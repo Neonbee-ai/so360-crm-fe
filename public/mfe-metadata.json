@@ -1,0 +1,19 @@
+{
+    "name": "crm_app",
+    "version": "1.0.0",
+    "owner": "CRM Team",
+    "minShellVersion": "1.0.0",
+    "maxShellVersion": "2.0.0",
+    "description": "Customer Relationship Management Module for SO360",
+    "healthEndpoint": "/health",
+    "features": [
+        "Contacts Management",
+        "Sales Pipeline",
+        "Customer Analytics"
+    ],
+    "dependencies": {
+        "@so360/shell-context": "^1.0.0",
+        "@so360/design-system": "^1.0.0",
+        "@so360/event-bus": "^1.0.0"
+    }
+}
