@@ -12,8 +12,26 @@ export interface TimelineEvent {
 }
 
 // API Configuration
-// Using relative /api path which will be proxied to http://localhost:3006 by Vite
-const API_BASE_URL = 'http://localhost:3004/crm-api';
+// In `npm run preview` (static), Vite proxy is not available (or unreliable across MFEs),
+// so default to absolute backend origins. Allow overrides via `window.*` or `import.meta.env`.
+const env = (import.meta as any)?.env || {};
+const win = typeof window !== 'undefined' ? (window as any) : {};
+
+const CRM_API_ORIGIN = String(
+    win.VITE_SO360_CRM_API ||
+    env.VITE_SO360_CRM_API ||
+    env.VITE_API_BASE_URL ||
+    'http://localhost:3003'
+).replace(/\/$/, '');
+
+const CORE_API_ORIGIN = String(
+    win.VITE_SO360_CORE_API ||
+    env.VITE_SO360_CORE_API ||
+    env.VITE_API_BASE_URL ||
+    'http://localhost:3000'
+).replace(/\/$/, '');
+
+const API_BASE_URL = CRM_API_ORIGIN;
 let TENANT_ID = 'default-tenant';
 let ORG_ID = 'default-org';
 let USER_ID = 'mock-user-id';
@@ -248,8 +266,7 @@ class ApiClient {
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
-const CORE_API_URL = '/core-api';
-const coreClient = new ApiClient(CORE_API_URL, TENANT_ID);
+const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {

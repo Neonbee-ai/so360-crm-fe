@@ -10,7 +10,7 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     const [isSynced, setIsSynced] = React.useState(false);
 
     useEffect(() => {
-        if (shell?.currentTenant?.id && shell?.currentOrg?.id) {
+        if (shell?.currentTenant?.id && shell?.currentOrg?.id && shell?.accessToken) {
             console.log('CRM MFE: Syncing context from shell:', {
                 tenant: shell.currentTenant.id,
                 org: shell.currentOrg.id
@@ -19,9 +19,7 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
             crmService.setTenantId(shell.currentTenant.id);
             crmService.setOrgId(shell.currentOrg.id);
 
-            if ((shell as any).accessToken) {
-                crmService.setAccessToken((shell as any).accessToken);
-            }
+            crmService.setAccessToken(shell.accessToken);
 
             if (shell.user) {
                 crmService.setUser({
@@ -34,7 +32,7 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
 
             setIsSynced(true);
         }
-    }, [shell?.currentTenant?.id, shell?.currentOrg?.id, shell?.user]);
+    }, [shell?.currentTenant?.id, shell?.currentOrg?.id, shell?.accessToken, shell?.user]);
 
     if (!isSynced) {
         return (

@@ -4,6 +4,8 @@ import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, C
 import { crmService } from '../services/crmService';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
+import { useBusinessSettings } from '@so360/shell-context';
+import { useFormatters } from '@so360/formatters';
 
 const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -16,6 +18,15 @@ const statusColors: Record<QuoteStatus, { bg: string; text: string; label: strin
 
 const QuotesPage = () => {
     const navigate = useNavigate();
+
+    // Use dynamic formatters from business settings
+    const { settings } = useBusinessSettings();
+    const formatters = useFormatters({
+        currency: settings?.base_currency || 'USD',
+        locale: settings?.document_language || 'en-US',
+        timezone: settings?.timezone || 'UTC',
+    });
+
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [deals, setDeals] = useState<Deal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -81,13 +92,9 @@ const QuotesPage = () => {
         }
     };
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    };
+    // Format functions now use dynamic settings
+    const formatCurrency = (value: number) => formatters.formatCurrency(value);
+    const formatDate = (dateString: string) => formatters.formatDate(dateString, { year: 'numeric', month: 'short', day: 'numeric' });
 
     const columns = [
         {

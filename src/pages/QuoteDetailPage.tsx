@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteLine, QuoteStatus } from '../types/crm';
+import { useBusinessSettings } from '@so360/shell-context';
+import { useFormatters } from '@so360/formatters';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -16,6 +18,14 @@ const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: strin
 const QuoteDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+
+    // Use dynamic formatters from business settings
+    const { settings } = useBusinessSettings();
+    const formatters = useFormatters({
+        currency: settings?.base_currency || 'USD',
+        locale: settings?.document_language || 'en-US',
+        timezone: settings?.timezone || 'UTC',
+    });
 
     const [quote, setQuote] = useState<Quote | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -177,13 +187,9 @@ const QuoteDetailPage = () => {
         };
     };
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    };
+    // Format functions now use dynamic settings
+    const formatCurrency = (value: number) => formatters.formatCurrency(value);
+    const formatDate = (dateString: string) => formatters.formatDate(dateString, { year: 'numeric', month: 'long', day: 'numeric' });
 
     if (isLoading) {
         return (

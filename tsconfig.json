@@ -19,7 +19,14 @@
         "isolatedModules": true,
         "jsx": "react-jsx",
         "declaration": true,
-        "outDir": "dist"
+        "outDir": "dist",
+        "baseUrl": ".",
+        "paths": {
+            "@so360/shell-context": ["../../so360-shell-fe/packages/shell-context/src"],
+            "@so360/design-system": ["../../so360-shell-fe/packages/design-system/src"],
+            "@so360/event-bus": ["../../so360-shell-fe/packages/event-bus/src"],
+            "@so360/formatters": ["../../so360-shell-fe/packages/formatters/src"]
+        }
     },
     "include": [
         "src"

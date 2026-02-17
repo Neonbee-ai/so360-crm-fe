@@ -35,7 +35,34 @@ const MockShellProvider = ({ children }: { children: React.ReactNode }) => {
         refreshModules: async () => { console.log('Mock refreshModules'); },
         modulesLoading: false,
         emitNotification: async () => ({ success: true, notificationIds: [], errors: [] }),
-        recordActivity: async () => { }
+        recordActivity: async () => { },
+        // Business Settings (mock for standalone development)
+        businessSettings: {
+            id: 'mock-settings-id',
+            org_id: 'mock-org-id',
+            base_currency: 'USD',
+            timezone: 'America/New_York',
+            fiscal_year_start_month: 1,
+            date_format: 'MM/DD/YYYY',
+            number_format: '1,234.56',
+            document_language: 'en-US',
+            is_multi_currency_enabled: false,
+            exchange_rate_source: 'manual',
+            tax_regime: 'standard',
+            default_tax_region: 'US',
+            is_tax_inclusive_pricing: false,
+            is_reverse_charge_applicable: false,
+            accounting_method: 'accrual' as const,
+            is_inventory_enabled: true,
+            valuation_method: 'FIFO' as const,
+            allow_negative_stock: false,
+            rounding_precision: 2,
+            document_settings: {},
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        },
+        businessSettingsLoading: false,
+        refreshBusinessSettings: async () => { console.log('Mock refreshBusinessSettings'); },
     };
 
     return (
