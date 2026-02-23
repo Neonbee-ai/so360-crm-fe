@@ -30,6 +30,11 @@ const CORE_API_ORIGIN = String(
     env.VITE_API_BASE_URL ||
     'http://localhost:3000'
 ).replace(/\/$/, '');
+const DAILYSTORE_API_ORIGIN = String(
+    win.VITE_SO360_DAILYSTORE_API ||
+    env.VITE_SO360_DAILYSTORE_API ||
+    'http://localhost:3016'
+).replace(/\/$/, '');
 
 const API_BASE_URL = CRM_API_ORIGIN;
 let TENANT_ID = 'default-tenant';
@@ -258,15 +263,24 @@ class ApiClient {
         });
     }
 
-    async delete<T>(endpoint: string): Promise<T> {
+    async put<T>(endpoint: string, data: any): Promise<T> {
+        return this.request<T>(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async delete<T>(endpoint: string, data?: any): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'DELETE',
+            ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
         });
     }
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
 const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
+const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -370,9 +384,14 @@ export const customersApi = {
         take?: number;
         channel?: string;
         category?: string;
+        customer_ids?: string[];
         q?: string;
     }): Promise<any[]> => {
-        return apiClient.get<any[]>('/leads/customers', params);
+        const normalizedParams = {
+            ...params,
+            customer_ids: params?.customer_ids?.length ? params.customer_ids.join(',') : undefined,
+        };
+        return apiClient.get<any[]>('/leads/customers', normalizedParams);
     },
 
     /**
@@ -743,9 +762,13 @@ export const documentsApi = {
 // ============================================================================
 // Maintain backward compatibility with existing code
 export const crmService = {
+    getDailystoreStores: async (): Promise<Array<{ id: string; name: string; store_code?: string; status?: string }>> => {
+        return dailystoreClient.get<Array<{ id: string; name: string; store_code?: string; status?: string }>>('/v1/dailystore/stores');
+    },
+
     // Leads
-    getLeads: async (): Promise<Lead[]> => {
-        return leadsApi.getAll();
+    getLeads: async (params?: { skip?: number; take?: number; status?: string; q?: string }): Promise<Lead[]> => {
+        return leadsApi.getAll(params);
     },
 
     getDashboardStats: async (params?: {
@@ -1480,14 +1503,116 @@ export const crmService = {
         return customersApi.updateCreditLimit(customerId, creditLimit);
     },
 
+    // Customer Segments
+    getCustomerSegments: async (): Promise<any[]> => {
+        return apiClient.get<any[]>('/customer-segments');
+    },
+    getCustomerSegmentById: async (segmentId: string): Promise<any> => {
+        return apiClient.get<any>(`/customer-segments/${segmentId}`);
+    },
+    createCustomerSegment: async (data: any): Promise<any> => {
+        return apiClient.post<any>('/customer-segments', data);
+    },
+    updateCustomerSegment: async (segmentId: string, data: any): Promise<any> => {
+        return apiClient.patch<any>(`/customer-segments/${segmentId}`, data);
+    },
+    deleteCustomerSegment: async (segmentId: string): Promise<any> => {
+        return apiClient.delete<any>(`/customer-segments/${segmentId}`);
+    },
+    getCustomerSegmentCustomers: async (segmentId: string): Promise<any> => {
+        return apiClient.get<any>(`/customer-segments/${segmentId}/customers`);
+    },
+    getCustomerSegmentLeads: async (segmentId: string): Promise<any> => {
+        return apiClient.get<any>(`/customer-segments/${segmentId}/leads`);
+    },
+    getCustomerSegmentMembers: async (segmentId: string, params?: { type?: 'all' | 'lead' | 'customer'; q?: string; skip?: number; take?: number }): Promise<any> => {
+        return apiClient.get<any>(`/customer-segments/${segmentId}/members`, params);
+    },
+    addCustomerSegmentMembers: async (segmentId: string, members: Array<{ id: string; type: 'lead' | 'customer' }>): Promise<any> => {
+        return apiClient.post<any>(`/customer-segments/${segmentId}/members`, { members });
+    },
+    removeCustomerSegmentMembers: async (segmentId: string, members: Array<{ id: string; type: 'lead' | 'customer' }>): Promise<any> => {
+        return apiClient.delete<any>(`/customer-segments/${segmentId}/members`, { members });
+    },
+
+    // Marketing (CRM-owned, proxied from Storefront internal APIs)
+    getAbandonedCarts: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/abandoned-carts`, params);
+    },
+    getAbandonedCartStats: async (storeId: string): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/abandoned-carts/stats`);
+    },
+    getAbandonedCart: async (storeId: string, cartId: string): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/abandoned-carts/${cartId}`);
+    },
+    sendAbandonedCartRecovery: async (storeId: string, cartId: string): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/abandoned-carts/${cartId}/send-recovery`, {});
+    },
+    updateAbandonedCartStatus: async (storeId: string, cartId: string, status: string): Promise<any> => {
+        return apiClient.patch<any>(`/marketing/${storeId}/abandoned-carts/${cartId}/status`, { status });
+    },
+    getCampaigns: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/campaigns`, params);
+    },
+    getCampaign: async (storeId: string, campaignId: string): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/campaigns/${campaignId}`);
+    },
+    createCampaign: async (storeId: string, data: any): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/campaigns`, data);
+    },
+    updateCampaign: async (storeId: string, campaignId: string, data: any): Promise<any> => {
+        return apiClient.put<any>(`/marketing/${storeId}/campaigns/${campaignId}`, data);
+    },
+    deleteCampaign: async (storeId: string, campaignId: string): Promise<any> => {
+        return apiClient.delete<any>(`/marketing/${storeId}/campaigns/${campaignId}`);
+    },
+    sendCampaignNow: async (storeId: string, campaignId: string): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/send`, {});
+    },
+    scheduleCampaign: async (storeId: string, campaignId: string, scheduleAt: string): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/schedule`, { scheduleAt });
+    },
+    pauseCampaign: async (storeId: string, campaignId: string): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/pause`, {});
+    },
+    testSendCampaign: async (storeId: string, campaignId: string, email: string): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/campaigns/${campaignId}/test-send`, { email });
+    },
+    getCampaignRecipients: async (storeId: string, campaignId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/campaigns/${campaignId}/recipients`, params);
+    },
+    getMarketingSegments: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/insights/customer-segments`, params);
+    },
+    getMarketingProductInterest: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/insights/product-interest`, params);
+    },
+    getMarketingBestSellingProducts: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/insights/best-selling-products`, params);
+    },
+    getMarketingTopBuyers: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/insights/top-buyers`, params);
+    },
+    getMarketingInactiveCustomers: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/insights/inactive-customers`, params);
+    },
+    getMarketingConversionFunnel: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/insights/conversion-funnel`, params);
+    },
+    getMarketingEmailPerformance: async (storeId: string, params?: any): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/insights/email-performance`, params);
+    },
+
     // Configuration
     setTenantId: (id: string) => {
         apiClient.setTenantId(id);
+        dailystoreClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         ORG_ID = id;
         apiClient.setOrgId(id);
         coreClient.setOrgId(id);
+        dailystoreClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -1501,5 +1626,6 @@ export const crmService = {
     setAccessToken: (token: string) => {
         apiClient.setAccessToken(token);
         coreClient.setAccessToken(token);
+        dailystoreClient.setAccessToken(token);
     },
 };

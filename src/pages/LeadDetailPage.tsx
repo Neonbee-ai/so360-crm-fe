@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     ChevronLeft, Mail, Phone, Building2,
     Calendar, Tag, Clock, Plus,
@@ -32,7 +32,10 @@ interface TimelineEvent {
 const LeadDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const { toasts, showSuccess, showError, dismissToast } = useToast();
+    const isCustomerDetailRoute = location.pathname.includes('/customers/');
+    const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const [lead, setLead] = useState<Lead | null>(null);
     const [associatedDeals, setAssociatedDeals] = useState<Deal[]>([]);
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
@@ -99,7 +102,7 @@ const LeadDetailPage = () => {
         return (
             <div className="p-8 text-center text-slate-500">
                 <p>Lead not found.</p>
-                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">Back to Leads</Link>
+                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</Link>
             </div>
         );
     }
@@ -258,7 +261,7 @@ const LeadDetailPage = () => {
         try {
             await crmService.deleteLead(id);
             showSuccess('Lead deleted successfully');
-            navigate('/crm/leads');
+            navigate(isCustomerDetailRoute ? '/crm/customers' : '/crm/leads');
         } catch (error: any) {
             showError(error.message || 'Failed to delete lead');
             setIsDeleting(false);
@@ -271,7 +274,7 @@ const LeadDetailPage = () => {
             <header className="mb-8">
                 <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
                     <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    Back to Leads
+                    {backLabel}
                 </Link>
                 <div className="flex justify-between items-start">
                     <div>
@@ -1297,5 +1300,4 @@ const LeadDetailPage = () => {
 };
 
 export default LeadDetailPage;
-
 

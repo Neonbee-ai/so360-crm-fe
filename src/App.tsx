@@ -56,7 +56,14 @@ const TasksPage = lazy(() => import('./pages/TasksPage'));
 const TaskDetailPage = lazy(() => import('./pages/TaskDetailPage'));
 const QuotesPage = lazy(() => import('./pages/QuotesPage'));
 const QuoteDetailPage = lazy(() => import('./pages/QuoteDetailPage'));
+const CustomersPage = lazy(() => import('./pages/CustomersPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const MarketingOverviewPage = lazy(() => import('./pages/MarketingOverviewPage'));
+const MarketingAbandonedCartsPage = lazy(() => import('./pages/MarketingAbandonedCartsPage'));
+const MarketingCampaignsPage = lazy(() => import('./pages/MarketingCampaignsPage'));
+const MarketingSegmentsPage = lazy(() => import('./pages/MarketingSegmentsPage'));
+const MarketingCampaignDetailPage = lazy(() => import('./pages/MarketingCampaignDetailPage'));
+const MarketingAbandonedCartDetailPage = lazy(() => import('./pages/MarketingAbandonedCartDetailPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -79,6 +86,8 @@ const App = () => {
                     <Route path="dashboard" element={<DashboardPage />} />
                     <Route path="leads" element={<LeadsPage />} />
                     <Route path="leads/:id" element={<LeadDetailPage />} />
+                    <Route path="customers" element={<CustomersPage />} />
+                    <Route path="customers/:id" element={<LeadDetailPage />} />
                     <Route path="pipeline" element={<PipelinePage />} />
                     <Route path="deal/:id" element={<DealDetailPage />} />
                     <Route path="tasks" element={<TasksPage />} />
@@ -86,6 +95,12 @@ const App = () => {
                     <Route path="quotes" element={<QuotesPage />} />
                     <Route path="quotes/:id" element={<QuoteDetailPage />} />
                     <Route path="settings" element={<SettingsPage />} />
+                    <Route path="marketing/overview" element={<MarketingOverviewPage />} />
+                    <Route path="marketing/abandoned-carts" element={<MarketingAbandonedCartsPage />} />
+                    <Route path="marketing/abandoned-carts/:cartId" element={<MarketingAbandonedCartDetailPage />} />
+                    <Route path="marketing/campaigns" element={<MarketingCampaignsPage />} />
+                    <Route path="marketing/campaigns/:campaignId" element={<MarketingCampaignDetailPage />} />
+                    <Route path="marketing/segments" element={<MarketingSegmentsPage />} />
                 </Routes>
             </CrmShellInitializer>
         </Layout>

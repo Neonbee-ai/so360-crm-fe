@@ -6,6 +6,7 @@ import {
     Calendar, User as UserIcon, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useBusinessSettings } from '@so360/shell-context';
 
 const DashboardPage = () => {
     const [stats, setStats] = useState<any>(null);
@@ -17,6 +18,7 @@ const DashboardPage = () => {
         return Math.ceil(month / 3); // Current quarter
     });
     const [month, setMonth] = useState(new Date().getMonth() + 1);
+    const { settings } = useBusinessSettings();
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -51,18 +53,29 @@ const DashboardPage = () => {
     const revenueLabels = chartLabels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            maximumFractionDigits: 0
-        }).format(amount);
+        const locale = settings?.document_language || 'en-US';
+        const currency = settings?.base_currency?.toUpperCase();
+
+        if (currency) {
+            try {
+                return new Intl.NumberFormat(locale, {
+                    style: 'currency',
+                    currency,
+                    maximumFractionDigits: 0,
+                }).format(amount);
+            } catch {
+                return `${currency} ${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(amount)}`;
+            }
+        }
+
+        return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(amount);
     };
 
     const maxRevenue = Math.max(...monthlyRevenue, 1);
     const maxActivity = Math.max(...teamStats.map((s: any) => s.activityCount), 1);
 
     return (
-        <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-16">
+        <div className="p-8 space-y-8 pb-16">
             <header className="flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-black text-white tracking-tight mb-2">Executive Overview</h1>

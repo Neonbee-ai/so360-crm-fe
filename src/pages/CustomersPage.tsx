@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
@@ -24,6 +24,7 @@ const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }
 
 const CustomersPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [customers, setCustomers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -35,15 +36,44 @@ const CustomersPage = () => {
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
+    const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
 
     const fetchData = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [customersData, statsData] = await Promise.all([
-                crmService.getCustomers(),
-                crmService.getCustomerStats(),
-            ]);
+            const segmentId = queryParams.get('segmentId');
+            const q = queryParams.get('q') || undefined;
+            const channel = queryParams.get('channel') || undefined;
+            const category = queryParams.get('category') || undefined;
+            const customerIds = (queryParams.get('customer_ids') || '')
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean);
+
+            const statsPromise = crmService.getCustomerStats();
+            let customersData: any[] = [];
+
+            if (segmentId) {
+                const resolved = await crmService.getCustomerSegmentCustomers(segmentId);
+                customersData = Array.isArray(resolved?.customers) ? resolved.customers : [];
+                setActiveSegmentName(
+                    queryParams.get('segmentName') ||
+                    resolved?.segment?.name ||
+                    'Segment',
+                );
+            } else {
+                customersData = await crmService.getCustomers({
+                    ...(q ? { q } : {}),
+                    ...(channel ? { channel } : {}),
+                    ...(category ? { category } : {}),
+                    ...(customerIds.length > 0 ? { customer_ids: customerIds } : {}),
+                });
+                setActiveSegmentName(null);
+            }
+
+            const statsData = await statsPromise;
             setCustomers(customersData || []);
             setStats(statsData || {});
         } catch (err: any) {
@@ -55,8 +85,11 @@ const CustomersPage = () => {
     };
 
     useEffect(() => {
+        setSearchTerm(queryParams.get('q') || '');
+        setChannelFilter(queryParams.get('channel') || 'All');
+        setCategoryFilter(queryParams.get('category') || 'All');
         fetchData();
-    }, []);
+    }, [location.search]);
 
     const toggleSort = (field: SortField) => {
         if (sortField === field) {
@@ -274,6 +307,12 @@ const CustomersPage = () => {
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                {activeSegmentName && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                        <Tag size={12} />
+                        Segment: {activeSegmentName}
+                    </span>
+                )}
                 <div className="flex-1 min-w-[200px] relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                     <input
@@ -304,9 +343,14 @@ const CustomersPage = () => {
                     <option value="b2b">B2B</option>
                     <option value="b2c">B2C</option>
                 </select>
-                {(channelFilter !== 'All' || categoryFilter !== 'All') && (
+                {(activeSegmentName || searchTerm || channelFilter !== 'All' || categoryFilter !== 'All') && (
                     <button
-                        onClick={() => { setChannelFilter('All'); setCategoryFilter('All'); }}
+                        onClick={() => {
+                            setSearchTerm('');
+                            setChannelFilter('All');
+                            setCategoryFilter('All');
+                            navigate('/crm/customers');
+                        }}
                         className="text-xs text-rose-400 hover:text-rose-300 underline"
                     >
                         Clear Filters
@@ -319,7 +363,7 @@ const CustomersPage = () => {
                 data={paginatedCustomers}
                 columns={columns}
                 isLoading={isLoading}
-                onRowClick={(customer) => navigate(`/crm/leads/${customer.id}`)}
+                onRowClick={(customer) => navigate(`../customers/${customer.id}`)}
                 emptyMessage={error || 'No customers found. Customers appear here when they register via Storefront, POS, guest checkout, or are promoted from Leads.'}
             />
 

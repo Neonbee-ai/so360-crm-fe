@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, User as UserIcon, Mail, Phone, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Search, Filter, Plus, User as UserIcon, Mail, Phone, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, Tag } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
 import { Table } from '../components/common/Table';
@@ -12,6 +12,7 @@ type SortDirection = 'asc' | 'desc' | null;
 
 const LeadsPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -36,19 +37,29 @@ const LeadsPage = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
 
     const fetchInitialData = async () => {
         setIsLoading(true);
         setError(null);
         try {
+            const queryParams = new URLSearchParams(location.search);
+            const segmentId = queryParams.get('segmentId');
+            const segmentName = queryParams.get('segmentName');
+            const q = queryParams.get('q') || undefined;
+
             const [leadsData, settingsData, usersData] = await Promise.all([
-                crmService.getLeads(),
+                segmentId
+                    ? crmService.getCustomerSegmentLeads(segmentId).then((res: any) => res?.leads || [])
+                    : crmService.getLeads({ ...(q ? { q } : {}) }),
                 crmService.getSettings(),
                 crmService.getUsers()
             ]);
             setLeads(leadsData);
             setLeadStages(settingsData.lead_stages);
             setUsers(usersData);
+            setActiveSegmentName(segmentId ? (segmentName || 'Segment') : null);
+            if (q) setSearchTerm(q);
         } catch (err: any) {
             console.error('Failed to fetch initial data', err);
             setError(err.message || 'Failed to initialize page');
@@ -59,7 +70,7 @@ const LeadsPage = () => {
 
     useEffect(() => {
         fetchInitialData();
-    }, []);
+    }, [location.search]);
 
     const isDateInRange = (dateString: string) => {
         if (dateRangeFilter === 'All') return true;
@@ -357,6 +368,12 @@ const LeadsPage = () => {
 
             <div className="flex flex-col gap-4 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
                 <div className="flex flex-wrap items-center gap-3">
+                    {activeSegmentName && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                            <Tag size={12} />
+                            Segment: {activeSegmentName}
+                        </span>
+                    )}
                     <div className="flex-1 min-w-[200px] relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                         <input

@@ -7,9 +7,9 @@ export default defineConfig({
     base: 'http://localhost:3004/',
     resolve: {
         alias: {
-            '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/src'),
-            '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src'),
-            '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/src'),
+            '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/dist/index.js'),
+            '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/dist/index.js'),
+            '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/dist/index.js'),
             '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/src'),
         },
     },
@@ -44,6 +44,7 @@ export default defineConfig({
     },
     server: {
         port: 3004,
+        strictPort: true,
         cors: true, // Allow Shell to load remoteEntry.js
         proxy: {
             '/crm-api': {
@@ -64,6 +65,7 @@ export default defineConfig({
     },
     preview: {
         port: 3004,
+        strictPort: true,
         cors: true,
         proxy: {
             '/crm-api': {

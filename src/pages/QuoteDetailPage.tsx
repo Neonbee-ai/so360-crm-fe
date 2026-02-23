@@ -22,7 +22,7 @@ const QuoteDetailPage = () => {
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
     const formatters = useFormatters({
-        currency: settings?.base_currency || 'USD',
+        currency: settings?.base_currency || 'XXX',
         locale: settings?.document_language || 'en-US',
         timezone: settings?.timezone || 'UTC',
     });
