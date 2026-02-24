@@ -129,7 +129,7 @@ const DashboardPage = () => {
                             <div className="p-2 bg-blue-500/10 rounded-lg">
                                 <DollarSign size={20} />
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Revenue</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Deal Revenue</span>
                         </div>
                         <div className="flex items-end gap-3">
                             <h3 className="text-3xl font-black text-white tracking-tight">{formatCurrency(financials.totalRevenue)}</h3>
@@ -137,7 +137,14 @@ const DashboardPage = () => {
                                 <ArrowUpRight size={14} /> +12.5%
                             </span>
                         </div>
-                        <p className="text-xs text-slate-500 mt-2 font-medium">vs. last year</p>
+                        {financials.accountingRevenue != null ? (
+                            <p className="text-xs mt-2 font-medium">
+                                <span className="text-slate-500">Booked: </span>
+                                <span className="text-emerald-400">{formatCurrency(financials.accountingRevenue)}</span>
+                            </p>
+                        ) : (
+                            <p className="text-xs text-slate-500 mt-2 font-medium">From won deals</p>
+                        )}
                     </div>
                 </div>
 
