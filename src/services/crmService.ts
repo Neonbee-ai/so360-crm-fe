@@ -1622,6 +1622,8 @@ export const crmService = {
         apiClient.get<any[]>(`/leads/${leadId}/storefront-coupons`),
     getStorefrontNewsletters: async (leadId: string): Promise<any[]> =>
         apiClient.get<any[]>(`/leads/${leadId}/storefront-newsletters`),
+    getStorefrontIntelligence: async (leadId: string): Promise<any> =>
+        apiClient.get<any>(`/leads/${leadId}/storefront-intelligence`),
     getAllStorefrontSearches: async (params?: any): Promise<any[]> => {
         return apiClient.get<any[]>('/marketing/storefront-searches', params);
     },
@@ -1714,6 +1716,19 @@ export const crmService = {
     deleteCoupon: async (storeId: string, couponId: string): Promise<any> => {
         return apiClient.delete<any>(`/marketing/${storeId}/coupons/${couponId}`);
     },
+
+    getCommerceKPIs: async (params?: {
+        period?: 'yearly' | 'quarterly' | 'monthly';
+        year?: number;
+        quarter?: number;
+        month?: number;
+    }): Promise<{
+        revenue: number;
+        orderCount: number;
+        aov: number;
+        repeatPurchaseRate: number;
+        refundRate: number;
+    }> => apiClient.get('/analytics/commerce-kpis', params as any),
 
     // Configuration
     setTenantId: (id: string) => {

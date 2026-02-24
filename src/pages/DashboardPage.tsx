@@ -3,10 +3,10 @@ import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
     BarChart3, ArrowUpRight, ArrowDownRight, Briefcase,
-    Calendar, User as UserIcon, Loader2
+    Calendar, User as UserIcon, Loader2, ShoppingBag, Package
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useBusinessSettings } from '@so360/shell-context';
+import { useBusinessSettings, useShell } from '@so360/shell-context';
 
 const DashboardPage = () => {
     const [stats, setStats] = useState<any>(null);
@@ -19,6 +19,14 @@ const DashboardPage = () => {
     });
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const { settings } = useBusinessSettings();
+    const { isModuleEnabled } = useShell();
+    const isDailyStoreEnabled = isModuleEnabled('dailystore');
+
+    const [commerceKPIs, setCommerceKPIs] = useState<{
+        revenue: number; orderCount: number; aov: number;
+        repeatPurchaseRate: number; refundRate: number;
+    } | null>(null);
+    const [isCommerceLoading, setIsCommerceLoading] = useState(false);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -39,6 +47,27 @@ const DashboardPage = () => {
         };
         fetchStats();
     }, [period, year, quarter, month]);
+
+    useEffect(() => {
+        if (!isDailyStoreEnabled) return;
+        const fetchCommerce = async () => {
+            setIsCommerceLoading(true);
+            try {
+                const data = await crmService.getCommerceKPIs({
+                    period,
+                    year,
+                    quarter: period === 'quarterly' ? quarter : undefined,
+                    month: period === 'monthly' ? month : undefined,
+                });
+                setCommerceKPIs(data);
+            } catch (err) {
+                console.error('Failed to fetch commerce KPIs', err);
+            } finally {
+                setIsCommerceLoading(false);
+            }
+        };
+        fetchCommerce();
+    }, [isDailyStoreEnabled, period, year, quarter, month]);
 
     if (isLoading) {
         return (
@@ -202,6 +231,101 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Commerce Performance — DailyStore gated */}
+            {isDailyStoreEnabled && (
+                <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-purple-500/10 rounded-lg">
+                            <ShoppingBag size={16} className="text-purple-400" />
+                        </div>
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                            Commerce Performance
+                        </h2>
+                        <span className="text-[9px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20">
+                            DailyStore
+                        </span>
+                        {isCommerceLoading && <Loader2 size={12} className="animate-spin text-slate-500 ml-auto" />}
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {/* 1. Ecommerce Revenue */}
+                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/50 transition-all">
+                            <div className="absolute right-0 top-0 p-24 bg-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/10 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-3 text-purple-400">
+                                    <div className="p-1.5 bg-purple-500/10 rounded-lg"><DollarSign size={16} /></div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Revenue</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                    {formatCurrency(commerceKPIs?.revenue ?? 0)}
+                                </h3>
+                                <p className="text-[10px] text-slate-500 mt-1 font-medium">Recognized (paid)</p>
+                            </div>
+                        </div>
+
+                        {/* 2. Orders Count */}
+                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-cyan-500/50 transition-all">
+                            <div className="absolute right-0 top-0 p-24 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-cyan-500/10 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-3 text-cyan-400">
+                                    <div className="p-1.5 bg-cyan-500/10 rounded-lg"><Package size={16} /></div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Orders</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                    {(commerceKPIs?.orderCount ?? 0).toLocaleString()}
+                                </h3>
+                                <p className="text-[10px] text-slate-500 mt-1 font-medium">Total orders placed</p>
+                            </div>
+                        </div>
+
+                        {/* 3. AOV */}
+                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-violet-500/50 transition-all">
+                            <div className="absolute right-0 top-0 p-24 bg-violet-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-violet-500/10 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-3 text-violet-400">
+                                    <div className="p-1.5 bg-violet-500/10 rounded-lg"><BarChart3 size={16} /></div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">AOV</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                    {formatCurrency(commerceKPIs?.aov ?? 0)}
+                                </h3>
+                                <p className="text-[10px] text-slate-500 mt-1 font-medium">Avg order value</p>
+                            </div>
+                        </div>
+
+                        {/* 4. Repeat Purchase % */}
+                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+                            <div className="absolute right-0 top-0 p-24 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/10 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-3 text-emerald-400">
+                                    <div className="p-1.5 bg-emerald-500/10 rounded-lg"><Users size={16} /></div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Repeat</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                    {(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%
+                                </h3>
+                                <p className="text-[10px] text-slate-500 mt-1 font-medium">Repeat purchase rate</p>
+                            </div>
+                        </div>
+
+                        {/* 5. Refund % */}
+                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-rose-500/50 transition-all">
+                            <div className="absolute right-0 top-0 p-24 bg-rose-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-rose-500/10 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center gap-2 mb-3 text-rose-400">
+                                    <div className="p-1.5 bg-rose-500/10 rounded-lg"><TrendingUp size={16} className="rotate-180" /></div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Refund</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                    {(commerceKPIs?.refundRate ?? 0).toFixed(1)}%
+                                </h3>
+                                <p className="text-[10px] text-slate-500 mt-1 font-medium">Refund rate</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Active Reminders Row */}
             <section>
