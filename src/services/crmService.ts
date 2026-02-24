@@ -36,6 +36,12 @@ const DAILYSTORE_API_ORIGIN = String(
     'http://localhost:3016'
 ).replace(/\/$/, '');
 
+const INVENTORY_API_ORIGIN = String(
+    win.VITE_SO360_INVENTORY_API ||
+    env.VITE_SO360_INVENTORY_API ||
+    'http://localhost:3006'
+).replace(/\/$/, '');
+
 const API_BASE_URL = CRM_API_ORIGIN;
 let TENANT_ID = 'default-tenant';
 let ORG_ID = 'default-org';
@@ -1500,6 +1506,25 @@ export const crmService = {
         create_project?: boolean;
     }): Promise<any> {
         return apiClient.post<any>(`/quotes/${quoteId}/convert`, data || {});
+    },
+
+    // Inventory stock availability — calls Inventory BE integration endpoint
+    async getStockAvailability(itemIds: string[]): Promise<{ items: Array<{ item_id: string; item_name: string | null; available_quantity: number }> }> {
+        if (!itemIds || itemIds.length === 0) return { items: [] };
+        const idsParam = itemIds.slice(0, 50).join(',');
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (TENANT_ID) headers['X-Tenant-Id'] = TENANT_ID;
+        if (ORG_ID) headers['X-Org-Id'] = ORG_ID;
+        try {
+            const res = await fetch(
+                `${INVENTORY_API_ORIGIN}/v1/inventory/integration/stock-availability?item_ids=${encodeURIComponent(idsParam)}`,
+                { headers },
+            );
+            if (!res.ok) return { items: [] };
+            return res.json();
+        } catch {
+            return { items: [] };
+        }
     },
 
     // Customers

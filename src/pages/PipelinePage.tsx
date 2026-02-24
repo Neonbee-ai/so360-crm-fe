@@ -21,6 +21,7 @@ const PipelinePage = () => {
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isFiltering, setIsFiltering] = useState(false);
     const [filters, setFilters] = useState<Filters>({});
+    const [pollTick, setPollTick] = useState(0);
 
     const [transitionModal, setTransitionModal] = useState<{
         isOpen: boolean;
@@ -34,13 +35,19 @@ const PipelinePage = () => {
         newStageId: null
     });
 
-    // Debounce filter changes for text inputs
+    // Debounce filter changes for text inputs; also re-runs on pollTick for auto-refresh
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             fetchData();
         }, 300);
         return () => clearTimeout(timeoutId);
-    }, [filters]);
+    }, [filters, pollTick]);
+
+    // Auto-refresh pipeline every 60 seconds
+    useEffect(() => {
+        const pollInterval = setInterval(() => setPollTick(t => t + 1), 60 * 1000);
+        return () => clearInterval(pollInterval);
+    }, []);
 
     const fetchData = async () => {
         try {

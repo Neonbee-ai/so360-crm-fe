@@ -40,6 +40,9 @@ const QuoteDetailPage = () => {
     const [validUntil, setValidUntil] = useState('');
     const [lines, setLines] = useState<QuoteLine[]>([]);
 
+    // Stock availability per item_id (available_quantity)
+    const [stockMap, setStockMap] = useState<Map<string, number>>(new Map());
+
     // Action modals
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
@@ -50,6 +53,17 @@ const QuoteDetailPage = () => {
             fetchQuote();
         }
     }, [id]);
+
+    // Fetch live stock whenever lines change and any have an item_id
+    useEffect(() => {
+        const itemIds = lines.map(l => l.item_id).filter(Boolean) as string[];
+        if (itemIds.length === 0) { setStockMap(new Map()); return; }
+        crmService.getStockAvailability(itemIds).then(result => {
+            const map = new Map<string, number>();
+            (result.items || []).forEach(i => map.set(i.item_id, i.available_quantity));
+            setStockMap(map);
+        }).catch(() => {});
+    }, [lines]);
 
     const fetchQuote = async () => {
         setIsLoading(true);
@@ -98,6 +112,12 @@ const QuoteDetailPage = () => {
 
     const handleSubmitForApproval = async () => {
         if (!quote) return;
+        // Warn if any line exceeds available stock
+        const oosLines = lines.filter(l => l.item_id && stockMap.has(l.item_id) && (stockMap.get(l.item_id) ?? 0) < l.quantity);
+        if (oosLines.length > 0) {
+            const names = oosLines.map(l => l.description || l.item_id).join(', ');
+            if (!window.confirm(`Warning: ${oosLines.length} line item(s) may have insufficient stock (${names}). Submit anyway?`)) return;
+        }
         try {
             const updated = await crmService.submitQuoteForApproval(quote.id);
             setQuote(updated);
@@ -388,6 +408,7 @@ const QuoteDetailPage = () => {
                                 <thead>
                                     <tr className="border-b border-slate-700">
                                         <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase">Description</th>
+                                        <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase w-28">Stock</th>
                                         <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-24">Qty</th>
                                         <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-32">Unit Price</th>
                                         <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-24">Disc %</th>
@@ -397,19 +418,47 @@ const QuoteDetailPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {lines.map((line, index) => (
+                                    {lines.map((line, index) => {
+                                        const stock = line.item_id ? stockMap.get(line.item_id) : undefined;
+                                        const isLowStock = stock !== undefined && stock > 0 && stock < line.quantity;
+                                        const isOOS = stock !== undefined && stock <= 0;
+                                        return (
                                         <tr key={index} className="border-b border-slate-700/50">
                                             <td className="py-3 px-4">
                                                 {isEditing ? (
-                                                    <input
-                                                        type="text"
-                                                        value={line.description}
-                                                        onChange={(e) => updateLine(index, 'description', e.target.value)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        placeholder="Item description..."
-                                                    />
+                                                    <div className="space-y-1">
+                                                        <input
+                                                            type="text"
+                                                            value={line.description}
+                                                            onChange={(e) => updateLine(index, 'description', e.target.value)}
+                                                            className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="Item description..."
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={line.item_id || ''}
+                                                            onChange={(e) => updateLine(index, 'item_id', e.target.value || undefined)}
+                                                            className="w-full px-3 py-1 bg-slate-900 border border-slate-700 rounded text-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                                            placeholder="Item ID (optional, for stock check)"
+                                                        />
+                                                    </div>
                                                 ) : (
                                                     <span className="text-slate-200">{line.description}</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {line.item_id ? (
+                                                    stock === undefined ? (
+                                                        <span className="text-xs text-slate-500">—</span>
+                                                    ) : isOOS ? (
+                                                        <span className="text-xs font-medium text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">OOS</span>
+                                                    ) : isLowStock ? (
+                                                        <span className="text-xs font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                    ) : (
+                                                        <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                    )
+                                                ) : (
+                                                    <span className="text-xs text-slate-600">—</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right">
@@ -483,10 +532,10 @@ const QuoteDetailPage = () => {
                                                 </td>
                                             )}
                                         </tr>
-                                    ))}
+                                    ); })}
                                     {lines.length === 0 && (
                                         <tr>
-                                            <td colSpan={isEditing ? 7 : 6} className="py-8 text-center text-slate-400">
+                                            <td colSpan={isEditing ? 8 : 7} className="py-8 text-center text-slate-400">
                                                 No line items added yet
                                             </td>
                                         </tr>
