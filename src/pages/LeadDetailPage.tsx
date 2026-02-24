@@ -6,7 +6,9 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon
+    File, Download, UploadCloud, FileIcon,
+    Search, ShoppingBag, Heart, Star, ShoppingCart, ShieldCheck, Package,
+    LogIn
 } from 'lucide-react';
 import { crmService, activitiesApi } from '../services/crmService';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note } from '../types/crm';
@@ -16,7 +18,7 @@ import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'storefront';
 
 interface TimelineEvent {
     id: string;
@@ -58,6 +60,16 @@ const LeadDetailPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Storefront activity states
+    const [sfActivities, setSfActivities] = useState<any[]>([]);
+    const [sfWishlist, setSfWishlist] = useState<any[]>([]);
+    const [sfReviews, setSfReviews] = useState<any[]>([]);
+    const [sfAbandonedCarts, setSfAbandonedCarts] = useState<any[]>([]);
+    const [sfOrders, setSfOrders] = useState<any[]>([]);
+    const [sfCoupons, setSfCoupons] = useState<any[]>([]);
+    const [sfNewsletters, setSfNewsletters] = useState<any[]>([]);
+    const [isSfLoading, setIsSfLoading] = useState(false);
+
     const fetchLeadData = useCallback(async () => {
         try {
             const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData] = await Promise.all([
@@ -78,6 +90,33 @@ const LeadDetailPage = () => {
             setScoringRules(settingsData.lead_scoring || []);
             setLeadStages(settingsData.lead_stages || []);
             setAllUsers(usersData);
+
+            // Fetch storefront data if lead is a customer and has storefront ID
+            if (leadData && leadData.storefront_customer_id) {
+                setIsSfLoading(true);
+                try {
+                    const [sfAct, sfWish, sfRev, sfAbCarts, sfOrd, sfCoup, sfNews] = await Promise.all([
+                        crmService.getStorefrontActivity(id),
+                        crmService.getStorefrontWishlist(id),
+                        crmService.getStorefrontReviews(id),
+                        crmService.getStorefrontAbandonedCarts(id),
+                        crmService.getStorefrontOrders(id),
+                        crmService.getStorefrontCoupons(id),
+                        crmService.getStorefrontNewsletters(id),
+                    ]);
+                    setSfActivities(sfAct);
+                    setSfWishlist(sfWish);
+                    setSfReviews(sfRev);
+                    setSfAbandonedCarts(sfAbCarts);
+                    setSfOrders(sfOrd);
+                    setSfCoupons(sfCoup);
+                    setSfNewsletters(sfNews);
+                } catch (sfErr) {
+                    console.error('Failed to fetch storefront data', sfErr);
+                } finally {
+                    setIsSfLoading(false);
+                }
+            }
         } catch (error) {
             console.error('Failed to fetch lead data', error);
         } finally {
@@ -207,6 +246,32 @@ const LeadDetailPage = () => {
                 author: d.owner
             });
         });
+
+        // 6. Storefront Activities
+        sfActivities.forEach(act => {
+            events.push({
+                id: act.id,
+                type: 'Activity',
+                subType: act.activity_type.toUpperCase(),
+                title: act.activity_type === 'search' ? `Searched: "${act.search_query}"` : `Storefront: ${act.activity_type.replace('_', ' ')}`,
+                description: act.metadata?.results_count !== undefined 
+                    ? `Found ${act.metadata.results_count} results on Storefront` 
+                    : `Customer interaction on storefront channel`,
+                date: act.created_at,
+            });
+        });
+
+        // 7. Storefront Login/Access (calculated from lead fields if sfActivities doesn't have it)
+        if (lead.last_login_at) {
+            events.push({
+                id: `login-${lead.id}-${lead.last_login_at}`,
+                type: 'Activity',
+                subType: 'LOGIN',
+                title: 'Customer Logged In',
+                description: `Last seen active: ${lead.last_seen_at ? new Date(lead.last_seen_at).toLocaleString() : 'N/A'}. Total login count: ${lead.login_count || 0}`,
+                date: lead.last_login_at,
+            });
+        }
 
         return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     };
@@ -530,6 +595,15 @@ const LeadDetailPage = () => {
                             >
                                 <File size={14} /> Documents ({lead.documents?.length || 0})
                             </button>
+                            {lead.storefront_customer_id && (
+                                <button
+                                    onClick={() => setActiveTab('storefront')}
+                                    className={`flex items-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'storefront' ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
+                                        }`}
+                                >
+                                    <ShoppingBag size={14} /> Storefront
+                                </button>
+                            )}
                         </div>
 
                         <div className="p-6">
@@ -552,6 +626,9 @@ const LeadDetailPage = () => {
                                                                 {event.subType === 'MEETING' && <Users size={14} className="text-purple-400" />}
                                                                 {event.subType === 'EMAIL' && <AtSign size={14} className="text-emerald-400" />}
                                                                 {event.subType === 'NOTE' && <FileText size={14} className="text-amber-400" />}
+                                                                {event.subType === 'SEARCH' && <Search size={14} className="text-blue-400" />}
+                                                                {event.subType === 'LOGIN' && <LogIn size={14} className="text-emerald-400" />}
+                                                                {(!['CALL', 'MEETING', 'EMAIL', 'NOTE', 'SEARCH', 'LOGIN'].includes(event.subType || '')) && event.subType && <ShoppingBag size={14} className="text-purple-400" />}
                                                             </>
                                                         )}
                                                         {event.type === 'NOTE' && <FileText size={14} className="text-amber-400" />}
@@ -914,6 +991,236 @@ const LeadDetailPage = () => {
                                     )}
                                 </div>
                             )}
+
+                            {activeTab === 'storefront' && (
+                                <div className="space-y-10">
+                                    {/* Activity Timeline */}
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <Search size={14} className="text-blue-500" /> Storefront Activity
+                                        </h4>
+                                        {sfActivities.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic px-4">No recent activity tracked.</p>
+                                        ) : (
+                                            <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-slate-800 ml-1">
+                                                {sfActivities.map((act) => (
+                                                    <div key={act.id} className="relative pl-8">
+                                                        <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-950 flex items-center justify-center z-10">
+                                                            {act.activity_type === 'search' ? <Search size={10} className="text-blue-400" /> : <ShoppingBag size={10} className="text-purple-400" />}
+                                                        </div>
+                                                        <div className="bg-slate-950/30 border border-slate-800/50 p-3 rounded-xl">
+                                                            <div className="flex justify-between items-start mb-1">
+                                                                <span className="text-[10px] font-black uppercase text-slate-300">
+                                                                    {act.activity_type === 'search' ? `Searched for "${act.search_query}"` : act.activity_type.replace('_', ' ')}
+                                                                </span>
+                                                                <span className="text-[8px] text-slate-600 font-bold uppercase">
+                                                                    {new Date(act.created_at).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+                                                            {act.metadata?.results_count !== undefined && (
+                                                                <p className="text-[9px] text-slate-500">Found {act.metadata.results_count} results</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    {/* Wishlist */}
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <Heart size={14} className="text-rose-500" /> Wishlist ({sfWishlist.length})
+                                        </h4>
+                                        {sfWishlist.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic px-4">Wishlist is empty.</p>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {sfWishlist.map((item) => (
+                                                    <div key={item.id} className="flex items-center gap-3 p-3 bg-slate-950/30 border border-slate-800/50 rounded-xl">
+                                                        <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
+                                                            {item.items?.image_urls?.[0] ? (
+                                                                <img src={item.items.image_urls[0]} alt={item.items.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <Package size={16} className="m-auto text-slate-600" />
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-bold text-slate-200 truncate">{item.items?.name || 'Unknown Item'}</p>
+                                                            <p className="text-[8px] text-slate-500 uppercase tracking-tighter mt-0.5">Added {new Date(item.added_at).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    {/* Abandoned Carts */}
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <ShoppingCart size={14} className="text-amber-500" /> Abandoned Carts ({sfAbandonedCarts.length})
+                                        </h4>
+                                        {sfAbandonedCarts.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic px-4">No abandoned carts found.</p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {sfAbandonedCarts.map((cart) => (
+                                                    <div key={cart.id} className="p-4 bg-slate-950/30 border border-amber-500/10 rounded-xl flex items-center justify-between">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs font-black text-white uppercase tracking-tight">Cart #{cart.id.substring(0, 8)}</span>
+                                                                <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-black uppercase tracking-widest">Abandoned</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                                                Last active: {new Date(cart.updated_at).toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => navigate(`/crm/marketing/abandoned-carts/${cart.id}`)}
+                                                            className="text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1"
+                                                        >
+                                                            Details <ExternalLink size={10} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    {/* Reviews */}
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <Star size={14} className="text-yellow-500" /> Product Reviews ({sfReviews.length})
+                                        </h4>
+                                        {sfReviews.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic px-4">No reviews submitted yet.</p>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {sfReviews.map((rev) => (
+                                                    <div key={rev.id} className="p-4 bg-slate-950/30 border border-slate-800/50 rounded-xl relative group">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex text-yellow-500">
+                                                                    {[...Array(5)].map((_, i) => (
+                                                                        <Star key={i} size={10} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-700'} />
+                                                                    ))}
+                                                                </div>
+                                                                <span className="text-[10px] font-black text-white uppercase tracking-tight ml-1">{rev.title || 'Untitled Review'}</span>
+                                                                {rev.is_approved ? (
+                                                                    <ShieldCheck size={12} className="text-emerald-500" />
+                                                                ) : (
+                                                                    <Clock size={12} className="text-amber-500" />
+                                                                )}
+                                                            </div>
+                                                            <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest">{new Date(rev.created_at).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-400 italic mb-2">"{rev.content}"</p>
+                                                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/50">
+                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                                                                <Package size={10} /> {rev.items?.name || 'Unknown Product'}
+                                                            </span>
+                                                            <a 
+                                                                href="/dailystore/reviews" 
+                                                                target="_blank"
+                                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1"
+                                                            >
+                                                                Moderate <ExternalLink size={10} />
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    {/* Orders */}
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <Package size={14} className="text-emerald-500" /> Orders ({sfOrders.length})
+                                        </h4>
+                                        {sfOrders.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic px-4">No orders placed yet.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {sfOrders.map(order => (
+                                                    <div key={order.id}
+                                                         onClick={() => navigate(`/dailystore/orders/${order.id}`)}
+                                                         className="flex items-center justify-between p-3 bg-slate-950/30 border border-slate-800/50 rounded-xl cursor-pointer hover:border-emerald-500/20 transition-all group">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-black text-white">#{order.order_number || order.id.substring(0, 8)}</span>
+                                                                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-black uppercase tracking-widest ${
+                                                                    order.status === 'delivered' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                                    order.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                                                    'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                                }`}>{order.status}</span>
+                                                            </div>
+                                                            <p className="text-[9px] text-slate-500 mt-0.5 font-bold uppercase tracking-widest">
+                                                                {new Date(order.created_at).toLocaleDateString()} · {order.currency} {parseFloat(order.total_amount).toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                        <ExternalLink size={12} className="text-slate-600 group-hover:text-blue-400 transition-colors" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    {/* Coupons Applied */}
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <Tag size={14} className="text-purple-500" /> Coupons Applied ({sfCoupons.length})
+                                        </h4>
+                                        {sfCoupons.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic px-4">No coupons used yet.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {sfCoupons.map(order => (
+                                                    <div key={order.id} className="flex items-center justify-between p-3 bg-slate-950/30 border border-purple-500/10 rounded-xl">
+                                                        <div>
+                                                            <span className="text-xs font-black text-purple-300 font-mono">{order.coupon_code}</span>
+                                                            <p className="text-[9px] text-slate-500 mt-0.5 font-bold uppercase tracking-widest">
+                                                                Order #{order.order_number || order.id.substring(0, 8)} · Saved {order.currency} {parseFloat(order.discount_amount || 0).toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                        <span className="text-[8px] text-slate-600 font-black uppercase">{new Date(order.created_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    {/* Newsletters */}
+                                    <section>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <Mail size={14} className="text-blue-500" /> Newsletter Subscription
+                                        </h4>
+                                        {sfNewsletters.length === 0 ? (
+                                            <p className="text-xs text-slate-500 italic px-4">Not subscribed to any newsletter.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {sfNewsletters.map(sub => (
+                                                    <div key={sub.id} className="flex items-center justify-between p-3 bg-slate-950/30 border border-slate-800/50 rounded-xl">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-black uppercase tracking-widest ${
+                                                                    sub.unsubscribed_at
+                                                                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                                                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                                }`}>{sub.unsubscribed_at ? 'Unsubscribed' : 'Subscribed'}</span>
+                                                            </div>
+                                                            <p className="text-[9px] text-slate-500 mt-1 font-bold uppercase tracking-widest">
+                                                                Since {new Date(sub.subscribed_at).toLocaleDateString()}
+                                                                {sub.unsubscribed_at && ` · Left ${new Date(sub.unsubscribed_at).toLocaleDateString()}`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -928,50 +1235,105 @@ const LeadDetailPage = () => {
                         />
                     )}
 
-                    {/* Lead Score Card */}
+                    {/* Lead / Customer Potential Score Card */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
                             <Trophy size={120} />
                         </div>
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Lead Potential</h3>
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                {isCustomerDetailRoute ? 'Customer Potential' : 'Lead Potential'}
+                            </h3>
                             <div className="bg-amber-500/10 text-amber-500 p-1.5 rounded-lg">
                                 <Zap size={14} className="fill-amber-500" />
                             </div>
                         </div>
 
-                        <div className="flex items-end gap-3 mb-6">
-                            <span className="text-6xl font-black text-white tracking-tighter leading-none">{score}</span>
-                            <div className="pb-1">
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Score</span>
-                                <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] uppercase tracking-tighter">
-                                    <TrendingUp size={12} />
-                                    <span>Top 10%</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 pt-6 border-t border-slate-800/50">
-                            {breakdown.length === 0 ? (
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No scoring rules applied yet</p>
-                            ) : (
-                                breakdown.map((item, idx) => (
-                                    <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                        <span className="text-slate-400">{item.label}</span>
-                                        <span className="text-emerald-400">+{item.points}</span>
+                        {isCustomerDetailRoute ? (() => {
+                            const engagementScore = Math.min(100,
+                                sfOrders.length * 20 +
+                                sfWishlist.length * 5 +
+                                Math.min(sfActivities.length, 20) * 2 +
+                                sfReviews.length * 10 +
+                                sfAbandonedCarts.length * 8 +
+                                sfCoupons.length * 6
+                            );
+                            const engagementBreakdown = [
+                                { label: `Orders placed (${sfOrders.length})`, points: sfOrders.length * 20 },
+                                { label: `Wishlist items (${sfWishlist.length})`, points: sfWishlist.length * 5 },
+                                { label: `Browsing sessions (${Math.min(sfActivities.length, 20)})`, points: Math.min(sfActivities.length, 20) * 2 },
+                                { label: `Reviews submitted (${sfReviews.length})`, points: sfReviews.length * 10 },
+                                { label: `Abandoned carts (${sfAbandonedCarts.length})`, points: sfAbandonedCarts.length * 8 },
+                                { label: `Coupons used (${sfCoupons.length})`, points: sfCoupons.length * 6 },
+                            ].filter(item => item.points > 0);
+                            return (
+                                <>
+                                    <div className="flex items-end gap-3 mb-6">
+                                        <span className="text-6xl font-black text-white tracking-tighter leading-none">{engagementScore}</span>
+                                        <div className="pb-1">
+                                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Engagement</span>
+                                            <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] uppercase tracking-tighter">
+                                                <TrendingUp size={12} />
+                                                <span>/ 100</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))
-                            )}
-                        </div>
-
-                        <div className="mt-6 pt-4">
-                            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
-                                    style={{ width: `${Math.min(100, (score / 150) * 100)}%` }}
-                                />
-                            </div>
-                        </div>
+                                    <div className="space-y-3 pt-6 border-t border-slate-800/50">
+                                        {engagementBreakdown.length === 0 ? (
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No engagement data yet</p>
+                                        ) : (
+                                            engagementBreakdown.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="text-slate-400">{item.label}</span>
+                                                    <span className="text-emerald-400">+{item.points}</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    <div className="mt-6 pt-4">
+                                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
+                                                style={{ width: `${engagementScore}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            );
+                        })() : (
+                            <>
+                                <div className="flex items-end gap-3 mb-6">
+                                    <span className="text-6xl font-black text-white tracking-tighter leading-none">{score}</span>
+                                    <div className="pb-1">
+                                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Score</span>
+                                        <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] uppercase tracking-tighter">
+                                            <TrendingUp size={12} />
+                                            <span>Top 10%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-3 pt-6 border-t border-slate-800/50">
+                                    {breakdown.length === 0 ? (
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No scoring rules applied yet</p>
+                                    ) : (
+                                        breakdown.map((item, idx) => (
+                                            <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                <span className="text-slate-400">{item.label}</span>
+                                                <span className="text-emerald-400">+{item.points}</span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="mt-6 pt-4">
+                                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
+                                            style={{ width: `${Math.min(100, (score / 150) * 100)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </section>
                     {/* Assigned Owner & Engagement Suite Combined */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-visible relative">
@@ -1010,7 +1372,7 @@ const LeadDetailPage = () => {
                                                     showError('Failed to update owner.');
                                                 }
                                             }}
-                                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${user.id === lead.owner.id ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'}`}
+                                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'}`}
                                         >
                                             <div className="w-8 h-8 rounded-full bg-slate-800 overflow-hidden flex-shrink-0">
                                                 {user.avatar_url ? (
@@ -1026,7 +1388,7 @@ const LeadDetailPage = () => {
                                         </button>
                                     ))}
                                 </div>
-                            ) : (
+                            ) : lead.owner ? (
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-slate-800 shadow-lg">
                                         {lead.owner.avatar_url ? (
@@ -1040,22 +1402,52 @@ const LeadDetailPage = () => {
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{lead.owner.email}</p>
                                     </div>
                                 </div>
+                            ) : (
+                                <div className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl">
+                                    <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                                        <Users size={18} className="text-slate-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-slate-500 uppercase tracking-tight">Unassigned</p>
+                                        <p className="text-[9px] text-slate-600 uppercase tracking-widest">Click CHANGE to assign</p>
+                                    </div>
+                                </div>
                             )}
                         </div>
 
                         <div className="py-6 border-b border-slate-800/50">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Lead Stage</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsChangingStage(!isChangingStage)}
-                                    className="text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-[0.2em]"
-                                >
-                                    {isChangingStage ? 'CANCEL' : 'CHANGE'}
-                                </button>
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                    {isCustomerDetailRoute ? 'CRM Stage' : 'Lead Stage'}
+                                </h3>
+                                {!isCustomerDetailRoute && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsChangingStage(!isChangingStage)}
+                                        className="text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-[0.2em]"
+                                    >
+                                        {isChangingStage ? 'CANCEL' : 'CHANGE'}
+                                    </button>
+                                )}
                             </div>
 
-                            {isChangingStage ? (
+                            {isCustomerDetailRoute ? (
+                                <>
+                                    <div className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl">
+                                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                                            <Users size={16} className="text-emerald-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block">Stage</span>
+                                            <p className="font-black text-white text-xs uppercase tracking-tight mt-1">Customer</p>
+                                        </div>
+                                        <span className="text-[8px] bg-slate-800 text-slate-500 px-2 py-1 rounded font-black uppercase tracking-widest">
+                                            Locked
+                                        </span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-600 mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
+                                </>
+                            ) : isChangingStage ? (
                                 <div className="space-y-1">
                                     {leadStages.map(stage => (
                                         <button

@@ -1616,6 +1616,12 @@ export const crmService = {
     getStorefrontAbandonedCarts: async (leadId: string): Promise<any[]> => {
         return apiClient.get<any[]>(`/leads/${leadId}/storefront-abandoned-carts`);
     },
+    getStorefrontOrders: async (leadId: string): Promise<any[]> =>
+        apiClient.get<any[]>(`/leads/${leadId}/storefront-orders`),
+    getStorefrontCoupons: async (leadId: string): Promise<any[]> =>
+        apiClient.get<any[]>(`/leads/${leadId}/storefront-coupons`),
+    getStorefrontNewsletters: async (leadId: string): Promise<any[]> =>
+        apiClient.get<any[]>(`/leads/${leadId}/storefront-newsletters`),
     getAllStorefrontSearches: async (params?: any): Promise<any[]> => {
         return apiClient.get<any[]>('/marketing/storefront-searches', params);
     },
