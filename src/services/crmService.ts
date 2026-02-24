@@ -792,21 +792,27 @@ export const crmService = {
                 if (params.quarter) queryParams.append('quarter', params.quarter.toString());
                 if (params.month) queryParams.append('month', params.month.toString());
 
-                const [periodStats, users, tasks] = await Promise.all([
+                const [periodStats, performanceStats, tasks] = await Promise.all([
                     apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`),
-                    crmService.getUsers(),
+                    apiClient.get<any>('/analytics/performance').catch(() => []),
                     crmService.getTasks(),
                 ]);
 
-                // Compute team stats from users (simplified version for now)
-                const teamStats = users.map((user: User) => ({
-                    user,
+                // Compute team stats from real performance data
+                const teamStats = (performanceStats || []).map((p: any) => ({
+                    user: {
+                        id: p.user.id,
+                        full_name: p.user.name,
+                        email: p.user.email,
+                        avatar_url: null,
+                        role: 'Sales Rep'
+                    },
                     revenue: 0,
-                    dealCount: 0,
-                    activeLeads: 0,
-                    activityCount: 0,
-                    conversionRate: 0
-                })).sort((a: any, b: any) => b.revenue - a.revenue);
+                    dealCount: p.metrics.won,
+                    activeLeads: p.metrics.leads,
+                    activityCount: p.metrics.activityPoints,
+                    conversionRate: p.metrics.conversionRate,
+                })).sort((a: any, b: any) => b.dealCount - a.dealCount);
 
                 // Get reminders
                 const reminders = tasks.filter((t: any) =>
@@ -1596,6 +1602,30 @@ export const crmService = {
     updateAbandonedCartStatus: async (storeId: string, cartId: string, status: string): Promise<any> => {
         return apiClient.patch<any>(`/marketing/${storeId}/abandoned-carts/${cartId}/status`, { status });
     },
+
+    // Storefront Activity Tracking (Proxied through CRM BE)
+    getStorefrontActivity: async (leadId: string, params?: any): Promise<any[]> => {
+        return apiClient.get<any[]>(`/leads/${leadId}/storefront-activity`, params);
+    },
+    getStorefrontWishlist: async (leadId: string): Promise<any[]> => {
+        return apiClient.get<any[]>(`/leads/${leadId}/storefront-wishlist`);
+    },
+    getStorefrontReviews: async (leadId: string): Promise<any[]> => {
+        return apiClient.get<any[]>(`/leads/${leadId}/storefront-reviews`);
+    },
+    getStorefrontAbandonedCarts: async (leadId: string): Promise<any[]> => {
+        return apiClient.get<any[]>(`/leads/${leadId}/storefront-abandoned-carts`);
+    },
+    getAllStorefrontSearches: async (params?: any): Promise<any[]> => {
+        return apiClient.get<any[]>('/marketing/storefront-searches', params);
+    },
+    getMarketingReviews: async (storeId: string, params?: any): Promise<any[]> => {
+        return apiClient.get<any[]>(`/marketing/${storeId}/reviews`, params);
+    },
+    getMarketingWishlist: async (storeId: string, params?: any): Promise<any[]> => {
+        return apiClient.get<any[]>(`/marketing/${storeId}/wishlist`, params);
+    },
+
     getCampaigns: async (storeId: string, params?: any): Promise<any> => {
         return apiClient.get<any>(`/marketing/${storeId}/campaigns`, params);
     },
@@ -1646,6 +1676,37 @@ export const crmService = {
     },
     getMarketingEmailPerformance: async (storeId: string, params?: any): Promise<any> => {
         return apiClient.get<any>(`/marketing/${storeId}/insights/email-performance`, params);
+    },
+
+    // Newsletter Management (moved from Dailystore to CRM)
+    getNewsletterSubscribers: async (storeId: string, params?: any): Promise<any[]> => {
+        return apiClient.get<any[]>(`/marketing/${storeId}/newsletter/subscribers`, params);
+    },
+    addNewsletterSubscriber: async (storeId: string, data: any): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/newsletter/subscribers`, data);
+    },
+    unsubscribeNewsletter: async (storeId: string, subscriberId: string): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/newsletter/subscribers/${subscriberId}/unsubscribe`, {});
+    },
+    deleteNewsletterSubscriber: async (storeId: string, subscriberId: string): Promise<any> => {
+        return apiClient.delete<any>(`/marketing/${storeId}/newsletter/subscribers/${subscriberId}`);
+    },
+
+    // Coupon Management (moved from Dailystore to CRM)
+    getCoupons: async (storeId: string, params?: any): Promise<any[]> => {
+        return apiClient.get<any[]>(`/marketing/${storeId}/coupons`, params);
+    },
+    createCoupon: async (storeId: string, data: any): Promise<any> => {
+        return apiClient.post<any>(`/marketing/${storeId}/coupons`, data);
+    },
+    getCoupon: async (storeId: string, couponId: string): Promise<any> => {
+        return apiClient.get<any>(`/marketing/${storeId}/coupons/${couponId}`);
+    },
+    updateCoupon: async (storeId: string, couponId: string, data: any): Promise<any> => {
+        return apiClient.put<any>(`/marketing/${storeId}/coupons/${couponId}`, data);
+    },
+    deleteCoupon: async (storeId: string, couponId: string): Promise<any> => {
+        return apiClient.delete<any>(`/marketing/${storeId}/coupons/${couponId}`);
     },
 
     // Configuration
