@@ -73,6 +73,8 @@ const DealDetailPage = () => {
         currency?: string;
     } | null>(null);
 
+    const [fulfillmentOrder, setFulfillmentOrder] = useState<any | null>(null);
+
     const fetchProjectDetails = async (projectId: string) => {
         try {
             const response = await fetch(`/projects-api/projects/${projectId}`);
@@ -219,6 +221,12 @@ const DealDetailPage = () => {
 
     useEffect(() => {
         fetchData();
+    }, [id]);
+
+    useEffect(() => {
+        crmService.getFulfillmentOrderByDeal(id)
+            .then(order => setFulfillmentOrder(order))
+            .catch(() => {});
     }, [id]);
 
     const handleUpdateDeal = async (updates: Partial<Deal>) => {
@@ -1022,6 +1030,57 @@ const DealDetailPage = () => {
                             </div>
                         </section>
                     )}
+
+                    {/* Fulfillment Tracking Card */}
+                    {fulfillmentOrder && (() => {
+                        const fo = fulfillmentOrder;
+                        const lastShipment = fo.fulfillment_shipments?.[0];
+                        const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
+                        const statusColor =
+                            fo.status === 'delivered' ? 'text-teal-400 bg-teal-500/10 border-teal-500/20' :
+                            fo.status === 'out_for_delivery' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
+                            fo.status === 'in_transit' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                            fo.status === 'delivery_failed' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
+                            'text-slate-400 bg-slate-500/10 border-slate-500/20';
+                        return (
+                            <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-teal-500/10 transition-colors" />
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-5 flex items-center gap-2">
+                                    <Zap size={14} className="text-teal-400" /> Fulfillment Tracking
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase">Status</span>
+                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${statusColor}`}>
+                                            {fo.status?.replace(/_/g, ' ') || 'pending'}
+                                        </span>
+                                    </div>
+                                    {lastShipment?.tracking_number && (
+                                        <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase">Tracking #</span>
+                                            <span className="text-xs font-mono text-slate-300">{lastShipment.tracking_number}</span>
+                                        </div>
+                                    )}
+                                    {lastEvent && (
+                                        <div className="py-2 border-t border-slate-800/50">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase block mb-1">Last Event</span>
+                                            <p className="text-xs text-slate-300 leading-relaxed">{lastEvent.description}</p>
+                                            {lastEvent.location && (
+                                                <p className="text-[10px] text-slate-500 mt-0.5">{lastEvent.location}</p>
+                                            )}
+                                            <p className="text-[9px] text-slate-600 mt-1">{new Date(lastEvent.occurred_at || lastEvent.created_at).toLocaleString()}</p>
+                                        </div>
+                                    )}
+                                    {fo.estimated_delivery_at && (
+                                        <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase">ETA</span>
+                                            <span className="text-[10px] font-bold text-slate-300">{new Date(fo.estimated_delivery_at).toLocaleDateString()}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                        );
+                    })()}
 
                     {/* Stats & Metadata */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">

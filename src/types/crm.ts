@@ -59,6 +59,14 @@ export interface Lead {
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
 
+export interface FlowState {
+    id: string;           // flow state code, e.g. 'qualified'
+    name: string;         // display name, e.g. 'Qualified'
+    color: string;
+    is_terminal: boolean;
+    deals?: Deal[];
+}
+
 export interface Deal {
     id: string;
     name: string;
@@ -67,6 +75,7 @@ export interface Deal {
     expected_close_date: string;
     stage: DealStage;
     stage_id?: string;
+    current_flow_state?: string;
     owner: User;
     owner_id?: string;  // Used for updating owner
     last_activity_at?: string;
@@ -79,6 +88,7 @@ export interface Deal {
     invoice_number?: string;
     custom_fields?: Record<string, any>;
     created_at: string;
+    fulfillment_status?: 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | null;
 }
 
 export type ActivityType = 'CALL' | 'MEETING' | 'EMAIL' | 'NOTE' | 'STATUS_CHANGE' | 'STAGE_CHANGE' | 'OWNER_CHANGE' | 'PROFILE_UPDATE' | 'TASK';

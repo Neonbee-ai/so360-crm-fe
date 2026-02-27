@@ -42,6 +42,12 @@ const INVENTORY_API_ORIGIN = String(
     'http://localhost:3006'
 ).replace(/\/$/, '');
 
+const FULFILLMENT_API_ORIGIN = String(
+    win.VITE_SO360_FULFILLMENT_API ||
+    env.VITE_SO360_FULFILLMENT_API ||
+    'http://localhost:3032'
+).replace(/\/$/, '');
+
 const API_BASE_URL = CRM_API_ORIGIN;
 let TENANT_ID = 'default-tenant';
 let ORG_ID = 'default-org';
@@ -287,6 +293,7 @@ class ApiClient {
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
 const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
 const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
+const fulfillmentClient = new ApiClient(`${FULFILLMENT_API_ORIGIN}/v1/fulfillment`, TENANT_ID);
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -300,8 +307,9 @@ interface PipelineResponse {
     stages: Array<{
         id: string;
         name: string;
-        order: number;
+        order?: number;
         color?: string;
+        is_terminal?: boolean;
         deals: Deal[];
     }>;
 }
@@ -1030,9 +1038,8 @@ export const crmService = {
     },
 
     updateDealStage: async (id: string, stage: string, reason?: string): Promise<void> => {
-        // Find stage_id based on stage name (would need to fetch stages first)
-        // For now, just update with the stage as-is
-        await dealsApi.update(id, { stage_id: stage });
+        // stage is now a flow state code (e.g. 'qualified') — send as target_state
+        await dealsApi.update(id, { target_state: stage });
     },
 
     getPipeline: async (filters?: DealFilters): Promise<PipelineResponse> => {
@@ -1616,16 +1623,6 @@ export const crmService = {
     getStorefrontAbandonedCarts: async (leadId: string): Promise<any[]> => {
         return apiClient.get<any[]>(`/leads/${leadId}/storefront-abandoned-carts`);
     },
-    getStorefrontOrders: async (leadId: string): Promise<any[]> =>
-        apiClient.get<any[]>(`/leads/${leadId}/storefront-orders`),
-    getStorefrontCoupons: async (leadId: string): Promise<any[]> =>
-        apiClient.get<any[]>(`/leads/${leadId}/storefront-coupons`),
-    getStorefrontNewsletters: async (leadId: string): Promise<any[]> =>
-        apiClient.get<any[]>(`/leads/${leadId}/storefront-newsletters`),
-    getStorefrontIntelligence: async (leadId: string): Promise<any> =>
-        apiClient.get<any>(`/leads/${leadId}/storefront-intelligence`),
-    getStorefrontRecommendations: async (leadId: string): Promise<any[]> =>
-        apiClient.get<any[]>(`/leads/${leadId}/storefront-recommendations`),
     getAllStorefrontSearches: async (params?: any): Promise<any[]> => {
         return apiClient.get<any[]>('/marketing/storefront-searches', params);
     },
@@ -1733,16 +1730,30 @@ export const crmService = {
         orderChartData: { labels: string[]; values: number[] };
     }> => apiClient.get('/analytics/commerce-kpis', params as any),
 
+    // Fulfillment integration — get fulfillment order linked to a CRM deal
+    getFulfillmentOrderByDeal: async (dealId: string): Promise<any | null> => {
+        try {
+            const res = await fulfillmentClient.get<any>(`/orders`, { source_type: 'crm_deal', source_id: dealId, limit: 1 });
+            const data = res?.data || res;
+            const orders = Array.isArray(data) ? data : (data?.data || []);
+            return orders.length > 0 ? orders[0] : null;
+        } catch {
+            return null;
+        }
+    },
+
     // Configuration
     setTenantId: (id: string) => {
         apiClient.setTenantId(id);
         dailystoreClient.setTenantId(id);
+        fulfillmentClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         ORG_ID = id;
         apiClient.setOrgId(id);
         coreClient.setOrgId(id);
         dailystoreClient.setOrgId(id);
+        fulfillmentClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -1757,5 +1768,6 @@ export const crmService = {
         apiClient.setAccessToken(token);
         coreClient.setAccessToken(token);
         dailystoreClient.setAccessToken(token);
+        fulfillmentClient.setAccessToken(token);
     },
 };
