@@ -1,12 +1,12 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ShellContext } from '@so360/shell-context';
+import { useShellBridge } from '@so360/shell-context';
 import { crmService } from './services/crmService';
 
 // Synchronizes Shell Context with CRM Service
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     // Access context directly to avoid throwing if provider is missing
-    const shell = React.useContext(ShellContext);
+    const shell = useShellBridge();
     const [isSynced, setIsSynced] = React.useState(false);
 
     useEffect(() => {
@@ -48,7 +48,7 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
 
 // Guards a route behind a module enablement check — redirects to dashboard when disabled
 const ModuleGuard = ({ moduleId, children }: { moduleId: string; children: React.ReactNode }) => {
-    const shell = React.useContext(ShellContext);
+    const shell = useShellBridge();
     const navigate = useNavigate();
     const enabled = shell?.isModuleEnabled ? shell.isModuleEnabled(moduleId) : true;
     useEffect(() => {
