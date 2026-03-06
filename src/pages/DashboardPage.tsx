@@ -19,8 +19,11 @@ const DashboardPage = () => {
     });
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const { settings } = useBusinessSettings();
-    const { isModuleEnabled } = useShell();
+    const { isModuleEnabled, isFeatureHidden } = useShell();
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
+    const showPipeline = !isFeatureHidden?.('submodule:crm:pipeline');
+    const showTasks    = !isFeatureHidden?.('submodule:crm:tasks');
+    const showLeads    = !isFeatureHidden?.('submodule:crm:leads');
 
     const [commerceKPIs, setCommerceKPIs] = useState<{
         revenue: number; orderCount: number; aov: number;
@@ -153,6 +156,8 @@ const DashboardPage = () => {
 
             {/* KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Deal Revenue — gated: deals are a B2B/Both concept */}
+                {showPipeline && (
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-blue-500/50 transition-all">
                     <div className="absolute right-0 top-0 p-32 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-500/10 transition-all" />
                     <div className="relative">
@@ -178,7 +183,9 @@ const DashboardPage = () => {
                         )}
                     </div>
                 </div>
+                )}
 
+                {showPipeline && (
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-purple-500/50 transition-all">
                     <div className="absolute right-0 top-0 p-32 bg-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/10 transition-all" />
                     <div className="relative">
@@ -197,7 +204,9 @@ const DashboardPage = () => {
                         <p className="text-xs text-slate-500 mt-2 font-medium">Projected revenue</p>
                     </div>
                 </div>
+                )}
 
+                {showPipeline && (
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/50 transition-all">
                     <div className="absolute right-0 top-0 p-32 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/10 transition-all" />
                     <div className="relative">
@@ -216,7 +225,9 @@ const DashboardPage = () => {
                         <p className="text-xs text-slate-500 mt-2 font-medium">AVG Deal Closure</p>
                     </div>
                 </div>
+                )}
 
+                {showPipeline && (
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-amber-500/50 transition-all">
                     <div className="absolute right-0 top-0 p-32 bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-amber-500/10 transition-all" />
                     <div className="relative">
@@ -232,6 +243,7 @@ const DashboardPage = () => {
                         <p className="text-xs text-slate-500 mt-2 font-medium">Per closed-won deal</p>
                     </div>
                 </div>
+                )}
             </div>
 
             {/* Commerce Performance — DailyStore gated */}
@@ -374,6 +386,7 @@ const DashboardPage = () => {
             )}
 
             {/* Active Reminders Row */}
+            {showTasks && (
             <section>
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-black text-white tracking-tight">Active Reminders</h3>
@@ -411,10 +424,11 @@ const DashboardPage = () => {
                     )}
                 </div>
             </section>
+            )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className={`grid grid-cols-1 ${showLeads ? 'lg:grid-cols-3' : ''} gap-8`}>
                 {/* Revenue Chart */}
-                <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+                <div className={`${showLeads ? 'lg:col-span-2' : ''} bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm`}>
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <h3 className="text-lg font-black text-white tracking-tight">Revenue Performance</h3>
@@ -457,7 +471,7 @@ const DashboardPage = () => {
                 </div>
 
                 {/* Team Leaderboard */}
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
+                {showLeads && <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
                     <h3 className="text-lg font-black text-white tracking-tight mb-1">Top Performers</h3>
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">Revenue Leaders</p>
 
@@ -495,11 +509,11 @@ const DashboardPage = () => {
                             </div>
                         ))}
                     </div>
-                </div>
+                </div>}
             </div>
 
             {/* Employee Performance Visualization */}
-            <section className="bg-slate-900 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
+            {showPipeline && <section className="bg-slate-900 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-64 bg-blue-500/5 rounded-full blur-[120px] shadow-2xl pointer-events-none" />
                 <div className="relative z-10">
                     <div className="flex justify-between items-center mb-8">
@@ -564,7 +578,7 @@ const DashboardPage = () => {
                         ))}
                     </div>
                 </div>
-            </section>
+            </section>}
         </div>
     );
 };
