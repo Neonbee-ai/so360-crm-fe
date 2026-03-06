@@ -46,6 +46,18 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
 };
 
+// Guards a route behind a feature flag — redirects to dashboard when hidden
+const FlagGuard = ({ flagKey, children }: { flagKey: string; children: React.ReactNode }) => {
+    const shell = useShellBridge();
+    const navigate = useNavigate();
+    const hidden = shell?.isFeatureHidden ? shell.isFeatureHidden(flagKey) : false;
+    useEffect(() => {
+        if (shell && hidden) navigate('/crm/dashboard', { replace: true });
+    }, [hidden, shell, navigate]);
+    if (!shell || hidden) return null;
+    return <>{children}</>;
+};
+
 // Guards a route behind a module enablement check — redirects to dashboard when disabled
 const ModuleGuard = ({ moduleId, children }: { moduleId: string; children: React.ReactNode }) => {
     const shell = useShellBridge();
@@ -100,16 +112,16 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="leads" element={<LeadsPage />} />
-                    <Route path="leads/:id" element={<LeadDetailPage />} />
+                    <Route path="leads" element={<FlagGuard flagKey="submodule:crm:leads"><LeadsPage /></FlagGuard>} />
+                    <Route path="leads/:id" element={<FlagGuard flagKey="submodule:crm:leads"><LeadDetailPage /></FlagGuard>} />
                     <Route path="customers" element={<CustomersPage />} />
                     <Route path="customers/:id" element={<LeadDetailPage />} />
-                    <Route path="pipeline" element={<PipelinePage />} />
-                    <Route path="deal/:id" element={<DealDetailPage />} />
-                    <Route path="tasks" element={<TasksPage />} />
-                    <Route path="tasks/:id" element={<TaskDetailPage />} />
-                    <Route path="quotes" element={<QuotesPage />} />
-                    <Route path="quotes/:id" element={<QuoteDetailPage />} />
+                    <Route path="pipeline" element={<FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard>} />
+                    <Route path="deal/:id" element={<FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard>} />
+                    <Route path="tasks" element={<FlagGuard flagKey="submodule:crm:tasks"><TasksPage /></FlagGuard>} />
+                    <Route path="tasks/:id" element={<FlagGuard flagKey="submodule:crm:tasks"><TaskDetailPage /></FlagGuard>} />
+                    <Route path="quotes" element={<FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard>} />
+                    <Route path="quotes/:id" element={<FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard>} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="marketing/overview" element={<ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard>} />
                     <Route path="marketing/abandoned-carts" element={<ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard>} />

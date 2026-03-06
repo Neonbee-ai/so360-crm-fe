@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag } from 'lucide-react';
+import { useShellBridge } from '@so360/shell-context';
 import { crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
 
@@ -25,6 +26,13 @@ const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }
 const CustomersPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const shell = useShellBridge();
+
+    // Feature-flag-driven KPI visibility
+    const showModelSplit = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false;
+    const showWeb        = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_web') : true;
+    const showMobile     = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_mobile') : true;
+    const showOffline    = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true;
     const [customers, setCustomers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -279,7 +287,7 @@ const CustomersPage = () => {
                 <p className="text-slate-400 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
             </header>
 
-            {/* Stats Row */}
+            {/* Stats Row — cards gated by feature flags */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
@@ -287,26 +295,54 @@ const CustomersPage = () => {
                     </div>
                     <div className="text-2xl font-bold text-white">{stats.total || 0}</div>
                 </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1">
-                        <Building2 size={14} /> B2B
-                    </div>
-                    <div className="text-2xl font-bold text-white">{stats.b2b_count || 0}</div>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                        <Users size={14} /> B2C
-                    </div>
-                    <div className="text-2xl font-bold text-white">{stats.b2c_count || 0}</div>
-                </div>
-                {Object.entries(CHANNEL_CONFIG).map(([key, config]) => (
-                    <div key={key} className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <config.icon size={14} /> {config.label}
+                {showModelSplit && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1">
+                            <Building2 size={14} /> B2B
                         </div>
-                        <div className="text-2xl font-bold text-white">{stats[key] || 0}</div>
+                        <div className="text-2xl font-bold text-white">{stats.b2b_count || 0}</div>
                     </div>
-                ))}
+                )}
+                {showModelSplit && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
+                            <Users size={14} /> B2C
+                        </div>
+                        <div className="text-2xl font-bold text-white">{stats.b2c_count || 0}</div>
+                    </div>
+                )}
+                {showWeb && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
+                            <Globe size={14} /> Web
+                        </div>
+                        <div className="text-2xl font-bold text-white">{stats.storefront_web || 0}</div>
+                    </div>
+                )}
+                {showMobile && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
+                            <Smartphone size={14} /> Mobile
+                        </div>
+                        <div className="text-2xl font-bold text-white">{stats.storefront_mobile || 0}</div>
+                    </div>
+                )}
+                {showOffline && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
+                            <ShoppingCart size={14} /> POS
+                        </div>
+                        <div className="text-2xl font-bold text-white">{stats.pos || 0}</div>
+                    </div>
+                )}
+                {showOffline && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
+                            <UserPlus size={14} /> Manual
+                        </div>
+                        <div className="text-2xl font-bold text-white">{stats.manual || 0}</div>
+                    </div>
+                )}
             </div>
 
             {/* Filters */}
