@@ -7,9 +7,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon,
-    Search, ShoppingBag, Heart, Star, ShoppingCart, ShieldCheck, Package,
-    LogIn, Eye
+    File, Download, UploadCloud, FileIcon
 } from 'lucide-react';
 import { crmService, activitiesApi } from '../services/crmService';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note } from '../types/crm';
@@ -20,9 +18,6 @@ import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents';
-
-type SfTabType = 'wishlist' | 'search' | 'abandoned' | 'orders'
-              | 'reviews' | 'coupons' | 'viewed' | 'newsletters';
 
 interface TimelineEvent {
     id: string;
@@ -50,7 +45,6 @@ const LeadDetailPage = () => {
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
     const [activeTab, setActiveTab] = useState<TabType>('activity');
-    const [activeSfTab, setActiveSfTab] = useState<SfTabType>('wishlist');
     const [infoTab, setInfoTab] = useState<'profile' | 'additional'>('profile');
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingInfo, setIsEditingInfo] = useState(false);
@@ -66,18 +60,6 @@ const LeadDetailPage = () => {
     const [newNoteContent, setNewNoteContent] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    // Storefront activity states
-    const [sfActivities, setSfActivities] = useState<any[]>([]);
-    const [sfWishlist, setSfWishlist] = useState<any[]>([]);
-    const [sfReviews, setSfReviews] = useState<any[]>([]);
-    const [sfAbandonedCarts, setSfAbandonedCarts] = useState<any[]>([]);
-    const [sfOrders, setSfOrders] = useState<any[]>([]);
-    const [sfCoupons, setSfCoupons] = useState<any[]>([]);
-    const [sfNewsletters, setSfNewsletters] = useState<any[]>([]);
-    const [sfIntelligence, setSfIntelligence] = useState<any>(null);
-    const [isSfLoading, setIsSfLoading] = useState(false);
-    const [sfTab, setSfTab] = useState<'shopping' | 'orders' | 'activity' | 'feedback' | 'marketing'>('shopping');
 
     const fetchLeadData = useCallback(async () => {
         try {
@@ -99,35 +81,6 @@ const LeadDetailPage = () => {
             setScoringRules(settingsData.lead_scoring || []);
             setLeadStages(settingsData.lead_stages || []);
             setAllUsers(usersData);
-
-            // Fetch storefront data if lead is a customer, has storefront ID, and DailyStore module is enabled
-            if (leadData && leadData.storefront_customer_id && isDailyStoreEnabled) {
-                setIsSfLoading(true);
-                try {
-                    const [sfAct, sfWish, sfRev, sfAbCarts, sfOrd, sfCoup, sfNews, sfIntel] = await Promise.all([
-                        crmService.getStorefrontActivity(id),
-                        crmService.getStorefrontWishlist(id),
-                        crmService.getStorefrontReviews(id),
-                        crmService.getStorefrontAbandonedCarts(id),
-                        crmService.getStorefrontOrders(id),
-                        crmService.getStorefrontCoupons(id),
-                        crmService.getStorefrontNewsletters(id),
-                        crmService.getStorefrontIntelligence(id)
-                    ]);
-                    setSfActivities(sfAct);
-                    setSfWishlist(sfWish);
-                    setSfReviews(sfRev);
-                    setSfAbandonedCarts(sfAbCarts);
-                    setSfOrders(sfOrd);
-                    setSfCoupons(sfCoup);
-                    setSfNewsletters(sfNews);
-                    setSfIntelligence(sfIntel);
-                } catch (sfErr) {
-                    console.error('Failed to fetch storefront data', sfErr);
-                } finally {
-                    setIsSfLoading(false);
-                }
-            }
         } catch (error) {
             console.error('Failed to fetch lead data', error);
         } finally {
@@ -258,41 +211,10 @@ const LeadDetailPage = () => {
             });
         });
 
-        // 6. Storefront Activities
-        sfActivities.forEach(act => {
-            events.push({
-                id: act.id,
-                type: 'Activity',
-                subType: act.activity_type.toUpperCase(),
-                title: act.activity_type === 'search' ? `Searched: "${act.search_query}"` : `Storefront: ${act.activity_type.replace('_', ' ')}`,
-                description: act.metadata?.results_count !== undefined 
-                    ? `Found ${act.metadata.results_count} results on Storefront` 
-                    : `Customer interaction on storefront channel`,
-                date: act.created_at,
-            });
-        });
-
-        // 7. Storefront Login/Access (calculated from lead fields if sfActivities doesn't have it)
-        if (lead.last_login_at) {
-            events.push({
-                id: `login-${lead.id}-${lead.last_login_at}`,
-                type: 'Activity',
-                subType: 'LOGIN',
-                title: 'Customer Logged In',
-                description: `Last seen active: ${lead.last_seen_at ? new Date(lead.last_seen_at).toLocaleString() : 'N/A'}. Total login count: ${lead.login_count || 0}`,
-                date: lead.last_login_at,
-            });
-        }
-
         return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     };
 
     const timeline = getAggregatedTimeline();
-
-    const sfSearches = sfActivities.filter(a => a.activity_type === 'search');
-    const sfViewed   = sfActivities.filter(a =>
-        ['view', 'product_view', 'page_view'].includes(a.activity_type)
-    );
 
     const calculateLegacyRevenue = () => {
         const earned = associatedDeals
@@ -355,12 +277,6 @@ const LeadDetailPage = () => {
                 : 'text-slate-500 hover:text-slate-300'
         }`;
 
-    const sfTabCls = (tab: SfTabType) =>
-        `flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
-            activeSfTab === tab
-                ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5'
-                : 'text-slate-500 hover:text-slate-300'
-        }`;
 
     return (
         <div className="p-8">
@@ -630,9 +546,6 @@ const LeadDetailPage = () => {
                                                                 {event.subType === 'MEETING' && <Users size={14} className="text-purple-400" />}
                                                                 {event.subType === 'EMAIL' && <AtSign size={14} className="text-emerald-400" />}
                                                                 {event.subType === 'NOTE' && <FileText size={14} className="text-amber-400" />}
-                                                                {event.subType === 'SEARCH' && <Search size={14} className="text-blue-400" />}
-                                                                {event.subType === 'LOGIN' && <LogIn size={14} className="text-emerald-400" />}
-                                                                {(!['CALL', 'MEETING', 'EMAIL', 'NOTE', 'SEARCH', 'LOGIN'].includes(event.subType || '')) && event.subType && <ShoppingBag size={14} className="text-purple-400" />}
                                                             </>
                                                         )}
                                                         {event.type === 'NOTE' && <FileText size={14} className="text-amber-400" />}
@@ -999,424 +912,6 @@ const LeadDetailPage = () => {
                         </div>
                     </div>
 
-                    {/* DailyStore Intelligence Card — only when storefront_customer_id is set and DailyStore module is enabled */}
-                    {lead.storefront_customer_id && isDailyStoreEnabled && (
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                            {/* Card header */}
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-                                <div className="flex items-center gap-2">
-                                    <ShoppingBag size={14} className="text-purple-400" />
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                        DailyStore Intelligence
-                                    </span>
-                                </div>
-                                {isSfLoading && <Loader2 size={12} className="animate-spin text-slate-500" />}
-                            </div>
-                            {/* Tab bar */}
-                            <div className="flex border-b border-slate-800 bg-slate-900/50 overflow-x-auto">
-                                <button onClick={() => setActiveSfTab('wishlist')} className={sfTabCls('wishlist')}>
-                                    <Heart size={14} /> Wishlist {sfWishlist.length > 0 && `(${sfWishlist.length})`}
-                                </button>
-                                <button onClick={() => setActiveSfTab('search')} className={sfTabCls('search')}>
-                                    <Search size={14} /> Search History {sfSearches.length > 0 && `(${sfSearches.length})`}
-                                </button>
-                                <button onClick={() => setActiveSfTab('abandoned')} className={sfTabCls('abandoned')}>
-                                    <ShoppingCart size={14} /> Abandoned Carts {sfAbandonedCarts.length > 0 && `(${sfAbandonedCarts.length})`}
-                                </button>
-                                <button onClick={() => setActiveSfTab('orders')} className={sfTabCls('orders')}>
-                                    <Package size={14} /> Orders {sfOrders.length > 0 && `(${sfOrders.length})`}
-                                </button>
-                                <button onClick={() => setActiveSfTab('reviews')} className={sfTabCls('reviews')}>
-                                    <Star size={14} /> Reviews {sfReviews.length > 0 && `(${sfReviews.length})`}
-                                </button>
-                                <button onClick={() => setActiveSfTab('coupons')} className={sfTabCls('coupons')}>
-                                    <Tag size={14} /> Coupons {sfCoupons.length > 0 && `(${sfCoupons.length})`}
-                                </button>
-                                <button onClick={() => setActiveSfTab('viewed')} className={sfTabCls('viewed')}>
-                                    <Eye size={14} /> Products Viewed {sfViewed.length > 0 && `(${sfViewed.length})`}
-                                </button>
-                                <button onClick={() => setActiveSfTab('newsletters')} className={sfTabCls('newsletters')}>
-                                    <Mail size={14} /> Newsletters {sfNewsletters.length > 0 && `(${sfNewsletters.length})`}
-                                </button>
-                            </div>
-                            {/* Content */}
-                            <div>
-                                {activeSfTab === 'wishlist' && (
-                                    <div className="p-6">
-                                        {sfWishlist.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">Wishlist is empty.</p>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {sfWishlist.map((item) => {
-                                                    const productId = item.item_id || item.items?.id;
-                                                    return (
-                                                        <div
-                                                            key={item.id}
-                                                            onClick={() => productId && navigate(`/dailystore/products/${productId}`)}
-                                                            className={`flex items-center gap-3 p-3 bg-slate-950/30 border border-slate-800/50 rounded-xl transition-all ${productId ? 'cursor-pointer hover:border-purple-500/30 group' : ''}`}
-                                                        >
-                                                            <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
-                                                                {item.items?.image_urls?.[0] ? (
-                                                                    <img src={item.items.image_urls[0]} alt={item.items.name} className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center"><Package size={16} className="text-slate-600" /></div>
-                                                                )}
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="text-xs font-bold text-slate-200 truncate group-hover:text-purple-300 transition-colors">{item.items?.name || 'Unknown Item'}</p>
-                                                                {item.items?.price != null && (
-                                                                    <p className="text-[9px] text-emerald-400 font-bold mt-0.5">{Number(item.items.price).toLocaleString()}</p>
-                                                                )}
-                                                                <p className="text-[8px] text-slate-500 uppercase tracking-tighter mt-0.5">Added {new Date(item.added_at).toLocaleDateString()}</p>
-                                                            </div>
-                                                            {productId && <ExternalLink size={10} className="text-slate-600 group-hover:text-purple-400 flex-shrink-0 transition-colors" />}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeSfTab === 'search' && (
-                                    <div className="p-6">
-                                        {sfSearches.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">No search history tracked.</p>
-                                        ) : (
-                                            <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-slate-800 ml-1">
-                                                {sfSearches.map((act) => {
-                                                    const productResults: any[] = act.metadata?.products || act.metadata?.items || act.metadata?.results || [];
-                                                    return (
-                                                        <div key={act.id} className="relative pl-8">
-                                                            <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-950 flex items-center justify-center z-10">
-                                                                <Search size={10} className="text-blue-400" />
-                                                            </div>
-                                                            <div className="bg-slate-950/30 border border-slate-800/50 p-3 rounded-xl">
-                                                                <div className="flex justify-between items-start mb-1">
-                                                                    <span className="text-[10px] font-black uppercase text-slate-300">
-                                                                        Searched for "{act.search_query}"
-                                                                    </span>
-                                                                    <span className="text-[8px] text-slate-600 font-bold uppercase">
-                                                                        {new Date(act.created_at).toLocaleDateString()}
-                                                                    </span>
-                                                                </div>
-                                                                {act.metadata?.results_count !== undefined && (
-                                                                    <p className="text-[9px] text-slate-500 mb-2">Found {act.metadata.results_count} results</p>
-                                                                )}
-                                                                {productResults.length > 0 && (
-                                                                    <div className="flex gap-2 flex-wrap mt-1">
-                                                                        {productResults.slice(0, 4).map((p: any, i: number) => {
-                                                                            const pid = p.id || p.item_id || p.product_id;
-                                                                            const img = p.image_url || p.image_urls?.[0];
-                                                                            return (
-                                                                                <div
-                                                                                    key={i}
-                                                                                    onClick={() => pid && navigate(`/dailystore/products/${pid}`)}
-                                                                                    className="flex items-center gap-1.5 px-2 py-1 bg-slate-800/60 border border-slate-700/50 rounded-lg cursor-pointer hover:border-blue-500/30 group/p transition-all"
-                                                                                >
-                                                                                    <div className="w-5 h-5 rounded bg-slate-700 overflow-hidden flex-shrink-0">
-                                                                                        {img ? <img src={img} alt={p.name || ''} className="w-full h-full object-cover" /> : <Package size={10} className="m-auto text-slate-500" />}
-                                                                                    </div>
-                                                                                    <span className="text-[9px] text-slate-300 font-bold group-hover/p:text-blue-300 transition-colors max-w-[72px] truncate">{p.name || 'Product'}</span>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeSfTab === 'abandoned' && (
-                                    <div className="p-6">
-                                        {sfAbandonedCarts.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">No abandoned carts found.</p>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {sfAbandonedCarts.map((cart) => {
-                                                    const cartItems: any[] = cart.cart_items || cart.items || [];
-                                                    const cartTotal = cartItems.reduce((sum: number, ci: any) => sum + (parseFloat(ci.price || ci.unit_price || 0) * (ci.quantity || 1)), 0);
-                                                    return (
-                                                        <div key={cart.id} className="p-4 bg-slate-950/30 border border-amber-500/10 rounded-xl">
-                                                            <div className="flex items-center justify-between mb-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-xs font-black text-white uppercase tracking-tight">Cart #{cart.id.substring(0, 8)}</span>
-                                                                    <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20 font-black uppercase tracking-widest">Abandoned</span>
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => navigate(`/crm/marketing/abandoned-carts/${cart.id}`)}
-                                                                    className="text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1"
-                                                                >
-                                                                    Details <ExternalLink size={10} />
-                                                                </button>
-                                                            </div>
-                                                            {cartItems.length > 0 ? (
-                                                                <>
-                                                                    <div className="space-y-1.5">
-                                                                        {cartItems.map((ci: any, idx: number) => {
-                                                                            const pid = ci.item_id || ci.product_id || ci.items?.id;
-                                                                            const img = ci.items?.image_urls?.[0] || ci.image_url;
-                                                                            const name = ci.items?.name || ci.product_name || ci.name;
-                                                                            return (
-                                                                                <div
-                                                                                    key={ci.id || idx}
-                                                                                    onClick={() => pid && navigate(`/dailystore/products/${pid}`)}
-                                                                                    className={`flex items-center gap-2 p-2 bg-slate-900/60 rounded-lg border border-transparent transition-all ${pid ? 'cursor-pointer hover:border-amber-500/20 group/ci' : ''}`}
-                                                                                >
-                                                                                    <div className="w-8 h-8 rounded bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
-                                                                                        {img ? <img src={img} alt={name || ''} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package size={12} className="text-slate-600" /></div>}
-                                                                                    </div>
-                                                                                    <div className="min-w-0 flex-1">
-                                                                                        <p className="text-[10px] font-bold text-slate-200 truncate group-hover/ci:text-amber-300 transition-colors">{name || 'Unknown Product'}</p>
-                                                                                        <p className="text-[9px] text-slate-500 font-bold">Qty {ci.quantity || 1}{(ci.price || ci.unit_price) ? ` · ${Number(ci.price || ci.unit_price).toLocaleString()}` : ''}</p>
-                                                                                    </div>
-                                                                                    {pid && <ExternalLink size={9} className="text-slate-600 group-hover/ci:text-amber-400 flex-shrink-0 transition-colors" />}
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                    {cartTotal > 0 && (
-                                                                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-amber-500/10">
-                                                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Cart Value</span>
-                                                                            <span className="text-xs font-black text-amber-400">{cartTotal.toLocaleString()}</span>
-                                                                        </div>
-                                                                    )}
-                                                                </>
-                                                            ) : (
-                                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Last active: {new Date(cart.updated_at).toLocaleString()}</p>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeSfTab === 'orders' && (
-                                    <div className="p-6">
-                                        {sfOrders.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">No orders placed yet.</p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {sfOrders.map(order => (
-                                                    <div key={order.id}
-                                                         onClick={() => navigate(`/dailystore/orders/${order.id}`)}
-                                                         className="flex items-center justify-between p-3 bg-slate-950/30 border border-slate-800/50 rounded-xl cursor-pointer hover:border-emerald-500/20 transition-all group">
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-black text-white">#{order.order_number || order.id.substring(0, 8)}</span>
-                                                                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-black uppercase tracking-widest ${
-                                                                    order.status === 'delivered' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                                    order.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                                                    'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                                                }`}>{order.status}</span>
-                                                            </div>
-                                                            <p className="text-[9px] text-slate-500 mt-0.5 font-bold uppercase tracking-widest">
-                                                                {new Date(order.created_at).toLocaleDateString()} · {order.currency} {parseFloat(order.total_amount).toLocaleString()}
-                                                            </p>
-                                                        </div>
-                                                        <ExternalLink size={12} className="text-slate-600 group-hover:text-blue-400 transition-colors" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeSfTab === 'reviews' && (
-                                    <div className="p-6">
-                                        {sfReviews.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">No reviews submitted yet.</p>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {sfReviews.map((rev) => {
-                                                    const productId = rev.item_id || rev.items?.id;
-                                                    return (
-                                                        <div key={rev.id} className="p-4 bg-slate-950/30 border border-slate-800/50 rounded-xl relative group">
-                                                            {/* Product row — click to open DS product */}
-                                                            <div
-                                                                onClick={() => productId && navigate(`/dailystore/products/${productId}`)}
-                                                                className={`flex items-center gap-3 mb-3 pb-3 border-b border-slate-800/50 ${productId ? 'cursor-pointer group/prod' : ''}`}
-                                                            >
-                                                                <div className="w-9 h-9 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
-                                                                    {rev.items?.image_urls?.[0] ? (
-                                                                        <img src={rev.items.image_urls[0]} alt={rev.items.name || ''} className="w-full h-full object-cover" />
-                                                                    ) : (
-                                                                        <div className="w-full h-full flex items-center justify-center"><Package size={14} className="text-slate-600" /></div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="min-w-0 flex-1">
-                                                                    <p className="text-xs font-bold text-slate-200 truncate group-hover/prod:text-yellow-300 transition-colors">{rev.items?.name || 'Unknown Product'}</p>
-                                                                    {rev.items?.price != null && (
-                                                                        <p className="text-[9px] text-emerald-400 font-bold">{Number(rev.items.price).toLocaleString()}</p>
-                                                                    )}
-                                                                </div>
-                                                                {productId && <ExternalLink size={10} className="text-slate-600 group-hover/prod:text-yellow-400 flex-shrink-0 transition-colors" />}
-                                                            </div>
-                                                            {/* Review content */}
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="flex text-yellow-500">
-                                                                        {[...Array(5)].map((_, i) => (
-                                                                            <Star key={i} size={10} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-700'} />
-                                                                        ))}
-                                                                    </div>
-                                                                    <span className="text-[10px] font-black text-white uppercase tracking-tight">{rev.title || 'Untitled Review'}</span>
-                                                                    {rev.is_approved ? (
-                                                                        <ShieldCheck size={12} className="text-emerald-500" />
-                                                                    ) : (
-                                                                        <Clock size={12} className="text-amber-500" />
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-[8px] text-slate-600 font-black uppercase tracking-widest">{new Date(rev.created_at).toLocaleDateString()}</span>
-                                                            </div>
-                                                            <p className="text-xs text-slate-400 italic mb-2">"{rev.content}"</p>
-                                                            <a
-                                                                href="/dailystore/reviews"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1"
-                                                            >
-                                                                Moderate <ExternalLink size={10} />
-                                                            </a>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeSfTab === 'coupons' && (
-                                    <div className="p-6">
-                                        {sfCoupons.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">No coupons used yet.</p>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {sfCoupons.map(order => (
-                                                    <div key={order.id} className="p-3 bg-slate-950/30 border border-purple-500/10 rounded-xl">
-                                                        <div className="flex items-start justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <Tag size={12} className="text-purple-400 flex-shrink-0" />
-                                                                <span className="text-xs font-black text-purple-300 font-mono">{order.coupon_code}</span>
-                                                            </div>
-                                                            <span className="text-[8px] text-slate-600 font-black uppercase">{new Date(order.created_at).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <div
-                                                                onClick={() => navigate(`/dailystore/orders/${order.id}`)}
-                                                                className="flex items-center gap-1.5 cursor-pointer group/ord"
-                                                            >
-                                                                <Package size={10} className="text-slate-500" />
-                                                                <span className="text-[10px] font-bold text-slate-400 group-hover/ord:text-blue-300 transition-colors uppercase tracking-widest">
-                                                                    Order #{order.order_number || order.id.substring(0, 8)}
-                                                                </span>
-                                                                <ExternalLink size={9} className="text-slate-600 group-hover/ord:text-blue-400 transition-colors" />
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest block">Saved</span>
-                                                                <span className="text-xs font-black text-emerald-400">{order.currency} {parseFloat(order.discount_amount || 0).toLocaleString()}</span>
-                                                            </div>
-                                                        </div>
-                                                        {order.total_amount && (
-                                                            <p className="text-[9px] text-slate-600 mt-1.5 font-bold uppercase tracking-widest">
-                                                                Order total: {order.currency} {parseFloat(order.total_amount).toLocaleString()}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeSfTab === 'viewed' && (
-                                    <div className="p-6">
-                                        {sfViewed.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">No product views tracked.</p>
-                                        ) : (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {sfViewed.map((act) => {
-                                                    const productId = act.metadata?.item_id || act.metadata?.product_id;
-                                                    const name = act.metadata?.item_name || act.metadata?.product_name;
-                                                    const price = act.metadata?.price ?? act.metadata?.item_price;
-                                                    const imageUrl = act.metadata?.image_url || act.metadata?.image_urls?.[0];
-                                                    return (
-                                                        <div
-                                                            key={act.id}
-                                                            onClick={() => productId && navigate(`/dailystore/products/${productId}`)}
-                                                            className={`flex items-center gap-3 p-3 bg-slate-950/30 border border-slate-800/50 rounded-xl transition-all ${productId ? 'cursor-pointer hover:border-cyan-500/30 group' : ''}`}
-                                                        >
-                                                            <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
-                                                                {imageUrl ? (
-                                                                    <img src={imageUrl} alt={name || ''} className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center"><Package size={16} className="text-slate-600" /></div>
-                                                                )}
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="text-xs font-bold text-slate-200 truncate group-hover:text-cyan-300 transition-colors">{name || 'Unknown Product'}</p>
-                                                                {price != null && (
-                                                                    <p className="text-[9px] text-emerald-400 font-bold mt-0.5">{Number(price).toLocaleString()}</p>
-                                                                )}
-                                                                <p className="text-[8px] text-slate-600 uppercase tracking-widest font-bold mt-0.5">Viewed {new Date(act.created_at).toLocaleDateString()}</p>
-                                                            </div>
-                                                            {productId && <ExternalLink size={10} className="text-slate-600 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeSfTab === 'newsletters' && (
-                                    <div className="p-6">
-                                        {sfNewsletters.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic px-4">Not subscribed to any newsletter.</p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {sfNewsletters.map(sub => (
-                                                    <div key={sub.id} className="flex items-center justify-between p-3 bg-slate-950/30 border border-slate-800/50 rounded-xl">
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-black uppercase tracking-widest ${
-                                                                    sub.unsubscribed_at
-                                                                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                                                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                                }`}>{sub.unsubscribed_at ? 'Unsubscribed' : 'Subscribed'}</span>
-                                                            </div>
-                                                            <p className="text-[9px] text-slate-500 mt-1 font-bold uppercase tracking-widest">
-                                                                Since {new Date(sub.subscribed_at).toLocaleDateString()}
-                                                                {sub.unsubscribed_at && ` · Left ${new Date(sub.unsubscribed_at).toLocaleDateString()}`}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                <div className="lg:col-span-1 space-y-8">
-                    {/* Customer Details Panel (B2B/Tax/Credit) — only for type='customer' */}
-                    {lead.type === 'customer' && (
-                        <CustomerDetailsPanel
-                            lead={lead}
-                            onUpdate={(updated) => setLead(updated)}
-                            showToast={(msg, type) => type === 'success' ? showSuccess(msg) : showError(msg)}
-                        />
-                    )}
-
                     {/* Lead / Customer Potential Score Card */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
@@ -1432,6 +927,12 @@ const LeadDetailPage = () => {
                         </div>
 
                         {isCustomerDetailRoute ? (() => {
+                            const sfOrders = [];
+                            const sfWishlist = [];
+                            const sfActivities = [];
+                            const sfReviews = [];
+                            const sfAbandonedCarts = [];
+                            const sfCoupons = [];
                             const engagementScore = Math.min(100,
                                 sfOrders.length * 20 +
                                 sfWishlist.length * 5 +
@@ -1770,45 +1271,6 @@ const LeadDetailPage = () => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* DailyStore order breakdown — shown when DailyStore is enabled and customer has orders */}
-                        {isCustomerDetailRoute && isDailyStoreEnabled && sfOrders.length > 0 && (
-                            <div className="mt-6 pt-5 border-t border-slate-800/50">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                        <ShoppingBag size={10} className="text-purple-400" /> Storefront Orders
-                                    </span>
-                                    <span className="text-[9px] font-black text-slate-500">{sfOrders.length} orders</span>
-                                </div>
-                                <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
-                                    {sfOrders.map(order => (
-                                        <div
-                                            key={order.id}
-                                            onClick={() => navigate(`/dailystore/orders/${order.id}`)}
-                                            className="flex items-center justify-between p-2 bg-slate-950/50 border border-slate-800/50 rounded-lg cursor-pointer hover:border-emerald-500/20 group/o transition-all"
-                                        >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <span className="text-[9px] font-bold text-slate-400 group-hover/o:text-white transition-colors truncate">
-                                                    #{order.order_number || order.id.substring(0, 8)}
-                                                </span>
-                                                <span className={`text-[8px] px-1 py-0.5 rounded font-black uppercase flex-shrink-0 ${
-                                                    order.status === 'delivered' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                    order.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400' :
-                                                    'bg-blue-500/10 text-blue-400'
-                                                }`}>{order.status}</span>
-                                            </div>
-                                            <span className="text-[10px] font-black text-white flex-shrink-0 ml-2">{order.currency} {parseFloat(order.total_amount || 0).toLocaleString()}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-800/50">
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Spent</span>
-                                    <span className="text-sm font-black text-emerald-400">
-                                        {sfOrders[0]?.currency || ''} {sfOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0).toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
                     </section>
 
                     {/* Associated Deals Section */}
