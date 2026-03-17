@@ -24,10 +24,6 @@ jobs:
         token: ${{ secrets.PAT_TOKEN }}
         path: _shell-fe
 
-    - name: Symlink shell-fe to expected location
-      run: |
-        ln -sfn "$GITHUB_WORKSPACE/_shell-fe" "$(dirname $(dirname $GITHUB_WORKSPACE))/so360-shell-fe"
-
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -41,6 +37,10 @@ jobs:
             (cd "$pkg" && npm install --legacy-peer-deps && npm run build)
           fi
         done
+
+    - name: Rewrite file: dep paths for CI
+      run: |
+        sed -i 's|file:../../so360-shell-fe/packages/|file:./_shell-fe/packages/|g' package.json
 
     - name: Install dependencies
       run: rm -f package-lock.json && npm install --legacy-peer-deps
