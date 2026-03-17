@@ -25,6 +25,7 @@ export interface Attachment {
     uploaded_at: string;
     uploaded_by: User;
     url: string;
+    created_at: string;
 }
 
 export interface Lead {
@@ -36,14 +37,35 @@ export interface Lead {
     source: string;
     owner: User;
     status: LeadStatus;
+    type?: 'lead' | 'customer';
     created_at: string;
+    updated_at?: string;
     activities: Activity[];
     notes: Note[];
     documents?: Attachment[];
     custom_fields?: Record<string, any>;
+    creator?: User;
+    customer_category?: 'b2b' | 'b2c';
+    tax_id?: string;
+    tax_id_verified?: boolean;
+    tax_id_verified_at?: string;
+    credit_limit?: number;
+    credit_balance?: number;
+    acquisition_source?: string;
+    first_order_id?: string;
+    first_order_at?: string;
+    channel?: string;
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
+
+export interface FlowState {
+    id: string;           // flow state code, e.g. 'qualified'
+    name: string;         // display name, e.g. 'Qualified'
+    color: string;
+    is_terminal: boolean;
+    deals?: Deal[];
+}
 
 export interface Deal {
     id: string;
@@ -52,16 +74,24 @@ export interface Deal {
     value: number;
     expected_close_date: string;
     stage: DealStage;
+    stage_id?: string;
+    current_flow_state?: string;
     owner: User;
+    owner_id?: string;  // Used for updating owner
     last_activity_at?: string;
     notes: Note[];
     activities: Activity[];
     documents?: Attachment[];
     lead_id?: string;
+    project_id?: string;
+    invoice_id?: string;
+    invoice_number?: string;
     custom_fields?: Record<string, any>;
+    created_at: string;
+    fulfillment_status?: 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | null;
 }
 
-export type ActivityType = 'Call' | 'Meeting' | 'Email' | 'Note';
+export type ActivityType = 'CALL' | 'MEETING' | 'EMAIL' | 'NOTE' | 'STATUS_CHANGE' | 'STAGE_CHANGE' | 'OWNER_CHANGE' | 'PROFILE_UPDATE' | 'TASK';
 
 export interface Activity {
     id: string;
@@ -70,6 +100,7 @@ export interface Activity {
     date: string;
     follow_up_date?: string;
     author: User;
+    created_at: string;
 }
 
 export interface Note {
@@ -79,7 +110,7 @@ export interface Note {
     created_at: string;
 }
 
-export type TaskType = 'Email' | 'ToDo' | 'Reminder' | 'Call' | 'Meeting';
+export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
 
 export interface Task {
     id: string;
@@ -90,7 +121,10 @@ export interface Task {
     deal_id?: string;
     deal_name?: string;
     lead_id?: string;
+    description?: string;
     assigned_to: User;
+    created_at: string;
+    reminder_minutes_before?: number;
 }
 
 export interface LeadScoringRule {
@@ -101,10 +135,84 @@ export interface LeadScoringRule {
 }
 
 export interface CRMSettings {
-    deal_stages: { id: string; name: string }[];
+    deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST' }[];
+    lead_stages: { id: string; name: string }[];
     default_owner_id: string;
     lead_sources: { id: string; name: string; archived: boolean }[];
     lead_custom_fields: CustomFieldDefinition[];
     deal_custom_fields: CustomFieldDefinition[];
     lead_scoring: LeadScoringRule[];
 }
+
+export interface DealFilters {
+    date_range?: 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_year' | 'custom';
+    start_date?: string;
+    end_date?: string;
+    owner_id?: string;
+    lead_id?: string;
+    company_name?: string;
+}
+
+// Quote Types
+export type QuoteStatus = 'draft' | 'pending_approval' | 'approved' | 'rejected' | 'converted' | 'expired';
+
+export interface QuoteLine {
+    id?: string;
+    item_id?: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    discount_percent?: number;
+    tax_rate?: number;
+    line_total?: number;
+}
+
+export interface Quote {
+    id: string;
+    quote_number: string;
+    deal_id: string;
+    deal?: Deal;
+    customer_id?: string;
+    customer_name?: string;
+    title?: string;
+    status: QuoteStatus;
+    lines: QuoteLine[];
+    subtotal: number;
+    tax_total: number;
+    discount_total: number;
+    grand_total: number;
+    notes?: string;
+    terms_and_conditions?: string;
+    valid_until?: string;
+    created_by: User;
+    approved_by?: User;
+    approved_at?: string;
+    rejection_reason?: string;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface CreateQuoteDto {
+    deal_id: string;
+    customer_id?: string;
+    title?: string;
+    notes?: string;
+    terms_and_conditions?: string;
+    valid_until?: string;
+    lines: Omit<QuoteLine, 'id' | 'line_total'>[];
+}
+
+export interface UpdateQuoteDto {
+    title?: string;
+    notes?: string;
+    terms_and_conditions?: string;
+    valid_until?: string;
+    lines?: Omit<QuoteLine, 'id' | 'line_total'>[];
+}
+
+export interface QuoteFilters {
+    status?: QuoteStatus;
+    deal_id?: string;
+    customer_id?: string;
+}
+

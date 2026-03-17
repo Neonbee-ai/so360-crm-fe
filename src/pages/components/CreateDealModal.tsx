@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, DollarSign, Briefcase } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
+import { ToastContainer, useToast } from '../../components/common/Toast';
+import { useActivity, usePeople } from '@so360/shell-context';
 
 interface CreateDealModalProps {
     leadId: string;
@@ -12,11 +14,15 @@ interface CreateDealModalProps {
 }
 
 const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName, onClose, onSuccess }) => {
+    const { toasts, showError, dismissToast } = useToast();
+    const { recordActivity } = useActivity();
+    const { people } = usePeople();
     const [name, setName] = useState(`${companyName} Deal`);
     const [value, setValue] = useState<string>('');
     const [stage, setStage] = useState<DealStage>('Lead');
     const [expectedClose, setExpectedClose] = useState<string>('');
     const [ownerId, setOwnerId] = useState<string>('');
+    const [ownerPersonId, setOwnerPersonId] = useState<string>('');
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [settings, setSettings] = useState<{ id: string, name: string }[]>([]);
@@ -46,14 +52,16 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                 value: parseFloat(value) || 0,
                 stage_id: settings.find(s => s.name === stage)?.id || stage, // Fallback if stage is generic string
                 owner_id: ownerId,
+                owner_person_id: ownerPersonId || undefined, // Include person link if selected
                 expected_close: expectedClose ? new Date(expectedClose).toISOString() : undefined,
                 lead_id: leadId,
             });
+            recordActivity({ eventType: 'deal.created', eventCategory: 'crm', description: `Created deal "${name}" for ${companyName}`, resourceType: 'deal', resourceId: deal?.id }).catch(() => {});
             onSuccess(deal);
             onClose();
         } catch (error) {
             console.error('Failed to create deal', error);
-            alert('Failed to create deal');
+            showError('Failed to create deal');
         } finally {
             setIsSubmitting(false);
         }
@@ -61,6 +69,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
     return (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between">
                     <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
@@ -124,7 +133,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Owner</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Owner (User)</label>
                             <select
                                 value={ownerId}
                                 onChange={(e) => setOwnerId(e.target.value)}
@@ -132,6 +141,20 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             >
                                 {users.map(u => (
                                     <option key={u.id} value={u.id}>{u.full_name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep (Person)</label>
+                            <select
+                                value={ownerPersonId}
+                                onChange={(e) => setOwnerPersonId(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                            >
+                                <option value="">-- Select a sales rep (optional) --</option>
+                                {people.map(p => (
+                                    <option key={p.id} value={p.id}>{p.full_name}</option>
                                 ))}
                             </select>
                         </div>
