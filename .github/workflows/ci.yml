@@ -33,7 +33,7 @@ jobs:
     - name: Build Shell packages
       working-directory: _shell-fe
       run: |
-        for pkg in packages/shell-context packages/design-system packages/event-bus packages/formatters; do
+        for pkg in packages/shell-context packages/design-system packages/event-bus; do
           if [ -d "$pkg" ]; then
             (cd "$pkg" && npm install --legacy-peer-deps && npm run build)
           fi
@@ -45,7 +45,7 @@ jobs:
     - name: Link Shell packages to node_modules
       run: |
         mkdir -p node_modules/@so360
-        for pkg in shell-context design-system event-bus formatters; do
+        for pkg in shell-context design-system event-bus; do
           if [ -d "_shell-fe/packages/$pkg" ]; then
             rm -rf "node_modules/@so360/$pkg"
             cp -r "_shell-fe/packages/$pkg" "node_modules/@so360/$pkg"
