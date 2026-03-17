@@ -17,11 +17,26 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Checkout Shell FE packages
+      uses: actions/checkout@v4
+      with:
+        repository: praveen-vr-moonhive/so360-shell-fe
+        token: ${{ secrets.PAT_TOKEN }}
+        path: ../../so360-shell-fe
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+
+    - name: Build Shell packages
+      working-directory: ../../so360-shell-fe
+      run: |
+        for pkg in packages/shell-context packages/design-system packages/event-bus packages/formatters; do
+          if [ -d "$pkg" ]; then
+            cd "$pkg" && npm install --legacy-peer-deps && npm run build && cd ../..
+          fi
+        done
 
     - name: Install dependencies
       run: npm install --legacy-peer-deps
