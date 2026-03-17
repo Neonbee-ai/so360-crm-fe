@@ -38,7 +38,7 @@ jobs:
           fi
         done
 
-    - name: Rewrite file: dep paths for CI
+    - name: Rewrite file-dep paths for CI
       run: |
         sed -i 's|file:../../so360-shell-fe/packages/|file:./_shell-fe/packages/|g' package.json
 
