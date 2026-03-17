@@ -30,6 +30,10 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Setup shell-fe path alias (for vite.config.ts ../../so360-shell-fe resolution)
+      run: |
+        ln -sfn "$GITHUB_WORKSPACE/_shell-fe" "$(dirname $(dirname $GITHUB_WORKSPACE))/so360-shell-fe"
+
     - name: Build Shell packages
       working-directory: _shell-fe
       run: |

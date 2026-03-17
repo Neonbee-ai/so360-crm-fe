@@ -10,7 +10,7 @@ export default defineConfig({
             '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/dist/index.js'),
             '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/dist/index.js'),
             '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/dist/index.js'),
-            '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/src'),
+            '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/dist/index.js'),
         },
     },
     plugins: [
