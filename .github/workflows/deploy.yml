@@ -40,16 +40,13 @@ jobs:
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           nvm use 22
           ln -sfn "/github/SO360 V.2/so360-shell-fe" "$(dirname "${BUILD_DIR}")/so360-shell-fe" 2>/dev/null || true
-          # Build shell packages (including formatters) on server before MFE build
-          SHELL_PKG_DIR="/github/SO360 V.2/so360-shell-fe/packages"
-          for pkg in shell-context design-system event-bus formatters; do
-            if [ -d "$SHELL_PKG_DIR/$pkg" ]; then
-              (cd "$SHELL_PKG_DIR/$pkg" && npm install --legacy-peer-deps --silent && npm run build --silent) 2>&1 || true
-            fi
-          done
           npm install --legacy-peer-deps
           export VITE_BASE_URL=https://dev.crm.skyoffice360.com/
+          export VITE_SO360_CORE_API=https://dev.api.skyoffice360.com/core
           export VITE_SO360_CRM_API=https://dev.api.skyoffice360.com/crm
+          export VITE_SO360_INVENTORY_API=https://dev.api.skyoffice360.com/inventory
+          export VITE_SO360_DAILYSTORE_API=https://dev.api.skyoffice360.com/dailystore
+          export VITE_SO360_FULFILLMENT_API=https://dev.api.skyoffice360.com/fulfillment
           npm run build
           mkdir -p "${NGINX_ROOT}"
           cp -r dist/* "${NGINX_ROOT}/"
@@ -74,16 +71,13 @@ jobs:
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           nvm use 22
           ln -sfn "/github/SO360 V.2/so360-shell-fe" "$(dirname "${BUILD_DIR}")/so360-shell-fe" 2>/dev/null || true
-          # Build shell packages (including formatters) on server before MFE build
-          SHELL_PKG_DIR="/github/SO360 V.2/so360-shell-fe/packages"
-          for pkg in shell-context design-system event-bus formatters; do
-            if [ -d "$SHELL_PKG_DIR/$pkg" ]; then
-              (cd "$SHELL_PKG_DIR/$pkg" && npm install --legacy-peer-deps --silent && npm run build --silent) 2>&1 || true
-            fi
-          done
           npm install --legacy-peer-deps
           export VITE_BASE_URL=https://staging.crm.skyoffice360.com/
+          export VITE_SO360_CORE_API=https://staging.api.skyoffice360.com/core
           export VITE_SO360_CRM_API=https://staging.api.skyoffice360.com/crm
+          export VITE_SO360_INVENTORY_API=https://staging.api.skyoffice360.com/inventory
+          export VITE_SO360_DAILYSTORE_API=https://staging.api.skyoffice360.com/dailystore
+          export VITE_SO360_FULFILLMENT_API=https://staging.api.skyoffice360.com/fulfillment
           npm run build
           mkdir -p "${NGINX_ROOT}"
           cp -r dist/* "${NGINX_ROOT}/"
