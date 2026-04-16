@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - qa
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -82,4 +83,48 @@ jobs:
           mkdir -p "${NGINX_ROOT}"
           cp -r dist/* "${NGINX_ROOT}/"
           echo "✅ Deployed to https://${DOMAIN}"
+        DEPLOY_SCRIPT
+
+    - name: Deploy to Production
+      if: github.ref == 'refs/heads/main'
+      env:
+        SERVER_IP: ${{ secrets.PROD_NGINX_VM }}
+        DOMAIN: cdn.neonbee.app
+        BUILD_DIR: /github/SO360 V.2/so360-crm/so360-crm-fe
+        NGINX_ROOT: /var/www/cdn.neonbee.app/html/crm
+      run: |
+        ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
+        ssh root@$SERVER_IP "mkdir -p '$BUILD_DIR'"
+        rsync -avz --delete --exclude 'node_modules' --exclude 'dist' --exclude '.git' ./ "root@$SERVER_IP:$BUILD_DIR/"
+        ssh root@$SERVER_IP "BUILD_DIR='$BUILD_DIR' DOMAIN='$DOMAIN' NGINX_ROOT='$NGINX_ROOT' MODULE='crm' bash -s" << 'DEPLOY_SCRIPT'
+          set -e
+          cd "${BUILD_DIR}"
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use 22
+          ln -sfn "/github/SO360 V.2/so360-shell-fe" "$(dirname "${BUILD_DIR}")/so360-shell-fe" 2>/dev/null || true
+          npm install --legacy-peer-deps
+          export VITE_BASE_URL=https://cdn.neonbee.app/${MODULE}/
+          export VITE_SO360_CORE_API=https://api.neonbee.app/core
+          export VITE_SO360_CRM_API=https://api.neonbee.app/crm
+          export VITE_SO360_INVENTORY_API=https://api.neonbee.app/inventory
+          export VITE_SO360_ACCOUNTING_API=https://api.neonbee.app/accounting
+          export VITE_SO360_PROJECTS_API=https://api.neonbee.app/projects
+          export VITE_SO360_TIMESHEET_API=https://api.neonbee.app/timesheet
+          export VITE_SO360_PEOPLE_API=https://api.neonbee.app/people
+          export VITE_SO360_DAILYSTORE_API=https://api.neonbee.app/dailystore
+          export VITE_SO360_NEURA_API=https://api.neonbee.app/neura
+          export VITE_SO360_FLOW_API=https://api.neonbee.app/flow
+          export VITE_SO360_INSIGHT_API=https://api.neonbee.app/insight
+          export VITE_SO360_INBOX_API=https://api.neonbee.app/inbox
+          export VITE_SO360_FORMS_API=https://api.neonbee.app/forms
+          export VITE_SO360_FULFILLMENT_API=https://api.neonbee.app/fulfillment
+          export VITE_SO360_SUPPORT_API=https://api.neonbee.app/support
+          export VITE_SO360_SUBSCRIPTION_API=https://api.neonbee.app/subscription
+          export VITE_SO360_STOREFRONT_PREVIEW_URL=https://neonbee.store
+          npm run build
+          mkdir -p "${NGINX_ROOT}"
+          rm -rf "${NGINX_ROOT:?}"/*
+          cp -r dist/* "${NGINX_ROOT}/"
+          echo "✅ Deployed to https://cdn.neonbee.app/${MODULE}/"
         DEPLOY_SCRIPT
