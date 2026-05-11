@@ -4,6 +4,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, mapCampaign } from './marketing/marketingMappers';
 import { Button } from '@so360/design-system';
+import CampaignTemplateEditor from '../components/CampaignTemplateEditor';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -118,12 +119,10 @@ const MarketingCampaignsPage: React.FC = () => {
             value={form.subjectTemplate}
             onChange={(e) => setForm({ ...form, subjectTemplate: e.target.value })}
           />
-          <textarea
-            className="mt-4 w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            rows={6}
-            placeholder="Body template (HTML)"
+          <label className="block text-xs font-semibold text-slate-400 mt-5 mb-2 uppercase tracking-wider">Email Body</label>
+          <CampaignTemplateEditor
             value={form.bodyTemplate}
-            onChange={(e) => setForm({ ...form, bodyTemplate: e.target.value })}
+            onChange={(html) => setForm({ ...form, bodyTemplate: html })}
           />
           <label className="block text-xs font-semibold text-slate-400 mt-5 mb-2 uppercase tracking-wider">Audience Filter (JSON)</label>
           <textarea
