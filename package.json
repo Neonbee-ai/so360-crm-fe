@@ -7,30 +7,39 @@
         "dev": "vite",
         "build": "tsc -b && vite build",
         "lint": "eslint .",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:cov": "vitest run --coverage"
     },
     "dependencies": {
-        "react": "^19.2.0",
-        "react-dom": "^19.2.0",
-        "react-router-dom": "^7.12.0",
-        "lucide-react": "^0.562.0",
-        "framer-motion": "^12.6.2",
-        "@so360/shell-context": "file:../so360-shell-fe/packages/shell-context",
         "@so360/design-system": "file:../so360-shell-fe/packages/design-system",
         "@so360/event-bus": "file:../so360-shell-fe/packages/event-bus",
-        "@so360/formatters": "file:../so360-shell-fe/packages/formatters"
+        "@so360/formatters": "file:../so360-shell-fe/packages/formatters",
+        "@so360/shell-context": "file:../so360-shell-fe/packages/shell-context",
+        "framer-motion": "^12.6.2",
+        "lucide-react": "^0.562.0",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "react-router-dom": "^7.12.0"
     },
     "devDependencies": {
         "@originjs/vite-plugin-federation": "^1.3.6",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.1",
         "@types/react": "^19.2.5",
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^4.3.4",
-        "typescript": "^5.7.2",
-        "vite": "^5.4.11",
+        "@vitest/coverage-v8": "^3.2.4",
         "autoprefixer": "^10.4.1",
+        "eslint": "^9.39.1",
+        "jsdom": "^26.1.0",
         "postcss": "^8.4.1",
         "tailwindcss": "^3.4.1",
-        "eslint": "^9.39.1"
+        "typescript": "^5.7.2",
+        "vite": "^5.4.11",
+        "vitest": "^3.2.4"
     },
     "repository": {
         "type": "git",
