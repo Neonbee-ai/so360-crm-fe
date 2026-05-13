@@ -84,7 +84,7 @@ describe('MarketingCampaignsPage', () => {
     render(<MarketingCampaignsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     await waitFor(() => screen.getByText('Summer Sale'));
-    const createBtn = screen.getByText(/create|new campaign/i);
+    const createBtn = screen.getByText(/^New Campaign$/i);
     fireEvent.click(createBtn);
     await waitFor(() => {
       expect(screen.getByTestId('template-editor')).toBeInTheDocument();

@@ -152,7 +152,7 @@ describe('DealDetailPage', () => {
   it('switches to tasks tab', async () => {
     render(<DealDetailPage />);
     await waitFor(() => screen.getByText('Big Deal'));
-    const tasksTab = screen.getByText('Tasks');
+    const tasksTab = screen.getByText(/^Tasks/);
     fireEvent.click(tasksTab);
     await waitFor(() => {
       expect(screen.getByText('Follow up')).toBeInTheDocument();
@@ -162,7 +162,7 @@ describe('DealDetailPage', () => {
   it('switches to documents tab', async () => {
     render(<DealDetailPage />);
     await waitFor(() => screen.getByText('Big Deal'));
-    const docsTab = screen.getByText('Documents');
+    const docsTab = screen.getByText(/^Docs/);
     fireEvent.click(docsTab);
     await waitFor(() => {
       expect(screen.getByText('file.pdf')).toBeInTheDocument();

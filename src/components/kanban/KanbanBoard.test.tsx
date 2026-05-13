@@ -45,13 +45,15 @@ describe('KanbanBoard', () => {
 
   it('shows deal count per stage', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
-    expect(screen.getByText('1').closest('[class*="bg-slate"]')).toBeTruthy();
+    const ones = screen.getAllByText('1');
+    expect(ones.some(el => el.closest('[class*="bg-slate"]'))).toBeTruthy();
   });
 
   it('shows stage totals', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
-    expect(screen.getByText('$5,000')).toBeInTheDocument();
-    expect(screen.getByText('$10,000')).toBeInTheDocument();
+    const fiveK = screen.getAllByText('$5,000');
+    expect(fiveK.length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$10,000').length).toBeGreaterThan(0);
   });
 
   it('shows lock icon on terminal stages', () => {

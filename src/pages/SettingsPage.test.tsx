@@ -21,7 +21,7 @@ vi.mock('../components/common/Toast', () => ({
 
 import SettingsPage from './SettingsPage';
 
-const settings = {
+const makeSettings = () => ({
   deal_stages: [
     { id: 's1', name: 'Lead', type: 'OPEN' },
     { id: 's2', name: 'Won', type: 'WON' },
@@ -35,12 +35,12 @@ const settings = {
   lead_sources: [{ id: 'src1', name: 'Website', archived: false }],
   lead_scoring: [{ id: 'ls-rule1', criteria: 'Has email', points: 10, type: 'field' }],
   default_owner_id: 'u1',
-};
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetSettings.mockResolvedValue(settings);
-  mockUpdateSettings.mockResolvedValue(settings);
+  mockGetSettings.mockResolvedValue(makeSettings());
+  mockUpdateSettings.mockResolvedValue(makeSettings());
 });
 
 describe('SettingsPage', () => {
@@ -99,7 +99,7 @@ describe('SettingsPage', () => {
 
   it('prevents removing last pipeline stage', async () => {
     mockGetSettings.mockResolvedValue({
-      ...settings,
+      ...makeSettings(),
       deal_stages: [{ id: 's1', name: 'Only', type: 'OPEN' }],
     });
     render(<SettingsPage />);
@@ -153,7 +153,7 @@ describe('SettingsPage', () => {
 
   it('prevents removing last lead stage', async () => {
     mockGetSettings.mockResolvedValue({
-      ...settings,
+      ...makeSettings(),
       lead_stages: [{ id: 'ls1', name: 'Only' }],
     });
     render(<SettingsPage />);
