@@ -16,6 +16,7 @@ import { Trophy, Zap, Info, TrendingUp } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
+import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents';
 
@@ -348,6 +349,12 @@ const LeadDetailPage = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Lead Journey Stepper */}
+            <div className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Lead Journey</h3>
+                <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">

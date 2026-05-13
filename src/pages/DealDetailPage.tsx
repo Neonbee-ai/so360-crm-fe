@@ -11,6 +11,7 @@ import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, Ac
 import { ToastContainer, useToast } from '../components/common/Toast';
 import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
+import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom';
 
@@ -535,6 +536,12 @@ const DealDetailPage = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Deal Lifecycle Stepper */}
+            <div className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Deal Lifecycle</h3>
+                <DealLifecycleStepper currentState={(deal as any).current_flow_state || deal.status} />
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Workspace Column */}
