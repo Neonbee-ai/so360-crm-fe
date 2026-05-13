@@ -540,7 +540,7 @@ const DealDetailPage = () => {
             {/* Deal Lifecycle Stepper */}
             <div className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl p-6">
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Deal Lifecycle</h3>
-                <DealLifecycleStepper currentState={(deal as any).current_flow_state || deal.status} />
+                <DealLifecycleStepper currentState={deal.current_flow_state || deal.stage} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
