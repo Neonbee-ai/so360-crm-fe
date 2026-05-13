@@ -156,7 +156,7 @@ describe('LeadDetailPage', () => {
   it('switches to tasks tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
-    fireEvent.click(screen.getByText('Tasks'));
+    fireEvent.click(screen.getByText(/^Tasks/));
     await waitFor(() => {
       expect(screen.getByText('Follow up')).toBeInTheDocument();
     });
@@ -165,7 +165,7 @@ describe('LeadDetailPage', () => {
   it('switches to documents tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
-    fireEvent.click(screen.getByText('Documents'));
+    fireEvent.click(screen.getByText(/^Documents/));
     await waitFor(() => {
       expect(screen.getByText('contract.pdf')).toBeInTheDocument();
     });

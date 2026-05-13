@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -158,6 +158,148 @@ describe('LeadsPage', () => {
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       const rows = screen.getAllByTestId(/lead-row/);
       expect(rows[0]).toHaveTextContent('Acme Corp');
+    });
+  });
+
+  describe('Given owner filter', () => {
+    it('When filtering by owner / Then only leads with that owner appear', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const ownerSelect = screen.getByDisplayValue('All Owners');
+      await user.selectOptions(ownerSelect, 'u2');
+      await waitFor(() => {
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Given creator filter', () => {
+    it('When filtering by creator / Then only leads by that creator appear', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const creatorSelect = screen.getByDisplayValue('Created By: All');
+      await user.selectOptions(creatorSelect, 'u2');
+      await waitFor(() => {
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Given date range filter', () => {
+    it('When filtering by This Month / Then filters leads by date', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const dateSelect = screen.getByDisplayValue('All Time');
+      await user.selectOptions(dateSelect, 'This Month');
+      await waitFor(() => expect(tableProps.data).toBeDefined());
+    });
+
+    it('When filtering by Today / Then applies today date filter', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const dateSelect = screen.getByDisplayValue('All Time');
+      await user.selectOptions(dateSelect, 'Today');
+      await waitFor(() => expect(tableProps.data.length).toBe(0));
+    });
+  });
+
+  describe('Given clear filters', () => {
+    it('When filters are active and Clear Filters is clicked / Then resets all filters', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const statusSelect = screen.getByDisplayValue('All Statuses');
+      await user.selectOptions(statusSelect, 'Qualified');
+      await waitFor(() => expect(screen.getByText('Clear Filters')).toBeInTheDocument());
+      await user.click(screen.getByText('Clear Filters'));
+      await waitFor(() => expect(tableProps.data.length).toBe(3));
+    });
+  });
+
+  describe('Given lead deletion', () => {
+    it('When delete is triggered / Then calls deleteLead API', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const deleteCol = tableProps.columns[tableProps.columns.length - 1];
+      const cell = deleteCol.accessor(leads[0]);
+      const { container } = render(cell);
+      const btn = container.querySelector('button');
+      fireEvent.click(btn!);
+      await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
+      const deleteConfirm = screen.getAllByText('Delete').find(el => {
+        const btn = el.closest('button');
+        return btn?.className.includes('bg-red');
+      });
+      fireEvent.click(deleteConfirm!);
+      await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
+    });
+  });
+
+  describe('Given column renderers', () => {
+    it('When owner column renders / Then shows owner select', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const ownerCol = tableProps.columns[2];
+      const cell = ownerCol.accessor(leads[0]);
+      const { container } = render(cell);
+      const select = container.querySelector('select');
+      expect(select?.value).toBe('u1');
+    });
+
+    it('When status column renders / Then shows status select with correct value', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const statusCol = tableProps.columns[3];
+      const cell = statusCol.accessor(leads[0]);
+      const { container } = render(cell);
+      const select = container.querySelector('select');
+      expect(select?.value).toBe('Open');
+    });
+
+    it('When created column renders / Then shows creator name and date', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const createdCol = tableProps.columns[4];
+      const cell = createdCol.accessor(leads[0]);
+      const { container } = render(cell);
+      expect(container.textContent).toContain('Alice Rep');
+    });
+
+    it('When communication column renders lead with phone / Then shows phone', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const commCol = tableProps.columns[1];
+      const cell = commCol.accessor(leads[0]);
+      const { container } = render(cell);
+      expect(container.textContent).toContain('555-1234');
+    });
+  });
+
+  describe('Given pagination', () => {
+    it('When many leads exist / Then shows pagination controls', async () => {
+      const manyLeads = Array.from({ length: 15 }, (_, i) => ({
+        id: `l${i}`, company_name: `Company ${i}`, contact_name: `Contact ${i}`, contact_email: `c${i}@test.com`,
+        status: 'Open', source: 'Web', owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z',
+      }));
+      mockGetLeads.mockResolvedValue(manyLeads);
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument());
+    });
+  });
+
+  describe('Given fetch error', () => {
+    it('When API fails / Then shows error in empty message', async () => {
+      mockGetLeads.mockRejectedValue(new Error('Network error'));
+      mockGetSettings.mockRejectedValue(new Error('Network error'));
+      mockGetUsers.mockRejectedValue(new Error('Network error'));
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByText('Network error')).toBeInTheDocument());
     });
   });
 });

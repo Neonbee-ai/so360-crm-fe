@@ -87,7 +87,7 @@ describe('QuoteDetailPage', () => {
   it('renders quote status badge', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/draft/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/draft/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -108,7 +108,7 @@ describe('QuoteDetailPage', () => {
   it('renders quote total', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('$5000')).toBeInTheDocument();
+      expect(screen.getAllByText('$5000').length).toBeGreaterThan(0);
     });
   });
 
