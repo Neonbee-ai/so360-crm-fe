@@ -45,45 +45,8 @@ jobs:
           npm run build
           mkdir -p "${NGINX_ROOT}"
           cp -r dist/* "${NGINX_ROOT}/"
-          # ── Always enforce cdn.neonbee.app NGINX CORS config ──
-          cat > "/etc/nginx/sites-available/cdn.neonbee.app" << NGINX_BLOCK
-server {
-    listen 80;
-    server_name cdn.neonbee.app;
-    root /var/www/cdn.neonbee.app/html;
-    index index.html;
-
-    access_log /var/log/nginx/cdn.neonbee.app-access.log;
-    error_log /var/log/nginx/cdn.neonbee.app-error.log;
-
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 256;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon;
-
-    location ~* /assets/remoteEntry\.js$ {
-        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
-        add_header Pragma "no-cache" always;
-        add_header Expires "0" always;
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
-        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range" always;
-        try_files \$uri =404;
-    }
-
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|otf|map)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable" always;
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
-        try_files \$uri =404;
-    }
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-}
-NGINX_BLOCK
+          # Write NGINX CORS config for cdn.neonbee.app (base64-encoded to avoid YAML issues)
+          echo 'c2VydmVyIHsKICAgIGxpc3RlbiA4MDsKICAgIHNlcnZlcl9uYW1lIGNkbi5uZW9uYmVlLmFwcDsKICAgIHJvb3QgL3Zhci93d3cvY2RuLm5lb25iZWUuYXBwL2h0bWw7CiAgICBpbmRleCBpbmRleC5odG1sOwoKICAgIGFjY2Vzc19sb2cgL3Zhci9sb2cvbmdpbngvY2RuLm5lb25iZWUuYXBwLWFjY2Vzcy5sb2c7CiAgICBlcnJvcl9sb2cgL3Zhci9sb2cvbmdpbngvY2RuLm5lb25iZWUuYXBwLWVycm9yLmxvZzsKCiAgICBnemlwIG9uOwogICAgZ3ppcF92YXJ5IG9uOwogICAgZ3ppcF9taW5fbGVuZ3RoIDI1NjsKICAgIGd6aXBfdHlwZXMgdGV4dC9wbGFpbiB0ZXh0L2NzcyBhcHBsaWNhdGlvbi9qc29uIGFwcGxpY2F0aW9uL2phdmFzY3JpcHQgdGV4dC94bWwgYXBwbGljYXRpb24veG1sIGFwcGxpY2F0aW9uL3htbCtyc3MgdGV4dC9qYXZhc2NyaXB0IGFwcGxpY2F0aW9uL3ZuZC5tcy1mb250b2JqZWN0IGFwcGxpY2F0aW9uL3gtZm9udC10dGYgZm9udC9vcGVudHlwZSBpbWFnZS9zdmcreG1sIGltYWdlL3gtaWNvbjsKCiAgICBsb2NhdGlvbiB+KiAvYXNzZXRzL3JlbW90ZUVudHJ5XC5qcyQgewogICAgICAgIGFkZF9oZWFkZXIgQ2FjaGUtQ29udHJvbCAibm8tY2FjaGUsIG5vLXN0b3JlLCBtdXN0LXJldmFsaWRhdGUiIGFsd2F5czsKICAgICAgICBhZGRfaGVhZGVyIFByYWdtYSAibm8tY2FjaGUiIGFsd2F5czsKICAgICAgICBhZGRfaGVhZGVyIEV4cGlyZXMgIjAiIGFsd2F5czsKICAgICAgICBhZGRfaGVhZGVyIEFjY2Vzcy1Db250cm9sLUFsbG93LU9yaWdpbiAiKiIgYWx3YXlzOwogICAgICAgIGFkZF9oZWFkZXIgQWNjZXNzLUNvbnRyb2wtQWxsb3ctTWV0aG9kcyAiR0VULCBPUFRJT05TIiBhbHdheXM7CiAgICAgICAgYWRkX2hlYWRlciBBY2Nlc3MtQ29udHJvbC1BbGxvdy1IZWFkZXJzICJETlQsVXNlci1BZ2VudCxYLVJlcXVlc3RlZC1XaXRoLElmLU1vZGlmaWVkLVNpbmNlLENhY2hlLUNvbnRyb2wsQ29udGVudC1UeXBlLFJhbmdlIiBhbHdheXM7CiAgICAgICAgdHJ5X2ZpbGVzICR1cmkgPTQwNDsKICAgIH0KCiAgICBsb2NhdGlvbiB+KiBcLihqc3xjc3N8cG5nfGpwZ3xqcGVnfGdpZnxpY298c3ZnfHdvZmZ8d29mZjJ8dHRmfGVvdHxvdGZ8bWFwKSQgewogICAgICAgIGV4cGlyZXMgMXk7CiAgICAgICAgYWRkX2hlYWRlciBDYWNoZS1Db250cm9sICJwdWJsaWMsIGltbXV0YWJsZSIgYWx3YXlzOwogICAgICAgIGFkZF9oZWFkZXIgQWNjZXNzLUNvbnRyb2wtQWxsb3ctT3JpZ2luICIqIiBhbHdheXM7CiAgICAgICAgYWRkX2hlYWRlciBBY2Nlc3MtQ29udHJvbC1BbGxvdy1NZXRob2RzICJHRVQsIE9QVElPTlMiIGFsd2F5czsKICAgICAgICB0cnlfZmlsZXMgJHVyaSA9NDA0OwogICAgfQoKICAgIGxvY2F0aW9uIC8gewogICAgICAgIHRyeV9maWxlcyAkdXJpICR1cmkvIC9pbmRleC5odG1sOwogICAgfQp9Cg==' | base64 -d > /etc/nginx/sites-available/cdn.neonbee.app
           ln -sfn "/etc/nginx/sites-available/cdn.neonbee.app" "/etc/nginx/sites-enabled/cdn.neonbee.app"
           nginx -t && systemctl reload nginx
           echo "✅ NGINX CORS config enforced for cdn.neonbee.app"
