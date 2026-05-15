@@ -121,6 +121,8 @@ export interface Task {
     deal_id?: string;
     deal_name?: string;
     lead_id?: string;
+    lead?: { id: string; company_name: string; contact_name: string } | null;
+    deal?: { id: string; name: string; company_name: string } | null;
     description?: string;
     assigned_to: User;
     created_at: string;
