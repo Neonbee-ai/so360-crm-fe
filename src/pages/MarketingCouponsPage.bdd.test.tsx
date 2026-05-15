@@ -211,7 +211,7 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /create coupon/i }));
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i })[0]);
       await waitFor(() => {
         expect(screen.getByText(/new discount code/i)).toBeInTheDocument();
       });
@@ -222,7 +222,7 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /create coupon/i }));
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i })[0]);
       await waitFor(() => {
         expect(screen.getByPlaceholderText('WELCOME20')).toBeInTheDocument();
       });
@@ -235,11 +235,11 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /create coupon/i }));
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i })[0]);
       await waitFor(() => expect(screen.getByPlaceholderText('WELCOME20')).toBeInTheDocument());
 
-      // Click create/update without entering code
-      await user.click(screen.getByRole('button', { name: /create coupon/i }));
+      // Click create/update without entering code — use last match (submit inside form)
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i }).at(-1)!);
       await waitFor(() => {
         expect(mockShowError).toHaveBeenCalledWith('Coupon code is required');
         expect(mockCreateCoupon).not.toHaveBeenCalled();
@@ -251,11 +251,11 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /create coupon/i }));
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i })[0]);
       await waitFor(() => expect(screen.getByPlaceholderText('WELCOME20')).toBeInTheDocument());
 
       await user.type(screen.getByPlaceholderText('WELCOME20'), 'NEWCODE');
-      await user.click(screen.getByRole('button', { name: /create coupon/i }));
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i }).at(-1)!);
 
       await waitFor(() => {
         expect(mockCreateCoupon).toHaveBeenCalledWith('store-1', expect.objectContaining({ code: 'NEWCODE' }));
