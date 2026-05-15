@@ -188,13 +188,13 @@ describe('MarketingCampaignDetailPage BDD', () => {
     it('When rendered / Then shows Schedule section', async () => {
       renderPage();
       await waitFor(() => {
-        expect(screen.getByText('Schedule')).toBeInTheDocument();
+        expect(screen.getAllByText('Schedule')[0]).toBeInTheDocument();
       });
     });
 
     it('When schedule date entered and Schedule clicked / Then calls scheduleCampaign', async () => {
       renderPage();
-      await waitFor(() => expect(screen.getByText('Schedule')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getAllByText('Schedule')[0]).toBeInTheDocument());
 
       const dateInput = screen.getByDisplayValue('');
       fireEvent.change(dateInput, { target: { value: '2025-08-01T09:00' } });
