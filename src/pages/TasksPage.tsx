@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, CheckCircle2, Circle, Clock, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus } from 'lucide-react';
+import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
@@ -8,7 +8,7 @@ import { useShell } from '@so360/shell-context';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
 import { ToastContainer, useToast } from '../components/common/Toast';
 
-type SortField = 'title' | 'due_date' | 'status' | 'assigned_to';
+type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
 
 const TasksPage = () => {
@@ -140,9 +140,13 @@ const TasksPage = () => {
 
     const sortedAndFilteredTasks = useMemo(() => {
         let result = tasks.filter(task => {
-            const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                task.deal_name?.toLowerCase().includes(searchTerm.toLowerCase());
+            const lc = searchTerm.toLowerCase();
+            const matchesSearch = task.title.toLowerCase().includes(lc) ||
+                task.description?.toLowerCase().includes(lc) ||
+                task.deal?.name?.toLowerCase().includes(lc) ||
+                task.deal?.company_name?.toLowerCase().includes(lc) ||
+                task.lead?.company_name?.toLowerCase().includes(lc) ||
+                task.lead?.contact_name?.toLowerCase().includes(lc);
 
             if (!matchesSearch) return false;
 
@@ -164,6 +168,10 @@ const TasksPage = () => {
                     case 'due_date': aVal = new Date(a.due_date).getTime(); bVal = new Date(b.due_date).getTime(); break;
                     case 'status': aVal = a.status; bVal = b.status; break;
                     case 'assigned_to': aVal = a.assigned_to?.full_name || ''; bVal = b.assigned_to?.full_name || ''; break;
+                    case 'associated_with': {
+                        const getLabel = (t: Task) => t.deal?.name || t.deal?.company_name || t.lead?.company_name || t.lead?.contact_name || '';
+                        aVal = getLabel(a); bVal = getLabel(b); break;
+                    }
                     default: return 0;
                 }
                 if (typeof aVal === 'string') {
@@ -206,7 +214,6 @@ const TasksPage = () => {
                         <span className={`font-semibold ${task.status === 'Done' ? 'text-slate-500 line-through' : 'text-white'}`}>
                             {task.title}
                         </span>
-                        {task.deal_name && <span className="text-xs text-slate-400">Related to: <span className="text-blue-400/80">{task.deal_name}</span></span>}
                     </div>
                 </div>
             )
@@ -220,6 +227,33 @@ const TasksPage = () => {
                         {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
                         {new Date(task.due_date).toLocaleDateString()}
                         {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
+                    </div>
+                );
+            }
+        },
+        {
+            header: <SortableHeader label="Associated With" field="associated_with" />,
+            accessor: (task: Task) => {
+                const entity = task.deal
+                    ? { label: task.deal.name || task.deal.company_name, sub: task.deal.company_name !== task.deal.name ? task.deal.company_name : null, type: 'deal' as const }
+                    : task.lead
+                    ? { label: task.lead.company_name || task.lead.contact_name, sub: task.lead.company_name ? task.lead.contact_name : null, type: 'lead' as const }
+                    : null;
+
+                if (!entity) {
+                    return <span className="text-slate-600 text-xs">—</span>;
+                }
+
+                return (
+                    <div className="flex items-center gap-2">
+                        <Building2 size={13} className={entity.type === 'deal' ? 'text-violet-400 shrink-0' : 'text-blue-400 shrink-0'} />
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-sm text-slate-200 truncate">{entity.label}</span>
+                            {entity.sub && <span className="text-[11px] text-slate-500 truncate">{entity.sub}</span>}
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${entity.type === 'deal' ? 'text-violet-500' : 'text-blue-500'}`}>
+                                {entity.type}
+                            </span>
+                        </div>
                     </div>
                 );
             }
