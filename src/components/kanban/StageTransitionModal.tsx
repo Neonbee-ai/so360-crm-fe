@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { Deal } from '../../types/crm';
 import { AlertCircle } from 'lucide-react';
+import { useActivity } from '@so360/shell-context';
 
 interface StageTransitionModalProps {
     isOpen: boolean;
@@ -14,12 +15,14 @@ interface StageTransitionModalProps {
 export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStage }: StageTransitionModalProps) => {
     const [reason, setReason] = useState('');
     const isSpecialStage = newStage === 'Won' || newStage === 'Lost';
+    const { recordActivity } = useActivity();
 
     if (!deal) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onConfirm(reason);
+        recordActivity({ eventType: 'deal.stage_changed', eventCategory: 'crm', description: `Moved deal "${deal.name}" to stage "${newStage}"`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
         setReason('');
         onClose();
     };

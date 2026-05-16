@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteLine, QuoteStatus } from '../types/crm';
-import { useBusinessSettings } from '@so360/shell-context';
+import { useBusinessSettings, useActivity } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
@@ -18,6 +18,7 @@ const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: strin
 const QuoteDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { recordActivity } = useActivity();
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -103,6 +104,7 @@ const QuoteDetailPage = () => {
             });
             setQuote(updatedQuote);
             setIsEditing(false);
+            recordActivity({ eventType: 'quote.updated', eventCategory: 'crm', description: `Updated quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to save quote');
         } finally {
@@ -121,6 +123,7 @@ const QuoteDetailPage = () => {
         try {
             const updated = await crmService.submitQuoteForApproval(quote.id);
             setQuote(updated);
+            recordActivity({ eventType: 'quote.sent', eventCategory: 'crm', description: `Submitted quote "${quote.quote_number || quote.id}" for approval`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to submit quote');
         }
@@ -131,6 +134,7 @@ const QuoteDetailPage = () => {
         try {
             const updated = await crmService.approveQuote(quote.id);
             setQuote(updated);
+            recordActivity({ eventType: 'quote.accepted', eventCategory: 'crm', description: `Approved quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to approve quote');
         }
@@ -143,6 +147,7 @@ const QuoteDetailPage = () => {
             setQuote(updated);
             setShowRejectModal(false);
             setRejectReason('');
+            recordActivity({ eventType: 'quote.rejected', eventCategory: 'crm', description: `Rejected quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to reject quote');
         }

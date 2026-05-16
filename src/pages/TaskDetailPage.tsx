@@ -9,13 +9,14 @@ import { Task } from '../types/crm';
 import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
-import { ShellContext } from '@so360/shell-context';
+import { ShellContext, useActivity } from '@so360/shell-context';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const shell = useContext(ShellContext);
     const currentUserId = shell?.user?.id;
+    const { recordActivity } = useActivity();
     const [task, setTask] = useState<Task | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingTask, setIsEditingTask] = useState(false);
@@ -67,6 +68,11 @@ const TaskDetailPage = () => {
             setTask({ ...task, status: newStatus });
 
             await crmService.updateTask(task.id, { status: newStatus });
+            if (newStatus === 'Done') {
+                recordActivity({ eventType: 'task.completed', eventCategory: 'crm', description: `Completed task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
+            } else {
+                recordActivity({ eventType: 'task.updated', eventCategory: 'crm', description: `Reopened task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
+            }
         } catch (error) {
             console.error('Failed to toggle task status:', error);
             // Revert
@@ -87,6 +93,7 @@ const TaskDetailPage = () => {
             await crmService.updateTask(task.id, { due_date: date });
             setTask({ ...task, due_date: date });
             setIsRescheduling(false);
+            recordActivity({ eventType: 'task.rescheduled', eventCategory: 'crm', description: `Rescheduled task "${task.title}" to ${new Date(date).toLocaleDateString()}`, resourceType: 'task', resourceId: task.id }).catch(() => {});
         } catch (error) {
             console.error('Failed to reschedule task:', error);
         }
