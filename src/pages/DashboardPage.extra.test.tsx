@@ -59,8 +59,8 @@ beforeEach(() => {
   });
 });
 
-describe('DashboardPage — period selectors', () => {
-  it('shows period filter buttons (Yearly, Quarterly, Monthly)', async () => {
+describe('Given DashboardPage — period selectors', () => {
+  it('When action / Then shows period filter buttons (Yearly, Quarterly, Monthly)', async () => {
     render(<DashboardPage />);
     await waitFor(() => screen.getByText('Executive Overview'));
     expect(screen.getByText('Yearly')).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('DashboardPage — period selectors', () => {
     expect(screen.getByText('Monthly')).toBeInTheDocument();
   });
 
-  it('clicking Quarterly calls getDashboardStats with period=quarterly', async () => {
+  it('When action / Then clicking Quarterly calls getDashboardStats with period=quarterly', async () => {
     render(<DashboardPage />);
     await waitFor(() => screen.getByText('Executive Overview'));
     fireEvent.click(screen.getByText('Quarterly'));
@@ -77,7 +77,7 @@ describe('DashboardPage — period selectors', () => {
     });
   });
 
-  it('clicking Monthly calls getDashboardStats with period=monthly', async () => {
+  it('When action / Then clicking Monthly calls getDashboardStats with period=monthly', async () => {
     render(<DashboardPage />);
     await waitFor(() => screen.getByText('Executive Overview'));
     fireEvent.click(screen.getByText('Monthly'));
@@ -87,15 +87,15 @@ describe('DashboardPage — period selectors', () => {
   });
 });
 
-describe('DashboardPage — active reminders', () => {
-  it('shows reminder title when reminders exist', async () => {
+describe('Given DashboardPage — active reminders', () => {
+  it('When action / Then shows reminder title when reminders exist', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText('Call John')).toBeInTheDocument();
     });
   });
 
-  it('shows no reminders message when list is empty', async () => {
+  it('When action / Then shows no reminders message when list is empty', async () => {
     mockGetDashboardStats.mockResolvedValue({ ...baseDashboard, reminders: [] });
     render(<DashboardPage />);
     await waitFor(() => {
@@ -104,8 +104,8 @@ describe('DashboardPage — active reminders', () => {
   });
 });
 
-describe('DashboardPage — team stats', () => {
-  it('shows both team members', async () => {
+describe('Given DashboardPage — team stats', () => {
+  it('When action / Then shows both team members', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getAllByText('Bob').length).toBeGreaterThan(0);
@@ -113,7 +113,7 @@ describe('DashboardPage — team stats', () => {
     });
   });
 
-  it('shows revenue figures for team', async () => {
+  it('When action / Then shows revenue figures for team', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getAllByText(/80,000|80000/).length).toBeGreaterThan(0);
@@ -121,22 +121,22 @@ describe('DashboardPage — team stats', () => {
   });
 });
 
-describe('DashboardPage — revenue KPIs', () => {
-  it('shows pipeline value', async () => {
+describe('Given DashboardPage — revenue KPIs', () => {
+  it('When action / Then shows pipeline value', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getAllByText(/250,000|250000/).length).toBeGreaterThan(0);
     });
   });
 
-  it('shows win rate percentage', async () => {
+  it('When action / Then shows win rate percentage', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText('72.5%')).toBeInTheDocument();
     });
   });
 
-  it('shows total revenue', async () => {
+  it('When action / Then shows total revenue', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getAllByText(/120,000|120000/).length).toBeGreaterThan(0);
@@ -144,15 +144,15 @@ describe('DashboardPage — revenue KPIs', () => {
   });
 });
 
-describe('DashboardPage — counts section', () => {
-  it('shows deals count in pipeline section', async () => {
+describe('Given DashboardPage — counts section', () => {
+  it('When action / Then shows deals count in pipeline section', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText(/12 active deals/i)).toBeInTheDocument();
     });
   });
 
-  it('shows avg deal size KPI', async () => {
+  it('When action / Then shows avg deal size KPI', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       // avgDealSize = 40000 appears in financials
@@ -161,8 +161,8 @@ describe('DashboardPage — counts section', () => {
   });
 });
 
-describe('DashboardPage — dailystore module enabled', () => {
-  it('calls getCommerceKPIs when dailystore module is enabled', async () => {
+describe('Given DashboardPage — dailystore module enabled', () => {
+  it('When action / Then calls getCommerceKPIs when dailystore module is enabled', async () => {
     mockIsModuleEnabled.mockImplementation((m: string) => m === 'dailystore');
     render(<DashboardPage />);
     await waitFor(() => {
@@ -170,14 +170,14 @@ describe('DashboardPage — dailystore module enabled', () => {
     });
   });
 
-  it('does not call getCommerceKPIs when dailystore is disabled', async () => {
+  it('When action / Then does not call getCommerceKPIs when dailystore is disabled', async () => {
     mockIsModuleEnabled.mockReturnValue(false);
     render(<DashboardPage />);
     await waitFor(() => screen.getByText('Executive Overview'));
     expect(mockGetCommerceKPIs).not.toHaveBeenCalled();
   });
 
-  it('shows commerce KPIs section when dailystore is enabled and data loads', async () => {
+  it('When action / Then shows commerce KPIs section when dailystore is enabled and data loads', async () => {
     mockIsModuleEnabled.mockImplementation((m: string) => m === 'dailystore');
     mockGetCommerceKPIs.mockResolvedValue({
       revenue: 55000, orderCount: 120, aov: 458, repeatPurchaseRate: 32, refundRate: 2.5,
@@ -191,8 +191,8 @@ describe('DashboardPage — dailystore module enabled', () => {
   });
 });
 
-describe('DashboardPage — error handling', () => {
-  it('shows loading spinner on initial load', () => {
+describe('Given DashboardPage — error handling', () => {
+  it('When action / Then shows loading spinner on initial load', () => {
     // getDashboardStats never resolves — stays in loading state
     mockGetDashboardStats.mockReturnValue(new Promise(() => {}));
     render(<DashboardPage />);

@@ -35,8 +35,8 @@ import MarketingAbandonedCartsPage from './MarketingAbandonedCartsPage';
 
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 
-describe('MarketingAbandonedCartsPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingAbandonedCartsPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingAbandonedCartsPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });

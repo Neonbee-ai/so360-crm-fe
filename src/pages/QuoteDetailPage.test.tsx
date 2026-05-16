@@ -62,14 +62,14 @@ beforeEach(() => {
   mockConvertQuoteToOrder.mockResolvedValue({ order_id: 'o1' });
 });
 
-describe('QuoteDetailPage', () => {
-  it('shows loading initially', () => {
+describe('Given QuoteDetailPage', () => {
+  it('When action / Then shows loading initially', () => {
     mockGetQuoteById.mockReturnValue(new Promise(() => {}));
     render(<QuoteDetailPage />);
     expect(document.body).toBeTruthy();
   });
 
-  it('shows error when quote not found', async () => {
+  it('When action / Then shows error when quote not found', async () => {
     mockGetQuoteById.mockRejectedValue(new Error('Not found'));
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -77,56 +77,56 @@ describe('QuoteDetailPage', () => {
     });
   });
 
-  it('renders quote details', async () => {
+  it('When action / Then renders quote details', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Test Quote')).toBeInTheDocument();
     });
   });
 
-  it('renders quote status badge', async () => {
+  it('When action / Then renders quote status badge', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getAllByText(/draft/i).length).toBeGreaterThan(0);
     });
   });
 
-  it('renders quote line items', async () => {
+  it('When action / Then renders quote line items', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Widget A')).toBeInTheDocument();
     });
   });
 
-  it('renders linked deal', async () => {
+  it('When action / Then renders linked deal', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Deal 1')).toBeInTheDocument();
     });
   });
 
-  it('renders quote total', async () => {
+  it('When action / Then renders quote total', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getAllByText('$5000').length).toBeGreaterThan(0);
     });
   });
 
-  it('shows submit for approval button on draft', async () => {
+  it('When action / Then shows submit for approval button on draft', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getByText(/submit for approval/i)).toBeInTheDocument();
     });
   });
 
-  it('shows edit button on draft', async () => {
+  it('When action / Then shows edit button on draft', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     const editBtns = screen.getAllByText(/edit/i);
     expect(editBtns.length).toBeGreaterThan(0);
   });
 
-  it('shows approve/reject buttons on pending_approval', async () => {
+  it('When action / Then shows approve/reject buttons on pending_approval', async () => {
     mockGetQuoteById.mockResolvedValue({ ...quoteData, status: 'pending_approval' });
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -135,7 +135,7 @@ describe('QuoteDetailPage', () => {
     });
   });
 
-  it('shows convert button on approved', async () => {
+  it('When action / Then shows convert button on approved', async () => {
     mockGetQuoteById.mockResolvedValue({ ...quoteData, status: 'approved' });
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -143,7 +143,7 @@ describe('QuoteDetailPage', () => {
     });
   });
 
-  it('fetches stock availability for line items', async () => {
+  it('When action / Then fetches stock availability for line items', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(mockGetStockAvailability).toHaveBeenCalledWith(['i1']);

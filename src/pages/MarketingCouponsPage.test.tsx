@@ -56,13 +56,13 @@ beforeEach(() => {
   mockDeleteCoupon.mockResolvedValue({});
 });
 
-describe('MarketingCouponsPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingCouponsPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingCouponsPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });
 
-  it('loads coupons when store selected', async () => {
+  it('When action / Then loads coupons when store selected', async () => {
     render(<MarketingCouponsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     await waitFor(() => {
@@ -72,7 +72,7 @@ describe('MarketingCouponsPage', () => {
     });
   });
 
-  it('shows coupon details', async () => {
+  it('When action / Then shows coupon details', async () => {
     render(<MarketingCouponsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     await waitFor(() => {
@@ -80,7 +80,7 @@ describe('MarketingCouponsPage', () => {
     });
   });
 
-  it('shows create form when Add Coupon clicked', async () => {
+  it('When action / Then shows create form when Add Coupon clicked', async () => {
     render(<MarketingCouponsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     await waitFor(() => screen.getByText('SAVE10'));
@@ -91,7 +91,7 @@ describe('MarketingCouponsPage', () => {
     });
   });
 
-  it('handles load error', async () => {
+  it('When action / Then handles load error', async () => {
     mockGetCoupons.mockRejectedValue(new Error('Load failed'));
     render(<MarketingCouponsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
@@ -100,7 +100,7 @@ describe('MarketingCouponsPage', () => {
     });
   });
 
-  it('persists store to localStorage', () => {
+  it('When action / Then persists store to localStorage', () => {
     render(<MarketingCouponsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     expect(localStorage.getItem('crm_marketing_store_id')).toBe('store-1');

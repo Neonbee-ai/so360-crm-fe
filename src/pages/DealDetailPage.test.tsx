@@ -109,14 +109,14 @@ beforeEach(() => {
   mockGetFulfillmentOrderByDeal.mockResolvedValue(null);
 });
 
-describe('DealDetailPage', () => {
-  it('shows loading state initially', () => {
+describe('Given DealDetailPage', () => {
+  it('When action / Then shows loading state initially', () => {
     mockGetDealById.mockReturnValue(new Promise(() => {}));
     render(<DealDetailPage />);
     expect(screen.getByText('Initializing deal workspace...')).toBeInTheDocument();
   });
 
-  it('shows not found when deal is null', async () => {
+  it('When action / Then shows not found when deal is null', async () => {
     mockGetDealById.mockResolvedValue(undefined);
     render(<DealDetailPage />);
     await waitFor(() => {
@@ -124,7 +124,7 @@ describe('DealDetailPage', () => {
     });
   });
 
-  it('renders deal detail with data', async () => {
+  it('When action / Then renders deal detail with data', async () => {
     render(<DealDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Big Deal')).toBeInTheDocument();
@@ -132,14 +132,14 @@ describe('DealDetailPage', () => {
     });
   });
 
-  it('renders deal stepper', async () => {
+  it('When action / Then renders deal stepper', async () => {
     render(<DealDetailPage />);
     await waitFor(() => {
       expect(screen.getByTestId('stepper')).toBeInTheDocument();
     });
   });
 
-  it('switches to notes tab', async () => {
+  it('When action / Then switches to notes tab', async () => {
     render(<DealDetailPage />);
     await waitFor(() => screen.getByText('Big Deal'));
     const notesTab = screen.getByText('Notes');
@@ -149,7 +149,7 @@ describe('DealDetailPage', () => {
     });
   });
 
-  it('switches to tasks tab', async () => {
+  it('When action / Then switches to tasks tab', async () => {
     render(<DealDetailPage />);
     await waitFor(() => screen.getByText('Big Deal'));
     const tasksTab = screen.getByText(/^Tasks/);
@@ -159,7 +159,7 @@ describe('DealDetailPage', () => {
     });
   });
 
-  it('switches to documents tab', async () => {
+  it('When action / Then switches to documents tab', async () => {
     render(<DealDetailPage />);
     await waitFor(() => screen.getByText('Big Deal'));
     const docsTab = screen.getByText(/^Docs/);
@@ -169,21 +169,21 @@ describe('DealDetailPage', () => {
     });
   });
 
-  it('shows activity timeline on activity tab', async () => {
+  it('When action / Then shows activity timeline on activity tab', async () => {
     render(<DealDetailPage />);
     await waitFor(() => screen.getByText('Big Deal'));
     // Activity tab is default
     expect(screen.getByText(/call logged/i)).toBeInTheDocument();
   });
 
-  it('displays deal value and close date', async () => {
+  it('When action / Then displays deal value and close date', async () => {
     render(<DealDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Big Deal')).toBeInTheDocument();
     });
   });
 
-  it('fetches lead data when deal has lead_id', async () => {
+  it('When action / Then fetches lead data when deal has lead_id', async () => {
     mockGetDealById.mockResolvedValue({ ...dealData, lead_id: 'l1' });
     mockGetLeadById.mockResolvedValue({ id: 'l1', company_name: 'LeadCo' });
     render(<DealDetailPage />);
@@ -192,7 +192,7 @@ describe('DealDetailPage', () => {
     });
   });
 
-  it('fetches invoice status when deal has invoice_id', async () => {
+  it('When action / Then fetches invoice status when deal has invoice_id', async () => {
     mockGetDealById.mockResolvedValue({ ...dealData, invoice_id: 'inv-1' });
     mockGetInvoiceStatus.mockResolvedValue({ has_invoice: true, invoice_id: 'inv-1' });
     render(<DealDetailPage />);
@@ -201,7 +201,7 @@ describe('DealDetailPage', () => {
     });
   });
 
-  it('handles invoice status fetch error with fallback', async () => {
+  it('When action / Then handles invoice status fetch error with fallback', async () => {
     mockGetDealById.mockResolvedValue({ ...dealData, invoice_id: 'inv-1', invoice_number: 'INV-001' });
     mockGetInvoiceStatus.mockRejectedValue(new Error('fail'));
     render(<DealDetailPage />);

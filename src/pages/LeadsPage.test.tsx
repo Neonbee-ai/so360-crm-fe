@@ -52,25 +52,25 @@ beforeEach(() => {
   mockGetUsers.mockResolvedValue([{ id: 'u1', full_name: 'Test', email: 't@t.com' }]);
 });
 
-describe('LeadsPage', () => {
-  it('renders header', async () => {
+describe('Given LeadsPage', () => {
+  it('When action / Then renders header', async () => {
     render(<LeadsPage />);
     expect(screen.getByText('Leads & Accounts')).toBeInTheDocument();
   });
 
-  it('shows Create Lead button', async () => {
+  it('When action / Then shows Create Lead button', async () => {
     render(<LeadsPage />);
     expect(screen.getByText('Create Lead')).toBeInTheDocument();
   });
 
-  it('shows empty state when no leads', async () => {
+  it('When action / Then shows empty state when no leads', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
       expect(screen.getByTestId('table')).toHaveTextContent('No leads found');
     });
   });
 
-  it('shows rows when leads loaded', async () => {
+  it('When action / Then shows rows when leads loaded', async () => {
     mockGetLeads.mockResolvedValue([
       { id: 'l1', company_name: 'Acme', contact_name: 'John', status: 'Open', owner: { id: 'u1', full_name: 'Test' }, creator: { id: 'u1', full_name: 'Test' }, created_at: '2024-01-01' },
     ]);

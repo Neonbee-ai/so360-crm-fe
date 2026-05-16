@@ -27,13 +27,13 @@ import MarketingAbandonedCartDetailPage from './MarketingAbandonedCartDetailPage
 
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 
-describe('MarketingAbandonedCartDetailPage', () => {
-  it('shows store selection prompt when no store selected', () => {
+describe('Given MarketingAbandonedCartDetailPage', () => {
+  it('When action / Then shows store selection prompt when no store selected', () => {
     render(<MarketingAbandonedCartDetailPage />);
     expect(screen.getByText(/select a store/i)).toBeInTheDocument();
   });
 
-  it('renders when store is selected', () => {
+  it('When action / Then renders when store is selected', () => {
     localStorage.setItem('crm_marketing_store_id', 'store-1');
     render(<MarketingAbandonedCartDetailPage />);
     expect(document.body).toBeTruthy();

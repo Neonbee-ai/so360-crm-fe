@@ -55,13 +55,13 @@ beforeEach(() => {
   mockDeleteCampaign.mockResolvedValue({});
 });
 
-describe('MarketingCampaignsPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingCampaignsPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingCampaignsPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });
 
-  it('loads campaigns when store selected', async () => {
+  it('When action / Then loads campaigns when store selected', async () => {
     render(<MarketingCampaignsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     await waitFor(() => {
@@ -71,7 +71,7 @@ describe('MarketingCampaignsPage', () => {
     });
   });
 
-  it('shows error state on load failure', async () => {
+  it('When action / Then shows error state on load failure', async () => {
     mockGetCampaigns.mockRejectedValue(new Error('API Error'));
     render(<MarketingCampaignsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
@@ -80,7 +80,7 @@ describe('MarketingCampaignsPage', () => {
     });
   });
 
-  it('shows create campaign form', async () => {
+  it('When action / Then shows create campaign form', async () => {
     render(<MarketingCampaignsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     await waitFor(() => screen.getByText('Summer Sale'));
@@ -91,7 +91,7 @@ describe('MarketingCampaignsPage', () => {
     });
   });
 
-  it('persists store to localStorage', () => {
+  it('When action / Then persists store to localStorage', () => {
     render(<MarketingCampaignsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     expect(localStorage.getItem('crm_marketing_store_id')).toBe('store-1');

@@ -50,14 +50,14 @@ beforeEach(() => {
   });
 });
 
-describe('PipelinePage', () => {
-  it('shows loading state initially', () => {
+describe('Given PipelinePage', () => {
+  it('When action / Then shows loading state initially', () => {
     mockGetPipeline.mockReturnValue(new Promise(() => {}));
     render(<PipelinePage />);
     expect(screen.getByText('Loading pipeline...')).toBeInTheDocument();
   });
 
-  it('renders pipeline header and kanban', async () => {
+  it('When action / Then renders pipeline header and kanban', async () => {
     render(<PipelinePage />);
     await waitFor(() => {
       expect(screen.getByText('Deals Pipeline')).toBeInTheDocument();

@@ -93,15 +93,15 @@ beforeEach(() => {
   mockDeleteQuote.mockResolvedValue({});
 });
 
-describe('QuotesPage — data display', () => {
-  it('renders all 3 quotes as table rows', async () => {
+describe('Given QuotesPage — data display', () => {
+  it('When action / Then renders all 3 quotes as table rows', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.getAllByTestId('table-row').length).toBe(3);
     });
   });
 
-  it('shows quote numbers via column accessor', async () => {
+  it('When action / Then shows quote numbers via column accessor', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.getByText('Q-001')).toBeInTheDocument();
@@ -109,35 +109,35 @@ describe('QuotesPage — data display', () => {
     });
   });
 
-  it('shows draft status badge', async () => {
+  it('When action / Then shows draft status badge', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.getAllByText('Draft').length).toBeGreaterThan(0);
     });
   });
 
-  it('shows approved status badge', async () => {
+  it('When action / Then shows approved status badge', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.getAllByText('Approved').length).toBeGreaterThan(0);
     });
   });
 
-  it('shows pending approval status badge', async () => {
+  it('When action / Then shows pending approval status badge', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.getAllByText('Pending Approval').length).toBeGreaterThan(0);
     });
   });
 
-  it('clicking quote number navigates to quote detail', async () => {
+  it('When action / Then clicking quote number navigates to quote detail', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Q-001'));
     fireEvent.click(screen.getByText('Q-001'));
     expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1');
   });
 
-  it('shows "No valid until" dash for quote without valid_until', async () => {
+  it('When action / Then shows "No valid until" dash for quote without valid_until', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Q-002'));
     // valid_until is null so accessor returns '-'
@@ -146,15 +146,15 @@ describe('QuotesPage — data display', () => {
   });
 });
 
-describe('QuotesPage — search filter', () => {
-  it('renders search input', async () => {
+describe('Given QuotesPage — search filter', () => {
+  it('When action / Then renders search input', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Quotes'));
     const searchInput = screen.getByPlaceholderText(/search/i);
     expect(searchInput).toBeInTheDocument();
   });
 
-  it('filtering by title reduces visible rows', async () => {
+  it('When action / Then filtering by title reduces visible rows', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
     const searchInput = screen.getByPlaceholderText(/search/i);
@@ -164,7 +164,7 @@ describe('QuotesPage — search filter', () => {
     });
   });
 
-  it('filtering by customer name works', async () => {
+  it('When action / Then filtering by customer name works', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
     const searchInput = screen.getByPlaceholderText(/search/i);
@@ -174,7 +174,7 @@ describe('QuotesPage — search filter', () => {
     });
   });
 
-  it('empty search shows all rows', async () => {
+  it('When action / Then empty search shows all rows', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
     const searchInput = screen.getByPlaceholderText(/search/i);
@@ -189,8 +189,8 @@ describe('QuotesPage — search filter', () => {
   });
 });
 
-describe('QuotesPage — status filter', () => {
-  it('renders status filter dropdown', async () => {
+describe('Given QuotesPage — status filter', () => {
+  it('When action / Then renders status filter dropdown', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Quotes'));
     // Find the select for status
@@ -198,7 +198,7 @@ describe('QuotesPage — status filter', () => {
     expect(selects.length).toBeGreaterThan(0);
   });
 
-  it('filtering by draft status shows only draft quotes', async () => {
+  it('When action / Then filtering by draft status shows only draft quotes', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
     const statusSelect = screen.getAllByRole('combobox')[0];
@@ -209,14 +209,14 @@ describe('QuotesPage — status filter', () => {
   });
 });
 
-describe('QuotesPage — create quote modal', () => {
-  it('shows New Quote button', async () => {
+describe('Given QuotesPage — create quote modal', () => {
+  it('When action / Then shows New Quote button', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Quotes'));
     expect(screen.getByText('New Quote')).toBeInTheDocument();
   });
 
-  it('clicking New Quote opens create modal', async () => {
+  it('When action / Then clicking New Quote opens create modal', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
@@ -225,7 +225,7 @@ describe('QuotesPage — create quote modal', () => {
     });
   });
 
-  it('create modal lists available deals', async () => {
+  it('When action / Then create modal lists available deals', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
@@ -234,7 +234,7 @@ describe('QuotesPage — create quote modal', () => {
     });
   });
 
-  it('Create Quote button calls createQuote with selected dealId', async () => {
+  it('When action / Then Create Quote button calls createQuote with selected dealId', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
@@ -249,7 +249,7 @@ describe('QuotesPage — create quote modal', () => {
     });
   });
 
-  it('successful create navigates to new quote', async () => {
+  it('When action / Then successful create navigates to new quote', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
@@ -264,8 +264,8 @@ describe('QuotesPage — create quote modal', () => {
   });
 });
 
-describe('QuotesPage — delete quote', () => {
-  it('draft quotes show a delete icon button', async () => {
+describe('Given QuotesPage — delete quote', () => {
+  it('When action / Then draft quotes show a delete icon button', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
     // The delete button appears only for draft quotes (q1 is draft)
@@ -273,7 +273,7 @@ describe('QuotesPage — delete quote', () => {
     expect(deleteButtons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('clicking delete shows confirmation dialog', async () => {
+  it('When action / Then clicking delete shows confirmation dialog', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
     const deleteButtons = screen.getAllByTitle('Delete');
@@ -284,8 +284,8 @@ describe('QuotesPage — delete quote', () => {
   });
 });
 
-describe('QuotesPage — error state', () => {
-  it('shows error when getQuotes fails', async () => {
+describe('Given QuotesPage — error state', () => {
+  it('When action / Then shows error when getQuotes fails', async () => {
     mockGetQuotes.mockRejectedValue(new Error('Load failed'));
     render(<QuotesPage />);
     await waitFor(() => {

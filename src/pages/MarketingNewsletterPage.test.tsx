@@ -24,8 +24,8 @@ import MarketingNewsletterPage from './MarketingNewsletterPage';
 
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 
-describe('MarketingNewsletterPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingNewsletterPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingNewsletterPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });

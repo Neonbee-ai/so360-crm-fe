@@ -45,35 +45,35 @@ beforeEach(() => {
   mockGetCommerceKPIs.mockResolvedValue({ revenue: 0, orderCount: 0, aov: 0, repeatPurchaseRate: 0, refundRate: 0, orderChartData: { labels: [], values: [] } });
 });
 
-describe('DashboardPage', () => {
-  it('shows loading state initially', () => {
+describe('Given DashboardPage', () => {
+  it('When action / Then shows loading state initially', () => {
     mockGetDashboardStats.mockReturnValue(new Promise(() => {})); // never resolves
     render(<DashboardPage />);
     expect(screen.getByText('Loading insights...')).toBeInTheDocument();
   });
 
-  it('renders executive overview after data loads', async () => {
+  it('When action / Then renders executive overview after data loads', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText('Executive Overview')).toBeInTheDocument();
     });
   });
 
-  it('displays financial KPIs', async () => {
+  it('When action / Then displays financial KPIs', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText('65.5%')).toBeInTheDocument();
     });
   });
 
-  it('shows no active reminders message', async () => {
+  it('When action / Then shows no active reminders message', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getByText('No active reminders')).toBeInTheDocument();
     });
   });
 
-  it('renders team stats', async () => {
+  it('When action / Then renders team stats', async () => {
     render(<DashboardPage />);
     await waitFor(() => {
       expect(screen.getAllByText('Alice').length).toBeGreaterThan(0);
