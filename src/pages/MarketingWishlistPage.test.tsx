@@ -25,8 +25,8 @@ import MarketingWishlistPage from './MarketingWishlistPage';
 
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 
-describe('MarketingWishlistPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingWishlistPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingWishlistPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });

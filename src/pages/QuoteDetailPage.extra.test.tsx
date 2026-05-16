@@ -70,36 +70,36 @@ beforeEach(() => {
   mockConvertQuoteToOrder.mockResolvedValue({ order_id: 'o1' });
 });
 
-describe('QuoteDetailPage — editing workflow', () => {
-  it('shows title input when edit mode entered', async () => {
+describe('Given QuoteDetailPage — editing workflow', () => {
+  it('When action / Then shows title input when edit mode entered', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getByText('Edit'));
     expect(screen.getByDisplayValue('Test Quote')).toBeInTheDocument();
   });
 
-  it('shows valid until date input in edit mode', async () => {
+  it('When action / Then shows valid until date input in edit mode', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getByText('Edit'));
     expect(screen.getByDisplayValue('2024-12-31')).toBeInTheDocument();
   });
 
-  it('shows notes textarea in edit mode', async () => {
+  it('When action / Then shows notes textarea in edit mode', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getByText('Edit'));
     expect(screen.getByDisplayValue('Initial notes')).toBeInTheDocument();
   });
 
-  it('shows terms textarea in edit mode', async () => {
+  it('When action / Then shows terms textarea in edit mode', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getByText('Edit'));
     expect(screen.getByDisplayValue('Net 30')).toBeInTheDocument();
   });
 
-  it('save button calls updateQuote API', async () => {
+  it('When action / Then save button calls updateQuote API', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getByText('Edit'));
@@ -109,7 +109,7 @@ describe('QuoteDetailPage — editing workflow', () => {
     });
   });
 
-  it('cancel button exits edit mode without calling API', async () => {
+  it('When action / Then cancel button exits edit mode without calling API', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     // Edit button contains an icon + text — use getAllByText to get the "Edit" text node
@@ -123,7 +123,7 @@ describe('QuoteDetailPage — editing workflow', () => {
     await waitFor(() => expect(screen.getAllByText('Edit').length).toBeGreaterThan(0));
   });
 
-  it('Add Line button adds a new empty row in edit mode', async () => {
+  it('When action / Then Add Line button adds a new empty row in edit mode', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getByText('Edit'));
@@ -133,7 +133,7 @@ describe('QuoteDetailPage — editing workflow', () => {
     expect(afterCount).toBe(beforeCount + 1);
   });
 
-  it('quantity field is editable in edit mode', async () => {
+  it('When action / Then quantity field is editable in edit mode', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getAllByText('Edit')[0]);
@@ -144,8 +144,8 @@ describe('QuoteDetailPage — editing workflow', () => {
   });
 });
 
-describe('QuoteDetailPage — quote number display', () => {
-  it('shows quote number in header', async () => {
+describe('Given QuoteDetailPage — quote number display', () => {
+  it('When action / Then shows quote number in header', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Q-0001')).toBeInTheDocument();
@@ -153,8 +153,8 @@ describe('QuoteDetailPage — quote number display', () => {
   });
 });
 
-describe('QuoteDetailPage — reject modal', () => {
-  it('shows reject modal when Reject button is clicked on pending_approval', async () => {
+describe('Given QuoteDetailPage — reject modal', () => {
+  it('When action / Then shows reject modal when Reject button is clicked on pending_approval', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, status: 'pending_approval' });
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText(/reject/i));
@@ -166,7 +166,7 @@ describe('QuoteDetailPage — reject modal', () => {
     });
   });
 
-  it('cancel closes reject modal', async () => {
+  it('When action / Then cancel closes reject modal', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, status: 'pending_approval' });
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText(/reject/i));
@@ -180,8 +180,8 @@ describe('QuoteDetailPage — reject modal', () => {
   });
 });
 
-describe('QuoteDetailPage — convert modal', () => {
-  it('shows convert modal when Convert to Order clicked on approved quote', async () => {
+describe('Given QuoteDetailPage — convert modal', () => {
+  it('When action / Then shows convert modal when Convert to Order clicked on approved quote', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, status: 'approved' });
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText(/convert to order/i));
@@ -191,7 +191,7 @@ describe('QuoteDetailPage — convert modal', () => {
     });
   });
 
-  it('clicking Convert to Order in modal calls API', async () => {
+  it('When action / Then clicking Convert to Order in modal calls API', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, status: 'approved' });
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText(/convert to order/i));
@@ -206,8 +206,8 @@ describe('QuoteDetailPage — convert modal', () => {
   });
 });
 
-describe('QuoteDetailPage — approve action', () => {
-  it('clicking Approve calls approveQuote and updates status', async () => {
+describe('Given QuoteDetailPage — approve action', () => {
+  it('When action / Then clicking Approve calls approveQuote and updates status', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, status: 'pending_approval' });
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText(/approve/i));
@@ -218,8 +218,8 @@ describe('QuoteDetailPage — approve action', () => {
   });
 });
 
-describe('QuoteDetailPage — totals section', () => {
-  it('shows subtotal, discount, tax and grand total', async () => {
+describe('Given QuoteDetailPage — totals section', () => {
+  it('When action / Then shows subtotal, discount, tax and grand total', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     expect(screen.getByText('Subtotal')).toBeInTheDocument();
@@ -230,8 +230,8 @@ describe('QuoteDetailPage — totals section', () => {
   });
 });
 
-describe('QuoteDetailPage — no lines state', () => {
-  it('shows "No line items added yet" when lines are empty', async () => {
+describe('Given QuoteDetailPage — no lines state', () => {
+  it('When action / Then shows "No line items added yet" when lines are empty', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, lines: [] });
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -239,7 +239,7 @@ describe('QuoteDetailPage — no lines state', () => {
     });
   });
 
-  it('submit for approval button is disabled when there are no lines', async () => {
+  it('When action / Then submit for approval button is disabled when there are no lines', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, lines: [] });
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
@@ -249,8 +249,8 @@ describe('QuoteDetailPage — no lines state', () => {
   });
 });
 
-describe('QuoteDetailPage — rejection reason display', () => {
-  it('shows rejection reason section when quote is rejected', async () => {
+describe('Given QuoteDetailPage — rejection reason display', () => {
+  it('When action / Then shows rejection reason section when quote is rejected', async () => {
     mockGetQuoteById.mockResolvedValue({ ...draftQuote, status: 'rejected', rejection_reason: 'Price too high' });
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -259,8 +259,8 @@ describe('QuoteDetailPage — rejection reason display', () => {
   });
 });
 
-describe('QuoteDetailPage — error state', () => {
-  it('shows not found state when API throws', async () => {
+describe('Given QuoteDetailPage — error state', () => {
+  it('When action / Then shows not found state when API throws', async () => {
     mockGetQuoteById.mockRejectedValue(new Error('Network error'));
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -269,8 +269,8 @@ describe('QuoteDetailPage — error state', () => {
   });
 });
 
-describe('QuoteDetailPage — stock indicators', () => {
-  it('shows OOS badge when stock is zero', async () => {
+describe('Given QuoteDetailPage — stock indicators', () => {
+  it('When action / Then shows OOS badge when stock is zero', async () => {
     mockGetStockAvailability.mockResolvedValue({ items: [{ item_id: 'i1', available_quantity: 0 }] });
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -278,7 +278,7 @@ describe('QuoteDetailPage — stock indicators', () => {
     });
   });
 
-  it('shows low stock badge when stock less than quantity', async () => {
+  it('When action / Then shows low stock badge when stock less than quantity', async () => {
     mockGetStockAvailability.mockResolvedValue({ items: [{ item_id: 'i1', available_quantity: 1 }] });
     render(<QuoteDetailPage />);
     await waitFor(() => {
@@ -286,7 +286,7 @@ describe('QuoteDetailPage — stock indicators', () => {
     });
   });
 
-  it('shows sufficient stock badge when stock exceeds quantity', async () => {
+  it('When action / Then shows sufficient stock badge when stock exceeds quantity', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.getByText(/100 avail/)).toBeInTheDocument();

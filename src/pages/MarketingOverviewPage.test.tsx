@@ -63,18 +63,18 @@ beforeEach(() => {
   ]);
 });
 
-describe('MarketingOverviewPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingOverviewPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingOverviewPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });
 
-  it('shows select store message when no store selected', () => {
+  it('When action / Then shows select store message when no store selected', () => {
     render(<MarketingOverviewPage />);
     expect(screen.getByText(/select a store/i)).toBeInTheDocument();
   });
 
-  it('loads data when store is selected', async () => {
+  it('When action / Then loads data when store is selected', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -84,7 +84,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('displays KPI cards when data loads', async () => {
+  it('When action / Then displays KPI cards when data loads', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -94,7 +94,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('displays best selling products', async () => {
+  it('When action / Then displays best selling products', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -104,7 +104,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('displays top buyers', async () => {
+  it('When action / Then displays top buyers', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -113,7 +113,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('displays inactive customers', async () => {
+  it('When action / Then displays inactive customers', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -123,7 +123,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('displays conversion funnel data', async () => {
+  it('When action / Then displays conversion funnel data', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -135,7 +135,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('displays search logs', async () => {
+  it('When action / Then displays search logs', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -144,7 +144,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('shows navigation links to sub-pages', async () => {
+  it('When action / Then shows navigation links to sub-pages', async () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
 
@@ -156,7 +156,7 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('shows error state when API fails', async () => {
+  it('When action / Then shows error state when API fails', async () => {
     mockGetAbandonedCartStats.mockRejectedValue(new Error('API Error'));
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
@@ -166,14 +166,14 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('shows loading state', async () => {
+  it('When action / Then shows loading state', async () => {
     mockGetAbandonedCartStats.mockReturnValue(new Promise(() => {}));
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
-  it('shows empty states for no data', async () => {
+  it('When action / Then shows empty states for no data', async () => {
     mockGetBestSelling.mockResolvedValue({ data: [] });
     mockGetTopBuyers.mockResolvedValue({ data: [] });
     mockGetInactive.mockResolvedValue({ data: [] });
@@ -189,19 +189,19 @@ describe('MarketingOverviewPage', () => {
     });
   });
 
-  it('persists store to localStorage', () => {
+  it('When action / Then persists store to localStorage', () => {
     render(<MarketingOverviewPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     expect(localStorage.getItem('crm_marketing_store_id')).toBe('store-1');
   });
 
-  it('restores store from localStorage', () => {
+  it('When action / Then restores store from localStorage', () => {
     localStorage.setItem('crm_marketing_store_id', 'store-1');
     render(<MarketingOverviewPage />);
     expect(mockGetAbandonedCartStats).toHaveBeenCalledWith('store-1');
   });
 
-  it('handles search log with anonymous customer', async () => {
+  it('When action / Then handles search log with anonymous customer', async () => {
     mockGetSearches.mockResolvedValue([
       { id: 'sl2', search_query: 'boots', created_at: '2024-02-01', storefront_customers: null },
     ]);

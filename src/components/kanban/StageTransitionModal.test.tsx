@@ -8,28 +8,28 @@ vi.mock('../common/Modal', () => ({
 
 import { StageTransitionModal } from './StageTransitionModal';
 
-describe('StageTransitionModal', () => {
+describe('Given StageTransitionModal', () => {
   const deal = { id: 'd1', name: 'Test Deal', value: 5000, owner: { id: 'u1', full_name: 'Test' } } as any;
 
-  it('returns null when deal is null', () => {
+  it('When action / Then returns null when deal is null', () => {
     const { container } = render(
       <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={null} newStage="Won" />,
     );
     expect(container.innerHTML).toBe('');
   });
 
-  it('renders modal for normal stage transition', () => {
+  it('When action / Then renders modal for normal stage transition', () => {
     render(<StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Qualified" />);
     expect(screen.getByText(/move to qualified/i)).toBeInTheDocument();
     expect(screen.getByText('Test Deal')).toBeInTheDocument();
   });
 
-  it('renders special close modal for Won stage', () => {
+  it('When action / Then renders special close modal for Won stage', () => {
     render(<StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Won" />);
     expect(screen.getByText(/close deal: won/i)).toBeInTheDocument();
   });
 
-  it('calls onConfirm on form submit', () => {
+  it('When action / Then calls onConfirm on form submit', () => {
     const onConfirm = vi.fn();
     const onClose = vi.fn();
     render(<StageTransitionModal isOpen={true} onClose={onClose} onConfirm={onConfirm} deal={deal} newStage="Qualified" />);
@@ -41,7 +41,7 @@ describe('StageTransitionModal', () => {
     }
   });
 
-  it('does not render when closed', () => {
+  it('When action / Then does not render when closed', () => {
     const { container } = render(
       <StageTransitionModal isOpen={false} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Won" />,
     );

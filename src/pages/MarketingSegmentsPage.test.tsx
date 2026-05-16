@@ -73,20 +73,20 @@ beforeEach(() => {
   mockGetSegmentMembers.mockResolvedValue({ members: [] });
 });
 
-describe('MarketingSegmentsPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingSegmentsPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingSegmentsPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });
 
-  it('loads manual segments on mount', async () => {
+  it('When action / Then loads manual segments on mount', async () => {
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
       expect(mockGetCustomerSegments).toHaveBeenCalled();
     });
   });
 
-  it('loads storefront segments when store selected', async () => {
+  it('When action / Then loads storefront segments when store selected', async () => {
     render(<MarketingSegmentsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });
     await waitFor(() => {
@@ -94,14 +94,14 @@ describe('MarketingSegmentsPage', () => {
     });
   });
 
-  it('displays manual segments', async () => {
+  it('When action / Then displays manual segments', async () => {
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
       expect(screen.getByText('VIP Customers')).toBeInTheDocument();
     });
   });
 
-  it('handles load error', async () => {
+  it('When action / Then handles load error', async () => {
     mockGetMarketingSegments.mockRejectedValue(new Error('fail'));
     render(<MarketingSegmentsPage />);
     fireEvent.change(screen.getByTestId('store-picker'), { target: { value: 'store-1' } });

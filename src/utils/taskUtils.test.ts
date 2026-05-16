@@ -19,84 +19,84 @@ const makeTask = (assignedToId: string | null): Task =>
     created_at: '2026-01-01',
   }) as Task;
 
-describe('canCurrentUserBeAssigned', () => {
+describe('Given canCurrentUserBeAssigned', () => {
   const usersList: User[] = [makeUser('u-1'), makeUser('u-2'), makeUser('u-3')];
 
-  it('returns true when current user exists in users list', () => {
+  it('When action / Then returns true when current user exists in users list', () => {
     expect(canCurrentUserBeAssigned({ id: 'u-1' }, usersList)).toBe(true);
   });
 
-  it('returns false when current user is NOT in users list', () => {
+  it('When action / Then returns false when current user is NOT in users list', () => {
     expect(canCurrentUserBeAssigned({ id: 'u-99' }, usersList)).toBe(false);
   });
 
-  it('returns false when currentUser is null', () => {
+  it('When action / Then returns false when currentUser is null', () => {
     expect(canCurrentUserBeAssigned(null, usersList)).toBe(false);
   });
 
-  it('returns false when currentUser is undefined', () => {
+  it('When action / Then returns false when currentUser is undefined', () => {
     expect(canCurrentUserBeAssigned(undefined, usersList)).toBe(false);
   });
 
-  it('returns false when currentUser has no id', () => {
+  it('When action / Then returns false when currentUser has no id', () => {
     expect(canCurrentUserBeAssigned({}, usersList)).toBe(false);
   });
 
-  it('returns false when currentUser.id is empty string', () => {
+  it('When action / Then returns false when currentUser.id is empty string', () => {
     // empty string is falsy, so should return false
     expect(canCurrentUserBeAssigned({ id: '' }, usersList)).toBe(false);
   });
 
-  it('returns false when usersList is empty', () => {
+  it('When action / Then returns false when usersList is empty', () => {
     expect(canCurrentUserBeAssigned({ id: 'u-1' }, [])).toBe(false);
   });
 });
 
-describe('isTaskAssignedToUser', () => {
-  it('returns true when task is assigned to the given user', () => {
+describe('Given isTaskAssignedToUser', () => {
+  it('When action / Then returns true when task is assigned to the given user', () => {
     expect(isTaskAssignedToUser(makeTask('u-1'), 'u-1')).toBe(true);
   });
 
-  it('returns false when task is assigned to a different user', () => {
+  it('When action / Then returns false when task is assigned to a different user', () => {
     expect(isTaskAssignedToUser(makeTask('u-1'), 'u-2')).toBe(false);
   });
 
-  it('returns false when task is null', () => {
+  it('When action / Then returns false when task is null', () => {
     expect(isTaskAssignedToUser(null, 'u-1')).toBe(false);
   });
 
-  it('returns false when task is undefined', () => {
+  it('When action / Then returns false when task is undefined', () => {
     expect(isTaskAssignedToUser(undefined, 'u-1')).toBe(false);
   });
 
-  it('returns false when currentUserId is undefined', () => {
+  it('When action / Then returns false when currentUserId is undefined', () => {
     expect(isTaskAssignedToUser(makeTask('u-1'), undefined)).toBe(false);
   });
 
-  it('returns false when task has no assigned_to', () => {
+  it('When action / Then returns false when task has no assigned_to', () => {
     expect(isTaskAssignedToUser(makeTask(null), 'u-1')).toBe(false);
   });
 });
 
-describe('getCurrentUserFromList', () => {
+describe('Given getCurrentUserFromList', () => {
   const usersList: User[] = [makeUser('u-1', 'Alice'), makeUser('u-2', 'Bob')];
 
-  it('returns the matching user from the list', () => {
+  it('When action / Then returns the matching user from the list', () => {
     const result = getCurrentUserFromList('u-2', usersList);
     expect(result).toBeDefined();
     expect(result!.id).toBe('u-2');
     expect(result!.full_name).toBe('Bob');
   });
 
-  it('returns undefined when user is not in the list', () => {
+  it('When action / Then returns undefined when user is not in the list', () => {
     expect(getCurrentUserFromList('u-99', usersList)).toBeUndefined();
   });
 
-  it('returns undefined when currentUserId is undefined', () => {
+  it('When action / Then returns undefined when currentUserId is undefined', () => {
     expect(getCurrentUserFromList(undefined, usersList)).toBeUndefined();
   });
 
-  it('returns undefined when usersList is empty', () => {
+  it('When action / Then returns undefined when usersList is empty', () => {
     expect(getCurrentUserFromList('u-1', [])).toBeUndefined();
   });
 });

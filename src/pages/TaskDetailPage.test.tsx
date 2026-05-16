@@ -59,14 +59,14 @@ beforeEach(() => {
   mockDeleteTask.mockResolvedValue(undefined);
 });
 
-describe('TaskDetailPage', () => {
-  it('shows loading state', () => {
+describe('Given TaskDetailPage', () => {
+  it('When action / Then shows loading state', () => {
     mockGetTaskById.mockReturnValue(new Promise(() => {}));
     render(<TaskDetailPage />);
     expect(screen.getByText(/loading task/i)).toBeInTheDocument();
   });
 
-  it('shows task not found', async () => {
+  it('When action / Then shows task not found', async () => {
     mockGetTaskById.mockResolvedValue(undefined);
     render(<TaskDetailPage />);
     await waitFor(() => {
@@ -74,42 +74,42 @@ describe('TaskDetailPage', () => {
     });
   });
 
-  it('renders task detail', async () => {
+  it('When action / Then renders task detail', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Follow up with client')).toBeInTheDocument();
     });
   });
 
-  it('shows task description', async () => {
+  it('When action / Then shows task description', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Call them tomorrow')).toBeInTheDocument();
     });
   });
 
-  it('shows associated deal', async () => {
+  it('When action / Then shows associated deal', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Big Deal')).toBeInTheDocument();
     });
   });
 
-  it('shows task status', async () => {
+  it('When action / Then shows task status', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Open')).toBeInTheDocument();
     });
   });
 
-  it('shows task notes', async () => {
+  it('When action / Then shows task notes', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Task note')).toBeInTheDocument();
     });
   });
 
-  it('shows overdue indicator for past due tasks', async () => {
+  it('When action / Then shows overdue indicator for past due tasks', async () => {
     mockGetTaskById.mockResolvedValue({ ...taskData, due_date: '2020-01-01' });
     render(<TaskDetailPage />);
     await waitFor(() => {
@@ -117,7 +117,7 @@ describe('TaskDetailPage', () => {
     });
   });
 
-  it('shows lead link when task has lead_id but no deal_id', async () => {
+  it('When action / Then shows lead link when task has lead_id but no deal_id', async () => {
     mockGetTaskById.mockResolvedValue({ ...taskData, deal_id: null, deal_name: null, lead_id: 'l1' });
     render(<TaskDetailPage />);
     await waitFor(() => {
@@ -125,7 +125,7 @@ describe('TaskDetailPage', () => {
     });
   });
 
-  it('shows empty description message when no description', async () => {
+  it('When action / Then shows empty description message when no description', async () => {
     mockGetTaskById.mockResolvedValue({ ...taskData, description: '' });
     render(<TaskDetailPage />);
     await waitFor(() => {
@@ -133,7 +133,7 @@ describe('TaskDetailPage', () => {
     });
   });
 
-  it('handles notes not supported', async () => {
+  it('When action / Then handles notes not supported', async () => {
     mockGetTaskNotes.mockRejectedValue(new Error('Not supported'));
     render(<TaskDetailPage />);
     await waitFor(() => {
@@ -141,7 +141,7 @@ describe('TaskDetailPage', () => {
     });
   });
 
-  it('shows Done status styling', async () => {
+  it('When action / Then shows Done status styling', async () => {
     mockGetTaskById.mockResolvedValue({ ...taskData, status: 'Done' });
     render(<TaskDetailPage />);
     await waitFor(() => {
@@ -149,7 +149,7 @@ describe('TaskDetailPage', () => {
     });
   });
 
-  it('shows back to tasks link', async () => {
+  it('When action / Then shows back to tasks link', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Back to Tasks')).toBeInTheDocument();

@@ -4,15 +4,15 @@ import React from 'react';
 
 import CampaignTemplateEditor from './CampaignTemplateEditor';
 
-describe('CampaignTemplateEditor', () => {
-  it('renders the editor with block toolbar', () => {
+describe('Given CampaignTemplateEditor', () => {
+  it('When action / Then renders the editor with block toolbar', () => {
     render(<CampaignTemplateEditor value="" onChange={vi.fn()} />);
     expect(screen.getByText('Header')).toBeInTheDocument();
     expect(screen.getByText('Text')).toBeInTheDocument();
     expect(screen.getByText('Button')).toBeInTheDocument();
   });
 
-  it('adds a block when toolbar button is clicked', async () => {
+  it('When action / Then adds a block when toolbar button is clicked', async () => {
     const onChange = vi.fn();
     render(<CampaignTemplateEditor value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('Header'));
@@ -21,7 +21,7 @@ describe('CampaignTemplateEditor', () => {
     });
   });
 
-  it('adds text block and calls onChange', async () => {
+  it('When action / Then adds text block and calls onChange', async () => {
     const onChange = vi.fn();
     render(<CampaignTemplateEditor value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('Text'));
@@ -30,7 +30,7 @@ describe('CampaignTemplateEditor', () => {
     });
   });
 
-  it('adds image block', async () => {
+  it('When action / Then adds image block', async () => {
     const onChange = vi.fn();
     render(<CampaignTemplateEditor value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('Image'));
@@ -39,7 +39,7 @@ describe('CampaignTemplateEditor', () => {
     });
   });
 
-  it('adds button block', async () => {
+  it('When action / Then adds button block', async () => {
     const onChange = vi.fn();
     render(<CampaignTemplateEditor value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('Button'));
@@ -48,7 +48,7 @@ describe('CampaignTemplateEditor', () => {
     });
   });
 
-  it('adds divider block', async () => {
+  it('When action / Then adds divider block', async () => {
     const onChange = vi.fn();
     render(<CampaignTemplateEditor value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('Divider'));
@@ -57,7 +57,7 @@ describe('CampaignTemplateEditor', () => {
     });
   });
 
-  it('adds spacer block', async () => {
+  it('When action / Then adds spacer block', async () => {
     const onChange = vi.fn();
     render(<CampaignTemplateEditor value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('Spacer'));
@@ -66,7 +66,7 @@ describe('CampaignTemplateEditor', () => {
     });
   });
 
-  it('adds columns block', async () => {
+  it('When action / Then adds columns block', async () => {
     const onChange = vi.fn();
     render(<CampaignTemplateEditor value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('2 Columns'));
@@ -75,7 +75,7 @@ describe('CampaignTemplateEditor', () => {
     });
   });
 
-  it('renders with initial value', () => {
+  it('When action / Then renders with initial value', () => {
     render(<CampaignTemplateEditor value="<h2>Hello</h2>" onChange={vi.fn()} />);
     expect(screen.getByText('Header')).toBeInTheDocument();
   });
