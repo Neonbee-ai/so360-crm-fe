@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useShell } from '@so360/shell-context';
+import { useShell, useActivity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     ChevronLeft, Mail, Phone, Building2,
@@ -36,6 +36,7 @@ const LeadDetailPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { toasts, showSuccess, showError, dismissToast } = useToast();
+    const { recordActivity } = useActivity();
     const { isModuleEnabled } = useShell();
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
@@ -261,9 +262,11 @@ const LeadDetailPage = () => {
 
     const handleDeleteLead = async () => {
         setIsDeleting(true);
+        const leadName = lead?.contact_name || id;
         try {
             await crmService.deleteLead(id);
             showSuccess('Lead deleted successfully');
+            recordActivity({ eventType: 'lead.deleted', eventCategory: 'crm', description: `Deleted lead "${leadName}"`, resourceType: 'lead', resourceId: id }).catch(() => {});
             navigate(isCustomerDetailRoute ? '/crm/customers' : '/crm/leads');
         } catch (error: any) {
             showError(error.message || 'Failed to delete lead');
@@ -387,6 +390,7 @@ const LeadDetailPage = () => {
                                                     notes: 'Lead profile information updated',
                                                     date: new Date().toISOString()
                                                 });
+                                                recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${lead.contact_name}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
                                                 fetchLeadData();
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);

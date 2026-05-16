@@ -4,7 +4,7 @@ import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, C
 import { crmService } from '../services/crmService';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
-import { useBusinessSettings } from '@so360/shell-context';
+import { useBusinessSettings, useActivity } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 
 const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
@@ -18,6 +18,7 @@ const statusColors: Record<QuoteStatus, { bg: string; text: string; label: strin
 
 const QuotesPage = () => {
     const navigate = useNavigate();
+    const { recordActivity } = useActivity();
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -76,6 +77,7 @@ const QuotesPage = () => {
                 title: 'New Quote',
                 lines: []
             });
+            recordActivity({ eventType: 'quote.created', eventCategory: 'crm', description: `Created quote for deal`, resourceType: 'quote', resourceId: newQuote.id }).catch(() => {});
             navigate(`/crm/quotes/${newQuote.id}`);
         } catch (err: any) {
             setError(err.message || 'Failed to create quote');

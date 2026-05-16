@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { formatDateTime } from './marketing/marketingMappers';
+import { useActivity } from '@so360/shell-context';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -9,6 +10,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { campaignId } = useParams<{ campaignId: string }>();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
+  const { recordActivity } = useActivity();
   const [campaign, setCampaign] = useState<any>(null);
   const [recipients, setRecipients] = useState<any[]>([]);
   const [testEmail, setTestEmail] = useState('');
@@ -101,6 +103,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   onClick={async () => {
                     if (!scheduleAt) return;
                     await crmService.scheduleCampaign(storeId, campaignId!, new Date(scheduleAt).toISOString());
+                    recordActivity({ eventType: 'campaign.activated', eventCategory: 'crm', description: `Scheduled campaign "${campaign?.name || campaignId}"`, resourceType: 'campaign', resourceId: campaignId! }).catch(() => {});
                     await load();
                   }}
                 >
