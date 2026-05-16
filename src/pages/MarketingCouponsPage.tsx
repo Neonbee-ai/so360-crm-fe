@@ -3,13 +3,14 @@ import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Pe
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
-import { useBusinessSettings } from '@so360/shell-context';
+import { useBusinessSettings, useActivity } from '@so360/shell-context';
 import { formatMoney } from './marketing/marketingMappers';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCouponsPage: React.FC = () => {
   const { settings } = useBusinessSettings();
+  const { recordActivity } = useActivity();
   const currencyCode = settings?.base_currency || 'INR';
   const locale = settings?.document_language || 'en-IN';
 
@@ -98,8 +99,9 @@ const MarketingCouponsPage: React.FC = () => {
         await crmService.updateCoupon(storeId, editingId, form);
         showSuccess(`Coupon "${form.code}" updated`);
       } else {
-        await crmService.createCoupon(storeId, form);
+        const newCoupon = await crmService.createCoupon(storeId, form);
         showSuccess(`Coupon "${form.code}" created`);
+        recordActivity({ eventType: 'coupon.created', eventCategory: 'crm', description: `Created coupon "${form.code}"`, resourceType: 'coupon', resourceId: newCoupon?.id || form.code }).catch(() => {});
       }
       setShowForm(false);
       resetForm();
@@ -116,6 +118,7 @@ const MarketingCouponsPage: React.FC = () => {
     try {
       await crmService.deleteCoupon(storeId, coupon.id);
       showSuccess(`Coupon "${coupon.code}" deleted`);
+      recordActivity({ eventType: 'coupon.deactivated', eventCategory: 'crm', description: `Deleted coupon "${coupon.code}"`, resourceType: 'coupon', resourceId: coupon.id }).catch(() => {});
       load();
     } catch (e: any) {
       showError(e.message || 'Failed to delete coupon');

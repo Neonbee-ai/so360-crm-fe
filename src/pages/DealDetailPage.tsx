@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useActivity } from '@so360/shell-context';
 import {
     ChevronLeft, Calendar, DollarSign, Clock, MessageSquare,
     AtSign, Phone, FileText, Plus, CheckCircle2, User as UserIcon, Users,
@@ -19,6 +20,7 @@ const DealDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { toasts, showSuccess, showError, dismissToast } = useToast();
+    const { recordActivity } = useActivity();
 
     const [deal, setDeal] = useState<Deal | null>(null);
     const [associatedLead, setAssociatedLead] = useState<any>(null);
@@ -245,6 +247,7 @@ const DealDetailPage = () => {
                 notes: `Deal updated: ${Object.keys(updates).join(', ')}`,
                 date: new Date().toISOString()
             });
+            recordActivity({ eventType: 'deal.updated', eventCategory: 'crm', description: `Updated deal "${deal.name}"`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
             fetchData();
         } catch (error) {
             showError('Failed to update deal');
@@ -426,9 +429,11 @@ const DealDetailPage = () => {
 
     const handleDeleteDeal = async () => {
         setIsDeleting(true);
+        const dealName = deal?.name || id;
         try {
             await crmService.deleteDeal(id);
             showSuccess('Deal deleted successfully');
+            recordActivity({ eventType: 'deal.deleted', eventCategory: 'crm', description: `Deleted deal "${dealName}"`, resourceType: 'deal', resourceId: id }).catch(() => {});
             navigate('/crm/pipeline');
         } catch (error: any) {
             showError(error.message || 'Failed to delete deal');
