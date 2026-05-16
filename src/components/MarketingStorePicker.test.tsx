@@ -20,21 +20,21 @@ beforeEach(() => {
   ]);
 });
 
-describe('MarketingStorePicker', () => {
-  it('shows loading state', () => {
+describe('Given MarketingStorePicker', () => {
+  it('When action / Then shows loading state', () => {
     mockGetDailystoreStores.mockReturnValue(new Promise(() => {}));
     render(<MarketingStorePicker storeId="" onChange={vi.fn()} />);
     expect(screen.getByText('Loading stores...')).toBeInTheDocument();
   });
 
-  it('renders stores after loading', async () => {
+  it('When action / Then renders stores after loading', async () => {
     render(<MarketingStorePicker storeId="" onChange={vi.fn()} />);
     await waitFor(() => {
       expect(screen.getByText(/Store 1/)).toBeInTheDocument();
     });
   });
 
-  it('calls onChange when selection changes', async () => {
+  it('When action / Then calls onChange when selection changes', async () => {
     const onChange = vi.fn();
     render(<MarketingStorePicker storeId="s1" onChange={onChange} />);
     await waitFor(() => {
@@ -44,7 +44,7 @@ describe('MarketingStorePicker', () => {
     expect(onChange).toHaveBeenCalledWith('s2');
   });
 
-  it('auto-selects first store when storeId is empty', async () => {
+  it('When action / Then auto-selects first store when storeId is empty', async () => {
     const onChange = vi.fn();
     render(<MarketingStorePicker storeId="" onChange={onChange} />);
     await waitFor(() => {
@@ -52,7 +52,7 @@ describe('MarketingStorePicker', () => {
     });
   });
 
-  it('shows error when fetch fails', async () => {
+  it('When action / Then shows error when fetch fails', async () => {
     mockGetDailystoreStores.mockRejectedValue(new Error('Network error'));
     render(<MarketingStorePicker storeId="" onChange={vi.fn()} />);
     await waitFor(() => {
@@ -60,7 +60,7 @@ describe('MarketingStorePicker', () => {
     });
   });
 
-  it('shows no stores message', async () => {
+  it('When action / Then shows no stores message', async () => {
     mockGetDailystoreStores.mockResolvedValue([]);
     render(<MarketingStorePicker storeId="" onChange={vi.fn()} />);
     await waitFor(() => {

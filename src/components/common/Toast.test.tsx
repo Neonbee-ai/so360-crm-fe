@@ -5,7 +5,7 @@ import Toast, { ToastContainer, useToast } from './Toast';
 import type { ToastMessage } from './Toast';
 
 // Mock lucide-react
-describe('Toast component', () => {
+describe('Given Toast component', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -26,19 +26,19 @@ describe('Toast component', () => {
     message: 'Something went wrong',
   };
 
-  it('renders success toast with message', () => {
+  it('When action / Then renders success toast with message', () => {
     render(<Toast toast={successToast} onDismiss={vi.fn()} />);
     expect(screen.getByText('Operation successful')).toBeInTheDocument();
     expect(screen.getByTestId('icon-CheckCircle')).toBeInTheDocument();
   });
 
-  it('renders error toast with message', () => {
+  it('When action / Then renders error toast with message', () => {
     render(<Toast toast={errorToast} onDismiss={vi.fn()} />);
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     expect(screen.getByTestId('icon-AlertCircle')).toBeInTheDocument();
   });
 
-  it('calls onDismiss after default duration (3000ms)', () => {
+  it('When action / Then calls onDismiss after default duration (3000ms)', () => {
     const onDismiss = vi.fn();
     render(<Toast toast={successToast} onDismiss={onDismiss} />);
 
@@ -49,7 +49,7 @@ describe('Toast component', () => {
     expect(onDismiss).toHaveBeenCalledWith('toast-1');
   });
 
-  it('calls onDismiss after custom duration', () => {
+  it('When action / Then calls onDismiss after custom duration', () => {
     const onDismiss = vi.fn();
     render(<Toast toast={successToast} onDismiss={onDismiss} duration={5000} />);
 
@@ -64,7 +64,7 @@ describe('Toast component', () => {
     expect(onDismiss).toHaveBeenCalledWith('toast-1');
   });
 
-  it('calls onDismiss when close button is clicked', () => {
+  it('When action / Then calls onDismiss when close button is clicked', () => {
     const onDismiss = vi.fn();
     render(<Toast toast={errorToast} onDismiss={onDismiss} />);
 
@@ -73,19 +73,19 @@ describe('Toast component', () => {
     expect(onDismiss).toHaveBeenCalledWith('toast-2');
   });
 
-  it('applies success styling for success type', () => {
+  it('When action / Then applies success styling for success type', () => {
     const { container } = render(<Toast toast={successToast} onDismiss={vi.fn()} />);
     const toastEl = container.querySelector('.border');
     expect(toastEl?.className).toContain('emerald');
   });
 
-  it('applies error styling for error type', () => {
+  it('When action / Then applies error styling for error type', () => {
     const { container } = render(<Toast toast={errorToast} onDismiss={vi.fn()} />);
     const toastEl = container.querySelector('.border');
     expect(toastEl?.className).toContain('rose');
   });
 
-  it('cleans up timer on unmount', () => {
+  it('When action / Then cleans up timer on unmount', () => {
     const onDismiss = vi.fn();
     const { unmount } = render(<Toast toast={successToast} onDismiss={onDismiss} />);
     unmount();
@@ -97,15 +97,15 @@ describe('Toast component', () => {
   });
 });
 
-describe('ToastContainer', () => {
-  it('renders nothing when toasts array is empty', () => {
+describe('Given ToastContainer', () => {
+  it('When action / Then renders nothing when toasts array is empty', () => {
     const { container } = render(
       <ToastContainer toasts={[]} onDismiss={vi.fn()} />
     );
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders multiple toasts', () => {
+  it('When action / Then renders multiple toasts', () => {
     const toasts: ToastMessage[] = [
       { id: 't-1', type: 'success', message: 'Saved' },
       { id: 't-2', type: 'error', message: 'Failed' },
@@ -116,7 +116,7 @@ describe('ToastContainer', () => {
     expect(screen.getByText('Failed')).toBeInTheDocument();
   });
 
-  it('passes onDismiss to each toast', () => {
+  it('When action / Then passes onDismiss to each toast', () => {
     const onDismiss = vi.fn();
     const toasts: ToastMessage[] = [
       { id: 't-1', type: 'success', message: 'Test' },
@@ -129,13 +129,13 @@ describe('ToastContainer', () => {
   });
 });
 
-describe('useToast hook', () => {
-  it('starts with empty toasts array', () => {
+describe('Given useToast hook', () => {
+  it('When action / Then starts with empty toasts array', () => {
     const { result } = renderHook(() => useToast());
     expect(result.current.toasts).toEqual([]);
   });
 
-  it('showSuccess adds a success toast', () => {
+  it('When action / Then showSuccess adds a success toast', () => {
     const { result } = renderHook(() => useToast());
     act(() => {
       result.current.showSuccess('It worked!');
@@ -145,7 +145,7 @@ describe('useToast hook', () => {
     expect(result.current.toasts[0].message).toBe('It worked!');
   });
 
-  it('showError adds an error toast', () => {
+  it('When action / Then showError adds an error toast', () => {
     const { result } = renderHook(() => useToast());
     act(() => {
       result.current.showError('Oops!');
@@ -155,7 +155,7 @@ describe('useToast hook', () => {
     expect(result.current.toasts[0].message).toBe('Oops!');
   });
 
-  it('showToast adds toast with specified type', () => {
+  it('When action / Then showToast adds toast with specified type', () => {
     const { result } = renderHook(() => useToast());
     act(() => {
       result.current.showToast('error', 'Custom error');
@@ -164,7 +164,7 @@ describe('useToast hook', () => {
     expect(result.current.toasts[0].type).toBe('error');
   });
 
-  it('dismissToast removes the toast by id', () => {
+  it('When action / Then dismissToast removes the toast by id', () => {
     const { result } = renderHook(() => useToast());
     act(() => {
       result.current.showSuccess('First');
@@ -180,7 +180,7 @@ describe('useToast hook', () => {
     expect(result.current.toasts[0].message).toBe('Second');
   });
 
-  it('each toast gets a unique id', () => {
+  it('When action / Then each toast gets a unique id', () => {
     const { result } = renderHook(() => useToast());
     act(() => {
       result.current.showSuccess('A');
@@ -192,7 +192,7 @@ describe('useToast hook', () => {
     expect(uniqueIds.size).toBe(3);
   });
 
-  it('dismissing non-existent id does not affect toasts', () => {
+  it('When action / Then dismissing non-existent id does not affect toasts', () => {
     const { result } = renderHook(() => useToast());
     act(() => {
       result.current.showSuccess('Only one');

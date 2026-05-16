@@ -25,8 +25,8 @@ import MarketingReviewsPage from './MarketingReviewsPage';
 
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 
-describe('MarketingReviewsPage', () => {
-  it('renders store picker', () => {
+describe('Given MarketingReviewsPage', () => {
+  it('When action / Then renders store picker', () => {
     render(<MarketingReviewsPage />);
     expect(screen.getByTestId('store-picker')).toBeInTheDocument();
   });

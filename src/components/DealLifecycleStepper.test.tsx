@@ -4,31 +4,31 @@ import React from 'react';
 
 import { DealLifecycleStepper } from './DealLifecycleStepper';
 
-describe('DealLifecycleStepper', () => {
-  it('renders forward states for new deal', () => {
+describe('Given DealLifecycleStepper', () => {
+  it('When action / Then renders forward states for new deal', () => {
     render(<DealLifecycleStepper currentState="new" />);
     expect(screen.getByText('New')).toBeInTheDocument();
     expect(screen.getByText('Qualified')).toBeInTheDocument();
     expect(screen.getByText('Won')).toBeInTheDocument();
   });
 
-  it('shows Deal Lost banner for lost state', () => {
+  it('When action / Then shows Deal Lost banner for lost state', () => {
     render(<DealLifecycleStepper currentState="lost" />);
     expect(screen.getByText('Deal Lost')).toBeInTheDocument();
   });
 
-  it('highlights completed states', () => {
+  it('When action / Then highlights completed states', () => {
     render(<DealLifecycleStepper currentState="negotiation" />);
     expect(screen.getByText('New')).toBeInTheDocument();
     expect(screen.getByText('Negotiation')).toBeInTheDocument();
   });
 
-  it('handles won state', () => {
+  it('When action / Then handles won state', () => {
     render(<DealLifecycleStepper currentState="won" />);
     expect(screen.getByText('Won')).toBeInTheDocument();
   });
 
-  it('defaults to new on empty state', () => {
+  it('When action / Then defaults to new on empty state', () => {
     render(<DealLifecycleStepper currentState="" />);
     expect(screen.getByText('New')).toBeInTheDocument();
   });

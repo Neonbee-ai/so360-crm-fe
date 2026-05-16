@@ -42,22 +42,22 @@ beforeEach(() => {
   mockGetDeals.mockResolvedValue([]);
 });
 
-describe('QuotesPage', () => {
-  it('renders quotes header', async () => {
+describe('Given QuotesPage', () => {
+  it('When action / Then renders quotes header', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.getByText('Quotes')).toBeInTheDocument();
     });
   });
 
-  it('shows empty state', async () => {
+  it('When action / Then shows empty state', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.getByText('No quotes found')).toBeInTheDocument();
     });
   });
 
-  it('shows quotes when loaded', async () => {
+  it('When action / Then shows quotes when loaded', async () => {
     mockGetQuotes.mockResolvedValue([
       { id: 'q1', title: 'Quote 1', status: 'draft', total: 1000, created_at: '2024-01-01', deal: { name: 'D1' } },
     ]);

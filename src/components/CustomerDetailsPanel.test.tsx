@@ -14,7 +14,7 @@ import { crmService } from '../services/crmService';
 
 beforeEach(() => { vi.clearAllMocks(); });
 
-describe('CustomerDetailsPanel', () => {
+describe('Given CustomerDetailsPanel', () => {
   const defaultProps = {
     lead: {
       id: 'lead-1',
@@ -29,22 +29,22 @@ describe('CustomerDetailsPanel', () => {
     showToast: vi.fn(),
   };
 
-  it('renders B2B panel with category', () => {
+  it('When action / Then renders B2B panel with category', () => {
     render(<CustomerDetailsPanel {...defaultProps} />);
     expect(screen.getByText('B2B')).toBeInTheDocument();
   });
 
-  it('renders acquisition source label', () => {
+  it('When action / Then renders acquisition source label', () => {
     render(<CustomerDetailsPanel {...defaultProps} />);
     expect(screen.getByText('Storefront Registration')).toBeInTheDocument();
   });
 
-  it('renders B2C category when not b2b', () => {
+  it('When action / Then renders B2C category when not b2b', () => {
     render(<CustomerDetailsPanel {...defaultProps} lead={{ ...defaultProps.lead, customer_category: 'b2c' }} />);
     expect(screen.getByText('B2C')).toBeInTheDocument();
   });
 
-  it('validates tax ID on button click', async () => {
+  it('When action / Then validates tax ID on button click', async () => {
     render(<CustomerDetailsPanel {...defaultProps} />);
     const input = screen.getByPlaceholderText(/29ABCDE/i);
     fireEvent.change(input, { target: { value: 'TAX123' } });
@@ -55,7 +55,7 @@ describe('CustomerDetailsPanel', () => {
     });
   });
 
-  it('handles tax validation error', async () => {
+  it('When action / Then handles tax validation error', async () => {
     vi.mocked(crmService.validateCustomerTaxId).mockRejectedValueOnce(new Error('Invalid tax ID'));
     render(<CustomerDetailsPanel {...defaultProps} />);
     const input = screen.getByPlaceholderText(/29ABCDE/i);
@@ -67,7 +67,7 @@ describe('CustomerDetailsPanel', () => {
     });
   });
 
-  it('saves credit limit', async () => {
+  it('When action / Then saves credit limit', async () => {
     render(<CustomerDetailsPanel {...defaultProps} />);
     const inputs = screen.getAllByRole('spinbutton');
     const creditInput = inputs.find(i => (i as HTMLInputElement).value === '0') || inputs[0];

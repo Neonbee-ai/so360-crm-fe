@@ -19,8 +19,8 @@ const testColumns = [
   { header: 'Value', accessor: 'value' as const },
 ];
 
-describe('Table', () => {
-  it('renders table with data', () => {
+describe('Given Table', () => {
+  it('When action / Then renders table with data', () => {
     render(<Table data={testData} columns={testColumns} />);
 
     expect(screen.getByText('Name')).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe('Table', () => {
     expect(screen.getByText('100')).toBeInTheDocument();
   });
 
-  it('renders loading skeleton when isLoading is true', () => {
+  it('When action / Then renders loading skeleton when isLoading is true', () => {
     const { container } = render(
       <Table data={[]} columns={testColumns} isLoading={true} />
     );
@@ -40,19 +40,19 @@ describe('Table', () => {
     expect(screen.queryByText('Name')).not.toBeInTheDocument();
   });
 
-  it('renders empty message when data is empty', () => {
+  it('When action / Then renders empty message when data is empty', () => {
     render(<Table data={[]} columns={testColumns} />);
     expect(screen.getByText('No records found')).toBeInTheDocument();
   });
 
-  it('renders custom empty message', () => {
+  it('When action / Then renders custom empty message', () => {
     render(
       <Table data={[]} columns={testColumns} emptyMessage="Nothing here" />
     );
     expect(screen.getByText('Nothing here')).toBeInTheDocument();
   });
 
-  it('calls onRowClick when a row is clicked', () => {
+  it('When action / Then calls onRowClick when a row is clicked', () => {
     const onRowClick = vi.fn();
     render(
       <Table data={testData} columns={testColumns} onRowClick={onRowClick} />
@@ -63,12 +63,12 @@ describe('Table', () => {
     expect(onRowClick).toHaveBeenCalledWith(testData[0]);
   });
 
-  it('does not throw when row is clicked without onRowClick', () => {
+  it('When action / Then does not throw when row is clicked without onRowClick', () => {
     render(<Table data={testData} columns={testColumns} />);
     expect(() => fireEvent.click(screen.getByText('Alice'))).not.toThrow();
   });
 
-  it('supports function accessor for custom rendering', () => {
+  it('When action / Then supports function accessor for custom rendering', () => {
     const columns = [
       { header: 'Name', accessor: 'name' as const },
       {
@@ -82,7 +82,7 @@ describe('Table', () => {
     expect(screen.getByTestId('formatted-2')).toHaveTextContent('$200');
   });
 
-  it('renders correct number of rows', () => {
+  it('When action / Then renders correct number of rows', () => {
     const { container } = render(
       <Table data={testData} columns={testColumns} />
     );
@@ -90,7 +90,7 @@ describe('Table', () => {
     expect(rows).toHaveLength(3);
   });
 
-  it('renders correct number of columns', () => {
+  it('When action / Then renders correct number of columns', () => {
     const { container } = render(
       <Table data={testData} columns={testColumns} />
     );
@@ -98,7 +98,7 @@ describe('Table', () => {
     expect(headerCells).toHaveLength(2);
   });
 
-  it('applies cursor-pointer class when onRowClick is provided', () => {
+  it('When action / Then applies cursor-pointer class when onRowClick is provided', () => {
     const { container } = render(
       <Table data={testData} columns={testColumns} onRowClick={vi.fn()} />
     );
@@ -106,7 +106,7 @@ describe('Table', () => {
     expect(row?.className).toContain('cursor-pointer');
   });
 
-  it('does not apply cursor-pointer when onRowClick is absent', () => {
+  it('When action / Then does not apply cursor-pointer when onRowClick is absent', () => {
     const { container } = render(
       <Table data={testData} columns={testColumns} />
     );
@@ -114,7 +114,7 @@ describe('Table', () => {
     expect(row?.className).not.toContain('cursor-pointer');
   });
 
-  it('supports ReactNode as column header', () => {
+  it('When action / Then supports ReactNode as column header', () => {
     const columns = [
       { header: <span data-testid="custom-header">Custom</span>, accessor: 'name' as const },
     ];

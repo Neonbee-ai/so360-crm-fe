@@ -64,9 +64,9 @@ afterEach(() => {
 // ============================================================================
 // LEADS API
 // ============================================================================
-describe('leadsApi', () => {
-  describe('getAll', () => {
-    it('fetches leads and maps status from backend format', async () => {
+describe('Given leadsApi', () => {
+  describe('Given getAll', () => {
+    it('When action / Then fetches leads and maps status from backend format', async () => {
       const apiLeads = [
         {
           id: 'lead-1',
@@ -90,7 +90,7 @@ describe('leadsApi', () => {
       expect(leads[0].contact_email).toBe('john@acme.com');
     });
 
-    it('maps QUALIFIED status correctly', async () => {
+    it('When action / Then maps QUALIFIED status correctly', async () => {
       mockFetchSuccess([
         { id: 'lead-2', status: 'QUALIFIED', notes: [], documents: [], deals: [], tasks: [], activities: [] },
       ]);
@@ -98,7 +98,7 @@ describe('leadsApi', () => {
       expect(leads[0].status).toBe('Qualified');
     });
 
-    it('maps CLOSED_WON status to Won', async () => {
+    it('When action / Then maps CLOSED_WON status to Won', async () => {
       mockFetchSuccess([
         { id: 'lead-3', status: 'CLOSED_WON', notes: [], documents: [], deals: [], tasks: [], activities: [] },
       ]);
@@ -106,7 +106,7 @@ describe('leadsApi', () => {
       expect(leads[0].status).toBe('Won');
     });
 
-    it('preserves unknown status as-is', async () => {
+    it('When action / Then preserves unknown status as-is', async () => {
       mockFetchSuccess([
         { id: 'lead-4', status: 'CUSTOM_STATUS', notes: [], documents: [], deals: [], tasks: [], activities: [] },
       ]);
@@ -114,7 +114,7 @@ describe('leadsApi', () => {
       expect(leads[0].status).toBe('CUSTOM_STATUS');
     });
 
-    it('passes query parameters to the request', async () => {
+    it('When action / Then passes query parameters to the request', async () => {
       mockFetchSuccess([]);
       await leadsApi.getAll({ skip: 0, take: 10, q: 'test' });
 
@@ -124,7 +124,7 @@ describe('leadsApi', () => {
       expect(calledUrl).toContain('q=test');
     });
 
-    it('maps FE status param to BE status in request', async () => {
+    it('When action / Then maps FE status param to BE status in request', async () => {
       mockFetchSuccess([]);
       await leadsApi.getAll({ status: 'Open' });
 
@@ -133,8 +133,8 @@ describe('leadsApi', () => {
     });
   });
 
-  describe('create', () => {
-    it('creates a lead and returns mapped result', async () => {
+  describe('Given create', () => {
+    it('When action / Then creates a lead and returns mapped result', async () => {
       const apiLead = {
         id: 'lead-new',
         company_name: 'NewCo',
@@ -157,8 +157,8 @@ describe('leadsApi', () => {
     });
   });
 
-  describe('getById', () => {
-    it('fetches a single lead by ID', async () => {
+  describe('Given getById', () => {
+    it('When action / Then fetches a single lead by ID', async () => {
       mockFetchSuccess({
         id: 'lead-1',
         status: 'NEGOTIATION',
@@ -175,8 +175,8 @@ describe('leadsApi', () => {
     });
   });
 
-  describe('delete', () => {
-    it('sends DELETE request', async () => {
+  describe('Given delete', () => {
+    it('When action / Then sends DELETE request', async () => {
       mockFetchSuccess({});
       await leadsApi.delete('lead-1');
 
@@ -190,9 +190,9 @@ describe('leadsApi', () => {
 // ============================================================================
 // DEALS API
 // ============================================================================
-describe('dealsApi', () => {
-  describe('getAll', () => {
-    it('fetches deals and maps values', async () => {
+describe('Given dealsApi', () => {
+  describe('Given getAll', () => {
+    it('When action / Then fetches deals and maps values', async () => {
       mockFetchSuccess([
         {
           id: 'deal-1',
@@ -212,7 +212,7 @@ describe('dealsApi', () => {
       expect(deals[0].stage).toBe('Qualified'); // QUALIFIED -> Qualified
     });
 
-    it('handles deal with invalid value', async () => {
+    it('When action / Then handles deal with invalid value', async () => {
       mockFetchSuccess([
         { id: 'deal-2', value: 'not-a-number', notes: [], documents: [], activities: [] },
       ]);
@@ -221,8 +221,8 @@ describe('dealsApi', () => {
     });
   });
 
-  describe('getPipeline', () => {
-    it('handles array format response', async () => {
+  describe('Given getPipeline', () => {
+    it('When action / Then handles array format response', async () => {
       const stages = [
         { id: 's-1', name: 'Lead', deals: [{ id: 'd-1', value: '100', notes: [], documents: [], activities: [] }] },
         { id: 's-2', name: 'Won', deals: [] },
@@ -234,7 +234,7 @@ describe('dealsApi', () => {
       expect(pipeline.stages[0].deals[0].value).toBe(100);
     });
 
-    it('handles object format response with stages property', async () => {
+    it('When action / Then handles object format response with stages property', async () => {
       const data = {
         stages: [
           { id: 's-1', name: 'Lead', deals: [] },
@@ -247,8 +247,8 @@ describe('dealsApi', () => {
     });
   });
 
-  describe('create', () => {
-    it('creates a deal', async () => {
+  describe('Given create', () => {
+    it('When action / Then creates a deal', async () => {
       mockFetchSuccess({
         id: 'deal-new',
         name: 'New Deal',
@@ -266,8 +266,8 @@ describe('dealsApi', () => {
     });
   });
 
-  describe('delete', () => {
-    it('sends DELETE request', async () => {
+  describe('Given delete', () => {
+    it('When action / Then sends DELETE request', async () => {
       mockFetchSuccess({});
       await dealsApi.delete('deal-1');
 
@@ -281,9 +281,9 @@ describe('dealsApi', () => {
 // ============================================================================
 // TASKS API
 // ============================================================================
-describe('tasksApi', () => {
-  describe('getAll', () => {
-    it('fetches tasks and capitalizes status', async () => {
+describe('Given tasksApi', () => {
+  describe('Given getAll', () => {
+    it('When action / Then fetches tasks and capitalizes status', async () => {
       mockFetchSuccess([
         { id: 'task-1', title: 'Follow up', status: 'open', assignee_id: 'u-1' },
         { id: 'task-2', title: 'Call client', status: 'done', assignee_id: 'u-2' },
@@ -295,21 +295,21 @@ describe('tasksApi', () => {
       expect(tasks[1].status).toBe('Done');
     });
 
-    it('defaults status to Open when missing', async () => {
+    it('When action / Then defaults status to Open when missing', async () => {
       mockFetchSuccess([{ id: 'task-3', title: 'No status' }]);
       const tasks = await tasksApi.getAll();
       expect(tasks[0].status).toBe('Open');
     });
 
-    it('handles empty status string', async () => {
+    it('When action / Then handles empty status string', async () => {
       mockFetchSuccess([{ id: 'task-4', title: 'Empty status', status: '' }]);
       const tasks = await tasksApi.getAll();
       expect(tasks[0].status).toBe('Open');
     });
   });
 
-  describe('create', () => {
-    it('creates a task and maps result', async () => {
+  describe('Given create', () => {
+    it('When action / Then creates a task and maps result', async () => {
       mockFetchSuccess({ id: 'task-new', title: 'New', status: 'open' });
       const task = await tasksApi.create({ title: 'New' });
       expect(task.id).toBe('task-new');
@@ -317,8 +317,8 @@ describe('tasksApi', () => {
     });
   });
 
-  describe('update', () => {
-    it('updates a task', async () => {
+  describe('Given update', () => {
+    it('When action / Then updates a task', async () => {
       mockFetchSuccess({ id: 'task-1', title: 'Updated', status: 'done' });
       const task = await tasksApi.update('task-1', { title: 'Updated' });
       expect(task.title).toBe('Updated');
@@ -329,8 +329,8 @@ describe('tasksApi', () => {
     });
   });
 
-  describe('bulkUpdate', () => {
-    it('sends bulk update request', async () => {
+  describe('Given bulkUpdate', () => {
+    it('When action / Then sends bulk update request', async () => {
       mockFetchSuccess({ updated: 3 });
       const result = await tasksApi.bulkUpdate({
         ids: ['t-1', 't-2', 't-3'],
@@ -344,9 +344,9 @@ describe('tasksApi', () => {
 // ============================================================================
 // NOTES API
 // ============================================================================
-describe('notesApi', () => {
-  describe('getAllByLead', () => {
-    it('fetches notes for a lead and resolves author', async () => {
+describe('Given notesApi', () => {
+  describe('Given getAllByLead', () => {
+    it('When action / Then fetches notes for a lead and resolves author', async () => {
       mockFetchSuccess([
         { id: 'note-1', content: 'Test note', author_id: 'u-1' },
       ]);
@@ -359,8 +359,8 @@ describe('notesApi', () => {
     });
   });
 
-  describe('getAllByDeal', () => {
-    it('fetches notes for a deal', async () => {
+  describe('Given getAllByDeal', () => {
+    it('When action / Then fetches notes for a deal', async () => {
       mockFetchSuccess([
         { id: 'note-2', content: 'Deal note', author: { id: 'u-1', full_name: 'Alice' } },
       ]);
@@ -371,16 +371,16 @@ describe('notesApi', () => {
     });
   });
 
-  describe('create', () => {
-    it('creates a note', async () => {
+  describe('Given create', () => {
+    it('When action / Then creates a note', async () => {
       mockFetchSuccess({ id: 'note-new', content: 'New note', author_id: 'u-1' });
       const note = await notesApi.create({ content: 'New note', lead_id: 'lead-1' });
       expect(note.id).toBe('note-new');
     });
   });
 
-  describe('delete', () => {
-    it('sends DELETE request', async () => {
+  describe('Given delete', () => {
+    it('When action / Then sends DELETE request', async () => {
       mockFetchSuccess(undefined);
       // The delete will try to parse text as JSON and may throw,
       // but let's test with proper empty response
@@ -411,9 +411,9 @@ describe('notesApi', () => {
 // ============================================================================
 // DOCUMENTS API
 // ============================================================================
-describe('documentsApi', () => {
-  describe('getAllByLead', () => {
-    it('fetches documents for a lead and resolves uploader', async () => {
+describe('Given documentsApi', () => {
+  describe('Given getAllByLead', () => {
+    it('When action / Then fetches documents for a lead and resolves uploader', async () => {
       mockFetchSuccess([
         {
           id: 'doc-1',
@@ -432,8 +432,8 @@ describe('documentsApi', () => {
     });
   });
 
-  describe('getAllByDeal', () => {
-    it('fetches documents for a deal', async () => {
+  describe('Given getAllByDeal', () => {
+    it('When action / Then fetches documents for a deal', async () => {
       mockFetchSuccess([
         { id: 'doc-2', name: 'proposal.pdf', uploaded_by: { id: 'u-2', full_name: 'Bob' } },
       ]);
@@ -448,9 +448,9 @@ describe('documentsApi', () => {
 // ============================================================================
 // CUSTOMERS API
 // ============================================================================
-describe('customersApi', () => {
-  describe('getAll', () => {
-    it('fetches customers', async () => {
+describe('Given customersApi', () => {
+  describe('Given getAll', () => {
+    it('When action / Then fetches customers', async () => {
       mockFetchSuccess([
         { id: 'cust-1', company_name: 'TestCo', type: 'customer' },
       ]);
@@ -459,7 +459,7 @@ describe('customersApi', () => {
       expect(customers).toHaveLength(1);
     });
 
-    it('joins customer_ids array into comma-separated string', async () => {
+    it('When action / Then joins customer_ids array into comma-separated string', async () => {
       mockFetchSuccess([]);
       await customersApi.getAll({ customer_ids: ['id-1', 'id-2', 'id-3'] });
 
@@ -467,7 +467,7 @@ describe('customersApi', () => {
       expect(calledUrl).toContain('customer_ids=id-1%2Cid-2%2Cid-3');
     });
 
-    it('omits customer_ids when array is empty', async () => {
+    it('When action / Then omits customer_ids when array is empty', async () => {
       mockFetchSuccess([]);
       await customersApi.getAll({ customer_ids: [] });
 
@@ -480,9 +480,9 @@ describe('customersApi', () => {
 // ============================================================================
 // ACTIVITIES API
 // ============================================================================
-describe('activitiesApi', () => {
-  describe('getAllByLead', () => {
-    it('fetches activities for a lead', async () => {
+describe('Given activitiesApi', () => {
+  describe('Given getAllByLead', () => {
+    it('When action / Then fetches activities for a lead', async () => {
       mockFetchSuccess([
         { id: 'act-1', type: 'CALL', notes: 'Called client', author_id: 'u-1' },
       ]);
@@ -493,7 +493,7 @@ describe('activitiesApi', () => {
       expect(activities[0].author.id).toBe('u-1');
     });
 
-    it('uses content field as notes fallback', async () => {
+    it('When action / Then uses content field as notes fallback', async () => {
       mockFetchSuccess([
         { id: 'act-2', type: 'EMAIL', content: 'Sent proposal', author_id: 'u-1' },
       ]);
@@ -503,8 +503,8 @@ describe('activitiesApi', () => {
     });
   });
 
-  describe('create', () => {
-    it('creates an activity', async () => {
+  describe('Given create', () => {
+    it('When action / Then creates an activity', async () => {
       mockFetchSuccess({ id: 'act-new', type: 'MEETING', notes: 'Meeting' });
       const activity = await activitiesApi.create({ type: 'MEETING', notes: 'Meeting' });
       expect(activity.id).toBe('act-new');
@@ -515,33 +515,33 @@ describe('activitiesApi', () => {
 // ============================================================================
 // ERROR HANDLING
 // ============================================================================
-describe('Error handling', () => {
-  it('throws with JSON error message from API', async () => {
+describe('Given Error handling', () => {
+  it('When action / Then throws with JSON error message from API', async () => {
     mockFetchErrorJson(400, { message: 'Validation failed' });
     await expect(leadsApi.getAll()).rejects.toThrow('Validation failed');
   });
 
-  it('throws with array message from API', async () => {
+  it('When action / Then throws with array message from API', async () => {
     mockFetchErrorJson(400, { message: ['Field required', 'Invalid email'] as any });
     await expect(leadsApi.getAll()).rejects.toThrow('Field required, Invalid email');
   });
 
-  it('throws with error field from API', async () => {
+  it('When action / Then throws with error field from API', async () => {
     mockFetchErrorJson(500, { error: 'Internal server error' });
     await expect(leadsApi.getAll()).rejects.toThrow('Internal server error');
   });
 
-  it('throws with raw text when JSON parse fails', async () => {
+  it('When action / Then throws with raw text when JSON parse fails', async () => {
     mockFetchErrorText(502, 'Bad Gateway');
     await expect(leadsApi.getAll()).rejects.toThrow('Bad Gateway');
   });
 
-  it('throws on network error', async () => {
+  it('When action / Then throws on network error', async () => {
     mockFetchNetworkError();
     await expect(leadsApi.getAll()).rejects.toThrow('Network error');
   });
 
-  it('includes status code when no body', async () => {
+  it('When action / Then includes status code when no body', async () => {
     mockFetchErrorText(404, '');
     await expect(leadsApi.getAll()).rejects.toThrow('API Error: 404');
   });
@@ -550,8 +550,8 @@ describe('Error handling', () => {
 // ============================================================================
 // REQUEST HEADERS
 // ============================================================================
-describe('Request headers', () => {
-  it('includes Content-Type and X-Tenant-Id headers', async () => {
+describe('Given Request headers', () => {
+  it('When action / Then includes Content-Type and X-Tenant-Id headers', async () => {
     mockFetchSuccess([]);
     await leadsApi.getAll();
 
@@ -564,9 +564,9 @@ describe('Request headers', () => {
 // ============================================================================
 // SETTINGS API
 // ============================================================================
-describe('settingsApi', () => {
-  describe('pipelineStages', () => {
-    it('getAll fetches pipeline stages', async () => {
+describe('Given settingsApi', () => {
+  describe('Given pipelineStages', () => {
+    it('When action / Then getAll fetches pipeline stages', async () => {
       const stages = [{ id: 's1', name: 'New', order: 0, color: '#fff' }];
       mockFetchSuccess(stages);
       const result = await settingsApi.pipelineStages.getAll();
@@ -577,7 +577,7 @@ describe('settingsApi', () => {
       );
     });
 
-    it('create creates a pipeline stage', async () => {
+    it('When action / Then create creates a pipeline stage', async () => {
       const stage = { id: 's2', name: 'Qualified', order: 1 };
       mockFetchSuccess(stage);
       const result = await settingsApi.pipelineStages.create({ name: 'Qualified', order: 1 });
@@ -588,7 +588,7 @@ describe('settingsApi', () => {
       );
     });
 
-    it('update updates a pipeline stage', async () => {
+    it('When action / Then update updates a pipeline stage', async () => {
       const stage = { id: 's1', name: 'Updated', order: 0 };
       mockFetchSuccess(stage);
       const result = await settingsApi.pipelineStages.update('s1', { name: 'Updated' });
@@ -599,7 +599,7 @@ describe('settingsApi', () => {
       );
     });
 
-    it('delete removes a pipeline stage', async () => {
+    it('When action / Then delete removes a pipeline stage', async () => {
       mockFetchSuccess({ message: 'Deleted' });
       const result = await settingsApi.pipelineStages.delete('s1');
       expect(result.message).toBe('Deleted');
@@ -610,15 +610,15 @@ describe('settingsApi', () => {
     });
   });
 
-  describe('customFields', () => {
-    it('getAll fetches custom fields', async () => {
+  describe('Given customFields', () => {
+    it('When action / Then getAll fetches custom fields', async () => {
       const fields = [{ id: 'cf1', label: 'Industry', field_type: 'TEXT' }];
       mockFetchSuccess(fields);
       const result = await settingsApi.customFields.getAll();
       expect(result).toEqual(fields);
     });
 
-    it('getAll with entity_type filter', async () => {
+    it('When action / Then getAll with entity_type filter', async () => {
       mockFetchSuccess([]);
       await settingsApi.customFields.getAll({ entity_type: 'LEAD' });
       expect(fetchMock).toHaveBeenCalledWith(
@@ -627,7 +627,7 @@ describe('settingsApi', () => {
       );
     });
 
-    it('create creates a custom field', async () => {
+    it('When action / Then create creates a custom field', async () => {
       const field = { id: 'cf2', label: 'Revenue', field_type: 'NUMBER' };
       mockFetchSuccess(field);
       const result = await settingsApi.customFields.create({
@@ -638,13 +638,13 @@ describe('settingsApi', () => {
       expect(result).toEqual(field);
     });
 
-    it('update updates a custom field', async () => {
+    it('When action / Then update updates a custom field', async () => {
       mockFetchSuccess({ id: 'cf1', label: 'Updated' });
       const result = await settingsApi.customFields.update('cf1', { label: 'Updated' });
       expect(result.label).toBe('Updated');
     });
 
-    it('delete removes a custom field', async () => {
+    it('When action / Then delete removes a custom field', async () => {
       mockFetchSuccess({ message: 'Deleted' });
       const result = await settingsApi.customFields.delete('cf1');
       expect(result.message).toBe('Deleted');
@@ -655,7 +655,7 @@ describe('settingsApi', () => {
 // ============================================================================
 // CRMSERVICE LEGACY COMPATIBILITY LAYER
 // ============================================================================
-describe('crmService (legacy layer)', () => {
+describe('Given crmService (legacy layer)', () => {
   it('setTenantId / setOrgId / setAccessToken / setUser do not throw', () => {
     expect(() => crmService.setTenantId('t1')).not.toThrow();
     expect(() => crmService.setOrgId('o1')).not.toThrow();
@@ -665,41 +665,41 @@ describe('crmService (legacy layer)', () => {
     ).not.toThrow();
   });
 
-  it('getLeads delegates to leadsApi and transforms result', async () => {
+  it('When action / Then getLeads delegates to leadsApi and transforms result', async () => {
     mockFetchSuccess([{ id: 'l1', company_name: 'Co', contact_name: 'J' }]);
     const result = await crmService.getLeads();
     expect(result.length).toBe(1);
     expect(result[0]).toEqual(expect.objectContaining({ id: 'l1' }));
   });
 
-  it('getLeadById returns lead or undefined', async () => {
+  it('When action / Then getLeadById returns lead or undefined', async () => {
     mockFetchSuccess({ id: 'l1', company_name: 'Co' });
     const result = await crmService.getLeadById('l1');
     expect(result).toBeDefined();
     expect(result?.id).toBe('l1');
   });
 
-  it('getLeadById returns undefined on error', async () => {
+  it('When action / Then getLeadById returns undefined on error', async () => {
     mockFetchErrorJson(404, { message: 'Not found' });
     const result = await crmService.getLeadById('bad');
     expect(result).toBeUndefined();
   });
 
-  it('getDeals delegates to dealsApi and transforms result', async () => {
+  it('When action / Then getDeals delegates to dealsApi and transforms result', async () => {
     mockFetchSuccess([{ id: 'd1', name: 'Deal', value: 1000 }]);
     const result = await crmService.getDeals();
     expect(result.length).toBe(1);
     expect(result[0]).toEqual(expect.objectContaining({ id: 'd1' }));
   });
 
-  it('getTasks delegates to tasksApi and transforms result', async () => {
+  it('When action / Then getTasks delegates to tasksApi and transforms result', async () => {
     mockFetchSuccess([{ id: 't1', title: 'Task' }]);
     const result = await crmService.getTasks();
     expect(result.length).toBe(1);
     expect(result[0]).toEqual(expect.objectContaining({ id: 't1' }));
   });
 
-  it('getUsers fetches users from core API and transforms result', async () => {
+  it('When action / Then getUsers fetches users from core API and transforms result', async () => {
     mockFetchSuccess([{ id: 'u1', full_name: 'User', email: 'u@x.com' }]);
     const result = await crmService.getUsers();
     expect(result.length).toBe(1);
@@ -710,14 +710,14 @@ describe('crmService (legacy layer)', () => {
     );
   });
 
-  it('getSettings fetches CRM settings', async () => {
+  it('When action / Then getSettings fetches CRM settings', async () => {
     const settings = { deal_stages: [], lead_stages: [], lead_custom_fields: [] };
     mockFetchSuccess(settings);
     const result = await crmService.getSettings();
     expect(result).toBeDefined();
   });
 
-  it('updateDealStage sends PATCH to deal endpoint with target_state', async () => {
+  it('When action / Then updateDealStage sends PATCH to deal endpoint with target_state', async () => {
     mockFetchSuccess({ id: 'd1', current_flow_state: 'qualified' });
     await crmService.updateDealStage('d1', 'qualified');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -729,31 +729,31 @@ describe('crmService (legacy layer)', () => {
     expect(body.target_state).toBe('qualified');
   });
 
-  it('getQuotes fetches quotes', async () => {
+  it('When action / Then getQuotes fetches quotes', async () => {
     mockFetchSuccess([{ id: 'q1', title: 'Quote' }]);
     const result = await crmService.getQuotes();
     expect(result).toEqual([{ id: 'q1', title: 'Quote' }]);
   });
 
-  it('getQuoteById fetches a single quote', async () => {
+  it('When action / Then getQuoteById fetches a single quote', async () => {
     mockFetchSuccess({ id: 'q1', title: 'My Quote' });
     const result = await crmService.getQuoteById('q1');
     expect(result.title).toBe('My Quote');
   });
 
-  it('createQuote sends POST', async () => {
+  it('When action / Then createQuote sends POST', async () => {
     mockFetchSuccess({ id: 'q2', title: 'New' });
     const result = await crmService.createQuote({ title: 'New', deal_id: 'd1' } as any);
     expect(result.id).toBe('q2');
   });
 
-  it('updateQuote sends PATCH', async () => {
+  it('When action / Then updateQuote sends PATCH', async () => {
     mockFetchSuccess({ id: 'q1', title: 'Updated' });
     const result = await crmService.updateQuote('q1', { title: 'Updated' } as any);
     expect(result.title).toBe('Updated');
   });
 
-  it('deleteQuote sends DELETE', async () => {
+  it('When action / Then deleteQuote sends DELETE', async () => {
     mockFetchSuccess({ message: 'ok' });
     await crmService.deleteQuote('q1');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -762,20 +762,20 @@ describe('crmService (legacy layer)', () => {
     );
   });
 
-  it('getDashboardStats returns fallback on error', async () => {
+  it('When action / Then getDashboardStats returns fallback on error', async () => {
     mockFetchNetworkError();
     const result = await crmService.getDashboardStats();
     expect(result.financials.totalRevenue).toBe(0);
     expect(result.counts.leads).toBe(0);
   });
 
-  it('getCustomers delegates to customersApi.getAll', async () => {
+  it('When action / Then getCustomers delegates to customersApi.getAll', async () => {
     mockFetchSuccess([{ id: 'c1' }]);
     const result = await crmService.getCustomers();
     expect(result).toEqual([{ id: 'c1' }]);
   });
 
-  it('logActivity delegates to activitiesApi.create', async () => {
+  it('When action / Then logActivity delegates to activitiesApi.create', async () => {
     mockFetchSuccess({ id: 'a1' });
     const result = await crmService.logActivity('d1', {
       type: 'CALL' as any,
@@ -784,13 +784,13 @@ describe('crmService (legacy layer)', () => {
     expect(result).toBeDefined();
   });
 
-  it('getDailystoreStores fetches stores from dailystore API', async () => {
+  it('When action / Then getDailystoreStores fetches stores from dailystore API', async () => {
     mockFetchSuccess([{ id: 's1', name: 'Store 1' }]);
     const result = await crmService.getDailystoreStores();
     expect(result).toEqual([{ id: 's1', name: 'Store 1' }]);
   });
 
-  it('getCommerceKPIs fetches from analytics endpoint', async () => {
+  it('When action / Then getCommerceKPIs fetches from analytics endpoint', async () => {
     mockFetchSuccess({ revenue: 5000, orderCount: 10 });
     const result = await crmService.getCommerceKPIs({ period: 'monthly', year: 2024 });
     expect(result.revenue).toBe(5000);
@@ -798,7 +798,7 @@ describe('crmService (legacy layer)', () => {
 
   // --- Additional legacy layer tests for full coverage ---
 
-  it('createLead delegates to leadsApi.create', async () => {
+  it('When action / Then createLead delegates to leadsApi.create', async () => {
     mockFetchSuccess({ id: 'l-new', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
     const result = await crmService.createLead({
       company_name: 'NewCo', contact_name: 'Jim', contact_email: 'j@n.com',
@@ -812,7 +812,7 @@ describe('crmService (legacy layer)', () => {
     expect(body.meta_data).toEqual({ cf1: 'val' });
   });
 
-  it('updateLead whitelists fields and maps owner', async () => {
+  it('When action / Then updateLead whitelists fields and maps owner', async () => {
     mockFetchSuccess({ id: 'l1', status: 'QUALIFIED', notes: [], documents: [], deals: [], tasks: [], activities: [] });
     const result = await crmService.updateLead('l1', {
       contact_name: 'Jane',
@@ -833,7 +833,7 @@ describe('crmService (legacy layer)', () => {
     expect(body.meta_data).toEqual({ cf: 'v' });
   });
 
-  it('updateLead maps owner_id when no owner object', async () => {
+  it('When action / Then updateLead maps owner_id when no owner object', async () => {
     mockFetchSuccess({ id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
     await crmService.updateLead('l1', { owner_id: 'u3' } as any);
     const [, opts] = fetchMock.mock.calls[0];
@@ -841,7 +841,7 @@ describe('crmService (legacy layer)', () => {
     expect(body.owner_id).toBe('u3');
   });
 
-  it('deleteLead delegates to leadsApi.delete', async () => {
+  it('When action / Then deleteLead delegates to leadsApi.delete', async () => {
     mockFetchSuccess({});
     await crmService.deleteLead('l1');
     const [url, opts] = fetchMock.mock.calls[0];
@@ -849,7 +849,7 @@ describe('crmService (legacy layer)', () => {
     expect(opts.method).toBe('DELETE');
   });
 
-  it('getDeals applies client-side filters', async () => {
+  it('When action / Then getDeals applies client-side filters', async () => {
     mockFetchSuccess([
       { id: 'd1', name: 'D1', value: '100', company_name: 'Acme', lead_id: 'l1', owner: { id: 'u1' }, owner_id: 'u1', notes: [], documents: [], activities: [], created_at: new Date().toISOString() },
       { id: 'd2', name: 'D2', value: '200', company_name: 'BigCo', lead_id: 'l2', owner: { id: 'u2' }, owner_id: 'u2', notes: [], documents: [], activities: [], created_at: '2020-01-01' },
@@ -859,7 +859,7 @@ describe('crmService (legacy layer)', () => {
     expect(result[0].id).toBe('d1');
   });
 
-  it('getDeals filters by company_name', async () => {
+  it('When action / Then getDeals filters by company_name', async () => {
     mockFetchSuccess([
       { id: 'd1', value: '0', company_name: 'Acme Corp', owner: { id: 'u1' }, notes: [], documents: [], activities: [] },
       { id: 'd2', value: '0', company_name: 'BigCo', owner: { id: 'u1' }, notes: [], documents: [], activities: [] },
@@ -868,7 +868,7 @@ describe('crmService (legacy layer)', () => {
     expect(result).toHaveLength(1);
   });
 
-  it('getDeals filters by lead_id', async () => {
+  it('When action / Then getDeals filters by lead_id', async () => {
     mockFetchSuccess([
       { id: 'd1', value: '0', lead_id: 'l1', company_name: 'A', owner: { id: 'u1' }, notes: [], documents: [], activities: [] },
       { id: 'd2', value: '0', lead_id: 'l2', company_name: 'B', owner: { id: 'u1' }, notes: [], documents: [], activities: [] },
@@ -877,7 +877,7 @@ describe('crmService (legacy layer)', () => {
     expect(result).toHaveLength(1);
   });
 
-  it('getDeals filters by date_range today', async () => {
+  it('When action / Then getDeals filters by date_range today', async () => {
     const today = new Date().toISOString();
     mockFetchSuccess([
       { id: 'd1', value: '0', company_name: 'A', owner: { id: 'u1' }, notes: [], documents: [], activities: [], created_at: today },
@@ -887,13 +887,13 @@ describe('crmService (legacy layer)', () => {
     expect(result).toHaveLength(1);
   });
 
-  it('getDealById returns undefined on error', async () => {
+  it('When action / Then getDealById returns undefined on error', async () => {
     mockFetchErrorJson(404, { message: 'Not found' });
     const result = await crmService.getDealById('bad');
     expect(result).toBeUndefined();
   });
 
-  it('getPipeline uses dealsApi.getPipeline', async () => {
+  it('When action / Then getPipeline uses dealsApi.getPipeline', async () => {
     mockFetchSuccess([
       { id: 's1', name: 'Lead', deals: [{ id: 'd1', value: '100', notes: [], documents: [], activities: [] }] },
     ]);
@@ -901,7 +901,7 @@ describe('crmService (legacy layer)', () => {
     expect(result.stages).toHaveLength(1);
   });
 
-  it('getPipeline falls back to manual merge when primary fails', async () => {
+  it('When action / Then getPipeline falls back to manual merge when primary fails', async () => {
     // First call: pipeline endpoint fails
     mockFetchSuccess([]);
     // Fallback: getSettings (4 calls) and getAll for deals
@@ -919,7 +919,7 @@ describe('crmService (legacy layer)', () => {
     expect(result.stages).toHaveLength(1);
   });
 
-  it('getDealsByLeadId filters deals by lead_id', async () => {
+  it('When action / Then getDealsByLeadId filters deals by lead_id', async () => {
     mockFetchSuccess([
       { id: 'd1', lead_id: 'l1', value: '0', notes: [], documents: [], activities: [] },
       { id: 'd2', lead_id: 'l2', value: '0', notes: [], documents: [], activities: [] },
@@ -929,25 +929,25 @@ describe('crmService (legacy layer)', () => {
     expect(result[0].id).toBe('d1');
   });
 
-  it('deleteDeal delegates to dealsApi.delete', async () => {
+  it('When action / Then deleteDeal delegates to dealsApi.delete', async () => {
     mockFetchSuccess({});
     await crmService.deleteDeal('d1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('getTaskById returns undefined on error', async () => {
+  it('When action / Then getTaskById returns undefined on error', async () => {
     mockFetchErrorJson(404, { message: 'Not found' });
     const result = await crmService.getTaskById('bad');
     expect(result).toBeUndefined();
   });
 
-  it('createTask delegates to tasksApi.create', async () => {
+  it('When action / Then createTask delegates to tasksApi.create', async () => {
     mockFetchSuccess({ id: 't-new', title: 'Task', status: 'open' });
     const result = await crmService.createTask({ title: 'Task' });
     expect(result.id).toBe('t-new');
   });
 
-  it('updateTask whitelists fields and uppercases status', async () => {
+  it('When action / Then updateTask whitelists fields and uppercases status', async () => {
     mockFetchSuccess({ id: 't1', title: 'Updated', status: 'done' });
     await crmService.updateTask('t1', {
       title: 'Updated', due_date: '2024-06-01', status: 'Done',
@@ -963,7 +963,7 @@ describe('crmService (legacy layer)', () => {
     expect(body.reminder_minutes_before).toBe(15);
   });
 
-  it('getTasksByLeadId filters tasks by lead_id', async () => {
+  it('When action / Then getTasksByLeadId filters tasks by lead_id', async () => {
     mockFetchSuccess([
       { id: 't1', lead_id: 'l1', title: 'A', status: 'open' },
       { id: 't2', lead_id: 'l2', title: 'B', status: 'open' },
@@ -972,7 +972,7 @@ describe('crmService (legacy layer)', () => {
     expect(result).toHaveLength(1);
   });
 
-  it('getTasksByDealId filters tasks by deal_id', async () => {
+  it('When action / Then getTasksByDealId filters tasks by deal_id', async () => {
     mockFetchSuccess([
       { id: 't1', deal_id: 'd1', title: 'A', status: 'open' },
       { id: 't2', deal_id: 'd2', title: 'B', status: 'open' },
@@ -981,13 +981,13 @@ describe('crmService (legacy layer)', () => {
     expect(result).toHaveLength(1);
   });
 
-  it('deleteTask delegates to tasksApi.delete', async () => {
+  it('When action / Then deleteTask delegates to tasksApi.delete', async () => {
     mockFetchSuccess({});
     await crmService.deleteTask('t1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('getSettings returns full CRMSettings structure', async () => {
+  it('When action / Then getSettings returns full CRMSettings structure', async () => {
     // pipeline-stages
     mockFetchSuccess([{ id: 's1', name: 'Won', type: 'WON' }]);
     // lead-stages
@@ -1005,7 +1005,7 @@ describe('crmService (legacy layer)', () => {
     expect(result.deal_custom_fields).toHaveLength(1);
   });
 
-  it('getSettings infers type for Won/Lost stage names', async () => {
+  it('When action / Then getSettings infers type for Won/Lost stage names', async () => {
     mockFetchSuccess([
       { id: 's1', name: 'Won' },
       { id: 's2', name: 'Lost' },
@@ -1020,14 +1020,14 @@ describe('crmService (legacy layer)', () => {
     expect(result.deal_stages[2].type).toBe('OPEN');
   });
 
-  it('getSettings returns defaults on error', async () => {
+  it('When action / Then getSettings returns defaults on error', async () => {
     mockFetchNetworkError();
     const result = await crmService.getSettings();
     expect(result.deal_stages).toEqual([]);
     expect(result.lead_stages).toEqual([]);
   });
 
-  it('updateSettings syncs pipeline stages, lead stages, and custom fields', async () => {
+  it('When action / Then updateSettings syncs pipeline stages, lead stages, and custom fields', async () => {
     // Current pipeline-stages
     mockFetchSuccess([{ id: 'existing-1', name: 'Old', order: 1 }]);
     // POST new stage (st- prefix)
@@ -1068,36 +1068,36 @@ describe('crmService (legacy layer)', () => {
     expect(result).toEqual(newSettings);
   });
 
-  it('updateSettings throws on error', async () => {
+  it('When action / Then updateSettings throws on error', async () => {
     mockFetchNetworkError();
     await expect(crmService.updateSettings({ deal_stages: [] } as any)).rejects.toThrow();
   });
 
-  it('getNotesByLeadId delegates to notesApi.getAllByLead', async () => {
+  it('When action / Then getNotesByLeadId delegates to notesApi.getAllByLead', async () => {
     mockFetchSuccess([{ id: 'n1', content: 'test', author_id: 'u1' }]);
     const result = await crmService.getNotesByLeadId('l1');
     expect(result).toHaveLength(1);
   });
 
-  it('getNotesByDealId delegates to notesApi.getAllByDeal', async () => {
+  it('When action / Then getNotesByDealId delegates to notesApi.getAllByDeal', async () => {
     mockFetchSuccess([{ id: 'n1', content: 'test', author_id: 'u1' }]);
     const result = await crmService.getNotesByDealId('d1');
     expect(result).toHaveLength(1);
   });
 
-  it('getTaskNotes fetches notes for a task', async () => {
+  it('When action / Then getTaskNotes fetches notes for a task', async () => {
     mockFetchSuccess([{ id: 'n1', content: 'task note', author_id: 'u1' }]);
     const result = await crmService.getTaskNotes('t1');
     expect(result).toHaveLength(1);
   });
 
-  it('createNote delegates to notesApi.create', async () => {
+  it('When action / Then createNote delegates to notesApi.create', async () => {
     mockFetchSuccess({ id: 'n-new', content: 'New note', author_id: 'u1' });
     const result = await crmService.createNote({ content: 'New note', lead_id: 'l1' });
     expect(result.id).toBe('n-new');
   });
 
-  it('updateNote delegates to notesApi.update', async () => {
+  it('When action / Then updateNote delegates to notesApi.update', async () => {
     mockFetchSuccess({ id: 'n1', content: 'Updated' });
     await crmService.updateNote('n1', 'Updated');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -1106,7 +1106,7 @@ describe('crmService (legacy layer)', () => {
     );
   });
 
-  it('deleteNote delegates to notesApi.delete', async () => {
+  it('When action / Then deleteNote delegates to notesApi.delete', async () => {
     mockFetchSuccess({});
     await crmService.deleteNote('n1');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -1115,26 +1115,26 @@ describe('crmService (legacy layer)', () => {
     );
   });
 
-  it('getUsers maps user format and falls back on error', async () => {
+  it('When action / Then getUsers maps user format and falls back on error', async () => {
     mockFetchErrorJson(500, { message: 'Server error' });
     const result = await crmService.getUsers();
     // Should fall back to empty or current user
     expect(Array.isArray(result)).toBe(true);
   });
 
-  it('getDocumentsByLeadId delegates to documentsApi', async () => {
+  it('When action / Then getDocumentsByLeadId delegates to documentsApi', async () => {
     mockFetchSuccess([{ id: 'doc1', name: 'file.pdf', uploaded_by_id: 'u1' }]);
     const result = await crmService.getDocumentsByLeadId('l1');
     expect(result).toHaveLength(1);
   });
 
-  it('getDocumentsByDealId delegates to documentsApi', async () => {
+  it('When action / Then getDocumentsByDealId delegates to documentsApi', async () => {
     mockFetchSuccess([{ id: 'doc1', name: 'file.pdf', uploaded_by_id: 'u1' }]);
     const result = await crmService.getDocumentsByDealId('d1');
     expect(result).toHaveLength(1);
   });
 
-  it('deleteDocument delegates to documentsApi.delete', async () => {
+  it('When action / Then deleteDocument delegates to documentsApi.delete', async () => {
     mockFetchSuccess({});
     await crmService.deleteDocument('l1', 'doc1');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -1143,19 +1143,19 @@ describe('crmService (legacy layer)', () => {
     );
   });
 
-  it('getActivitiesByLeadId delegates to activitiesApi.getAllByLead', async () => {
+  it('When action / Then getActivitiesByLeadId delegates to activitiesApi.getAllByLead', async () => {
     mockFetchSuccess([{ id: 'a1', type: 'CALL', notes: 'test', author_id: 'u1' }]);
     const result = await crmService.getActivitiesByLeadId('l1');
     expect(result).toHaveLength(1);
   });
 
-  it('getActivitiesByDealId tries tier 1, then returns activities', async () => {
+  it('When action / Then getActivitiesByDealId tries tier 1, then returns activities', async () => {
     mockFetchSuccess([{ id: 'a1', type: 'CALL', deal_id: 'd1', notes: 'test', author_id: 'u1' }]);
     const result = await crmService.getActivitiesByDealId('d1');
     expect(result).toHaveLength(1);
   });
 
-  it('getActivitiesByDealId falls back to tier 2 on tier 1 failure', async () => {
+  it('When action / Then getActivitiesByDealId falls back to tier 2 on tier 1 failure', async () => {
     // Tier 1 fails
     mockFetchErrorJson(404, { message: 'Not found' });
     // Tier 2: /activities returns all
@@ -1168,7 +1168,7 @@ describe('crmService (legacy layer)', () => {
     expect(result[0].id).toBe('a1');
   });
 
-  it('getActivitiesByDealId returns empty on all tiers failing', async () => {
+  it('When action / Then getActivitiesByDealId returns empty on all tiers failing', async () => {
     // Tier 1 fails
     mockFetchErrorJson(500, { message: 'fail' });
     // Tier 2 fails
@@ -1179,7 +1179,7 @@ describe('crmService (legacy layer)', () => {
     expect(result).toEqual([]);
   });
 
-  it('requestInvoice sends POST', async () => {
+  it('When action / Then requestInvoice sends POST', async () => {
     mockFetchSuccess({});
     await crmService.requestInvoice('d1');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -1188,19 +1188,19 @@ describe('crmService (legacy layer)', () => {
     );
   });
 
-  it('getInvoiceStatus returns status or fallback', async () => {
+  it('When action / Then getInvoiceStatus returns status or fallback', async () => {
     mockFetchSuccess({ has_invoice: true, invoice_id: 'inv-1' });
     const result = await crmService.getInvoiceStatus('d1');
     expect(result.has_invoice).toBe(true);
   });
 
-  it('getInvoiceStatus returns { has_invoice: false } on error', async () => {
+  it('When action / Then getInvoiceStatus returns { has_invoice: false } on error', async () => {
     mockFetchErrorJson(500, { message: 'fail' });
     const result = await crmService.getInvoiceStatus('d1');
     expect(result.has_invoice).toBe(false);
   });
 
-  it('linkProject sends PATCH', async () => {
+  it('When action / Then linkProject sends PATCH', async () => {
     mockFetchSuccess({});
     await crmService.linkProject('d1', 'p1');
     const [, opts] = fetchMock.mock.calls[0];
@@ -1208,7 +1208,7 @@ describe('crmService (legacy layer)', () => {
     expect(JSON.parse(opts.body).project_id).toBe('p1');
   });
 
-  it('unlinkProject sends PATCH', async () => {
+  it('When action / Then unlinkProject sends PATCH', async () => {
     mockFetchSuccess({});
     await crmService.unlinkProject('d1');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -1217,25 +1217,25 @@ describe('crmService (legacy layer)', () => {
     );
   });
 
-  it('createProjectFromDeal sends POST', async () => {
+  it('When action / Then createProjectFromDeal sends POST', async () => {
     mockFetchSuccess({ id: 'p-new' });
     const result = await crmService.createProjectFromDeal('d1');
     expect(result.id).toBe('p-new');
   });
 
-  it('getProjects returns empty on error', async () => {
+  it('When action / Then getProjects returns empty on error', async () => {
     mockFetchErrorJson(500, { message: 'fail' });
     const result = await crmService.getProjects();
     expect(result).toEqual([]);
   });
 
-  it('getProjects returns projects list', async () => {
+  it('When action / Then getProjects returns projects list', async () => {
     mockFetchSuccess([{ id: 'p1', title: 'Project' }]);
     const result = await crmService.getProjects();
     expect(result).toHaveLength(1);
   });
 
-  it('getQuotes with filters builds query string', async () => {
+  it('When action / Then getQuotes with filters builds query string', async () => {
     mockFetchSuccess([]);
     await crmService.getQuotes({ status: 'draft', deal_id: 'd1', customer_id: 'c1' });
     const url = fetchMock.mock.calls[0][0];
@@ -1244,37 +1244,37 @@ describe('crmService (legacy layer)', () => {
     expect(url).toContain('customer_id=c1');
   });
 
-  it('submitQuoteForApproval sends POST', async () => {
+  it('When action / Then submitQuoteForApproval sends POST', async () => {
     mockFetchSuccess({ status: 'pending_approval' });
     const result = await crmService.submitQuoteForApproval('q1');
     expect(result.status).toBe('pending_approval');
   });
 
-  it('approveQuote sends POST', async () => {
+  it('When action / Then approveQuote sends POST', async () => {
     mockFetchSuccess({ status: 'approved' });
     const result = await crmService.approveQuote('q1', 'Looks good');
     expect(result.status).toBe('approved');
   });
 
-  it('rejectQuote sends POST', async () => {
+  it('When action / Then rejectQuote sends POST', async () => {
     mockFetchSuccess({ status: 'rejected' });
     const result = await crmService.rejectQuote('q1', 'Too expensive');
     expect(result.status).toBe('rejected');
   });
 
-  it('convertQuoteToOrder sends POST', async () => {
+  it('When action / Then convertQuoteToOrder sends POST', async () => {
     mockFetchSuccess({ order_id: 'o1' });
     const result = await crmService.convertQuoteToOrder('q1', { delivery_date: '2024-12-01' });
     expect(result.order_id).toBe('o1');
   });
 
-  it('convertQuoteToOrder works without data', async () => {
+  it('When action / Then convertQuoteToOrder works without data', async () => {
     mockFetchSuccess({ order_id: 'o1' });
     const result = await crmService.convertQuoteToOrder('q1');
     expect(result.order_id).toBe('o1');
   });
 
-  it('getStockAvailability returns items', async () => {
+  it('When action / Then getStockAvailability returns items', async () => {
     // This calls fetch directly, not via apiClient
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -1284,362 +1284,362 @@ describe('crmService (legacy layer)', () => {
     expect(result.items).toHaveLength(1);
   });
 
-  it('getStockAvailability returns empty for empty ids', async () => {
+  it('When action / Then getStockAvailability returns empty for empty ids', async () => {
     const result = await crmService.getStockAvailability([]);
     expect(result.items).toEqual([]);
   });
 
-  it('getStockAvailability returns empty on failure', async () => {
+  it('When action / Then getStockAvailability returns empty on failure', async () => {
     fetchMock.mockResolvedValueOnce({ ok: false, status: 500 });
     const result = await crmService.getStockAvailability(['i1']);
     expect(result.items).toEqual([]);
   });
 
-  it('getStockAvailability returns empty on network error', async () => {
+  it('When action / Then getStockAvailability returns empty on network error', async () => {
     fetchMock.mockRejectedValueOnce(new Error('fail'));
     const result = await crmService.getStockAvailability(['i1']);
     expect(result.items).toEqual([]);
   });
 
-  it('getCustomerStats delegates to customersApi.getStats', async () => {
+  it('When action / Then getCustomerStats delegates to customersApi.getStats', async () => {
     mockFetchSuccess({ total: 100 });
     const result = await crmService.getCustomerStats();
     expect(result.total).toBe(100);
   });
 
-  it('promoteToCustomer delegates to customersApi.promote', async () => {
+  it('When action / Then promoteToCustomer delegates to customersApi.promote', async () => {
     mockFetchSuccess({ id: 'l1', type: 'customer' });
     const result = await crmService.promoteToCustomer('l1');
     expect(result.type).toBe('customer');
   });
 
-  it('validateCustomerTaxId delegates', async () => {
+  it('When action / Then validateCustomerTaxId delegates', async () => {
     mockFetchSuccess({ valid: true });
     const result = await crmService.validateCustomerTaxId('c1', 'TAX123');
     expect(result.valid).toBe(true);
   });
 
-  it('updateCustomerCreditLimit delegates', async () => {
+  it('When action / Then updateCustomerCreditLimit delegates', async () => {
     mockFetchSuccess({ credit_limit: 5000 });
-    const result = await crmService.updateCustomerCreditLimit('c1', 5000);
+    const result = await crmService.updateCustomerCreditLimit('When action / Then c1', 5000);
     expect(result.credit_limit).toBe(5000);
   });
 
   // Customer Segments
-  it('getCustomerSegments fetches segments', async () => {
+  it('When action / Then getCustomerSegments fetches segments', async () => {
     mockFetchSuccess([{ id: 'seg1', name: 'VIP' }]);
     const result = await crmService.getCustomerSegments();
     expect(result).toHaveLength(1);
   });
 
-  it('getCustomerSegmentById fetches one segment', async () => {
+  it('When action / Then getCustomerSegmentById fetches one segment', async () => {
     mockFetchSuccess({ id: 'seg1', name: 'VIP' });
     const result = await crmService.getCustomerSegmentById('seg1');
     expect(result.name).toBe('VIP');
   });
 
-  it('createCustomerSegment sends POST', async () => {
+  it('When action / Then createCustomerSegment sends POST', async () => {
     mockFetchSuccess({ id: 'seg-new' });
     const result = await crmService.createCustomerSegment({ name: 'New' });
     expect(result.id).toBe('seg-new');
   });
 
-  it('updateCustomerSegment sends PATCH', async () => {
+  it('When action / Then updateCustomerSegment sends PATCH', async () => {
     mockFetchSuccess({ id: 'seg1', name: 'Updated' });
     const result = await crmService.updateCustomerSegment('seg1', { name: 'Updated' });
     expect(result.name).toBe('Updated');
   });
 
-  it('deleteCustomerSegment sends DELETE', async () => {
+  it('When action / Then deleteCustomerSegment sends DELETE', async () => {
     mockFetchSuccess({ message: 'ok' });
     await crmService.deleteCustomerSegment('seg1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('getCustomerSegmentCustomers fetches customers', async () => {
+  it('When action / Then getCustomerSegmentCustomers fetches customers', async () => {
     mockFetchSuccess([{ id: 'c1' }]);
     const result = await crmService.getCustomerSegmentCustomers('seg1');
     expect(result).toHaveLength(1);
   });
 
-  it('getCustomerSegmentLeads fetches leads', async () => {
+  it('When action / Then getCustomerSegmentLeads fetches leads', async () => {
     mockFetchSuccess([{ id: 'l1' }]);
     const result = await crmService.getCustomerSegmentLeads('seg1');
     expect(result).toHaveLength(1);
   });
 
-  it('getCustomerSegmentMembers fetches with params', async () => {
+  it('When action / Then getCustomerSegmentMembers fetches with params', async () => {
     mockFetchSuccess({ members: [{ id: 'c1' }] });
     const result = await crmService.getCustomerSegmentMembers('seg1', { type: 'customer' });
     expect(result.members).toHaveLength(1);
   });
 
-  it('addCustomerSegmentMembers sends POST', async () => {
+  it('When action / Then addCustomerSegmentMembers sends POST', async () => {
     mockFetchSuccess({ added: 2 });
     const result = await crmService.addCustomerSegmentMembers('seg1', [{ id: 'c1', type: 'customer' }]);
     expect(result.added).toBe(2);
   });
 
-  it('removeCustomerSegmentMembers sends DELETE', async () => {
+  it('When action / Then removeCustomerSegmentMembers sends DELETE', async () => {
     mockFetchSuccess({ removed: 1 });
     const result = await crmService.removeCustomerSegmentMembers('seg1', [{ id: 'c1', type: 'customer' }]);
     expect(result.removed).toBe(1);
   });
 
   // Marketing APIs
-  it('getAbandonedCarts fetches carts', async () => {
+  it('When action / Then getAbandonedCarts fetches carts', async () => {
     mockFetchSuccess([{ id: 'cart1' }]);
     const result = await crmService.getAbandonedCarts('s1');
     expect(result).toHaveLength(1);
   });
 
-  it('getAbandonedCartStats fetches stats', async () => {
+  it('When action / Then getAbandonedCartStats fetches stats', async () => {
     mockFetchSuccess({ totalAbandoned: 5 });
     const result = await crmService.getAbandonedCartStats('s1');
     expect(result.totalAbandoned).toBe(5);
   });
 
-  it('getAbandonedCart fetches single cart', async () => {
+  it('When action / Then getAbandonedCart fetches single cart', async () => {
     mockFetchSuccess({ id: 'cart1' });
     const result = await crmService.getAbandonedCart('s1', 'cart1');
     expect(result.id).toBe('cart1');
   });
 
-  it('sendAbandonedCartRecovery sends POST', async () => {
+  it('When action / Then sendAbandonedCartRecovery sends POST', async () => {
     mockFetchSuccess({ sent: true });
     const result = await crmService.sendAbandonedCartRecovery('s1', 'cart1');
     expect(result.sent).toBe(true);
   });
 
-  it('updateAbandonedCartStatus sends PATCH', async () => {
+  it('When action / Then updateAbandonedCartStatus sends PATCH', async () => {
     mockFetchSuccess({ status: 'recovered' });
     const result = await crmService.updateAbandonedCartStatus('s1', 'cart1', 'recovered');
     expect(result.status).toBe('recovered');
   });
 
-  it('getStorefrontActivity fetches activities', async () => {
+  it('When action / Then getStorefrontActivity fetches activities', async () => {
     mockFetchSuccess([{ id: 'a1' }]);
     const result = await crmService.getStorefrontActivity('l1');
     expect(result).toHaveLength(1);
   });
 
-  it('getStorefrontWishlist fetches wishlist', async () => {
+  it('When action / Then getStorefrontWishlist fetches wishlist', async () => {
     mockFetchSuccess([{ id: 'w1' }]);
     const result = await crmService.getStorefrontWishlist('l1');
     expect(result).toHaveLength(1);
   });
 
-  it('getStorefrontReviews fetches reviews', async () => {
+  it('When action / Then getStorefrontReviews fetches reviews', async () => {
     mockFetchSuccess([{ id: 'r1' }]);
     const result = await crmService.getStorefrontReviews('l1');
     expect(result).toHaveLength(1);
   });
 
-  it('getStorefrontAbandonedCarts fetches carts', async () => {
+  it('When action / Then getStorefrontAbandonedCarts fetches carts', async () => {
     mockFetchSuccess([{ id: 'c1' }]);
     const result = await crmService.getStorefrontAbandonedCarts('l1');
     expect(result).toHaveLength(1);
   });
 
-  it('getAllStorefrontSearches fetches searches', async () => {
+  it('When action / Then getAllStorefrontSearches fetches searches', async () => {
     mockFetchSuccess([{ id: 's1', search_query: 'test' }]);
     const result = await crmService.getAllStorefrontSearches();
     expect(result).toHaveLength(1);
   });
 
-  it('getMarketingReviews fetches reviews', async () => {
+  it('When action / Then getMarketingReviews fetches reviews', async () => {
     mockFetchSuccess([{ id: 'r1' }]);
     const result = await crmService.getMarketingReviews('s1');
     expect(result).toHaveLength(1);
   });
 
-  it('getMarketingWishlist fetches wishlist', async () => {
+  it('When action / Then getMarketingWishlist fetches wishlist', async () => {
     mockFetchSuccess([{ id: 'w1' }]);
     const result = await crmService.getMarketingWishlist('s1');
     expect(result).toHaveLength(1);
   });
 
-  it('getCampaigns fetches campaigns', async () => {
+  it('When action / Then getCampaigns fetches campaigns', async () => {
     mockFetchSuccess({ data: [{ id: 'c1' }] });
     const result = await crmService.getCampaigns('s1');
     expect(result.data).toHaveLength(1);
   });
 
-  it('getCampaign fetches single campaign', async () => {
+  it('When action / Then getCampaign fetches single campaign', async () => {
     mockFetchSuccess({ id: 'c1' });
     const result = await crmService.getCampaign('s1', 'c1');
     expect(result.id).toBe('c1');
   });
 
-  it('createCampaign sends POST', async () => {
+  it('When action / Then createCampaign sends POST', async () => {
     mockFetchSuccess({ id: 'c-new' });
     const result = await crmService.createCampaign('s1', { name: 'Camp' });
     expect(result.id).toBe('c-new');
   });
 
-  it('updateCampaign sends PUT', async () => {
+  it('When action / Then updateCampaign sends PUT', async () => {
     mockFetchSuccess({ id: 'c1', name: 'Updated' });
     const result = await crmService.updateCampaign('s1', 'c1', { name: 'Updated' });
     expect(result.name).toBe('Updated');
   });
 
-  it('deleteCampaign sends DELETE', async () => {
+  it('When action / Then deleteCampaign sends DELETE', async () => {
     mockFetchSuccess({});
     await crmService.deleteCampaign('s1', 'c1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('sendCampaignNow sends POST', async () => {
+  it('When action / Then sendCampaignNow sends POST', async () => {
     mockFetchSuccess({ sent: true });
     await crmService.sendCampaignNow('s1', 'c1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('scheduleCampaign sends POST with scheduleAt', async () => {
+  it('When action / Then scheduleCampaign sends POST with scheduleAt', async () => {
     mockFetchSuccess({ scheduled: true });
     await crmService.scheduleCampaign('s1', 'c1', '2024-12-01T10:00:00Z');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('pauseCampaign sends POST', async () => {
+  it('When action / Then pauseCampaign sends POST', async () => {
     mockFetchSuccess({});
     await crmService.pauseCampaign('s1', 'c1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('testSendCampaign sends POST with email', async () => {
+  it('When action / Then testSendCampaign sends POST with email', async () => {
     mockFetchSuccess({});
     await crmService.testSendCampaign('s1', 'c1', 'test@test.com');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('getCampaignRecipients fetches recipients', async () => {
+  it('When action / Then getCampaignRecipients fetches recipients', async () => {
     mockFetchSuccess({ data: [{ email: 'a@b.com' }] });
     const result = await crmService.getCampaignRecipients('s1', 'c1');
     expect(result.data).toHaveLength(1);
   });
 
-  it('getMarketingSegments fetches segments', async () => {
+  it('When action / Then getMarketingSegments fetches segments', async () => {
     mockFetchSuccess({ data: [] });
     const result = await crmService.getMarketingSegments('s1');
     expect(result.data).toBeDefined();
   });
 
-  it('getMarketingProductInterest fetches data', async () => {
+  it('When action / Then getMarketingProductInterest fetches data', async () => {
     mockFetchSuccess({ data: [] });
     const result = await crmService.getMarketingProductInterest('s1');
     expect(result).toBeDefined();
   });
 
-  it('getMarketingBestSellingProducts fetches data', async () => {
+  it('When action / Then getMarketingBestSellingProducts fetches data', async () => {
     mockFetchSuccess({ data: [] });
     const result = await crmService.getMarketingBestSellingProducts('s1');
     expect(result).toBeDefined();
   });
 
-  it('getMarketingTopBuyers fetches data', async () => {
+  it('When action / Then getMarketingTopBuyers fetches data', async () => {
     mockFetchSuccess({ data: [] });
     const result = await crmService.getMarketingTopBuyers('s1');
     expect(result).toBeDefined();
   });
 
-  it('getMarketingInactiveCustomers fetches data', async () => {
+  it('When action / Then getMarketingInactiveCustomers fetches data', async () => {
     mockFetchSuccess({ data: [] });
     const result = await crmService.getMarketingInactiveCustomers('s1');
     expect(result).toBeDefined();
   });
 
-  it('getMarketingConversionFunnel fetches data', async () => {
+  it('When action / Then getMarketingConversionFunnel fetches data', async () => {
     mockFetchSuccess({ funnel: {} });
     const result = await crmService.getMarketingConversionFunnel('s1');
     expect(result).toBeDefined();
   });
 
-  it('getMarketingEmailPerformance fetches data', async () => {
+  it('When action / Then getMarketingEmailPerformance fetches data', async () => {
     mockFetchSuccess({ openRate: 45 });
     const result = await crmService.getMarketingEmailPerformance('s1');
     expect(result.openRate).toBe(45);
   });
 
   // Newsletter
-  it('getNewsletterSubscribers fetches subscribers', async () => {
+  it('When action / Then getNewsletterSubscribers fetches subscribers', async () => {
     mockFetchSuccess([{ id: 'sub1' }]);
     const result = await crmService.getNewsletterSubscribers('s1');
     expect(result).toHaveLength(1);
   });
 
-  it('addNewsletterSubscriber sends POST', async () => {
+  it('When action / Then addNewsletterSubscriber sends POST', async () => {
     mockFetchSuccess({ id: 'sub-new' });
     const result = await crmService.addNewsletterSubscriber('s1', { email: 'a@b.com' });
     expect(result.id).toBe('sub-new');
   });
 
-  it('unsubscribeNewsletter sends POST', async () => {
+  it('When action / Then unsubscribeNewsletter sends POST', async () => {
     mockFetchSuccess({});
     await crmService.unsubscribeNewsletter('s1', 'sub1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('deleteNewsletterSubscriber sends DELETE', async () => {
+  it('When action / Then deleteNewsletterSubscriber sends DELETE', async () => {
     mockFetchSuccess({});
     await crmService.deleteNewsletterSubscriber('s1', 'sub1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
   // Coupons
-  it('getCoupons fetches coupons', async () => {
+  it('When action / Then getCoupons fetches coupons', async () => {
     mockFetchSuccess([{ id: 'cp1' }]);
     const result = await crmService.getCoupons('s1');
     expect(result).toHaveLength(1);
   });
 
-  it('createCoupon sends POST', async () => {
+  it('When action / Then createCoupon sends POST', async () => {
     mockFetchSuccess({ id: 'cp-new' });
     const result = await crmService.createCoupon('s1', { code: 'SAVE10' });
     expect(result.id).toBe('cp-new');
   });
 
-  it('getCoupon fetches single coupon', async () => {
+  it('When action / Then getCoupon fetches single coupon', async () => {
     mockFetchSuccess({ id: 'cp1', code: 'SAVE10' });
     const result = await crmService.getCoupon('s1', 'cp1');
     expect(result.code).toBe('SAVE10');
   });
 
-  it('updateCoupon sends PUT', async () => {
+  it('When action / Then updateCoupon sends PUT', async () => {
     mockFetchSuccess({ id: 'cp1', code: 'SAVE20' });
     const result = await crmService.updateCoupon('s1', 'cp1', { code: 'SAVE20' });
     expect(result.code).toBe('SAVE20');
   });
 
-  it('deleteCoupon sends DELETE', async () => {
+  it('When action / Then deleteCoupon sends DELETE', async () => {
     mockFetchSuccess({});
     await crmService.deleteCoupon('s1', 'cp1');
     expect(fetchMock).toHaveBeenCalled();
   });
 
-  it('getFulfillmentOrderByDeal returns null when no orders', async () => {
+  it('When action / Then getFulfillmentOrderByDeal returns null when no orders', async () => {
     mockFetchSuccess({ data: [] });
     const result = await crmService.getFulfillmentOrderByDeal('d1');
     expect(result).toBeNull();
   });
 
-  it('getFulfillmentOrderByDeal returns first order', async () => {
+  it('When action / Then getFulfillmentOrderByDeal returns first order', async () => {
     mockFetchSuccess({ data: [{ id: 'fo1', status: 'pending' }] });
     const result = await crmService.getFulfillmentOrderByDeal('d1');
     expect(result.id).toBe('fo1');
   });
 
-  it('getFulfillmentOrderByDeal returns null on error', async () => {
+  it('When action / Then getFulfillmentOrderByDeal returns null on error', async () => {
     mockFetchNetworkError();
     const result = await crmService.getFulfillmentOrderByDeal('d1');
     expect(result).toBeNull();
   });
 
-  it('setUserId sets user id', () => {
+  it('When action / Then setUserId sets user id', () => {
     expect(() => crmService.setUserId('u-test')).not.toThrow();
   });
 
-  it('getDashboardStats with period param uses analytics endpoint', async () => {
+  it('When action / Then getDashboardStats with period param uses analytics endpoint', async () => {
     // Analytics dashboard
     mockFetchSuccess({
       financials: { totalRevenue: 1000, pipelineValue: 500, avgDealSize: 250 },
@@ -1657,7 +1657,7 @@ describe('crmService (legacy layer)', () => {
     expect(result.chartLabels).toEqual(['Jan']);
   });
 
-  it('getDashboardStats with period and performance data', async () => {
+  it('When action / Then getDashboardStats with period and performance data', async () => {
     mockFetchSuccess({
       financials: { totalRevenue: 5000, pipelineValue: 2000, avgDealSize: 500 },
       metrics: { winRate: 60 },
@@ -1678,7 +1678,7 @@ describe('crmService (legacy layer)', () => {
     expect(result.counts.tasks).toBe(2);
   });
 
-  it('getDashboardStats legacy path (no period)', async () => {
+  it('When action / Then getDashboardStats legacy path (no period)', async () => {
     // getLeads
     mockFetchSuccess([
       { id: 'l1', status: 'NEW', owner: { id: 'u1' }, owner_id: 'u1', notes: [], documents: [], deals: [], tasks: [], activities: [] },
@@ -1709,8 +1709,8 @@ describe('crmService (legacy layer)', () => {
 // ============================================================================
 // LEADS API - update method
 // ============================================================================
-describe('leadsApi additional', () => {
-  it('update maps FE status to BE format in payload', async () => {
+describe('Given leadsApi additional', () => {
+  it('When action / Then update maps FE status to BE format in payload', async () => {
     mockFetchSuccess({ id: 'l1', status: 'QUALIFIED', notes: [], documents: [], deals: [], tasks: [], activities: [] });
     await leadsApi.update('l1', { status: 'Qualified' });
     const [, opts] = fetchMock.mock.calls[0];
@@ -1718,7 +1718,7 @@ describe('leadsApi additional', () => {
     expect(body.status).toBe('QUALIFIED');
   });
 
-  it('getStats fetches lead stats', async () => {
+  it('When action / Then getStats fetches lead stats', async () => {
     mockFetchSuccess({ stats: [{ status: 'NEW', count: 5 }] });
     const result = await leadsApi.getStats();
     expect(result.stats).toHaveLength(1);
@@ -1728,27 +1728,27 @@ describe('leadsApi additional', () => {
 // ============================================================================
 // DEALS API - additional methods
 // ============================================================================
-describe('dealsApi additional', () => {
-  it('getById fetches a single deal', async () => {
+describe('Given dealsApi additional', () => {
+  it('When action / Then getById fetches a single deal', async () => {
     mockFetchSuccess({ id: 'd1', name: 'Deal', value: '100', notes: [], documents: [], activities: [] });
     const deal = await dealsApi.getById('d1');
     expect(deal.id).toBe('d1');
     expect(deal.value).toBe(100);
   });
 
-  it('update returns deal with mapped owner', async () => {
+  it('When action / Then update returns deal with mapped owner', async () => {
     mockFetchSuccess({ id: 'd1', owner: { id: 'u1', full_name: 'Alice' }, owner_id: 'u1' });
     const result = await dealsApi.update('d1', { name: 'Updated' });
     expect(result.owner.full_name).toBe('Alice');
   });
 
-  it('getSalesPerformanceByPerson fetches performance', async () => {
+  it('When action / Then getSalesPerformanceByPerson fetches performance', async () => {
     mockFetchSuccess([{ person_id: 'p1', total_deals: 5 }]);
     const result = await dealsApi.getSalesPerformanceByPerson({ start_date: '2024-01-01' });
     expect(result).toHaveLength(1);
   });
 
-  it('getDealsByPerson fetches deals for a person', async () => {
+  it('When action / Then getDealsByPerson fetches deals for a person', async () => {
     mockFetchSuccess([{ id: 'd1', value: '100', notes: [], documents: [], activities: [] }]);
     const result = await dealsApi.getDealsByPerson('p1');
     expect(result).toHaveLength(1);
@@ -1759,14 +1759,14 @@ describe('dealsApi additional', () => {
 // ============================================================================
 // TASKS API - additional methods
 // ============================================================================
-describe('tasksApi additional', () => {
-  it('getById fetches a single task', async () => {
+describe('Given tasksApi additional', () => {
+  it('When action / Then getById fetches a single task', async () => {
     mockFetchSuccess({ id: 't1', title: 'Task', status: 'done' });
     const task = await tasksApi.getById('t1');
     expect(task.status).toBe('Done');
   });
 
-  it('delete sends DELETE request', async () => {
+  it('When action / Then delete sends DELETE request', async () => {
     mockFetchSuccess({});
     await tasksApi.delete('t1');
     const [url, opts] = fetchMock.mock.calls[0];
@@ -1778,8 +1778,8 @@ describe('tasksApi additional', () => {
 // ============================================================================
 // NOTES API - additional methods
 // ============================================================================
-describe('notesApi additional', () => {
-  it('update sends PATCH', async () => {
+describe('Given notesApi additional', () => {
+  it('When action / Then update sends PATCH', async () => {
     mockFetchSuccess({ id: 'n1', content: 'Updated' });
     const result = await notesApi.update('n1', { content: 'Updated' });
     expect(result.content).toBe('Updated');
@@ -1789,14 +1789,14 @@ describe('notesApi additional', () => {
 // ============================================================================
 // DOCUMENTS API - additional methods
 // ============================================================================
-describe('documentsApi additional', () => {
-  it('create sends POST', async () => {
+describe('Given documentsApi additional', () => {
+  it('When action / Then create sends POST', async () => {
     mockFetchSuccess({ id: 'doc-new', name: 'file.pdf', uploaded_by_id: 'u1' });
     const result = await documentsApi.create({ name: 'file.pdf', lead_id: 'l1' });
     expect(result.id).toBe('doc-new');
   });
 
-  it('delete sends DELETE request', async () => {
+  it('When action / Then delete sends DELETE request', async () => {
     mockFetchSuccess({});
     await documentsApi.delete('doc1');
     const [url, opts] = fetchMock.mock.calls[0];
@@ -1808,14 +1808,14 @@ describe('documentsApi additional', () => {
 // ============================================================================
 // ACTIVITIES API - additional methods
 // ============================================================================
-describe('activitiesApi additional', () => {
-  it('update sends PATCH', async () => {
+describe('Given activitiesApi additional', () => {
+  it('When action / Then update sends PATCH', async () => {
     mockFetchSuccess({ id: 'a1', type: 'CALL', notes: 'Updated' });
     const result = await activitiesApi.update('a1', { notes: 'Updated' });
     expect(result.notes).toBe('Updated');
   });
 
-  it('delete sends DELETE request', async () => {
+  it('When action / Then delete sends DELETE request', async () => {
     mockFetchSuccess({});
     await activitiesApi.delete('a1');
     const [url, opts] = fetchMock.mock.calls[0];
@@ -1827,28 +1827,28 @@ describe('activitiesApi additional', () => {
 // ============================================================================
 // CUSTOMERS API - additional methods
 // ============================================================================
-describe('customersApi additional', () => {
-  it('getStats fetches customer stats', async () => {
+describe('Given customersApi additional', () => {
+  it('When action / Then getStats fetches customer stats', async () => {
     mockFetchSuccess({ total: 50 });
     const result = await customersApi.getStats();
     expect(result.total).toBe(50);
   });
 
-  it('promote sends PATCH to promote endpoint', async () => {
+  it('When action / Then promote sends PATCH to promote endpoint', async () => {
     mockFetchSuccess({ type: 'customer' });
     const result = await customersApi.promote('l1');
     expect(result.type).toBe('customer');
   });
 
-  it('validateTaxId sends PATCH', async () => {
+  it('When action / Then validateTaxId sends PATCH', async () => {
     mockFetchSuccess({ valid: true });
     const result = await customersApi.validateTaxId('c1', 'TAX123');
     expect(result.valid).toBe(true);
   });
 
-  it('updateCreditLimit sends PATCH', async () => {
+  it('When action / Then updateCreditLimit sends PATCH', async () => {
     mockFetchSuccess({ credit_limit: 10000 });
-    const result = await customersApi.updateCreditLimit('c1', 10000);
+    const result = await customersApi.updateCreditLimit('When action / Then c1', 10000);
     expect(result.credit_limit).toBe(10000);
   });
 });

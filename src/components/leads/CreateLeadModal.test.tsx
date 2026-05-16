@@ -40,29 +40,29 @@ beforeEach(() => {
   mockRecordActivity.mockResolvedValue(undefined);
 });
 
-describe('CreateLeadModal', () => {
-  it('returns null when closed', () => {
+describe('Given CreateLeadModal', () => {
+  it('When action / Then returns null when closed', () => {
     const { container } = render(
       <CreateLeadModal isOpen={false} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />,
     );
     expect(container.querySelector('[data-testid="modal"]')).toBeNull();
   });
 
-  it('renders form when open', async () => {
+  it('When action / Then renders form when open', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
       expect(screen.getByTestId('modal')).toBeInTheDocument();
     });
   });
 
-  it('shows company name field', async () => {
+  it('When action / Then shows company name field', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
       expect(screen.getByText(/company name/i)).toBeInTheDocument();
     });
   });
 
-  it('shows all form fields', async () => {
+  it('When action / Then shows all form fields', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
       expect(screen.getByText(/contact name/i)).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('CreateLeadModal', () => {
     });
   });
 
-  it('shows custom fields', async () => {
+  it('When action / Then shows custom fields', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
       expect(screen.getByText('Industry')).toBeInTheDocument();
@@ -83,7 +83,7 @@ describe('CreateLeadModal', () => {
     });
   });
 
-  it('shows duplicate warning', async () => {
+  it('When action / Then shows duplicate warning', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={['Acme']} />);
     await waitFor(() => screen.getByTestId('modal'));
     const input = screen.getByPlaceholderText('e.g. Acme Corp');
@@ -91,7 +91,7 @@ describe('CreateLeadModal', () => {
     expect(screen.getByText(/potential duplicate/i)).toBeInTheDocument();
   });
 
-  it('submits form and calls onSuccess', async () => {
+  it('When action / Then submits form and calls onSuccess', async () => {
     const onSuccess = vi.fn();
     const onClose = vi.fn();
     render(<CreateLeadModal isOpen={true} onClose={onClose} onSuccess={onSuccess} existingLeads={[]} />);
@@ -110,7 +110,7 @@ describe('CreateLeadModal', () => {
     });
   });
 
-  it('shows error on submit failure', async () => {
+  it('When action / Then shows error on submit failure', async () => {
     mockCreateLead.mockRejectedValue(new Error('fail'));
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => screen.getByTestId('modal'));
@@ -124,14 +124,14 @@ describe('CreateLeadModal', () => {
     });
   });
 
-  it('shows lead stage dropdown with options', async () => {
+  it('When action / Then shows lead stage dropdown with options', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
       expect(screen.getByText('New')).toBeInTheDocument();
     });
   });
 
-  it('fills in all form fields', async () => {
+  it('When action / Then fills in all form fields', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => screen.getByTestId('modal'));
 
@@ -140,14 +140,14 @@ describe('CreateLeadModal', () => {
     if (phoneField) fireEvent.change(phoneField, { target: { value: '555' } });
   });
 
-  it('fetches settings on open', async () => {
+  it('When action / Then fetches settings on open', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
       expect(mockGetSettings).toHaveBeenCalled();
     });
   });
 
-  it('does not fetch settings when closed', () => {
+  it('When action / Then does not fetch settings when closed', () => {
     render(<CreateLeadModal isOpen={false} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     expect(mockGetSettings).not.toHaveBeenCalled();
   });

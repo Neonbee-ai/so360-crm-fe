@@ -108,14 +108,14 @@ beforeEach(() => {
   ]);
 });
 
-describe('LeadDetailPage', () => {
-  it('shows loading state initially', () => {
+describe('Given LeadDetailPage', () => {
+  it('When action / Then shows loading state initially', () => {
     mockGetLeadById.mockReturnValue(new Promise(() => {}));
     render(<LeadDetailPage />);
     expect(document.body).toBeTruthy();
   });
 
-  it('shows not found when lead is null', async () => {
+  it('When action / Then shows not found when lead is null', async () => {
     mockGetLeadById.mockResolvedValue(undefined);
     render(<LeadDetailPage />);
     await waitFor(() => {
@@ -123,7 +123,7 @@ describe('LeadDetailPage', () => {
     });
   });
 
-  it('renders lead detail with data', async () => {
+  it('When action / Then renders lead detail with data', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Acme')).toBeInTheDocument();
@@ -131,20 +131,20 @@ describe('LeadDetailPage', () => {
     });
   });
 
-  it('renders lead journey stepper', async () => {
+  it('When action / Then renders lead journey stepper', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
       expect(screen.getByTestId('stepper')).toBeInTheDocument();
     });
   });
 
-  it('shows activity timeline on activity tab', async () => {
+  it('When action / Then shows activity timeline on activity tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
     expect(screen.getByText(/call logged/i)).toBeInTheDocument();
   });
 
-  it('switches to notes tab', async () => {
+  it('When action / Then switches to notes tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
     fireEvent.click(screen.getByText('Notes'));
@@ -153,7 +153,7 @@ describe('LeadDetailPage', () => {
     });
   });
 
-  it('switches to tasks tab', async () => {
+  it('When action / Then switches to tasks tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
     fireEvent.click(screen.getByText(/^Tasks/));
@@ -162,7 +162,7 @@ describe('LeadDetailPage', () => {
     });
   });
 
-  it('switches to documents tab', async () => {
+  it('When action / Then switches to documents tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
     fireEvent.click(screen.getByText(/^Documents/));
@@ -171,7 +171,7 @@ describe('LeadDetailPage', () => {
     });
   });
 
-  it('displays lead contact info', async () => {
+  it('When action / Then displays lead contact info', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('j@a.com')).toBeInTheDocument();
@@ -179,14 +179,14 @@ describe('LeadDetailPage', () => {
     });
   });
 
-  it('displays lead source', async () => {
+  it('When action / Then displays lead source', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Website')).toBeInTheDocument();
     });
   });
 
-  it('displays back to leads link', async () => {
+  it('When action / Then displays back to leads link', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Back to Leads')).toBeInTheDocument();

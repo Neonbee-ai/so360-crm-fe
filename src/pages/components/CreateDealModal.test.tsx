@@ -24,7 +24,7 @@ import CreateDealModal from './CreateDealModal';
 
 beforeEach(() => { vi.clearAllMocks(); });
 
-describe('CreateDealModal', () => {
+describe('Given CreateDealModal', () => {
   const defaultProps = {
     leadId: 'lead-1',
     leadName: 'John',
@@ -33,14 +33,14 @@ describe('CreateDealModal', () => {
     onSuccess: vi.fn(),
   };
 
-  it('renders the modal with form fields', async () => {
+  it('When action / Then renders the modal with form fields', async () => {
     render(<CreateDealModal {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByText(/create deal/i)).toBeInTheDocument();
     });
   });
 
-  it('pre-fills the deal name from company', () => {
+  it('When action / Then pre-fills the deal name from company', () => {
     render(<CreateDealModal {...defaultProps} />);
     const nameInput = screen.getByDisplayValue('Acme Deal');
     expect(nameInput).toBeInTheDocument();

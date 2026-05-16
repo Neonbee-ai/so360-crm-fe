@@ -46,21 +46,21 @@ beforeEach(() => {
   mockRecordActivity.mockResolvedValue(undefined);
 });
 
-describe('TaskModal', () => {
+describe('Given TaskModal', () => {
   const defaultProps = {
     leadId: 'lead-1',
     onClose: vi.fn(),
     onSuccess: vi.fn(),
   };
 
-  it('renders create task form', async () => {
+  it('When action / Then renders create task form', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByText('New Task')).toBeInTheDocument();
     });
   });
 
-  it('renders edit form when task is provided', async () => {
+  it('When action / Then renders edit form when task is provided', async () => {
     render(
       <TaskModal
         {...defaultProps}
@@ -76,7 +76,7 @@ describe('TaskModal', () => {
     });
   });
 
-  it('renders with REMINDER type task showing datetime', async () => {
+  it('When action / Then renders with REMINDER type task showing datetime', async () => {
     render(
       <TaskModal
         {...defaultProps}
@@ -93,28 +93,28 @@ describe('TaskModal', () => {
     });
   });
 
-  it('shows title field', async () => {
+  it('When action / Then shows title field', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/follow up/i)).toBeInTheDocument();
     });
   });
 
-  it('shows due date field', async () => {
+  it('When action / Then shows due date field', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByText(/due date/i)).toBeInTheDocument();
     });
   });
 
-  it('shows assignee dropdown', async () => {
+  it('When action / Then shows assignee dropdown', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByText(/Assigned To/i)).toBeInTheDocument();
     });
   });
 
-  it('submits create form', async () => {
+  it('When action / Then submits create form', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => screen.getByText('New Task'));
 
@@ -129,7 +129,7 @@ describe('TaskModal', () => {
     });
   });
 
-  it('submits update form', async () => {
+  it('When action / Then submits update form', async () => {
     render(
       <TaskModal
         {...defaultProps}
@@ -150,7 +150,7 @@ describe('TaskModal', () => {
     });
   });
 
-  it('calls onClose when cancel clicked', async () => {
+  it('When action / Then calls onClose when cancel clicked', async () => {
     const onClose = vi.fn();
     render(<TaskModal {...defaultProps} onClose={onClose} />);
     await waitFor(() => screen.getByText('New Task'));
@@ -158,21 +158,21 @@ describe('TaskModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('shows task type selector', async () => {
+  it('When action / Then shows task type selector', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByText(/type/i)).toBeInTheDocument();
     });
   });
 
-  it('shows assign to me button', async () => {
+  it('When action / Then shows assign to me button', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => {
       expect(screen.getByTitle(/assign this task to yourself|already assigned/i)).toBeInTheDocument();
     });
   });
 
-  it('handles assign to me', async () => {
+  it('When action / Then handles assign to me', async () => {
     render(<TaskModal {...defaultProps} />);
     await waitFor(() => screen.getByTitle(/assign this task to yourself|already assigned/i));
     fireEvent.click(screen.getByTitle(/assign this task to yourself|already assigned/i));

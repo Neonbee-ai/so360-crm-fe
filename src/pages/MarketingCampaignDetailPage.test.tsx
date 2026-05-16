@@ -26,13 +26,13 @@ import MarketingCampaignDetailPage from './MarketingCampaignDetailPage';
 
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 
-describe('MarketingCampaignDetailPage', () => {
-  it('shows store selection prompt when no store selected', () => {
+describe('Given MarketingCampaignDetailPage', () => {
+  it('When action / Then shows store selection prompt when no store selected', () => {
     render(<MarketingCampaignDetailPage />);
     expect(screen.getByText(/select a store/i)).toBeInTheDocument();
   });
 
-  it('renders when store is set', () => {
+  it('When action / Then renders when store is set', () => {
     localStorage.setItem('crm_marketing_store_id', 'store-1');
     render(<MarketingCampaignDetailPage />);
     expect(document.body).toBeTruthy();

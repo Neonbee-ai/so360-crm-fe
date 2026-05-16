@@ -16,77 +16,77 @@ const deals = [
   { id: 'd3', name: 'Deal C', value: 3000, company_name: 'WinCo', owner: { id: 'u1', full_name: 'Test', avatar_url: null }, current_flow_state: 'won', created_at: '2024-03-01', expected_close_date: '2024-05-01' },
 ] as any;
 
-describe('KanbanBoard', () => {
-  it('renders all stages', () => {
+describe('Given KanbanBoard', () => {
+  it('When action / Then renders all stages', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     expect(screen.getByText('New')).toBeInTheDocument();
     expect(screen.getByText('Qualified')).toBeInTheDocument();
     expect(screen.getByText('Won')).toBeInTheDocument();
   });
 
-  it('renders deal cards', () => {
+  it('When action / Then renders deal cards', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     expect(screen.getByText('Deal A')).toBeInTheDocument();
     expect(screen.getByText('Deal B')).toBeInTheDocument();
     expect(screen.getByText('Deal C')).toBeInTheDocument();
   });
 
-  it('calls onDealClick when card is clicked', () => {
+  it('When action / Then calls onDealClick when card is clicked', () => {
     const onDealClick = vi.fn();
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={onDealClick} onStageChange={vi.fn()} />);
     fireEvent.click(screen.getByText('Deal A'));
     expect(onDealClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'd1' }));
   });
 
-  it('renders empty stages with no deals', () => {
+  it('When action / Then renders empty stages with no deals', () => {
     render(<KanbanBoard deals={[]} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     expect(screen.getByText('New')).toBeInTheDocument();
   });
 
-  it('shows deal count per stage', () => {
+  it('When action / Then shows deal count per stage', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     const ones = screen.getAllByText('1');
     expect(ones.some(el => el.closest('[class*="bg-slate"]'))).toBeTruthy();
   });
 
-  it('shows stage totals', () => {
+  it('When action / Then shows stage totals', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     const fiveK = screen.getAllByText('$5,000');
     expect(fiveK.length).toBeGreaterThan(0);
     expect(screen.getAllByText('$10,000').length).toBeGreaterThan(0);
   });
 
-  it('shows lock icon on terminal stages', () => {
+  it('When action / Then shows lock icon on terminal stages', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     // Terminal stage should have the lock icon rendered
     expect(screen.getByText('Won')).toBeInTheDocument();
   });
 
-  it('renders deal with avatar url', () => {
+  it('When action / Then renders deal with avatar url', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     // Deal B has an avatar URL
     const img = document.querySelector('img[alt="Other"]');
     expect(img).toBeTruthy();
   });
 
-  it('renders deal with avatar initial (no url)', () => {
+  it('When action / Then renders deal with avatar initial (no url)', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     // Deal A has no avatar URL, should show initial 'T'
     expect(screen.getAllByText('T').length).toBeGreaterThan(0);
   });
 
-  it('shows company name on cards', () => {
+  it('When action / Then shows company name on cards', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     expect(screen.getByText('Acme')).toBeInTheDocument();
     expect(screen.getByText('BigCo')).toBeInTheDocument();
   });
 
-  it('shows deal value on cards', () => {
+  it('When action / Then shows deal value on cards', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     expect(screen.getAllByText('$5,000').length).toBeGreaterThan(0);
   });
 
-  it('handles drag start on non-terminal deal', () => {
+  it('When action / Then handles drag start on non-terminal deal', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     const dealCard = screen.getByText('Deal A').closest('[draggable]');
     expect(dealCard).toBeTruthy();
@@ -97,7 +97,7 @@ describe('KanbanBoard', () => {
     }
   });
 
-  it('handles drag end', () => {
+  it('When action / Then handles drag end', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     const dealCard = screen.getByText('Deal A').closest('[draggable]');
     if (dealCard) {
@@ -106,7 +106,7 @@ describe('KanbanBoard', () => {
     }
   });
 
-  it('handles drag over and drop', () => {
+  it('When action / Then handles drag over and drop', () => {
     const onStageChange = vi.fn();
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={onStageChange} />);
 
@@ -124,7 +124,7 @@ describe('KanbanBoard', () => {
     }
   });
 
-  it('handles drag leave', () => {
+  it('When action / Then handles drag leave', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     const dropZones = document.querySelectorAll('[class*="flex-1"]');
     if (dropZones[0]) {
@@ -134,7 +134,7 @@ describe('KanbanBoard', () => {
     expect(true).toBe(true);
   });
 
-  it('does not call onStageChange when dropping on same stage', () => {
+  it('When action / Then does not call onStageChange when dropping on same stage', () => {
     const onStageChange = vi.fn();
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={onStageChange} />);
 
@@ -147,13 +147,13 @@ describe('KanbanBoard', () => {
     }
   });
 
-  it('terminal stages show empty state message', () => {
+  it('When action / Then terminal stages show empty state message', () => {
     const emptyDeals = deals.filter((d: any) => d.current_flow_state !== 'won');
     render(<KanbanBoard deals={emptyDeals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
     expect(screen.getByText(/win\/lose via/i)).toBeInTheDocument();
   });
 
-  it('terminal stage deals are clickable', () => {
+  it('When action / Then terminal stage deals are clickable', () => {
     const onDealClick = vi.fn();
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={onDealClick} onStageChange={vi.fn()} />);
     fireEvent.click(screen.getByText('Deal C'));

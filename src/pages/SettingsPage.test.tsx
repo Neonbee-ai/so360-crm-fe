@@ -43,14 +43,14 @@ beforeEach(() => {
   mockUpdateSettings.mockResolvedValue(makeSettings());
 });
 
-describe('SettingsPage', () => {
-  it('shows loading spinner initially', () => {
+describe('Given SettingsPage', () => {
+  it('When action / Then shows loading spinner initially', () => {
     mockGetSettings.mockReturnValue(new Promise(() => {}));
     render(<SettingsPage />);
     expect(screen.getByText(/loading settings/i)).toBeInTheDocument();
   });
 
-  it('renders settings page with pipeline tab by default', async () => {
+  it('When action / Then renders settings page with pipeline tab by default', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
       expect(screen.getByDisplayValue('Lead')).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('saves settings when Save button is clicked', async () => {
+  it('When action / Then saves settings when Save button is clicked', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/save configuration/i));
@@ -68,7 +68,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('shows error when save fails', async () => {
+  it('When action / Then shows error when save fails', async () => {
     mockUpdateSettings.mockRejectedValue(new Error('fail'));
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
@@ -78,7 +78,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('adds a new pipeline stage', async () => {
+  it('When action / Then adds a new pipeline stage', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/add stage/i));
@@ -87,7 +87,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('removes a pipeline stage', async () => {
+  it('When action / Then removes a pipeline stage', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     const removeButtons = screen.getAllByTitle('Remove Stage');
@@ -97,7 +97,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('prevents removing last pipeline stage', async () => {
+  it('When action / Then prevents removing last pipeline stage', async () => {
     mockGetSettings.mockResolvedValue({
       ...makeSettings(),
       deal_stages: [{ id: 's1', name: 'Only', type: 'OPEN' }],
@@ -109,7 +109,7 @@ describe('SettingsPage', () => {
     expect(mockShowError).toHaveBeenCalledWith('Pipeline must have at least one stage.');
   });
 
-  it('edits pipeline stage name', async () => {
+  it('When action / Then edits pipeline stage name', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     const input = screen.getByDisplayValue('Lead');
@@ -117,7 +117,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('Prospect')).toBeInTheDocument();
   });
 
-  it('changes pipeline stage type', async () => {
+  it('When action / Then changes pipeline stage type', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     const selects = screen.getAllByDisplayValue('OPEN');
@@ -125,7 +125,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('LOST')).toBeInTheDocument();
   });
 
-  it('switches to lead-stages tab', async () => {
+  it('When action / Then switches to lead-stages tab', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead stages/i));
@@ -135,7 +135,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('adds and removes lead stages', async () => {
+  it('When action / Then adds and removes lead stages', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead stages/i));
@@ -151,7 +151,7 @@ describe('SettingsPage', () => {
     fireEvent.click(removeButtons[0]);
   });
 
-  it('prevents removing last lead stage', async () => {
+  it('When action / Then prevents removing last lead stage', async () => {
     mockGetSettings.mockResolvedValue({
       ...makeSettings(),
       lead_stages: [{ id: 'ls1', name: 'Only' }],
@@ -165,7 +165,7 @@ describe('SettingsPage', () => {
     expect(mockShowError).toHaveBeenCalledWith('Lead stages must have at least one stage.');
   });
 
-  it('edits lead stage name', async () => {
+  it('When action / Then edits lead stage name', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead stages/i));
@@ -174,7 +174,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('Fresh')).toBeInTheDocument();
   });
 
-  it('switches to custom-fields tab and shows lead/deal fields', async () => {
+  it('When action / Then switches to custom-fields tab and shows lead/deal fields', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/custom fields/i));
@@ -186,7 +186,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('adds and removes lead custom fields', async () => {
+  it('When action / Then adds and removes lead custom fields', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/custom fields/i));
@@ -198,7 +198,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('New Field')).toBeInTheDocument();
   });
 
-  it('edits lead custom field label and type', async () => {
+  it('When action / Then edits lead custom field label and type', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/custom fields/i));
@@ -208,7 +208,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('Sector')).toBeInTheDocument();
   });
 
-  it('switches to sources tab and shows lead sources', async () => {
+  it('When action / Then switches to sources tab and shows lead sources', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
@@ -217,7 +217,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('adds a new source', async () => {
+  it('When action / Then adds a new source', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
@@ -226,7 +226,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('New Source')).toBeInTheDocument();
   });
 
-  it('edits source name', async () => {
+  it('When action / Then edits source name', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
@@ -235,7 +235,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('LinkedIn')).toBeInTheDocument();
   });
 
-  it('toggles archive on source', async () => {
+  it('When action / Then toggles archive on source', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
@@ -246,7 +246,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
   });
 
-  it('switches to scoring tab and shows rules', async () => {
+  it('When action / Then switches to scoring tab and shows rules', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
@@ -256,7 +256,7 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('adds a new scoring rule', async () => {
+  it('When action / Then adds a new scoring rule', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
@@ -265,7 +265,7 @@ describe('SettingsPage', () => {
     expect(screen.getByDisplayValue('New Rule')).toBeInTheDocument();
   });
 
-  it('edits scoring rule criteria, type, and points', async () => {
+  it('When action / Then edits scoring rule criteria, type, and points', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));

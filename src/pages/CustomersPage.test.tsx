@@ -41,13 +41,13 @@ beforeEach(() => {
   mockGetCustomerStats.mockResolvedValue({ total: 0 });
 });
 
-describe('CustomersPage', () => {
-  it('renders header', async () => {
+describe('Given CustomersPage', () => {
+  it('When action / Then renders header', async () => {
     render(<CustomersPage />);
     expect(screen.getByText('Customers')).toBeInTheDocument();
   });
 
-  it('shows loading then data', async () => {
+  it('When action / Then shows loading then data', async () => {
     mockGetCustomers.mockResolvedValue([{ id: '1', contact_name: 'John', email: 'j@x.com', channel: 'manual', created_at: '2024-01-01' }]);
     render(<CustomersPage />);
     await waitFor(() => {
@@ -55,14 +55,14 @@ describe('CustomersPage', () => {
     });
   });
 
-  it('shows empty state', async () => {
+  it('When action / Then shows empty state', async () => {
     render(<CustomersPage />);
     await waitFor(() => {
       expect(screen.getByTestId('table')).toHaveTextContent('No customers found');
     });
   });
 
-  it('displays stats', async () => {
+  it('When action / Then displays stats', async () => {
     mockGetCustomerStats.mockResolvedValue({ total: 42 });
     render(<CustomersPage />);
     await waitFor(() => {

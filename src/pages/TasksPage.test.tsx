@@ -46,22 +46,22 @@ beforeEach(() => {
   mockGetUsers.mockResolvedValue([{ id: 'u1', full_name: 'Test' }]);
 });
 
-describe('TasksPage', () => {
-  it('renders tasks header', async () => {
+describe('Given TasksPage', () => {
+  it('When action / Then renders tasks header', async () => {
     render(<TasksPage />);
     await waitFor(() => {
       expect(screen.getAllByText(/task/i).length).toBeGreaterThan(0);
     });
   });
 
-  it('shows empty state when no tasks', async () => {
+  it('When action / Then shows empty state when no tasks', async () => {
     render(<TasksPage />);
     await waitFor(() => {
       expect(screen.getByTestId('table')).toBeTruthy();
     });
   });
 
-  it('shows tasks when loaded', async () => {
+  it('When action / Then shows tasks when loaded', async () => {
     mockGetTasks.mockResolvedValue([
       { id: 't1', title: 'Call John', status: 'Open', due_date: '2024-01-01', type: 'TODO', assigned_to: { id: 'u1', full_name: 'Test' } },
     ]);
