@@ -26,8 +26,8 @@ vi.mock('./services/crmService', () => ({
 
 import App from './App';
 
-describe('App', () => {
-  it('renders without crashing and shows loading then content', async () => {
+describe('Given the App component is rendered', () => {
+  it('When navigated to /dashboard / Then renders without crashing and shows loading then content', async () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <App />
@@ -37,7 +37,7 @@ describe('App', () => {
     expect(document.body).toBeTruthy();
   });
 
-  it('redirects root to dashboard', () => {
+  it('When navigated to root / / Then redirects to dashboard', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
