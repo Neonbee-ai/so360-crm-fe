@@ -13,6 +13,7 @@ vi.mock('@so360/shell-context', () => ({
     isFeatureHidden: () => false,
     isModuleEnabled: () => true,
   }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('./services/crmService', () => ({

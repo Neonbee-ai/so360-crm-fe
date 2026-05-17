@@ -31,6 +31,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   ShellContext: React.createContext({ user: { id: 'u1' } }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('./components/TaskModal', () => ({ default: () => null }));

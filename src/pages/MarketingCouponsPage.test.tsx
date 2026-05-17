@@ -34,6 +34,7 @@ vi.mock('../components/common/Toast', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('./marketing/marketingMappers', () => ({
