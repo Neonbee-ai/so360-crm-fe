@@ -42,12 +42,14 @@ jobs:
           --excludePrivatePackages
       - name: Scan for secrets
         run: |
+          # Remove build artifacts before scanning (they contain env var names that trigger false positives)
+          rm -rf coverage/ dist/ dist-ssr/
           GITLEAKS_VERSION="8.30.1"
           if command -v gitleaks &>/dev/null; then
-            gitleaks detect --source . --config .gitleaks.toml --verbose
+            gitleaks detect --source . --verbose
           else
             curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz -C /tmp/
-            /tmp/gitleaks detect --source . --config .gitleaks.toml --verbose
+            /tmp/gitleaks detect --source . --verbose
           fi
 
   codeql:
