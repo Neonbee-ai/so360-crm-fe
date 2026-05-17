@@ -1,5 +1,13 @@
-export const useShellBridge: any;
-export const useShell: any;
-export const eventBus: any;
+export declare const useShellBridge: any;
+export declare const useShell: any;
+export declare const useBusinessSettings: () => { settings: { base_currency: string; timezone: string } };
+export declare const useNotify: () => { emitNotification: (...args: any[]) => void };
+export declare const useActivity: () => { recordActivity: (...args: any[]) => Promise<void> };
+export declare const usePeople: () => { people: any[] };
+export declare const useTenant: () => { id: string };
+export declare const useOrganization: () => { id: string };
+export declare const useIdentity: () => { user: any };
+export declare const ShellContext: any;
+export declare const eventBus: any;
 declare const _: any;
 export default _;
