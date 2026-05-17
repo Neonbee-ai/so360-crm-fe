@@ -85,6 +85,13 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </div>
                 )}
 
+                {error && (
+                    <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                        <AlertCircle size={18} className="shrink-0" />
+                        <p>{error}</p>
+                    </div>
+                )}
+
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-400">Company Name *</label>
                     <input
