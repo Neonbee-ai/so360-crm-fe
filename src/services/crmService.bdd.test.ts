@@ -144,15 +144,16 @@ describe('crmService — tasksApi', () => {
 describe('crmService — dashboard stats', () => {
   describe('Given the backend returns stats', () => {
     it('When getDashboardStats is called / Then returns stats object', async () => {
-      const stats = {
-        financials: { totalRevenue: 1000, pipelineValue: 5000, avgDealSize: 2000, winRate: 60 },
-        counts: { leads: 5, deals: 3, tasks: 2, reminders: 1 },
-        teamStats: [],
-        monthlyRevenue: [],
-        chartLabels: [],
-        reminders: [],
+      // Backend format expected by the analytics/dashboard endpoint
+      const analyticsStats = {
+        financials: { totalRevenue: 1000, pipelineValue: 5000, avgDealSize: 2000 },
+        metrics: { winRate: 60 },
+        counts: { totalLeads: 5, totalDeals: 3 },
+        chartData: { values: [], labels: [] },
       };
-      mockSuccess(stats);
+      mockSuccess(analyticsStats);  // /analytics/dashboard
+      mockSuccess([]);               // /analytics/performance
+      mockSuccess([]);               // getTasks
       const result = await crmService.getDashboardStats({ period: 'monthly' });
       expect(result.financials.totalRevenue).toBe(1000);
     });
