@@ -1,5 +1,12 @@
-export const useShellBridge: any;
-export const useShell: any;
-export const eventBus: any;
+import * as React from 'react';
+export declare const Button: any;
+export declare const Card: any;
+export declare const Modal: any;
+export declare const Input: any;
+export declare const Badge: any;
+export declare const Spinner: any;
+export declare const LoadingSpinner: any;
+export declare const Table: any;
+export declare const Select: any;
 declare const _: any;
 export default _;
