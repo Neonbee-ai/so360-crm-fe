@@ -23,6 +23,7 @@ vi.mock('@so360/shell-context', () => ({
   useShellBridge: () => ({
     isFeatureEnabled: () => true,
   }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('../components/common/Table', () => ({

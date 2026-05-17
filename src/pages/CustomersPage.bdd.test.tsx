@@ -31,6 +31,7 @@ vi.mock('@so360/shell-context', () => ({
       return true;
     },
   }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 let tableProps: any = {};

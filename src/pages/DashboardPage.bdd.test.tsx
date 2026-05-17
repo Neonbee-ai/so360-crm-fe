@@ -23,6 +23,7 @@ vi.mock('@so360/shell-context', () => ({
     isModuleEnabled: () => false,
     isFeatureHidden: () => false,
   }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 import DashboardPage from './DashboardPage';

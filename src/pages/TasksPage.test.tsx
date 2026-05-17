@@ -20,6 +20,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ user: { id: 'u1', full_name: 'Test' } }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('../components/common/Table', () => ({

@@ -41,6 +41,7 @@ vi.mock('./marketing/marketingMappers', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('@so360/design-system', () => ({
