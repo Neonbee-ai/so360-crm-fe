@@ -1,0 +1,14 @@
+title = "SO360 CRM Frontend Gitleaks Config"
+
+[extend]
+# Start from the default rules
+useDefault = true
+
+[allowlist]
+description = "Ignore build artifacts and coverage reports"
+paths = [
+    '''coverage/''',
+    '''dist/''',
+    '''dist-ssr/''',
+    '''node_modules/''',
+]
