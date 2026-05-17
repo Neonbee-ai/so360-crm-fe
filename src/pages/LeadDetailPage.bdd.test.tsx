@@ -52,6 +52,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 const mockShowSuccess = vi.fn();

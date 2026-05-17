@@ -33,6 +33,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   ShellContext: { Consumer: ({ children }: any) => children({ user: { id: 'user-1' } }) },
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('./components/TaskModal', () => ({

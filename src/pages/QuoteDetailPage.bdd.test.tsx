@@ -31,6 +31,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
+  useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
 vi.mock('@so360/formatters', () => ({
