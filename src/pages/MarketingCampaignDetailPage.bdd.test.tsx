@@ -196,7 +196,8 @@ describe('MarketingCampaignDetailPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getAllByText('Schedule')[0]).toBeInTheDocument());
 
-      const dateInput = screen.getByDisplayValue('');
+      const dateInput = document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+      expect(dateInput).toBeTruthy();
       fireEvent.change(dateInput, { target: { value: '2025-08-01T09:00' } });
       fireEvent.click(screen.getByRole('button', { name: /^schedule$/i }));
 

@@ -53,9 +53,9 @@ vi.mock('../components/common/Table', () => ({
 import TasksPage from './TasksPage';
 
 const makeTasks = () => [
-  { id: 't1', title: 'Follow up call', description: 'Call client', status: 'Open', due_date: '2026-01-15', deal_name: 'Big Deal', assigned_to: { id: 'user-1', full_name: 'Test User' } },
-  { id: 't2', title: 'Send proposal', description: 'Draft and send', status: 'Done', due_date: '2026-01-10', deal_name: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
-  { id: 't3', title: 'Review contract', description: null, status: 'Open', due_date: '2024-01-01', deal_name: 'Old Deal', assigned_to: { id: 'user-2', full_name: 'Other User' } },
+  { id: 't1', title: 'Follow up call', description: 'Call client', status: 'Open', due_date: '2026-01-15', deal: { name: 'Big Deal', company_name: 'Big Deal Inc' }, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' } },
+  { id: 't2', title: 'Send proposal', description: 'Draft and send', status: 'Done', due_date: '2026-01-10', deal: null, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
+  { id: 't3', title: 'Review contract', description: null, status: 'Open', due_date: '2024-01-01', deal: { name: 'Old Deal', company_name: 'Old Deal Inc' }, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
 ];
 
 const makeUsers = () => [
@@ -214,7 +214,7 @@ describe('TasksPage', () => {
     it('When assigned_to header is rendered / Then provides sortable header', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const assigneeHeader = tableProps.columns[2].header;
+      const assigneeHeader = tableProps.columns[3].header;
       const { container } = render(assigneeHeader);
       expect(container.textContent).toContain('Assigned To');
     });
@@ -224,7 +224,7 @@ describe('TasksPage', () => {
     it('When page size is changed / Then resets to page 1', async () => {
       const manyTasks = Array.from({ length: 15 }, (_, i) => ({
         id: `t${i}`, title: `Task ${i}`, description: null, status: 'Open',
-        due_date: '2026-01-15', deal_name: null, assigned_to: { id: 'user-1', full_name: 'Test User' },
+        due_date: '2026-01-15', deal: null, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' },
       }));
       mockGetTasks.mockResolvedValue(manyTasks);
       render(<TasksPage />);
@@ -245,7 +245,7 @@ describe('TasksPage', () => {
     it('When status column renders an open task / Then shows circle icon', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const statusCol = tableProps.columns[3];
+      const statusCol = tableProps.columns[4];
       const cell = statusCol.accessor(makeTasks()[0]);
       const { container } = render(cell);
       const select = container.querySelector('select');
@@ -255,7 +255,7 @@ describe('TasksPage', () => {
     it('When status column renders a done task / Then shows Done selected', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const statusCol = tableProps.columns[3];
+      const statusCol = tableProps.columns[4];
       const cell = statusCol.accessor(makeTasks()[1]);
       const { container } = render(cell);
       const select = container.querySelector('select');
@@ -265,7 +265,7 @@ describe('TasksPage', () => {
     it('When assignee column renders / Then shows user select with current assignee', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const assigneeCol = tableProps.columns[2];
+      const assigneeCol = tableProps.columns[3];
       const cell = assigneeCol.accessor(makeTasks()[0]);
       const { container } = render(cell);
       const select = container.querySelector('select');
@@ -282,11 +282,11 @@ describe('TasksPage', () => {
       expect(container.textContent).toContain('Overdue');
     });
 
-    it('When title column renders task with deal / Then shows deal name', async () => {
+    it('When Associated With column renders task with deal / Then shows deal name', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const titleCol = tableProps.columns[0];
-      const cell = titleCol.accessor(makeTasks()[0]);
+      const associatedWithCol = tableProps.columns[2];
+      const cell = associatedWithCol.accessor(makeTasks()[0]);
       const { container } = render(cell);
       expect(container.textContent).toContain('Big Deal');
     });
