@@ -104,7 +104,8 @@ const mapNoteFromApi = (apiNote: any): Note => ({
 const mapTaskFromApi = (apiTask: any): Task => ({
     ...apiTask,
     status: apiTask.status ? (apiTask.status.charAt(0).toUpperCase() + apiTask.status.slice(1).toLowerCase()) : 'Open',
-    assigned_to: mapUser(apiTask.assigned_to, apiTask.assignee_id)
+    assigned_to: mapUser(apiTask.assigned_to, apiTask.assignee_id),
+    deal: apiTask.deal ? { ...apiTask.deal, company_name: apiTask.deal.company || apiTask.deal.company_name } : apiTask.deal
 });
 
 const mapActivityFromApi = (apiActivity: any): Activity => ({
@@ -123,6 +124,7 @@ const mapDealFromApi = (apiDeal: any): Deal => {
     return {
         ...apiDeal,
         value: parseFloat(apiDeal.value) || 0,
+        company_name: apiDeal.company || apiDeal.company_name,
         owner: mapUser(apiDeal.owner, apiDeal.owner_id),
         // Notes, documents, and activities are fetched separately via dedicated endpoints
         // Don't assume they're embedded in the deal response to avoid N+1 query issues
