@@ -45,8 +45,8 @@ jobs:
           fi) &
           GITLEAKS_PID=$!
 
-          # Run unit tests in foreground
-          npm test -- --passWithNoTests --forceExit --ci --runInBand
+          # Run unit tests in foreground (Vitest — no --forceExit/--runInBand, those are Jest flags)
+          npm test -- --passWithNoTests
           TEST_EXIT=$?
 
           # Collect results from background jobs
