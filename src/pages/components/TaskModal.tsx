@@ -21,6 +21,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
     const isEditing = !!task;
+    const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayDatetime = new Date().toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
     const [title, setTitle] = useState(task?.title || '');
     const [description, setDescription] = useState(task?.description || '');
     const [dueDate, setDueDate] = useState(() => {
@@ -175,6 +177,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                         type={type === 'REMINDER' ? "datetime-local" : "date"}
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
+                                        min={type === 'REMINDER' ? todayDatetime : todayDate}
                                         className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                         required
                                     />
