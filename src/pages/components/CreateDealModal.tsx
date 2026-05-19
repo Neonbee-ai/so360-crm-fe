@@ -38,6 +38,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                 setOwnerId(usersData[0].id);
             }
             setSettings(settingsData.deal_stages);
+            if (settingsData.deal_stages.length > 0) {
+                setStage(settingsData.deal_stages[0].name as DealStage);
+            }
         };
         fetchDependencies();
     }, []);

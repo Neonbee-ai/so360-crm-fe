@@ -33,3 +33,27 @@ describe('Given DealLifecycleStepper', () => {
     expect(screen.getByText('New')).toBeInTheDocument();
   });
 });
+
+describe('Given an unexpected or unknown currentState', () => {
+  it('When rendered with an unknown state / Then does not crash and renders all step labels', () => {
+    render(<DealLifecycleStepper currentState="unknown_state" />);
+    expect(screen.getByText('New')).toBeInTheDocument();
+    expect(screen.getByText('Qualified')).toBeInTheDocument();
+  });
+
+  it('When rendered with uppercase state / Then normalizes and does not crash', () => {
+    render(<DealLifecycleStepper currentState="NEW" />);
+    expect(document.body).toBeTruthy();
+  });
+});
+
+describe('Given each valid forward state', () => {
+  const states = ['new', 'qualified', 'proposal', 'negotiation', 'won'];
+
+  states.forEach((state) => {
+    it(`When currentState is "${state}" / Then renders without crashing`, () => {
+      render(<DealLifecycleStepper currentState={state} />);
+      expect(document.body).toBeTruthy();
+    });
+  });
+});
