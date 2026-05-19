@@ -2,10 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 
-const mockGetNewsletterSubscribers = vi.fn().mockResolvedValue([]);
-const mockAddNewsletterSubscriber = vi.fn();
-const mockUnsubscribeNewsletter = vi.fn();
-const mockDeleteNewsletterSubscriber = vi.fn();
+const { mockGetNewsletterSubscribers, mockAddNewsletterSubscriber, mockUnsubscribeNewsletter, mockDeleteNewsletterSubscriber, mockShowError } = vi.hoisted(() => ({
+  mockGetNewsletterSubscribers: vi.fn().mockResolvedValue([]),
+  mockAddNewsletterSubscriber: vi.fn(),
+  mockUnsubscribeNewsletter: vi.fn(),
+  mockDeleteNewsletterSubscriber: vi.fn(),
+  mockShowError: vi.fn(),
+}));
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -20,7 +23,6 @@ vi.mock('../components/MarketingStorePicker', () => ({
   MarketingStorePicker: ({ storeId, onChange }: any) => <select data-testid="store-picker" value={storeId} onChange={(e: any) => onChange(e.target.value)}><option value="">Select</option></select>,
 }));
 
-const mockShowError = vi.fn();
 vi.mock('../components/common/Toast', () => ({
   ToastContainer: () => null,
   useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: mockShowError, dismissToast: vi.fn() }),
