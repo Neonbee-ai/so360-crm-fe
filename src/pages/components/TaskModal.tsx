@@ -4,7 +4,6 @@ import { crmService } from '../../services/crmService';
 import { Task, TaskType, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
 import { useShell, useNotify, useActivity } from '@so360/shell-context';
-import { canCurrentUserBeAssigned } from '../../utils/taskUtils';
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -42,21 +41,23 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
 
     useEffect(() => {
         const fetchUsers = async () => {
-            console.log('[TaskModal] Shell context:', shell);
-            console.log('[TaskModal] Current user:', currentUser);
-            console.log('[TaskModal] Current user ID:', currentUserId);
-
             const usersData = await crmService.getUsers();
-            console.log('[TaskModal] Fetched users:', usersData);
 
-            setUsers(usersData);
-            if (!assignedToId && usersData.length > 0) {
-                setAssignedToId(usersData[0].id);
+            // If API returns no users but we have the current user from shell, use them as fallback
+            let finalUsers = usersData;
+            if (usersData.length === 0 && currentUser?.id) {
+                finalUsers = [{
+                    id: currentUser.id,
+                    full_name: (currentUser as any).full_name || (currentUser as any).email || 'Me',
+                    email: (currentUser as any).email || '',
+                    avatar_url: (currentUser as any).avatar_url || null
+                }];
             }
 
-            // Verify current user is in list
-            const userInList = usersData.some(u => u.id === currentUserId);
-            console.log('[TaskModal] Current user in fetched list:', userInList);
+            setUsers(finalUsers);
+            if (!assignedToId && finalUsers.length > 0) {
+                setAssignedToId(finalUsers[0].id);
+            }
         };
         fetchUsers();
     }, []);
@@ -126,16 +127,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    {/* Debug Info Panel */}
-                    {import.meta.env.DEV && (
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4 text-xs space-y-1">
-                            <div className="font-bold text-yellow-400 mb-2">Debug Info:</div>
-                            <div className="text-slate-300">Shell User ID: <span className="text-white font-mono">{currentUserId || 'null'}</span></div>
-                            <div className="text-slate-300">Users Count: <span className="text-white font-mono">{users.length}</span></div>
-                            <div className="text-slate-300">Can Be Assigned: <span className={canCurrentUserBeAssigned(currentUser, users) ? 'text-green-400' : 'text-red-400'}>{canCurrentUserBeAssigned(currentUser, users) ? 'Yes' : 'No'}</span></div>
-                            <div className="text-slate-300">Current Assignee: <span className="text-white font-mono">{assignedToId || 'none'}</span></div>
-                        </div>
-                    )}
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Task Title</label>
@@ -229,14 +220,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                 <button
                                     type="button"
                                     onClick={handleAssignToMe}
-                                    disabled={
-                                        !canCurrentUserBeAssigned(currentUser, users) ||
-                                        assignedToId === currentUserId
-                                    }
+                                    disabled={!currentUserId || assignedToId === currentUserId}
                                     className="flex items-center gap-1.5 px-3 py-3 text-sm bg-blue-600/10 border border-blue-600/20 rounded-xl text-blue-400 hover:bg-blue-600/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                     title={
-                                        !canCurrentUserBeAssigned(currentUser, users)
-                                            ? "You don't have permission to be assigned tasks"
+                                        !currentUserId
+                                            ? "User session not available"
                                             : assignedToId === currentUserId
                                             ? "Already assigned to you"
                                             : "Assign this task to yourself"
