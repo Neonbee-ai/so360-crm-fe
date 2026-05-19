@@ -15,6 +15,7 @@ permissions:
 jobs:
   gate:
     runs-on: self-hosted
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
