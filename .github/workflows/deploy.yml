@@ -2,7 +2,7 @@ name: Deploy crm-fe
 
 on:
   push:
-    branches: [develop, qa]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
