@@ -120,7 +120,7 @@ jobs:
           ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
           ssh root@$SERVER_IP "mkdir -p '$NGINX_ROOT'"
           rsync -avz --delete dist/ "root@$SERVER_IP:$NGINX_ROOT/"
-          ssh root@$SERVER_IP "nginx -s reload"
+          ssh root@$SERVER_IP "nginx -t && nginx -s reload"
           echo "Deployed CRM to cdn.neonbee.app/crm"
 
       - name: Purge Cloudflare cache
