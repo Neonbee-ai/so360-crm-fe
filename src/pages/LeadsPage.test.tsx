@@ -26,6 +26,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 vi.mock('../components/common/Table', () => ({

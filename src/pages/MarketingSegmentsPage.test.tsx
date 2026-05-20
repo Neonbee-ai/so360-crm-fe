@@ -44,6 +44,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
   useShell: () => ({ isModuleEnabled: () => true }),
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 vi.mock('@so360/design-system', () => ({

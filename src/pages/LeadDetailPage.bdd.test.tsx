@@ -38,6 +38,7 @@ vi.mock('../services/crmService', () => ({
     uploadDocument: (...a: any[]) => mockUploadDocument(...a),
     deleteDocument: (...a: any[]) => mockDeleteDocument(...a),
     deleteLead: (...a: any[]) => mockDeleteLead(...a),
+    getPartners: () => Promise.resolve([]),
   },
   activitiesApi: { update: (...a: any[]) => mockActivitiesUpdate(...a), delete: (...a: any[]) => mockActivitiesDelete(...a) },
 }));
@@ -54,6 +55,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 const mockShowSuccess = vi.fn();

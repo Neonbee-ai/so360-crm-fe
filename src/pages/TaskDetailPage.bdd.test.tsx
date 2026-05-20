@@ -34,6 +34,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   ShellContext: { Consumer: ({ children }: any) => children({ user: { id: 'user-1' } }) },
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 vi.mock('./components/TaskModal', () => ({

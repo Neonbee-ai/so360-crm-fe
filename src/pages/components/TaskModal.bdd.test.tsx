@@ -24,6 +24,7 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ user: { id: 'u1', full_name: 'Test User' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 vi.mock('../../utils/taskUtils', () => ({

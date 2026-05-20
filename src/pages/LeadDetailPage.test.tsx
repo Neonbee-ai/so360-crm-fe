@@ -39,6 +39,7 @@ vi.mock('../services/crmService', () => ({
     getStorefrontWishlist: vi.fn().mockResolvedValue([]),
     getStorefrontReviews: vi.fn().mockResolvedValue([]),
     getStorefrontAbandonedCarts: vi.fn().mockResolvedValue([]),
+    getPartners: vi.fn().mockResolvedValue([]),
   },
   activitiesApi: { create: vi.fn(), update: vi.fn(), delete: vi.fn() },
 }));
@@ -53,6 +54,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false, user: { id: 'u1' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 vi.mock('../components/common/Toast', () => ({

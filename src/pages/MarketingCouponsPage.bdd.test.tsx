@@ -60,6 +60,7 @@ vi.mock('@so360/shell-context', () => ({
     settings: { base_currency: 'USD', document_language: 'en-US' },
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 vi.mock('./marketing/marketingMappers', () => ({

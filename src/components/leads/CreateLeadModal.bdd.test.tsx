@@ -17,6 +17,7 @@ vi.mock('../../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     createLead: (...a: any[]) => mockCreateLead(...a),
     getUsers: () => Promise.resolve([{ id: 'u1', full_name: 'Test User', email: 't@t.com' }]),
+    getPartners: () => Promise.resolve([]),
   },
 }));
 
@@ -24,6 +25,7 @@ vi.mock('@so360/shell-context', () => ({
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
   useIdentity: () => ({ user: { id: 'u1', full_name: 'Test User', email: 't@t.com' } }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 import { CreateLeadModal } from './CreateLeadModal';
