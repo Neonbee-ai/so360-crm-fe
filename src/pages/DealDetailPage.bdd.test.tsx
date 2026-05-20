@@ -480,11 +480,11 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given deal project linking', () => {
-    it('When Link Project is clicked / Then opens the project modal', async () => {
+    it('When Create Project is clicked / Then opens the project modal', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Link Project')).toBeInTheDocument());
-      await user.click(screen.getByText('Link Project'));
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
       await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
     });
 
