@@ -37,20 +37,20 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('crmService — leadsApi', () => {
   describe('Given the backend returns leads', () => {
-    it('When getAll is called / Then maps NEW backend status to Open on the frontend', async () => {
+    it('When getAll is called / Then maps NEW backend status to New on the frontend', async () => {
       mockSuccess([
         { id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] },
       ]);
       const leads = await leadsApi.getAll();
-      expect(leads[0].status).toBe('Open');
+      expect(leads[0].status).toBe('New');
     });
 
-    it('When getAll is called / Then maps CLOSED_WON to Won', async () => {
+    it('When getAll is called / Then maps CLOSED_WON to Converted', async () => {
       mockSuccess([
         { id: 'l2', status: 'CLOSED_WON', notes: [], documents: [], deals: [], tasks: [], activities: [] },
       ]);
       const leads = await leadsApi.getAll();
-      expect(leads[0].status).toBe('Won');
+      expect(leads[0].status).toBe('Converted');
     });
 
     it('When getAll is called / Then maps CLOSED_LOST to Lost', async () => {
@@ -83,9 +83,9 @@ describe('crmService — leadsApi', () => {
   describe('Given a lead is created', () => {
     it('When create is called / Then sends the lead data to the backend and maps the result', async () => {
       mockSuccess({ id: 'l-new', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
-      const lead = await leadsApi.create({ company_name: 'NewCo', status: 'Open' } as any);
+      const lead = await leadsApi.create({ company_name: 'NewCo', status: 'New' } as any);
       expect(lead.id).toBe('l-new');
-      expect(lead.status).toBe('Open');
+      expect(lead.status).toBe('New');
     });
   });
 

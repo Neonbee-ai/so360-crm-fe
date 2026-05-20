@@ -41,7 +41,7 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
 import LeadsPage from './LeadsPage';
 
 const settings = {
-  deal_stages: [], lead_stages: [{ id: 'ls1', name: 'Open' }],
+  deal_stages: [], lead_stages: [{ id: 'new', name: 'New' }],
   lead_custom_fields: [], deal_custom_fields: [], lead_sources: [], lead_scoring: [], default_owner_id: 'u1',
 };
 
@@ -72,7 +72,7 @@ describe('Given LeadsPage', () => {
 
   it('When action / Then shows rows when leads loaded', async () => {
     mockGetLeads.mockResolvedValue([
-      { id: 'l1', company_name: 'Acme', contact_name: 'John', status: 'Open', owner: { id: 'u1', full_name: 'Test' }, creator: { id: 'u1', full_name: 'Test' }, created_at: '2024-01-01' },
+      { id: 'l1', company_name: 'Acme', contact_name: 'John', status: 'New', owner: { id: 'u1', full_name: 'Test' }, creator: { id: 'u1', full_name: 'Test' }, created_at: '2024-01-01' },
     ]);
     render(<LeadsPage />);
     await waitFor(() => {
