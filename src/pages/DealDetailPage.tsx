@@ -287,8 +287,15 @@ const DealDetailPage = () => {
             // Refresh deal data to show the newly linked invoice
             fetchData();
         } catch (error: any) {
-            if (error?.response?.status === 404 || error?.message?.includes('404')) {
-                showError('Invoice request feature is not yet configured. Contact your administrator.');
+            const msg: string = error?.message || '';
+            if (msg.toLowerCase().includes('won')) {
+                showError('This deal must be in Won stage before requesting an invoice. Move the deal to Won and try again.');
+            } else if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('does not have')) {
+                showError(`Permission denied: ${msg}`);
+            } else if (msg.toLowerCase().includes('accounting') || msg.toLowerCase().includes('unavailable')) {
+                showError('Accounting service is unavailable. Please ensure the Accounting module is running and try again.');
+            } else if (msg) {
+                showError(msg);
             } else {
                 showError('Failed to request invoice. Please try again later.');
             }
