@@ -298,23 +298,14 @@ const DealDetailPage = () => {
         }
     };
 
-    const handleCreateProject = async () => {
-        try {
-            const project = await crmService.createProjectFromDeal(id);
-            showSuccess('Project created and linked successfully');
-            await crmService.logActivity({
-                lead_id: deal?.lead_id,
-                deal_id: id,
-                type: 'NOTE',
-                notes: `System: Created new project from this deal (ID: ${project.id})`,
-                date: new Date().toISOString()
-            });
-            setIsProjectModalOpen(false);
-            fetchData();
-        } catch (error: any) {
-            showError('Failed to create project. Please ensure Projects service is reachable.');
-            console.warn('Project creation failed:', error);
-        }
+    const handleCreateProject = () => {
+        if (!deal) return;
+        const params = new URLSearchParams({ create: 'true' });
+        if (id) params.set('deal_id', id);
+        if (deal.name) params.set('deal_name', deal.name);
+        if (deal.value != null) params.set('budget', String(deal.value));
+        if (deal.company) params.set('client_name', deal.company);
+        window.location.href = `/projects/list?${params.toString()}`;
     };
 
     const handleLinkExistingProject = async () => {
@@ -524,7 +515,7 @@ const DealDetailPage = () => {
                                 onClick={handleOpenProjectModal}
                                 className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-black text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2 uppercase tracking-widest border border-blue-400/20"
                             >
-                                <Briefcase size={14} /> {deal.project_id ? 'Manage Project' : 'Link Project'}
+                                <Briefcase size={14} /> {deal.project_id ? 'Manage Project' : 'Create Project'}
                             </button>
                         )}
                     </div>
@@ -1123,11 +1114,11 @@ const DealDetailPage = () => {
                                     <div>
                                         <h4 className="text-slate-200 font-bold text-sm mb-1 group-hover:text-blue-400 transition-colors">Create New Project</h4>
                                         <p className="text-slate-500 text-[10px] leading-relaxed max-w-[200px]">
-                                            Spawn a project in the Projects module using this deal's value and client info.
+                                            Open the Projects module with deal info pre-filled to create and configure a new project.
                                         </p>
                                     </div>
-                                    <div className="bg-blue-600 group-hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">
-                                        Execute
+                                    <div className="bg-blue-600 group-hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-1">
+                                        Open <ExternalLink size={10} />
                                     </div>
                                 </div>
                             </div>
