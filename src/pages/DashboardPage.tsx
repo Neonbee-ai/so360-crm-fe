@@ -390,13 +390,13 @@ const DashboardPage = () => {
             <section>
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-black text-white tracking-tight">Active Reminders</h3>
-                    <Link to="/tasks" className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors">View All Tasks</Link>
+                    <Link to="../tasks" className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors">View All Tasks</Link>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                     {reminders.length > 0 ? reminders.map((task: any) => (
                         <Link
                             key={task.id}
-                            to={`/tasks/${task.id}`}
+                            to={`../tasks/${task.id}`}
                             className="flex-shrink-0 w-72 bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-blue-500/50 transition-all group"
                         >
                             <div className="flex items-center justify-between mb-2">
