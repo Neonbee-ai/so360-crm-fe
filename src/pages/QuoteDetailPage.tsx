@@ -44,6 +44,8 @@ const QuoteDetailPage = () => {
     const [termsAndConditions, setTermsAndConditions] = useState('');
     const [validUntil, setValidUntil] = useState('');
     const [lines, setLines] = useState<QuoteLine[]>([]);
+    // Tracks raw string values while user is mid-typing in numeric fields (prevents Number() from swallowing "5." or "")
+    const [draftValues, setDraftValues] = useState<Record<string, string>>({});
 
     // Stock availability per item_id (available_quantity)
     const [stockMap, setStockMap] = useState<Map<string, number>>(new Map());
@@ -108,6 +110,7 @@ const QuoteDetailPage = () => {
             });
             setQuote(updatedQuote);
             setIsEditing(false);
+            setDraftValues({});
             recordActivity({ eventType: 'quote.updated', eventCategory: 'crm', description: `Updated quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to save quote');
@@ -189,6 +192,24 @@ const QuoteDetailPage = () => {
 
     const removeLine = (index: number) => {
         setLines(lines.filter((_, i) => i !== index));
+        // Clean up any draft values for this line
+        setDraftValues(prev => {
+            const next = { ...prev };
+            Object.keys(next).filter(k => k.startsWith(`${index}_`)).forEach(k => delete next[k]);
+            return next;
+        });
+    };
+
+    const handleNumericInput = (index: number, field: keyof QuoteLine, rawValue: string) => {
+        setDraftValues(prev => ({ ...prev, [`${index}_${field as string}`]: rawValue }));
+        const num = parseFloat(rawValue);
+        if (!isNaN(num)) updateLine(index, field, num);
+    };
+
+    const commitNumericInput = (index: number, field: keyof QuoteLine, rawValue: string, fallback: number) => {
+        const num = parseFloat(rawValue);
+        updateLine(index, field, isNaN(num) ? fallback : num);
+        setDraftValues(prev => { const n = { ...prev }; delete n[`${index}_${field as string}`]; return n; });
     };
 
     const calculateLineTotal = (line: QuoteLine) => {
@@ -297,6 +318,7 @@ const QuoteDetailPage = () => {
                             <button
                                 onClick={() => {
                                     setIsEditing(false);
+                                    setDraftValues({});
                                     fetchQuote();
                                 }}
                                 className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
@@ -474,10 +496,12 @@ const QuoteDetailPage = () => {
                                                 {isEditing ? (
                                                     <input
                                                         type="number"
-                                                        value={line.quantity}
-                                                        onChange={(e) => updateLine(index, 'quantity', Number(e.target.value))}
+                                                        value={draftValues[`${index}_quantity`] ?? String(line.quantity)}
+                                                        onChange={(e) => handleNumericInput(index, 'quantity', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'quantity', e.target.value, 1)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         min="1"
+                                                        step="1"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{line.quantity}</span>
@@ -487,8 +511,9 @@ const QuoteDetailPage = () => {
                                                 {isEditing ? (
                                                     <input
                                                         type="number"
-                                                        value={line.unit_price}
-                                                        onChange={(e) => updateLine(index, 'unit_price', Number(e.target.value))}
+                                                        value={draftValues[`${index}_unit_price`] ?? String(line.unit_price)}
+                                                        onChange={(e) => handleNumericInput(index, 'unit_price', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'unit_price', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         min="0"
                                                         step="0.01"
@@ -501,8 +526,9 @@ const QuoteDetailPage = () => {
                                                 {isEditing ? (
                                                     <input
                                                         type="number"
-                                                        value={line.discount_percent || 0}
-                                                        onChange={(e) => updateLine(index, 'discount_percent', Number(e.target.value))}
+                                                        value={draftValues[`${index}_discount_percent`] ?? String(line.discount_percent || 0)}
+                                                        onChange={(e) => handleNumericInput(index, 'discount_percent', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'discount_percent', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         min="0"
                                                         max="100"
@@ -515,8 +541,9 @@ const QuoteDetailPage = () => {
                                                 {isEditing ? (
                                                     <input
                                                         type="number"
-                                                        value={line.tax_rate || 0}
-                                                        onChange={(e) => updateLine(index, 'tax_rate', Number(e.target.value))}
+                                                        value={draftValues[`${index}_tax_rate`] ?? String(line.tax_rate || 0)}
+                                                        onChange={(e) => handleNumericInput(index, 'tax_rate', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'tax_rate', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         min="0"
                                                         max="100"
