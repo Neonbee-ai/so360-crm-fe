@@ -114,7 +114,8 @@ describe('TaskModal', () => {
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Call client' } });
       const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
-      if (dateInput) fireEvent.change(dateInput, { target: { value: '2024-06-15' } });
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      if (dateInput) fireEvent.change(dateInput, { target: { value: futureDate } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         expect(mockCreateTask).toHaveBeenCalled();
@@ -124,9 +125,10 @@ describe('TaskModal', () => {
 
   describe('Given the form is submitted in edit mode', () => {
     it('When submitted / Then calls updateTask', async () => {
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const existingTask = {
         id: 't1', title: 'Existing', status: 'Open' as const,
-        due_date: '2024-06-15', type: 'TODO' as const,
+        due_date: futureDate, type: 'TODO' as const,
         assigned_to: { id: 'u1', full_name: 'Test User', email: '', avatar_url: '' },
       };
       render(<TaskModal task={existingTask as any} onClose={vi.fn()} onSuccess={vi.fn()} />);

@@ -120,7 +120,8 @@ describe('Given TaskModal', () => {
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'My Task' } });
     const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
-    if (dateInput) fireEvent.change(dateInput, { target: { value: '2024-06-15' } });
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    if (dateInput) fireEvent.change(dateInput, { target: { value: futureDate } });
     const form = document.querySelector('form');
     if (form) fireEvent.submit(form);
 
@@ -135,7 +136,7 @@ describe('Given TaskModal', () => {
         {...defaultProps}
         task={{
           id: 't1', title: 'Existing', status: 'Open',
-          due_date: '2024-06-15', type: 'TODO',
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], type: 'TODO',
           assigned_to: { id: 'u1', full_name: 'Test', email: '', avatar_url: '' },
         } as any}
       />,
