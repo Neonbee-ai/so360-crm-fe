@@ -295,14 +295,16 @@ const LeadDetailPage = () => {
                         <div className="flex items-center gap-3 mb-2 relative">
                             {isChangingStatus ? (
                                 <select
-                                    value={lead.status}
+                                    value={leadStages.find(s => s.name === lead.status)?.id || (lead as any).backend_status || ''}
                                     onChange={async (e) => {
-                                        const newStatus = e.target.value as any;
-                                        await crmService.updateLead(lead.id, { status: newStatus as any });
+                                        const stageId = e.target.value;
+                                        const stage = leadStages.find(s => s.id === stageId);
+                                        const displayName = stage?.name || stageId;
+                                        await crmService.updateLead(lead.id, { status: displayName as any });
                                         await crmService.logActivity({
                                             lead_id: lead.id,
                                             type: 'STATUS_CHANGE',
-                                            notes: `Lead status changed to ${newStatus}`,
+                                            notes: `Lead status changed to ${displayName}`,
                                             date: new Date().toISOString()
                                         });
                                         fetchLeadData();
@@ -313,13 +315,13 @@ const LeadDetailPage = () => {
                                     className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-white rounded px-2 py-1 outline-none"
                                 >
                                     {leadStages.map(stage => (
-                                        <option key={stage.id} value={stage.name}>{stage.name}</option>
+                                        <option key={stage.id} value={stage.id}>{stage.name}</option>
                                     ))}
                                 </select>
                             ) : (
                                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
                                     <h1 className="text-4xl font-black text-white tracking-tight">{lead.contact_name}</h1>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all group-hover:scale-110 ${lead.status === 'Won' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all group-hover:scale-110 ${lead.status === 'Converted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                         lead.status === 'Lost' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
                                             'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                         }`}>
@@ -1180,7 +1182,7 @@ const LeadDetailPage = () => {
                                     className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl group hover:border-blue-500/20 transition-all cursor-pointer"
                                     onClick={() => setIsChangingStage(true)}
                                 >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${lead.status === 'Won' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${lead.status === 'Converted' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
                                         lead.status === 'Lost' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
                                             'bg-blue-500/10 border-blue-500/30 text-blue-400'
                                         }`}>
