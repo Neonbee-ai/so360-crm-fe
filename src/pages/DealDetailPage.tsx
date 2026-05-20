@@ -255,10 +255,10 @@ const DealDetailPage = () => {
     };
 
     const handleTaskToggle = async (task: Task) => {
-        const newStatus = task.status === 'Done' ? 'Open' : 'Done';
+        const newStatus = task.status === 'DONE' ? 'OPEN' : 'DONE';
         try {
             await crmService.updateTask(task.id, { status: newStatus });
-            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus as Task['status'] } : t));
 
             await crmService.logActivity({
                 lead_id: deal?.lead_id,
@@ -803,16 +803,16 @@ const DealDetailPage = () => {
                                             </div>
                                         ) : (
                                             tasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group relative transition-all ${task.status === 'Done' ? 'border-emerald-500/10 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/10 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'Done' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700'}`}
                                                     >
-                                                        {task.status === 'Done' && <CheckCircle2 size={12} />}
+                                                        {task.status === 'DONE' && <CheckCircle2 size={12} />}
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
-                                                            <h4 className={`text-sm font-bold text-white truncate ${task.status === 'Done' ? 'line-through text-slate-500' : ''}`}>
+                                                            <h4 className={`text-sm font-bold text-white truncate ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
                                                                 {task.title}
                                                             </h4>
                                                         </div>

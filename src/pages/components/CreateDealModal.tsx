@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, DollarSign, Briefcase } from 'lucide-react';
+import { X, Loader2, DollarSign, Briefcase, Calendar } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
@@ -130,21 +130,27 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                    />
+                                    <Calendar size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Close Date</label>
-                                <input
-                                    type="date"
-                                    value={expectedClose}
-                                    onChange={(e) => setExpectedClose(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="date"
+                                        value={expectedClose}
+                                        onChange={(e) => setExpectedClose(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                    />
+                                    <Calendar size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
                             </div>
                         </div>
 

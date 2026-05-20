@@ -96,7 +96,7 @@ beforeEach(() => {
   mockGetUsers.mockResolvedValue([{ id: 'u1', full_name: 'Test User', email: 't@t.com' }]);
   mockGetDealsByLeadId.mockResolvedValue([]);
   mockGetTasksByLeadId.mockResolvedValue([
-    { id: 't1', title: 'Follow up', status: 'Open', due_date: '2024-06-15', type: 'TODO', assigned_to: { id: 'u1', full_name: 'Test' } },
+    { id: 't1', title: 'Follow up', status: 'OPEN', due_date: '2024-06-15', type: 'TODO', assigned_to: { id: 'u1', full_name: 'Test' } },
   ]);
   mockGetActivitiesByLeadId.mockResolvedValue([
     { id: 'a1', type: 'CALL', notes: 'Called', created_at: '2024-01-02', author: { id: 'u1', full_name: 'Test' } },

@@ -112,8 +112,8 @@ const associatedDeals = [
 ];
 
 const associatedTasks = [
-  { id: 't1', title: 'Call back', type: 'CALL', status: 'Open', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: owner, description: 'Follow up call' },
-  { id: 't2', title: 'Send docs', type: 'TODO', status: 'Done', due_date: '2025-01-15', created_at: '2025-01-10T10:00:00Z', assigned_to: owner, deal_name: 'Acme Deal' },
+  { id: 't1', title: 'Call back', type: 'CALL', status: 'OPEN', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: owner, description: 'Follow up call' },
+  { id: 't2', title: 'Send docs', type: 'TODO', status: 'DONE', due_date: '2025-01-15', created_at: '2025-01-10T10:00:00Z', assigned_to: owner, deal_name: 'Acme Deal' },
 ];
 
 const settings = {
@@ -314,7 +314,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Call back')).toBeInTheDocument());
       const checkboxes = screen.getAllByRole('button').filter(b => b.className.includes('rounded border'));
       fireEvent.click(checkboxes[0]);
-      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'Done' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'DONE' }));
     });
 
     it('When no tasks exist / Then shows no active tasks message', async () => {
@@ -337,7 +337,7 @@ describe('LeadDetailPage', () => {
     });
 
     it('When task has assigned_to with avatar / Then shows avatar image', async () => {
-      const taskWithAvatar = [{ id: 't1', title: 'Call back', type: 'CALL', status: 'Open', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: { id: 'u1', full_name: 'Test Owner', avatar_url: 'https://img/av.jpg' }, description: null }];
+      const taskWithAvatar = [{ id: 't1', title: 'Call back', type: 'CALL', status: 'OPEN', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: { id: 'u1', full_name: 'Test Owner', avatar_url: 'https://img/av.jpg' }, description: null }];
       mockGetTasksByLeadId.mockResolvedValue(taskWithAvatar);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
@@ -475,7 +475,7 @@ describe('LeadDetailPage', () => {
   describe('Given reminders', () => {
     it('When task has REMINDER type due soon / Then shows Due Reminders badge', async () => {
       const reminderTask = {
-        id: 'tr1', title: 'Reminder: Call client', type: 'REMINDER', status: 'Open',
+        id: 'tr1', title: 'Reminder: Call client', type: 'REMINDER', status: 'OPEN',
         due_date: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         created_at: '2025-01-20T10:00:00Z', assigned_to: owner,
       };

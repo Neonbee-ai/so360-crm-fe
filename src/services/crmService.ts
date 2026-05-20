@@ -116,7 +116,7 @@ const mapNoteFromApi = (apiNote: any): Note => ({
 
 const mapTaskFromApi = (apiTask: any): Task => ({
     ...apiTask,
-    status: apiTask.status ? (apiTask.status.charAt(0).toUpperCase() + apiTask.status.slice(1).toLowerCase()) : 'Open',
+    status: apiTask.status ? (apiTask.status.toUpperCase() as Task['status']) : 'OPEN',
     assigned_to: mapUser(apiTask.assigned_to, apiTask.assignee_id),
     deal: apiTask.deal ? { ...apiTask.deal, company_name: apiTask.deal.company || apiTask.deal.company_name } : apiTask.deal
 });
@@ -867,7 +867,7 @@ export const crmService = {
 
                 // Get reminders
                 const reminders = tasks.filter((t: any) =>
-                    t.status === 'Open' && t.type === 'REMINDER'
+                    t.status === 'OPEN' && t.type === 'REMINDER'
                 ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
                 return {
@@ -880,7 +880,7 @@ export const crmService = {
                     counts: {
                         leads: periodStats.counts.totalLeads,
                         deals: periodStats.counts.totalDeals,
-                        tasks: tasks.filter(t => t.status === 'Open').length,
+                        tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
                         reminders: reminders.length
                     },
                     teamStats,
@@ -964,7 +964,7 @@ export const crmService = {
 
             // 4. Reminders
             const reminders = tasks.filter(t =>
-                t.status === 'Open' && t.type === 'REMINDER'
+                t.status === 'OPEN' && t.type === 'REMINDER'
             ).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
             return {
@@ -977,7 +977,7 @@ export const crmService = {
                 counts: {
                     leads: leads.length,
                     deals: deals.length,
-                    tasks: tasks.filter(t => t.status === 'Open').length,
+                    tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
                     reminders: reminders.length
                 },
                 teamStats,

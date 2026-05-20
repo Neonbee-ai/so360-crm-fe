@@ -55,7 +55,7 @@ const makeTask = (overrides: any = {}) => ({
   id: 'task-1',
   title: 'Follow up with client',
   description: 'Call them about the proposal',
-  status: 'Open',
+  status: 'OPEN',
   due_date: '2026-06-15',
   deal_id: 'deal-1',
   deal_name: 'Big Deal',
@@ -149,15 +149,15 @@ describe('TaskDetailPage', () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Mark as Complete')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Mark as Complete'));
-      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'Done' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'DONE' }));
     });
 
     it('When task is Done and Mark as Open is clicked / Then reopens task', async () => {
-      mockGetTaskById.mockResolvedValue(makeTask({ status: 'Done' }));
+      mockGetTaskById.mockResolvedValue(makeTask({ status: 'DONE' }));
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Mark as Open')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Mark as Open'));
-      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'Open' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'OPEN' }));
     });
   });
 

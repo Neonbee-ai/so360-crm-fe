@@ -291,20 +291,20 @@ describe('Given tasksApi', () => {
 
       const tasks = await tasksApi.getAll();
       expect(tasks).toHaveLength(2);
-      expect(tasks[0].status).toBe('Open');
-      expect(tasks[1].status).toBe('Done');
+      expect(tasks[0].status).toBe('OPEN');
+      expect(tasks[1].status).toBe('DONE');
     });
 
     it('When action / Then defaults status to Open when missing', async () => {
       mockFetchSuccess([{ id: 'task-3', title: 'No status' }]);
       const tasks = await tasksApi.getAll();
-      expect(tasks[0].status).toBe('Open');
+      expect(tasks[0].status).toBe('OPEN');
     });
 
     it('When action / Then handles empty status string', async () => {
       mockFetchSuccess([{ id: 'task-4', title: 'Empty status', status: '' }]);
       const tasks = await tasksApi.getAll();
-      expect(tasks[0].status).toBe('Open');
+      expect(tasks[0].status).toBe('OPEN');
     });
   });
 
@@ -313,7 +313,7 @@ describe('Given tasksApi', () => {
       mockFetchSuccess({ id: 'task-new', title: 'New', status: 'open' });
       const task = await tasksApi.create({ title: 'New' });
       expect(task.id).toBe('task-new');
-      expect(task.status).toBe('Open');
+      expect(task.status).toBe('OPEN');
     });
   });
 
@@ -322,7 +322,7 @@ describe('Given tasksApi', () => {
       mockFetchSuccess({ id: 'task-1', title: 'Updated', status: 'done' });
       const task = await tasksApi.update('task-1', { title: 'Updated' });
       expect(task.title).toBe('Updated');
-      expect(task.status).toBe('Done');
+      expect(task.status).toBe('DONE');
 
       const [, options] = fetchMock.mock.calls[0];
       expect(options.method).toBe('PATCH');
@@ -1763,7 +1763,7 @@ describe('Given tasksApi additional', () => {
   it('When action / Then getById fetches a single task', async () => {
     mockFetchSuccess({ id: 't1', title: 'Task', status: 'done' });
     const task = await tasksApi.getById('t1');
-    expect(task.status).toBe('Done');
+    expect(task.status).toBe('DONE');
   });
 
   it('When action / Then delete sends DELETE request', async () => {

@@ -120,7 +120,7 @@ export interface Task {
     title: string;
     due_date: string;
     start_date?: string;
-    status: 'Open' | 'Done';
+    status: 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'ON_HOLD' | 'CANCELLED';
     type: TaskType;
     deal_id?: string;
     deal_name?: string;

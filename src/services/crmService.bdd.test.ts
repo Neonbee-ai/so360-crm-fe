@@ -126,7 +126,7 @@ describe('crmService — dealsApi', () => {
 describe('crmService — tasksApi', () => {
   describe('Given the backend has tasks', () => {
     it('When getAll is called / Then returns tasks', async () => {
-      mockSuccess([{ id: 't1', title: 'Call client', status: 'Open' }]);
+      mockSuccess([{ id: 't1', title: 'Call client', status: 'OPEN' }]);
       const tasks = await tasksApi.getAll();
       expect(tasks[0].title).toBe('Call client');
     });
@@ -134,8 +134,8 @@ describe('crmService — tasksApi', () => {
 
   describe('Given a task is created', () => {
     it('When create is called / Then returns the new task', async () => {
-      mockSuccess({ id: 't-new', title: 'New task', status: 'Open' });
-      const task = await tasksApi.create({ title: 'New task', status: 'Open' } as any);
+      mockSuccess({ id: 't-new', title: 'New task', status: 'OPEN' });
+      const task = await tasksApi.create({ title: 'New task', status: 'OPEN' } as any);
       expect(task.id).toBe('t-new');
     });
   });

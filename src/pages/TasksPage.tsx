@@ -153,10 +153,13 @@ const TasksPage = () => {
             if (!matchesSearch) return false;
 
             if (filter === 'All') return true;
-            if (filter === 'Open') return task.status === 'Open';
-            if (filter === 'Done') return task.status === 'Done';
+            if (filter === 'Open') return task.status === 'OPEN';
+            if (filter === 'In Progress') return task.status === 'IN_PROGRESS';
+            if (filter === 'Done') return task.status === 'DONE';
+            if (filter === 'On Hold') return task.status === 'ON_HOLD';
+            if (filter === 'Cancelled') return task.status === 'CANCELLED';
             if (filter === 'Overdue') {
-                return task.status === 'Open' && new Date(task.due_date) < new Date();
+                return (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
             }
             return true;
         });
@@ -206,14 +209,14 @@ const TasksPage = () => {
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleStatusChange(task, task.status === 'Done' ? 'Open' : 'Done');
+                            handleStatusChange(task, task.status === 'DONE' ? 'OPEN' : 'DONE');
                         }}
                         className="mt-0.5 text-slate-500 hover:text-blue-400 transition-colors"
                     >
-                        {task.status === 'Done' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
+                        {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
                     </button>
                     <div className="flex flex-col gap-0.5">
-                        <span className={`font-semibold ${task.status === 'Done' ? 'text-slate-500 line-through' : 'text-white'}`}>
+                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-white'}`}>
                             {task.title}
                         </span>
                     </div>
@@ -223,7 +226,7 @@ const TasksPage = () => {
         {
             header: <SortableHeader label="Due Date" field="due_date" />,
             accessor: (task: Task) => {
-                const isOverdue = task.status === 'Open' && new Date(task.due_date) < new Date();
+                const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
                 return (
                     <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-400'}`}>
                         {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
@@ -301,13 +304,22 @@ const TasksPage = () => {
                     <select
                         value={task.status}
                         onChange={(e) => handleStatusChange(task, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 ${task.status === 'Done'
+                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 ${task.status === 'DONE'
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 focus:ring-emerald-500'
+                            : task.status === 'IN_PROGRESS'
+                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 focus:ring-amber-500'
+                            : task.status === 'ON_HOLD'
+                            ? 'bg-orange-500/10 text-orange-400 border-orange-500/20 focus:ring-orange-500'
+                            : task.status === 'CANCELLED'
+                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 focus:ring-rose-500'
                             : 'bg-slate-800 text-slate-400 border-slate-700 focus:ring-slate-500'
                             }`}
                     >
-                        <option value="Open" className="bg-slate-900 text-slate-300">OPEN</option>
-                        <option value="Done" className="bg-slate-900 text-slate-300">DONE</option>
+                        <option value="OPEN" className="bg-slate-900 text-slate-300">OPEN</option>
+                        <option value="IN_PROGRESS" className="bg-slate-900 text-slate-300">IN PROGRESS</option>
+                        <option value="DONE" className="bg-slate-900 text-slate-300">DONE</option>
+                        <option value="ON_HOLD" className="bg-slate-900 text-slate-300">ON HOLD</option>
+                        <option value="CANCELLED" className="bg-slate-900 text-slate-300">CANCELLED</option>
                     </select>
                 </div>
             )
@@ -350,7 +362,7 @@ const TasksPage = () => {
                     />
                 </div>
                 <div className="flex gap-2">
-                    {['All', 'Open', 'Overdue', 'Done'].map((btn) => (
+                    {['All', 'Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map((btn) => (
                         <button
                             key={btn}
                             onClick={() => setFilter(btn)}

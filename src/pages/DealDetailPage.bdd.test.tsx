@@ -130,8 +130,8 @@ const associatedLead = {
 };
 
 const tasks = [
-  { id: 't1', title: 'Follow up call', status: 'Open', type: 'CALL', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: owner },
-  { id: 't2', title: 'Send proposal', status: 'Done', type: 'TODO', due_date: '2025-01-15', created_at: '2025-01-10T10:00:00Z', assigned_to: owner },
+  { id: 't1', title: 'Follow up call', status: 'OPEN', type: 'CALL', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: owner },
+  { id: 't2', title: 'Send proposal', status: 'DONE', type: 'TODO', due_date: '2025-01-15', created_at: '2025-01-10T10:00:00Z', assigned_to: owner },
 ];
 
 const activities = [
@@ -295,7 +295,7 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Follow up call')).toBeInTheDocument());
       const checkboxes = screen.getAllByRole('button').filter(b => b.className.includes('rounded border'));
       fireEvent.click(checkboxes[0]);
-      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'Done' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'DONE' }));
     });
 
     it('When no tasks exist / Then shows zero pending actions', async () => {

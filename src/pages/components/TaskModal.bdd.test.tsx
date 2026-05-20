@@ -40,8 +40,8 @@ const users = [
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetUsers.mockResolvedValue(users);
-  mockCreateTask.mockResolvedValue({ id: 't-new', title: 'New Task', status: 'Open' });
-  mockUpdateTask.mockResolvedValue({ id: 't1', title: 'Updated', status: 'Open' });
+  mockCreateTask.mockResolvedValue({ id: 't-new', title: 'New Task', status: 'OPEN' });
+  mockUpdateTask.mockResolvedValue({ id: 't1', title: 'Updated', status: 'OPEN' });
   mockRecordActivity.mockResolvedValue(undefined);
 });
 
@@ -94,7 +94,7 @@ describe('TaskModal', () => {
     const existingTask = {
       id: 't1',
       title: 'Follow up call',
-      status: 'Open' as const,
+      status: 'OPEN' as const,
       due_date: '2024-06-15',
       type: 'TODO' as const,
       assigned_to: { id: 'u1', full_name: 'Test User', email: 'test@test.com', avatar_url: '' },
@@ -127,7 +127,7 @@ describe('TaskModal', () => {
     it('When submitted / Then calls updateTask', async () => {
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const existingTask = {
-        id: 't1', title: 'Existing', status: 'Open' as const,
+        id: 't1', title: 'Existing', status: 'OPEN' as const,
         due_date: futureDate, type: 'TODO' as const,
         assigned_to: { id: 'u1', full_name: 'Test User', email: '', avatar_url: '' },
       };

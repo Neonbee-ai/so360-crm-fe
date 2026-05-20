@@ -53,9 +53,9 @@ vi.mock('../components/common/Table', () => ({
 import TasksPage from './TasksPage';
 
 const makeTasks = () => [
-  { id: 't1', title: 'Follow up call', description: 'Call client', status: 'Open', due_date: '2026-01-15', deal: { name: 'Big Deal', company_name: 'Big Deal Inc' }, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' } },
-  { id: 't2', title: 'Send proposal', description: 'Draft and send', status: 'Done', due_date: '2026-01-10', deal: null, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
-  { id: 't3', title: 'Review contract', description: null, status: 'Open', due_date: '2024-01-01', deal: { name: 'Old Deal', company_name: 'Old Deal Inc' }, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
+  { id: 't1', title: 'Follow up call', description: 'Call client', status: 'OPEN', due_date: '2026-01-15', deal: { name: 'Big Deal', company_name: 'Big Deal Inc' }, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' } },
+  { id: 't2', title: 'Send proposal', description: 'Draft and send', status: 'DONE', due_date: '2026-01-10', deal: null, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
+  { id: 't3', title: 'Review contract', description: null, status: 'OPEN', due_date: '2024-01-01', deal: { name: 'Old Deal', company_name: 'Old Deal Inc' }, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
 ];
 
 const makeUsers = () => [
@@ -115,7 +115,7 @@ describe('TasksPage', () => {
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Open'));
       await waitFor(() => {
-        expect(tableProps.data.every((t: any) => t.status === 'Open')).toBe(true);
+        expect(tableProps.data.every((t: any) => t.status === 'OPEN')).toBe(true);
       });
     });
 
@@ -124,7 +124,7 @@ describe('TasksPage', () => {
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Done'));
       await waitFor(() => {
-        expect(tableProps.data.every((t: any) => t.status === 'Done')).toBe(true);
+        expect(tableProps.data.every((t: any) => t.status === 'DONE')).toBe(true);
       });
     });
 
@@ -135,7 +135,7 @@ describe('TasksPage', () => {
       const overdueBtn = filterBtns.find(b => b.textContent === 'Overdue')!;
       fireEvent.click(overdueBtn);
       await waitFor(() => {
-        const openPastDue = tableProps.data.filter((t: any) => t.status === 'Open' && new Date(t.due_date) < new Date());
+        const openPastDue = tableProps.data.filter((t: any) => t.status === 'OPEN' && new Date(t.due_date) < new Date());
         expect(tableProps.data.length).toBe(openPastDue.length);
       });
     });
@@ -223,7 +223,7 @@ describe('TasksPage', () => {
   describe('Given pagination controls', () => {
     it('When page size is changed / Then resets to page 1', async () => {
       const manyTasks = Array.from({ length: 15 }, (_, i) => ({
-        id: `t${i}`, title: `Task ${i}`, description: null, status: 'Open',
+        id: `t${i}`, title: `Task ${i}`, description: null, status: 'OPEN',
         due_date: '2026-01-15', deal: null, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' },
       }));
       mockGetTasks.mockResolvedValue(manyTasks);
@@ -249,7 +249,7 @@ describe('TasksPage', () => {
       const cell = statusCol.accessor(makeTasks()[0]);
       const { container } = render(cell);
       const select = container.querySelector('select');
-      expect(select?.value).toBe('Open');
+      expect(select?.value).toBe('OPEN');
     });
 
     it('When status column renders a done task / Then shows Done selected', async () => {
@@ -259,7 +259,7 @@ describe('TasksPage', () => {
       const cell = statusCol.accessor(makeTasks()[1]);
       const { container } = render(cell);
       const select = container.querySelector('select');
-      expect(select?.value).toBe('Done');
+      expect(select?.value).toBe('DONE');
     });
 
     it('When assignee column renders / Then shows user select with current assignee', async () => {

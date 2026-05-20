@@ -64,13 +64,13 @@ const TaskDetailPage = () => {
 
     const handleTaskToggle = async () => {
         if (!task) return;
-        const newStatus = task.status === 'Done' ? 'Open' : 'Done';
+        const newStatus = task.status === 'DONE' ? 'OPEN' : 'DONE';
         try {
             // Optimistic update
             setTask({ ...task, status: newStatus });
 
             await crmService.updateTask(task.id, { status: newStatus });
-            if (newStatus === 'Done') {
+            if (newStatus === 'DONE') {
                 recordActivity({ eventType: 'task.completed', eventCategory: 'crm', description: `Completed task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
             } else {
                 recordActivity({ eventType: 'task.updated', eventCategory: 'crm', description: `Reopened task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
@@ -129,7 +129,7 @@ const TaskDetailPage = () => {
         );
     }
 
-    const isOverdue = task.status === 'Open' && new Date(task.due_date) < new Date();
+    const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
@@ -141,11 +141,11 @@ const TaskDetailPage = () => {
                 <div className="flex justify-between items-start">
                     <div className="flex items-start gap-4">
                         <button className="mt-1 text-slate-500 hover:text-blue-400 transition-colors">
-                            {task.status === 'Done' ? <CheckCircle2 size={32} className="text-emerald-500" /> : <Circle size={32} />}
+                            {task.status === 'DONE' ? <CheckCircle2 size={32} className="text-emerald-500" /> : <Circle size={32} />}
                         </button>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'Done' ? 'text-slate-500 line-through' : 'text-white'}`}>
+                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-white'}`}>
                                     {task.title}
                                 </h1>
                                 <button
@@ -156,7 +156,7 @@ const TaskDetailPage = () => {
                                 </button>
                             </div>
                             <div className="flex items-center gap-3 mt-2">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : task.status === 'IN_PROGRESS' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : task.status === 'ON_HOLD' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : task.status === 'CANCELLED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
                                     }`}>
                                     {task.status}
                                 </span>
@@ -362,9 +362,9 @@ const TaskDetailPage = () => {
                         <div className="space-y-2">
                             <button
                                 onClick={handleTaskToggle}
-                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'Done' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}
+                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'DONE' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}
                             >
-                                {task.status === 'Done' ? 'Mark as Open' : 'Mark as Complete'}
+                                {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
                             </button>
                             <button
                                 onClick={() => setIsRescheduling(true)}

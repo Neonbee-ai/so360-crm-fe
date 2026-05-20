@@ -241,7 +241,7 @@ const LeadDetailPage = () => {
     const { earned, pipeline, totalValue, dealCount } = calculateLegacyRevenue();
 
     const handleTaskToggle = async (task: Task) => {
-        const newStatus = task.status === 'Done' ? 'Open' : 'Done';
+        const newStatus = task.status === 'DONE' ? 'OPEN' : 'DONE';
         try {
             // Optimistic update
             const updatedTask = { ...task, status: newStatus };
@@ -737,7 +737,7 @@ const LeadDetailPage = () => {
                                     <div className="flex justify-between items-center mb-4">
                                         <div className="flex items-center gap-2">
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Tasks</p>
-                                            {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'Open' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
+                                            {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
                                                 <span className="bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
                                                     Due Reminders
                                                 </span>
@@ -752,14 +752,14 @@ const LeadDetailPage = () => {
                                     </div>
 
                                     {/* Reminders Alert Section */}
-                                    {associatedTasks.filter(t => t.type === 'REMINDER' && t.status === 'Open' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000)).length > 0 && (
+                                    {associatedTasks.filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000)).length > 0 && (
                                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
                                             <h4 className="flex items-center gap-2 text-xs font-black text-amber-500 uppercase tracking-widest mb-3">
                                                 <Clock size={14} /> upcoming & due reminders
                                             </h4>
                                             <div className="space-y-2">
                                                 {associatedTasks
-                                                    .filter(t => t.type === 'REMINDER' && t.status === 'Open' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
+                                                    .filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
                                                     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
                                                     .map(task => (
                                                         <div key={task.id} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-lg border border-amber-500/10">
@@ -786,20 +786,20 @@ const LeadDetailPage = () => {
                                     ) : (
                                         <div className="grid gap-3">
                                             {associatedTasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'Done' ? 'border-emerald-500/20 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'Done' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
                                                     >
-                                                        <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'Done' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-blue-500'}`} />
+                                                        <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'DONE' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-blue-500'}`} />
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <Link to={`/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h4 className={`text-sm font-bold text-white leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'Done' ? 'line-through text-slate-500' : ''}`}>
+                                                                <h4 className={`text-sm font-bold text-white leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
                                                                     {task.title || 'Untitled Task'}
                                                                 </h4>
-                                                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${task.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                                                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                                                                     {task.status}
                                                                 </span>
                                                             </div>

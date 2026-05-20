@@ -42,7 +42,7 @@ vi.mock('./components/RescheduleModal', () => ({
 import TaskDetailPage from './TaskDetailPage';
 
 const taskData = {
-  id: 'task-1', title: 'Follow up with client', status: 'Open',
+  id: 'task-1', title: 'Follow up with client', status: 'OPEN',
   due_date: '2099-06-15', type: 'TODO', description: 'Call them tomorrow',
   assigned_to: { id: 'u1', full_name: 'Test User', avatar_url: null },
   created_at: '2024-01-01',
@@ -56,7 +56,7 @@ beforeEach(() => {
   mockGetTaskNotes.mockResolvedValue([
     { id: 'tn1', content: 'Task note', created_at: '2024-01-02', author: { id: 'u1', full_name: 'Test' } },
   ]);
-  mockUpdateTask.mockResolvedValue({ ...taskData, status: 'Done' });
+  mockUpdateTask.mockResolvedValue({ ...taskData, status: 'DONE' });
   mockDeleteTask.mockResolvedValue(undefined);
 });
 
@@ -143,7 +143,7 @@ describe('Given TaskDetailPage', () => {
   });
 
   it('When action / Then shows Done status styling', async () => {
-    mockGetTaskById.mockResolvedValue({ ...taskData, status: 'Done' });
+    mockGetTaskById.mockResolvedValue({ ...taskData, status: 'DONE' });
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.getByText('Done')).toBeInTheDocument();

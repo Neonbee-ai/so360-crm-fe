@@ -41,7 +41,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
         }
         return new Date(task.due_date).toISOString().split('T')[0];
     });
-    const [status, setStatus] = useState<'Open' | 'Done'>(task?.status || 'Open');
+    const [status, setStatus] = useState<Task['status']>(task?.status || 'OPEN');
     const [type, setType] = useState<TaskType>(task?.type || 'TODO');
     const [assignedToId, setAssignedToId] = useState(task?.assigned_to?.id || '');
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
@@ -276,30 +276,17 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                         {isEditing && (
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</label>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="status"
-                                            value="Open"
-                                            checked={status === 'Open'}
-                                            onChange={() => setStatus('Open')}
-                                            className="text-blue-500 focus:ring-blue-500 bg-slate-950 border-slate-800"
-                                        />
-                                        <span className="text-sm font-bold text-slate-300">Open</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="status"
-                                            value="Done"
-                                            checked={status === 'Done'}
-                                            onChange={() => setStatus('Done')}
-                                            className="text-emerald-500 focus:ring-emerald-500 bg-slate-950 border-slate-800"
-                                        />
-                                        <span className="text-sm font-bold text-slate-300">Done</span>
-                                    </label>
-                                </div>
+                                <select
+                                    value={status}
+                                    onChange={(e) => setStatus(e.target.value as Task['status'])}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                                >
+                                    <option value="OPEN">Open</option>
+                                    <option value="IN_PROGRESS">In Progress</option>
+                                    <option value="DONE">Done</option>
+                                    <option value="ON_HOLD">On Hold</option>
+                                    <option value="CANCELLED">Cancelled</option>
+                                </select>
                             </div>
                         )}
                     </div>
