@@ -147,11 +147,19 @@ const QuotesPage = () => {
         {
             key: 'valid_until',
             header: 'Valid Until',
-            accessor: (quote: Quote) => (
-                <span className="text-slate-400">
-                    {quote.valid_until ? formatDate(quote.valid_until) : '-'}
-                </span>
-            )
+            accessor: (quote: Quote) => {
+                if (!quote.valid_until) return <span className="text-slate-500">-</span>;
+                const isExpired = new Date(quote.valid_until) < new Date();
+                if (isExpired) {
+                    return (
+                        <span className="flex items-center gap-1.5">
+                            <span className="text-red-400/70 line-through text-xs">{formatDate(quote.valid_until)}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-red-500/10 text-red-400 border border-red-500/20">Expired</span>
+                        </span>
+                    );
+                }
+                return <span className="text-slate-400">{formatDate(quote.valid_until)}</span>;
+            }
         },
         {
             key: 'created_at',
