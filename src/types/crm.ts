@@ -119,6 +119,7 @@ export interface Task {
     id: string;
     title: string;
     due_date: string;
+    start_date?: string;
     status: 'Open' | 'Done';
     type: TaskType;
     deal_id?: string;
