@@ -147,7 +147,7 @@ describe('Given TaskDetailPage', () => {
     mockGetTaskById.mockResolvedValue({ ...taskData, status: 'DONE' });
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Done')).toBeInTheDocument();
+      expect(screen.getByText('DONE')).toBeInTheDocument();
     });
   });
 
