@@ -388,6 +388,9 @@ export const leadsApi = {
      * POST /leads - Create a new lead
      */
     create: async (data: any): Promise<Lead> => {
+        if (data.status && STATUS_MAP_FE_TO_BE[data.status]) {
+            data.status = STATUS_MAP_FE_TO_BE[data.status];
+        }
         const lead = await apiClient.post<any>('/leads', data);
         return mapLeadFromApi(lead);
     },
