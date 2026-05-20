@@ -467,12 +467,15 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
     });
 
-    it('When Request Invoice is clicked / Then calls requestInvoice API', async () => {
+    it('When Create Invoice is clicked / Then navigates to Accounting invoices with deal params', async () => {
+      const assignHref = vi.fn();
+      Object.defineProperty(window, 'location', { value: { ...window.location, set href(v: string) { assignHref(v); } }, writable: true });
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Request Invoice')).toBeInTheDocument());
-      await user.click(screen.getByText('Request Invoice'));
-      await waitFor(() => expect(mockRequestInvoice).toHaveBeenCalledWith('deal-1'));
+      await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Invoice'));
+      expect(assignHref).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
+      expect(assignHref).toHaveBeenCalledWith(expect.stringContaining('create=true'));
     });
   });
 
