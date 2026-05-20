@@ -28,6 +28,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
     const todayDatetime = `${todayDate}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
     const [title, setTitle] = useState(task?.title || '');
     const [description, setDescription] = useState(task?.description || '');
+    const [startDate, setStartDate] = useState(() => {
+        if (!task?.start_date) return '';
+        return new Date(task.start_date).toISOString().split('T')[0];
+    });
     const [dueDate, setDueDate] = useState(() => {
         if (!task?.due_date) return '';
         // If it's a reminder, keep the time. task.due_date is ISO string.
@@ -94,6 +98,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                 type: type.toUpperCase(),
                 assignee_id: assignedToId
             };
+
+            if (startDate) {
+                data.start_date = new Date(startDate + 'T00:00:00').toISOString();
+            }
 
             // Handle date formatting based on type
             if (type === 'REMINDER') {
@@ -182,20 +190,32 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                    {type === 'REMINDER' ? 'Date & Time' : 'Due Date'}
-                                </label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                                     <input
-                                        type={type === 'REMINDER' ? "datetime-local" : "date"}
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
-                                        min={type === 'REMINDER' ? todayDatetime : todayDate}
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
                                         className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                        required
                                     />
                                 </div>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                {type === 'REMINDER' ? 'Date & Time' : 'Due Date'}
+                            </label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                <input
+                                    type={type === 'REMINDER' ? "datetime-local" : "date"}
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    min={type === 'REMINDER' ? todayDatetime : todayDate}
+                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                    required
+                                />
                             </div>
                         </div>
 
