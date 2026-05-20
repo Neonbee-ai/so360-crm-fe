@@ -21,8 +21,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
     const isEditing = !!task;
-    const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const todayDatetime = new Date().toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+    // Use local date/time (not UTC) so min constraint is correct in all timezones
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const todayDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const todayDatetime = `${todayDate}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
     const [title, setTitle] = useState(task?.title || '');
     const [description, setDescription] = useState(task?.description || '');
     const [dueDate, setDueDate] = useState(() => {
@@ -71,6 +74,15 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Reject past dates regardless of browser min-attribute enforcement
+        const selectedDate = new Date(dueDate);
+        const startOfToday = new Date(todayDate + 'T00:00:00');
+        if (selectedDate < startOfToday) {
+            showError('Due Date cannot be in the past. Please select today or a future date.');
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const data: any = {
