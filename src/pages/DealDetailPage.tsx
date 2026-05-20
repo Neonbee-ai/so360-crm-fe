@@ -278,10 +278,8 @@ const DealDetailPage = () => {
         const params = new URLSearchParams({ create: 'true' });
         if (id) params.set('deal_id', id);
         if (deal.name) params.set('deal_name', deal.name);
-        if (deal.partner_id) params.set('customer_id', deal.partner_id);
-        if (deal.company) params.set('customer_name', deal.company);
+        if (deal.company_name) params.set('customer_name', deal.company_name);
         if (deal.value != null) params.set('amount', String(deal.value));
-        if (deal.contact_email) params.set('customer_email', deal.contact_email);
         window.location.href = `/accounting/invoices?${params.toString()}`;
     };
 
@@ -304,7 +302,7 @@ const DealDetailPage = () => {
         if (id) params.set('deal_id', id);
         if (deal.name) params.set('deal_name', deal.name);
         if (deal.value != null) params.set('budget', String(deal.value));
-        if (deal.company) params.set('client_name', deal.company);
+        if (deal.company_name) params.set('client_name', deal.company_name);
         window.location.href = `/projects/list?${params.toString()}`;
     };
 
