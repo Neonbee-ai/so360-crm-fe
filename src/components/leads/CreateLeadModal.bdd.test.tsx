@@ -16,12 +16,14 @@ vi.mock('../../services/crmService', () => ({
   crmService: {
     getSettings: (...a: any[]) => mockGetSettings(...a),
     createLead: (...a: any[]) => mockCreateLead(...a),
+    getUsers: () => Promise.resolve([{ id: 'u1', full_name: 'Test User', email: 't@t.com' }]),
   },
 }));
 
 vi.mock('@so360/shell-context', () => ({
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
+  useIdentity: () => ({ user: { id: 'u1', full_name: 'Test User', email: 't@t.com' } }),
 }));
 
 import { CreateLeadModal } from './CreateLeadModal';
