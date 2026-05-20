@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, DollarSign, Briefcase, Calendar } from 'lucide-react';
+import { X, Loader2, DollarSign, Briefcase, Calendar, ChevronDown } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
@@ -115,15 +115,18 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage</label>
-                                <select
-                                    value={stage}
-                                    onChange={(e) => setStage(e.target.value as DealStage)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    {settings.map(s => (
-                                        <option key={s.id} value={s.name}>{s.name}</option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        value={stage}
+                                        onChange={(e) => setStage(e.target.value as DealStage)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    >
+                                        {settings.map(s => (
+                                            <option key={s.id} value={s.name}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
                             </div>
                         </div>
 
@@ -156,29 +159,35 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Owner (User)</label>
-                            <select
-                                value={ownerId}
-                                onChange={(e) => setOwnerId(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                            >
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.full_name}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={ownerId}
+                                    onChange={(e) => setOwnerId(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    {users.map(u => (
+                                        <option key={u.id} value={u.id}>{u.full_name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep (Person)</label>
-                            <select
-                                value={ownerPersonId}
-                                onChange={(e) => setOwnerPersonId(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                            >
-                                <option value="">-- Select a sales rep (optional) --</option>
-                                {people.map(p => (
-                                    <option key={p.id} value={p.id}>{p.full_name}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={ownerPersonId}
+                                    onChange={(e) => setOwnerPersonId(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    <option value="">-- Select a sales rep (optional) --</option>
+                                    {people.map(p => (
+                                        <option key={p.id} value={p.id}>{p.full_name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            </div>
                         </div>
                     </div>
 
