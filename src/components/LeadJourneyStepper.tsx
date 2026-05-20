@@ -18,7 +18,7 @@ interface LeadJourneyStepperProps {
 }
 
 export const LeadJourneyStepper: React.FC<LeadJourneyStepperProps> = ({ currentState }) => {
-    const normalized = currentState?.toLowerCase() || 'new';
+    const normalized = currentState?.toLowerCase().replace(/\s+/g, '_') || 'new';
     const isLost = normalized === 'lost';
     const isConverted = normalized === 'converted';
 

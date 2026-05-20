@@ -43,10 +43,11 @@ vi.mock('../services/crmService', () => ({
 }));
 
 const mockNavigate = vi.fn();
+let mockPathname = '/crm/leads/lead-1';
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'lead-1' }),
   useNavigate: () => mockNavigate,
-  useLocation: () => ({ pathname: '/crm/leads/lead-1', search: '' }),
+  useLocation: () => ({ pathname: mockPathname, search: '' }),
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
@@ -131,6 +132,7 @@ const settings = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPathname = '/crm/leads/lead-1';
   mockGetLeadById.mockResolvedValue(makeLead());
   mockGetDealsByLeadId.mockResolvedValue(associatedDeals);
   mockGetTasksByLeadId.mockResolvedValue(associatedTasks);
@@ -154,6 +156,13 @@ describe('LeadDetailPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('journey-stepper')).toHaveTextContent('new');
       });
+    });
+
+    it('When viewed as a customer route / Then hides the lead journey stepper', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.queryByTestId('journey-stepper')).not.toBeInTheDocument();
     });
 
     it('When the page loads / Then shows the email and phone in profile', async () => {
