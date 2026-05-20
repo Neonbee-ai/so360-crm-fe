@@ -20,6 +20,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     const [name, setName] = useState(`${companyName} Deal`);
     const [value, setValue] = useState<string>('');
     const [stage, setStage] = useState<DealStage>('Lead');
+    const [startDate, setStartDate] = useState<string>('');
     const [expectedClose, setExpectedClose] = useState<string>('');
     const [ownerId, setOwnerId] = useState<string>('');
     const [ownerPersonId, setOwnerPersonId] = useState<string>('');
@@ -53,9 +54,10 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                 name,
                 company: companyName,
                 value: parseFloat(value) || 0,
-                stage_id: settings.find(s => s.name === stage)?.id || stage, // Fallback if stage is generic string
+                stage_id: settings.find(s => s.name === stage)?.id || stage,
                 owner_id: ownerId,
-                owner_person_id: ownerPersonId || undefined, // Include person link if selected
+                owner_person_id: ownerPersonId || undefined,
+                start_date: startDate ? new Date(startDate).toISOString() : undefined,
                 expected_close: expectedClose ? new Date(expectedClose).toISOString() : undefined,
                 lead_id: leadId,
             });
@@ -112,6 +114,30 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 </div>
                             </div>
                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage</label>
+                                <select
+                                    value={stage}
+                                    onChange={(e) => setStage(e.target.value as DealStage)}
+                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    {settings.map(s => (
+                                        <option key={s.id} value={s.name}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                />
+                            </div>
+                            <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Close Date</label>
                                 <input
                                     type="date"
@@ -120,19 +146,6 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                 />
                             </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage</label>
-                            <select
-                                value={stage}
-                                onChange={(e) => setStage(e.target.value as DealStage)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                            >
-                                {settings.map(s => (
-                                    <option key={s.id} value={s.name}>{s.name}</option>
-                                ))}
-                            </select>
                         </div>
 
                         <div className="space-y-2">
