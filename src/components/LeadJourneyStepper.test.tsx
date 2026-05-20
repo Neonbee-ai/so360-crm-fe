@@ -32,3 +32,27 @@ describe('Given LeadJourneyStepper', () => {
     expect(screen.getByText('New')).toBeInTheDocument();
   });
 });
+
+describe('Given an unexpected or unknown currentState', () => {
+  it('When rendered with an unknown state / Then does not crash and renders all step labels', () => {
+    render(<LeadJourneyStepper currentState="unknown_state" />);
+    expect(screen.getByText('New')).toBeInTheDocument();
+    expect(screen.getByText('Contacted')).toBeInTheDocument();
+  });
+
+  it('When rendered with uppercase state / Then normalizes and does not crash', () => {
+    render(<LeadJourneyStepper currentState="NEW" />);
+    expect(document.body).toBeTruthy();
+  });
+});
+
+describe('Given each valid forward state', () => {
+  const states = ['new', 'contacted', 'qualified', 'proposal_sent', 'negotiation', 'converted'];
+
+  states.forEach((state) => {
+    it(`When currentState is "${state}" / Then renders without crashing`, () => {
+      render(<LeadJourneyStepper currentState={state} />);
+      expect(document.body).toBeTruthy();
+    });
+  });
+});

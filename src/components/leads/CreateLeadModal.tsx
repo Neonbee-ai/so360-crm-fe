@@ -21,7 +21,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         contact_email: '',
         phone: '',
         source: 'Website',
-        status: 'Open' as any,
+        status: 'New' as any,
         custom_fields: {} as Record<string, any>
     });
 
