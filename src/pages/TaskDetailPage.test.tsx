@@ -100,7 +100,7 @@ describe('Given TaskDetailPage', () => {
   it('When action / Then shows task status', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Open')).toBeInTheDocument();
+      expect(screen.getByText('OPEN')).toBeInTheDocument();
     });
   });
 

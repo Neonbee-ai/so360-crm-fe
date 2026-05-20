@@ -82,6 +82,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
         // Reject past dates regardless of browser min-attribute enforcement
         // Date-only strings (YYYY-MM-DD) must be appended with T00:00:00 so they are
         // parsed as local midnight, not UTC midnight, for a correct timezone comparison.
+        if (!dueDate) {
+            showError('Please select a due date.');
+            return;
+        }
         const selectedDate = new Date(dueDate.includes('T') ? dueDate : dueDate + 'T00:00:00');
         const startOfToday = new Date(todayDate + 'T00:00:00');
         if (selectedDate < startOfToday) {

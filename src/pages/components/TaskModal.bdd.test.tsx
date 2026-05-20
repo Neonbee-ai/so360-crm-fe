@@ -114,9 +114,10 @@ describe('TaskModal', () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Call client' } });
-      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      const dueDateInput = (dateInputs[1] || dateInputs[0]) as HTMLInputElement;
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      if (dateInput) fireEvent.change(dateInput, { target: { value: futureDate } });
+      if (dueDateInput) fireEvent.change(dueDateInput, { target: { value: futureDate } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         expect(mockCreateTask).toHaveBeenCalled();
