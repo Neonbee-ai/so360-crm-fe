@@ -55,7 +55,6 @@ const DealDetailPage = () => {
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isRequestingInvoice, setIsRequestingInvoice] = useState(false);
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
         title: string;
@@ -274,37 +273,16 @@ const DealDetailPage = () => {
         }
     };
 
-    const handleInvoiceRequest = async () => {
-        setIsRequestingInvoice(true);
-        try {
-            await crmService.requestInvoice(id);
-            showSuccess('Invoice created successfully');
-            await crmService.logActivity({
-                lead_id: deal?.lead_id,
-                deal_id: id,
-                type: 'NOTE',
-                notes: 'Requested invoice for deal from accounting',
-                date: new Date().toISOString()
-            });
-            // Refresh deal data to show the newly linked invoice
-            fetchData();
-        } catch (error: any) {
-            const msg: string = error?.message || '';
-            if (msg.toLowerCase().includes('won')) {
-                showError('This deal must be in Won stage before requesting an invoice. Move the deal to Won and try again.');
-            } else if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('does not have')) {
-                showError(`Permission denied: ${msg}`);
-            } else if (msg.toLowerCase().includes('accounting') || msg.toLowerCase().includes('unavailable')) {
-                showError('Accounting service is unavailable. Please ensure the Accounting module is running and try again.');
-            } else if (msg) {
-                showError(msg);
-            } else {
-                showError('Failed to request invoice. Please try again later.');
-            }
-            console.warn('Invoice request failed:', error);
-        } finally {
-            setIsRequestingInvoice(false);
-        }
+    const handleCreateInvoice = () => {
+        if (!deal) return;
+        const params = new URLSearchParams({ create: 'true' });
+        if (id) params.set('deal_id', id);
+        if (deal.name) params.set('deal_name', deal.name);
+        if (deal.partner_id) params.set('customer_id', deal.partner_id);
+        if (deal.company) params.set('customer_name', deal.company);
+        if (deal.value != null) params.set('amount', String(deal.value));
+        if (deal.contact_email) params.set('customer_email', deal.contact_email);
+        window.location.href = `/accounting/invoices?${params.toString()}`;
     };
 
     const handleOpenProjectModal = async () => {
@@ -535,15 +513,10 @@ const DealDetailPage = () => {
                         </button>
                         {FEATURES.DEAL_INVOICE_REQUEST && (
                             <button
-                                onClick={handleInvoiceRequest}
-                                disabled={isRequestingInvoice}
-                                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
+                                onClick={handleCreateInvoice}
+                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
                             >
-                                {isRequestingInvoice ? (
-                                    <><Loader2 size={14} className="animate-spin" /> Requesting...</>
-                                ) : (
-                                    <><Receipt size={14} /> Request Invoice</>
-                                )}
+                                <Receipt size={14} /> Create Invoice
                             </button>
                         )}
                         {FEATURES.DEAL_PROJECT_CREATION && (
