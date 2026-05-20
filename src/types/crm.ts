@@ -83,6 +83,9 @@ export interface Deal {
     activities: Activity[];
     documents?: Attachment[];
     lead_id?: string;
+    partner_id?: string;
+    company?: string;
+    contact_email?: string;
     project_id?: string;
     invoice_id?: string;
     invoice_number?: string;
