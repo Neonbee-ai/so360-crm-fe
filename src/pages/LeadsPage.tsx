@@ -207,18 +207,20 @@ const LeadsPage = () => {
         }
     };
 
-    const handleStatusChange = async (lead: Lead, newStatus: string) => {
+    const handleStatusChange = async (lead: Lead, newStageId: string) => {
+        const stage = leadStages.find(s => s.id === newStageId);
+        const displayName = stage?.name || newStageId;
         try {
-            await crmService.updateLead(lead.id, { status: newStatus as any });
+            await crmService.updateLead(lead.id, { status: displayName as any });
             await crmService.logActivity({
                 lead_id: lead.id,
                 type: 'STATUS_CHANGE',
-                notes: `Lead status changed to ${newStatus}`,
+                notes: `Lead status changed to ${displayName}`,
                 date: new Date().toISOString()
             });
-            recordActivity({ eventType: newStatus === 'Converted' ? 'lead.converted' : 'lead.status_changed', eventCategory: 'crm', description: `Lead "${lead.company_name}" status changed to ${newStatus}`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
-            // Optimistic update
-            setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: newStatus as any } : l));
+            const isConverted = newStageId === 'converted' || newStageId === 'won';
+            recordActivity({ eventType: isConverted ? 'lead.converted' : 'lead.status_changed', eventCategory: 'crm', description: `Lead "${lead.company_name}" status changed to ${displayName}`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
+            setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: displayName as any, backend_status: newStageId } as any : l));
         } catch (error) {
             console.error('Failed to update status:', error);
         }
@@ -291,22 +293,26 @@ const LeadsPage = () => {
             header: <SortableHeader label="Status" field="status" />,
             accessor: (lead: Lead) => {
                 const colors: any = {
-                    'Open': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                    'New': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                    'Contacted': 'bg-sky-500/10 text-sky-400 border-sky-500/20',
                     'Qualified': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-                    'Won': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                    'Proposal Sent': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                    'Negotiation': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                    'Converted': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
                     'Lost': 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                 };
                 const colorClass = colors[lead.status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+                const currentStageId = leadStages.find(s => s.name === lead.status)?.id || (lead as any).backend_status || '';
 
                 return (
                     <div onClick={(e) => e.stopPropagation()}>
                         <select
-                            value={lead.status}
+                            value={currentStageId}
                             onChange={(e) => handleStatusChange(lead, e.target.value)}
                             className={`px-2 py-1 rounded-full text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 focus:ring-blue-500 ${colorClass}`}
                         >
                             {leadStages.map(stage => (
-                                <option key={stage.id} value={stage.name} className="bg-slate-900 text-slate-300">
+                                <option key={stage.id} value={stage.id} className="bg-slate-900 text-slate-300">
                                     {stage.name}
                                 </option>
                             ))}
