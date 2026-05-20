@@ -55,6 +55,7 @@ const DealDetailPage = () => {
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isRequestingInvoice, setIsRequestingInvoice] = useState(false);
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
         title: string;
@@ -274,6 +275,7 @@ const DealDetailPage = () => {
     };
 
     const handleInvoiceRequest = async () => {
+        setIsRequestingInvoice(true);
         try {
             await crmService.requestInvoice(id);
             showSuccess('Invoice created successfully');
@@ -300,6 +302,8 @@ const DealDetailPage = () => {
                 showError('Failed to request invoice. Please try again later.');
             }
             console.warn('Invoice request failed:', error);
+        } finally {
+            setIsRequestingInvoice(false);
         }
     };
 
@@ -532,9 +536,14 @@ const DealDetailPage = () => {
                         {FEATURES.DEAL_INVOICE_REQUEST && (
                             <button
                                 onClick={handleInvoiceRequest}
-                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
+                                disabled={isRequestingInvoice}
+                                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
                             >
-                                <Receipt size={14} /> Request Invoice
+                                {isRequestingInvoice ? (
+                                    <><Loader2 size={14} className="animate-spin" /> Requesting...</>
+                                ) : (
+                                    <><Receipt size={14} /> Request Invoice</>
+                                )}
                             </button>
                         )}
                         {FEATURES.DEAL_PROJECT_CREATION && (
