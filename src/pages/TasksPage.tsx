@@ -4,7 +4,7 @@ import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp,
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
-import { useShell } from '@so360/shell-context';
+import { useShell, useShellBridge } from '@so360/shell-context';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
 import { ToastContainer, useToast } from '../components/common/Toast';
 
@@ -14,6 +14,8 @@ type SortDirection = 'asc' | 'desc' | null;
 const TasksPage = () => {
     const navigate = useNavigate();
     const shell = useShell();
+    const shellBridge = useShellBridge();
+    const canCreateTask = shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true;
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
     const { toasts, showSuccess, showError, dismissToast } = useToast();
@@ -314,13 +316,13 @@ const TasksPage = () => {
             header: '',
             accessor: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
-                    <button
+                    {canCreateTask && <button
                         onClick={() => setShowDeleteConfirm(task.id)}
                         className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
                         title="Delete task"
                     >
                         <Trash2 size={16} />
-                    </button>
+                    </button>}
                 </div>
             )
         }

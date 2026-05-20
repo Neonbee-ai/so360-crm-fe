@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteLine, QuoteStatus } from '../types/crm';
-import { useBusinessSettings, useActivity } from '@so360/shell-context';
+import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
@@ -19,6 +19,10 @@ const QuoteDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
+    const shell = useShellBridge();
+    const canCreateQuote = shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true;
+    const canApproveQuote = shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true;
+    const canConvertQuote = shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true;
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -279,7 +283,7 @@ const QuoteDetailPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {canEdit && !isEditing && (
+                    {canCreateQuote && canEdit && !isEditing && (
                         <button
                             onClick={() => setIsEditing(true)}
                             className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
@@ -318,7 +322,7 @@ const QuoteDetailPage = () => {
                             Submit for Approval
                         </button>
                     )}
-                    {canApprove && (
+                    {canApproveQuote && canApprove && (
                         <>
                             <button
                                 onClick={() => setShowRejectModal(true)}
@@ -336,7 +340,7 @@ const QuoteDetailPage = () => {
                             </button>
                         </>
                     )}
-                    {canConvert && (
+                    {canConvertQuote && canConvert && (
                         <button
                             onClick={() => setShowConvertModal(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -397,7 +401,7 @@ const QuoteDetailPage = () => {
                     <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-semibold text-slate-100">Line Items</h2>
-                            {isEditing && (
+                            {canCreateQuote && isEditing && (
                                 <button
                                     onClick={addLine}
                                     className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-400 hover:text-blue-300 border border-blue-500/50 hover:border-blue-400 rounded-lg transition-colors"

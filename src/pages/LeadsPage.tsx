@@ -5,7 +5,7 @@ import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
-import { useNotify, useActivity } from '@so360/shell-context';
+import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 
 type SortField = 'company_name' | 'contact_name' | 'status' | 'created_at' | 'owner';
 type SortDirection = 'asc' | 'desc' | null;
@@ -15,6 +15,9 @@ const LeadsPage = () => {
     const location = useLocation();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
+    const shell = useShellBridge();
+    const canCreateLead = shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true;
+    const canUpdateLead = shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true;
     const [leads, setLeads] = useState<Lead[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -337,13 +340,13 @@ const LeadsPage = () => {
             header: '',
             accessor: (lead: Lead) => (
                 <div onClick={(e) => e.stopPropagation()}>
-                    <button
+                    {canUpdateLead && <button
                         onClick={() => setShowDeleteConfirm(lead.id)}
                         className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
                         title="Delete lead"
                     >
                         <Trash2 size={16} />
-                    </button>
+                    </button>}
                 </div>
             )
         }
@@ -356,13 +359,13 @@ const LeadsPage = () => {
                     <h1 className="text-3xl font-bold text-white tracking-tight">Leads & Accounts</h1>
                     <p className="text-slate-400 mt-1">Single source of truth for business deals</p>
                 </div>
-                <button
+                {canCreateLead && <button
                     onClick={() => setIsModalOpen(true)}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
                 >
                     <Plus size={20} />
                     Create Lead
-                </button>
+                </button>}
             </header>
 
             <CreateLeadModal

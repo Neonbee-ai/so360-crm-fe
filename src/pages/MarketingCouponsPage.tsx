@@ -3,7 +3,7 @@ import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Pe
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
-import { useBusinessSettings, useActivity } from '@so360/shell-context';
+import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { formatMoney } from './marketing/marketingMappers';
 
 const STORE_KEY = 'crm_marketing_store_id';
@@ -11,6 +11,8 @@ const STORE_KEY = 'crm_marketing_store_id';
 const MarketingCouponsPage: React.FC = () => {
   const { settings } = useBusinessSettings();
   const { recordActivity } = useActivity();
+  const shell = useShellBridge();
+  const canCreateMarketing = shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true;
   const currencyCode = settings?.base_currency || 'INR';
   const locale = settings?.document_language || 'en-IN';
 
@@ -137,12 +139,12 @@ const MarketingCouponsPage: React.FC = () => {
           <h1 className="text-3xl font-black text-white tracking-tight uppercase">Discount Coupons</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage promotional codes and offers</p>
         </div>
-        <button 
+        {canCreateMarketing && <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
         >
           <Plus size={16} /> Create Coupon
-        </button>
+        </button>}
       </div>
 
       <div className="grid grid-cols-1 gap-8">
@@ -362,18 +364,18 @@ const MarketingCouponsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
+                          {canCreateMarketing && <button
                             onClick={() => handleEdit(coupon)}
                             className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
                           >
                             <Pencil size={16} />
-                          </button>
-                          <button 
+                          </button>}
+                          {canCreateMarketing && <button
                             onClick={() => handleDelete(coupon)}
                             className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"
                           >
                             <Trash2 size={16} />
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>

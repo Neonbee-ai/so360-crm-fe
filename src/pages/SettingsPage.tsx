@@ -3,11 +3,14 @@ import { crmService } from '../services/crmService';
 import { CRMSettings } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck } from 'lucide-react';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { useShellBridge } from '@so360/shell-context';
 
 type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring';
 
 const SettingsPage = () => {
     const { toasts, showSuccess, showError, dismissToast } = useToast();
+    const shell = useShellBridge();
+    const canWriteSettings = shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true;
     const [settings, setSettings] = useState<CRMSettings | null>(null);
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);
@@ -151,14 +154,14 @@ const SettingsPage = () => {
                     <h1 className="text-4xl font-black text-white tracking-tight">CRM Settings</h1>
                     <p className="text-slate-400 mt-1 font-medium">Configure your workspace and custom data points</p>
                 </div>
-                <button
+                {canWriteSettings && <button
                     onClick={handleSave}
                     disabled={isSaving}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
                 >
                     <Save size={20} />
                     {isSaving ? 'Saving...' : 'Save Configuration'}
-                </button>
+                </button>}
             </header>
 
             <div className="flex gap-1 mb-8 bg-slate-900/50 p-1 rounded-xl border border-slate-800 w-fit">

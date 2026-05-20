@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useShell, useActivity } from '@so360/shell-context';
+import { useShell, useActivity, useShellBridge } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     ChevronLeft, Mail, Phone, Building2,
@@ -38,6 +38,11 @@ const LeadDetailPage = () => {
     const { toasts, showSuccess, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { isModuleEnabled } = useShell();
+    const shell = useShellBridge();
+    const canCreateDeal = shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true;
+    const canPromoteLead = shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true;
+    const canQualifyLead = shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true;
+    const canConvertLead = shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true;
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
@@ -344,13 +349,13 @@ const LeadDetailPage = () => {
                             <Trash2 size={16} />
                             Delete
                         </button>
-                        <button
+                        {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
                         >
                             <Plus size={16} />
                             Create Deal
-                        </button>
+                        </button>}
                     </div>
                 </div>
             </header>

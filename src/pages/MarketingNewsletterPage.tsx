@@ -3,10 +3,13 @@ import { Plus, Trash2, MailX, Search, Mail, Loader2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { useShellBridge } from '@so360/shell-context';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingNewsletterPage: React.FC = () => {
+  const shell = useShellBridge();
+  const canCreateMarketing = shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true;
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,13 +107,13 @@ const MarketingNewsletterPage: React.FC = () => {
                   />
                 </div>
               </div>
-              <button
+              {canCreateMarketing && <button
                 onClick={handleAdd}
                 disabled={!email || !storeId}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
               >
                 <Plus size={14} /> Add Subscriber
-              </button>
+              </button>}
             </div>
           </section>
         </div>
@@ -172,13 +175,13 @@ const MarketingNewsletterPage: React.FC = () => {
                             <MailX size={16} />
                           </button>
                         )}
-                        <button
+                        {canCreateMarketing && <button
                           onClick={() => handleDelete(s.id)}
                           className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
-                        </button>
+                        </button>}
                       </div>
                     </div>
                   ))}

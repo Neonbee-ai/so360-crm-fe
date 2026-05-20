@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
-import { useBusinessSettings, useShell } from '@so360/shell-context';
+import { useBusinessSettings, useShell, useShellBridge } from '@so360/shell-context';
 import { Button } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
@@ -13,6 +13,8 @@ type SegmentMemberType = 'lead' | 'customer';
 const MarketingSegmentsPage: React.FC = () => {
   const navigate = useNavigate();
   const shell = useShell();
+  const shellBridge = useShellBridge();
+  const canCreateMarketing = shellBridge?.isFeatureEnabled?.('action:crm:marketing:create') ?? true;
   const { settings } = useBusinessSettings();
   const currencyCode = settings?.base_currency;
   const locale = settings?.document_language || 'en-US';
@@ -253,12 +255,12 @@ const MarketingSegmentsPage: React.FC = () => {
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 lg:col-span-3">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-slate-100 font-bold text-lg">Segments</h3>
-            <Button
+            {canCreateMarketing && <Button
               variant="primary"
               onClick={() => setShowCreate((v) => !v)}
             >
               {showCreate ? 'Close Form' : 'Create Segment'}
-            </Button>
+            </Button>}
           </div>
 
           {showCreate && (
@@ -369,7 +371,7 @@ const MarketingSegmentsPage: React.FC = () => {
                           >
                             Customers
                           </Button>
-                          <Button
+                          {canCreateMarketing && <Button
                             variant="danger"
                             size="sm"
                             onClick={async () => {
@@ -383,7 +385,7 @@ const MarketingSegmentsPage: React.FC = () => {
                             }}
                           >
                             Delete
-                          </Button>
+                          </Button>}
                         </div>
                       </td>
                     </tr>

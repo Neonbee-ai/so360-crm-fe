@@ -4,7 +4,7 @@ import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, C
 import { crmService } from '../services/crmService';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
-import { useBusinessSettings, useActivity } from '@so360/shell-context';
+import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 
 const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
@@ -19,6 +19,8 @@ const statusColors: Record<QuoteStatus, { bg: string; text: string; label: strin
 const QuotesPage = () => {
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
+    const shell = useShellBridge();
+    const canCreateQuote = shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true;
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -197,7 +199,7 @@ const QuotesPage = () => {
                     >
                         <FileText className="w-4 h-4" />
                     </button>
-                    {quote.status === 'draft' && (
+                    {canCreateQuote && quote.status === 'draft' && (
                         <button
                             onClick={() => setShowDeleteConfirm(quote.id)}
                             className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded"
@@ -230,13 +232,13 @@ const QuotesPage = () => {
                     <h1 className="text-2xl font-bold text-slate-100">Quotes</h1>
                     <p className="text-sm text-slate-400 mt-1">Manage sales quotes and proposals</p>
                 </div>
-                <button
+                {canCreateQuote && <button
                     onClick={() => setIsCreateModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
                     <Plus className="w-4 h-4" />
                     New Quote
-                </button>
+                </button>}
             </div>
 
             {error && (
@@ -304,13 +306,13 @@ const QuotesPage = () => {
                             ? 'Try adjusting your filters'
                             : 'Create your first quote to get started'}
                     </p>
-                    <button
+                    {canCreateQuote && <button
                         onClick={() => setIsCreateModalOpen(true)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                         Create Quote
-                    </button>
+                    </button>}
                 </div>
             ) : (
                 <Table

@@ -9,7 +9,7 @@ import { Task } from '../types/crm';
 import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
-import { ShellContext, useActivity } from '@so360/shell-context';
+import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
@@ -17,6 +17,8 @@ const TaskDetailPage = () => {
     const shell = useContext(ShellContext);
     const currentUserId = shell?.user?.id;
     const { recordActivity } = useActivity();
+    const shellBridge = useShellBridge();
+    const canCreateTask = shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true;
     const [task, setTask] = useState<Task | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingTask, setIsEditingTask] = useState(false);
@@ -166,12 +168,12 @@ const TaskDetailPage = () => {
                             </div>
                         </div>
                     </div>
-                    <button
+                    {canCreateTask && <button
                         onClick={() => setShowDeleteConfirm(true)}
                         className="text-slate-500 hover:text-rose-400 p-2 transition-colors"
                     >
                         <Trash2 size={20} />
-                    </button>
+                    </button>}
                 </div>
             </header>
 
@@ -233,7 +235,7 @@ const TaskDetailPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
                             <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Notes & Comments</h3>
-                            {notesSupported && (
+                            {canCreateTask && notesSupported && (
                                 <button
                                     onClick={() => setIsAddingNote(!isAddingNote)}
                                     className="text-xs text-blue-400 hover:text-blue-300 font-bold"
