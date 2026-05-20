@@ -71,7 +71,7 @@ import LeadDetailPage from './LeadDetailPage';
 
 const leadData = {
   id: 'lead-1', company_name: 'Acme', contact_name: 'John', contact_email: 'j@a.com',
-  phone: '555-1234', status: 'Open', source: 'Website', value: 5000,
+  phone: '555-1234', status: 'New', source: 'Website', value: 5000,
   owner: { id: 'u1', full_name: 'Test User', avatar_url: null },
   creator: { id: 'u1', full_name: 'Test User' },
   notes: [{ id: 'n1', content: 'Initial note', created_at: '2024-01-01', author: { id: 'u1', full_name: 'Test' } }],
@@ -86,7 +86,7 @@ beforeEach(() => {
   mockGetLeadById.mockResolvedValue(leadData);
   mockGetSettings.mockResolvedValue({
     deal_stages: [{ id: 's1', name: 'Lead' }],
-    lead_stages: [{ id: 'ls1', name: 'Open' }, { id: 'ls2', name: 'Contacted' }],
+    lead_stages: [{ id: 'new', name: 'New' }, { id: 'contacted', name: 'Contacted' }],
     lead_custom_fields: [{ id: 'cf1', label: 'Industry', type: 'text', required: false }],
     deal_custom_fields: [],
     lead_sources: [{ id: 'src1', name: 'Website' }],

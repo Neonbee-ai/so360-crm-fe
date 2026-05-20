@@ -86,7 +86,7 @@ describe('Given leadsApi', () => {
 
       const leads = await leadsApi.getAll();
       expect(leads).toHaveLength(1);
-      expect(leads[0].status).toBe('Open'); // NEW -> Open
+      expect(leads[0].status).toBe('New'); // NEW -> New
       expect(leads[0].contact_email).toBe('john@acme.com');
     });
 
@@ -98,12 +98,12 @@ describe('Given leadsApi', () => {
       expect(leads[0].status).toBe('Qualified');
     });
 
-    it('When action / Then maps CLOSED_WON status to Won', async () => {
+    it('When action / Then maps CLOSED_WON status to Converted', async () => {
       mockFetchSuccess([
         { id: 'lead-3', status: 'CLOSED_WON', notes: [], documents: [], deals: [], tasks: [], activities: [] },
       ]);
       const leads = await leadsApi.getAll();
-      expect(leads[0].status).toBe('Won');
+      expect(leads[0].status).toBe('Converted');
     });
 
     it('When action / Then preserves unknown status as-is', async () => {
@@ -126,10 +126,10 @@ describe('Given leadsApi', () => {
 
     it('When action / Then maps FE status param to BE status in request', async () => {
       mockFetchSuccess([]);
-      await leadsApi.getAll({ status: 'Open' });
+      await leadsApi.getAll({ status: 'New' });
 
       const calledUrl = fetchMock.mock.calls[0][0];
-      expect(calledUrl).toContain('status=NEW');
+      expect(calledUrl).toContain('status=new');
     });
   });
 
@@ -149,7 +149,7 @@ describe('Given leadsApi', () => {
 
       const lead = await leadsApi.create({ company_name: 'NewCo' });
       expect(lead.id).toBe('lead-new');
-      expect(lead.status).toBe('Open');
+      expect(lead.status).toBe('New');
 
       // Verify POST method
       const [, options] = fetchMock.mock.calls[0];
@@ -171,7 +171,7 @@ describe('Given leadsApi', () => {
 
       const lead = await leadsApi.getById('lead-1');
       expect(lead.id).toBe('lead-1');
-      expect(lead.status).toBe('Qualified'); // NEGOTIATION -> Qualified
+      expect(lead.status).toBe('Negotiation'); // NEGOTIATION -> Negotiation
     });
   });
 
@@ -829,7 +829,7 @@ describe('Given crmService (legacy layer)', () => {
     const body = JSON.parse(opts.body);
     expect(body.contact_name).toBe('Jane');
     expect(body.owner_id).toBe('u2');
-    expect(body.status).toBe('QUALIFIED');
+    expect(body.status).toBe('qualified');
     expect(body.meta_data).toEqual({ cf: 'v' });
   });
 
@@ -1715,7 +1715,7 @@ describe('Given leadsApi additional', () => {
     await leadsApi.update('l1', { status: 'Qualified' });
     const [, opts] = fetchMock.mock.calls[0];
     const body = JSON.parse(opts.body);
-    expect(body.status).toBe('QUALIFIED');
+    expect(body.status).toBe('qualified');
   });
 
   it('When action / Then getStats fetches lead stats', async () => {

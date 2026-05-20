@@ -82,7 +82,7 @@ const makeLead = (overrides: any = {}) => ({
   contact_email: 'john@acme.com',
   phone: '555-1234',
   source: 'Website',
-  status: 'Open',
+  status: 'New',
   current_flow_state: 'new',
   owner,
   created_at: '2025-01-01T10:00:00Z',
@@ -117,7 +117,7 @@ const associatedTasks = [
 
 const settings = {
   deal_stages: [],
-  lead_stages: [{ id: 'ls1', name: 'Open' }, { id: 'ls2', name: 'Qualified' }, { id: 'ls3', name: 'Won' }],
+  lead_stages: [{ id: 'new', name: 'New' }, { id: 'qualified', name: 'Qualified' }, { id: 'converted', name: 'Converted' }],
   lead_custom_fields: [{ id: 'cf1', label: 'Priority Level', type: 'text' }],
   deal_custom_fields: [],
   lead_sources: [],
@@ -435,12 +435,12 @@ describe('LeadDetailPage', () => {
   });
 
   describe('Given lead status badge colors', () => {
-    it('When lead status is Won / Then shows Won status text', async () => {
-      mockGetLeadById.mockResolvedValue(makeLead({ status: 'Won' }));
+    it('When lead status is Converted / Then shows Converted status text', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({ status: 'Converted' }));
       render(<LeadDetailPage />);
       await waitFor(() => {
-        const wonBadges = screen.getAllByText('Won');
-        expect(wonBadges.length).toBeGreaterThan(0);
+        const convertedBadges = screen.getAllByText('Converted');
+        expect(convertedBadges.length).toBeGreaterThan(0);
       });
     });
 
