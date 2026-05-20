@@ -134,13 +134,30 @@ const QuotesPage = () => {
         },
         {
             key: 'status',
-            header: 'Status',
+            header: (
+                <span className="flex items-center gap-1.5">
+                    Status
+                    {statusFilter !== 'All' && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            {statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter}
+                        </span>
+                    )}
+                </span>
+            ),
             accessor: (quote: Quote) => {
                 const status = statusColors[quote.status] || statusColors.draft;
+                const isActive = statusFilter === quote.status;
                 return (
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setStatusFilter(isActive ? 'All' : quote.status);
+                        }}
+                        title={isActive ? 'Click to clear filter' : `Click to filter by ${status.label}`}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text} transition-opacity hover:opacity-80 ${isActive ? 'ring-1 ring-offset-1 ring-offset-slate-950 ring-current' : ''}`}
+                    >
                         {status.label}
-                    </span>
+                    </button>
                 );
             }
         },
