@@ -1159,12 +1159,20 @@ export const crmService = {
     // Settings
     getSettings: async (): Promise<CRMSettings> => {
         try {
-            const [stages, leadStages, leadFields, dealFields] = await Promise.all([
+            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult] = await Promise.allSettled([
                 apiClient.get<any[]>('/settings/pipeline-stages'),
                 apiClient.get<any[]>('/settings/lead-stages'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL')
             ]);
+
+            const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
+            const leadStages = leadStagesResult.status === 'fulfilled' ? leadStagesResult.value : [];
+            const leadFields = leadFieldsResult.status === 'fulfilled' ? leadFieldsResult.value : [];
+            const dealFields = dealFieldsResult.status === 'fulfilled' ? dealFieldsResult.value : [];
+
+            if (stagesResult.status === 'rejected') console.error('[CRM] Failed to fetch pipeline stages', stagesResult.reason);
+            if (leadStagesResult.status === 'rejected') console.error('[CRM] Failed to fetch lead stages', leadStagesResult.reason);
 
             return {
                 deal_stages: stages.map(s => ({
