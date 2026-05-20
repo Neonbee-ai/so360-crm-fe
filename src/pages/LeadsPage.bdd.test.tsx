@@ -60,7 +60,7 @@ import LeadsPage from './LeadsPage';
 
 const settings = {
   deal_stages: [],
-  lead_stages: [{ id: 'ls1', name: 'Open' }, { id: 'ls2', name: 'Qualified' }, { id: 'ls3', name: 'Won' }],
+  lead_stages: [{ id: 'new', name: 'New' }, { id: 'qualified', name: 'Qualified' }, { id: 'converted', name: 'Converted' }],
   lead_custom_fields: [],
   deal_custom_fields: [],
   lead_sources: [],
@@ -74,9 +74,9 @@ const users = [
 ];
 
 const leads = [
-  { id: 'l1', company_name: 'Acme Corp', contact_name: 'John Doe', contact_email: 'john@acme.com', phone: '555-1234', status: 'Open', source: 'Website', owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z' },
+  { id: 'l1', company_name: 'Acme Corp', contact_name: 'John Doe', contact_email: 'john@acme.com', phone: '555-1234', status: 'New', source: 'Website', owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z' },
   { id: 'l2', company_name: 'Beta Inc', contact_name: 'Jane Smith', contact_email: 'jane@beta.com', status: 'Qualified', source: 'Referral', owner: users[1], creator: users[1], created_at: '2025-02-20T10:00:00Z' },
-  { id: 'l3', company_name: 'Gamma LLC', contact_name: 'Bob Brown', contact_email: 'bob@gamma.com', status: 'Open', source: 'Website', owner: users[0], creator: users[0], created_at: '2025-03-10T10:00:00Z' },
+  { id: 'l3', company_name: 'Gamma LLC', contact_name: 'Bob Brown', contact_email: 'bob@gamma.com', status: 'New', source: 'Website', owner: users[0], creator: users[0], created_at: '2025-03-10T10:00:00Z' },
 ];
 
 beforeEach(() => {
@@ -259,7 +259,7 @@ describe('LeadsPage', () => {
       const cell = statusCol.accessor(leads[0]);
       const { container } = render(cell);
       const select = container.querySelector('select');
-      expect(select?.value).toBe('Open');
+      expect(select?.value).toBe('new');
     });
 
     it('When created column renders / Then shows creator name and date', async () => {
@@ -285,7 +285,7 @@ describe('LeadsPage', () => {
     it('When many leads exist / Then shows pagination controls', async () => {
       const manyLeads = Array.from({ length: 15 }, (_, i) => ({
         id: `l${i}`, company_name: `Company ${i}`, contact_name: `Contact ${i}`, contact_email: `c${i}@test.com`,
-        status: 'Open', source: 'Web', owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z',
+        status: 'New', source: 'Web', owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z',
       }));
       mockGetLeads.mockResolvedValue(manyLeads);
       render(<LeadsPage />);
