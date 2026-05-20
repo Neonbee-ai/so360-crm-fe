@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { crmService } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
-import { CustomFieldDefinition, User } from '../../types/crm';
+import { CustomFieldDefinition, User, Lead } from '../../types/crm';
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
+import { LEAD_SOURCES } from '../../constants/leadSources';
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -24,23 +25,27 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         source: 'Website',
         status: 'New' as any,
         owner_id: '',
+        referred_by: '',
         custom_fields: {} as Record<string, any>
     });
 
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [leadStages, setLeadStages] = useState<{ id: string, name: string }[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [partners, setPartners] = useState<Lead[]>([]);
 
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const [settings, fetchedUsers] = await Promise.all([
+                const [settings, fetchedUsers, fetchedPartners] = await Promise.all([
                     crmService.getSettings(),
                     crmService.getUsers(),
+                    crmService.getPartners(),
                 ]);
                 setCustomFieldDefs(settings.lead_custom_fields);
                 setLeadStages(settings.lead_stages);
                 setUsers(fetchedUsers);
+                setPartners(fetchedPartners);
                 setFormData(prev => ({
                     ...prev,
                     ...(settings.lead_stages.length > 0 && !prev.status ? { status: settings.lead_stages[0].name } : {}),
@@ -73,6 +78,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 activities: [],
                 notes: [],
                 owner_id: formData.owner_id,
+                referred_by: formData.referred_by || undefined,
             } as any);
             // Fire-and-forget notification + activity
             recordActivity({ eventType: 'lead.created', eventCategory: 'crm', description: `Created lead "${formData.company_name}"`, resourceType: 'lead', resourceId: newLead?.id }).catch(() => {});
@@ -152,13 +158,12 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <label className="text-sm font-medium text-slate-400">Lead Source</label>
                         <select
                             value={formData.source}
-                            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, source: e.target.value, referred_by: '' })}
                             className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                         >
-                            <option value="Website">Website</option>
-                            <option value="Referral">Referral</option>
-                            <option value="Cold Call">Cold Call</option>
-                            <option value="LinkedIn">LinkedIn</option>
+                            {LEAD_SOURCES.map(src => (
+                                <option key={src} value={src}>{src}</option>
+                            ))}
                         </select>
                     </div>
 
@@ -175,6 +180,24 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         </select>
                     </div>
                 </div>
+
+                {formData.source === 'Referral' && (
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-slate-400">Referred By (Partner)</label>
+                        <select
+                            value={formData.referred_by}
+                            onChange={(e) => setFormData({ ...formData, referred_by: e.target.value })}
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                        >
+                            <option value="">— Select partner —</option>
+                            {partners.map(p => (
+                                <option key={p.id} value={p.id}>
+                                    {p.company_name}{p.contact_name ? ` (${p.contact_name})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-400">Owner</label>

@@ -37,7 +37,8 @@ export interface Lead {
     source: string;
     owner: User;
     status: LeadStatus;
-    type?: 'lead' | 'customer';
+    type?: 'lead' | 'customer' | 'partner';
+    referred_by?: string;
     created_at: string;
     updated_at?: string;
     activities: Activity[];

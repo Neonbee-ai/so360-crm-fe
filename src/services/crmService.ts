@@ -1035,12 +1035,19 @@ export const crmService = {
             data.owner_id = (updates as any).owner_id;
         }
         if (updates.custom_fields !== undefined) data.meta_data = updates.custom_fields;
+        if ((updates as any).referred_by !== undefined) data.referred_by = (updates as any).referred_by || null;
+        if (updates.type !== undefined) data.type = updates.type;
 
         return leadsApi.update(id, data);
     },
 
     deleteLead: async (id: string): Promise<void> => {
         return leadsApi.delete(id);
+    },
+
+    getPartners: async (): Promise<Lead[]> => {
+        const leads = await apiClient.get<any[]>('/leads', { type: 'partner', take: 200 });
+        return leads.map(mapLeadFromApi);
     },
 
     // Deals

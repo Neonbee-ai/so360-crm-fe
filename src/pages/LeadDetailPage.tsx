@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { crmService, activitiesApi } from '../services/crmService';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note } from '../types/crm';
+import { LEAD_SOURCES } from '../constants/leadSources';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { Trophy, Zap, Info, TrendingUp } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -67,16 +68,18 @@ const LeadDetailPage = () => {
     const [newNoteContent, setNewNoteContent] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [partners, setPartners] = useState<Lead[]>([]);
 
     const fetchLeadData = useCallback(async () => {
         try {
-            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData] = await Promise.all([
+            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData, partnersData] = await Promise.all([
                 crmService.getLeadById(id),
                 crmService.getDealsByLeadId(id),
                 crmService.getTasksByLeadId(id),
                 crmService.getSettings(),
                 crmService.getUsers(),
-                crmService.getActivitiesByLeadId(id)
+                crmService.getActivitiesByLeadId(id),
+                crmService.getPartners(),
             ]);
             setLead(leadData || null);
             if (leadData) {
@@ -88,6 +91,7 @@ const LeadDetailPage = () => {
             setScoringRules(settingsData.lead_scoring || []);
             setLeadStages(settingsData.lead_stages || []);
             setAllUsers(usersData);
+            setPartners(partnersData);
         } catch (error) {
             console.error('Failed to fetch lead data', error);
         } finally {
@@ -332,6 +336,11 @@ const LeadDetailPage = () => {
                                         }`}>
                                         {lead.status}
                                     </span>
+                                    {lead.type === 'partner' && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-violet-500/10 text-violet-400 border-violet-500/20">
+                                            Partner
+                                        </span>
+                                    )}
                                     <Edit2 size={12} className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             )}
@@ -466,17 +475,70 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Source</span>
                                                 {isEditingInfo ? (
-                                                    <input
-                                                        type="text"
+                                                    <select
                                                         value={lead.source}
-                                                        onChange={(e) => setLead({ ...lead, source: e.target.value })}
+                                                        onChange={(e) => setLead({ ...lead, source: e.target.value, referred_by: e.target.value !== 'Referral' ? undefined : lead.referred_by })}
                                                         className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
-                                                    />
+                                                    >
+                                                        {LEAD_SOURCES.map(src => (
+                                                            <option key={src} value={src}>{src}</option>
+                                                        ))}
+                                                    </select>
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.source}</span>
                                                 )}
                                             </div>
                                         </div>
+
+                                        {(lead.source === 'Referral' || lead.referred_by) && (
+                                            <div className="flex items-center gap-4 text-slate-300">
+                                                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
+                                                    <Users size={18} />
+                                                </div>
+                                                <div className="flex flex-col flex-1">
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Referred By</span>
+                                                    {isEditingInfo ? (
+                                                        <select
+                                                            value={lead.referred_by || ''}
+                                                            onChange={(e) => setLead({ ...lead, referred_by: e.target.value || undefined })}
+                                                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        >
+                                                            <option value="">— None —</option>
+                                                            {partners.map(p => (
+                                                                <option key={p.id} value={p.id}>
+                                                                    {p.company_name}{p.contact_name ? ` (${p.contact_name})` : ''}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <span className="text-sm font-bold uppercase tracking-tight">
+                                                            {partners.find(p => p.id === lead.referred_by)?.company_name || '—'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {isEditingInfo && (
+                                            <div className="flex items-center gap-4 text-slate-300">
+                                                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
+                                                    <Users size={18} />
+                                                </div>
+                                                <div className="flex flex-col flex-1">
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Partner</span>
+                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={lead.type === 'partner'}
+                                                            onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })}
+                                                            className="w-4 h-4 rounded accent-violet-500"
+                                                        />
+                                                        <span className="text-sm font-bold">Mark as Partner</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="flex items-center gap-4 text-slate-300 text-opacity-50">
                                             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-amber-400 shadow-inner opacity-50">
                                                 <Calendar size={18} />
