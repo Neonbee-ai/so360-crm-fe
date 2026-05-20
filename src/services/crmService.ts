@@ -58,22 +58,35 @@ let CURRENT_USER: User | null = null;
 let USERS_CACHE: Map<string, User> = new Map();
 let USERS_CACHE_LOADED = false;
 
-// Status Mapping
+// Status Mapping — handles both legacy uppercase DB values and current lowercase stage IDs
 const STATUS_MAP_FE_TO_BE: Record<string, string> = {
-    'Open': 'NEW',
-    'Qualified': 'QUALIFIED',
-    'Won': 'CLOSED_WON',
-    'Lost': 'CLOSED_LOST'
+    'Open': 'new',
+    'New': 'new',
+    'Contacted': 'contacted',
+    'Qualified': 'qualified',
+    'Proposal Sent': 'proposal_sent',
+    'Negotiation': 'negotiation',
+    'Converted': 'converted',
+    'Won': 'converted',
+    'Lost': 'lost',
 };
 
 const STATUS_MAP_BE_TO_FE: Record<string, string> = {
-    'NEW': 'Open',
-    'CONTACTED': 'Open',
+    'NEW': 'New',
+    'new': 'New',
+    'CONTACTED': 'Contacted',
+    'contacted': 'Contacted',
     'QUALIFIED': 'Qualified',
-    'PROPOSAL_SENT': 'Qualified',
-    'NEGOTIATION': 'Qualified',
-    'CLOSED_WON': 'Won',
-    'CLOSED_LOST': 'Lost'
+    'qualified': 'Qualified',
+    'PROPOSAL_SENT': 'Proposal Sent',
+    'proposal_sent': 'Proposal Sent',
+    'NEGOTIATION': 'Negotiation',
+    'negotiation': 'Negotiation',
+    'CLOSED_WON': 'Converted',
+    'converted': 'Converted',
+    'CLOSED_LOST': 'Lost',
+    'lost': 'Lost',
+    'customer': 'Converted',
 };
 
 const mapUser = (userObj: any, userId: string) => {
@@ -144,13 +157,13 @@ const mapLeadFromApi = (apiLead: any): Lead => {
         creator: mapUser(apiLead.creator, apiLead.created_by),
         notes: (apiLead.notes || []).map(mapNoteFromApi),
         documents: (apiLead.documents || []).map(mapDocumentFromApi),
-        // Ensure arrays are initialized if null
         deals: apiLead.deals || [],
         tasks: (apiLead.tasks || []).map(mapTaskFromApi),
         activities: (apiLead.activities || []).map(mapActivityFromApi),
         custom_fields: apiLead.meta_data || {},
         contact_email: apiLead.email,
-        status: STATUS_MAP_BE_TO_FE[apiLead.status] || apiLead.status || 'Open'
+        backend_status: apiLead.status,
+        status: STATUS_MAP_BE_TO_FE[apiLead.status] || apiLead.status || 'New'
     };
 };
 
@@ -913,7 +926,7 @@ export const crmService = {
 
                 const userLeads = leads.filter((l: any) => l.owner.id === user.id);
                 const totalUserLeads = userLeads.length;
-                const activeLeads = userLeads.filter((l: any) => l.status !== 'Won' && l.status !== 'Lost').length;
+                const activeLeads = userLeads.filter((l: any) => l.status !== 'Converted' && l.status !== 'Lost').length;
 
                 // Aggregate activities for this user across all leads and deals
                 const leadActivities = leads.reduce((sum: number, lead: any) => {
