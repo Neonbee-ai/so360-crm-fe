@@ -996,7 +996,7 @@ export const crmService = {
         }
     },
 
-    createLead: async (lead: Omit<Lead, 'id' | 'created_at' | 'owner'>): Promise<Lead> => {
+    createLead: async (lead: Omit<Lead, 'id' | 'created_at' | 'owner'> & { owner_id?: string }): Promise<Lead> => {
         return leadsApi.create({
             company_name: lead.company_name,
             contact_name: lead.contact_name,
@@ -1004,7 +1004,7 @@ export const crmService = {
             phone: lead.phone,
             status: lead.status || 'New',
             source: lead.source,
-            owner_id: USER_ID,
+            owner_id: lead.owner_id || USER_ID,
             meta_data: lead.custom_fields,
         });
     },

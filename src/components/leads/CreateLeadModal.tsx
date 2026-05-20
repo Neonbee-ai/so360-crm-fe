@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { crmService } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
-import { CustomFieldDefinition } from '../../types/crm';
-import { useNotify, useActivity } from '@so360/shell-context';
+import { CustomFieldDefinition, User } from '../../types/crm';
+import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -15,6 +15,7 @@ interface CreateLeadModalProps {
 export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: CreateLeadModalProps) => {
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
+    const { user: currentUser } = useIdentity();
     const [formData, setFormData] = useState({
         company_name: '',
         contact_name: '',
@@ -22,21 +23,29 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         phone: '',
         source: 'Website',
         status: 'New' as any,
+        owner_id: '',
         custom_fields: {} as Record<string, any>
     });
 
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [leadStages, setLeadStages] = useState<{ id: string, name: string }[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
 
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const settings = await crmService.getSettings();
+                const [settings, fetchedUsers] = await Promise.all([
+                    crmService.getSettings(),
+                    crmService.getUsers(),
+                ]);
                 setCustomFieldDefs(settings.lead_custom_fields);
                 setLeadStages(settings.lead_stages);
-                if (settings.lead_stages.length > 0 && !formData.status) {
-                    setFormData(prev => ({ ...prev, status: settings.lead_stages[0].name }));
-                }
+                setUsers(fetchedUsers);
+                setFormData(prev => ({
+                    ...prev,
+                    ...(settings.lead_stages.length > 0 && !prev.status ? { status: settings.lead_stages[0].name } : {}),
+                    owner_id: prev.owner_id || currentUser?.id || fetchedUsers[0]?.id || '',
+                }));
             } catch (error) {
                 console.error('Failed to fetch lead settings', error);
             }
@@ -62,8 +71,9 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             const newLead = await crmService.createLead({
                 ...formData,
                 activities: [],
-                notes: []
-            });
+                notes: [],
+                owner_id: formData.owner_id,
+            } as any);
             // Fire-and-forget notification + activity
             recordActivity({ eventType: 'lead.created', eventCategory: 'crm', description: `Created lead "${formData.company_name}"`, resourceType: 'lead', resourceId: newLead?.id }).catch(() => {});
             onSuccess();
@@ -164,6 +174,22 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             ))}
                         </select>
                     </div>
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-slate-400">Owner</label>
+                    <select
+                        value={formData.owner_id}
+                        onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                    >
+                        {users.length === 0 && (
+                            <option value="">Loading...</option>
+                        )}
+                        {users.map(u => (
+                            <option key={u.id} value={u.id}>{u.full_name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {customFieldDefs.length > 0 && (
