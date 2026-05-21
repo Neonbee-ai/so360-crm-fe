@@ -22,5 +22,5 @@ export const useQuota = () => ({
   isExceeded: () => false,
   getQuota: () => null,
   getPercentage: () => 0,
-  refresh: vi.fn(),
+  refresh: async () => {},
 });
