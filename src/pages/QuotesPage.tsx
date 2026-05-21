@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, Clock, Send, Trash2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
-import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
+import { useBusinessSettings, useActivity, useShellBridge, useQuota } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
+import { QuotaBar, QuotaGate } from '@so360/design-system';
 
 const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -21,6 +22,9 @@ const QuotesPage = () => {
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
     const canCreateQuote = shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true;
+    const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_quotes' }], []);
+    const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
+    const quotaData = getQuota('max_quotes');
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -232,14 +236,34 @@ const QuotesPage = () => {
                     <h1 className="text-2xl font-bold text-slate-100">Quotes</h1>
                     <p className="text-sm text-slate-400 mt-1">Manage sales quotes and proposals</p>
                 </div>
-                {canCreateQuote && <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    New Quote
-                </button>}
+                {canCreateQuote && (
+                    <QuotaGate
+                        quotaKey="max_quotes"
+                        moduleCode="crm"
+                        used={quotaData?.current_usage ?? 0}
+                        limit={quotaData?.limit ?? 0}
+                        isUnlimited={quotaData?.is_unlimited}
+                        disableOnExceeded
+                    >
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New Quote
+                        </button>
+                    </QuotaGate>
+                )}
             </div>
+
+            {quotaData && (
+                <QuotaBar
+                    label="Quotes"
+                    used={quotaData.current_usage}
+                    limit={quotaData.limit}
+                    isUnlimited={quotaData.is_unlimited}
+                />
+            )}
 
             {error && (
                 <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">

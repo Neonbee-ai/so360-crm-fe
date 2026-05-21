@@ -73,20 +73,20 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <>
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between">
-                    <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                        <Briefcase className="text-blue-500" size={24} />
-                        New Deal
-                    </h2>
-                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div className="space-y-4">
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between">
+                        <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                            <Briefcase className="text-blue-500" size={24} />
+                            New Deal
+                        </h2>
+                        <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                            <X size={20} />
+                        </button>
+                    </div>
+                    <form onSubmit={handleSubmit} className="p-8 space-y-5">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Deal Name</label>
                             <input
@@ -98,7 +98,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Value</label>
                                 <div className="relative">
@@ -119,40 +119,41 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     <select
                                         value={stage}
                                         onChange={(e) => setStage(e.target.value as DealStage)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-10 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         {settings.map(s => (
                                             <option key={s.id} value={s.name}>{s.name}</option>
                                         ))}
                                     </select>
-                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    <ChevronDown size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
                                 <div className="relative">
+                                    <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
                                     <input
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute"
                                     />
-                                    <Calendar size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Close Date</label>
                                 <div className="relative">
+                                    <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
                                     <input
                                         type="date"
                                         value={expectedClose}
                                         onChange={(e) => setExpectedClose(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute"
                                     />
-                                    <Calendar size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
                             </div>
                         </div>
@@ -169,19 +170,21 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         <option key={u.id} value={u.id}>{u.full_name}</option>
                                     ))}
                                 </select>
-                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep (Person)</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                Sales Rep <span className="text-slate-700 normal-case font-bold tracking-normal">(optional)</span>
+                            </label>
                             <div className="relative">
                                 <select
                                     value={ownerPersonId}
                                     onChange={(e) => setOwnerPersonId(e.target.value)}
                                     className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
-                                    <option value="">-- Select a sales rep (optional) --</option>
+                                    <option value="">Select sales rep...</option>
                                     {people.map(p => (
                                         <option key={p.id} value={p.id}>{p.full_name}</option>
                                     ))}
@@ -189,28 +192,28 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="pt-4 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
-                        >
-                            {isSubmitting && <Loader2 size={12} className="animate-spin" />}
-                            Create Deal
-                        </button>
-                    </div>
-                </form>
+                        <div className="flex justify-end gap-3 border-t border-slate-800 pt-5 mt-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+                            >
+                                {isSubmitting && <Loader2 size={12} className="animate-spin" />}
+                                Create Deal
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

@@ -5,7 +5,8 @@ import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
-import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
+import { useNotify, useActivity, useShellBridge, useQuota } from '@so360/shell-context';
+import { QuotaBar, QuotaGate } from '@so360/design-system';
 
 type SortField = 'company_name' | 'contact_name' | 'status' | 'created_at' | 'owner';
 type SortDirection = 'asc' | 'desc' | null;
@@ -18,6 +19,9 @@ const LeadsPage = () => {
     const shell = useShellBridge();
     const canCreateLead = shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true;
     const canUpdateLead = shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true;
+    const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
+    const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
+    const quotaData = getQuota('max_contacts');
     const [leads, setLeads] = useState<Lead[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -359,14 +363,34 @@ const LeadsPage = () => {
                     <h1 className="text-3xl font-bold text-white tracking-tight">Leads & Accounts</h1>
                     <p className="text-slate-400 mt-1">Single source of truth for business deals</p>
                 </div>
-                {canCreateLead && <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
-                >
-                    <Plus size={20} />
-                    Create Lead
-                </button>}
+                {canCreateLead && (
+                    <QuotaGate
+                        quotaKey="max_contacts"
+                        moduleCode="crm"
+                        used={quotaData?.current_usage ?? 0}
+                        limit={quotaData?.limit ?? 0}
+                        isUnlimited={quotaData?.is_unlimited}
+                        disableOnExceeded
+                    >
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+                        >
+                            <Plus size={20} />
+                            Create Lead
+                        </button>
+                    </QuotaGate>
+                )}
             </header>
+
+            {quotaData && (
+                <QuotaBar
+                    label="Contacts"
+                    used={quotaData.current_usage}
+                    limit={quotaData.limit}
+                    isUnlimited={quotaData.is_unlimited}
+                />
+            )}
 
             <CreateLeadModal
                 isOpen={isModalOpen}
