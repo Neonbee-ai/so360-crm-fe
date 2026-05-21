@@ -14,3 +14,13 @@ export const useShellBridge = () => ({
 });
 export const usePeople = () => ({ people: [] });
 export const ShellContext = React.createContext<any>({ user: { id: 'mock-user-id', email: 'test@test.com' } });
+
+export const useQuota = () => ({
+  quotas: [],
+  isLoading: false,
+  error: null,
+  isExceeded: () => false,
+  getQuota: () => null,
+  getPercentage: () => 0,
+  refresh: vi.fn(),
+});
