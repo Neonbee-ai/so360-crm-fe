@@ -1,0 +1,13 @@
+name: Preview Deploy
+
+on:
+  push:
+    branches: [preview]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
+    steps:
+      - name: Deploy to preview
+        run: ~/SO360/preview-deploy.sh crm-fe so360-crm/so360-crm-fe build
