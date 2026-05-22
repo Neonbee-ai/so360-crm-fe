@@ -2,7 +2,7 @@ name: Deploy CRM Frontend
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
