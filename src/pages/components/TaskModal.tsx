@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus } from 'lucide-react';
+import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { Task, TaskType, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
@@ -181,17 +181,20 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</label>
-                                <select
-                                    value={type}
-                                    onChange={(e) => setType(e.target.value as TaskType)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    <option value="TODO">To Do</option>
-                                    <option value="CALL">Call</option>
-                                    <option value="EMAIL">Email</option>
-                                    <option value="MEETING">Meeting</option>
-                                    <option value="REMINDER">Reminder</option>
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        value={type}
+                                        onChange={(e) => setType(e.target.value as TaskType)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    >
+                                        <option value="TODO">To Do</option>
+                                        <option value="CALL">Call</option>
+                                        <option value="EMAIL">Email</option>
+                                        <option value="MEETING">Meeting</option>
+                                        <option value="REMINDER">Reminder</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
