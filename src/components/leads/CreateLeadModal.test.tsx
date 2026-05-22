@@ -24,7 +24,8 @@ vi.mock('@so360/shell-context', () => ({
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
   useIdentity: () => ({ user: { id: 'u1', full_name: 'Test User', email: 't@t.com' } }),
   useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 import { CreateLeadModal } from './CreateLeadModal';
 

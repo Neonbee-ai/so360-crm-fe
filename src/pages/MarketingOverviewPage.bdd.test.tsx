@@ -57,7 +57,8 @@ vi.mock('@so360/shell-context', () => ({
     settings: { base_currency: 'USD', document_language: 'en-US' },
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('./marketing/marketingMappers', () => ({
   formatMoney: (v: number) => `$${(v || 0).toFixed(2)}`,

@@ -33,7 +33,8 @@ vi.mock('@so360/shell-context', () => ({
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('@so360/formatters', () => ({
   useFormatters: () => ({

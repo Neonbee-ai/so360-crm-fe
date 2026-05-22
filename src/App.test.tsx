@@ -14,7 +14,8 @@ vi.mock('@so360/shell-context', () => ({
     isModuleEnabled: () => true,
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('./services/crmService', () => ({
   crmService: {

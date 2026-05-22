@@ -26,7 +26,8 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ user: { id: 'user-1', full_name: 'Test User' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('../components/common/Toast', () => ({
   ToastContainer: () => null,

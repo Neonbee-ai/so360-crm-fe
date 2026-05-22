@@ -25,7 +25,8 @@ vi.mock('@so360/shell-context', () => ({
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
   useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('../../utils/taskUtils', () => ({
   canCurrentUserBeAssigned: () => true,

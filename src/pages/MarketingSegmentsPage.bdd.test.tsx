@@ -42,7 +42,8 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: (m: string) => m === 'dailystore' }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('@so360/design-system', () => ({
   Button: ({ children, onClick, disabled, ...props }: any) => <button onClick={onClick} disabled={disabled} {...props}>{children}</button>,

@@ -22,7 +22,8 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 let kanbanProps: any = {};
 vi.mock('../components/kanban/KanbanBoard', () => ({

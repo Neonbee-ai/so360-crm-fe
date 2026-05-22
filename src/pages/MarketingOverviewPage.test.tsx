@@ -41,7 +41,8 @@ vi.mock('./marketing/marketingMappers', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,

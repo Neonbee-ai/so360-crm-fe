@@ -18,7 +18,8 @@ vi.mock('../../components/common/Toast', () => ({
 vi.mock('@so360/shell-context', () => ({
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
   usePeople: () => ({ people: [] }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 import CreateDealModal from './CreateDealModal';
 
