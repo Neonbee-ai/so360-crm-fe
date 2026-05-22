@@ -92,7 +92,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Create New Lead">
+        <Modal isOpen={isOpen} onClose={onClose} title="Create New Lead" size="xl">
             <form onSubmit={handleSubmit} className="space-y-4">
                 {isDuplicate && (
                     <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-sm">
@@ -115,7 +115,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         type="text"
                         value={formData.company_name}
                         onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
                         placeholder="e.g. Acme Corp"
                     />
                 </div>
@@ -128,7 +128,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="text"
                             value={formData.contact_name}
                             onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
                         />
                     </div>
                     <div className="space-y-1.5">
@@ -138,7 +138,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="email"
                             value={formData.contact_email}
                             onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
                         />
                     </div>
                 </div>
@@ -149,7 +149,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
                     />
                 </div>
 
@@ -159,7 +159,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <select
                             value={formData.source}
                             onChange={(e) => setFormData({ ...formData, source: e.target.value, referred_by: '' })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                         >
                             {LEAD_SOURCES.map(src => (
                                 <option key={src} value={src}>{src}</option>
@@ -216,7 +216,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 </div>
 
                 {customFieldDefs.length > 0 && (
-                    <div className="pt-2 border-t border-slate-800 space-y-4">
+                    <div className="pt-4 border-t border-slate-800 space-y-4">
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Additional Details</p>
                         <div className="grid grid-cols-2 gap-4">
                             {customFieldDefs.map(field => (
@@ -243,7 +243,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                 ...formData,
                                                 custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
                                             })}
-                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
                                         />
                                     )}
                                 </div>
@@ -252,18 +252,18 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </div>
                 )}
 
-                <div className="pt-4 flex gap-3">
+                <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 px-4 py-2 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800 transition-colors"
+                        className="px-4 py-2 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50"
                     >
                         {isSubmitting ? 'Creating...' : 'Create Lead'}
                     </button>
