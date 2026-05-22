@@ -642,7 +642,7 @@ const LeadDetailPage = () => {
                                                     </div>
                                                     <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-slate-700 transition-all">
                                                         {event.type === 'TASK' ? (
-                                                            <Link to={`/tasks/${event.id}`} className="block group/link">
+                                                            <Link to={`/crm/tasks/${event.id}`} className="block group/link">
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="font-bold text-white text-xs uppercase tracking-tight group-hover/link:text-blue-400 transition-colors">{event.title}</span>
@@ -832,7 +832,7 @@ const LeadDetailPage = () => {
                                                                     {new Date(task.due_date).toLocaleString()}
                                                                 </span>
                                                             </div>
-                                                            <Link to={`/tasks/${task.id}`} className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                                                            <Link to={`/crm/tasks/${task.id}`} className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1">
                                                                 View <ChevronLeft size={10} className="rotate-180" />
                                                             </Link>
                                                         </div>
@@ -856,7 +856,7 @@ const LeadDetailPage = () => {
                                                         <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'DONE' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-blue-500'}`} />
                                                     </button>
                                                     <div className="flex-1 min-w-0">
-                                                        <Link to={`/tasks/${task.id}`} className="block group/link">
+                                                        <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
                                                                 <h4 className={`text-sm font-bold text-white leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
                                                                     {task.title || 'Untitled Task'}
