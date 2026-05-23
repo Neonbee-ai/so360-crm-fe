@@ -176,12 +176,49 @@ export type QuoteStatus = 'draft' | 'pending_approval' | 'approved' | 'rejected'
 export interface QuoteLine {
     id?: string;
     item_id?: string;
+    variant_id?: string;
+    item_name?: string;
+    sku?: string;
+    sub_sku?: string;
+    item_image_url?: string | null;
     description: string;
     quantity: number;
     unit_price: number;
     discount_percent?: number;
     tax_rate?: number;
     line_total?: number;
+}
+
+// Inventory item types — used by ProductPickerModal
+export interface InventoryVariant {
+    id: string;
+    name: string;
+    sku: string;
+    price: number;
+    variant_attributes: Record<string, string>;
+    image_url: string | null;
+}
+
+export interface InventoryItem {
+    id: string;
+    name: string;
+    sku: string;
+    price: number;
+    cost: number;
+    image_url: string | null;
+    metadata: Record<string, any>;
+    has_variants: boolean;
+    variants: InventoryVariant[];
+}
+
+export interface ProductPickerSelection {
+    item_id: string;
+    variant_id: string;
+    name: string;
+    sku: string;
+    sub_sku: string;
+    unit_price: number;
+    image_url: string | null;
 }
 
 export interface Quote {

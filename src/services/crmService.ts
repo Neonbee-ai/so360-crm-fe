@@ -1,4 +1,4 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem } from '../types/crm';
 
 export interface TimelineEvent {
     id: string;
@@ -333,6 +333,7 @@ class ApiClient {
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
 const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
 const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
+const inventoryClient = new ApiClient(INVENTORY_API_ORIGIN, TENANT_ID);
 const fulfillmentClient = new ApiClient(`${FULFILLMENT_API_ORIGIN}/v1/fulfillment`, TENANT_ID);
 
 // Type Definitions for API Responses
@@ -1617,6 +1618,19 @@ export const crmService = {
         }
     },
 
+    // Inventory item search — used by ProductPickerModal
+    async searchInventoryItems(q: string, categoryId?: string): Promise<{ items: InventoryItem[] }> {
+        try {
+            const params: Record<string, string> = { q };
+            if (categoryId) params.category_id = categoryId;
+            const result = await inventoryClient.get<any>('/v1/inventory/items/search-with-variants', params);
+            const items: InventoryItem[] = Array.isArray(result) ? result : (result?.items || result?.data || []);
+            return { items };
+        } catch {
+            return { items: [] };
+        }
+    },
+
     // Customers
     getCustomers: async (filters?: { channel?: string; category?: string; q?: string; skip?: number; take?: number }): Promise<any[]> => {
         return customersApi.getAll(filters);
@@ -1823,6 +1837,7 @@ export const crmService = {
     setTenantId: (id: string) => {
         apiClient.setTenantId(id);
         dailystoreClient.setTenantId(id);
+        inventoryClient.setTenantId(id);
         fulfillmentClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
@@ -1830,6 +1845,7 @@ export const crmService = {
         apiClient.setOrgId(id);
         coreClient.setOrgId(id);
         dailystoreClient.setOrgId(id);
+        inventoryClient.setOrgId(id);
         fulfillmentClient.setOrgId(id);
     },
     setUser: (user: User) => {
@@ -1845,6 +1861,7 @@ export const crmService = {
         apiClient.setAccessToken(token);
         coreClient.setAccessToken(token);
         dailystoreClient.setAccessToken(token);
+        inventoryClient.setAccessToken(token);
         fulfillmentClient.setAccessToken(token);
     },
 };

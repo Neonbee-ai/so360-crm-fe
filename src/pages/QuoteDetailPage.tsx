@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package } from 'lucide-react';
 import { crmService } from '../services/crmService';
-import { Quote, QuoteLine, QuoteStatus } from '../types/crm';
+import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
+import { ProductPickerModal } from '../components/ProductPickerModal';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -49,6 +50,9 @@ const QuoteDetailPage = () => {
 
     // Stock availability per item_id (available_quantity)
     const [stockMap, setStockMap] = useState<Map<string, number>>(new Map());
+
+    // Product picker modal — tracks which line is being edited (-1 = closed)
+    const [pickerLineIndex, setPickerLineIndex] = useState<number>(-1);
 
     // Action modals
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -169,6 +173,24 @@ const QuoteDetailPage = () => {
         } catch (err: any) {
             setError(err.message || 'Failed to convert quote');
         }
+    };
+
+    const handleProductSelect = (selection: ProductPickerSelection) => {
+        if (pickerLineIndex < 0) return;
+        const newLines = [...lines];
+        newLines[pickerLineIndex] = {
+            ...newLines[pickerLineIndex],
+            item_id: selection.item_id,
+            variant_id: selection.variant_id,
+            item_name: selection.name,
+            sku: selection.sku,
+            sub_sku: selection.sub_sku,
+            item_image_url: selection.image_url,
+            unit_price: selection.unit_price,
+            description: newLines[pickerLineIndex].description || selection.name,
+        };
+        setLines(newLines);
+        setPickerLineIndex(-1);
     };
 
     const addLine = () => {
@@ -457,24 +479,58 @@ const QuoteDetailPage = () => {
                                         <tr key={index} className="border-b border-slate-700/50">
                                             <td className="py-3 px-4">
                                                 {isEditing ? (
-                                                    <div className="space-y-1">
+                                                    <div className="space-y-1.5">
+                                                        {/* Product selector button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPickerLineIndex(index)}
+                                                            className="w-full flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-700 hover:border-blue-500/50 rounded text-sm transition-colors text-left"
+                                                        >
+                                                            {line.item_image_url ? (
+                                                                <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
+                                                            ) : (
+                                                                <Package className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                                                            )}
+                                                            {line.item_name ? (
+                                                                <span className="flex-1 min-w-0">
+                                                                    <span className="text-slate-200 truncate block">{line.item_name}</span>
+                                                                    <span className="flex items-center gap-1 mt-0.5">
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-slate-700 text-slate-400 rounded">{line.sku}</span>
+                                                                        {line.sub_sku && line.sub_sku !== 'NIL' && (
+                                                                            <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded">{line.sub_sku}</span>
+                                                                        )}
+                                                                    </span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-slate-500">Select product...</span>
+                                                            )}
+                                                        </button>
+                                                        {/* Free-text description */}
                                                         <input
                                                             type="text"
                                                             value={line.description}
                                                             onChange={(e) => updateLine(index, 'description', e.target.value)}
                                                             className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                            placeholder="Item description..."
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            value={line.item_id || ''}
-                                                            onChange={(e) => updateLine(index, 'item_id', e.target.value || undefined)}
-                                                            className="w-full px-3 py-1 bg-slate-900 border border-slate-700 rounded text-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                            placeholder="Item ID (optional, for stock check)"
+                                                            placeholder="Description / notes..."
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <span className="text-slate-200">{line.description}</span>
+                                                    <div className="flex items-start gap-2">
+                                                        {line.item_image_url && (
+                                                            <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <span className="text-slate-200 block">{line.description}</span>
+                                                            {line.sku && (
+                                                                <span className="flex items-center gap-1 mt-0.5">
+                                                                    <span className="text-xs px-1.5 py-0.5 bg-slate-700/80 text-slate-400 rounded">{line.sku}</span>
+                                                                    {line.sub_sku && line.sub_sku !== 'NIL' && (
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-blue-900/40 text-blue-400 rounded">{line.sub_sku}</span>
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4">
@@ -686,6 +742,13 @@ const QuoteDetailPage = () => {
                     )}
                 </div>
             </div>
+
+            {/* Product Picker Modal */}
+            <ProductPickerModal
+                isOpen={pickerLineIndex >= 0}
+                onClose={() => setPickerLineIndex(-1)}
+                onSelect={handleProductSelect}
+            />
 
             {/* Reject Modal */}
             {showRejectModal && (
