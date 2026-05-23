@@ -92,6 +92,8 @@ const MarketingNewsletterPage = lazy(() => import('./pages/MarketingNewsletterPa
 const MarketingCouponsPage = lazy(() => import('./pages/MarketingCouponsPage'));
 const MarketingReviewsPage = lazy(() => import('./pages/MarketingReviewsPage'));
 const MarketingWishlistPage = lazy(() => import('./pages/MarketingWishlistPage'));
+const PartnersPage = lazy(() => import('./pages/PartnersPage'));
+const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -114,6 +116,8 @@ const App = () => {
                     <Route path="dashboard" element={<DashboardPage />} />
                     <Route path="leads" element={<FlagGuard flagKey="submodule:crm:leads"><LeadsPage /></FlagGuard>} />
                     <Route path="leads/:id" element={<FlagGuard flagKey="submodule:crm:leads"><LeadDetailPage /></FlagGuard>} />
+                    <Route path="partners" element={<FlagGuard flagKey="submodule:crm:partners"><PartnersPage /></FlagGuard>} />
+                    <Route path="partners/:id" element={<FlagGuard flagKey="submodule:crm:partners"><PartnerDetailPage /></FlagGuard>} />
                     <Route path="customers" element={<CustomersPage />} />
                     <Route path="customers/:id" element={<LeadDetailPage />} />
                     <Route path="pipeline" element={<FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard>} />

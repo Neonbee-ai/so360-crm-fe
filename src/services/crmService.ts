@@ -774,9 +774,51 @@ export const settingsApi = {
             return apiClient.delete<any>(`/settings/source-types/${id}`);
         },
     },
+
+    partnerTypes: {
+        getAll: async () => {
+            return apiClient.get<any[]>('/settings/partner-types');
+        },
+        create: async (data: { label: string; value: string; sort_order?: number }) => {
+            return apiClient.post<any>('/settings/partner-types', data);
+        },
+        update: async (id: string, data: { label?: string; is_active?: boolean; sort_order?: number }) => {
+            return apiClient.patch<any>(`/settings/partner-types/${id}`, data);
+        },
+        delete: async (id: string) => {
+            return apiClient.delete<any>(`/settings/partner-types/${id}`);
+        },
+    },
 };
 
 
+
+// ============================================================================
+// PARTNERS API
+// ============================================================================
+export const partnersApi = {
+    getAll: async (params?: { search?: string; partner_type?: string; skip?: number; take?: number }) => {
+        return apiClient.get<any[]>('/partners', params);
+    },
+    create: async (data: any) => {
+        return apiClient.post<any>('/partners', data);
+    },
+    getOne: async (id: string) => {
+        return apiClient.get<any>(`/partners/${id}`);
+    },
+    update: async (id: string, data: any) => {
+        return apiClient.patch<any>(`/partners/${id}`, data);
+    },
+    getDeals: async (id: string) => {
+        return apiClient.get<any>(`/partners/${id}/deals`);
+    },
+    getCommissions: async (id: string) => {
+        return apiClient.get<any>(`/partners/${id}/commissions`);
+    },
+    updateCommission: async (commissionId: string, data: { status: string; payment_ref?: string }) => {
+        return apiClient.patch<any>(`/commissions/${commissionId}`, data);
+    },
+};
 
 // ============================================================================
 // NOTES API
