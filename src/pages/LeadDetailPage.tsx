@@ -9,9 +9,8 @@ import {
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
     File, Download, UploadCloud, FileIcon
 } from 'lucide-react';
-import { crmService, activitiesApi } from '../services/crmService';
-import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note } from '../types/crm';
-import { LEAD_SOURCES } from '../constants/leadSources';
+import { crmService, activitiesApi, settingsApi } from '../services/crmService';
+import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { Trophy, Zap, Info, TrendingUp } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -69,10 +68,11 @@ const LeadDetailPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [partners, setPartners] = useState<Lead[]>([]);
+    const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
 
     const fetchLeadData = useCallback(async () => {
         try {
-            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData, partnersData] = await Promise.all([
+            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData, partnersData, fetchedSourceTypes] = await Promise.all([
                 crmService.getLeadById(id),
                 crmService.getDealsByLeadId(id),
                 crmService.getTasksByLeadId(id),
@@ -80,6 +80,7 @@ const LeadDetailPage = () => {
                 crmService.getUsers(),
                 crmService.getActivitiesByLeadId(id),
                 crmService.getPartners(),
+                settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
             ]);
             setLead(leadData || null);
             if (leadData) {
@@ -92,6 +93,7 @@ const LeadDetailPage = () => {
             setLeadStages(settingsData.lead_stages || []);
             setAllUsers(usersData);
             setPartners(partnersData);
+            setSourceTypes(fetchedSourceTypes);
         } catch (error) {
             console.error('Failed to fetch lead data', error);
         } finally {
@@ -477,20 +479,26 @@ const LeadDetailPage = () => {
                                                 {isEditingInfo ? (
                                                     <select
                                                         value={lead.source}
-                                                        onChange={(e) => setLead({ ...lead, source: e.target.value, referred_by: e.target.value !== 'Referral' ? undefined : lead.referred_by })}
+                                                        onChange={(e) => {
+                                                            const isReferral = e.target.value === 'customer_referral' || e.target.value === 'architect_referral';
+                                                            setLead({ ...lead, source: e.target.value, referred_by: isReferral ? lead.referred_by : undefined });
+                                                        }}
                                                         className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     >
-                                                        {LEAD_SOURCES.map(src => (
-                                                            <option key={src} value={src}>{src}</option>
+                                                        <option value="">— Select source —</option>
+                                                        {sourceTypes.map(opt => (
+                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.source}</span>
+                                                    <span className="text-sm font-bold uppercase tracking-tight">
+                                                        {sourceTypes.find(o => o.value === lead.source)?.label ?? lead.source}
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {(lead.source === 'Referral' || lead.referred_by) && (
+                                        {(lead.source === 'customer_referral' || lead.source === 'architect_referral' || lead.referred_by) && (
                                             <div className="flex items-center gap-4 text-slate-300">
                                                 <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
                                                     <Users size={18} />

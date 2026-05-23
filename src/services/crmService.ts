@@ -758,6 +758,21 @@ export const settingsApi = {
             );
         },
     },
+
+    sourceTypes: {
+        getAll: async () => {
+            return apiClient.get<any[]>('/settings/source-types');
+        },
+        create: async (data: { label: string; value: string; sort_order?: number }) => {
+            return apiClient.post<any>('/settings/source-types', data);
+        },
+        update: async (id: string, data: { label?: string; is_active?: boolean; sort_order?: number }) => {
+            return apiClient.patch<any>(`/settings/source-types/${id}`, data);
+        },
+        delete: async (id: string) => {
+            return apiClient.delete<any>(`/settings/source-types/${id}`);
+        },
+    },
 };
 
 
@@ -1182,17 +1197,19 @@ export const crmService = {
     // Settings
     getSettings: async (): Promise<CRMSettings> => {
         try {
-            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult] = await Promise.allSettled([
+            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, sourceTypesResult] = await Promise.allSettled([
                 apiClient.get<any[]>('/settings/pipeline-stages'),
                 apiClient.get<any[]>('/settings/lead-stages'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD'),
-                apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL')
+                apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL'),
+                apiClient.get<any[]>('/settings/source-types'),
             ]);
 
             const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
             const leadStages = leadStagesResult.status === 'fulfilled' ? leadStagesResult.value : [];
             const leadFields = leadFieldsResult.status === 'fulfilled' ? leadFieldsResult.value : [];
             const dealFields = dealFieldsResult.status === 'fulfilled' ? dealFieldsResult.value : [];
+            const sourceTypes = sourceTypesResult.status === 'fulfilled' ? sourceTypesResult.value : [];
 
             if (stagesResult.status === 'rejected') console.error('[CRM] Failed to fetch pipeline stages', stagesResult.reason);
             if (leadStagesResult.status === 'rejected') console.error('[CRM] Failed to fetch lead stages', leadStagesResult.reason);
@@ -1206,6 +1223,7 @@ export const crmService = {
                 lead_stages: leadStages.map(s => ({ id: s.id, name: s.name })),
                 default_owner_id: USER_ID,
                 lead_sources: [],
+                source_type_options: sourceTypes,
                 lead_custom_fields: leadFields,
                 deal_custom_fields: dealFields,
                 lead_scoring: []
@@ -1217,6 +1235,7 @@ export const crmService = {
                 lead_stages: [],
                 default_owner_id: USER_ID,
                 lead_sources: [],
+                source_type_options: [],
                 lead_custom_fields: [],
                 deal_custom_fields: [],
                 lead_scoring: []

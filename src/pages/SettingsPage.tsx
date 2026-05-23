@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { crmService } from '../services/crmService';
-import { CRMSettings } from '../types/crm';
-import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck } from 'lucide-react';
+import { crmService, settingsApi } from '../services/crmService';
+import { CRMSettings, SourceTypeOption } from '../types/crm';
+import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight } from 'lucide-react';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { useShellBridge } from '@so360/shell-context';
 
@@ -16,11 +16,16 @@ const SettingsPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
+    const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
+    const [newSourceLabel, setNewSourceLabel] = useState('');
+    const [isAddingSource, setIsAddingSource] = useState(false);
+
     useEffect(() => {
         const fetchSettings = async () => {
             try {
                 const data = await crmService.getSettings();
                 setSettings(data);
+                setSourceTypes(data.source_type_options ?? []);
             } catch (error) {
                 console.error('Failed to fetch settings', error);
             } finally {
@@ -29,6 +34,45 @@ const SettingsPage = () => {
         };
         fetchSettings();
     }, []);
+
+    const slugify = (text: string) =>
+        text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+    const handleAddSourceType = async () => {
+        const label = newSourceLabel.trim();
+        if (!label) return;
+        const value = slugify(label);
+        setIsAddingSource(true);
+        try {
+            const created = await settingsApi.sourceTypes.create({ label, value });
+            setSourceTypes(prev => [...prev, created]);
+            setNewSourceLabel('');
+            showSuccess('Source type added');
+        } catch {
+            showError('Failed to add source type');
+        } finally {
+            setIsAddingSource(false);
+        }
+    };
+
+    const handleToggleSourceActive = async (option: SourceTypeOption) => {
+        try {
+            const updated = await settingsApi.sourceTypes.update(option.id, { is_active: !option.is_active });
+            setSourceTypes(prev => prev.map(o => o.id === option.id ? updated : o));
+        } catch {
+            showError('Failed to update source type');
+        }
+    };
+
+    const handleDeleteSourceType = async (id: string) => {
+        try {
+            await settingsApi.sourceTypes.delete(id);
+            setSourceTypes(prev => prev.filter(o => o.id !== id));
+            showSuccess('Source type deleted');
+        } catch {
+            showError('Cannot delete system source type');
+        }
+    };
 
     const handleSave = async () => {
         if (!settings) return;
@@ -438,50 +482,63 @@ const SettingsPage = () => {
 
                 {activeTab === 'sources' && (
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
-                            <div>
-                                <h3 className="font-black text-white uppercase tracking-widest text-xs">Lead Sources</h3>
-                                <p className="text-[10px] text-slate-500 font-bold mt-1">WHERE DO YOUR LEADS COME FROM?</p>
-                            </div>
-                            <button
-                                onClick={addSource}
-                                className="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95"
-                            >
-                                <Plus size={12} /> ADD SOURCE
-                            </button>
+                        <div className="p-6 border-b border-slate-800 bg-slate-900/50">
+                            <h3 className="font-black text-white uppercase tracking-widest text-xs">Lead Source Types</h3>
+                            <p className="text-[10px] text-slate-500 font-bold mt-1">WHERE DO YOUR LEADS COME FROM? SYSTEM TYPES CANNOT BE DELETED.</p>
                         </div>
-                        <div className="p-6">
-                            <div className="space-y-3">
-                                {settings.lead_sources.map((source, idx) => (
-                                    <div key={source.id} className={`flex items-center gap-4 border p-3 rounded-xl group transition-all ${source.archived
-                                        ? 'bg-slate-950/20 border-slate-900 opacity-60'
-                                        : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
-                                        }`}>
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-2">
+                                {sourceTypes.map(option => (
+                                    <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-xl transition-all ${!option.is_active ? 'opacity-50 border-slate-900 bg-slate-950/20' : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'}`}>
                                         <div className="flex-1">
-                                            <input
-                                                type="text"
-                                                value={source.name}
-                                                onChange={(e) => updateSourceName(idx, e.target.value)}
-                                                placeholder="Source Name"
-                                                className={`w-full bg-transparent border-none p-0 text-sm font-bold focus:ring-0 placeholder:text-slate-700 ${source.archived ? 'text-slate-500 italic line-through' : 'text-white'
-                                                    }`}
-                                            />
+                                            <span className="text-sm font-bold text-white">{option.label}</span>
+                                            <span className="ml-2 text-[10px] font-black text-slate-600 uppercase">{option.value}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => toggleArchiveSource(source.id)}
-                                                className={`p-2 rounded-lg transition-all ${source.archived
-                                                    ? 'hover:bg-emerald-500/10 text-emerald-500'
-                                                    : 'hover:bg-slate-700 text-slate-500 hover:text-white'
-                                                    }`}
-                                                title={source.archived ? 'Unarchive' : 'Archive'}
-                                            >
-                                                <Archive size={16} />
-                                            </button>
-                                        </div>
+                                        {option.is_system && (
+                                            <span className="text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">System</span>
+                                        )}
+                                        {canWriteSettings && (
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleToggleSourceActive(option)}
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-all"
+                                                    title={option.is_active ? 'Deactivate' : 'Activate'}
+                                                >
+                                                    {option.is_active ? <ToggleRight size={18} className="text-emerald-400" /> : <ToggleLeft size={18} />}
+                                                </button>
+                                                {!option.is_system && (
+                                                    <button
+                                                        onClick={() => handleDeleteSourceType(option.id)}
+                                                        className="p-1.5 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
+                            {canWriteSettings && (
+                                <div className="flex items-center gap-3 pt-2 border-t border-slate-800">
+                                    <input
+                                        type="text"
+                                        value={newSourceLabel}
+                                        onChange={(e) => setNewSourceLabel(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddSourceType()}
+                                        placeholder="New source type label…"
+                                        className="flex-1 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                    />
+                                    <button
+                                        onClick={handleAddSourceType}
+                                        disabled={isAddingSource || !newSourceLabel.trim()}
+                                        className="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                    >
+                                        <Plus size={12} /> ADD
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </section>
                 )}

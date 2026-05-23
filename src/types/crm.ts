@@ -141,11 +141,21 @@ export interface LeadScoringRule {
     type: 'source' | 'activity' | 'field';
 }
 
+export interface SourceTypeOption {
+    id: string;
+    label: string;
+    value: string;
+    is_system: boolean;
+    is_active: boolean;
+    sort_order: number;
+}
+
 export interface CRMSettings {
     deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST' }[];
     lead_stages: { id: string; name: string }[];
     default_owner_id: string;
     lead_sources: { id: string; name: string; archived: boolean }[];
+    source_type_options: SourceTypeOption[];
     lead_custom_fields: CustomFieldDefinition[];
     deal_custom_fields: CustomFieldDefinition[];
     lead_scoring: LeadScoringRule[];

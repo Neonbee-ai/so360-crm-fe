@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { crmService } from '../../services/crmService';
+import { crmService, settingsApi } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
-import { CustomFieldDefinition, User, Lead } from '../../types/crm';
+import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types/crm';
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
-import { LEAD_SOURCES } from '../../constants/leadSources';
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -22,7 +21,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         contact_name: '',
         contact_email: '',
         phone: '',
-        source: 'Website',
+        source: '',
         status: 'New' as any,
         owner_id: '',
         referred_by: '',
@@ -31,24 +30,28 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [leadStages, setLeadStages] = useState<{ id: string, name: string }[]>([]);
+    const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [partners, setPartners] = useState<Lead[]>([]);
 
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const [settings, fetchedUsers, fetchedPartners] = await Promise.all([
+                const [settings, fetchedUsers, fetchedPartners, fetchedSourceTypes] = await Promise.all([
                     crmService.getSettings(),
                     crmService.getUsers(),
                     crmService.getPartners(),
+                    settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
                 ]);
                 setCustomFieldDefs(settings.lead_custom_fields);
                 setLeadStages(settings.lead_stages);
+                setSourceTypes(fetchedSourceTypes);
                 setUsers(fetchedUsers);
                 setPartners(fetchedPartners);
                 setFormData(prev => ({
                     ...prev,
                     ...(settings.lead_stages.length > 0 && !prev.status ? { status: settings.lead_stages[0].name } : {}),
+                    ...(fetchedSourceTypes.length > 0 && !prev.source ? { source: fetchedSourceTypes[0].value } : {}),
                     owner_id: prev.owner_id || currentUser?.id || fetchedUsers[0]?.id || '',
                 }));
             } catch (error) {
@@ -161,8 +164,9 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             onChange={(e) => setFormData({ ...formData, source: e.target.value, referred_by: '' })}
                             className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
                         >
-                            {LEAD_SOURCES.map(src => (
-                                <option key={src} value={src}>{src}</option>
+                            <option value="">— Select source —</option>
+                            {sourceTypes.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
                     </div>
@@ -181,7 +185,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </div>
                 </div>
 
-                {formData.source === 'Referral' && (
+                {(formData.source === 'customer_referral' || formData.source === 'architect_referral') && (
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-400">Referred By (Partner)</label>
                         <select
