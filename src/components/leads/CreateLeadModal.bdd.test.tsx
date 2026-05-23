@@ -19,6 +19,14 @@ vi.mock('../../services/crmService', () => ({
     getUsers: () => Promise.resolve([{ id: 'u1', full_name: 'Test User', email: 't@t.com' }]),
     getPartners: () => Promise.resolve([]),
   },
+  settingsApi: {
+    sourceTypes: {
+      getAll: () => Promise.resolve([
+        { id: 'st1', label: 'Website', value: 'website', is_active: true },
+        { id: 'st2', label: 'Referral', value: 'referral', is_active: true },
+      ]),
+    },
+  },
 }));
 
 vi.mock('@so360/shell-context', () => ({

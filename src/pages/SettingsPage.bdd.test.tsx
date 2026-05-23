@@ -43,6 +43,10 @@ vi.mock('../components/common/Toast', () => ({
   }),
 }));
 
+vi.mock('@so360/shell-context', () => ({
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+}));
+
 import SettingsPage from './SettingsPage';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────
@@ -71,6 +75,10 @@ const mockSettings = {
     { id: 'sc-1', criterion: 'email_opened', points: 5 },
   ],
   default_owner_id: 'user-1',
+  source_type_options: [
+    { id: 'st-1', label: 'Website', value: 'website', is_active: true, is_system: true },
+    { id: 'st-2', label: 'Referral', value: 'referral', is_active: true, is_system: false },
+  ],
 };
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -156,8 +164,9 @@ describe('SettingsPage BDD', () => {
 
       await user.click(screen.getByRole('button', { name: /lead sources/i }));
       await waitFor(() => {
-        expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Referral')).toBeInTheDocument();
+        // Sources tab now shows source_type_options as text labels (not input fields)
+        expect(screen.getByText('Website')).toBeInTheDocument();
+        expect(screen.getByText('Referral')).toBeInTheDocument();
       });
     });
 
@@ -271,14 +280,15 @@ describe('SettingsPage BDD', () => {
   });
 
   describe('Given lead sources management', () => {
-    it('When Lead Sources tab shown / Then shows archive toggle for each source', async () => {
+    it('When Lead Sources tab shown / Then shows toggle for each source type', async () => {
       const user = userEvent.setup();
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: /lead sources/i }));
       await waitFor(() => {
-        expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
+        // Sources tab now shows source_type_options as text labels (not input fields)
+        expect(screen.getByText('Website')).toBeInTheDocument();
       });
     });
   });

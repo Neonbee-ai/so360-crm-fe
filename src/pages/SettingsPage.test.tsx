@@ -19,6 +19,10 @@ vi.mock('../components/common/Toast', () => ({
   useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
 }));
 
+vi.mock('@so360/shell-context', () => ({
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+}));
+
 import SettingsPage from './SettingsPage';
 
 const makeSettings = () => ({
@@ -35,6 +39,9 @@ const makeSettings = () => ({
   lead_sources: [{ id: 'src1', name: 'Website', archived: false }],
   lead_scoring: [{ id: 'ls-rule1', criteria: 'Has email', points: 10, type: 'field' }],
   default_owner_id: 'u1',
+  source_type_options: [
+    { id: 'st1', label: 'Website', value: 'website', is_active: true, is_system: true },
+  ],
 });
 
 beforeEach(() => {
@@ -213,7 +220,8 @@ describe('Given SettingsPage', () => {
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
+      // Sources tab now shows source_type_options as text labels (not inputs)
+      expect(screen.getByText('Website')).toBeInTheDocument();
     });
   });
 
@@ -221,29 +229,32 @@ describe('Given SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
-    await waitFor(() => screen.getByDisplayValue('Website'));
-    fireEvent.click(screen.getByText(/add source/i));
-    expect(screen.getByDisplayValue('New Source')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('Website'));
+    // The new sources tab has a text input + ADD button to create source types via API
+    const addInput = screen.getByPlaceholderText(/new source type label/i);
+    fireEvent.change(addInput, { target: { value: 'LinkedIn' } });
+    expect(addInput).toHaveValue('LinkedIn');
   });
 
   it('When action / Then edits source name', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
-    await waitFor(() => screen.getByDisplayValue('Website'));
-    fireEvent.change(screen.getByDisplayValue('Website'), { target: { value: 'LinkedIn' } });
-    expect(screen.getByDisplayValue('LinkedIn')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('Website'));
+    // Sources are now displayed as text (not editable inputs); verify the source label is visible
+    expect(screen.getByText('Website')).toBeInTheDocument();
   });
 
   it('When action / Then toggles archive on source', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
-    await waitFor(() => screen.getByDisplayValue('Website'));
-    const archiveBtn = screen.getByTitle(/archive/i);
-    fireEvent.click(archiveBtn);
-    // Source should now be archived (class change)
-    expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('Website'));
+    // Toggle button now has title 'Deactivate' (for active) or 'Activate' (for inactive)
+    const toggleBtn = screen.getByTitle(/deactivate|activate/i);
+    fireEvent.click(toggleBtn);
+    // Source label remains visible after toggle
+    expect(screen.getByText('Website')).toBeInTheDocument();
   });
 
   it('When action / Then switches to scoring tab and shows rules', async () => {

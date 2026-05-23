@@ -904,7 +904,7 @@ describe('Given crmService (legacy layer)', () => {
   it('When action / Then getPipeline falls back to manual merge when primary fails', async () => {
     // First call: pipeline endpoint fails
     mockFetchSuccess([]);
-    // Fallback: getSettings (4 calls) and getAll for deals
+    // Fallback: getSettings (5 calls) and getAll for deals
     // Settings: pipeline-stages
     mockFetchSuccess([{ id: 's1', name: 'Lead' }]);
     // Settings: lead-stages
@@ -912,6 +912,8 @@ describe('Given crmService (legacy layer)', () => {
     // Settings: custom-fields LEAD
     mockFetchSuccess([]);
     // Settings: custom-fields DEAL
+    mockFetchSuccess([]);
+    // Settings: source-types (added in P2)
     mockFetchSuccess([]);
     // getAll deals
     mockFetchSuccess([{ id: 'd1', value: '0', stage: 'Lead', stage_id: 's1', notes: [], documents: [], activities: [] }]);
@@ -996,6 +998,8 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([{ id: 'cf1', label: 'Industry', type: 'text' }]);
     // custom-fields DEAL
     mockFetchSuccess([{ id: 'cf2', label: 'Budget', type: 'number' }]);
+    // source-types (added in P2)
+    mockFetchSuccess([]);
 
     const result = await crmService.getSettings();
     expect(result.deal_stages).toHaveLength(1);
@@ -1013,6 +1017,8 @@ describe('Given crmService (legacy layer)', () => {
     ]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
+    mockFetchSuccess([]);
+    // source-types (added in P2)
     mockFetchSuccess([]);
     const result = await crmService.getSettings();
     expect(result.deal_stages[0].type).toBe('WON');
@@ -1693,8 +1699,9 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([
       { id: 't1', status: 'open', type: 'REMINDER', due_date: '2099-01-01' },
     ]);
-    // getSettings (4 calls)
+    // getSettings (5 calls — pipeline-stages, lead-stages, custom-fields LEAD, custom-fields DEAL, source-types)
     mockFetchSuccess([{ id: 's1', name: 'Won', type: 'WON' }, { id: 's2', name: 'Lost', type: 'LOST' }]);
+    mockFetchSuccess([]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
