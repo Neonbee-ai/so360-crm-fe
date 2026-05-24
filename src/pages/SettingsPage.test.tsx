@@ -12,6 +12,13 @@ vi.mock('../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     updateSettings: (...a: any[]) => mockUpdateSettings(...a),
   },
+  settingsApi: {
+    sourceTypes: {
+      create: vi.fn().mockResolvedValue({ id: 'st-new', label: 'LinkedIn', value: 'linkedin', is_active: true, is_system: false }),
+      update: vi.fn().mockResolvedValue({ id: 'st1', label: 'Website', value: 'website', is_active: false, is_system: true }),
+      delete: vi.fn().mockResolvedValue({}),
+    },
+  },
 }));
 
 vi.mock('../components/common/Toast', () => ({

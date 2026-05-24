@@ -74,3 +74,5 @@ export const Pencil = createIcon('Pencil');
 export const Percent = createIcon('Percent');
 export const MailX = createIcon('MailX');
 export const Star = createIcon('Star');
+export const ToggleLeft = createIcon('ToggleLeft');
+export const ToggleRight = createIcon('ToggleRight');
