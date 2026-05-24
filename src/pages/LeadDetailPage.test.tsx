@@ -42,6 +42,10 @@ vi.mock('../services/crmService', () => ({
     getPartners: vi.fn().mockResolvedValue([]),
   },
   activitiesApi: { create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  settingsApi: {
+    sourceTypes: { getAll: vi.fn().mockResolvedValue([]) },
+    partnerTypes: { getAll: vi.fn().mockResolvedValue([]) },
+  },
 }));
 
 vi.mock('react-router-dom', () => ({
