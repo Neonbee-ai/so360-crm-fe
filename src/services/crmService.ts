@@ -1104,8 +1104,7 @@ export const crmService = {
     },
 
     getPartners: async (): Promise<Lead[]> => {
-        const leads = await apiClient.get<any[]>('/leads', { type: 'partner', take: 200 });
-        return leads.map(mapLeadFromApi);
+        return partnersApi.getAll({ take: 200 }) as any;
     },
 
     // Deals
