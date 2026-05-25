@@ -41,6 +41,10 @@ vi.mock('../services/crmService', () => ({
     getPartners: () => Promise.resolve([]),
   },
   activitiesApi: { update: (...a: any[]) => mockActivitiesUpdate(...a), delete: (...a: any[]) => mockActivitiesDelete(...a) },
+  settingsApi: {
+    sourceTypes: { getAll: vi.fn().mockResolvedValue([]) },
+    partnerTypes: { getAll: vi.fn().mockResolvedValue([]) },
+  },
 }));
 
 const mockNavigate = vi.fn();
