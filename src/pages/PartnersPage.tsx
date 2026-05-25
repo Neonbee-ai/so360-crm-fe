@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Search, UserCheck, Plus, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, BarChart2 } from 'lucide-react';
 import { partnersApi, settingsApi } from '../services/crmService';
 import { Table } from '../components/common/Table';
+import { useBusinessSettings } from '@so360/shell-context';
+import { useFormatters } from '@so360/formatters';
 
 type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value';
 type SortDirection = 'asc' | 'desc' | null;
@@ -162,6 +164,11 @@ const PartnersPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(20);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const { settings } = useBusinessSettings();
+    const formatters = useFormatters({
+        currency: settings?.base_currency || 'USD',
+        locale: settings?.document_language || 'en-US',
+    });
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -295,7 +302,7 @@ const PartnersPage = () => {
             header: <SortableHeader label="Deal Value" field="total_deal_value" />,
             accessor: (p: any) => (
                 <span className="text-slate-300 text-sm">
-                    {(p.total_deal_value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}
+                    {formatters.formatCurrency(p.total_deal_value || 0)}
                 </span>
             ),
         },
@@ -303,7 +310,7 @@ const PartnersPage = () => {
             header: 'Commission Pending',
             accessor: (p: any) => (
                 <span className={`text-sm font-medium ${(p.pending_commission || 0) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
-                    {(p.pending_commission || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}
+                    {formatters.formatCurrency(p.pending_commission || 0)}
                 </span>
             ),
         },
@@ -343,11 +350,11 @@ const PartnersPage = () => {
                 </div>
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} /> Total Deal Value</div>
-                    <div className="text-xl font-bold text-white">{totals.totalValue.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</div>
+                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(totals.totalValue)}</div>
                 </div>
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} /> Commission Pending</div>
-                    <div className="text-xl font-bold text-white">{totals.pendingCommission.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</div>
+                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(totals.pendingCommission)}</div>
                 </div>
             </div>
 

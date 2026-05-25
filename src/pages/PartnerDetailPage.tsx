@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { useBusinessSettings } from '@so360/shell-context';
+import { useFormatters } from '@so360/formatters';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -93,6 +95,11 @@ const PartnerDetailPage = () => {
     const [saving, setSaving] = useState(false);
     const [markPaidId, setMarkPaidId] = useState<string | null>(null);
     const [approvingId, setApprovingId] = useState<string | null>(null);
+    const { settings } = useBusinessSettings();
+    const formatters = useFormatters({
+        currency: settings?.base_currency || 'USD',
+        locale: settings?.document_language || 'en-US',
+    });
 
     const fetchData = useCallback(async () => {
         try {
@@ -445,7 +452,7 @@ const PartnerDetailPage = () => {
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} />Total Value</div>
-                                    <div className="text-xl font-bold text-white">{(deals.summary.total_value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</div>
+                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(deals.summary.total_value || 0)}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1"><Trophy size={14} />Won Deals</div>
@@ -453,7 +460,7 @@ const PartnerDetailPage = () => {
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1"><DollarSign size={14} />Won Value</div>
-                                    <div className="text-xl font-bold text-white">{(deals.summary.won_value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</div>
+                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(deals.summary.won_value || 0)}</div>
                                 </div>
                             </div>
                             {deals.deals.length > 0 ? (
@@ -477,7 +484,7 @@ const PartnerDetailPage = () => {
                                                 >
                                                     <td className="px-4 py-3 text-white font-medium">{deal.name}</td>
                                                     <td className="px-4 py-3 text-slate-400">{deal.company || '-'}</td>
-                                                    <td className="px-4 py-3 text-slate-300 text-right">{(deal.value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</td>
+                                                    <td className="px-4 py-3 text-slate-300 text-right">{formatters.formatCurrency(deal.value || 0)}</td>
                                                     <td className="px-4 py-3">
                                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${deal.status === 'won' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : deal.status === 'lost' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'}`}>
                                                             {deal.stage?.name || deal.status || '-'}
@@ -509,15 +516,15 @@ const PartnerDetailPage = () => {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} />Total Earned</div>
-                                    <div className="text-xl font-bold text-white">{(commissions.summary.total_earned || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</div>
+                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(commissions.summary.total_earned || 0)}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} />Pending</div>
-                                    <div className="text-xl font-bold text-white">{(commissions.summary.pending || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</div>
+                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(commissions.summary.pending || 0)}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1"><DollarSign size={14} />Paid</div>
-                                    <div className="text-xl font-bold text-white">{(commissions.summary.paid || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</div>
+                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(commissions.summary.paid || 0)}</div>
                                 </div>
                             </div>
                             {commissions.commissions.length > 0 ? (
@@ -539,9 +546,9 @@ const PartnerDetailPage = () => {
                                                 return (
                                                     <tr key={c.id} className="border-b border-slate-800/50">
                                                         <td className="px-4 py-3 text-white">{c.deal?.name || c.deal_id.slice(0, 8)}</td>
-                                                        <td className="px-4 py-3 text-slate-300 text-right">{(c.deal_amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</td>
+                                                        <td className="px-4 py-3 text-slate-300 text-right">{formatters.formatCurrency(c.deal_amount || 0)}</td>
                                                         <td className="px-4 py-3 text-slate-400 text-right">{c.commission_rate}%</td>
-                                                        <td className="px-4 py-3 text-white font-medium text-right">{(c.commission_amount || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}</td>
+                                                        <td className="px-4 py-3 text-white font-medium text-right">{formatters.formatCurrency(c.commission_amount || 0)}</td>
                                                         <td className="px-4 py-3">
                                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusCfg.color}`}>
                                                                 {statusCfg.label}
