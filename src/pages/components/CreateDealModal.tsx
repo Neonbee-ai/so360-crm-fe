@@ -140,7 +140,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute"
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
                                     />
                                 </div>
                             </div>
@@ -152,7 +152,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         type="date"
                                         value={expectedClose}
                                         onChange={(e) => setExpectedClose(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute"
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
                                     />
                                 </div>
                             </div>
