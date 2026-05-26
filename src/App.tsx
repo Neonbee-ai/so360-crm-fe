@@ -97,7 +97,7 @@ const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100">
+        <div className="min-h-full bg-slate-950 text-slate-100">
             <main className="w-full">
                 <Suspense fallback={<div className="p-8 text-slate-400">Loading module...</div>}>
                     {children}
