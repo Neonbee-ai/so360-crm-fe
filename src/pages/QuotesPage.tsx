@@ -4,7 +4,7 @@ import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, C
 import { crmService } from '../services/crmService';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
-import { useBusinessSettings, useActivity, useShellBridge, useQuota } from '@so360/shell-context';
+import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { QuotaBar, QuotaGate } from '@so360/design-system';
 
@@ -25,6 +25,7 @@ const QuotesPage = () => {
     const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_quotes' }], []);
     const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
     const quotaData = getQuota('max_quotes');
+    const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -320,8 +321,16 @@ const QuotesPage = () => {
                 ))}
             </div>
 
+            {/* Sandbox limit notice */}
+            {isSandboxMode && isLimited(filteredQuotes.length) && (
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                    <span className="font-semibold">Sandbox mode:</span>
+                    showing {sandboxEntryLimit} of {filteredQuotes.length} quotes — full list visible in production.
+                </div>
+            )}
+
             {/* Table */}
-            {filteredQuotes.length === 0 ? (
+            {(isSandboxMode ? filteredQuotes.slice(0, sandboxEntryLimit) : filteredQuotes).length === 0 ? (
                 <div className="text-center py-16 bg-slate-900/50 border border-slate-700 rounded-lg">
                     <FileText className="w-12 h-12 mx-auto text-slate-600 mb-4" />
                     <h3 className="text-lg font-medium text-slate-300 mb-2">No quotes found</h3>
@@ -340,7 +349,7 @@ const QuotesPage = () => {
                 </div>
             ) : (
                 <Table
-                    data={filteredQuotes}
+                    data={isSandboxMode ? filteredQuotes.slice(0, sandboxEntryLimit) : filteredQuotes}
                     columns={columns}
                     onRowClick={(quote) => navigate(`/crm/quotes/${quote.id}`)}
                 />

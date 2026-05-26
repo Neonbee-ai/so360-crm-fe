@@ -4,7 +4,7 @@ import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp,
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
-import { useShell, useShellBridge } from '@so360/shell-context';
+import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
 import { ToastContainer, useToast } from '../components/common/Toast';
 
@@ -16,6 +16,7 @@ const TasksPage = () => {
     const shell = useShell();
     const shellBridge = useShellBridge();
     const canCreateTask = shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true;
+    const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
     const { toasts, showSuccess, showError, dismissToast } = useToast();
@@ -189,12 +190,17 @@ const TasksPage = () => {
         return result;
     }, [tasks, searchTerm, filter, sortField, sortDirection]);
 
-    // Pagination
-    const totalPages = Math.ceil(sortedAndFilteredTasks.length / pageSize);
+    // Sandbox limit + pagination
+    const sandboxLimitedTasks = useMemo(
+        () => isSandboxMode ? sortedAndFilteredTasks.slice(0, sandboxEntryLimit) : sortedAndFilteredTasks,
+        [sortedAndFilteredTasks, isSandboxMode, sandboxEntryLimit],
+    );
+
+    const totalPages = Math.ceil(sandboxLimitedTasks.length / pageSize);
     const paginatedTasks = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
-        return sortedAndFilteredTasks.slice(start, start + pageSize);
-    }, [sortedAndFilteredTasks, currentPage, pageSize]);
+        return sandboxLimitedTasks.slice(start, start + pageSize);
+    }, [sandboxLimitedTasks, currentPage, pageSize]);
 
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -384,6 +390,14 @@ const TasksPage = () => {
                 </div>
             )}
 
+            {/* Sandbox limit notice */}
+            {isSandboxMode && isLimited(sortedAndFilteredTasks.length) && (
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                    <span className="font-semibold">Sandbox mode:</span>
+                    showing {sandboxEntryLimit} of {sortedAndFilteredTasks.length} tasks — full list visible in production.
+                </div>
+            )}
+
             <Table
                 data={paginatedTasks}
                 columns={columns}
@@ -393,7 +407,7 @@ const TasksPage = () => {
             />
 
             {/* Pagination Controls */}
-            {sortedAndFilteredTasks.length > 0 && (
+            {sandboxLimitedTasks.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-slate-400">
                         <span>Show</span>
@@ -406,7 +420,7 @@ const TasksPage = () => {
                                 <option key={size} value={size}>{size}</option>
                             ))}
                         </select>
-                        <span>of {sortedAndFilteredTasks.length} tasks</span>
+                        <span>of {sandboxLimitedTasks.length} tasks</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button

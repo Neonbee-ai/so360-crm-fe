@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag } from 'lucide-react';
-import { useShellBridge } from '@so360/shell-context';
+import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
 
@@ -27,6 +27,7 @@ const CustomersPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const shell = useShellBridge();
+    const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 
     // Feature-flag-driven KPI visibility
     const showModelSplit = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false;
@@ -160,11 +161,16 @@ const CustomersPage = () => {
         return result;
     }, [customers, searchTerm, channelFilter, categoryFilter, sortField, sortDirection]);
 
-    const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+    const sandboxLimitedCustomers = useMemo(
+        () => isSandboxMode ? filteredCustomers.slice(0, sandboxEntryLimit) : filteredCustomers,
+        [filteredCustomers, isSandboxMode, sandboxEntryLimit],
+    );
+
+    const totalPages = Math.ceil(sandboxLimitedCustomers.length / pageSize);
     const paginatedCustomers = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
-        return filteredCustomers.slice(start, start + pageSize);
-    }, [filteredCustomers, currentPage, pageSize]);
+        return sandboxLimitedCustomers.slice(start, start + pageSize);
+    }, [sandboxLimitedCustomers, currentPage, pageSize]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -398,6 +404,14 @@ const CustomersPage = () => {
                 )}
             </div>
 
+            {/* Sandbox limit notice */}
+            {isSandboxMode && isLimited(filteredCustomers.length) && (
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                    <span className="font-semibold">Sandbox mode:</span>
+                    showing {sandboxEntryLimit} of {filteredCustomers.length} customers — full list visible in production.
+                </div>
+            )}
+
             {/* Table */}
             <Table
                 data={paginatedCustomers}
@@ -408,7 +422,7 @@ const CustomersPage = () => {
             />
 
             {/* Pagination */}
-            {filteredCustomers.length > 0 && (
+            {sandboxLimitedCustomers.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-slate-400">
                         <span>Show</span>
@@ -421,7 +435,7 @@ const CustomersPage = () => {
                                 <option key={size} value={size}>{size}</option>
                             ))}
                         </select>
-                        <span>of {filteredCustomers.length} customers</span>
+                        <span>of {sandboxLimitedCustomers.length} customers</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">First</button>

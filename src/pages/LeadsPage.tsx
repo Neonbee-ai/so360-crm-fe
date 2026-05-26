@@ -5,7 +5,7 @@ import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
-import { useNotify, useActivity, useShellBridge, useQuota } from '@so360/shell-context';
+import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { QuotaBar, QuotaGate } from '@so360/design-system';
 
 type SortField = 'company_name' | 'contact_name' | 'status' | 'created_at' | 'owner';
@@ -19,6 +19,7 @@ const LeadsPage = () => {
     const shell = useShellBridge();
     const canCreateLead = shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true;
     const canUpdateLead = shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true;
+    const { isSandboxMode, sandboxEntryLimit, limitItems, isLimited } = useSandboxLimit();
     const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
     const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
     const quotaData = getQuota('max_contacts');
@@ -181,12 +182,18 @@ const LeadsPage = () => {
         return result;
     }, [leads, searchTerm, statusFilter, ownerFilter, creatorFilter, dateRangeFilter, customDateStart, customDateEnd, sortField, sortDirection]);
 
+    // Sandbox limit: cap list to sandboxEntryLimit entries when in sandbox mode
+    const sandboxLimitedLeads = useMemo(
+        () => isSandboxMode ? sortedAndFilteredLeads.slice(0, sandboxEntryLimit) : sortedAndFilteredLeads,
+        [sortedAndFilteredLeads, isSandboxMode, sandboxEntryLimit],
+    );
+
     // Pagination
-    const totalPages = Math.ceil(sortedAndFilteredLeads.length / pageSize);
+    const totalPages = Math.ceil(sandboxLimitedLeads.length / pageSize);
     const paginatedLeads = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
-        return sortedAndFilteredLeads.slice(start, start + pageSize);
-    }, [sortedAndFilteredLeads, currentPage, pageSize]);
+        return sandboxLimitedLeads.slice(start, start + pageSize);
+    }, [sandboxLimitedLeads, currentPage, pageSize]);
 
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -392,6 +399,13 @@ const LeadsPage = () => {
                 />
             )}
 
+            {isSandboxMode && isLimited(sortedAndFilteredLeads.length) && (
+                <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-400 text-sm">
+                    <span className="font-semibold">Sandbox:</span>
+                    <span>Showing {sandboxEntryLimit} of {sortedAndFilteredLeads.length} leads. Switch to Production to view all records.</span>
+                </div>
+            )}
+
             <CreateLeadModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -518,7 +532,7 @@ const LeadsPage = () => {
             />
 
             {/* Pagination Controls */}
-            {sortedAndFilteredLeads.length > 0 && (
+            {sandboxLimitedLeads.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-slate-400">
                         <span>Show</span>
@@ -531,7 +545,7 @@ const LeadsPage = () => {
                                 <option key={size} value={size}>{size}</option>
                             ))}
                         </select>
-                        <span>of {sortedAndFilteredLeads.length} leads</span>
+                        <span>of {sandboxLimitedLeads.length} leads</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
