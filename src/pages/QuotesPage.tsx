@@ -44,6 +44,9 @@ const QuotesPage = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedDealId, setSelectedDealId] = useState<string>('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [rejectTarget, setRejectTarget] = useState<string | null>(null);
+    const [rejectReason, setRejectReason] = useState('');
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -88,6 +91,23 @@ const QuotesPage = () => {
             navigate(`/crm/quotes/${newQuote.id}`);
         } catch (err: any) {
             setError(err.message || 'Failed to create quote');
+        }
+    };
+
+    const handleStatusAction = async (quote: Quote, action: 'submit' | 'approve' | 'reject' | 'convert') => {
+        setActionLoading(quote.id + action);
+        try {
+            if (action === 'submit')  await crmService.submitQuoteForApproval(quote.id);
+            if (action === 'approve') await crmService.approveQuote(quote.id);
+            if (action === 'reject')  await crmService.rejectQuote(quote.id, rejectReason);
+            if (action === 'convert') await crmService.convertQuoteToOrder(quote.id);
+            setRejectTarget(null);
+            setRejectReason('');
+            await fetchData();
+        } catch (err: any) {
+            setError(err.message || `Failed to ${action} quote`);
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -153,18 +173,54 @@ const QuotesPage = () => {
             ),
             accessor: (quote: Quote) => {
                 const status = statusColors[quote.status] || statusColors.draft;
-                const isActive = statusFilter === quote.status;
+                const isFiltered = statusFilter === quote.status;
+                const isLoading = (id: string) => actionLoading === quote.id + id;
                 return (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setStatusFilter(isActive ? 'All' : quote.status);
-                        }}
-                        title={isActive ? 'Click to clear filter' : `Click to filter by ${status.label}`}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text} transition-opacity hover:opacity-80 ${isActive ? 'ring-1 ring-offset-1 ring-offset-slate-950 ring-current' : ''}`}
-                    >
-                        {status.label}
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            onClick={() => setStatusFilter(isFiltered ? 'All' : quote.status)}
+                            title={isFiltered ? 'Click to clear filter' : `Filter by ${status.label}`}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text} transition-opacity hover:opacity-80 ${isFiltered ? 'ring-1 ring-offset-1 ring-offset-slate-950 ring-current' : ''}`}
+                        >
+                            {status.label}
+                        </button>
+                        {quote.status === 'draft' && (
+                            <button
+                                onClick={() => handleStatusAction(quote, 'submit')}
+                                disabled={!!actionLoading}
+                                className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-300 hover:bg-amber-500/40 transition-colors disabled:opacity-40"
+                            >
+                                {isLoading('submit') ? '...' : 'Submit'}
+                            </button>
+                        )}
+                        {quote.status === 'pending_approval' && (
+                            <>
+                                <button
+                                    onClick={() => handleStatusAction(quote, 'approve')}
+                                    disabled={!!actionLoading}
+                                    className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-green-500/20 text-green-300 hover:bg-green-500/40 transition-colors disabled:opacity-40"
+                                >
+                                    {isLoading('approve') ? '...' : 'Approve'}
+                                </button>
+                                <button
+                                    onClick={() => setRejectTarget(quote.id)}
+                                    disabled={!!actionLoading}
+                                    className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-red-500/20 text-red-300 hover:bg-red-500/40 transition-colors disabled:opacity-40"
+                                >
+                                    Reject
+                                </button>
+                            </>
+                        )}
+                        {quote.status === 'approved' && (
+                            <button
+                                onClick={() => handleStatusAction(quote, 'convert')}
+                                disabled={!!actionLoading}
+                                className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 transition-colors disabled:opacity-40"
+                            >
+                                {isLoading('convert') ? '...' : 'Convert'}
+                            </button>
+                        )}
+                    </div>
                 );
             }
         },
@@ -284,19 +340,22 @@ const QuotesPage = () => {
                         className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    <option value="All">All Status</option>
-                    <option value="draft">Draft</option>
-                    <option value="pending_approval">Pending Approval</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                    <option value="converted">Converted</option>
-                    <option value="expired">Expired</option>
-                </select>
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg">
+                    <Filter className={`w-4 h-4 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-slate-400'}`} />
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="bg-transparent text-slate-200 focus:outline-none text-sm cursor-pointer"
+                    >
+                        <option value="All">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="pending_approval">Pending Approval</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="converted">Converted</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
             </div>
 
             {/* Stats */}
@@ -397,6 +456,39 @@ const QuotesPage = () => {
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                             >
                                 Create Quote
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reject Reason Modal */}
+            {rejectTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
+                        <h2 className="text-lg font-semibold text-slate-100 mb-3">Reject Quote</h2>
+                        <textarea
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            placeholder="Reason for rejection (optional)"
+                            rows={3}
+                            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none mb-4"
+                        />
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => { setRejectTarget(null); setRejectReason(''); }}
+                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const q = quotes.find(q => q.id === rejectTarget)!;
+                                    handleStatusAction(q, 'reject');
+                                }}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                            >
+                                Confirm Reject
                             </button>
                         </div>
                     </div>
