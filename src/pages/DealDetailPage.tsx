@@ -441,7 +441,7 @@ const DealDetailPage = () => {
         <div className="p-8">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-            <header className="mb-8 overflow-hidden">
+            <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
                     <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group">
                         <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -631,7 +631,7 @@ const DealDetailPage = () => {
                     </section>
 
                     {/* Navigation Tabs */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
                         <div className="flex border-b border-slate-800 bg-slate-900/50">
                             {[
                                 { id: 'activity', name: 'Activity', icon: MessageSquare },
