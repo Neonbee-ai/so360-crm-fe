@@ -288,7 +288,7 @@ const QuotesPage = () => {
     return (
         <div className="p-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-100">Quotes</h1>
                     <p className="text-sm text-slate-400 mt-1">Manage sales quotes and proposals</p>
@@ -319,6 +319,7 @@ const QuotesPage = () => {
                     used={quotaData.current_usage}
                     limit={quotaData.limit}
                     isUnlimited={quotaData.is_unlimited}
+                    className="mb-6"
                 />
             )}
 
