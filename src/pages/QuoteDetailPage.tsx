@@ -86,7 +86,13 @@ const QuoteDetailPage = () => {
             setNotes(data.notes || '');
             setTermsAndConditions(data.terms_and_conditions || '');
             setValidUntil(data.valid_until ? data.valid_until.split('T')[0] : '');
-            setLines(data.lines || []);
+            setLines((data.lines || []).map((l: any) => ({
+                ...l,
+                quantity: Number(l.quantity) || 0,
+                unit_price: Number(l.unit_price) || 0,
+                discount_percent: Number(l.discount_percent) || 0,
+                tax_rate: Number(l.tax_rate) || 0,
+            })));
         } catch (err: any) {
             setError(err.message || 'Failed to load quote');
         } finally {
