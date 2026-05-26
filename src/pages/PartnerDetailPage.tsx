@@ -168,6 +168,8 @@ const PartnerDetailPage = () => {
             const updated = await partnersApi.update(id, {
                 ...editForm,
                 commission_rate: parseFloat(editForm.commission_rate) || 0,
+                poc_primary: editForm.poc_primary || undefined,
+                poc_secondary: editForm.poc_secondary || undefined,
             });
             setPartner(updated);
             setIsEditing(false);
