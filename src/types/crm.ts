@@ -8,13 +8,16 @@ export interface User {
     role?: string;
 }
 
-export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean';
+export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean' | 'SELECT';
 
 export interface CustomFieldDefinition {
     id: string;
     label: string;
     type: CustomFieldType;
-    required: boolean;
+    field_type?: string;
+    required?: boolean;
+    is_required?: boolean;
+    options?: string[];
 }
 
 export interface Attachment {
@@ -158,6 +161,7 @@ export interface CRMSettings {
     source_type_options: SourceTypeOption[];
     lead_custom_fields: CustomFieldDefinition[];
     deal_custom_fields: CustomFieldDefinition[];
+    partner_custom_fields: CustomFieldDefinition[];
     lead_scoring: LeadScoringRule[];
 }
 

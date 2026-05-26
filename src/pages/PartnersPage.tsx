@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, UserCheck, Plus, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, BarChart2 } from 'lucide-react';
-import { partnersApi, settingsApi } from '../services/crmService';
+import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
+import type { CustomFieldDefinition } from '../types/crm';
 
 type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value';
 type SortDirection = 'asc' | 'desc' | null;
@@ -26,12 +27,29 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         contact_name: '',
         email: '',
         phone: '',
+        alt_phone: '',
+        address: '',
+        city: '',
+        pin_code: '',
         partner_type: '',
-        grading: '',
         commission_rate: '',
+        owner_person_id: '',
+        custom_fields: {} as Record<string, any>,
     });
+    const [users, setUsers] = useState<any[]>([]);
+    const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        Promise.all([
+            crmService.getUsers().catch(() => []),
+            settingsApi.customFields.getAll({ entity_type: 'PARTNER' }).catch(() => []),
+        ]).then(([u, defs]) => {
+            setUsers(u);
+            setCustomFieldDefs(defs);
+        });
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,8 +61,17 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         setError(null);
         try {
             await partnersApi.create({
-                ...form,
+                contact_name: form.contact_name,
+                email: form.email || undefined,
+                phone: form.phone || undefined,
+                alt_phone: form.alt_phone || undefined,
+                address: form.address || undefined,
+                city: form.city || undefined,
+                pin_code: form.pin_code || undefined,
+                partner_type: form.partner_type,
                 commission_rate: form.commission_rate ? parseFloat(form.commission_rate) : 0,
+                owner_person_id: form.owner_person_id || undefined,
+                meta_data: Object.keys(form.custom_fields).length ? form.custom_fields : undefined,
             });
             onCreated();
         } catch (err: any) {
@@ -54,94 +81,145 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         }
     };
 
+    const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+    const labelCls = 'text-xs text-slate-400 mb-1 block';
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
                 <h2 className="text-lg font-semibold text-white mb-5">Add Partner</h2>
                 {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-4">
+
+                    {/* Name */}
                     <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Name *</label>
-                        <input
-                            type="text"
-                            value={form.contact_name}
+                        <label className={labelCls}>Name *</label>
+                        <input type="text" required value={form.contact_name}
                             onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                            placeholder="Partner name"
-                        />
+                            className={inputCls} placeholder="Partner / architect name" />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Email</label>
-                            <input
-                                type="email"
-                                value={form.email}
-                                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                placeholder="email@example.com"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Phone</label>
-                            <input
-                                type="text"
-                                value={form.phone}
-                                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                placeholder="+91 98765 43210"
-                            />
-                        </div>
-                    </div>
+
+                    {/* Partner Type */}
                     <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Partner Type *</label>
-                        <select
-                            value={form.partner_type}
+                        <label className={labelCls}>Partner Type *</label>
+                        <select required value={form.partner_type}
                             onChange={e => setForm(f => ({ ...f, partner_type: e.target.value }))}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                        >
+                            className={inputCls}>
                             <option value="">Select type...</option>
                             {partnerTypes.map(pt => (
                                 <option key={pt.value} value={pt.value}>{pt.label}</option>
                             ))}
                         </select>
                     </div>
+
+                    {/* Email + Phone */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Grading</label>
-                            <select
-                                value={form.grading}
-                                onChange={e => setForm(f => ({ ...f, grading: e.target.value }))}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                            >
-                                <option value="">Select...</option>
-                                <option value="low">Low</option>
-                                <option value="mid">Mid</option>
-                                <option value="high">High</option>
-                            </select>
+                            <label className={labelCls}>Email</label>
+                            <input type="email" value={form.email}
+                                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                                className={inputCls} placeholder="email@example.com" />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Commission Rate (%)</label>
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.5"
-                                value={form.commission_rate}
-                                onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
-                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                placeholder="0"
-                            />
+                            <label className={labelCls}>Phone</label>
+                            <input type="text" value={form.phone}
+                                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                                className={inputCls} placeholder="+91 98765 43210" />
                         </div>
                     </div>
+
+                    {/* Alt Phone */}
+                    <div>
+                        <label className={labelCls}>Alt. Phone</label>
+                        <input type="text" value={form.alt_phone}
+                            onChange={e => setForm(f => ({ ...f, alt_phone: e.target.value }))}
+                            className={inputCls} placeholder="+91 98765 43211" />
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                        <label className={labelCls}>Address</label>
+                        <input type="text" value={form.address}
+                            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                            className={inputCls} placeholder="Street / area" />
+                    </div>
+
+                    {/* City + Pin Code */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className={labelCls}>City</label>
+                            <input type="text" value={form.city}
+                                onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                                className={inputCls} placeholder="Bangalore" />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Pin Code</label>
+                            <input type="text" value={form.pin_code}
+                                onChange={e => setForm(f => ({ ...f, pin_code: e.target.value }))}
+                                className={inputCls} placeholder="560001" />
+                        </div>
+                    </div>
+
+                    {/* Relationship Manager */}
+                    <div>
+                        <label className={labelCls}>Relationship Manager</label>
+                        <select value={form.owner_person_id}
+                            onChange={e => setForm(f => ({ ...f, owner_person_id: e.target.value }))}
+                            className={inputCls}>
+                            <option value="">— Assign RM —</option>
+                            {users.map(u => (
+                                <option key={u.id} value={u.id}>{u.full_name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Commission Rate */}
+                    <div>
+                        <label className={labelCls}>Commission Rate (%)</label>
+                        <input type="number" min="0" max="100" step="0.5"
+                            value={form.commission_rate}
+                            onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
+                            className={inputCls} placeholder="0" />
+                    </div>
+
+                    {/* Custom Fields */}
+                    {customFieldDefs.length > 0 && (
+                        <div className="pt-4 border-t border-slate-800 space-y-4">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Additional Details</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                {customFieldDefs.map(field => (
+                                    <div key={field.id} className="space-y-1">
+                                        <label className={labelCls}>{field.label}{field.is_required ? ' *' : ''}</label>
+                                        {field.field_type === 'SELECT' ? (
+                                            <select required={field.is_required}
+                                                value={form.custom_fields[field.id] || ''}
+                                                onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))}
+                                                className={inputCls}>
+                                                <option value="">— Select —</option>
+                                                {(field.options || []).map((opt: string) => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                required={field.is_required}
+                                                type={field.field_type === 'NUMBER' ? 'number' : field.field_type === 'DATE' ? 'date' : 'text'}
+                                                value={form.custom_fields[field.id] || ''}
+                                                onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))}
+                                                className={inputCls} />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
                             Cancel
                         </button>
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50 transition-colors"
-                        >
+                        <button type="submit" disabled={saving}
+                            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50 transition-colors">
                             {saving ? 'Creating...' : 'Create Partner'}
                         </button>
                     </div>

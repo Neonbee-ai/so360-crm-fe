@@ -709,7 +709,7 @@ export const settingsApi = {
          * GET /settings/custom-fields - Get all custom field definitions
          */
         getAll: async (params?: {
-            entity_type?: 'LEAD' | 'DEAL';
+            entity_type?: 'LEAD' | 'DEAL' | 'PARTNER';
         }): Promise<CustomFieldDefinition[]> => {
             return apiClient.get<CustomFieldDefinition[]>(
                 '/settings/custom-fields',
@@ -721,7 +721,7 @@ export const settingsApi = {
          * POST /settings/custom-fields - Create a new custom field definition
          */
         create: async (data: {
-            entity_type: 'LEAD' | 'DEAL';
+            entity_type: 'LEAD' | 'DEAL' | 'PARTNER';
             label: string;
             field_type: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT';
             options?: string[];
@@ -1239,11 +1239,12 @@ export const crmService = {
     // Settings
     getSettings: async (): Promise<CRMSettings> => {
         try {
-            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, sourceTypesResult] = await Promise.allSettled([
+            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, partnerFieldsResult, sourceTypesResult] = await Promise.allSettled([
                 apiClient.get<any[]>('/settings/pipeline-stages'),
                 apiClient.get<any[]>('/settings/lead-stages'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL'),
+                apiClient.get<any[]>('/settings/custom-fields?entity_type=PARTNER'),
                 apiClient.get<any[]>('/settings/source-types'),
             ]);
 
@@ -1251,6 +1252,7 @@ export const crmService = {
             const leadStages = leadStagesResult.status === 'fulfilled' ? leadStagesResult.value : [];
             const leadFields = leadFieldsResult.status === 'fulfilled' ? leadFieldsResult.value : [];
             const dealFields = dealFieldsResult.status === 'fulfilled' ? dealFieldsResult.value : [];
+            const partnerFields = partnerFieldsResult.status === 'fulfilled' ? partnerFieldsResult.value : [];
             const sourceTypes = sourceTypesResult.status === 'fulfilled' ? sourceTypesResult.value : [];
 
             if (stagesResult.status === 'rejected') console.error('[CRM] Failed to fetch pipeline stages', stagesResult.reason);
@@ -1268,6 +1270,7 @@ export const crmService = {
                 source_type_options: sourceTypes,
                 lead_custom_fields: leadFields,
                 deal_custom_fields: dealFields,
+                partner_custom_fields: partnerFields,
                 lead_scoring: []
             };
         } catch (error) {
@@ -1280,6 +1283,7 @@ export const crmService = {
                 source_type_options: [],
                 lead_custom_fields: [],
                 deal_custom_fields: [],
+                partner_custom_fields: [],
                 lead_scoring: []
             };
         }
@@ -1372,6 +1376,31 @@ export const crmService = {
                     is_required: f.required
                 })),
                 ...dfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
+            ]);
+
+            // 4. Sync Custom Fields (Partner)
+            const currentPartnerFields = await apiClient.get<any[]>('/settings/custom-fields?entity_type=PARTNER');
+            const newPartnerFields = settings.partner_custom_fields || [];
+
+            const pfToCreate = newPartnerFields.filter(f => f.id.startsWith('pcf-'));
+            const pfToUpdate = newPartnerFields.filter(f => !f.id.startsWith('pcf-'));
+            const pfToDelete = currentPartnerFields.filter(cf => !newPartnerFields.find(nf => nf.id === cf.id));
+
+            await Promise.all([
+                ...pfToCreate.map(f => apiClient.post('/settings/custom-fields', {
+                    entity_type: 'PARTNER',
+                    label: f.label,
+                    field_type: f.type,
+                    options: f.options,
+                    is_required: f.required
+                })),
+                ...pfToUpdate.map(f => apiClient.patch(`/settings/custom-fields/${f.id}`, {
+                    label: f.label,
+                    field_type: f.type,
+                    options: f.options,
+                    is_required: f.required
+                })),
+                ...pfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
             ]);
 
             return settings;

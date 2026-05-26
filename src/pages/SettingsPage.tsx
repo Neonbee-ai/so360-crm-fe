@@ -351,7 +351,7 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'custom-fields' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Lead Custom Fields */}
                         <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
                             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
@@ -397,6 +397,7 @@ const SettingsPage = () => {
                                                 <option value="number">NUM</option>
                                                 <option value="date">DATE</option>
                                                 <option value="boolean">BOOL</option>
+                                                <option value="SELECT">SELECT</option>
                                             </select>
                                             <button
                                                 onClick={() => {
@@ -460,6 +461,7 @@ const SettingsPage = () => {
                                                 <option value="number">NUM</option>
                                                 <option value="date">DATE</option>
                                                 <option value="boolean">BOOL</option>
+                                                <option value="SELECT">SELECT</option>
                                             </select>
                                             <button
                                                 onClick={() => {
@@ -474,6 +476,73 @@ const SettingsPage = () => {
                                             </button>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Partner Custom Fields */}
+                        <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
+                            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-black text-white uppercase tracking-widest text-xs">Partner Fields</h3>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
+                                        setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
+                                    }}
+                                    className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                >
+                                    <Plus size={12} /> ADD
+                                </button>
+                            </div>
+                            <div className="p-6">
+                                <div className="space-y-3">
+                                    {(settings.partner_custom_fields || []).map((field, idx) => (
+                                        <div key={field.id} className="flex items-center gap-3 bg-slate-950/50 border border-slate-800 p-3 rounded-xl group hover:border-slate-700 transition-all">
+                                            <div className="flex-1">
+                                                <input
+                                                    type="text"
+                                                    value={field.label}
+                                                    onChange={(e) => {
+                                                        const newFields = [...(settings.partner_custom_fields || [])];
+                                                        newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                        setSettings({ ...settings, partner_custom_fields: newFields });
+                                                    }}
+                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-white focus:ring-0"
+                                                />
+                                            </div>
+                                            <select
+                                                value={field.type}
+                                                onChange={(e) => {
+                                                    const newFields = [...(settings.partner_custom_fields || [])];
+                                                    newFields[idx] = { ...newFields[idx], type: e.target.value as any };
+                                                    setSettings({ ...settings, partner_custom_fields: newFields });
+                                                }}
+                                                className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
+                                            >
+                                                <option value="text">TEXT</option>
+                                                <option value="number">NUM</option>
+                                                <option value="date">DATE</option>
+                                                <option value="boolean">BOOL</option>
+                                                <option value="SELECT">SELECT</option>
+                                            </select>
+                                            <button
+                                                onClick={() => {
+                                                    setSettings({
+                                                        ...settings,
+                                                        partner_custom_fields: (settings.partner_custom_fields || []).filter(f => f.id !== field.id)
+                                                    });
+                                                }}
+                                                className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {(settings.partner_custom_fields || []).length === 0 && (
+                                        <p className="text-[11px] text-slate-600 font-bold text-center py-4">No partner fields yet. Click ADD to create one.</p>
+                                    )}
                                 </div>
                             </div>
                         </section>

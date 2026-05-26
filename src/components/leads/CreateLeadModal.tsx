@@ -21,6 +21,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         contact_name: '',
         contact_email: '',
         phone: '',
+        alt_phone: '',
+        address: '',
+        city: '',
+        pin_code: '',
         source: '',
         status: 'New' as any,
         owner_id: '',
@@ -146,14 +150,61 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-slate-400">Phone</label>
+                        <input
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            placeholder="+91 98765 43210"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-slate-400">Alt. Phone</label>
+                        <input
+                            type="tel"
+                            value={formData.alt_phone}
+                            onChange={(e) => setFormData({ ...formData, alt_phone: e.target.value })}
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            placeholder="+91 98765 43211"
+                        />
+                    </div>
+                </div>
+
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-400">Phone (Optional)</label>
+                    <label className="text-sm font-medium text-slate-400">Address</label>
                     <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        type="text"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                        placeholder="Street / area"
                     />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-slate-400">City</label>
+                        <input
+                            type="text"
+                            value={formData.city}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            placeholder="Bangalore"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-slate-400">Pin Code</label>
+                        <input
+                            type="text"
+                            value={formData.pin_code}
+                            onChange={(e) => setFormData({ ...formData, pin_code: e.target.value })}
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            placeholder="560001"
+                        />
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -238,10 +289,25 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                 className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-blue-500/50"
                                             />
                                         </div>
+                                    ) : field.type === 'SELECT' || field.field_type === 'SELECT' ? (
+                                        <select
+                                            required={field.required}
+                                            value={formData.custom_fields[field.id] || ''}
+                                            onChange={(e) => setFormData({
+                                                ...formData,
+                                                custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
+                                            })}
+                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                                        >
+                                            <option value="">— Select —</option>
+                                            {(field.options || []).map((opt: string) => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
                                     ) : (
                                         <input
                                             required={field.required}
-                                            type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                                            type={field.type === 'number' || field.field_type === 'NUMBER' ? 'number' : field.type === 'date' || field.field_type === 'DATE' ? 'date' : 'text'}
                                             value={formData.custom_fields[field.id] || ''}
                                             onChange={(e) => setFormData({
                                                 ...formData,

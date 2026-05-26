@@ -33,7 +33,8 @@ vi.mock('@so360/shell-context', () => ({
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
 
-  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 let tableProps: any = {};
 vi.mock('../components/common/Table', () => ({
