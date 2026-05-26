@@ -80,7 +80,7 @@ describe('Given CreateLeadModal', () => {
     await waitFor(() => {
       expect(screen.getByText(/contact name/i)).toBeInTheDocument();
       expect(screen.getByText(/contact email/i)).toBeInTheDocument();
-      expect(screen.getByText(/phone/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/phone/i).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/lead source/i)).toBeInTheDocument();
       expect(screen.getByText(/lead stage/i)).toBeInTheDocument();
     });
