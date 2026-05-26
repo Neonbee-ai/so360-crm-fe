@@ -427,7 +427,7 @@ const QuotesPage = () => {
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md">
-                        <div className="p-6">
+                        <div className="px-6 pt-6 pb-2">
                             <h2 className="text-xl font-semibold text-slate-100 mb-4">Create New Quote</h2>
                             <div className="space-y-4">
                                 <div>
