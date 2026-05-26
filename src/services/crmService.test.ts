@@ -913,6 +913,8 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([]);
     // Settings: custom-fields DEAL
     mockFetchSuccess([]);
+    // Settings: custom-fields PARTNER
+    mockFetchSuccess([]);
     // Settings: source-types (added in P2)
     mockFetchSuccess([]);
     // getAll deals
@@ -1056,6 +1058,9 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([{ id: 'dcf-old', label: 'Old', entity_type: 'DEAL' }]);
     // No new dcf, update existing
     mockFetchSuccess({ id: 'dcf-old', label: 'Updated' });
+
+    // Current partner custom fields (step 5 GET)
+    mockFetchSuccess([]);
 
     const newSettings = {
       deal_stages: [
