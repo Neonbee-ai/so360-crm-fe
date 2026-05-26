@@ -359,25 +359,33 @@ const QuotesPage = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
-                {[
-                    { label: 'Total Quotes', value: quotes.length, icon: FileText, color: 'blue' },
-                    { label: 'Draft', value: quotes.filter(q => q.status === 'draft').length, icon: Clock, color: 'slate' },
-                    { label: 'Pending', value: quotes.filter(q => q.status === 'pending_approval').length, icon: Send, color: 'amber' },
-                    { label: 'Approved', value: quotes.filter(q => q.status === 'approved').length, icon: CheckCircle, color: 'green' },
-                ].map((stat) => (
-                    <div key={stat.label} className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg bg-${stat.color}-500/20`}>
-                                <stat.icon className={`w-5 h-5 text-${stat.color}-400`} />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-slate-100">{stat.value}</p>
-                                <p className="text-sm text-slate-400">{stat.label}</p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+            <div className="mb-6 bg-slate-900/50 border border-slate-700 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                    <thead className="border-b border-slate-700">
+                        <tr>
+                            <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                            <th className="text-right px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/50">
+                        {[
+                            { label: 'Total Quotes', value: quotes.length, icon: FileText, textColor: 'text-blue-400' },
+                            { label: 'Draft', value: quotes.filter(q => q.status === 'draft').length, icon: Clock, textColor: 'text-slate-300' },
+                            { label: 'Pending Approval', value: quotes.filter(q => q.status === 'pending_approval').length, icon: Send, textColor: 'text-amber-400' },
+                            { label: 'Approved', value: quotes.filter(q => q.status === 'approved').length, icon: CheckCircle, textColor: 'text-green-400' },
+                        ].map((stat) => (
+                            <tr key={stat.label} className="hover:bg-slate-800/30 transition-colors">
+                                <td className="px-4 py-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <stat.icon className={`w-4 h-4 ${stat.textColor} shrink-0`} />
+                                        <span className="text-slate-300">{stat.label}</span>
+                                    </div>
+                                </td>
+                                <td className={`px-4 py-2.5 text-right font-semibold ${stat.textColor}`}>{stat.value}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
 
             {/* Sandbox limit notice */}
