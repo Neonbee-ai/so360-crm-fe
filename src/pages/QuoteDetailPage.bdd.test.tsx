@@ -309,4 +309,156 @@ describe('QuoteDetailPage', () => {
       });
     });
   });
+
+  // ── Fix: type="text" inputs — raw string preserved for intermediate typing states ──
+
+  describe('Given a Draft quote is in edit mode — numeric input type fix', () => {
+    it('When edit mode is active / Then Quantity input is type="text" (not type="number")', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const qtyInput = screen.getByDisplayValue('2');
+      expect(qtyInput.getAttribute('type')).toBe('text');
+    });
+
+    it('When edit mode is active / Then Quantity input has inputMode="numeric"', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const qtyInput = screen.getByDisplayValue('2');
+      expect(qtyInput.getAttribute('inputmode')).toBe('numeric');
+    });
+
+    it('When edit mode is active / Then Unit Price input is type="text" (not type="number")', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const priceInput = screen.getByDisplayValue('2500');
+      expect(priceInput.getAttribute('type')).toBe('text');
+    });
+
+    it('When edit mode is active / Then Unit Price input has inputMode="decimal"', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const priceInput = screen.getByDisplayValue('2500');
+      expect(priceInput.getAttribute('inputmode')).toBe('decimal');
+    });
+
+    it('When the user types "05" in Quantity / Then the draftValue "05" is preserved (not cleared)', async () => {
+      // type="number" in Chrome returns e.target.value="" for "05" (leading zero = invalid).
+      // type="text" returns the raw "05" string, preserving the typing state.
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInput = screen.getByDisplayValue('2');
+      fireEvent.change(qtyInput, { target: { value: '05' } });
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('05')).toBeInTheDocument();
+      });
+    });
+
+    it('When the user types "25." in Unit Price / Then the draftValue "25." is preserved (not cleared)', async () => {
+      // type="number" in Chrome returns "" for "25." (incomplete decimal = invalid).
+      // type="text" returns the raw "25." string so the user can continue typing digits.
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInput = screen.getByDisplayValue('2500');
+      fireEvent.change(priceInput, { target: { value: '25.' } });
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('25.')).toBeInTheDocument();
+      });
+    });
+
+    it('When the user types a full decimal "99.99" in Unit Price / Then the value is committed on blur', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInput = screen.getByDisplayValue('2500');
+      fireEvent.change(priceInput, { target: { value: '99.99' } });
+      fireEvent.blur(priceInput, { target: { value: '99.99' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ unit_price: 99.99 }),
+            ]),
+          }),
+        );
+      });
+    });
+
+    it('When the user clears Quantity and blurs / Then it falls back to 1', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInput = screen.getByDisplayValue('2');
+      fireEvent.change(qtyInput, { target: { value: '' } });
+      fireEvent.blur(qtyInput, { target: { value: '' } });
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+      });
+    });
+
+    it('When the user clears Unit Price and blurs / Then it falls back to 0', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInput = screen.getByDisplayValue('2500');
+      fireEvent.change(priceInput, { target: { value: '' } });
+      fireEvent.blur(priceInput, { target: { value: '' } });
+
+      await waitFor(() => {
+        // discount_percent and tax_rate also show "0"; use getAllByDisplayValue
+        const zeroInputs = screen.getAllByDisplayValue('0');
+        expect(zeroInputs.length).toBeGreaterThanOrEqual(1);
+        // the unit_price input (formerly "2500") must now be one of the zeros
+        expect(zeroInputs.some(el => el === priceInput || el.getAttribute('inputmode') === 'decimal')).toBe(true);
+      });
+    });
+
+    it('When the user types non-numeric text in Quantity / Then Save does not update the quantity', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInput = screen.getByDisplayValue('2');
+      fireEvent.change(qtyInput, { target: { value: 'abc' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        const [, payload] = mockUpdateQuote.mock.calls[0];
+        // parseFloat('abc') === NaN → updateLine not called → quantity stays 2
+        expect(payload.lines[0].quantity).toBe(2);
+      });
+    });
+
+    it('When the Discount % input is in edit mode / Then it is type="text" with inputMode="decimal"', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      // Both discount_percent and tax_rate start at 0 — grab all zero-valued inputs
+      const zeroInputs = screen.getAllByDisplayValue('0');
+      expect(zeroInputs.length).toBeGreaterThanOrEqual(2);
+      zeroInputs.forEach(input => {
+        expect(input.getAttribute('type')).toBe('text');
+        expect(input.getAttribute('inputmode')).toBe('decimal');
+      });
+    });
+  });
 });

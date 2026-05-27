@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
 import { crmService } from '../services/crmService';
@@ -592,13 +593,12 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
+                                                        type="text"
+                                                        inputMode="numeric"
                                                         value={draftValues[`${index}_quantity`] ?? String(line.quantity)}
                                                         onChange={(e) => handleNumericInput(index, 'quantity', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'quantity', e.target.value, 1)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="1"
-                                                        step="1"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{line.quantity}</span>
@@ -607,13 +607,12 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
+                                                        type="text"
+                                                        inputMode="decimal"
                                                         value={draftValues[`${index}_unit_price`] ?? String(line.unit_price)}
                                                         onChange={(e) => handleNumericInput(index, 'unit_price', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'unit_price', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="0"
-                                                        step="0.01"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{formatCurrency(line.unit_price)}</span>
@@ -622,13 +621,12 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
+                                                        type="text"
+                                                        inputMode="decimal"
                                                         value={draftValues[`${index}_discount_percent`] ?? String(line.discount_percent || 0)}
                                                         onChange={(e) => handleNumericInput(index, 'discount_percent', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'discount_percent', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="0"
-                                                        max="100"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.discount_percent || 0}%</span>
@@ -637,13 +635,12 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
+                                                        type="text"
+                                                        inputMode="decimal"
                                                         value={draftValues[`${index}_tax_rate`] ?? String(line.tax_rate || 0)}
                                                         onChange={(e) => handleNumericInput(index, 'tax_rate', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'tax_rate', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="0"
-                                                        max="100"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.tax_rate || 0}%</span>
@@ -792,8 +789,8 @@ const QuoteDetailPage = () => {
             />
 
             {/* Reject Modal */}
-            {showRejectModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {showRejectModal && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-4">Reject Quote</h2>
                         <div className="mb-4">
@@ -827,12 +824,13 @@ const QuoteDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Convert Modal */}
-            {showConvertModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {showConvertModal && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-4">Convert to Sales Order</h2>
                         <p className="text-slate-400 mb-6">
@@ -853,7 +851,8 @@ const QuoteDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
