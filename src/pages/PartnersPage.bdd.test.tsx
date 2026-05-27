@@ -258,6 +258,27 @@ describe('PartnersPage', () => {
             expect(panel.className).not.toContain('overflow-y-auto');
         });
 
+        it('When modal panel is rendered / Then it carries overflow-hidden to clip child overflow', async () => {
+            const user = userEvent.setup();
+            render(<PartnersPage />);
+            await user.click(screen.getByRole('button', { name: /add partner/i }));
+
+            const backdrop = document.querySelector('.fixed.inset-0');
+            expect(backdrop).not.toBeNull();
+            const panel = backdrop!.firstElementChild as HTMLElement;
+            expect(panel.className).toContain('overflow-hidden');
+        });
+
+        it('When modal panel is rendered / Then it has max-h-[90vh] to prevent viewport overflow', async () => {
+            const user = userEvent.setup();
+            render(<PartnersPage />);
+            await user.click(screen.getByRole('button', { name: /add partner/i }));
+
+            const backdrop = document.querySelector('.fixed.inset-0');
+            const panel = backdrop!.firstElementChild as HTMLElement;
+            expect(panel.className).toContain('max-h-[90vh]');
+        });
+
         it('When X button clicked / Then modal closes', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);

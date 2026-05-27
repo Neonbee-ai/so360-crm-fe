@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, UserCheck, Plus, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, BarChart2, X } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
@@ -92,9 +93,9 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
     const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50';
     const labelCls = 'text-xs text-slate-400 mb-1 block';
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+    return createPortal(
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 p-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
                 {/* Sticky header — never scrolls */}
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-800 shrink-0">
@@ -249,7 +250,8 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 </div>
 
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
