@@ -235,6 +235,19 @@ describe('TasksPage', () => {
     });
   });
 
+  describe('Given search bar rendering', () => {
+    it('When Tasks page loads / Then search input uses consistent CRM padding and text-sm class', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const input = screen.getByPlaceholderText('Search tasks...');
+      expect(input.className).toContain('pl-10');
+      expect(input.className).toContain('py-2');
+      expect(input.className).toContain('text-sm');
+      expect(input.className).not.toContain('pl-12');
+      expect(input.className).not.toContain('py-2.5');
+    });
+  });
+
   describe('Given fetch fails', () => {
     it('When API returns error / Then renders empty table', async () => {
       mockGetTasks.mockRejectedValue(new Error('Network error'));
