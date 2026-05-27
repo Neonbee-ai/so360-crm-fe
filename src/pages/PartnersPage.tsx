@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, UserCheck, Plus, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, BarChart2 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
+import { validatePhone } from '../utils/phoneValidation';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
@@ -40,6 +41,8 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [altPhoneError, setAltPhoneError] = useState<string | null>(null);
 
     useEffect(() => {
         Promise.all([
@@ -57,6 +60,11 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
             setError('Name and partner type are required.');
             return;
         }
+        const pErr = validatePhone(form.phone);
+        const apErr = validatePhone(form.alt_phone);
+        setPhoneError(pErr);
+        setAltPhoneError(apErr);
+        if (pErr || apErr) return;
         setSaving(true);
         setError(null);
         try {
@@ -122,18 +130,20 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </div>
                         <div>
                             <label className={labelCls}>Phone</label>
-                            <input type="text" value={form.phone}
-                                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                                className={inputCls} placeholder="+91 98765 43210" />
+                            <input type="tel" value={form.phone} maxLength={20}
+                                onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
+                                className={`${inputCls}${phoneError ? ' border-rose-500/60 focus:ring-rose-500/50' : ''}`} placeholder="+91 98765 43210" />
+                            {phoneError && <p className="text-rose-400 text-xs mt-1">{phoneError}</p>}
                         </div>
                     </div>
 
                     {/* Alt Phone */}
                     <div>
                         <label className={labelCls}>Alt. Phone</label>
-                        <input type="text" value={form.alt_phone}
-                            onChange={e => setForm(f => ({ ...f, alt_phone: e.target.value }))}
-                            className={inputCls} placeholder="+91 98765 43211" />
+                        <input type="tel" value={form.alt_phone} maxLength={20}
+                            onChange={e => { setForm(f => ({ ...f, alt_phone: e.target.value })); setAltPhoneError(validatePhone(e.target.value)); }}
+                            className={`${inputCls}${altPhoneError ? ' border-rose-500/60 focus:ring-rose-500/50' : ''}`} placeholder="+91 98765 43211" />
+                        {altPhoneError && <p className="text-rose-400 text-xs mt-1">{altPhoneError}</p>}
                     </div>
 
                     {/* Address */}

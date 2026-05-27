@@ -5,6 +5,7 @@ import {
     BarChart2, DollarSign, Trophy, MapPin, Percent, Users,
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
+import { validatePhone } from '../utils/phoneValidation';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
@@ -93,6 +94,7 @@ const PartnerDetailPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<any>({});
     const [saving, setSaving] = useState(false);
+    const [phoneError, setPhoneError] = useState<string | null>(null);
     const [markPaidId, setMarkPaidId] = useState<string | null>(null);
     const [approvingId, setApprovingId] = useState<string | null>(null);
     const { settings } = useBusinessSettings();
@@ -163,6 +165,9 @@ const PartnerDetailPage = () => {
     }, [activeTab, fetchDeals, fetchCommissions, fetchActivities]);
 
     const handleSave = async () => {
+        const pErr = validatePhone(editForm.phone ?? '');
+        setPhoneError(pErr);
+        if (pErr) return;
         setSaving(true);
         try {
             const updated = await partnersApi.update(id, {
@@ -311,10 +316,13 @@ const PartnerDetailPage = () => {
                                     <div>
                                         <label className="text-xs text-slate-400 mb-1 block">Phone</label>
                                         <input
+                                            type="tel"
+                                            maxLength={20}
                                             value={editForm.phone}
-                                            onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))}
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                            onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
+                                            className={`w-full bg-slate-950 border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`}
                                         />
+                                        {phoneError && <p className="text-rose-400 text-xs mt-1">{phoneError}</p>}
                                     </div>
                                 </div>
                                 <div>
