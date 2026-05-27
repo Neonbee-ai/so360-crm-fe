@@ -68,7 +68,11 @@ const QuoteDetailPage = () => {
     // Fetch live stock whenever lines change and any have an item_id
     useEffect(() => {
         const itemIds = lines.map(l => l.item_id).filter(Boolean) as string[];
-        if (itemIds.length === 0) { setStockMap(new Map()); return; }
+        if (itemIds.length === 0) {
+            // Only reset if map isn't already empty — avoids spurious re-renders on every keystroke
+            setStockMap(prev => prev.size === 0 ? prev : new Map());
+            return;
+        }
         crmService.getStockAvailability(itemIds).then(result => {
             const map = new Map<string, number>();
             (result.items || []).forEach(i => map.set(i.item_id, i.available_quantity));
@@ -213,13 +217,17 @@ const QuoteDetailPage = () => {
     };
 
     const updateLine = (index: number, field: keyof QuoteLine, value: any) => {
-        const newLines = [...lines];
-        newLines[index] = { ...newLines[index], [field]: value };
-        setLines(newLines);
+        // Functional updater ensures we always mutate the latest committed state,
+        // preventing stale-closure bugs when rapid keystrokes interleave with re-renders
+        setLines(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], [field]: value };
+            return next;
+        });
     };
 
     const removeLine = (index: number) => {
-        setLines(lines.filter((_, i) => i !== index));
+        setLines(prev => prev.filter((_, i) => i !== index));
         // Clean up any draft values for this line
         setDraftValues(prev => {
             const next = { ...prev };
@@ -482,7 +490,7 @@ const QuoteDetailPage = () => {
                                         const isLowStock = stock !== undefined && stock > 0 && stock < line.quantity;
                                         const isOOS = stock !== undefined && stock <= 0;
                                         return (
-                                        <tr key={index} className="border-b border-slate-700/50">
+                                        <tr key={line.id || `new-${index}`} className="border-b border-slate-700/50">
                                             <td className="py-3 px-4">
                                                 {isEditing ? (
                                                     <div className="space-y-1.5">

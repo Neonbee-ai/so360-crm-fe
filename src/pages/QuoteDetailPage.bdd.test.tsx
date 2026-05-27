@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 
 const mockGetQuoteById = vi.fn();
@@ -161,6 +161,149 @@ describe('QuoteDetailPage', () => {
       render(<QuoteDetailPage />);
       await waitFor(() => {
         expect(screen.getByText(/convert to order/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ── Fix: updateLine uses functional updater (prevents stale-closure on rapid typing) ──
+
+  describe('Given a Draft quote is in edit mode', () => {
+    it('When Quantity is changed / Then Save sends the updated quantity', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('2');
+      fireEvent.change(qtyInputs[0], { target: { value: '7' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ quantity: 7 }),
+            ]),
+          }),
+        );
+      });
+    });
+
+    it('When Unit Price is changed / Then Save sends the updated unit price', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInputs = screen.getAllByDisplayValue('2500');
+      fireEvent.change(priceInputs[0], { target: { value: '1000' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ unit_price: 1000 }),
+            ]),
+          }),
+        );
+      });
+    });
+
+    it('When Quantity changes multiple times / Then final value is committed (no stale state)', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('2');
+      fireEvent.change(qtyInputs[0], { target: { value: '5' } });
+      fireEvent.change(qtyInputs[0], { target: { value: '50' } });
+      fireEvent.change(qtyInputs[0], { target: { value: '500' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ quantity: 500 }),
+            ]),
+          }),
+        );
+      });
+    });
+  });
+
+  // ── Fix: stock useEffect bail-out avoids spurious re-renders when map is already empty ──
+
+  describe('Given a Draft quote with lines that have no item_id', () => {
+    it('When loaded / Then getStockAvailability is NOT called for lines without item_id', async () => {
+      const noItemIdQuote = {
+        ...quoteData,
+        lines: [{ id: 'ql2', description: 'Manual Item', quantity: 1, unit_price: 100, line_total: 100, discount_percent: 0, tax_rate: 0 }],
+      };
+      mockGetQuoteById.mockResolvedValue(noItemIdQuote);
+
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      expect(mockGetStockAvailability).not.toHaveBeenCalled();
+    });
+
+    it('When Quantity changes on a line with no item_id / Then getStockAvailability is still not called', async () => {
+      const noItemIdQuote = {
+        ...quoteData,
+        lines: [{ id: 'ql2', description: 'Manual Item', quantity: 1, unit_price: 100, line_total: 100, discount_percent: 0, tax_rate: 0 }],
+      };
+      mockGetQuoteById.mockResolvedValue(noItemIdQuote);
+
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('1');
+      fireEvent.change(qtyInputs[0], { target: { value: '3' } });
+
+      expect(mockGetStockAvailability).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Fix: stable tr keys — existing rows maintain DOM identity after adding a new line ──
+
+  describe('Given a Draft quote in edit mode with multiple line items', () => {
+    it('When a second line is added / Then both line items remain in the table', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.click(screen.getByText(/add line/i));
+
+      const rows = screen.getAllByRole('row');
+      // header row + 2 data rows (original + new)
+      expect(rows.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('When first line Quantity is edited then a new line is added / Then first line value is preserved', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('2');
+      fireEvent.change(qtyInputs[0], { target: { value: '9' } });
+
+      fireEvent.click(screen.getByText(/add line/i));
+
+      // After adding a line the first input should still reflect 9
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('9')).toBeInTheDocument();
       });
     });
   });
