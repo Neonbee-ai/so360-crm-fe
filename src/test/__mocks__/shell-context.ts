@@ -24,3 +24,5 @@ export const useQuota = () => ({
   getPercentage: () => 0,
   refresh: async () => {},
 });
+
+export const useOrganization = () => ({ currentOrg: { id: 'org-1', name: 'Test Org' } });
