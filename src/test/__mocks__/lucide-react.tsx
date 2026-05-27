@@ -76,3 +76,4 @@ export const MailX = createIcon('MailX');
 export const Star = createIcon('Star');
 export const ToggleLeft = createIcon('ToggleLeft');
 export const ToggleRight = createIcon('ToggleRight');
+export const Printer = createIcon('Printer');
