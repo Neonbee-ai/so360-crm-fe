@@ -233,8 +233,11 @@ describe('Given QuotesPage — create quote modal', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
+    await waitFor(() => screen.getByText('Select a deal...'));
+    fireEvent.click(screen.getByText('Select a deal...'));
     await waitFor(() => {
-      expect(screen.getByText('Acme Deal - Acme Corp')).toBeInTheDocument();
+      expect(screen.getByText('Acme Deal')).toBeInTheDocument();
+      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     });
   });
 
@@ -242,11 +245,10 @@ describe('Given QuotesPage — create quote modal', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
-    await waitFor(() => screen.getByText('Acme Deal - Acme Corp'));
-    // Select a deal from dropdown
-    const dealSelects = screen.getAllByRole('combobox');
-    const dealSelect = dealSelects[dealSelects.length - 1];
-    fireEvent.change(dealSelect, { target: { value: 'd1' } });
+    await waitFor(() => screen.getByText('Select a deal...'));
+    fireEvent.click(screen.getByText('Select a deal...'));
+    await waitFor(() => screen.getByText('Acme Deal'));
+    fireEvent.click(screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByText(/^Create Quote$/));
     await waitFor(() => {
       expect(mockCreateQuote).toHaveBeenCalledWith(expect.objectContaining({ deal_id: 'd1' }));
@@ -257,10 +259,10 @@ describe('Given QuotesPage — create quote modal', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
-    await waitFor(() => screen.getByText('Acme Deal - Acme Corp'));
-    const dealSelects = screen.getAllByRole('combobox');
-    const dealSelect = dealSelects[dealSelects.length - 1];
-    fireEvent.change(dealSelect, { target: { value: 'd1' } });
+    await waitFor(() => screen.getByText('Select a deal...'));
+    fireEvent.click(screen.getByText('Select a deal...'));
+    await waitFor(() => screen.getByText('Acme Deal'));
+    fireEvent.click(screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByText(/^Create Quote$/));
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q-new');
