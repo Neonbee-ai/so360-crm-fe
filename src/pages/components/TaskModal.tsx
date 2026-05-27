@@ -178,24 +178,24 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</label>
-                                <div className="relative">
-                                    <select
-                                        value={type}
-                                        onChange={(e) => setType(e.target.value as TaskType)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                    >
-                                        <option value="TODO">To Do</option>
-                                        <option value="CALL">Call</option>
-                                        <option value="EMAIL">Email</option>
-                                        <option value="MEETING">Meeting</option>
-                                        <option value="REMINDER">Reminder</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                                </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</label>
+                            <div className="relative">
+                                <select
+                                    value={type}
+                                    onChange={(e) => setType(e.target.value as TaskType)}
+                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    <option value="TODO">To Do</option>
+                                    <option value="CALL">Call</option>
+                                    <option value="EMAIL">Email</option>
+                                    <option value="MEETING">Meeting</option>
+                                    <option value="REMINDER">Reminder</option>
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                             </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
                                 <div className="relative">
@@ -208,21 +208,21 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                     />
                                 </div>
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                {type === 'REMINDER' ? 'Date & Time' : 'Due Date'}
-                            </label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                                <input
-                                    type={type === 'REMINDER' ? "datetime-local" : "date"}
-                                    value={dueDate}
-                                    onChange={(e) => setDueDate(e.target.value)}
-                                    min={type === 'REMINDER' ? todayDatetime : todayDate}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                    required
-                                />
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    {type === 'REMINDER' ? 'Date & Time' : 'Due Date'}
+                                </label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                                    <input
+                                        type={type === 'REMINDER' ? "datetime-local" : "date"}
+                                        value={dueDate}
+                                        onChange={(e) => setDueDate(e.target.value)}
+                                        min={type === 'REMINDER' ? todayDatetime : todayDate}
+                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        required
+                                    />
+                                </div>
                             </div>
                         </div>
 
