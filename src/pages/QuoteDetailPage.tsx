@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package } from 'lucide-react';
+import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection } from '../types/crm';
-import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
+import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
+import { printQuote } from '../utils/printQuote';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -27,6 +28,7 @@ const QuoteDetailPage = () => {
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
+    const { currentOrg } = useOrganization();
     const formatters = useFormatters({
         currency: settings?.base_currency || 'XXX',
         locale: settings?.document_language || 'en-US',
@@ -405,6 +407,31 @@ const QuoteDetailPage = () => {
                         >
                             <FileText className="w-4 h-4" />
                             Convert to Order
+                        </button>
+                    )}
+                    {!isEditing && (
+                        <button
+                            onClick={() => printQuote(
+                                quote,
+                                { formatCurrency, formatDate },
+                                {
+                                    name: currentOrg?.name,
+                                    logo_url: (currentOrg as any)?.logo_url,
+                                    address: (currentOrg as any)?.billing_address
+                                        ? [
+                                            (currentOrg as any).billing_address.street,
+                                            (currentOrg as any).billing_address.city,
+                                            (currentOrg as any).billing_address.country,
+                                          ].filter(Boolean).join(', ')
+                                        : undefined,
+                                    tax_id: (currentOrg as any)?.tax_id,
+                                },
+                                settings?.document_settings,
+                            )}
+                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
+                        >
+                            <Printer className="w-4 h-4" />
+                            Print Quote
                         </button>
                     )}
                 </div>
