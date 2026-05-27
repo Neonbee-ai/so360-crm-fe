@@ -236,8 +236,8 @@ describe('Given QuotesPage — create quote modal', () => {
     await waitFor(() => screen.getByText('Select a deal...'));
     fireEvent.click(screen.getByText('Select a deal...'));
     await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument();
       expect(screen.getByText('Acme Deal')).toBeInTheDocument();
-      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     });
   });
 
