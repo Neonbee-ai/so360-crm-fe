@@ -246,6 +246,22 @@ describe('TasksPage', () => {
       expect(input.className).not.toContain('pl-12');
       expect(input.className).not.toContain('py-2.5');
     });
+
+    it('When Tasks page loads / Then search input has placeholder-slate-400 matching other CRM modules', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const input = screen.getByPlaceholderText('Search tasks...');
+      expect(input.className).toContain('placeholder-slate-400');
+    });
+
+    it('When Tasks page loads / Then outer search+filter container has md:items-center for proper icon alignment', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const input = screen.getByPlaceholderText('Search tasks...');
+      // input → relative wrapper → outer flex container
+      const outerContainer = input.parentElement?.parentElement;
+      expect(outerContainer?.className).toContain('md:items-center');
+    });
   });
 
   describe('Given fetch fails', () => {
