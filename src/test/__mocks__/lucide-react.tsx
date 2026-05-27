@@ -77,3 +77,5 @@ export const Star = createIcon('Star');
 export const ToggleLeft = createIcon('ToggleLeft');
 export const ToggleRight = createIcon('ToggleRight');
 export const Printer = createIcon('Printer');
+export const UserCheck = createIcon('UserCheck');
+export const BarChart2 = createIcon('BarChart2');
