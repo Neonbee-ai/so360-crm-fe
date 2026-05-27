@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, Clock, Send, Trash2 } from 'lucide-react';
+import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, Clock, Send, Trash2, ChevronDown } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
@@ -47,6 +47,9 @@ const QuotesPage = () => {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [rejectTarget, setRejectTarget] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
+    const [dealDropdownOpen, setDealDropdownOpen] = useState(false);
+    const [dealSearchTerm, setDealSearchTerm] = useState('');
+    const dealDropdownRef = useRef<HTMLDivElement>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -69,6 +72,17 @@ const QuotesPage = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (!dealDropdownOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (dealDropdownRef.current && !dealDropdownRef.current.contains(e.target as Node)) {
+                setDealDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [dealDropdownOpen]);
 
     const filteredQuotes = quotes.filter(quote => {
         const matchesSearch = !searchTerm ||
@@ -434,18 +448,69 @@ const QuotesPage = () => {
                                     <label className="block text-sm font-medium text-slate-300 mb-2">
                                         Select Deal *
                                     </label>
-                                    <select
-                                        value={selectedDealId}
-                                        onChange={(e) => setSelectedDealId(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
-                                        <option value="">Select a deal...</option>
-                                        {deals.map((deal) => (
-                                            <option key={deal.id} value={deal.id}>
-                                                {deal.name} - {deal.company_name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div ref={dealDropdownRef} className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setDealDropdownOpen(o => !o); setDealSearchTerm(''); }}
+                                            className="w-full flex items-center justify-between px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors hover:border-slate-600"
+                                        >
+                                            {selectedDealId ? (() => {
+                                                const d = deals.find(d => d.id === selectedDealId);
+                                                return d ? (
+                                                    <span className="flex flex-col min-w-0">
+                                                        <span className="text-slate-100 text-sm font-medium truncate">{d.name}</span>
+                                                        {d.company_name && <span className="text-slate-400 text-xs truncate">{d.company_name}</span>}
+                                                    </span>
+                                                ) : <span className="text-slate-400 text-sm">Select a deal...</span>;
+                                            })() : <span className="text-slate-400 text-sm">Select a deal...</span>}
+                                            <ChevronDown className={`ml-2 h-4 w-4 text-slate-400 shrink-0 transition-transform ${dealDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {dealDropdownOpen && (
+                                            <div className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
+                                                <div className="p-2 border-b border-slate-700">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            placeholder="Search deals..."
+                                                            value={dealSearchTerm}
+                                                            onChange={e => setDealSearchTerm(e.target.value)}
+                                                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-900 border border-slate-700 rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <ul className="max-h-52 overflow-y-auto py-1">
+                                                    {deals
+                                                        .filter(d =>
+                                                            !dealSearchTerm ||
+                                                            d.name.toLowerCase().includes(dealSearchTerm.toLowerCase()) ||
+                                                            (d.company_name || '').toLowerCase().includes(dealSearchTerm.toLowerCase())
+                                                        )
+                                                        .map(deal => (
+                                                            <li key={deal.id}>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => { setSelectedDealId(deal.id); setDealDropdownOpen(false); }}
+                                                                    className={`w-full flex flex-col items-start px-4 py-2.5 text-left hover:bg-slate-700 transition-colors ${selectedDealId === deal.id ? 'bg-blue-600/20' : ''}`}
+                                                                >
+                                                                    <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-blue-300' : 'text-slate-100'}`}>{deal.name}</span>
+                                                                    {deal.company_name && <span className="text-xs text-slate-400 truncate w-full mt-0.5">{deal.company_name}</span>}
+                                                                </button>
+                                                            </li>
+                                                        ))
+                                                    }
+                                                    {deals.filter(d =>
+                                                        !dealSearchTerm ||
+                                                        d.name.toLowerCase().includes(dealSearchTerm.toLowerCase()) ||
+                                                        (d.company_name || '').toLowerCase().includes(dealSearchTerm.toLowerCase())
+                                                    ).length === 0 && (
+                                                        <li className="px-4 py-3 text-sm text-slate-500 text-center">No deals found</li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -454,6 +519,8 @@ const QuotesPage = () => {
                                 onClick={() => {
                                     setIsCreateModalOpen(false);
                                     setSelectedDealId('');
+                                    setDealDropdownOpen(false);
+                                    setDealSearchTerm('');
                                 }}
                                 className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
                             >

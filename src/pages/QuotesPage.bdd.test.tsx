@@ -60,6 +60,7 @@ const quotes = [
 const deals = [
   { id: 'd1', name: 'Acme Deal', company_name: 'Acme Corp' },
   { id: 'd2', name: 'Beta Deal', company_name: 'Beta Inc' },
+  { id: 'd3', name: 'No Company Deal', company_name: '' },
 ];
 
 beforeEach(() => {
@@ -130,6 +131,186 @@ describe('QuotesPage', () => {
         expect(screen.getByText('Create New Quote')).toBeInTheDocument();
         expect(screen.getByText('Select a deal...')).toBeInTheDocument();
       });
+    });
+
+    it('When clicking the deal trigger / Then opens dropdown and shows deal options', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => {
+        expect(screen.getByText('Acme Deal')).toBeInTheDocument();
+        expect(screen.getByText('Beta Deal')).toBeInTheDocument();
+      });
+    });
+
+    it('When searching in deal dropdown / Then filters deals by name', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument());
+      await user.type(screen.getByPlaceholderText('Search deals...'), 'Acme');
+      await waitFor(() => {
+        expect(screen.getByText('Acme Deal')).toBeInTheDocument();
+        expect(screen.queryByText('Beta Deal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('When searching with no match / Then shows no deals found', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument());
+      await user.type(screen.getByPlaceholderText('Search deals...'), 'zzz-no-match');
+      await waitFor(() => expect(screen.getByText('No deals found')).toBeInTheDocument());
+    });
+
+    it('When selecting a deal from dropdown / Then closes dropdown and shows deal name in trigger', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByText('Acme Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('Acme Deal'));
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText('Search deals...')).not.toBeInTheDocument();
+        expect(screen.getByText('Acme Deal')).toBeInTheDocument();
+      });
+    });
+
+    it('When a deal is selected / Then Create Quote button becomes enabled', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      const createBtn = screen.getByRole('button', { name: 'Create Quote' });
+      expect(createBtn).toBeDisabled();
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByText('Acme Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('Acme Deal'));
+      await waitFor(() => expect(createBtn).not.toBeDisabled());
+    });
+
+    it('When searching by company name / Then filters deals matching the company', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument());
+      await user.type(screen.getByPlaceholderText('Search deals...'), 'Beta Inc');
+      await waitFor(() => {
+        expect(screen.getByText('Beta Deal')).toBeInTheDocument();
+        expect(screen.queryByText('Acme Deal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('When a deal without company_name is in the list / Then option renders without company subtitle', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByText('No Company Deal')).toBeInTheDocument());
+      // the option exists but has no company subtitle — only one text node for this deal
+      const optionBtn = screen.getByText('No Company Deal').closest('li');
+      expect(optionBtn?.querySelectorAll('span').length).toBe(1);
+    });
+
+    it('When a deal without company_name is selected / Then trigger shows name only without subtitle', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByText('No Company Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('No Company Deal'));
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText('Search deals...')).not.toBeInTheDocument();
+        // trigger shows the deal name
+        expect(screen.getByText('No Company Deal')).toBeInTheDocument();
+        // trigger must not render a company subtitle span — parentElement is the outer flex span
+        const outerSpan = screen.getByText('No Company Deal').parentElement;
+        expect(outerSpan?.querySelectorAll('span').length).toBe(1);
+      });
+    });
+
+    it('When selecting a deal then reopening dropdown / Then selected deal is highlighted', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByText('Acme Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('Acme Deal'));
+      // reopen via the trigger button (now labelled by the selected deal name span)
+      await waitFor(() => expect(screen.queryByPlaceholderText('Search deals...')).not.toBeInTheDocument());
+      const triggerBtn = screen.getByText('Acme Deal').closest('button') as HTMLElement;
+      await user.click(triggerBtn);
+      await waitFor(() => expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument());
+      // the option button for the selected deal carries the highlight class
+      const optionBtns = screen.getAllByRole('button', { name: /acme deal/i });
+      const optionBtn = optionBtns.find(b => b.closest('li'));
+      expect(optionBtn).toHaveClass('bg-blue-600/20');
+      const nameSpan = optionBtn?.querySelector('span');
+      expect(nameSpan).toHaveClass('text-blue-300');
+    });
+
+    it('When trigger clicked while dropdown is open / Then closes the dropdown (toggle)', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument());
+      // click trigger again to close
+      await user.click(screen.getByRole('button', { name: /select a deal/i }));
+      await waitFor(() => expect(screen.queryByPlaceholderText('Search deals...')).not.toBeInTheDocument());
+    });
+
+    it('When clicking outside the dropdown / Then closes the dropdown', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument());
+      await user.click(screen.getByText('Create New Quote'));
+      await waitFor(() => expect(screen.queryByPlaceholderText('Search deals...')).not.toBeInTheDocument());
+    });
+
+    it('When Cancel is clicked after opening dropdown / Then resets dropdown and search state', async () => {
+      const user = userEvent.setup();
+      render(<QuotesPage />);
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      await user.click(screen.getByText('Select a deal...'));
+      await waitFor(() => expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument());
+      await user.type(screen.getByPlaceholderText('Search deals...'), 'Acme');
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByText('Create New Quote')).not.toBeInTheDocument());
+      // reopen modal — dropdown must be closed and search cleared
+      await user.click(screen.getByText('New Quote'));
+      await waitFor(() => expect(screen.getByText('Create New Quote')).toBeInTheDocument());
+      expect(screen.queryByPlaceholderText('Search deals...')).not.toBeInTheDocument();
     });
 
     it('When the page renders / Then shows stats cards with correct counts', async () => {
