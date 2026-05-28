@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     ChevronLeft, Mail, Phone, Edit2, Loader2, Check, X,
@@ -51,8 +52,8 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    return createPortal(
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60">
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
                 <h2 className="text-base font-semibold text-white mb-4">Mark Commission as Paid</h2>
                 {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
@@ -75,7 +76,8 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

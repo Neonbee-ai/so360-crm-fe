@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     ChevronLeft, CheckCircle2, Circle, Calendar,
@@ -404,8 +405,8 @@ const TaskDetailPage = () => {
             )}
 
             {/* Edit Note Modal */}
-            {editingNote && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            {editingNote && createPortal(
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
@@ -453,12 +454,13 @@ const TaskDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Note Confirmation Modal */}
-            {deleteNoteId && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            {deleteNoteId && createPortal(
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
@@ -496,12 +498,13 @@ const TaskDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Confirmation Dialog */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6">
                         <h3 className="text-lg font-bold text-white mb-2">Delete Task</h3>
                         <p className="text-slate-400 mb-6">
@@ -522,7 +525,8 @@ const TaskDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
