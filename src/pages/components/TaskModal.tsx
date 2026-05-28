@@ -144,8 +144,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
     return (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+                <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between flex-shrink-0">
                     <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
                         <CheckCircle2 className={isEditing ? "text-blue-500" : "text-emerald-500"} size={24} />
                         {isEditing ? 'Edit Task' : 'New Task'}
@@ -154,7 +154,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                         <X size={20} />
                     </button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-8 space-y-6 overflow-y-auto flex-1">
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Task Title</label>
@@ -298,7 +299,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                         )}
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3">
+                </div>
+                <div className="px-8 pb-6 pt-4 flex justify-end gap-3 border-t border-slate-800/50 flex-shrink-0">
                         <button
                             type="button"
                             onClick={onClose}
@@ -314,7 +316,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                             {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                             {isEditing ? 'Save Changes' : 'Create Task'}
                         </button>
-                    </div>
+                </div>
                 </form>
             </div>
         </div>

@@ -45,8 +45,12 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
         setDragOverStage(stageId);
     };
 
-    const handleDragLeave = () => {
-        setDragOverStage(null);
+    const handleDragLeave = (e: React.DragEvent) => {
+        // Only clear the over-state when the cursor truly leaves the column container
+        // (not just moves onto a child element within it).
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setDragOverStage(null);
+        }
     };
 
     const handleDrop = (e: React.DragEvent, targetStageId: string) => {
@@ -63,7 +67,14 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
     return (
         <div className="flex gap-6 overflow-x-auto pb-6 h-full min-h-[650px] scrollbar-hide">
             {stages.map((stage) => {
-                const stageDeals = deals.filter(d => d.current_flow_state === stage.id || d.stage === stage.name);
+                // Use current_flow_state as the authoritative source; fall back to stage name only
+                // when current_flow_state is absent. The OR fallback caused deals to appear in
+                // terminal (Won/Lost) columns because the legacy `stage` field matched stage.name.
+                const stageDeals = deals.filter(d =>
+                    d.current_flow_state
+                        ? d.current_flow_state === stage.id
+                        : d.stage === stage.name
+                );
                 const isOver = dragOverStage === stage.id;
                 const accentColor = stage.color || '#94A3B8';
 

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Search, Filter, MoreHorizontal, CheckCircle, XCircle, Clock, Send, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, FileText, Search, Filter, CheckCircle, XCircle, Clock, Send, Trash2, ChevronDown } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
@@ -15,6 +16,88 @@ const statusColors: Record<QuoteStatus, { bg: string; text: string; label: strin
     rejected: { bg: 'bg-red-500/20', text: 'text-red-300', label: 'Rejected' },
     converted: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Converted' },
     expired: { bg: 'bg-gray-500/20', text: 'text-gray-300', label: 'Expired' },
+};
+
+// Allowed next transitions per status — empty means terminal (no dropdown)
+const STATUS_TRANSITIONS: Partial<Record<QuoteStatus, Array<{ action: 'submit' | 'approve' | 'reject' | 'convert'; label: string; color: string }>>> = {
+    draft:            [{ action: 'submit',  label: 'Submit for Approval', color: 'text-amber-300 hover:bg-amber-500/20' }],
+    pending_approval: [
+        { action: 'approve', label: 'Approve',  color: 'text-green-300 hover:bg-green-500/20' },
+        { action: 'reject',  label: 'Reject',   color: 'text-red-300   hover:bg-red-500/20'   },
+    ],
+    approved: [{ action: 'convert', label: 'Convert to Order', color: 'text-blue-300 hover:bg-blue-500/20' }],
+};
+
+interface QuoteStatusCellProps {
+    quote: Quote;
+    isActionLoading: boolean;
+    onAction: (quote: Quote, action: 'submit' | 'approve' | 'reject' | 'convert') => void;
+}
+
+export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActionLoading, onAction }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+    const btnRef = useRef<HTMLButtonElement>(null);
+    const transitions = STATUS_TRANSITIONS[quote.status] ?? [];
+    const status = statusColors[quote.status] || statusColors.draft;
+
+    const openDropdown = useCallback(() => {
+        if (transitions.length === 0) return;
+        const rect = btnRef.current?.getBoundingClientRect();
+        if (rect) {
+            setDropdownStyle({
+                position: 'fixed',
+                top: rect.bottom + 4,
+                left: rect.left,
+                zIndex: 9999,
+                minWidth: rect.width,
+            });
+        }
+        setIsOpen(true);
+    }, [transitions.length]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const close = (e: MouseEvent) => {
+            if (btnRef.current && !btnRef.current.contains(e.target as Node)) setIsOpen(false);
+        };
+        document.addEventListener('mousedown', close);
+        return () => document.removeEventListener('mousedown', close);
+    }, [isOpen]);
+
+    return (
+        <div onClick={(e) => e.stopPropagation()}>
+            <button
+                ref={btnRef}
+                onClick={openDropdown}
+                disabled={isActionLoading}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${status.bg} ${status.text} ${transitions.length > 0 ? 'cursor-pointer hover:brightness-125' : 'cursor-default'} disabled:opacity-50`}
+                title={transitions.length > 0 ? 'Click to update status' : status.label}
+            >
+                {status.label}
+                {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60" />}
+            </button>
+            {isOpen && transitions.length > 0 && createPortal(
+                <div style={dropdownStyle} className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden w-44">
+                    <div className="py-1">
+                        {transitions.map(t => (
+                            <button
+                                key={t.action}
+                                // onMouseDown fires before the document mousedown outside-click
+                                // listener, so stopPropagation prevents it from closing the
+                                // dropdown before the action callback executes.
+                                onMouseDown={(e) => { e.stopPropagation(); setIsOpen(false); onAction(quote, t.action); }}
+                                className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors ${t.color}`}
+                            >
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
 };
 
 const QuotesPage = () => {
@@ -50,6 +133,8 @@ const QuotesPage = () => {
     const [dealDropdownOpen, setDealDropdownOpen] = useState(false);
     const [dealSearchTerm, setDealSearchTerm] = useState('');
     const dealDropdownRef = useRef<HTMLDivElement>(null);
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+    const statusDropdownRef = useRef<HTMLDivElement>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -84,6 +169,17 @@ const QuotesPage = () => {
         return () => document.removeEventListener('mousedown', handler);
     }, [dealDropdownOpen]);
 
+    useEffect(() => {
+        if (!statusDropdownOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+                setStatusDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [statusDropdownOpen]);
+
     const filteredQuotes = quotes.filter(quote => {
         const matchesSearch = !searchTerm ||
             quote.quote_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,7 +204,8 @@ const QuotesPage = () => {
         }
     };
 
-    const handleStatusAction = async (quote: Quote, action: 'submit' | 'approve' | 'reject' | 'convert') => {
+    // Performs the actual API call — called after rejection reason is collected
+    const executeStatusAction = async (quote: Quote, action: 'submit' | 'approve' | 'reject' | 'convert') => {
         setActionLoading(quote.id + action);
         try {
             if (action === 'submit')  await crmService.submitQuoteForApproval(quote.id);
@@ -123,6 +220,15 @@ const QuotesPage = () => {
         } finally {
             setActionLoading(null);
         }
+    };
+
+    // Dispatch: reject opens the reason modal; all other actions execute immediately
+    const handleStatusAction = (quote: Quote, action: 'submit' | 'approve' | 'reject' | 'convert') => {
+        if (action === 'reject') {
+            setRejectTarget(quote.id);
+            return;
+        }
+        executeStatusAction(quote, action);
     };
 
     const handleDeleteQuote = async (quoteId: string) => {
@@ -185,58 +291,13 @@ const QuotesPage = () => {
                     )}
                 </span>
             ),
-            accessor: (quote: Quote) => {
-                const status = statusColors[quote.status] || statusColors.draft;
-                const isFiltered = statusFilter === quote.status;
-                const isLoading = (id: string) => actionLoading === quote.id + id;
-                return (
-                    <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                        <button
-                            onClick={() => setStatusFilter(isFiltered ? 'All' : quote.status)}
-                            title={isFiltered ? 'Click to clear filter' : `Filter by ${status.label}`}
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text} transition-opacity hover:opacity-80 ${isFiltered ? 'ring-1 ring-offset-1 ring-offset-slate-950 ring-current' : ''}`}
-                        >
-                            {status.label}
-                        </button>
-                        {quote.status === 'draft' && (
-                            <button
-                                onClick={() => handleStatusAction(quote, 'submit')}
-                                disabled={!!actionLoading}
-                                className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-300 hover:bg-amber-500/40 transition-colors disabled:opacity-40"
-                            >
-                                {isLoading('submit') ? '...' : 'Submit'}
-                            </button>
-                        )}
-                        {quote.status === 'pending_approval' && (
-                            <>
-                                <button
-                                    onClick={() => handleStatusAction(quote, 'approve')}
-                                    disabled={!!actionLoading}
-                                    className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-green-500/20 text-green-300 hover:bg-green-500/40 transition-colors disabled:opacity-40"
-                                >
-                                    {isLoading('approve') ? '...' : 'Approve'}
-                                </button>
-                                <button
-                                    onClick={() => setRejectTarget(quote.id)}
-                                    disabled={!!actionLoading}
-                                    className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-red-500/20 text-red-300 hover:bg-red-500/40 transition-colors disabled:opacity-40"
-                                >
-                                    Reject
-                                </button>
-                            </>
-                        )}
-                        {quote.status === 'approved' && (
-                            <button
-                                onClick={() => handleStatusAction(quote, 'convert')}
-                                disabled={!!actionLoading}
-                                className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 transition-colors disabled:opacity-40"
-                            >
-                                {isLoading('convert') ? '...' : 'Convert'}
-                            </button>
-                        )}
-                    </div>
-                );
-            }
+            accessor: (quote: Quote) => (
+                <QuoteStatusCell
+                    quote={quote}
+                    isActionLoading={!!actionLoading}
+                    onAction={handleStatusAction}
+                />
+            )
         },
         {
             key: 'valid_until',
@@ -355,21 +416,55 @@ const QuotesPage = () => {
                         className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
-                <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg">
-                    <Filter className={`w-4 h-4 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-slate-400'}`} />
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="bg-transparent text-slate-200 focus:outline-none text-sm cursor-pointer"
+                <div ref={statusDropdownRef} className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setStatusDropdownOpen(o => !o)}
+                        className={`flex items-center gap-2 px-3 py-2 bg-slate-800 border rounded-lg text-sm transition-colors hover:border-slate-600 ${statusFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-slate-700 text-slate-300'}`}
                     >
-                        <option value="All">All Status</option>
-                        <option value="draft">Draft</option>
-                        <option value="pending_approval">Pending Approval</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="converted">Converted</option>
-                        <option value="expired">Expired</option>
-                    </select>
+                        <Filter className={`w-4 h-4 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <span>
+                            {statusFilter === 'All' ? 'All Status' : (statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter)}
+                        </span>
+                        {statusFilter !== 'All' && (
+                            <span
+                                role="button"
+                                aria-label="Clear status filter"
+                                onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
+                                className="ml-0.5 text-blue-400 hover:text-white leading-none cursor-pointer"
+                            >×</span>
+                        )}
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {statusDropdownOpen && (
+                        <div className="absolute left-0 top-full mt-1 z-20 w-52 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
+                            <div className="py-1">
+                                <button
+                                    type="button"
+                                    onClick={() => { setStatusFilter('All'); setStatusDropdownOpen(false); }}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-700 transition-colors ${statusFilter === 'All' ? 'text-blue-300 bg-blue-600/10' : 'text-slate-300'}`}
+                                >
+                                    <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
+                                    All Status
+                                </button>
+                                {(Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => (
+                                    <button
+                                        key={value}
+                                        type="button"
+                                        onClick={() => { setStatusFilter(value); setStatusDropdownOpen(false); }}
+                                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-700 transition-colors ${statusFilter === value ? 'bg-blue-600/10' : ''}`}
+                                    >
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>
+                                            {cfg.label}
+                                        </span>
+                                        <span className="ml-auto text-xs text-slate-500">
+                                            {quotes.filter(q => q.status === value).length}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -438,8 +533,8 @@ const QuotesPage = () => {
             )}
 
             {/* Create Quote Modal */}
-            {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {isCreateModalOpen && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md">
                         <div className="px-6 pt-6 pb-2">
                             <h2 className="text-xl font-semibold text-slate-100 mb-4">Create New Quote</h2>
@@ -535,12 +630,13 @@ const QuotesPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Reject Reason Modal */}
-            {rejectTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {rejectTarget && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-lg font-semibold text-slate-100 mb-3">Reject Quote</h2>
                         <textarea
@@ -560,7 +656,7 @@ const QuotesPage = () => {
                             <button
                                 onClick={() => {
                                     const q = quotes.find(q => q.id === rejectTarget)!;
-                                    handleStatusAction(q, 'reject');
+                                    executeStatusAction(q, 'reject');
                                 }}
                                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                             >
@@ -568,12 +664,13 @@ const QuotesPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Confirm Dialog */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Quote</h2>
                         <p className="text-slate-400 mb-6">
@@ -594,7 +691,8 @@ const QuotesPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

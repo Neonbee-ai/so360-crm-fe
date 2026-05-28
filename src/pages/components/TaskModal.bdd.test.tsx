@@ -482,6 +482,31 @@ describe('TaskModal', () => {
     });
   });
 
+  // ── Viewport height fix ───────────────────────────────────────────────────
+  describe('Given the modal renders in a constrained viewport (height fix)', () => {
+    it('When rendered / Then the modal container has max-h-[90vh] class to stay within viewport', async () => {
+      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('New Task'));
+      // The inner modal div (not the overlay) must have the height constraint
+      const modalBox = container.querySelector('[class*="max-h-\\[90vh\\]"]');
+      expect(modalBox).not.toBeNull();
+    });
+
+    it('When rendered / Then the scrollable content area has overflow-y-auto to allow internal scrolling', async () => {
+      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('New Task'));
+      const scrollableArea = container.querySelector('[class*="overflow-y-auto"]');
+      expect(scrollableArea).not.toBeNull();
+    });
+
+    it('When rendered / Then Cancel and Create Task buttons are accessible without scrolling (in fixed footer)', async () => {
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('New Task'));
+      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /create task/i })).toBeInTheDocument();
+    });
+  });
+
   // ── Close / cancel ────────────────────────────────────────────────────────
   describe('Given the user wants to close the modal', () => {
     it('When Cancel button is clicked / Then calls onClose', async () => {

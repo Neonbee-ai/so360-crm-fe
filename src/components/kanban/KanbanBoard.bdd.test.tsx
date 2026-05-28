@@ -70,4 +70,59 @@ describe('KanbanBoard', () => {
       expect(zeroCountElements.length).toBe(3);
     });
   });
+
+  describe('Bug fix — stage mapping: current_flow_state takes priority over legacy stage field', () => {
+    it('Given a deal whose current_flow_state is "new" but stage field is "Won" / When rendered / Then deal appears in New column only', () => {
+      const mismatchedDeal: any = {
+        id: 'dm', name: 'Mismatched Deal', value: 5000,
+        current_flow_state: 'new',
+        stage: 'Won',
+        company_name: 'Mismatch Co', expected_close_date: '2025-12-01',
+        owner: { id: 'u3', full_name: 'Owner' },
+      };
+      render(<KanbanBoard deals={[mismatchedDeal]} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+
+      // Deal must be visible
+      expect(screen.getByText('Mismatched Deal')).toBeInTheDocument();
+
+      // Won column is terminal and empty → shows the lock/empty message
+      expect(screen.getByText(/Win\/Lose via/i)).toBeInTheDocument();
+    });
+
+    it('Given a deal with NO current_flow_state but stage "Qualified" / When rendered / Then falls back to Qualified column by name', () => {
+      const fallbackDeal: any = {
+        id: 'df', name: 'Fallback Deal', value: 8000,
+        current_flow_state: undefined,
+        stage: 'Qualified',
+        company_name: 'Fallback Co', expected_close_date: '2025-12-01',
+        owner: { id: 'u4', full_name: 'Owner' },
+      };
+      render(<KanbanBoard deals={[fallbackDeal]} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      expect(screen.getByText('Fallback Deal')).toBeInTheDocument();
+    });
+
+    it('Given a deal in a non-terminal stage / When dropped on a different stage / Then onStageChange fires', () => {
+      const moveDeal: any = { ...deals[0], id: 'mv', name: 'Movable Deal', current_flow_state: 'new', stage: 'New' };
+      const { container } = render(<KanbanBoard deals={[moveDeal]} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const columns = container.querySelectorAll('.w-80');
+      const qualifiedColumn = columns[1];
+      const dropZone = qualifiedColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: (k: string) => k === 'dealId' ? 'mv' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      fireEvent.drop(dropZone, { dataTransfer: dt } as any);
+      expect(mockOnStageChange).toHaveBeenCalledWith(moveDeal, 'qualified');
+    });
+
+    it('Given a deal / When dropped onto its current stage / Then onStageChange is NOT called', () => {
+      const sameDeal: any = { ...deals[0], id: 'same', name: 'Same Stage Deal', current_flow_state: 'new', stage: 'New' };
+      const { container } = render(<KanbanBoard deals={[sameDeal]} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const columns = container.querySelectorAll('.w-80');
+      const newColumn = columns[0];
+      const dropZone = newColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: (k: string) => k === 'dealId' ? 'same' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      fireEvent.drop(dropZone, { dataTransfer: dt } as any);
+      expect(mockOnStageChange).not.toHaveBeenCalled();
+    });
+  });
 });
