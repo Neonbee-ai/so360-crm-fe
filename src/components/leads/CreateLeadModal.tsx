@@ -71,7 +71,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const [error, setError] = useState<string | null>(null);
 
     const isDuplicate = existingLeads.some(
-        name => name.toLowerCase() === formData.company_name.toLowerCase() && formData.company_name.length > 0
+        name => name && (name as string).toLowerCase() === (formData.company_name || '').toLowerCase() && (formData.company_name || '').length > 0
     );
 
     const handleSubmit = async (e: React.FormEvent) => {
