@@ -65,7 +65,7 @@ const mockQuotes = [
 describe('Given QuotesPage — Quote Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCrmService.getQuotes.mockResolvedValue({ quotes: mockQuotes, total: mockQuotes.length });
+    mockCrmService.getQuotes.mockResolvedValue(mockQuotes);
     mockCrmService.getDeals.mockResolvedValue([]);
   });
 
@@ -118,7 +118,7 @@ describe('Given QuotesPage — Quote Management', () => {
   });
 
   test('Given empty quote list / When no quotes / Then shows empty state', async () => {
-    mockCrmService.getQuotes.mockResolvedValueOnce({ quotes: [], total: 0 });
+    mockCrmService.getQuotes.mockResolvedValueOnce([]);
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no quotes|empty|quote/i)).toBeTruthy();

@@ -61,7 +61,7 @@ const mockTasks = [
 describe('Given TasksPage — CRM Task Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCrmService.getTasks.mockResolvedValue({ tasks: mockTasks, total: mockTasks.length });
+    mockCrmService.getTasks.mockResolvedValue(mockTasks);
     mockCrmService.getUsers.mockResolvedValue([]);
     mockCrmService.updateTask.mockResolvedValue({});
     mockCrmService.deleteTask.mockResolvedValue(undefined);
@@ -127,7 +127,7 @@ describe('Given TasksPage — CRM Task Management', () => {
   });
 
   test('Given empty task list / When no tasks / Then shows empty state', async () => {
-    mockCrmService.getTasks.mockResolvedValueOnce({ tasks: [], total: 0 });
+    mockCrmService.getTasks.mockResolvedValueOnce([]);
     render(<TasksPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no tasks|empty|task/i)).toBeTruthy();

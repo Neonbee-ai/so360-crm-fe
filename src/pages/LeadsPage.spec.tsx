@@ -63,7 +63,7 @@ const mockLeads = [
 describe('Given LeadsPage — Lead Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCrmService.getLeads.mockResolvedValue({ leads: mockLeads, total: mockLeads.length });
+    mockCrmService.getLeads.mockResolvedValue(mockLeads);
     mockCrmService.getSettings.mockResolvedValue({});
     mockCrmService.getUsers.mockResolvedValue([]);
   });
@@ -138,7 +138,7 @@ describe('Given LeadsPage — Lead Management', () => {
   });
 
   test('Given empty leads list / When no leads / Then shows empty state', async () => {
-    mockCrmService.getLeads.mockResolvedValueOnce({ leads: [], total: 0 });
+    mockCrmService.getLeads.mockResolvedValueOnce([]);
     render(<LeadsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no leads|empty|lead/i)).toBeTruthy();
