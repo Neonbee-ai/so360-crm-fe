@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
-import { MarketingCampaignDetailPage } from './MarketingCampaignDetailPage';
+import MarketingCampaignDetailPage from './MarketingCampaignDetailPage';
 
 const mockCrmService = vi.hoisted(() => ({
   getCampaign: vi.fn(),

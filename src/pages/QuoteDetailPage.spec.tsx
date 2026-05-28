@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
-import { QuoteDetailPage } from './QuoteDetailPage';
+import QuoteDetailPage from './QuoteDetailPage';
 
 const mockCrmService = vi.hoisted(() => ({
   approveQuote: vi.fn(),

@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
-import { SettingsPage } from './SettingsPage';
+import SettingsPage from './SettingsPage';
 
 const mockCrmService = vi.hoisted(() => ({
   getSettings: vi.fn(),

@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
-import { LeadDetailPage } from './LeadDetailPage';
+import LeadDetailPage from './LeadDetailPage';
 
 const mockCrmService = vi.hoisted(() => ({
   createNote: vi.fn(),

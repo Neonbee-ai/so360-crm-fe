@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
-import { MarketingWishlistPage } from './MarketingWishlistPage';
+import MarketingWishlistPage from './MarketingWishlistPage';
 
 const mockCrmService = vi.hoisted(() => ({
   getMarketingWishlist: vi.fn(),

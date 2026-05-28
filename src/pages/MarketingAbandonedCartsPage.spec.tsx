@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
-import { MarketingAbandonedCartsPage } from './MarketingAbandonedCartsPage';
+import MarketingAbandonedCartsPage from './MarketingAbandonedCartsPage';
 
 const mockCrmService = vi.hoisted(() => ({
   getAbandonedCartStats: vi.fn(),
