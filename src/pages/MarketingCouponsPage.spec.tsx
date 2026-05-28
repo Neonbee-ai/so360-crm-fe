@@ -54,7 +54,7 @@ describe('Given MarketingCouponsPage — Coupon & Discount Management', () => {
   test('Given create coupon button / When clicked / Then opens coupon creation form', async () => {
     render(<MarketingCouponsPage />);
     await waitFor(() => {
-      const createBtn = screen.queryByRole('button', { name: /create coupon|new coupon|\+/i });
+      const createBtn = screen.queryAllByRole('button', { name: /create coupon|new coupon|\+/i })[0];
       if (createBtn) {
         fireEvent.click(createBtn);
       }

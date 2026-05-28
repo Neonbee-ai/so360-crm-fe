@@ -3,6 +3,7 @@ import { vi, describe, test, expect, beforeEach } from 'vitest';
 import MarketingWishlistPage from './MarketingWishlistPage';
 
 const mockCrmService = vi.hoisted(() => ({
+  getDailystoreStores: vi.fn(),
   getMarketingWishlist: vi.fn(),
 }));
 
@@ -27,24 +28,27 @@ vi.mock('../hooks/useShellBridge', () => ({
   }),
 }));
 
-const mockWishlistData = {
-  total_wishlisted: 1245,
-  unique_customers: 380,
-  top_wishlisted_products: [
-    { product_id: 'prod-1', name: 'Enterprise Software License', wishlist_count: 89, price: 75000 },
-    { product_id: 'prod-2', name: 'Premium Support Package', wishlist_count: 64, price: 25000 },
-    { product_id: 'prod-3', name: 'Analytics Add-on', wishlist_count: 52, price: 15000 },
-  ],
-  recent_wishlist_additions: [
-    { customer_email: 'alice@test.com', product_name: 'Enterprise License', added_at: '2024-01-22T10:00:00Z' },
-  ],
-};
+const mockWishlistData = [
+  {
+    id: 'w1',
+    items: { name: 'Enterprise Software License', image_urls: [] },
+    storefront_customers: { email: 'alice@test.com', first_name: 'Alice', last_name: 'Test', crm_lead_id: null },
+    added_at: '2024-01-22T10:00:00Z',
+  },
+  {
+    id: 'w2',
+    items: { name: 'Premium Support Package', image_urls: [] },
+    storefront_customers: { email: 'bob@test.com', first_name: 'Bob', last_name: 'Test', crm_lead_id: null },
+    added_at: '2024-01-21T10:00:00Z',
+  },
+];
 
 describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.setItem('crm_marketing_store_id', 'store-1');
     localStorage.setItem('crm_store_id', 'store-1');
+    mockCrmService.getDailystoreStores.mockResolvedValue([]);
     mockCrmService.getMarketingWishlist.mockResolvedValue(mockWishlistData);
   });
 

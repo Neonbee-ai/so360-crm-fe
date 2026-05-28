@@ -68,6 +68,24 @@ const MarketingCampaignDetailPage: React.FC = () => {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            {[
+              { label: 'Open Rate', value: `${Math.round((campaign.open_rate || 0) * 100)}%` },
+              { label: 'Click Rate', value: `${Math.round((campaign.click_rate || 0) * 100)}%` },
+              { label: 'Sent', value: (campaign.sent_count || 0).toLocaleString() },
+              { label: 'Delivered', value: (campaign.delivered || 0).toLocaleString() },
+              { label: 'Revenue', value: (campaign.revenue_attributed || 0).toLocaleString() },
+              { label: 'Unsubscribes', value: String(campaign.unsubscribes || 0) },
+              { label: 'Clicks', value: String(campaign.clicks || 0) },
+              ...(campaign.segment ? [{ label: 'Segment', value: campaign.segment }] : []),
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <p className="text-slate-400 text-xs">{label}</p>
+                <p className="text-slate-100 text-xl font-bold">{value}</p>
+              </div>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
               <h3 className="text-slate-200 font-semibold mb-2">Test Send</h3>
