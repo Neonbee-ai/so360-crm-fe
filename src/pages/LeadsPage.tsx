@@ -64,7 +64,7 @@ const LeadsPage = () => {
                 crmService.getUsers()
             ]);
             setLeads(leadsData);
-            setLeadStages(settingsData.lead_stages);
+            setLeadStages(settingsData?.lead_stages || []);
             setUsers(usersData);
             setActiveSegmentName(segmentId ? (segmentName || 'Segment') : null);
             if (q) setSearchTerm(q);

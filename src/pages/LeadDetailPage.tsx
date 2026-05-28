@@ -89,7 +89,7 @@ const LeadDetailPage = () => {
             }
             setAssociatedDeals(dealsData);
             setAssociatedTasks(tasksData);
-            setCustomFieldDefs(settingsData.lead_custom_fields);
+            setCustomFieldDefs(settingsData?.lead_custom_fields || []);
             setScoringRules(settingsData.lead_scoring || []);
             setLeadStages(settingsData.lead_stages || []);
             setAllUsers(usersData);

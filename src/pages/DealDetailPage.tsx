@@ -151,8 +151,8 @@ const DealDetailPage = () => {
                 }
             }
 
-            setCustomFieldDefs(settingsData.deal_custom_fields);
-            setDealStages(settingsData.deal_stages);
+            setCustomFieldDefs(settingsData?.deal_custom_fields || []);
+            setDealStages(settingsData?.deal_stages || []);
             setAllUsers(usersData);
         } catch (error) {
             console.error('Failed to fetch deal workspace', error);
