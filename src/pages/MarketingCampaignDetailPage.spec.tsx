@@ -2,8 +2,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingCampaignDetailPage } from './MarketingCampaignDetailPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+const mockCrmService = {
+  getCampaign: vi.fn(),
+  getCampaignRecipients: vi.fn(),
+  scheduleCampaign: vi.fn(),
+  testSendCampaign: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -44,8 +51,8 @@ const mockCampaign = {
 describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockCampaign });
+    mockCrmService.getCampaign.mockResolvedValue(mockCampaign);
+    mockCrmService.getCampaignRecipients.mockResolvedValue([]);
   });
 
   test('Given campaign id / When loaded / Then displays campaign details and metrics', async () => {
@@ -77,8 +84,6 @@ describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () =
   });
 
   test('Given pause button / When active campaign / Then pauses campaign delivery', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockCampaign, status: 'paused' } });
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
       const pauseBtn = screen.queryByRole('button', { name: /pause|stop/i });
@@ -109,8 +114,7 @@ describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () =
   });
 
   test('Given campaign not found / When 404 / Then shows not found state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce({ response: { status: 404 } });
+    mockCrmService.getCampaign.mockRejectedValueOnce({ response: { status: 404 } });
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
       expect(screen.queryByText(/not found|error|campaign/i)).toBeTruthy();

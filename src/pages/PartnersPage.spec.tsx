@@ -2,14 +2,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { PartnersPage } from './PartnersPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  getUsers: vi.fn(),
+  partnersApi: vi.fn(),
+  settingsApi: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -30,8 +30,7 @@ const mockPartners = [
 describe('Given PartnersPage — Partner Relationship Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { partners: mockPartners, total: mockPartners.length } });
+    mockCrmService.getUsers.mockResolvedValue([]);
   });
 
   test('Given user visits partners page / When loaded / Then displays partner list', async () => {
@@ -83,8 +82,6 @@ describe('Given PartnersPage — Partner Relationship Management', () => {
   });
 
   test('Given empty partner list / When no partners / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { partners: [], total: 0 } });
     render(<PartnersPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no partners|empty|partner/i)).toBeTruthy();
@@ -110,8 +107,6 @@ describe('Given PartnersPage — Partner Relationship Management', () => {
   });
 
   test('Given API error / When partners fail to load / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
     render(<PartnersPage />);
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|partner/i)).toBeTruthy();

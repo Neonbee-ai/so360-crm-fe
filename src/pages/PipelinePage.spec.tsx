@@ -2,14 +2,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { PipelinePage } from './PipelinePage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  getPipeline: vi.fn(),
+  updateDealStage: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -36,8 +35,8 @@ const mockDeals = [
 describe('Given PipelinePage — Deal Pipeline Kanban', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { stages: mockPipelineStages, deals: mockDeals } });
+    mockCrmService.getPipeline.mockResolvedValue({ stages: mockPipelineStages, deals: mockDeals });
+    mockCrmService.updateDealStage.mockResolvedValue({});
   });
 
   test('Given user navigates to pipeline / When page loads / Then renders pipeline board', async () => {
@@ -88,8 +87,7 @@ describe('Given PipelinePage — Deal Pipeline Kanban', () => {
   });
 
   test('Given API error / When pipeline fails to load / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
+    mockCrmService.getPipeline.mockRejectedValueOnce(new Error('Network error'));
     render(<PipelinePage />);
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|pipeline/i)).toBeTruthy();
@@ -97,10 +95,7 @@ describe('Given PipelinePage — Deal Pipeline Kanban', () => {
   });
 
   test('Given empty pipeline / When no deals exist / Then shows empty state per column', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({
-      data: { stages: mockPipelineStages, deals: [] },
-    });
+    mockCrmService.getPipeline.mockResolvedValueOnce({ stages: mockPipelineStages, deals: [] });
     render(<PipelinePage />);
     await waitFor(() => {
       expect(screen.queryByText(/pipeline|empty|no deals/i)).toBeTruthy();

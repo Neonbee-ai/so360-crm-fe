@@ -2,8 +2,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { QuoteDetailPage } from './QuoteDetailPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+const mockCrmService = {
+  approveQuote: vi.fn(),
+  convertQuoteToOrder: vi.fn(),
+  getQuoteById: vi.fn(),
+  getStockAvailability: vi.fn(),
+  rejectQuote: vi.fn(),
+  submitQuoteForApproval: vi.fn(),
+  updateQuote: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -43,8 +53,8 @@ const mockQuote = {
 describe('Given QuoteDetailPage — Quote Detail and Editing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockQuote });
+    mockCrmService.getQuoteById.mockResolvedValue(mockQuote);
+    mockCrmService.getStockAvailability.mockResolvedValue({});
   });
 
   test('Given quote id in params / When loaded / Then displays quote details', async () => {
@@ -62,8 +72,7 @@ describe('Given QuoteDetailPage — Quote Detail and Editing', () => {
   });
 
   test('Given send quote button / When clicked / Then changes status to sent', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockQuote, status: 'sent' } });
+    mockCrmService.updateQuote.mockResolvedValueOnce({ ...mockQuote, status: 'sent' });
     render(<QuoteDetailPage />);
     await waitFor(() => {
       const sendBtn = screen.queryByRole('button', { name: /send quote|send/i });
@@ -86,8 +95,6 @@ describe('Given QuoteDetailPage — Quote Detail and Editing', () => {
   });
 
   test('Given duplicate quote / When action triggered / Then creates copy as draft', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.post.mockResolvedValueOnce({ data: { ...mockQuote, id: 'quote-copy', quote_number: 'QT-002', status: 'draft' } });
     render(<QuoteDetailPage />);
     await waitFor(() => {
       const dupeBtn = screen.queryByRole('button', { name: /duplicate|copy/i });
@@ -96,8 +103,7 @@ describe('Given QuoteDetailPage — Quote Detail and Editing', () => {
   });
 
   test('Given accept button / When clicked / Then marks quote as accepted', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockQuote, status: 'accepted' } });
+    mockCrmService.approveQuote.mockResolvedValueOnce({ ...mockQuote, status: 'accepted' });
     render(<QuoteDetailPage />);
     await waitFor(() => {
       const acceptBtn = screen.queryByRole('button', { name: /accept|mark accepted/i });
@@ -114,8 +120,7 @@ describe('Given QuoteDetailPage — Quote Detail and Editing', () => {
   });
 
   test('Given quote not found / When invalid id / Then shows not found state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce({ response: { status: 404 } });
+    mockCrmService.getQuoteById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<QuoteDetailPage />);
     await waitFor(() => {
       expect(screen.queryByText(/not found|error|quote/i)).toBeTruthy();

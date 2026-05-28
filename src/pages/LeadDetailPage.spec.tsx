@@ -2,14 +2,27 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { LeadDetailPage } from './LeadDetailPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  createNote: vi.fn(),
+  deleteDocument: vi.fn(),
+  deleteLead: vi.fn(),
+  deleteNote: vi.fn(),
+  getActivitiesByLeadId: vi.fn(),
+  getDealsByLeadId: vi.fn(),
+  getLeadById: vi.fn(),
+  getPartners: vi.fn(),
+  getSettings: vi.fn(),
+  getTasksByLeadId: vi.fn(),
+  getUsers: vi.fn(),
+  logActivity: vi.fn(),
+  updateLead: vi.fn(),
+  updateNote: vi.fn(),
+  updateTask: vi.fn(),
+  uploadDocument: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -47,8 +60,14 @@ const mockLead = {
 describe('Given LeadDetailPage — Lead Detail View', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockLead });
+    mockCrmService.getLeadById.mockResolvedValue(mockLead);
+    mockCrmService.getNotesByLeadId?.mockResolvedValue([]);
+    mockCrmService.getActivitiesByLeadId.mockResolvedValue([]);
+    mockCrmService.getTasksByLeadId.mockResolvedValue([]);
+    mockCrmService.getDealsByLeadId.mockResolvedValue([]);
+    mockCrmService.getUsers.mockResolvedValue([]);
+    mockCrmService.getPartners.mockResolvedValue([]);
+    mockCrmService.getSettings.mockResolvedValue({});
   });
 
   test('Given lead id in params / When page loads / Then fetches and displays lead details', async () => {
@@ -124,8 +143,7 @@ describe('Given LeadDetailPage — Lead Detail View', () => {
   });
 
   test('Given lead not found / When 404 from API / Then shows not found state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce({ response: { status: 404 } });
+    mockCrmService.getLeadById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<LeadDetailPage />);
     await waitFor(() => {
       expect(screen.queryByText(/not found|error|lead/i)).toBeTruthy();

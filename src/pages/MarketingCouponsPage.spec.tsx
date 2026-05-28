@@ -2,8 +2,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingCouponsPage } from './MarketingCouponsPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+const mockCrmService = {
+  createCoupon: vi.fn(),
+  deleteCoupon: vi.fn(),
+  getCoupons: vi.fn(),
+  updateCoupon: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -24,8 +31,7 @@ const mockCoupons = [
 describe('Given MarketingCouponsPage — Coupon & Discount Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { coupons: mockCoupons, total: mockCoupons.length } });
+    mockCrmService.getCoupons.mockResolvedValue({ coupons: mockCoupons, total: mockCoupons.length });
   });
 
   test('Given user visits coupons page / When loaded / Then displays coupon list', async () => {
@@ -61,8 +67,7 @@ describe('Given MarketingCouponsPage — Coupon & Discount Management', () => {
   });
 
   test('Given deactivate toggle / When clicked / Then deactivates coupon', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockCoupons[0], active: false } });
+    mockCrmService.updateCoupon.mockResolvedValueOnce({ ...mockCoupons[0], active: false });
     render(<MarketingCouponsPage />);
     await waitFor(() => {
       const toggleEl = screen.queryByRole('checkbox');
@@ -95,8 +100,7 @@ describe('Given MarketingCouponsPage — Coupon & Discount Management', () => {
   });
 
   test('Given empty coupons list / When no coupons / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { coupons: [], total: 0 } });
+    mockCrmService.getCoupons.mockResolvedValueOnce({ coupons: [], total: 0 });
     render(<MarketingCouponsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no coupon|empty|coupon/i)).toBeTruthy();

@@ -2,8 +2,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { PartnerDetailPage } from './PartnerDetailPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+const mockCrmService = {
+  getActivitiesByLeadId: vi.fn(),
+  partnersApi: vi.fn(),
+  settingsApi: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -45,8 +51,7 @@ const mockPartner = {
 describe('Given PartnerDetailPage — Partner Detail View', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockPartner });
+    mockCrmService.getActivitiesByLeadId.mockResolvedValue([]);
   });
 
   test('Given partner id / When loaded / Then displays partner details', async () => {
@@ -107,8 +112,6 @@ describe('Given PartnerDetailPage — Partner Detail View', () => {
   });
 
   test('Given upgrade tier / When changed / Then updates partner tier', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockPartner, tier: 'platinum' } });
     render(<PartnerDetailPage />);
     await waitFor(() => {
       expect(screen.queryByText(/gold|tier|partner/i)).toBeTruthy();
@@ -128,8 +131,6 @@ describe('Given PartnerDetailPage — Partner Detail View', () => {
   });
 
   test('Given partner not found / When 404 / Then shows not found state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce({ response: { status: 404 } });
     render(<PartnerDetailPage />);
     await waitFor(() => {
       expect(screen.queryByText(/not found|error|partner/i)).toBeTruthy();

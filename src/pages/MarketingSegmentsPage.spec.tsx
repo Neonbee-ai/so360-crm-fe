@@ -2,14 +2,22 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingSegmentsPage } from './MarketingSegmentsPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  addCustomerSegmentMembers: vi.fn(),
+  createCustomerSegment: vi.fn(),
+  deleteCustomerSegment: vi.fn(),
+  getCustomers: vi.fn(),
+  getCustomerSegmentMembers: vi.fn(),
+  getCustomerSegments: vi.fn(),
+  getLeads: vi.fn(),
+  getMarketingInactiveCustomers: vi.fn(),
+  getMarketingSegments: vi.fn(),
+  getMarketingTopBuyers: vi.fn(),
+  removeCustomerSegmentMembers: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -30,8 +38,13 @@ const mockSegments = [
 describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { segments: mockSegments, total: mockSegments.length } });
+    mockCrmService.getCustomerSegments.mockResolvedValue({ segments: mockSegments, total: mockSegments.length });
+    mockCrmService.getMarketingSegments.mockResolvedValue([]);
+    mockCrmService.getCustomers.mockResolvedValue([]);
+    mockCrmService.getLeads.mockResolvedValue([]);
+    mockCrmService.getMarketingInactiveCustomers.mockResolvedValue([]);
+    mockCrmService.getMarketingTopBuyers.mockResolvedValue([]);
+    mockCrmService.getCustomerSegmentMembers.mockResolvedValue([]);
   });
 
   test('Given user visits segments page / When loaded / Then displays segment list', async () => {
@@ -75,8 +88,7 @@ describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
   });
 
   test('Given empty segment list / When no segments / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { segments: [], total: 0 } });
+    mockCrmService.getCustomerSegments.mockResolvedValueOnce({ segments: [], total: 0 });
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no segments|empty|segment/i)).toBeTruthy();
@@ -111,8 +123,7 @@ describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
   });
 
   test('Given API error / When segments fail to load / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
+    mockCrmService.getCustomerSegments.mockRejectedValueOnce(new Error('Network error'));
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|segment/i)).toBeTruthy();

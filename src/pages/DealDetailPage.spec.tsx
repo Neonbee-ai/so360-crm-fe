@@ -2,14 +2,28 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { DealDetailPage } from './DealDetailPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  createNote: vi.fn(),
+  deleteDeal: vi.fn(),
+  deleteDocument: vi.fn(),
+  deleteNote: vi.fn(),
+  getActivitiesByDealId: vi.fn(),
+  getDealById: vi.fn(),
+  getDocumentsByDealId: vi.fn(),
+  getFulfillmentOrderByDeal: vi.fn(),
+  getLeadById: vi.fn(),
+  getNotesByDealId: vi.fn(),
+  getSettings: vi.fn(),
+  getTasksByDealId: vi.fn(),
+  getUsers: vi.fn(),
+  logActivity: vi.fn(),
+  updateNote: vi.fn(),
+  updateTask: vi.fn(),
+  uploadDocument: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -46,8 +60,14 @@ const mockDeal = {
 describe('Given DealDetailPage — Deal Lifecycle Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockDeal });
+    mockCrmService.getDealById.mockResolvedValue(mockDeal);
+    mockCrmService.getNotesByDealId.mockResolvedValue([]);
+    mockCrmService.getActivitiesByDealId.mockResolvedValue([]);
+    mockCrmService.getTasksByDealId.mockResolvedValue([]);
+    mockCrmService.getDocumentsByDealId.mockResolvedValue([]);
+    mockCrmService.getUsers.mockResolvedValue([]);
+    mockCrmService.getSettings.mockResolvedValue({});
+    mockCrmService.getFulfillmentOrderByDeal.mockResolvedValue(null);
   });
 
   test('Given deal id in params / When page loads / Then fetches and displays deal details', async () => {
@@ -76,8 +96,7 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
   });
 
   test('Given stage change / When user selects new stage / Then updates deal stage', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockDeal, stage: 'Closed Won' } });
+    mockCrmService.getDealById.mockResolvedValueOnce({ ...mockDeal, stage: 'Closed Won' });
     render(<DealDetailPage />);
     await waitFor(() => {
       const stageEl = screen.queryByText(/stage|proposal/i);
@@ -108,8 +127,7 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
   });
 
   test('Given deal not found / When invalid id in params / Then shows 404 state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce({ response: { status: 404 } });
+    mockCrmService.getDealById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<DealDetailPage />);
     await waitFor(() => {
       expect(screen.queryByText(/not found|error|deal/i)).toBeTruthy();

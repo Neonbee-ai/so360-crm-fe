@@ -2,8 +2,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingReviewsPage } from './MarketingReviewsPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+const mockCrmService = {
+  getMarketingReviews: vi.fn(),
+  getStorefrontReviews: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -24,15 +29,8 @@ const mockReviews = [
 describe('Given MarketingReviewsPage — Customer Review Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({
-      data: {
-        reviews: mockReviews,
-        total: mockReviews.length,
-        avg_rating: 3.0,
-        pending_count: 1,
-      },
-    });
+    mockCrmService.getMarketingReviews.mockResolvedValue({ reviews: mockReviews, total: mockReviews.length, avg_rating: 3.0, pending_count: 1 });
+    mockCrmService.getStorefrontReviews.mockResolvedValue([]);
   });
 
   test('Given user visits reviews page / When loaded / Then displays review list', async () => {
@@ -57,8 +55,6 @@ describe('Given MarketingReviewsPage — Customer Review Management', () => {
   });
 
   test('Given pending review / When approve clicked / Then approves review', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockReviews[1], status: 'approved' } });
     render(<MarketingReviewsPage />);
     await waitFor(() => {
       const approveBtn = screen.queryByRole('button', { name: /approve|accept/i });
@@ -67,8 +63,6 @@ describe('Given MarketingReviewsPage — Customer Review Management', () => {
   });
 
   test('Given flagged review / When reject clicked / Then removes review from public', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockReviews[2], status: 'rejected' } });
     render(<MarketingReviewsPage />);
     await waitFor(() => {
       const rejectBtn = screen.queryByRole('button', { name: /reject|remove|hide/i });
@@ -111,8 +105,7 @@ describe('Given MarketingReviewsPage — Customer Review Management', () => {
   });
 
   test('Given empty reviews / When no reviews / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { reviews: [], total: 0, avg_rating: 0, pending_count: 0 } });
+    mockCrmService.getMarketingReviews.mockResolvedValueOnce({ reviews: [], total: 0, avg_rating: 0, pending_count: 0 });
     render(<MarketingReviewsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no review|empty|review/i)).toBeTruthy();

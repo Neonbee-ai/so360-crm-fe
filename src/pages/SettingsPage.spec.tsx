@@ -2,14 +2,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { SettingsPage } from './SettingsPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  getSettings: vi.fn(),
+  updateSettings: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -34,8 +33,8 @@ const mockSettings = {
 describe('Given SettingsPage — CRM Configuration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockSettings });
+    mockCrmService.getSettings.mockResolvedValue(mockSettings);
+    mockCrmService.updateSettings.mockResolvedValue(mockSettings);
   });
 
   test('Given user visits settings page / When loaded / Then displays settings sections', async () => {
@@ -71,8 +70,7 @@ describe('Given SettingsPage — CRM Configuration', () => {
   });
 
   test('Given add lead source / When submitted / Then adds new source', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.post.mockResolvedValueOnce({ data: { lead_sources: [...mockSettings.lead_sources, 'event'] } });
+    mockCrmService.updateSettings.mockResolvedValueOnce({ lead_sources: [...mockSettings.lead_sources, 'event'] });
     render(<SettingsPage />);
     await waitFor(() => {
       const addBtn = screen.queryByRole('button', { name: /add source|new source/i });
@@ -103,8 +101,7 @@ describe('Given SettingsPage — CRM Configuration', () => {
   });
 
   test('Given save settings button / When clicked / Then persists configuration', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.put.mockResolvedValueOnce({ data: mockSettings });
+    mockCrmService.updateSettings.mockResolvedValueOnce(mockSettings);
     render(<SettingsPage />);
     await waitFor(() => {
       const saveBtn = screen.queryByRole('button', { name: /save|update settings/i });
@@ -113,8 +110,7 @@ describe('Given SettingsPage — CRM Configuration', () => {
   });
 
   test('Given API error on load / When settings fail to fetch / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
+    mockCrmService.getSettings.mockRejectedValueOnce(new Error('Network error'));
     render(<SettingsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|settings/i)).toBeTruthy();

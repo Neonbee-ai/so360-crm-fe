@@ -2,8 +2,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { TaskDetailPage } from './TaskDetailPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+const mockCrmService = {
+  getUsers: vi.fn(),
+  getTaskById: vi.fn(),
+  getTaskNotes: vi.fn(),
+  updateTask: vi.fn(),
+  deleteTask: vi.fn(),
+  createNote: vi.fn(),
+  updateNote: vi.fn(),
+  deleteNote: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -39,8 +50,14 @@ const mockTask = {
 describe('Given TaskDetailPage — Task Detail and Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockTask });
+    mockCrmService.getTaskById.mockResolvedValue(mockTask);
+    mockCrmService.getTaskNotes.mockResolvedValue([]);
+    mockCrmService.getUsers.mockResolvedValue([]);
+    mockCrmService.updateTask.mockResolvedValue({});
+    mockCrmService.deleteTask.mockResolvedValue(undefined);
+    mockCrmService.createNote.mockResolvedValue({});
+    mockCrmService.updateNote.mockResolvedValue({});
+    mockCrmService.deleteNote.mockResolvedValue(undefined);
   });
 
   test('Given task id in params / When loaded / Then displays task details', async () => {
@@ -58,8 +75,7 @@ describe('Given TaskDetailPage — Task Detail and Management', () => {
   });
 
   test('Given complete button / When clicked / Then marks task as completed', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockTask, status: 'completed' } });
+    mockCrmService.updateTask.mockResolvedValueOnce({ ...mockTask, status: 'completed' });
     render(<TaskDetailPage />);
     await waitFor(() => {
       const completeBtn = screen.queryByRole('button', { name: /complete|mark done/i });
@@ -127,8 +143,7 @@ describe('Given TaskDetailPage — Task Detail and Management', () => {
   });
 
   test('Given task not found / When 404 from API / Then shows not found state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce({ response: { status: 404 } });
+    mockCrmService.getTaskById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.queryByText(/not found|error|task/i)).toBeTruthy();

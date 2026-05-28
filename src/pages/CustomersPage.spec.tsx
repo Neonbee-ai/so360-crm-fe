@@ -11,14 +11,14 @@ import React, { useState, useMemo } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 // ── Infrastructure mocks (required by the real CustomersPage) ─────────────
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  getCustomers: vi.fn(),
+  getCustomerSegmentCustomers: vi.fn(),
+  getCustomerStats: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({

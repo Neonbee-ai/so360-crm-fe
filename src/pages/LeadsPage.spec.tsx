@@ -2,14 +2,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { LeadsPage } from './LeadsPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  deleteLead: vi.fn(),
+  getCustomerSegmentLeads: vi.fn(),
+  getLeads: vi.fn(),
+  getSettings: vi.fn(),
+  getUsers: vi.fn(),
+  logActivity: vi.fn(),
+  updateLead: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -37,8 +41,9 @@ const mockLeads = [
 describe('Given LeadsPage — Lead Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { leads: mockLeads, total: mockLeads.length } });
+    mockCrmService.getLeads.mockResolvedValue({ leads: mockLeads, total: mockLeads.length });
+    mockCrmService.getSettings.mockResolvedValue({});
+    mockCrmService.getUsers.mockResolvedValue([]);
   });
 
   test('Given user visits leads page / When loaded / Then displays lead list', async () => {
@@ -94,8 +99,6 @@ describe('Given LeadsPage — Lead Management', () => {
   });
 
   test('Given convert to deal / When triggered on qualified lead / Then creates deal from lead', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.post.mockResolvedValueOnce({ data: { deal_id: 'deal-new', lead_id: 'lead-3' } });
     render(<LeadsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/qualified|lead/i)).toBeTruthy();
@@ -113,8 +116,7 @@ describe('Given LeadsPage — Lead Management', () => {
   });
 
   test('Given empty leads list / When no leads / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { leads: [], total: 0 } });
+    mockCrmService.getLeads.mockResolvedValueOnce({ leads: [], total: 0 });
     render(<LeadsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no leads|empty|lead/i)).toBeTruthy();

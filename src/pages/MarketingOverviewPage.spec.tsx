@@ -2,12 +2,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingOverviewPage } from './MarketingOverviewPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-  },
+const mockCrmService = {
+  getAbandonedCartStats: vi.fn(),
+  getAllStorefrontSearches: vi.fn(),
+  getMarketingBestSellingProducts: vi.fn(),
+  getMarketingConversionFunnel: vi.fn(),
+  getMarketingEmailPerformance: vi.fn(),
+  getMarketingInactiveCustomers: vi.fn(),
+  getMarketingSegments: vi.fn(),
+  getMarketingTopBuyers: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -36,8 +43,14 @@ const mockOverviewData = {
 describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockOverviewData });
+    mockCrmService.getMarketingEmailPerformance.mockResolvedValue(mockOverviewData);
+    mockCrmService.getAbandonedCartStats.mockResolvedValue({});
+    mockCrmService.getAllStorefrontSearches.mockResolvedValue([]);
+    mockCrmService.getMarketingBestSellingProducts.mockResolvedValue([]);
+    mockCrmService.getMarketingConversionFunnel.mockResolvedValue({});
+    mockCrmService.getMarketingInactiveCustomers.mockResolvedValue([]);
+    mockCrmService.getMarketingSegments.mockResolvedValue([]);
+    mockCrmService.getMarketingTopBuyers.mockResolvedValue([]);
   });
 
   test('Given user visits marketing overview / When loaded / Then displays marketing KPIs', async () => {
@@ -92,10 +105,7 @@ describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
   });
 
   test('Given unsubscribe spike / When detected / Then shows alert or warning', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({
-      data: { ...mockOverviewData, unsubscribes: 500 },
-    });
+    mockCrmService.getMarketingEmailPerformance.mockResolvedValueOnce({ ...mockOverviewData, unsubscribes: 500 });
     render(<MarketingOverviewPage />);
     await waitFor(() => {
       expect(screen.queryByText(/marketing|overview/i)).toBeTruthy();
@@ -103,8 +113,7 @@ describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
   });
 
   test('Given API error / When overview fails to load / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
+    mockCrmService.getMarketingEmailPerformance.mockRejectedValueOnce(new Error('Network error'));
     render(<MarketingOverviewPage />);
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|marketing/i)).toBeTruthy();

@@ -2,14 +2,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { TasksPage } from './TasksPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  deleteTask: vi.fn(),
+  getTasks: vi.fn(),
+  getUsers: vi.fn(),
+  updateTask: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -30,8 +31,10 @@ const mockTasks = [
 describe('Given TasksPage — CRM Task Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { tasks: mockTasks, total: mockTasks.length } });
+    mockCrmService.getTasks.mockResolvedValue({ tasks: mockTasks, total: mockTasks.length });
+    mockCrmService.getUsers.mockResolvedValue([]);
+    mockCrmService.updateTask.mockResolvedValue({});
+    mockCrmService.deleteTask.mockResolvedValue(undefined);
   });
 
   test('Given user visits tasks page / When loaded / Then displays task list', async () => {
@@ -67,8 +70,7 @@ describe('Given TasksPage — CRM Task Management', () => {
   });
 
   test('Given complete checkbox / When checked / Then marks task completed', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockTasks[0], status: 'completed' } });
+    mockCrmService.updateTask.mockResolvedValueOnce({ ...mockTasks[0], status: 'completed' });
     render(<TasksPage />);
     await waitFor(() => {
       const checkboxes = screen.queryAllByRole('checkbox');
@@ -95,8 +97,7 @@ describe('Given TasksPage — CRM Task Management', () => {
   });
 
   test('Given empty task list / When no tasks / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { tasks: [], total: 0 } });
+    mockCrmService.getTasks.mockResolvedValueOnce({ tasks: [], total: 0 });
     render(<TasksPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no tasks|empty|task/i)).toBeTruthy();
@@ -104,8 +105,7 @@ describe('Given TasksPage — CRM Task Management', () => {
   });
 
   test('Given API error / When tasks fail to load / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
+    mockCrmService.getTasks.mockRejectedValueOnce(new Error('Network error'));
     render(<TasksPage />);
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|task/i)).toBeTruthy();

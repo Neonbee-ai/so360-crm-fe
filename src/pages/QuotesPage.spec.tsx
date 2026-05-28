@@ -2,14 +2,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { QuotesPage } from './QuotesPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  approveQuote: vi.fn(),
+  convertQuoteToOrder: vi.fn(),
+  createQuote: vi.fn(),
+  deleteQuote: vi.fn(),
+  getDeals: vi.fn(),
+  getQuotes: vi.fn(),
+  rejectQuote: vi.fn(),
+  submitQuoteForApproval: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -30,8 +35,8 @@ const mockQuotes = [
 describe('Given QuotesPage — Quote Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { quotes: mockQuotes, total: mockQuotes.length } });
+    mockCrmService.getQuotes.mockResolvedValue({ quotes: mockQuotes, total: mockQuotes.length });
+    mockCrmService.getDeals.mockResolvedValue([]);
   });
 
   test('Given user visits quotes page / When loaded / Then displays quote list', async () => {
@@ -76,8 +81,6 @@ describe('Given QuotesPage — Quote Management', () => {
   });
 
   test('Given send action / When triggered on draft quote / Then updates status to sent', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.patch.mockResolvedValueOnce({ data: { ...mockQuotes[0], status: 'sent' } });
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.queryByText(/quote|send|status/i)).toBeTruthy();
@@ -85,8 +88,7 @@ describe('Given QuotesPage — Quote Management', () => {
   });
 
   test('Given empty quote list / When no quotes / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { quotes: [], total: 0 } });
+    mockCrmService.getQuotes.mockResolvedValueOnce({ quotes: [], total: 0 });
     render(<QuotesPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no quotes|empty|quote/i)).toBeTruthy();

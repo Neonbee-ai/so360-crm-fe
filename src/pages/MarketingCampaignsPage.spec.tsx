@@ -2,14 +2,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingCampaignsPage } from './MarketingCampaignsPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
+const mockCrmService = {
+  createCampaign: vi.fn(),
+  deleteCampaign: vi.fn(),
+  getCampaigns: vi.fn(),
+  pauseCampaign: vi.fn(),
+  sendCampaignNow: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -30,8 +32,7 @@ const mockCampaigns = [
 describe('Given MarketingCampaignsPage — Email & SMS Campaigns', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: { campaigns: mockCampaigns, total: mockCampaigns.length } });
+    mockCrmService.getCampaigns.mockResolvedValue({ campaigns: mockCampaigns, total: mockCampaigns.length });
   });
 
   test('Given user visits campaigns page / When loaded / Then displays campaign list', async () => {
@@ -91,8 +92,7 @@ describe('Given MarketingCampaignsPage — Email & SMS Campaigns', () => {
   });
 
   test('Given duplicate action / When triggered / Then copies campaign as draft', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.post.mockResolvedValueOnce({ data: { ...mockCampaigns[0], id: 'camp-copy', name: 'Copy of Summer Sale 2024', status: 'draft' } });
+    mockCrmService.createCampaign.mockResolvedValueOnce({ ...mockCampaigns[0], id: 'camp-copy', name: 'Copy of Summer Sale 2024', status: 'draft' });
     render(<MarketingCampaignsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/campaign|summer sale/i)).toBeTruthy();
@@ -100,8 +100,7 @@ describe('Given MarketingCampaignsPage — Email & SMS Campaigns', () => {
   });
 
   test('Given empty campaign list / When no campaigns / Then shows empty state with CTA', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { campaigns: [], total: 0 } });
+    mockCrmService.getCampaigns.mockResolvedValueOnce({ campaigns: [], total: 0 });
     render(<MarketingCampaignsPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no campaigns|empty|campaign/i)).toBeTruthy();

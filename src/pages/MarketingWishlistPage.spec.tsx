@@ -2,8 +2,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingWishlistPage } from './MarketingWishlistPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+const mockCrmService = {
+  getMarketingWishlist: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -31,8 +35,7 @@ const mockWishlistData = {
 describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({ data: mockWishlistData });
+    mockCrmService.getMarketingWishlist.mockResolvedValue(mockWishlistData);
   });
 
   test('Given user visits wishlist page / When loaded / Then displays wishlist analytics', async () => {
@@ -65,8 +68,6 @@ describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () =
   });
 
   test('Given notify customers button / When clicked / Then sends price drop notification', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.post.mockResolvedValueOnce({ data: { sent: 89, product_id: 'prod-1' } });
     render(<MarketingWishlistPage />);
     await waitFor(() => {
       const notifyBtn = screen.queryByRole('button', { name: /notify|send|price drop/i });
@@ -93,10 +94,7 @@ describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () =
   });
 
   test('Given empty wishlist data / When no wishlists / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({
-      data: { total_wishlisted: 0, unique_customers: 0, top_wishlisted_products: [], recent_wishlist_additions: [] },
-    });
+    mockCrmService.getMarketingWishlist.mockResolvedValueOnce({ total_wishlisted: 0, unique_customers: 0, top_wishlisted_products: [], recent_wishlist_additions: [] });
     render(<MarketingWishlistPage />);
     await waitFor(() => {
       expect(screen.queryByText(/no wishlist|empty|0/i)).toBeTruthy();
@@ -104,8 +102,7 @@ describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () =
   });
 
   test('Given API error / When wishlist data fails / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
+    mockCrmService.getMarketingWishlist.mockRejectedValueOnce(new Error('Network error'));
     render(<MarketingWishlistPage />);
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|wishlist/i)).toBeTruthy();
