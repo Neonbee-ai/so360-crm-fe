@@ -73,7 +73,7 @@ const mockDeal = {
   stage: 'Proposal',
   probability: 65,
   close_date: '2024-03-31',
-  owner: { id: 'user-1', name: 'John Doe' },
+  owner: { id: 'user-1', name: 'John Doe', avatar_url: null, full_name: 'John Doe' },
   customer: { id: 'cust-1', name: 'Acme Corp' },
   notes: 'Key decision maker contacted',
   created_at: '2024-01-01T00:00:00Z',
