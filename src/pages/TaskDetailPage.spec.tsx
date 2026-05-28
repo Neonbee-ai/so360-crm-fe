@@ -37,6 +37,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -45,6 +48,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -87,14 +91,14 @@ describe('Given TaskDetailPage — Task Detail and Management', () => {
   test('Given task id in params / When loaded / Then displays task details', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/follow up with acme|task/i)).toBeTruthy();
+      expect(screen.queryAllByText(/follow up with acme|task/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given task loaded / When rendered / Then shows priority, status and due date', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/task|back to tasks/i)).toBeTruthy();
+      expect(screen.queryAllByText(/task|back to tasks/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -124,14 +128,14 @@ describe('Given TaskDetailPage — Task Detail and Management', () => {
   test('Given assignee section / When rendered / Then shows assigned user details', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/task|back to tasks/i)).toBeTruthy();
+      expect(screen.queryAllByText(/task|back to tasks/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given linked deal / When rendered / Then shows deal reference', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/task|back to tasks/i)).toBeTruthy();
+      expect(screen.queryAllByText(/task|back to tasks/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -150,7 +154,7 @@ describe('Given TaskDetailPage — Task Detail and Management', () => {
   test('Given reschedule / When due date updated / Then persists new due date', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/task|back to tasks/i)).toBeTruthy();
+      expect(screen.queryAllByText(/task|back to tasks/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -170,7 +174,7 @@ describe('Given TaskDetailPage — Task Detail and Management', () => {
     mockCrmService.getTaskById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/not found|error|task/i)).toBeTruthy();
+      expect(screen.queryAllByText(/not found|error|task/i).length).toBeGreaterThan(0);
     });
   });
 });

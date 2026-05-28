@@ -43,6 +43,8 @@ const mockOverviewData = {
 describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('crm_marketing_store_id', 'store-1');
+    localStorage.setItem('crm_store_id', 'store-1');
     mockCrmService.getMarketingEmailPerformance.mockResolvedValue(mockOverviewData);
     mockCrmService.getAbandonedCartStats.mockResolvedValue({});
     mockCrmService.getAllStorefrontSearches.mockResolvedValue([]);
@@ -56,21 +58,21 @@ describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
   test('Given user visits marketing overview / When loaded / Then displays marketing KPIs', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/marketing|overview|campaign/i)).toBeTruthy();
+      expect(screen.queryAllByText(/marketing|overview|campaign/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given overview loaded / When rendered / Then shows active campaign count', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/5|active campaign|marketing/i)).toBeTruthy();
+      expect(screen.queryAllByText(/5|active campaign|marketing/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given date range filter / When changed / Then refreshes metrics for period', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      const dateFilter = screen.queryByText(/date|last 7|30 days/i);
+      const dateFilter = screen.queryAllByText(/date|last 7|30 days/i)[0];
       if (dateFilter) fireEvent.click(dateFilter);
     });
   });
@@ -78,21 +80,21 @@ describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
   test('Given open rate metric / When displayed / Then shows percentage correctly', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/32%|open rate|0.32/i)).toBeTruthy();
+      expect(screen.queryAllByText(/32%|open rate|0.32/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given revenue attributed / When shown / Then formats currency correctly', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/150,000|revenue|attributed/i)).toBeTruthy();
+      expect(screen.queryAllByText(/150,000|revenue|attributed/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given recent campaigns list / When rendered / Then shows top performing campaigns', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/crm marketing overview|marketing/i)).toBeTruthy();
+      expect(screen.queryAllByText(/crm marketing overview|marketing/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -108,7 +110,7 @@ describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
     mockCrmService.getMarketingEmailPerformance.mockResolvedValueOnce({ ...mockOverviewData, unsubscribes: 500 });
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/marketing|overview/i)).toBeTruthy();
+      expect(screen.queryAllByText(/marketing|overview/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -116,14 +118,14 @@ describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
     mockCrmService.getMarketingEmailPerformance.mockRejectedValueOnce(new Error('Network error'));
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/error|failed|marketing/i)).toBeTruthy();
+      expect(screen.queryAllByText(/error|failed|marketing/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given subscriber growth chart / When data loaded / Then renders chart or summary', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/342|subscriber|new|marketing/i)).toBeTruthy();
+      expect(screen.queryAllByText(/342|subscriber|new|marketing/i).length).toBeGreaterThan(0);
     });
   });
 });

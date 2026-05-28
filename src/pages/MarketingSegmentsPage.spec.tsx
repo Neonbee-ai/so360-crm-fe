@@ -40,6 +40,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -48,6 +51,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -68,6 +72,8 @@ const mockSegments = [
 describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('crm_marketing_store_id', 'store-1');
+    localStorage.setItem('crm_store_id', 'store-1');
     mockCrmService.getCustomerSegments.mockResolvedValue({ segments: mockSegments, total: mockSegments.length });
     mockCrmService.getMarketingSegments.mockResolvedValue([]);
     mockCrmService.getCustomers.mockResolvedValue([]);
@@ -80,14 +86,14 @@ describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
   test('Given user visits segments page / When loaded / Then displays segment list', async () => {
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/segment|high value/i)).toBeTruthy();
+      expect(screen.queryAllByText(/segment|high value/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given segments loaded / When rendered / Then shows segment names and counts', async () => {
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/customer segments|segments/i)).toBeTruthy();
+      expect(screen.queryAllByText(/customer segments|segments/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -113,7 +119,7 @@ describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
   test('Given use in campaign / When action triggered / Then creates campaign with segment', async () => {
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/segment|campaign/i)).toBeTruthy();
+      expect(screen.queryAllByText(/segment|campaign/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -121,7 +127,7 @@ describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
     mockCrmService.getCustomerSegments.mockResolvedValueOnce({ segments: [], total: 0 });
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/no segments|empty|segment/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no segments|empty|segment/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -148,7 +154,7 @@ describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
   test('Given churned users segment / When selected / Then shows re-engagement option', async () => {
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/churned|segment/i)).toBeTruthy();
+      expect(screen.queryAllByText(/churned|segment/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -156,7 +162,7 @@ describe('Given MarketingSegmentsPage — Customer Segmentation', () => {
     mockCrmService.getCustomerSegments.mockRejectedValueOnce(new Error('Network error'));
     render(<MarketingSegmentsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/error|failed|segment/i)).toBeTruthy();
+      expect(screen.queryAllByText(/error|failed|segment/i).length).toBeGreaterThan(0);
     });
   });
 });

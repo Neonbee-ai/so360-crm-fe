@@ -33,6 +33,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -41,6 +44,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -70,14 +74,14 @@ describe('Given TasksPage — CRM Task Management', () => {
   test('Given user visits tasks page / When loaded / Then displays task list', async () => {
     render(<TasksPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/task|follow up/i)).toBeTruthy();
+      expect(screen.queryAllByText(/task|follow up/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given tasks loaded / When rendered / Then shows task titles and due dates', async () => {
     render(<TasksPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/follow up with acme|send proposal/i)).toBeTruthy();
+      expect(screen.queryAllByText(/follow up with acme|send proposal/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -95,7 +99,7 @@ describe('Given TasksPage — CRM Task Management', () => {
   test('Given overdue task / When past due date / Then shows overdue indicator', async () => {
     render(<TasksPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/overdue|demo scheduled|task/i)).toBeTruthy();
+      expect(screen.queryAllByText(/overdue|demo scheduled|task/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -113,7 +117,7 @@ describe('Given TasksPage — CRM Task Management', () => {
   test('Given priority filter / When high selected / Then shows high priority tasks only', async () => {
     render(<TasksPage />);
     await waitFor(() => {
-      const filterEl = screen.queryByText(/priority|high/i);
+      const filterEl = screen.queryAllByText(/priority|high/i)[0];
       if (filterEl) fireEvent.click(filterEl);
     });
   });
@@ -121,7 +125,7 @@ describe('Given TasksPage — CRM Task Management', () => {
   test('Given assignee filter / When user filters by assignee / Then shows their tasks', async () => {
     render(<TasksPage />);
     await waitFor(() => {
-      const assigneeEl = screen.queryByText(/assignee|assigned to/i);
+      const assigneeEl = screen.queryAllByText(/assignee|assigned to/i)[0];
       if (assigneeEl) fireEvent.click(assigneeEl);
     });
   });
@@ -130,7 +134,7 @@ describe('Given TasksPage — CRM Task Management', () => {
     mockCrmService.getTasks.mockResolvedValueOnce([]);
     render(<TasksPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/no tasks|empty|task/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no tasks|empty|task/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -138,7 +142,7 @@ describe('Given TasksPage — CRM Task Management', () => {
     mockCrmService.getTasks.mockRejectedValueOnce(new Error('Network error'));
     render(<TasksPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/error|failed|task/i)).toBeTruthy();
+      expect(screen.queryAllByText(/error|failed|task/i).length).toBeGreaterThan(0);
     });
   });
 

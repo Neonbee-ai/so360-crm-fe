@@ -35,20 +35,22 @@ const mockSubscribers = [
 describe('Given MarketingNewsletterPage — Newsletter Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('crm_marketing_store_id', 'store-1');
+    localStorage.setItem('crm_store_id', 'store-1');
     mockCrmService.getNewsletterSubscribers.mockResolvedValue({ newsletters: mockNewsletters, subscribers: mockSubscribers, total: mockNewsletters.length });
   });
 
   test('Given user visits newsletter page / When loaded / Then displays newsletter list', async () => {
     render(<MarketingNewsletterPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/newsletter|monthly product/i)).toBeTruthy();
+      expect(screen.queryAllByText(/newsletter|monthly product/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given newsletters loaded / When rendered / Then shows subject and status', async () => {
     render(<MarketingNewsletterPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/newsletter subscribers|subscriber/i)).toBeTruthy();
+      expect(screen.queryAllByText(/newsletter subscribers|subscriber/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -77,17 +79,17 @@ describe('Given MarketingNewsletterPage — Newsletter Management', () => {
   test('Given sent newsletter / When viewed / Then shows open rate metrics', async () => {
     render(<MarketingNewsletterPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/newsletter subscribers|subscriber list/i)).toBeTruthy();
+      expect(screen.queryAllByText(/newsletter subscribers|subscriber list/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given subscriber list tab / When clicked / Then shows subscriber management', async () => {
     render(<MarketingNewsletterPage />);
     await waitFor(() => {
-      const subTab = screen.queryByText(/subscriber|members/i);
+      const subTab = screen.queryAllByText(/subscriber|members/i)[0];
       if (subTab) {
         fireEvent.click(subTab);
-        expect(screen.queryByText(/user1@test|user2@test|subscriber/i)).toBeTruthy();
+        expect(screen.queryAllByText(/user1@test|user2@test|subscriber/i).length).toBeGreaterThan(0);
       }
     });
   });
@@ -107,7 +109,7 @@ describe('Given MarketingNewsletterPage — Newsletter Management', () => {
     mockCrmService.getNewsletterSubscribers.mockResolvedValueOnce({ newsletters: [], subscribers: [], total: 0 });
     render(<MarketingNewsletterPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/no newsletter|empty|newsletter/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no newsletter|empty|newsletter/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -123,7 +125,7 @@ describe('Given MarketingNewsletterPage — Newsletter Management', () => {
     mockCrmService.getNewsletterSubscribers.mockRejectedValueOnce(new Error('Network error'));
     render(<MarketingNewsletterPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/error|failed|newsletter/i)).toBeTruthy();
+      expect(screen.queryAllByText(/error|failed|newsletter/i).length).toBeGreaterThan(0);
     });
   });
 });

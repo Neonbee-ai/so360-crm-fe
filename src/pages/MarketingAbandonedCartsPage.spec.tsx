@@ -66,21 +66,21 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
   test('Given user visits abandoned carts page / When loaded / Then displays cart list', async () => {
     await renderAndSelectStore();
     await waitFor(() => {
-      expect(screen.queryByText(/abandoned cart|alice kumar/i)).toBeTruthy();
+      expect(screen.queryAllByText(/abandoned cart|alice kumar/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given carts loaded / When rendered / Then shows cart values and customer names', async () => {
     await renderAndSelectStore();
     await waitFor(() => {
-      expect(screen.queryByText(/abandoned carts|recovery rate/i)).toBeTruthy();
+      expect(screen.queryAllByText(/abandoned carts|recovery rate/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given recovery rate / When displayed / Then shows percentage format', async () => {
     await renderAndSelectStore();
     await waitFor(() => {
-      expect(screen.queryByText(/33%|recovery|33/i)).toBeTruthy();
+      expect(screen.queryAllByText(/33%|recovery|33/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -90,7 +90,7 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
       const sendBtn = screen.queryByRole('button', { name: /send email|recover|contact/i });
       if (sendBtn) {
         fireEvent.click(sendBtn);
-        expect(screen.queryByText(/sent|email|recovery/i)).toBeTruthy();
+        expect(screen.queryAllByText(/sent|email|recovery/i).length).toBeGreaterThan(0);
       }
     });
   });
@@ -98,14 +98,14 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
   test('Given recovered cart / When shown / Then displays recovered badge', async () => {
     await renderAndSelectStore();
     await waitFor(() => {
-      expect(screen.queryByText(/abandoned carts|recovery/i)).toBeTruthy();
+      expect(screen.queryAllByText(/abandoned carts|recovery/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given cart value sort / When sorted descending / Then reorders by value', async () => {
     await renderAndSelectStore();
     await waitFor(() => {
-      const valueHeader = screen.queryByText(/value|amount/i);
+      const valueHeader = screen.queryAllByText(/value|amount/i)[0];
       if (valueHeader) fireEvent.click(valueHeader);
     });
   });
@@ -113,7 +113,7 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
   test('Given recovery status filter / When not contacted selected / Then shows uncontacted carts', async () => {
     await renderAndSelectStore();
     await waitFor(() => {
-      const filterEl = screen.queryByText(/not contacted|filter|status/i);
+      const filterEl = screen.queryAllByText(/not contacted|filter|status/i)[0];
       if (filterEl) fireEvent.click(filterEl);
     });
   });
@@ -136,7 +136,7 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
     mockCrmService.getAbandonedCartStats.mockResolvedValueOnce({ totalAbandoned: 0, totalRecovered: 0, recoveryRate: 0, revenueRecovered: 0 });
     await renderAndSelectStore();
     await waitFor(() => {
-      expect(screen.queryByText(/no abandoned|empty|cart/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no abandoned|empty|cart/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -144,7 +144,7 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
     mockCrmService.getAbandonedCarts.mockRejectedValueOnce(new Error('Network error'));
     await renderAndSelectStore();
     await waitFor(() => {
-      expect(screen.queryByText(/error|failed|cart/i)).toBeTruthy();
+      expect(screen.queryAllByText(/error|failed|cart/i).length).toBeGreaterThan(0);
     });
   });
 });

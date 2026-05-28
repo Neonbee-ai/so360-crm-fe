@@ -35,27 +35,29 @@ const mockWishlistData = {
 describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('crm_marketing_store_id', 'store-1');
+    localStorage.setItem('crm_store_id', 'store-1');
     mockCrmService.getMarketingWishlist.mockResolvedValue(mockWishlistData);
   });
 
   test('Given user visits wishlist page / When loaded / Then displays wishlist analytics', async () => {
     render(<MarketingWishlistPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/wishlist|1,245|analytics/i)).toBeTruthy();
+      expect(screen.queryAllByText(/wishlist|1,245|analytics/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given top products / When rendered / Then shows most wishlisted items', async () => {
     render(<MarketingWishlistPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/enterprise software|premium support/i)).toBeTruthy();
+      expect(screen.queryAllByText(/enterprise software|premium support/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given unique customers metric / When displayed / Then shows correct count', async () => {
     render(<MarketingWishlistPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/380|unique customer|wishlist/i)).toBeTruthy();
+      expect(screen.queryAllByText(/380|unique customer|wishlist/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -81,7 +83,7 @@ describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () =
   test('Given date range filter / When changed / Then refreshes wishlist analytics', async () => {
     render(<MarketingWishlistPage />);
     await waitFor(() => {
-      const dateEl = screen.queryByText(/date|period|filter/i);
+      const dateEl = screen.queryAllByText(/date|period|filter/i)[0];
       if (dateEl) fireEvent.click(dateEl);
     });
   });
@@ -89,7 +91,7 @@ describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () =
   test('Given recent additions list / When rendered / Then shows latest wishlist activity', async () => {
     render(<MarketingWishlistPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/alice@test.com|enterprise license|recent/i)).toBeTruthy();
+      expect(screen.queryAllByText(/alice@test.com|enterprise license|recent/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -97,7 +99,7 @@ describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () =
     mockCrmService.getMarketingWishlist.mockResolvedValueOnce({ total_wishlisted: 0, unique_customers: 0, top_wishlisted_products: [], recent_wishlist_additions: [] });
     render(<MarketingWishlistPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/no wishlist|empty|0/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no wishlist|empty|0/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -105,7 +107,7 @@ describe('Given MarketingWishlistPage — Wishlist Analytics & Management', () =
     mockCrmService.getMarketingWishlist.mockRejectedValueOnce(new Error('Network error'));
     render(<MarketingWishlistPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/error|failed|wishlist/i)).toBeTruthy();
+      expect(screen.queryAllByText(/error|failed|wishlist/i).length).toBeGreaterThan(0);
     });
   });
 

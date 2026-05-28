@@ -28,6 +28,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -36,6 +39,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -71,14 +75,14 @@ describe('Given LeadsPage — Lead Management', () => {
   test('Given user visits leads page / When loaded / Then displays lead list', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/lead|alice kumar/i)).toBeTruthy();
+      expect(screen.queryAllByText(/lead|alice kumar/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given leads loaded / When rendered / Then shows names, scores, and sources', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/leads & accounts|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/leads & accounts|lead/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -107,7 +111,7 @@ describe('Given LeadsPage — Lead Management', () => {
   test('Given lead score column / When sorted descending / Then reorders by score', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      const scoreHeader = screen.queryByText(/score/i);
+      const scoreHeader = screen.queryAllByText(/score/i)[0];
       if (scoreHeader) fireEvent.click(scoreHeader);
     });
   });
@@ -115,7 +119,7 @@ describe('Given LeadsPage — Lead Management', () => {
   test('Given status filter / When new selected / Then shows only new leads', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      const filterEl = screen.queryByText(/status|new|filter/i);
+      const filterEl = screen.queryAllByText(/status|new|filter/i)[0];
       if (filterEl) fireEvent.click(filterEl);
     });
   });
@@ -123,7 +127,7 @@ describe('Given LeadsPage — Lead Management', () => {
   test('Given convert to deal / When triggered on qualified lead / Then creates deal from lead', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/qualified|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/qualified|lead/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -141,7 +145,7 @@ describe('Given LeadsPage — Lead Management', () => {
     mockCrmService.getLeads.mockResolvedValueOnce([]);
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/no leads|empty|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no leads|empty|lead/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -152,7 +156,7 @@ describe('Given LeadsPage — Lead Management', () => {
       if (checkboxes.length > 1) {
         fireEvent.click(checkboxes[0]);
         fireEvent.click(checkboxes[1]);
-        expect(screen.queryByText(/selected|bulk/i)).toBeTruthy();
+        expect(screen.queryAllByText(/selected|bulk/i).length).toBeGreaterThan(0);
       }
     });
   });

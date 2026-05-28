@@ -46,6 +46,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -54,6 +57,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -97,14 +101,14 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
   test('Given deal id in params / When page loads / Then fetches and displays deal details', async () => {
     render(<DealDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/enterprise software license|deal/i)).toBeTruthy();
+      expect(screen.queryAllByText(/enterprise software license|deal/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given deal loaded / When rendered / Then shows deal value and stage', async () => {
     render(<DealDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/75,000|proposal|deal/i)).toBeTruthy();
+      expect(screen.queryAllByText(/75,000|proposal|deal/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -123,7 +127,7 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
     mockCrmService.getDealById.mockResolvedValueOnce({ ...mockDeal, stage: 'Closed Won' });
     render(<DealDetailPage />);
     await waitFor(() => {
-      const stageEl = screen.queryByText(/stage|proposal/i);
+      const stageEl = screen.queryAllByText(/stage|proposal/i)[0];
       if (stageEl) expect(stageEl).toBeTruthy();
     });
   });
@@ -131,10 +135,10 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
   test('Given activity tab / When clicked / Then shows activity history', async () => {
     render(<DealDetailPage />);
     await waitFor(() => {
-      const activityTab = screen.queryByText(/activity|timeline/i);
+      const activityTab = screen.queryAllByText(/activity|timeline/i)[0];
       if (activityTab) {
         fireEvent.click(activityTab);
-        expect(screen.queryByText(/activity|no activities/i)).toBeTruthy();
+        expect(screen.queryAllByText(/activity|no activities/i).length).toBeGreaterThan(0);
       }
     });
   });
@@ -154,7 +158,7 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
     mockCrmService.getDealById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<DealDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/not found|error|deal/i)).toBeTruthy();
+      expect(screen.queryAllByText(/not found|error|deal/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -172,7 +176,7 @@ describe('Given DealDetailPage — Deal Lifecycle Management', () => {
   test('Given probability field / When updated / Then recalculates weighted value', async () => {
     render(<DealDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/probability|65|deal/i)).toBeTruthy();
+      expect(screen.queryAllByText(/probability|65|deal/i).length).toBeGreaterThan(0);
     });
   });
 

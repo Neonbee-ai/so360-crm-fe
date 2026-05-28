@@ -33,6 +33,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -41,6 +44,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -75,6 +79,8 @@ const mockCampaign = {
 describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('crm_marketing_store_id', 'store-1');
+    localStorage.setItem('crm_store_id', 'store-1');
     mockCrmService.getCampaign.mockResolvedValue(mockCampaign);
     mockCrmService.getCampaignRecipients.mockResolvedValue([]);
   });
@@ -82,28 +88,28 @@ describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () =
   test('Given campaign id / When loaded / Then displays campaign details and metrics', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/summer sale 2024|campaign/i)).toBeTruthy();
+      expect(screen.queryAllByText(/summer sale 2024|campaign/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given campaign metrics / When rendered / Then shows open rate and click rate', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/35%|8%|open rate|click/i)).toBeTruthy();
+      expect(screen.queryAllByText(/35%|8%|open rate|click/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given sent count / When displayed / Then shows delivery funnel', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/1,500|1,480|delivered/i)).toBeTruthy();
+      expect(screen.queryAllByText(/1,500|1,480|delivered/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given revenue attributed / When shown / Then formats correctly', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/45,000|revenue/i)).toBeTruthy();
+      expect(screen.queryAllByText(/45,000|revenue/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -126,14 +132,14 @@ describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () =
   test('Given unsubscribe count / When shown / Then highlights if above threshold', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/8|unsubscribe|bounce/i)).toBeTruthy();
+      expect(screen.queryAllByText(/8|unsubscribe|bounce/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given segment info / When displayed / Then shows target segment name', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/high value customers|segment/i)).toBeTruthy();
+      expect(screen.queryAllByText(/high value customers|segment/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -141,14 +147,14 @@ describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () =
     mockCrmService.getCampaign.mockRejectedValueOnce({ response: { status: 404 } });
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/not found|error|campaign/i)).toBeTruthy();
+      expect(screen.queryAllByText(/not found|error|campaign/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given engagement breakdown / When rendered / Then shows click heatmap or link list', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/120|click|engagement/i)).toBeTruthy();
+      expect(screen.queryAllByText(/120|click|engagement/i).length).toBeGreaterThan(0);
     });
   });
 });

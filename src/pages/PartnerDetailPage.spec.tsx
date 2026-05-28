@@ -32,6 +32,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -40,6 +43,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -81,45 +85,45 @@ describe('Given PartnerDetailPage — Partner Detail View', () => {
   test('Given partner id / When loaded / Then displays partner details', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/alpha resellers|partner/i)).toBeTruthy();
+      expect(screen.queryAllByText(/alpha resellers|partner/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given partner loaded / When rendered / Then shows tier and type', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/partner|back to partners/i)).toBeTruthy();
+      expect(screen.queryAllByText(/partner|back to partners/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given contact info / When rendered / Then shows contact details', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/partner|back to partners/i)).toBeTruthy();
+      expect(screen.queryAllByText(/partner|back to partners/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given commission rate / When displayed / Then shows percentage correctly', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/partner|back to partners/i)).toBeTruthy();
+      expect(screen.queryAllByText(/partner|back to partners/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given revenue total / When shown / Then formats correctly', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/partner|back to partners/i)).toBeTruthy();
+      expect(screen.queryAllByText(/partner|back to partners/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given deals tab / When clicked / Then shows partner deals list', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      const dealsTab = screen.queryByText(/deals|transactions/i);
+      const dealsTab = screen.queryAllByText(/deals|transactions/i)[0];
       if (dealsTab) {
         fireEvent.click(dealsTab);
-        expect(screen.queryByText(/enterprise deal|smb package/i)).toBeTruthy();
+        expect(screen.queryAllByText(/enterprise deal|smb package/i).length).toBeGreaterThan(0);
       }
     });
   });
@@ -138,7 +142,7 @@ describe('Given PartnerDetailPage — Partner Detail View', () => {
   test('Given upgrade tier / When changed / Then updates partner tier', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/gold|tier|partner/i)).toBeTruthy();
+      expect(screen.queryAllByText(/gold|tier|partner/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -157,7 +161,7 @@ describe('Given PartnerDetailPage — Partner Detail View', () => {
   test('Given partner not found / When 404 / Then shows not found state', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/not found|error|partner/i)).toBeTruthy();
+      expect(screen.queryAllByText(/not found|error|partner/i).length).toBeGreaterThan(0);
     });
   });
 });

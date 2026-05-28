@@ -29,6 +29,8 @@ const mockReviews = [
 describe('Given MarketingReviewsPage — Customer Review Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('crm_marketing_store_id', 'store-1');
+    localStorage.setItem('crm_store_id', 'store-1');
     mockCrmService.getMarketingReviews.mockResolvedValue({ reviews: mockReviews, total: mockReviews.length, avg_rating: 3.0, pending_count: 1 });
     mockCrmService.getStorefrontReviews.mockResolvedValue([]);
   });
@@ -36,21 +38,21 @@ describe('Given MarketingReviewsPage — Customer Review Management', () => {
   test('Given user visits reviews page / When loaded / Then displays review list', async () => {
     render(<MarketingReviewsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/review|alice kumar|excellent/i)).toBeTruthy();
+      expect(screen.queryAllByText(/review|alice kumar|excellent/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given reviews loaded / When rendered / Then shows ratings and comments', async () => {
     render(<MarketingReviewsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/customer reviews|no reviews found/i)).toBeTruthy();
+      expect(screen.queryAllByText(/customer reviews|no reviews found/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given average rating / When displayed / Then shows calculated average', async () => {
     render(<MarketingReviewsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/customer reviews|reviews/i)).toBeTruthy();
+      expect(screen.queryAllByText(/customer reviews|reviews/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -73,14 +75,14 @@ describe('Given MarketingReviewsPage — Customer Review Management', () => {
   test('Given 5-star review / When rendered / Then shows filled stars', async () => {
     render(<MarketingReviewsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/customer reviews|no reviews found/i)).toBeTruthy();
+      expect(screen.queryAllByText(/customer reviews|no reviews found/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given status filter / When pending selected / Then shows only pending reviews', async () => {
     render(<MarketingReviewsPage />);
     await waitFor(() => {
-      const pendingEl = screen.queryByText(/pending|filter/i);
+      const pendingEl = screen.queryAllByText(/pending|filter/i)[0];
       if (pendingEl) fireEvent.click(pendingEl);
     });
   });
@@ -88,7 +90,7 @@ describe('Given MarketingReviewsPage — Customer Review Management', () => {
   test('Given rating filter / When 1-star selected / Then shows low-rated reviews', async () => {
     render(<MarketingReviewsPage />);
     await waitFor(() => {
-      const ratingEl = screen.queryByText(/1 star|low rating|filter/i);
+      const ratingEl = screen.queryAllByText(/1 star|low rating|filter/i)[0];
       if (ratingEl) fireEvent.click(ratingEl);
     });
   });
@@ -108,7 +110,7 @@ describe('Given MarketingReviewsPage — Customer Review Management', () => {
     mockCrmService.getMarketingReviews.mockResolvedValueOnce({ reviews: [], total: 0, avg_rating: 0, pending_count: 0 });
     render(<MarketingReviewsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/no review|empty|review/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no review|empty|review/i).length).toBeGreaterThan(0);
     });
   });
 });

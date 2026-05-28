@@ -45,6 +45,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -53,6 +56,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -97,14 +101,14 @@ describe('Given LeadDetailPage — Lead Detail View', () => {
   test('Given lead id in params / When page loads / Then fetches and displays lead details', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/alice kumar|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/alice kumar|lead/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given lead loaded / When rendered / Then shows email, company, score', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/lead not found|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/lead not found|lead/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -133,7 +137,7 @@ describe('Given LeadDetailPage — Lead Detail View', () => {
   test('Given activity section / When rendered / Then shows lead activity history', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/lead not found|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/lead not found|lead/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -151,7 +155,7 @@ describe('Given LeadDetailPage — Lead Detail View', () => {
   test('Given score indicator / When lead score is high / Then shows hot lead badge', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/85|hot|score|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/85|hot|score|lead/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -170,14 +174,14 @@ describe('Given LeadDetailPage — Lead Detail View', () => {
     mockCrmService.getLeadById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/not found|error|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/not found|error|lead/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given assign owner / When changed / Then updates lead owner', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/john doe|owner|lead/i)).toBeTruthy();
+      expect(screen.queryAllByText(/john doe|owner|lead/i).length).toBeGreaterThan(0);
     });
   });
 });

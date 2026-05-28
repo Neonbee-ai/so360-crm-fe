@@ -37,6 +37,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -45,6 +48,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -72,14 +76,14 @@ describe('Given QuotesPage — Quote Management', () => {
   test('Given user visits quotes page / When loaded / Then displays quote list', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/quote|QT-/i)).toBeTruthy();
+      expect(screen.queryAllByText(/quote|QT-/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given quotes exist / When rendered / Then shows quote numbers and amounts', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/QT-001|QT-002/i)).toBeTruthy();
+      expect(screen.queryAllByText(/QT-001|QT-002/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -97,7 +101,7 @@ describe('Given QuotesPage — Quote Management', () => {
   test('Given status filter / When draft selected / Then shows only draft quotes', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
-      const filterEl = screen.queryByText(/draft|status/i);
+      const filterEl = screen.queryAllByText(/draft|status/i)[0];
       if (filterEl) fireEvent.click(filterEl);
     });
   });
@@ -113,7 +117,7 @@ describe('Given QuotesPage — Quote Management', () => {
   test('Given send action / When triggered on draft quote / Then updates status to sent', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/quote|send|status/i)).toBeTruthy();
+      expect(screen.queryAllByText(/quote|send|status/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -121,7 +125,7 @@ describe('Given QuotesPage — Quote Management', () => {
     mockCrmService.getQuotes.mockResolvedValueOnce([]);
     render(<QuotesPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/no quotes|empty|quote/i)).toBeTruthy();
+      expect(screen.queryAllByText(/no quotes|empty|quote/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -138,7 +142,7 @@ describe('Given QuotesPage — Quote Management', () => {
   test('Given accepted quote / When viewed / Then shows acceptance badge', async () => {
     render(<QuotesPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/accepted|quote/i)).toBeTruthy();
+      expect(screen.queryAllByText(/accepted|quote/i).length).toBeGreaterThan(0);
     });
   });
 

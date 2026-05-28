@@ -44,14 +44,14 @@ describe('Given SettingsPage — CRM Configuration', () => {
   test('Given user visits settings page / When loaded / Then displays settings sections', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/settings|pipeline|configuration/i)).toBeTruthy();
+      expect(screen.queryAllByText(/settings|pipeline|configuration/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given pipeline stages section / When rendered / Then shows stage management', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/pipeline|prospecting|stage/i)).toBeTruthy();
+      expect(screen.queryAllByText(/pipeline|prospecting|stage/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -69,7 +69,7 @@ describe('Given SettingsPage — CRM Configuration', () => {
   test('Given lead sources section / When rendered / Then shows source list', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/source|website|referral/i)).toBeTruthy();
+      expect(screen.queryAllByText(/source|website|referral/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -93,14 +93,14 @@ describe('Given SettingsPage — CRM Configuration', () => {
   test('Given custom fields section / When rendered / Then shows field manager', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/custom field|settings/i)).toBeTruthy();
+      expect(screen.queryAllByText(/custom field|settings/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given deal lost reasons section / When rendered / Then shows reason list', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/crm settings|settings/i)).toBeTruthy();
+      expect(screen.queryAllByText(/crm settings|settings/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -117,14 +117,14 @@ describe('Given SettingsPage — CRM Configuration', () => {
     mockCrmService.getSettings.mockRejectedValueOnce(new Error('Network error'));
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/error|failed|settings/i)).toBeTruthy();
+      expect(screen.queryAllByText(/error|failed|settings/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given reorder stages / When drag and drop / Then updates stage order', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/pipeline|stage|settings/i)).toBeTruthy();
+      expect(screen.queryAllByText(/pipeline|stage|settings/i).length).toBeGreaterThan(0);
     });
   });
 });

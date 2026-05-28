@@ -36,6 +36,9 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
@@ -44,6 +47,7 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
   ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
@@ -84,14 +88,14 @@ describe('Given QuoteDetailPage — Quote Detail and Editing', () => {
   test('Given quote id in params / When loaded / Then displays quote details', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/QT-001|enterprise software|quote/i)).toBeTruthy();
+      expect(screen.queryAllByText(/QT-001|enterprise software|quote/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given quote loaded / When rendered / Then shows line items and totals', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/75,000|10,000|100,300|line item/i)).toBeTruthy();
+      expect(screen.queryAllByText(/75,000|10,000|100,300|line item/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -147,21 +151,21 @@ describe('Given QuoteDetailPage — Quote Detail and Editing', () => {
     mockCrmService.getQuoteById.mockRejectedValueOnce({ response: { status: 404 } });
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/not found|error|quote/i)).toBeTruthy();
+      expect(screen.queryAllByText(/not found|error|quote/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given tax calculation / When items added / Then recalculates GST', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/15,300|tax|gst/i)).toBeTruthy();
+      expect(screen.queryAllByText(/15,300|tax|gst/i).length).toBeGreaterThan(0);
     });
   });
 
   test('Given validity period / When shown / Then displays valid until date', async () => {
     render(<QuoteDetailPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/2024-03-31|march 31|valid until/i)).toBeTruthy();
+      expect(screen.queryAllByText(/2024-03-31|march 31|valid until/i).length).toBeGreaterThan(0);
     });
   });
 });

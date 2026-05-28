@@ -106,11 +106,9 @@ describe('Given ProductPickerModal', () => {
       mockCrmService.searchInventoryItems.mockResolvedValue({ items: [ITEM_NO_VARIANTS, ITEM_WITH_VARIANTS] });
       render(<ProductPickerModal {...defaultProps} />);
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
-      await act(async () => { vi.advanceTimersByTime(300); });
-      await waitFor(() => {
-        expect(screen.getByText('Widget Pro')).toBeInTheDocument();
-        expect(screen.getByText('T-Shirt')).toBeInTheDocument();
-      });
+      await act(async () => { await vi.runAllTimersAsync(); });
+      expect(screen.getByText('Widget Pro')).toBeInTheDocument();
+      expect(screen.getByText('T-Shirt')).toBeInTheDocument();
     });
   });
 
@@ -120,8 +118,8 @@ describe('Given ProductPickerModal', () => {
       const onSelect = vi.fn();
       render(<ProductPickerModal {...defaultProps} onSelect={onSelect} />);
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'widget' } });
-      await act(async () => { vi.advanceTimersByTime(300); });
-      await waitFor(() => screen.getByText('Widget Pro'));
+      await act(async () => { await vi.runAllTimersAsync(); });
+      expect(screen.getByText('Widget Pro')).toBeInTheDocument();
       fireEvent.click(screen.getByText('Widget Pro').closest('button')!);
       expect(onSelect).toHaveBeenCalledWith(
         expect.objectContaining({ item_id: 'item-1', name: 'Widget Pro', unit_price: 250.0 })
@@ -134,13 +132,11 @@ describe('Given ProductPickerModal', () => {
       mockCrmService.searchInventoryItems.mockResolvedValue({ items: [ITEM_WITH_VARIANTS] });
       render(<ProductPickerModal {...defaultProps} />);
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'shirt' } });
-      await act(async () => { vi.advanceTimersByTime(300); });
-      await waitFor(() => screen.getByText('T-Shirt'));
+      await act(async () => { await vi.runAllTimersAsync(); });
+      expect(screen.getByText('T-Shirt')).toBeInTheDocument();
       fireEvent.click(screen.getByText('T-Shirt').closest('button')!);
-      await waitFor(() => {
-        expect(screen.getByText('TS-001-SR')).toBeInTheDocument();
-        expect(screen.getByText('TS-001-LB')).toBeInTheDocument();
-      });
+      expect(screen.getByText('TS-001-SR')).toBeInTheDocument();
+      expect(screen.getByText('TS-001-LB')).toBeInTheDocument();
     });
 
     test('Given expanded variant / When variant clicked / Then onSelect called with variant data', async () => {
@@ -148,10 +144,10 @@ describe('Given ProductPickerModal', () => {
       const onSelect = vi.fn();
       render(<ProductPickerModal {...defaultProps} onSelect={onSelect} />);
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'shirt' } });
-      await act(async () => { vi.advanceTimersByTime(300); });
-      await waitFor(() => screen.getByText('T-Shirt'));
+      await act(async () => { await vi.runAllTimersAsync(); });
+      expect(screen.getByText('T-Shirt')).toBeInTheDocument();
       fireEvent.click(screen.getByText('T-Shirt').closest('button')!);
-      await waitFor(() => screen.getByText('TS-001-SR'));
+      expect(screen.getByText('TS-001-SR')).toBeInTheDocument();
       fireEvent.click(screen.getByText('TS-001-SR').closest('button')!);
       expect(onSelect).toHaveBeenCalledWith(
         expect.objectContaining({ variant_id: 'var-1', unit_price: 499.0 })
@@ -164,8 +160,8 @@ describe('Given ProductPickerModal', () => {
       mockCrmService.searchInventoryItems.mockResolvedValue({ items: [] });
       render(<ProductPickerModal {...defaultProps} />);
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'xyz' } });
-      await act(async () => { vi.advanceTimersByTime(300); });
-      await waitFor(() => expect(mockCrmService.searchInventoryItems).toHaveBeenCalled());
+      await act(async () => { await vi.runAllTimersAsync(); });
+      expect(mockCrmService.searchInventoryItems).toHaveBeenCalled();
       expect(screen.queryByText('Widget Pro')).toBeNull();
     });
   });
