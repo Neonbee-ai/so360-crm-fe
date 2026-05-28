@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import TaskDetailPage from './TaskDetailPage';
@@ -20,7 +21,30 @@ vi.mock('../services/crmService', () => ({
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'task-1' }),
   useNavigate: () => vi.fn(),
+  useLocation: () => ({ search: '', pathname: '/', state: null }),
   Link: ({ children }: any) => children,
+  NavLink: ({ children }: any) => children,
+}));
+
+vi.mock('@so360/shell-context', () => ({
+  useShellBridge: () => ({
+    tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
+    orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
+    userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isFeatureEnabled: vi.fn().mockReturnValue(true),
+  }),
+  useShell: () => ({
+    tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
+    orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
+    userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+  }),
+  useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
+  useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
+  useNotify: () => ({ notify: vi.fn(), emitNotification: vi.fn() }),
+  useOrganization: () => ({ id: '8317fe18-6ac4-4ac4-b71d-dc13122a905d', name: 'Test Org' }),
+  useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
+  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
+  ShellContext: React.createContext({}),
 }));
 
 vi.mock('../hooks/useShellBridge', () => ({
