@@ -150,8 +150,8 @@ const LeadsPage = () => {
     const sortedAndFilteredLeads = useMemo(() => {
         let result = leads.filter(lead => {
             const matchesSearch =
-                lead.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                lead.contact_name.toLowerCase().includes(searchTerm.toLowerCase());
+                (lead.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (lead.contact_name || '').toLowerCase().includes(searchTerm.toLowerCase());
             const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
             const matchesOwner = ownerFilter === 'All' || lead.owner?.id === ownerFilter;
             const matchesCreator = creatorFilter === 'All' || lead.creator?.id === creatorFilter;
