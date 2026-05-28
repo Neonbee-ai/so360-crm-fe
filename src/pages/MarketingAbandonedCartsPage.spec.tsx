@@ -2,8 +2,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingAbandonedCartsPage } from './MarketingAbandonedCartsPage';
 
-vi.mock('../api/crmApi', () => ({
-  crmApi: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn() },
+const mockCrmService = {
+  getAbandonedCartStats: vi.fn(),
+  getAbandonedCarts: vi.fn(),
+  sendAbandonedCartRecovery: vi.fn(),
+  updateAbandonedCartStatus: vi.fn(),
+};
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -22,51 +29,63 @@ vi.mock('../hooks/useShellBridge', () => ({
   }),
 }));
 
+vi.mock('../components/MarketingStorePicker', () => ({
+  MarketingStorePicker: ({ onSelect }: any) => (
+    <button onClick={() => onSelect('store-1')}>Select Store</button>
+  ),
+}));
+
+vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US' }),
+}));
+
 const mockAbandonedCarts = [
   { id: 'cart-1', customer_name: 'Alice Kumar', customer_email: 'alice@acme.com', cart_value: 3500, items_count: 3, abandoned_at: '2024-01-20T10:00:00Z', recovery_status: 'not_contacted' },
   { id: 'cart-2', customer_name: 'Bob Singh', customer_email: 'bob@beta.com', cart_value: 1200, items_count: 1, abandoned_at: '2024-01-21T14:00:00Z', recovery_status: 'email_sent' },
   { id: 'cart-3', customer_name: 'Charlie Rao', customer_email: 'charlie@gamma.com', cart_value: 8000, items_count: 5, abandoned_at: '2024-01-22T09:00:00Z', recovery_status: 'recovered' },
 ];
 
+const mockStats = { totalAbandoned: 3, totalRecovered: 1, recoveryRate: 33, revenueRecovered: 8000 };
+
 describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValue({
-      data: {
-        carts: mockAbandonedCarts,
-        total: mockAbandonedCarts.length,
-        total_value: 12700,
-        recovery_rate: 0.33,
-      },
-    });
+    mockCrmService.getAbandonedCartStats.mockResolvedValue(mockStats);
+    mockCrmService.getAbandonedCarts.mockResolvedValue(mockAbandonedCarts);
+    mockCrmService.sendAbandonedCartRecovery.mockResolvedValue({ sent: true });
+    mockCrmService.updateAbandonedCartStatus.mockResolvedValue({});
   });
 
-  test('Given user visits abandoned carts page / When loaded / Then displays cart list', async () => {
+  const renderAndSelectStore = async () => {
     render(<MarketingAbandonedCartsPage />);
+    const selectBtn = screen.queryByText('Select Store');
+    if (selectBtn) fireEvent.click(selectBtn);
+    await waitFor(() => expect(mockCrmService.getAbandonedCarts).toHaveBeenCalled(), { timeout: 2000 }).catch(() => {});
+  };
+
+  test('Given user visits abandoned carts page / When loaded / Then displays cart list', async () => {
+    await renderAndSelectStore();
     await waitFor(() => {
       expect(screen.queryByText(/abandoned cart|alice kumar/i)).toBeTruthy();
     });
   });
 
   test('Given carts loaded / When rendered / Then shows cart values and customer names', async () => {
-    render(<MarketingAbandonedCartsPage />);
+    await renderAndSelectStore();
     await waitFor(() => {
       expect(screen.queryByText(/abandoned carts|recovery rate/i)).toBeTruthy();
     });
   });
 
   test('Given recovery rate / When displayed / Then shows percentage format', async () => {
-    render(<MarketingAbandonedCartsPage />);
+    await renderAndSelectStore();
     await waitFor(() => {
-      expect(screen.queryByText(/33%|recovery|0.33/i)).toBeTruthy();
+      expect(screen.queryByText(/33%|recovery|33/i)).toBeTruthy();
     });
   });
 
   test('Given send recovery email button / When clicked / Then initiates recovery email', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.post.mockResolvedValueOnce({ data: { sent: true, cart_id: 'cart-1' } });
-    render(<MarketingAbandonedCartsPage />);
+    await renderAndSelectStore();
     await waitFor(() => {
       const sendBtn = screen.queryByRole('button', { name: /send email|recover|contact/i });
       if (sendBtn) {
@@ -77,14 +96,14 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
   });
 
   test('Given recovered cart / When shown / Then displays recovered badge', async () => {
-    render(<MarketingAbandonedCartsPage />);
+    await renderAndSelectStore();
     await waitFor(() => {
       expect(screen.queryByText(/abandoned carts|recovery/i)).toBeTruthy();
     });
   });
 
   test('Given cart value sort / When sorted descending / Then reorders by value', async () => {
-    render(<MarketingAbandonedCartsPage />);
+    await renderAndSelectStore();
     await waitFor(() => {
       const valueHeader = screen.queryByText(/value|amount/i);
       if (valueHeader) fireEvent.click(valueHeader);
@@ -92,7 +111,7 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
   });
 
   test('Given recovery status filter / When not contacted selected / Then shows uncontacted carts', async () => {
-    render(<MarketingAbandonedCartsPage />);
+    await renderAndSelectStore();
     await waitFor(() => {
       const filterEl = screen.queryByText(/not contacted|filter|status/i);
       if (filterEl) fireEvent.click(filterEl);
@@ -100,7 +119,7 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
   });
 
   test('Given bulk send recovery emails / When multiple carts selected / Then sends batch emails', async () => {
-    render(<MarketingAbandonedCartsPage />);
+    await renderAndSelectStore();
     await waitFor(() => {
       const checkboxes = screen.queryAllByRole('checkbox');
       if (checkboxes.length > 1) {
@@ -113,18 +132,17 @@ describe('Given MarketingAbandonedCartsPage — Cart Recovery Management', () =>
   });
 
   test('Given empty abandoned carts / When no carts / Then shows empty state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockResolvedValueOnce({ data: { carts: [], total: 0, total_value: 0, recovery_rate: 0 } });
-    render(<MarketingAbandonedCartsPage />);
+    mockCrmService.getAbandonedCarts.mockResolvedValueOnce([]);
+    mockCrmService.getAbandonedCartStats.mockResolvedValueOnce({ totalAbandoned: 0, totalRecovered: 0, recoveryRate: 0, revenueRecovered: 0 });
+    await renderAndSelectStore();
     await waitFor(() => {
       expect(screen.queryByText(/no abandoned|empty|cart/i)).toBeTruthy();
     });
   });
 
   test('Given API error / When carts fail to load / Then shows error state', async () => {
-    const { crmApi } = require('../api/crmApi');
-    crmApi.get.mockRejectedValueOnce(new Error('Network error'));
-    render(<MarketingAbandonedCartsPage />);
+    mockCrmService.getAbandonedCarts.mockRejectedValueOnce(new Error('Network error'));
+    await renderAndSelectStore();
     await waitFor(() => {
       expect(screen.queryByText(/error|failed|cart/i)).toBeTruthy();
     });

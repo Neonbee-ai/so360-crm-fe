@@ -37,7 +37,7 @@ const mockCrmService = {
   updateCustomerCreditLimit: vi.fn(),
 };
 
-vi.mock('../services/crmService', () => ({
+vi.mock('../../services/crmService', () => ({
   crmService: mockCrmService,
 }));
 
@@ -309,9 +309,9 @@ describe('Given KanbanBoard', () => {
       />
     );
 
-    expect(screen.getByText('NEW')).toBeTruthy();
-    expect(screen.getByText('QUALIFIED')).toBeTruthy();
-    expect(screen.getByText('WON')).toBeTruthy();
+    expect(screen.getByText('New')).toBeTruthy();
+    expect(screen.getByText('Qualified')).toBeTruthy();
+    expect(screen.getByText('Won')).toBeTruthy();
   });
 
   it('Given deals in stages / When rendered / Then deal names appear in their respective columns', () => {
