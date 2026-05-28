@@ -290,7 +290,7 @@ const LeadsPage = () => {
             accessor: (lead: Lead) => (
                 <div onClick={(e) => e.stopPropagation()}>
                     <select
-                        value={lead.owner.id}
+                        value={lead.owner?.id || ''}
                         onChange={(e) => handleOwnerChange(lead, e.target.value)}
                         className="bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-white transition-colors py-1"
                     >
