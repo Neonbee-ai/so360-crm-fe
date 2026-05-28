@@ -10,6 +10,14 @@ vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,
 }));
 
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+  useLocation: () => ({ search: '', pathname: '/', state: null }),
+  useParams: () => ({}),
+  Link: ({ children }: any) => children,
+  NavLink: ({ children }: any) => children,
+}));
+
 vi.mock('../hooks/useShellBridge', () => ({
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
