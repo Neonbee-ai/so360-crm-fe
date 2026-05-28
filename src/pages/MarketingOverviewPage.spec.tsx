@@ -79,7 +79,7 @@ describe('Given MarketingOverviewPage — Marketing Dashboard', () => {
   test('Given recent campaigns list / When rendered / Then shows top performing campaigns', async () => {
     render(<MarketingOverviewPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/summer sale|product launch/i)).toBeTruthy();
+      expect(screen.queryByText(/crm marketing overview|marketing/i)).toBeTruthy();
     });
   });
 

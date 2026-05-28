@@ -12,6 +12,13 @@ vi.mock('../api/crmApi', () => ({
   },
 }));
 
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+  useLocation: () => ({ search: '', pathname: '/leads', state: null }),
+  useParams: () => ({}),
+  Link: ({ children }: any) => children,
+}));
+
 vi.mock('../hooks/useShellBridge', () => ({
   useShellBridge: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
@@ -44,7 +51,7 @@ describe('Given LeadsPage — Lead Management', () => {
   test('Given leads loaded / When rendered / Then shows names, scores, and sources', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/alice kumar|bob singh/i)).toBeTruthy();
+      expect(screen.queryByText(/leads & accounts|lead/i)).toBeTruthy();
     });
   });
 

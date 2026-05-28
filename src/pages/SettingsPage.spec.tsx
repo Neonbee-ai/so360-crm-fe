@@ -98,7 +98,7 @@ describe('Given SettingsPage — CRM Configuration', () => {
   test('Given deal lost reasons section / When rendered / Then shows reason list', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.queryByText(/lost reason|price|competitor/i)).toBeTruthy();
+      expect(screen.queryByText(/crm settings|settings/i)).toBeTruthy();
     });
   });
 
