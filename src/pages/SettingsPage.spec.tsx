@@ -25,6 +25,10 @@ const mockSettings = {
     { id: 'stage-1', name: 'Prospecting', order: 1 },
     { id: 'stage-2', name: 'Qualification', order: 2 },
   ],
+  deal_stages: [
+    { id: 'stage-1', name: 'New', color: '#94A3B8', order: 1 },
+    { id: 'stage-2', name: 'Won', color: '#22C55E', order: 2 },
+  ],
   lead_sources: ['website', 'referral', 'cold_email', 'linkedin'],
   deal_lost_reasons: ['price', 'competitor', 'no_budget', 'timing'],
   custom_fields: [],

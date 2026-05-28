@@ -185,7 +185,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="">Select sales rep...</option>
-                                    {people.map(p => (
+                                    {people?.map((p: any) => (
                                         <option key={p.id} value={p.id}>{p.full_name}</option>
                                     ))}
                                 </select>
