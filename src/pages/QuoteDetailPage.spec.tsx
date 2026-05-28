@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { QuoteDetailPage } from './QuoteDetailPage';
 
-const mockCrmService = {
+const mockCrmService = vi.hoisted(() => ({
   approveQuote: vi.fn(),
   convertQuoteToOrder: vi.fn(),
   getQuoteById: vi.fn(),
@@ -10,7 +10,7 @@ const mockCrmService = {
   rejectQuote: vi.fn(),
   submitQuoteForApproval: vi.fn(),
   updateQuote: vi.fn(),
-};
+}));
 
 vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,

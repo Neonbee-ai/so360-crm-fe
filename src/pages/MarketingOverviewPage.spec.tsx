@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import { MarketingOverviewPage } from './MarketingOverviewPage';
 
-const mockCrmService = {
+const mockCrmService = vi.hoisted(() => ({
   getAbandonedCartStats: vi.fn(),
   getAllStorefrontSearches: vi.fn(),
   getMarketingBestSellingProducts: vi.fn(),
@@ -11,7 +11,7 @@ const mockCrmService = {
   getMarketingInactiveCustomers: vi.fn(),
   getMarketingSegments: vi.fn(),
   getMarketingTopBuyers: vi.fn(),
-};
+}));
 
 vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,

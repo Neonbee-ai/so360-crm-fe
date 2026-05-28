@@ -28,9 +28,9 @@ vi.mock('./common/Skeleton', () => ({
   Skeleton: () => <div data-testid="skeleton" />,
 }));
 
-const mockCrmService = {
+const mockCrmService = vi.hoisted(() => ({
   searchInventoryItems: vi.fn(),
-};
+}));
 vi.mock('../services/crmService', () => ({ crmService: mockCrmService }));
 
 import { ProductPickerModal } from './ProductPickerModal';

@@ -32,10 +32,10 @@ vi.mock('lucide-react', () => ({
 }));
 
 // ── crmService mock ────────────────────────────────────────────────────────────
-const mockCrmService = {
+const mockCrmService = vi.hoisted(() => ({
   validateCustomerTaxId:    vi.fn(),
   updateCustomerCreditLimit: vi.fn(),
-};
+}));
 
 vi.mock('../../services/crmService', () => ({
   crmService: mockCrmService,

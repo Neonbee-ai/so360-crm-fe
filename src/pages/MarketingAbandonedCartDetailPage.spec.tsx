@@ -11,11 +11,11 @@ import React, { useState, useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 // ── Infrastructure mocks ──────────────────────────────────────────────────
-const mockCrmService = {
+const mockCrmService = vi.hoisted(() => ({
   getAbandonedCart: vi.fn(),
   sendAbandonedCartRecovery: vi.fn(),
   updateAbandonedCartStatus: vi.fn(),
-};
+}));
 
 vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,
