@@ -15,7 +15,7 @@ import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context'
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const shell = useContext(ShellContext);
+    const shell = useContext(ShellContext) as any;
     const currentUserId = shell?.user?.id;
     const { recordActivity } = useActivity();
     const shellBridge = useShellBridge();

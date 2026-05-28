@@ -23,12 +23,12 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[600] flex items-start justify-center p-6 overflow-y-auto">
             <div
                 className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm"
                 onClick={onClose}
             />
-            <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl w-full ${sizeClasses[size]} shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[calc(100vh-2rem)]`}>
+            <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl w-full ${sizeClasses[size]} shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col my-auto max-h-[calc(100vh-3rem)]`}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 shrink-0">
                     <h3 className="text-xl font-bold text-white">{title}</h3>
                     <button
@@ -38,7 +38,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
                         <X size={20} />
                     </button>
                 </div>
-                <div className="p-6 overflow-y-auto flex-1">
+                <div className="p-6 overflow-y-auto flex-1 min-h-0">
                     {children}
                 </div>
             </div>

@@ -63,7 +63,7 @@ const mockTask = {
   due_date: '2024-02-01T10:00:00Z',
   priority: 'high',
   status: 'pending',
-  assigned_to: { id: 'user-1', name: 'John Doe', email: 'john@test.com' },
+  assigned_to: { id: 'user-1', name: 'John Doe', full_name: 'John Doe', email: 'john@test.com', avatar_url: null },
   deal: { id: 'deal-1', title: 'Enterprise Deal' },
   customer: { id: 'cust-1', name: 'Acme Corp' },
   created_at: '2024-01-20T00:00:00Z',
