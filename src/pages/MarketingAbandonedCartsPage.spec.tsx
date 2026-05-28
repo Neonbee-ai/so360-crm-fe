@@ -30,8 +30,8 @@ vi.mock('../hooks/useShellBridge', () => ({
 }));
 
 vi.mock('../components/MarketingStorePicker', () => ({
-  MarketingStorePicker: ({ onSelect }: any) => (
-    <button onClick={() => onSelect('store-1')}>Select Store</button>
+  MarketingStorePicker: ({ onChange }: any) => (
+    <button onClick={() => onChange('store-1')}>Select Store</button>
   ),
 }));
 

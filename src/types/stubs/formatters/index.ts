@@ -7,3 +7,4 @@ export const formatDate: any = _any;
 export const formatNumber: any = _any;
 export const formatPercent: any = _any;
 export const useFormatters: any = _any;
+export const useFormattersBase: any = _any;
