@@ -1,7 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+
+// Mutable holder so each test can drive the resolved feature state the shell returns.
+const shellState: { getFeatureState: (flag: string) => string } = {
+  getFeatureState: () => 'enabled',
+};
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
@@ -13,6 +18,7 @@ vi.mock('@so360/shell-context', () => ({
     isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
     isModuleEnabled: () => true,
+    getFeatureState: (flag: string) => shellState.getFeatureState(flag),
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
 
@@ -28,6 +34,10 @@ vi.mock('./services/crmService', () => ({
 }));
 
 import App from './App';
+
+beforeEach(() => {
+  shellState.getFeatureState = () => 'enabled';
+});
 
 describe('Given the App component is rendered', () => {
   it('When navigated to /dashboard / Then renders without crashing and shows loading then content', async () => {
@@ -47,5 +57,28 @@ describe('Given the App component is rendered', () => {
       </MemoryRouter>,
     );
     expect(document.body).toBeTruthy();
+  });
+});
+
+describe('Given a flag-guarded route on the 5-state model', () => {
+  it('When the feature is locked / Then the route shows the upgrade prompt instead of the page', async () => {
+    shellState.getFeatureState = () => 'locked';
+    render(
+      <MemoryRouter initialEntries={['/leads']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/upgrade plan/i)).toBeTruthy();
+  });
+
+  it('When the feature is disabled / Then the route shows the unavailable panel and NO upgrade prompt', async () => {
+    shellState.getFeatureState = () => 'disabled';
+    render(
+      <MemoryRouter initialEntries={['/leads']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/feature unavailable/i)).toBeTruthy();
+    expect(screen.queryByText(/upgrade plan/i)).toBeNull();
   });
 });
