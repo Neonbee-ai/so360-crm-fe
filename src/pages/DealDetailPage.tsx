@@ -8,6 +8,7 @@ import {
     ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap
 } from 'lucide-react';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
+import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import TaskModal from './components/TaskModal';
@@ -17,6 +18,7 @@ import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom';
 
 const DealDetailPage = () => {
+    const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { toasts, showSuccess, showError, dismissToast } = useToast();
@@ -579,7 +581,7 @@ const DealDetailPage = () => {
                                         />
                                     ) : (
                                         <p className="text-xl font-black text-emerald-400 flex items-center gap-1.5">
-                                            <DollarSign size={18} />{deal.value.toLocaleString()}
+                                            {formatters.formatCurrency(deal.value)}
                                         </p>
                                     )}
                                 </div>
@@ -979,7 +981,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Total</span>
                                         <span className="text-sm font-bold text-emerald-400">
-                                            {invoiceStatus.currency || '$'}{Number(invoiceStatus.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatters.formatCurrency(Number(invoiceStatus.total))}
                                         </span>
                                     </div>
                                 )}
@@ -988,7 +990,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Paid</span>
                                         <span className="text-sm font-bold text-emerald-400">
-                                            {invoiceStatus.currency || '$'}{Number(invoiceStatus.amount_paid).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatters.formatCurrency(Number(invoiceStatus.amount_paid))}
                                         </span>
                                     </div>
                                 )}
@@ -997,7 +999,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Balance Due</span>
                                         <span className="text-sm font-bold text-amber-400">
-                                            {invoiceStatus.currency || '$'}{Number(invoiceStatus.balance_due).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatters.formatCurrency(Number(invoiceStatus.balance_due))}
                                         </span>
                                     </div>
                                 )}
@@ -1183,7 +1185,7 @@ const DealDetailPage = () => {
                                 <h4 className="text-sm font-bold text-white mb-2">{projectDetails.title}</h4>
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="text-slate-400">
-                                        Budget: ${projectDetails.budget_total?.toLocaleString() || 0}
+                                        Budget: {formatters.formatCurrency(projectDetails.budget_total || 0)}
                                     </span>
                                     {projectDetails.completion_percentage > 0 && (
                                         <span className="text-slate-400">

@@ -2,6 +2,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { KanbanBoard } from './KanbanBoard';
+import { useBusinessSettings } from '@so360/shell-context';
+
+vi.mock('@so360/shell-context', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@so360/shell-context')>();
+  return {
+    ...original,
+    useBusinessSettings: vi.fn(),
+  };
+});
+
+vi.mock('@so360/formatters', () => ({
+  useFormatters: vi.fn((config: any) => ({
+    formatCurrency: (v: number) => `${config.currency}${v.toFixed(2)}`,
+    formatCompactCurrency: (v: number) => `${config.currency}${v}`,
+    formatDate: (d: string) => d,
+    formatNumber: (n: number) => String(n),
+    formatPercent: (n: number) => `${n}%`,
+  })),
+}));
+
+const mockUseBusinessSettings = useBusinessSettings as ReturnType<typeof vi.fn>;
 
 const stages = [
   { id: 'new', name: 'New', color: '#3B82F6', is_terminal: false },
@@ -20,6 +41,10 @@ const mockOnStageChange = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: USD settings so existing non-currency tests render without crashing
+  mockUseBusinessSettings.mockReturnValue({
+    settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
+  });
 });
 
 describe('KanbanBoard', () => {
@@ -123,6 +148,168 @@ describe('KanbanBoard', () => {
       fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
       fireEvent.drop(dropZone, { dataTransfer: dt } as any);
       expect(mockOnStageChange).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Dynamic currency — useCRMFormatters integration
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('Dynamic currency formatting via useCRMFormatters', () => {
+    const singleDeal: any[] = [
+      {
+        id: 'dc1',
+        name: 'Currency Deal',
+        value: 5000,
+        current_flow_state: 'new',
+        stage: 'New',
+        company_name: 'Acme Ltd',
+        expected_close_date: '2025-12-31',
+        owner: { id: 'u9', full_name: 'Alice', avatar_url: null },
+      },
+    ];
+
+    describe('Given org base_currency is USD', () => {
+      it('When deals are rendered in kanban / Then deal values show in USD format (not hardcoded $)', () => {
+        mockUseBusinessSettings.mockReturnValue({
+          settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
+        });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        // formatCurrency mock produces "USD5000.00"
+        expect(screen.getByText('USD5000.00')).toBeInTheDocument();
+      });
+
+      it('When deals are rendered in kanban / Then stage total also shows USD', () => {
+        mockUseBusinessSettings.mockReturnValue({
+          settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
+        });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        // formatCompactCurrency mock produces "USD5000"
+        expect(screen.getByText('USD5000')).toBeInTheDocument();
+      });
+    });
+
+    describe('Given org base_currency is INR', () => {
+      it('When deals are rendered in kanban / Then deal values show in INR format', () => {
+        mockUseBusinessSettings.mockReturnValue({
+          settings: { base_currency: 'INR', document_language: 'en-IN', timezone: 'Asia/Kolkata' },
+        });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        // formatCurrency mock produces "INR5000.00"
+        expect(screen.getByText('INR5000.00')).toBeInTheDocument();
+      });
+
+      it('When deals are rendered in kanban / Then stage total shows INR', () => {
+        mockUseBusinessSettings.mockReturnValue({
+          settings: { base_currency: 'INR', document_language: 'en-IN', timezone: 'Asia/Kolkata' },
+        });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        expect(screen.getByText('INR5000')).toBeInTheDocument();
+      });
+    });
+
+    describe('Given org base_currency is AED', () => {
+      it('When kanban renders / Then deal value is formatted with AED currency prefix', () => {
+        mockUseBusinessSettings.mockReturnValue({
+          settings: { base_currency: 'AED', document_language: 'ar-AE', timezone: 'Asia/Dubai' },
+        });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        // formatCurrency mock produces "AED5000.00" — proves useCRMFormatters receives AED from settings
+        expect(screen.getByText('AED5000.00')).toBeInTheDocument();
+      });
+
+      it('When deals are rendered / Then stage total shows AED', () => {
+        mockUseBusinessSettings.mockReturnValue({
+          settings: { base_currency: 'AED', document_language: 'ar-AE', timezone: 'Asia/Dubai' },
+        });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        expect(screen.getByText('AED5000')).toBeInTheDocument();
+      });
+    });
+
+    describe('Given businessSettings is null', () => {
+      it('When kanban renders / Then falls back to USD gracefully', () => {
+        mockUseBusinessSettings.mockReturnValue({ settings: null });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        // useCRMFormatters falls back to 'USD' when settings is null
+        expect(screen.getByText('USD5000.00')).toBeInTheDocument();
+      });
+
+      it('When kanban renders with null settings / Then stage total falls back to USD', () => {
+        mockUseBusinessSettings.mockReturnValue({ settings: null });
+        render(
+          <KanbanBoard
+            deals={singleDeal}
+            stages={stages}
+            onDealClick={mockOnDealClick}
+            onStageChange={mockOnStageChange}
+          />,
+        );
+        expect(screen.getByText('USD5000')).toBeInTheDocument();
+      });
+
+      it('When kanban renders with undefined settings / Then does not crash and shows USD fallback', () => {
+        mockUseBusinessSettings.mockReturnValue({ settings: undefined });
+        expect(() =>
+          render(
+            <KanbanBoard
+              deals={singleDeal}
+              stages={stages}
+              onDealClick={mockOnDealClick}
+              onStageChange={mockOnStageChange}
+            />,
+          ),
+        ).not.toThrow();
+        expect(screen.getByText('USD5000.00')).toBeInTheDocument();
+      });
     });
   });
 });
