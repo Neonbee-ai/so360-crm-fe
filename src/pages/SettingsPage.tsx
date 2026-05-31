@@ -570,7 +570,7 @@ const SettingsPage = () => {
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => handleToggleSourceActive(option)}
-                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-all"
+                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-50 hover:bg-slate-700 transition-all"
                                                     title={option.is_active ? 'Deactivate' : 'Activate'}
                                                 >
                                                     {option.is_active ? <ToggleRight size={18} className="text-emerald-400" /> : <ToggleLeft size={18} />}
@@ -597,7 +597,7 @@ const SettingsPage = () => {
                                         onChange={(e) => setNewSourceLabel(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddSourceType()}
                                         placeholder="New source type label…"
-                                        className="flex-1 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        className="flex-1 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg text-sm text-slate-50 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                     />
                                     <button
                                         onClick={handleAddSourceType}

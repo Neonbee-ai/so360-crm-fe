@@ -120,7 +120,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <button
                                 onClick={handleValidateTaxId}
                                 disabled={isValidatingTax || !taxIdInput.trim()}
-                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-50 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
                             >
                                 {isValidatingTax ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
                                 Validate
@@ -155,7 +155,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <button
                                 onClick={handleSaveCreditLimit}
                                 disabled={isSavingCredit}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-slate-50 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
                             >
                                 {isSavingCredit ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
                                 Save

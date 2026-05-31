@@ -93,7 +93,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                 required
                             />
                         </div>
@@ -107,7 +107,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         type="number"
                                         value={value}
                                         onChange={(e) => setValue(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                         required
                                         min="0"
                                     />
@@ -119,7 +119,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     <select
                                         value={stage}
                                         onChange={(e) => setStage(e.target.value as DealStage)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-10 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-10 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         {settings.map(s => (
                                             <option key={s.id} value={s.name}>{s.name}</option>
@@ -140,7 +140,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
                                     />
                                 </div>
                             </div>
@@ -152,7 +152,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         type="date"
                                         value={expectedClose}
                                         onChange={(e) => setExpectedClose(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
                                     />
                                 </div>
                             </div>
@@ -164,7 +164,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 <select
                                     value={ownerId}
                                     onChange={(e) => setOwnerId(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     {users.map(u => (
                                         <option key={u.id} value={u.id}>{u.full_name}</option>
@@ -182,7 +182,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 <select
                                     value={ownerPersonId}
                                     onChange={(e) => setOwnerPersonId(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="">Select sales rep...</option>
                                     {people?.map((p: any) => (

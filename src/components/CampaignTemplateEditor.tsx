@@ -309,13 +309,13 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
         <div className="flex items-center gap-2 mb-3">
           <button
             onClick={() => setShowPreview(false)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${!showPreview ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${!showPreview ? 'bg-blue-600 text-slate-50' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
           >
             Editor
           </button>
           <button
             onClick={() => setShowPreview(true)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${showPreview ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${showPreview ? 'bg-blue-600 text-slate-50' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
           >
             Preview
           </button>

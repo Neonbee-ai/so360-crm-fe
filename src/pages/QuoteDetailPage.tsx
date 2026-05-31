@@ -322,7 +322,7 @@ const QuoteDetailPage = () => {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/crm/quotes')}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>

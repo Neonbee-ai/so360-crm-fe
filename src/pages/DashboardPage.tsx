@@ -127,7 +127,7 @@ const DashboardPage = () => {
                     <button
                         onClick={() => setPeriod('yearly')}
                         className={`px-4 py-2 ${period === 'yearly'
-                            ? 'bg-slate-800 text-white'
+                            ? 'bg-slate-800 text-slate-50'
                             : 'text-slate-500 hover:text-slate-300'
                             } rounded-lg text-xs font-black uppercase tracking-widest transition-colors shadow-sm`}
                     >
@@ -136,7 +136,7 @@ const DashboardPage = () => {
                     <button
                         onClick={() => setPeriod('quarterly')}
                         className={`px-4 py-2 ${period === 'quarterly'
-                            ? 'bg-slate-800 text-white'
+                            ? 'bg-slate-800 text-slate-50'
                             : 'text-slate-500 hover:text-slate-300'
                             } rounded-lg text-xs font-black uppercase tracking-widest transition-colors`}
                     >
@@ -145,7 +145,7 @@ const DashboardPage = () => {
                     <button
                         onClick={() => setPeriod('monthly')}
                         className={`px-4 py-2 ${period === 'monthly'
-                            ? 'bg-slate-800 text-white'
+                            ? 'bg-slate-800 text-slate-50'
                             : 'text-slate-500 hover:text-slate-300'
                             } rounded-lg text-xs font-black uppercase tracking-widest transition-colors`}
                     >
@@ -369,7 +369,7 @@ const DashboardPage = () => {
                                                 className="w-full bg-cyan-500/20 border-t-2 border-cyan-500 rounded-t-sm hover:bg-cyan-500/40 transition-all relative group-hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
                                                 style={{ height: `${heightPct}%` }}
                                             >
-                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none border border-slate-700">
+                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-50 text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none border border-slate-700">
                                                     {val} orders
                                                 </div>
                                             </div>
@@ -459,7 +459,7 @@ const DashboardPage = () => {
                                         className="w-full bg-blue-500/20 border-t-2 border-blue-500 rounded-t-sm hover:bg-blue-500/40 transition-all relative group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]"
                                         style={{ height: `${heightPercentage}%` }}
                                     >
-                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none border border-slate-700">
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-50 text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none border border-slate-700">
                                             {formatCurrency(val)}
                                         </div>
                                     </div>

@@ -122,7 +122,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         type="text"
                         value={formData.company_name}
                         onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                         placeholder="e.g. Acme Corp"
                     />
                 </div>
@@ -135,7 +135,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="text"
                             value={formData.contact_name}
                             onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                         />
                     </div>
                     <div className="space-y-1.5">
@@ -145,7 +145,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="email"
                             value={formData.contact_email}
                             onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                         />
                     </div>
                 </div>
@@ -157,7 +157,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="tel"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                             placeholder="+91 98765 43210"
                         />
                     </div>
@@ -167,7 +167,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="tel"
                             value={formData.alt_phone}
                             onChange={(e) => setFormData({ ...formData, alt_phone: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                             placeholder="+91 98765 43211"
                         />
                     </div>
@@ -179,7 +179,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         type="text"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                         placeholder="Street / area"
                     />
                 </div>
@@ -191,7 +191,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="text"
                             value={formData.city}
                             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                             placeholder="Bangalore"
                         />
                     </div>
@@ -201,7 +201,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             type="text"
                             value={formData.pin_code}
                             onChange={(e) => setFormData({ ...formData, pin_code: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                             placeholder="560001"
                         />
                     </div>
@@ -213,7 +213,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <select
                             value={formData.source}
                             onChange={(e) => setFormData({ ...formData, source: e.target.value, referred_by: '' })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
                         >
                             <option value="">— Select source —</option>
                             {sourceTypes.map(opt => (
@@ -227,7 +227,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <select
                             value={formData.status}
                             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
                         >
                             {leadStages.map(stage => (
                                 <option key={stage.id} value={stage.name}>{stage.name}</option>
@@ -242,7 +242,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <select
                             value={formData.referred_by}
                             onChange={(e) => setFormData({ ...formData, referred_by: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
                         >
                             <option value="">— Select partner —</option>
                             {partners.map(p => (
@@ -259,7 +259,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     <select
                         value={formData.owner_id}
                         onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
                     >
                         {users.length === 0 && (
                             <option value="">Loading...</option>
@@ -297,7 +297,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                 ...formData,
                                                 custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
                                             })}
-                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white"
+                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
                                         >
                                             <option value="">— Select —</option>
                                             {(field.options || []).map((opt: string) => (
@@ -313,7 +313,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                 ...formData,
                                                 custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
                                             })}
-                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-white placeholder:text-slate-500"
+                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                                         />
                                     )}
                                 </div>

@@ -144,7 +144,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
     return (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between flex-shrink-0">
                     <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
                         <CheckCircle2 className={isEditing ? "text-blue-500" : "text-emerald-500"} size={24} />
@@ -163,7 +163,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                 required
                                 placeholder="e.g. Follow up email..."
                             />
@@ -174,7 +174,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold resize-none h-20"
+                                className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold resize-none h-20"
                                 placeholder="Add details..."
                             />
                         </div>
@@ -185,7 +185,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                 <select
                                     value={type}
                                     onChange={(e) => setType(e.target.value as TaskType)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="TODO">To Do</option>
                                     <option value="CALL">Call</option>
@@ -205,7 +205,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                     />
                                 </div>
                             </div>
@@ -220,7 +220,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
                                         min={type === 'REMINDER' ? todayDatetime : todayDate}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                         required
                                     />
                                 </div>
@@ -233,7 +233,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                 <select
                                     value={reminderMinutes}
                                     onChange={(e) => setReminderMinutes(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="">No reminder notification</option>
                                     <option value="15">15 minutes before</option>
@@ -252,7 +252,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                     <select
                                         value={assignedToId}
                                         onChange={(e) => setAssignedToId(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         {users.map(u => (
                                             <option key={u.id} value={u.id}>

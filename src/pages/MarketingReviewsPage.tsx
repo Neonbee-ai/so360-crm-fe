@@ -76,7 +76,7 @@ const MarketingReviewsPage: React.FC = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   placeholder="Filter by product, title, or content..."
                 />
               </div>
@@ -166,7 +166,7 @@ const MarketingReviewsPage: React.FC = () => {
                       <a 
                         href="/dailystore/reviews" 
                         target="_blank"
-                        className="bg-slate-800 hover:bg-slate-700 text-white text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-700 flex items-center gap-2"
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-50 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-700 flex items-center gap-2"
                       >
                         <ShieldCheck size={12} /> Moderate in DailyStore
                       </a>
