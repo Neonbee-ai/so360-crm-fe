@@ -39,7 +39,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                                 type="date"
                                 value={newDate}
                                 onChange={(e) => setNewDate(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500"
+                                className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500"
                                 required
                             />
                         </div>

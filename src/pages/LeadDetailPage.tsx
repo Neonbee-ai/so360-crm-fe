@@ -326,7 +326,7 @@ const LeadDetailPage = () => {
                                     }}
                                     onBlur={() => setIsChangingStatus(false)}
                                     autoFocus
-                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-white rounded px-2 py-1 outline-none"
+                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-slate-50 rounded px-2 py-1 outline-none"
                                 >
                                     {leadStages.map(stage => (
                                         <option key={stage.id} value={stage.id}>{stage.name}</option>
@@ -422,7 +422,7 @@ const LeadDetailPage = () => {
                                         }
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
-                                    className={`p-2 rounded-lg transition-all ${isEditingInfo ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                                    className={`p-2 rounded-lg transition-all ${isEditingInfo ? 'bg-blue-600 text-slate-50 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
                                     title={isEditingInfo ? "Save Changes" : "Edit Intelligence"}
                                 >
                                     {isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
@@ -445,7 +445,7 @@ const LeadDetailPage = () => {
                                                         type="email"
                                                         value={lead.contact_email}
                                                         onChange={(e) => setLead({ ...lead, contact_email: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
                                                     <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.contact_email}</a>
@@ -464,7 +464,7 @@ const LeadDetailPage = () => {
                                                         value={lead.phone || ''}
                                                         onChange={(e) => setLead({ ...lead, phone: e.target.value })}
                                                         placeholder="Add phone..."
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.phone || 'Not provided'}</span>
@@ -486,7 +486,7 @@ const LeadDetailPage = () => {
                                                             const isReferral = e.target.value === 'customer_referral' || e.target.value === 'architect_referral';
                                                             setLead({ ...lead, source: e.target.value, referred_by: isReferral ? lead.referred_by : undefined });
                                                         }}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     >
                                                         <option value="">— Select source —</option>
                                                         {sourceTypes.map(opt => (
@@ -512,7 +512,7 @@ const LeadDetailPage = () => {
                                                         <select
                                                             value={lead.referred_by || ''}
                                                             onChange={(e) => setLead({ ...lead, referred_by: e.target.value || undefined })}
-                                                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                         >
                                                             <option value="">— None —</option>
                                                             {partners.map(p => (
@@ -583,7 +583,7 @@ const LeadDetailPage = () => {
                                                                 [field.id]: e.target.value
                                                             }
                                                         })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">
@@ -795,7 +795,7 @@ const LeadDetailPage = () => {
                                                         setNewNoteContent('');
                                                     }}
                                                     disabled={!newNoteContent.trim()}
-                                                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700 disabled:opacity-50"
+                                                    className="bg-slate-800 hover:bg-slate-700 text-slate-50 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700 disabled:opacity-50"
                                                 >
                                                     Save Note
                                                 </button>
@@ -923,7 +923,7 @@ const LeadDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Digital Assets & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 active:scale-95'}`}>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-slate-50 shadow-lg shadow-blue-500/20 active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload Document'}
                                             <input
@@ -974,7 +974,7 @@ const LeadDetailPage = () => {
                                                     </div>
                                                     <div className="flex gap-2">
                                                         <button
-                                                            className="p-2 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                                                            className="p-2 text-slate-500 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-all"
                                                             title="Download"
                                                         >
                                                             <Download size={16} />
@@ -1249,7 +1249,7 @@ const LeadDetailPage = () => {
                                             }}
                                             className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
                                                 ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white'
+                                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-50'
                                                 }`}
                                         >
                                             <span>{stage.name}</span>

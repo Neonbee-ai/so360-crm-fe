@@ -420,13 +420,13 @@ const MarketingSegmentsPage: React.FC = () => {
 
             <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900 border border-slate-800 p-2 rounded-xl">
               <button
-                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'customer' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'customer' ? 'bg-blue-600 text-slate-50' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
                 onClick={() => setMemberType('customer')}
               >
                 Customers
               </button>
               <button
-                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'lead' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'lead' ? 'bg-blue-600 text-slate-50' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
                 onClick={() => setMemberType('lead')}
               >
                 Leads

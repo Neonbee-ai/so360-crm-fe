@@ -62,7 +62,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                         <select
                             value={filters.date_range || ''}
                             onChange={(e) => handleChange('date_range', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded-lg pl-9 pr-4 py-2 outline-none focus:border-blue-500 appearance-none min-w-[160px]"
+                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg pl-9 pr-4 py-2 outline-none focus:border-blue-500 appearance-none min-w-[160px]"
                         >
                             <option value="">All Time</option>
                             <option value="today">Today</option>
@@ -87,7 +87,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                             type="date"
                             value={filters.start_date || ''}
                             onChange={(e) => handleChange('start_date', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
                         />
                     </div>
                     <div className="space-y-1">
@@ -96,7 +96,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                             type="date"
                             value={filters.end_date || ''}
                             onChange={(e) => handleChange('end_date', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
                         />
                     </div>
                 </>
@@ -108,7 +108,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                 <select
                     value={filters.owner_id || ''}
                     onChange={(e) => handleChange('owner_id', e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded-lg px-3 py-2 outline-none focus:border-blue-500 min-w-[140px]"
+                    className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg px-3 py-2 outline-none focus:border-blue-500 min-w-[140px]"
                 >
                     <option value="">All Owners</option>
                     {users.map(u => (
@@ -127,7 +127,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                         placeholder="Search company..."
                         value={filters.company_name || ''}
                         onChange={(e) => handleChange('company_name', e.target.value)}
-                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded-lg pl-9 pr-4 py-2 outline-none focus:border-blue-500 w-[180px]"
+                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg pl-9 pr-4 py-2 outline-none focus:border-blue-500 w-[180px]"
                     />
                 </div>
             </div>
@@ -136,7 +136,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
             {hasActiveFilters && (
                 <button
                     onClick={clearFilters}
-                    className="flex items-center gap-1.5 text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-xs font-bold"
+                    className="flex items-center gap-1.5 text-slate-400 hover:text-slate-50 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-xs font-bold"
                 >
                     <X size={14} />
                     Clear

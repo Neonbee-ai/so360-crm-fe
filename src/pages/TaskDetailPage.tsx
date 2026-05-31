@@ -261,7 +261,7 @@ const TaskDetailPage = () => {
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     placeholder="Add a note or comment..."
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-24"
+                                    className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-24"
                                 />
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button
@@ -422,7 +422,7 @@ const TaskDetailPage = () => {
                         <textarea
                             value={editingNote.content}
                             onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-32 mb-4"
+                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-32 mb-4"
                             placeholder="Note content..."
                         />
                         <div className="flex gap-3 justify-end">

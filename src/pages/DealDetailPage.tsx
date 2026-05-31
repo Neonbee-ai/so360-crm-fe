@@ -468,7 +468,7 @@ const DealDetailPage = () => {
                                     }}
                                     onBlur={() => setIsChangingStage(false)}
                                     autoFocus
-                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-white rounded px-2 py-1 outline-none"
+                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-slate-50 rounded px-2 py-1 outline-none"
                                 >
                                     {dealStages.map(s => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
@@ -592,7 +592,7 @@ const DealDetailPage = () => {
                                             type="date"
                                             value={editedCloseDate ?? deal.expected_close_date ?? ''}
                                             onChange={(e) => setEditedCloseDate(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-white font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
+                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
                                         />
                                     ) : (
                                         <p className="text-sm font-bold text-white flex items-center gap-1.5">
@@ -606,7 +606,7 @@ const DealDetailPage = () => {
                                         <select
                                             value={editedOwnerId ?? deal.owner.id}
                                             onChange={(e) => setEditedOwnerId(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-white font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
+                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
                                         >
                                             {allUsers.map(u => (
                                                 <option key={u.id} value={u.id}>{u.full_name}</option>
@@ -848,7 +848,7 @@ const DealDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-4">
                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Attachments & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95'}`}>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-slate-50 shadow-lg active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload File'}
                                             <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => {

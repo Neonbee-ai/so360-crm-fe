@@ -162,7 +162,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     placeholder="Search by coupon code..."
                   />
                 </div>
@@ -187,7 +187,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="text" 
                     value={form.code} 
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                     placeholder="WELCOME20" 
                   />
                 </div>
@@ -196,7 +196,7 @@ const MarketingCouponsPage: React.FC = () => {
                   <select 
                     value={form.discount_type} 
                     onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold appearance-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold appearance-none"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed Amount</option>
@@ -212,7 +212,7 @@ const MarketingCouponsPage: React.FC = () => {
                       type="number" 
                       value={form.discount_value} 
                       onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })} 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                     />
                   </div>
                 </div>
@@ -222,7 +222,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="number" 
                     value={form.min_order_amount} 
                     onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                   />
                 </div>
                 <div>
@@ -231,7 +231,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="number" 
                     value={form.usage_limit} 
                     onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                     placeholder="0 = Unlimited"
                   />
                 </div>
@@ -241,7 +241,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="date" 
                     value={form.valid_from} 
                     onChange={(e) => setForm({ ...form, valid_from: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                   />
                 </div>
                 <div>
@@ -250,7 +250,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="date" 
                     value={form.valid_until} 
                     onChange={(e) => setForm({ ...form, valid_until: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                   />
                 </div>
                 <div className="lg:col-span-4">
@@ -258,7 +258,7 @@ const MarketingCouponsPage: React.FC = () => {
                   <textarea 
                     value={form.description} 
                     onChange={(e) => setForm({ ...form, description: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold h-20 resize-none" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold h-20 resize-none" 
                     placeholder="Describe the offer..."
                   />
                 </div>
