@@ -195,7 +195,7 @@ const SettingsPage = () => {
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-10 flex justify-between items-center">
                 <div>
-                    <h1 className="text-4xl font-black text-white tracking-tight">CRM Settings</h1>
+                    <h1 className="text-4xl font-black text-slate-50 tracking-tight">CRM Settings</h1>
                     <p className="text-slate-400 mt-1 font-medium">Configure your workspace and custom data points</p>
                 </div>
                 {canWriteSettings && <button
@@ -246,7 +246,7 @@ const SettingsPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
                             <div>
-                                <h3 className="font-black text-white uppercase tracking-widest text-xs">Deal Pipeline Stages</h3>
+                                <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Deal Pipeline Stages</h3>
                                 <p className="text-[10px] text-slate-500 font-bold mt-1">THE ORDER DEFINES YOUR SALES FUNNEL</p>
                             </div>
                             <button
@@ -269,7 +269,7 @@ const SettingsPage = () => {
                                                 value={stage.name}
                                                 onChange={(e) => updateStageName(idx, e.target.value)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-white focus:ring-0 placeholder:text-slate-700"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-700"
                                             />
                                         </div>
                                         <select
@@ -308,7 +308,7 @@ const SettingsPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
                             <div>
-                                <h3 className="font-black text-white uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
+                                <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
                                 <p className="text-[10px] text-slate-500 font-bold mt-1">THE ORDER DEFINES YOUR LEAD JOURNEY</p>
                             </div>
                             <button
@@ -331,7 +331,7 @@ const SettingsPage = () => {
                                                 value={stage.name}
                                                 onChange={(e) => updateLeadStageName(idx, e.target.value)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-white focus:ring-0 placeholder:text-slate-700"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-700"
                                             />
                                         </div>
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -356,7 +356,7 @@ const SettingsPage = () => {
                         <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
                             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-white uppercase tracking-widest text-xs">Lead Fields</h3>
+                                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
@@ -381,7 +381,7 @@ const SettingsPage = () => {
                                                         newFields[idx].label = e.target.value;
                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                     }}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-white focus:ring-0"
+                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
                                                 />
                                             </div>
                                             <select
@@ -420,7 +420,7 @@ const SettingsPage = () => {
                         <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
                             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-white uppercase tracking-widest text-xs">Deal Fields</h3>
+                                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Deal Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
@@ -445,7 +445,7 @@ const SettingsPage = () => {
                                                         newFields[idx].label = e.target.value;
                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                     }}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-white focus:ring-0"
+                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
                                                 />
                                             </div>
                                             <select
@@ -484,7 +484,7 @@ const SettingsPage = () => {
                         <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
                             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-white uppercase tracking-widest text-xs">Partner Fields</h3>
+                                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Partner Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
@@ -509,7 +509,7 @@ const SettingsPage = () => {
                                                         newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                     }}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-white focus:ring-0"
+                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
                                                 />
                                             </div>
                                             <select
@@ -552,7 +552,7 @@ const SettingsPage = () => {
                 {activeTab === 'sources' && (
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 bg-slate-900/50">
-                            <h3 className="font-black text-white uppercase tracking-widest text-xs">Lead Source Types</h3>
+                            <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Source Types</h3>
                             <p className="text-[10px] text-slate-500 font-bold mt-1">WHERE DO YOUR LEADS COME FROM? SYSTEM TYPES CANNOT BE DELETED.</p>
                         </div>
                         <div className="p-6 space-y-4">
@@ -560,7 +560,7 @@ const SettingsPage = () => {
                                 {sourceTypes.map(option => (
                                     <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-xl transition-all ${!option.is_active ? 'opacity-50 border-slate-900 bg-slate-950/20' : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'}`}>
                                         <div className="flex-1">
-                                            <span className="text-sm font-bold text-white">{option.label}</span>
+                                            <span className="text-sm font-bold text-slate-50">{option.label}</span>
                                             <span className="ml-2 text-[10px] font-black text-slate-600 uppercase">{option.value}</span>
                                         </div>
                                         {option.is_system && (
@@ -615,7 +615,7 @@ const SettingsPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
                             <div>
-                                <h3 className="font-black text-white uppercase tracking-widest text-xs flex items-center gap-2">
+                                <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs flex items-center gap-2">
                                     <Trophy size={14} className="text-amber-400" />
                                     Lead Scoring Rules
                                 </h3>
@@ -650,7 +650,7 @@ const SettingsPage = () => {
                                                         newScoring[idx].criteria = e.target.value;
                                                         setSettings({ ...settings, lead_scoring: newScoring });
                                                     }}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-white focus:ring-0"
+                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
                                                 />
                                             </div>
                                             <div>

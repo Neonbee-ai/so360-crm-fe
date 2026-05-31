@@ -118,7 +118,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                         className="bg-slate-800 border-2 border-slate-700/50 p-4 rounded-xl shadow-sm transition-all cursor-pointer group hover:border-slate-600/50 hover:shadow-xl"
                                     >
                                         <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-sm text-white group-hover:text-blue-400 transition-colors truncate">
+                                            <h4 className="font-bold text-sm text-slate-50 group-hover:text-blue-400 transition-colors truncate">
                                                 {deal.name}
                                             </h4>
                                         </div>
@@ -182,7 +182,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                             }`}
                                     >
                                         <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-sm text-white group-hover:text-blue-400 transition-colors truncate">
+                                            <h4 className="font-bold text-sm text-slate-50 group-hover:text-blue-400 transition-colors truncate">
                                                 {deal.name}
                                             </h4>
                                         </div>

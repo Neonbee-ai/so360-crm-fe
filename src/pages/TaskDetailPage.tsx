@@ -146,7 +146,7 @@ const TaskDetailPage = () => {
                         </button>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-white'}`}>
+                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
                                     {task.title}
                                 </h1>
                                 <button
@@ -190,7 +190,7 @@ const TaskDetailPage = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Associated Deal</span>
-                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-white hover:text-blue-400 transition-colors truncate block">
+                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
                                             {task.deal_name || 'View Deal'}
                                         </Link>
                                     </div>
@@ -204,7 +204,7 @@ const TaskDetailPage = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Related Lead</span>
-                                        <Link to={`/leads/${task.lead_id}`} className="text-lg font-bold text-white hover:text-blue-400 transition-colors truncate block">
+                                        <Link to={`/leads/${task.lead_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
                                             View Lead
                                         </Link>
                                     </div>
@@ -217,7 +217,7 @@ const TaskDetailPage = () => {
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Due Date</span>
-                                    <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-white'}`}>
+                                    <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-50'}`}>
                                         {new Date(task.due_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                     </p>
                                 </div>
@@ -266,7 +266,7 @@ const TaskDetailPage = () => {
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button
                                         onClick={() => { setNewNote(''); setIsAddingNote(false); }}
-                                        className="px-4 py-2 text-slate-400 hover:text-white text-sm"
+                                        className="px-4 py-2 text-slate-400 hover:text-slate-50 text-sm"
                                     >
                                         Cancel
                                     </button>
@@ -352,7 +352,7 @@ const TaskDetailPage = () => {
                                 {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
                             </div>
                             <div>
-                                <p className="font-bold text-white">{task.assigned_to.full_name}</p>
+                                <p className="font-bold text-slate-50">{task.assigned_to.full_name}</p>
                                 <p className="text-xs text-slate-500">Sales Representative</p>
                             </div>
                         </div>
@@ -413,7 +413,7 @@ const TaskDetailPage = () => {
                                 <Edit2 className="text-blue-400" size={20} />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-white mb-1">Edit Note</h3>
+                                <h3 className="text-lg font-bold text-slate-50 mb-1">Edit Note</h3>
                                 <p className="text-sm text-slate-400">
                                     Update your note content below.
                                 </p>
@@ -467,7 +467,7 @@ const TaskDetailPage = () => {
                                 <Trash2 className="text-rose-400" size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white mb-1">Delete Note</h3>
+                                <h3 className="text-lg font-bold text-slate-50 mb-1">Delete Note</h3>
                                 <p className="text-sm text-slate-400">
                                     Are you sure you want to delete this note? This action cannot be undone.
                                 </p>
@@ -506,14 +506,14 @@ const TaskDetailPage = () => {
             {showDeleteConfirm && createPortal(
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6">
-                        <h3 className="text-lg font-bold text-white mb-2">Delete Task</h3>
+                        <h3 className="text-lg font-bold text-slate-50 mb-2">Delete Task</h3>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this task? This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="px-4 py-2 text-slate-400 hover:text-white"
+                                className="px-4 py-2 text-slate-400 hover:text-slate-50"
                             >
                                 Cancel
                             </button>

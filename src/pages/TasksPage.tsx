@@ -135,7 +135,7 @@ const TasksPage = () => {
     const SortableHeader = ({ label, field }: { label: string, field: SortField }) => (
         <button
             onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
         >
             {label}
             <SortIcon field={field} />
@@ -223,7 +223,7 @@ const TasksPage = () => {
                         {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
                     </button>
                     <div className="flex flex-col gap-0.5">
-                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-white'}`}>
+                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
                             {task.title}
                         </span>
                     </div>
@@ -277,7 +277,7 @@ const TasksPage = () => {
                     <select
                         value={task.assigned_to.id}
                         onChange={(e) => handleAssigneeChange(task, e.target.value)}
-                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-white transition-colors py-1"
+                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1"
                     >
                         {users.map(user => (
                             <option key={user.id} value={user.id} className="bg-slate-900 text-slate-300">
@@ -352,7 +352,7 @@ const TasksPage = () => {
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight leading-none">Tasks & Follow-ups</h1>
+                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>
                     <p className="text-slate-400 mt-2">Personal execution discipline and daily tasks</p>
                 </div>
             </header>
@@ -471,7 +471,7 @@ const TasksPage = () => {
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>

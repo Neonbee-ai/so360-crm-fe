@@ -136,7 +136,7 @@ const MarketingCouponsPage: React.FC = () => {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Discount Coupons</h1>
+          <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Discount Coupons</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage promotional codes and offers</p>
         </div>
         {canCreateMarketing && <button
@@ -175,7 +175,7 @@ const MarketingCouponsPage: React.FC = () => {
           <section className="bg-slate-900 border border-blue-500/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-blue-500/5">
               <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
-              <button onClick={() => setShowForm(false)} className="text-slate-500 hover:text-white transition-colors">
+              <button onClick={() => setShowForm(false)} className="text-slate-500 hover:text-slate-50 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -266,7 +266,7 @@ const MarketingCouponsPage: React.FC = () => {
               <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-slate-800">
                 <button 
                   onClick={() => setShowForm(false)} 
-                  className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+                  className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-all"
                 >
                   Cancel
                 </button>
@@ -326,7 +326,7 @@ const MarketingCouponsPage: React.FC = () => {
                             <Tag size={18} />
                           </div>
                           <div>
-                            <p className="text-sm font-black text-white tracking-tight uppercase">{coupon.code}</p>
+                            <p className="text-sm font-black text-slate-50 tracking-tight uppercase">{coupon.code}</p>
                             <p className="text-[10px] text-slate-500 font-bold truncate max-w-xs">{coupon.description || 'No description'}</p>
                           </div>
                         </div>

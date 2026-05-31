@@ -80,7 +80,7 @@ const MarketingNewsletterPage: React.FC = () => {
     <div className="p-8">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight uppercase">Newsletter Subscribers</h1>
+        <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Newsletter Subscribers</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage storefront newsletter audience</p>
       </div>
 

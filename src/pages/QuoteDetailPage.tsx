@@ -346,7 +346,7 @@ const QuoteDetailPage = () => {
                     {canCreateQuote && canEdit && !isEditing && (
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
                         >
                             <Edit2 className="w-4 h-4" />
                             Edit
@@ -360,7 +360,7 @@ const QuoteDetailPage = () => {
                                     setDraftValues({});
                                     fetchQuote();
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -429,7 +429,7 @@ const QuoteDetailPage = () => {
                                 },
                                 settings?.document_settings,
                             )}
-                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
                         >
                             <Printer className="w-4 h-4" />
                             Print Quote
@@ -811,7 +811,7 @@ const QuoteDetailPage = () => {
                                     setShowRejectModal(false);
                                     setRejectReason('');
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -839,7 +839,7 @@ const QuoteDetailPage = () => {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowConvertModal(false)}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>

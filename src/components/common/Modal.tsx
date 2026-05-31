@@ -30,7 +30,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
             />
             <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl w-full ${sizeClasses[size]} shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col my-auto max-h-[calc(100vh-3rem)]`}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 shrink-0">
-                    <h3 className="text-xl font-bold text-white">{title}</h3>
+                    <h3 className="text-xl font-bold text-slate-50">{title}</h3>
                     <button
                         onClick={onClose}
                         className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-50 transition-colors"

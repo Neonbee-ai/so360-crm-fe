@@ -59,7 +59,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
 
     return (
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-5">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-50 flex items-center gap-2">
                 <Building2 size={16} className="text-emerald-400" />
                 Customer Details
             </h3>

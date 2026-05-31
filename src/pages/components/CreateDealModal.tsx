@@ -78,11 +78,11 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
             <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                     <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between">
-                        <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                        <h2 className="text-xl font-black text-slate-50 uppercase tracking-tight flex items-center gap-2">
                             <Briefcase className="text-blue-500" size={24} />
                             New Deal
                         </h2>
-                        <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                        <button onClick={onClose} className="text-slate-500 hover:text-slate-50 transition-colors">
                             <X size={20} />
                         </button>
                     </div>
@@ -197,7 +197,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
+                                className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>

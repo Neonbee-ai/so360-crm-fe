@@ -112,7 +112,7 @@ const DashboardPage = () => {
         <div className="p-8 space-y-8 pb-16">
             <header className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-black text-white tracking-tight mb-2">Executive Overview</h1>
+                    <h1 className="text-3xl font-black text-slate-50 tracking-tight mb-2">Executive Overview</h1>
                     <p className="text-slate-400 font-medium">
                         Sales performance and financial insights for {
                             period === 'yearly'
@@ -168,7 +168,7 @@ const DashboardPage = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Deal Revenue</span>
                         </div>
                         <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-black text-white tracking-tight">{formatCurrency(financials.totalRevenue)}</h3>
+                            <h3 className="text-3xl font-black text-slate-50 tracking-tight">{formatCurrency(financials.totalRevenue)}</h3>
                             <span className="text-emerald-400 flex items-center text-xs font-bold mb-1.5">
                                 <ArrowUpRight size={14} /> +12.5%
                             </span>
@@ -196,7 +196,7 @@ const DashboardPage = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Pipeline Value</span>
                         </div>
                         <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-black text-white tracking-tight">{formatCurrency(financials.pipelineValue)}</h3>
+                            <h3 className="text-3xl font-black text-slate-50 tracking-tight">{formatCurrency(financials.pipelineValue)}</h3>
                             <span className="text-slate-500 text-xs font-bold mb-1.5 uppercase tracking-wider">
                                 {counts.deals} Active Deals
                             </span>
@@ -217,7 +217,7 @@ const DashboardPage = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Win Rate</span>
                         </div>
                         <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-black text-white tracking-tight">{financials.winRate.toFixed(1)}%</h3>
+                            <h3 className="text-3xl font-black text-slate-50 tracking-tight">{financials.winRate.toFixed(1)}%</h3>
                             <span className="text-emerald-400 flex items-center text-xs font-bold mb-1.5">
                                 <ArrowUpRight size={14} /> +2.4%
                             </span>
@@ -238,7 +238,7 @@ const DashboardPage = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Avg Deal Size</span>
                         </div>
                         <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-black text-white tracking-tight">{formatCurrency(financials.avgDealSize)}</h3>
+                            <h3 className="text-3xl font-black text-slate-50 tracking-tight">{formatCurrency(financials.avgDealSize)}</h3>
                         </div>
                         <p className="text-xs text-slate-500 mt-2 font-medium">Per closed-won deal</p>
                     </div>
@@ -271,7 +271,7 @@ const DashboardPage = () => {
                                     <div className="p-1.5 bg-purple-500/10 rounded-lg"><DollarSign size={16} /></div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Revenue</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                <h3 className="text-2xl font-black text-slate-50 tracking-tight">
                                     {formatCurrency(commerceKPIs?.revenue ?? 0)}
                                 </h3>
                                 <p className="text-[10px] text-slate-500 mt-1 font-medium">Recognized (paid)</p>
@@ -286,7 +286,7 @@ const DashboardPage = () => {
                                     <div className="p-1.5 bg-cyan-500/10 rounded-lg"><Package size={16} /></div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Orders</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                <h3 className="text-2xl font-black text-slate-50 tracking-tight">
                                     {(commerceKPIs?.orderCount ?? 0).toLocaleString()}
                                 </h3>
                                 <p className="text-[10px] text-slate-500 mt-1 font-medium">Total orders placed</p>
@@ -301,7 +301,7 @@ const DashboardPage = () => {
                                     <div className="p-1.5 bg-violet-500/10 rounded-lg"><BarChart3 size={16} /></div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">AOV</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                <h3 className="text-2xl font-black text-slate-50 tracking-tight">
                                     {formatCurrency(commerceKPIs?.aov ?? 0)}
                                 </h3>
                                 <p className="text-[10px] text-slate-500 mt-1 font-medium">Avg order value</p>
@@ -316,7 +316,7 @@ const DashboardPage = () => {
                                     <div className="p-1.5 bg-emerald-500/10 rounded-lg"><Users size={16} /></div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Repeat</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                <h3 className="text-2xl font-black text-slate-50 tracking-tight">
                                     {(commerceKPIs?.repeatPurchaseRate ?? 0).toFixed(1)}%
                                 </h3>
                                 <p className="text-[10px] text-slate-500 mt-1 font-medium">Repeat purchase rate</p>
@@ -331,7 +331,7 @@ const DashboardPage = () => {
                                     <div className="p-1.5 bg-rose-500/10 rounded-lg"><TrendingUp size={16} className="rotate-180" /></div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Refund</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-white tracking-tight">
+                                <h3 className="text-2xl font-black text-slate-50 tracking-tight">
                                     {(commerceKPIs?.refundRate ?? 0).toFixed(1)}%
                                 </h3>
                                 <p className="text-[10px] text-slate-500 mt-1 font-medium">Refund rate</p>
@@ -344,7 +344,7 @@ const DashboardPage = () => {
                         <div className="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h3 className="text-base font-black text-white tracking-tight">Orders Distribution</h3>
+                                    <h3 className="text-base font-black text-slate-50 tracking-tight">Orders Distribution</h3>
                                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Order volume by period</p>
                                 </div>
                                 <div className="px-3 py-1 bg-slate-800 rounded-lg flex items-center gap-2 text-xs font-bold text-slate-400">
@@ -389,7 +389,7 @@ const DashboardPage = () => {
             {showTasks && (
             <section>
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-black text-white tracking-tight">Active Reminders</h3>
+                    <h3 className="text-lg font-black text-slate-50 tracking-tight">Active Reminders</h3>
                     <Link to="../tasks" className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors">View All Tasks</Link>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
@@ -406,7 +406,7 @@ const DashboardPage = () => {
                                 </div>
                                 <span className="text-[9px] font-bold text-slate-500">{new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
-                            <h4 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate mb-1">{task.title}</h4>
+                            <h4 className="text-sm font-bold text-slate-50 group-hover:text-blue-400 transition-colors truncate mb-1">{task.title}</h4>
                             <p className="text-[11px] text-slate-500 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
                             <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-800/50">
                                 <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-black border border-slate-700">
@@ -431,7 +431,7 @@ const DashboardPage = () => {
                 <div className={`${showLeads ? 'lg:col-span-2' : ''} bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm`}>
                     <div className="flex justify-between items-center mb-8">
                         <div>
-                            <h3 className="text-lg font-black text-white tracking-tight">Revenue Performance</h3>
+                            <h3 className="text-lg font-black text-slate-50 tracking-tight">Revenue Performance</h3>
                             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Monthly Revenue Distribution</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
@@ -472,7 +472,7 @@ const DashboardPage = () => {
 
                 {/* Team Leaderboard */}
                 {showLeads && <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
-                    <h3 className="text-lg font-black text-white tracking-tight mb-1">Top Performers</h3>
+                    <h3 className="text-lg font-black text-slate-50 tracking-tight mb-1">Top Performers</h3>
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">Revenue Leaders</p>
 
                     <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
@@ -495,7 +495,7 @@ const DashboardPage = () => {
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-bold text-white truncate group-hover:text-blue-400 transition-colors">{stat.user.full_name}</h4>
+                                    <h4 className="text-sm font-bold text-slate-50 truncate group-hover:text-blue-400 transition-colors">{stat.user.full_name}</h4>
                                     <div className="flex items-center gap-3 text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-0.5">
                                         <span>{stat.dealCount} Deals</span>
                                         <span className="w-1 h-1 bg-slate-700 rounded-full" />
@@ -518,7 +518,7 @@ const DashboardPage = () => {
                 <div className="relative z-10">
                     <div className="flex justify-between items-center mb-8">
                         <div>
-                            <h3 className="text-xl font-black text-white tracking-tight">Performance Analytics</h3>
+                            <h3 className="text-xl font-black text-slate-50 tracking-tight">Performance Analytics</h3>
                             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Activity vs. Conversion Efficiency</p>
                         </div>
                     </div>
@@ -531,7 +531,7 @@ const DashboardPage = () => {
                                         {stat.user.avatar_url ? <img src={stat.user.avatar_url} /> : stat.user.full_name.charAt(0)}
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-white">{stat.user.full_name}</span>
+                                        <span className="text-xs font-bold text-slate-50">{stat.user.full_name}</span>
                                         <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{stat.user.role || 'Sales Rep'}</span>
                                     </div>
                                 </div>
@@ -567,11 +567,11 @@ const DashboardPage = () => {
                                 <div className="grid grid-cols-2 gap-2 mt-6">
                                     <div className="bg-slate-900/50 p-2 rounded-lg text-center">
                                         <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Won</div>
-                                        <div className="text-sm font-black text-white">{stat.dealCount}</div>
+                                        <div className="text-sm font-black text-slate-50">{stat.dealCount}</div>
                                     </div>
                                     <div className="bg-slate-900/50 p-2 rounded-lg text-center">
                                         <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Leads</div>
-                                        <div className="text-sm font-black text-white">{stat.activeLeads}</div>
+                                        <div className="text-sm font-black text-slate-50">{stat.activeLeads}</div>
                                     </div>
                                 </div>
                             </div>

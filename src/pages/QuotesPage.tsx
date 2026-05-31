@@ -431,7 +431,7 @@ const QuotesPage = () => {
                                 role="button"
                                 aria-label="Clear status filter"
                                 onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                className="ml-0.5 text-blue-400 hover:text-white leading-none cursor-pointer"
+                                className="ml-0.5 text-blue-400 hover:text-slate-50 leading-none cursor-pointer"
                             >×</span>
                         )}
                         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
@@ -617,7 +617,7 @@ const QuotesPage = () => {
                                     setDealDropdownOpen(false);
                                     setDealSearchTerm('');
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -649,7 +649,7 @@ const QuotesPage = () => {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => { setRejectTarget(null); setRejectReason(''); }}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -679,7 +679,7 @@ const QuotesPage = () => {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>

@@ -61,7 +61,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
       {campaign && (
         <>
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4">
-            <h1 className="text-2xl font-semibold text-white">{campaign.name}</h1>
+            <h1 className="text-2xl font-semibold text-slate-50">{campaign.name}</h1>
             <p className="text-slate-400 mt-1">{campaign.campaign_type} • {campaign.status}</p>
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
               <p className="text-slate-300"><span className="text-slate-500">Subject:</span> {campaign.subject_template || '-'}</p>

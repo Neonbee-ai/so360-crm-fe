@@ -476,7 +476,7 @@ const DealDetailPage = () => {
                                 </select>
                             ) : (
                                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStage(true)}>
-                                    <h1 className="text-4xl font-black text-white tracking-tight leading-tight">{deal.name}</h1>
+                                    <h1 className="text-4xl font-black text-slate-50 tracking-tight leading-tight">{deal.name}</h1>
                                     <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-blue-500/10 text-blue-400 border-blue-500/20 transition-all group-hover:scale-105">
                                         {deal.stage}
                                     </span>
@@ -485,7 +485,7 @@ const DealDetailPage = () => {
                             )}
                         </div>
                         <p className="text-slate-400 flex items-center gap-2 mt-1">
-                            <span className="font-semibold text-white">{deal.company_name}</span>
+                            <span className="font-semibold text-slate-50">{deal.company_name}</span>
                             {deal.expected_close_date && (
                                 <>
                                     <span className="w-1 h-1 bg-slate-700 rounded-full" />
@@ -595,7 +595,7 @@ const DealDetailPage = () => {
                                             className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
                                         />
                                     ) : (
-                                        <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                                        <p className="text-sm font-bold text-slate-50 flex items-center gap-1.5">
                                             <Calendar size={16} />{deal.expected_close_date || '—'}
                                         </p>
                                     )}
@@ -678,7 +678,7 @@ const DealDetailPage = () => {
                                                 </div>
                                                 <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-slate-700 transition-all">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-black text-white text-[10px] uppercase tracking-widest">
+                                                        <span className="font-black text-slate-50 text-[10px] uppercase tracking-widest">
                                                             {ev.title}
                                                         </span>
                                                         <div className="flex items-center gap-2">
@@ -772,7 +772,7 @@ const DealDetailPage = () => {
                                             placeholder="Capture commercial context..."
                                             value={newNoteContent}
                                             onChange={(e) => setNewNoteContent(e.target.value)}
-                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-white focus:ring-0 resize-none h-24 mb-3"
+                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-50 focus:ring-0 resize-none h-24 mb-3"
                                         />
                                         <div className="flex justify-end">
                                             <button
@@ -814,7 +814,7 @@ const DealDetailPage = () => {
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
-                                                            <h4 className={`text-sm font-bold text-white truncate ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
+                                                            <h4 className={`text-sm font-bold text-slate-50 truncate ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
                                                                 {task.title}
                                                             </h4>
                                                         </div>
@@ -869,12 +869,12 @@ const DealDetailPage = () => {
                                                 <div className="flex items-center gap-3">
                                                     <div className="bg-slate-800 p-2 rounded-lg text-blue-400"><FileIcon size={20} /></div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-white truncate max-w-[150px]">{doc.name}</p>
+                                                        <p className="text-sm font-bold text-slate-50 truncate max-w-[150px]">{doc.name}</p>
                                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{(doc.size / 1024).toFixed(1)} KB</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={doc.url} download className="p-2 text-slate-500 hover:text-white transition-colors"><Download size={16} /></a>
+                                                    <a href={doc.url} download className="p-2 text-slate-500 hover:text-slate-50 transition-colors"><Download size={16} /></a>
                                                     <button
                                                         onClick={async () => {
                                                             if (confirm('Delete file?')) {
@@ -900,7 +900,7 @@ const DealDetailPage = () => {
                                         customFieldDefs.map(field => (
                                             <div key={field.id} className="flex flex-col gap-1.5">
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</span>
-                                                <p className="text-sm font-bold text-white border-l-2 border-slate-800 pl-3 py-1">
+                                                <p className="text-sm font-bold text-slate-50 border-l-2 border-slate-800 pl-3 py-1">
                                                     {field.type === 'boolean'
                                                         ? (deal.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                         : field.type === 'date' && deal.custom_fields?.[field.id]
@@ -927,18 +927,18 @@ const DealDetailPage = () => {
                             </h3>
                             <div className="space-y-6">
                                 <Link to={`/crm/leads/${associatedLead.id}`} className="group/link block">
-                                    <h4 className="text-lg font-black text-white group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
+                                    <h4 className="text-lg font-black text-slate-50 group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
                                     <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
                                         <Building2 size={12} /> {associatedLead.company_name}
                                     </p>
                                 </Link>
                                 <div className="space-y-3 pt-4 border-t border-slate-800/50">
-                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-white transition-colors">
+                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
                                         <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Mail size={14} /></div>
                                         {associatedLead.contact_email}
                                     </a>
                                     {associatedLead.phone && (
-                                        <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-white transition-colors">
+                                        <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
                                             <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Phone size={14} /></div>
                                             {associatedLead.phone}
                                         </a>
@@ -959,7 +959,7 @@ const DealDetailPage = () => {
                                 {invoiceStatus.invoice_number && (
                                     <div>
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Invoice Number</span>
-                                        <p className="text-sm font-bold text-white">{invoiceStatus.invoice_number}</p>
+                                        <p className="text-sm font-bold text-slate-50">{invoiceStatus.invoice_number}</p>
                                     </div>
                                 )}
 
@@ -1098,11 +1098,11 @@ const DealDetailPage = () => {
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                            <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                            <h3 className="text-slate-50 font-black uppercase tracking-widest text-xs flex items-center gap-2">
                                 <Briefcase size={16} className="text-blue-400" />
                                 Project Management
                             </h3>
-                            <button onClick={() => setIsProjectModalOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                            <button onClick={() => setIsProjectModalOpen(false)} className="text-slate-500 hover:text-slate-50 transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -1182,7 +1182,7 @@ const DealDetailPage = () => {
                                         {projectDetails.status}
                                     </span>
                                 </div>
-                                <h4 className="text-sm font-bold text-white mb-2">{projectDetails.title}</h4>
+                                <h4 className="text-sm font-bold text-slate-50 mb-2">{projectDetails.title}</h4>
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="text-slate-400">
                                         Budget: {formatters.formatCurrency(projectDetails.budget_total || 0)}
@@ -1243,7 +1243,7 @@ const DealDetailPage = () => {
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>

@@ -56,7 +56,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
       {cart && (
         <>
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4">
-            <h1 className="text-2xl font-semibold text-white">Abandoned Cart Detail</h1>
+            <h1 className="text-2xl font-semibold text-slate-50">Abandoned Cart Detail</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-sm">
               <p className="text-slate-300"><span className="text-slate-500">Customer:</span> {cart.customer_email || '-'}</p>
               <p className="text-slate-300"><span className="text-slate-500">Status:</span> {cart.recovery_status || '-'}</p>

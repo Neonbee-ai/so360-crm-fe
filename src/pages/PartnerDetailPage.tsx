@@ -55,7 +55,7 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
     return createPortal(
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60">
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-                <h2 className="text-base font-semibold text-white mb-4">Mark Commission as Paid</h2>
+                <h2 className="text-base font-semibold text-slate-50 mb-4">Mark Commission as Paid</h2>
                 {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -69,7 +69,7 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
                         />
                     </div>
                     <div className="flex justify-end gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-50">Cancel</button>
                         <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium disabled:opacity-50">
                             {saving ? 'Saving...' : 'Mark Paid'}
                         </button>
@@ -246,7 +246,7 @@ const PartnerDetailPage = () => {
                 <div className="flex items-start justify-between">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-3xl font-bold text-white">{partner.contact_name}</h1>
+                            <h1 className="text-3xl font-bold text-slate-50">{partner.contact_name}</h1>
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
                                 {getTypeLabel(partner.partner_type)}
                             </span>
@@ -280,16 +280,16 @@ const PartnerDetailPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-semibold text-white uppercase tracking-wider">Partner Profile</h2>
+                            <h2 className="text-sm font-semibold text-slate-50 uppercase tracking-wider">Partner Profile</h2>
                             {isEditing ? (
                                 <div className="flex gap-2">
-                                    <button onClick={() => { setIsEditing(false); }} className="p-1.5 rounded text-slate-400 hover:text-white"><X size={16} /></button>
+                                    <button onClick={() => { setIsEditing(false); }} className="p-1.5 rounded text-slate-400 hover:text-slate-50"><X size={16} /></button>
                                     <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium disabled:opacity-50">
                                         <Check size={14} />{saving ? 'Saving...' : 'Save'}
                                     </button>
                                 </div>
                             ) : (
-                                <button onClick={() => setIsEditing(true)} className="p-1.5 rounded text-slate-500 hover:text-white transition-colors">
+                                <button onClick={() => setIsEditing(true)} className="p-1.5 rounded text-slate-500 hover:text-slate-50 transition-colors">
                                     <Edit2 size={16} />
                                 </button>
                             )}
@@ -401,7 +401,7 @@ const PartnerDetailPage = () => {
                             <dl className="space-y-3">
                                 <div className="flex justify-between">
                                     <dt className="text-xs text-slate-500">Partner Type</dt>
-                                    <dd className="text-sm text-white">{getTypeLabel(partner.partner_type)}</dd>
+                                    <dd className="text-sm text-slate-50">{getTypeLabel(partner.partner_type)}</dd>
                                 </div>
                                 <div className="flex justify-between">
                                     <dt className="text-xs text-slate-500">Grading</dt>
@@ -415,7 +415,7 @@ const PartnerDetailPage = () => {
                                 </div>
                                 <div className="flex justify-between">
                                     <dt className="text-xs text-slate-500">Commission Rate</dt>
-                                    <dd className="text-sm text-white">{partner.commission_rate ? `${partner.commission_rate}%` : '-'}</dd>
+                                    <dd className="text-sm text-slate-50">{partner.commission_rate ? `${partner.commission_rate}%` : '-'}</dd>
                                 </div>
                                 <div className="flex justify-between">
                                     <dt className="text-xs text-slate-500">Email</dt>
@@ -460,19 +460,19 @@ const PartnerDetailPage = () => {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><BarChart2 size={14} />Total Deals</div>
-                                    <div className="text-2xl font-bold text-white">{deals.summary.total_count}</div>
+                                    <div className="text-2xl font-bold text-slate-50">{deals.summary.total_count}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} />Total Value</div>
-                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(deals.summary.total_value || 0)}</div>
+                                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(deals.summary.total_value || 0)}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1"><Trophy size={14} />Won Deals</div>
-                                    <div className="text-2xl font-bold text-white">{deals.summary.won_count}</div>
+                                    <div className="text-2xl font-bold text-slate-50">{deals.summary.won_count}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1"><DollarSign size={14} />Won Value</div>
-                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(deals.summary.won_value || 0)}</div>
+                                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(deals.summary.won_value || 0)}</div>
                                 </div>
                             </div>
                             {deals.deals.length > 0 ? (
@@ -494,7 +494,7 @@ const PartnerDetailPage = () => {
                                                     className="border-b border-slate-800/50 hover:bg-slate-800/30 cursor-pointer"
                                                     onClick={() => navigate(`/crm/deal/${deal.id}`)}
                                                 >
-                                                    <td className="px-4 py-3 text-white font-medium">{deal.name}</td>
+                                                    <td className="px-4 py-3 text-slate-50 font-medium">{deal.name}</td>
                                                     <td className="px-4 py-3 text-slate-400">{deal.company || '-'}</td>
                                                     <td className="px-4 py-3 text-slate-300 text-right">{formatters.formatCurrency(deal.value || 0)}</td>
                                                     <td className="px-4 py-3">
@@ -528,15 +528,15 @@ const PartnerDetailPage = () => {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} />Total Earned</div>
-                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(commissions.summary.total_earned || 0)}</div>
+                                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(commissions.summary.total_earned || 0)}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} />Pending</div>
-                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(commissions.summary.pending || 0)}</div>
+                                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(commissions.summary.pending || 0)}</div>
                                 </div>
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1"><DollarSign size={14} />Paid</div>
-                                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(commissions.summary.paid || 0)}</div>
+                                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(commissions.summary.paid || 0)}</div>
                                 </div>
                             </div>
                             {commissions.commissions.length > 0 ? (
@@ -557,10 +557,10 @@ const PartnerDetailPage = () => {
                                                 const statusCfg = COMMISSION_STATUS_CONFIG[c.status] || COMMISSION_STATUS_CONFIG.pending;
                                                 return (
                                                     <tr key={c.id} className="border-b border-slate-800/50">
-                                                        <td className="px-4 py-3 text-white">{c.deal?.name || c.deal_id.slice(0, 8)}</td>
+                                                        <td className="px-4 py-3 text-slate-50">{c.deal?.name || c.deal_id.slice(0, 8)}</td>
                                                         <td className="px-4 py-3 text-slate-300 text-right">{formatters.formatCurrency(c.deal_amount || 0)}</td>
                                                         <td className="px-4 py-3 text-slate-400 text-right">{c.commission_rate}%</td>
-                                                        <td className="px-4 py-3 text-white font-medium text-right">{formatters.formatCurrency(c.commission_amount || 0)}</td>
+                                                        <td className="px-4 py-3 text-slate-50 font-medium text-right">{formatters.formatCurrency(c.commission_amount || 0)}</td>
                                                         <td className="px-4 py-3">
                                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusCfg.color}`}>
                                                                 {statusCfg.label}
@@ -620,7 +620,7 @@ const PartnerDetailPage = () => {
                                     <Users size={14} className="text-blue-400" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-white font-medium">{a.type || 'Activity'}</p>
+                                    <p className="text-sm text-slate-50 font-medium">{a.type || 'Activity'}</p>
                                     <p className="text-sm text-slate-400 mt-0.5">{a.notes || '-'}</p>
                                     <p className="text-xs text-slate-600 mt-1">{a.created_at ? new Date(a.created_at).toLocaleString() : ''}</p>
                                 </div>

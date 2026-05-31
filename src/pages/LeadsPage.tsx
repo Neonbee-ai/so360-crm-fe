@@ -257,7 +257,7 @@ const LeadsPage = () => {
     const SortableHeader = ({ label, field }: { label: string, field: SortField }) => (
         <button
             onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
         >
             {label}
             <SortIcon field={field} />
@@ -269,7 +269,7 @@ const LeadsPage = () => {
             header: <SortableHeader label="Company & Contact" field="company_name" />,
             accessor: (lead: Lead) => (
                 <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-white">{lead.company_name}</span>
+                    <span className="font-semibold text-slate-50">{lead.company_name}</span>
                     <span className="text-xs text-slate-400 flex items-center gap-1">
                         <UserIcon size={12} /> {lead.contact_name}
                     </span>
@@ -292,7 +292,7 @@ const LeadsPage = () => {
                     <select
                         value={lead.owner?.id || ''}
                         onChange={(e) => handleOwnerChange(lead, e.target.value)}
-                        className="bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-white transition-colors py-1"
+                        className="bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1"
                     >
                         {users.map(user => (
                             <option key={user.id} value={user.id} className="bg-slate-900 text-slate-300">
@@ -367,7 +367,7 @@ const LeadsPage = () => {
         <div className="p-8">
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Leads & Accounts</h1>
+                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Leads & Accounts</h1>
                     <p className="text-slate-400 mt-1">Single source of truth for business deals</p>
                 </div>
                 {canCreateLead && (
@@ -595,7 +595,7 @@ const LeadsPage = () => {
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>

@@ -57,7 +57,7 @@ const MarketingReviewsPage: React.FC = () => {
     <div className="p-8">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight uppercase">Customer Reviews</h1>
+        <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Customer Reviews</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Monitor and moderate storefront product feedback</p>
       </div>
 
@@ -126,7 +126,7 @@ const MarketingReviewsPage: React.FC = () => {
                             <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-700'} />
                           ))}
                         </div>
-                        <h3 className="text-sm font-black text-white uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
+                        <h3 className="text-sm font-black text-slate-50 uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
                       </div>
                       <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded border ${rev.is_approved ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                         {rev.is_approved ? 'Approved' : 'Pending Approval'}

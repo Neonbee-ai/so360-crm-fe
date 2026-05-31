@@ -49,7 +49,7 @@ const MarketingWishlistPage: React.FC = () => {
     <div className="p-8">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight uppercase">Customer Wishlists</h1>
+        <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Customer Wishlists</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Track high-intent items across storefront customers</p>
       </div>
 
@@ -110,7 +110,7 @@ const MarketingWishlistPage: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex justify-between items-start mb-1">
-                          <p className="text-sm font-black text-white truncate uppercase tracking-tight">{item.items?.name || 'Unknown Item'}</p>
+                          <p className="text-sm font-black text-slate-50 truncate uppercase tracking-tight">{item.items?.name || 'Unknown Item'}</p>
                           <Heart size={12} className="text-rose-500 fill-rose-500/20" />
                         </div>
                         <div className="space-y-1">

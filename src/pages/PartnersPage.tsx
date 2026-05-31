@@ -99,8 +99,8 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
                 {/* Sticky header — never scrolls */}
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-800 shrink-0">
-                    <h2 className="text-lg font-semibold text-white">Add Partner</h2>
-                    <button type="button" onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                    <h2 className="text-lg font-semibold text-slate-50">Add Partner</h2>
+                    <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-50 transition-colors">
                         <X size={18} />
                     </button>
                 </div>
@@ -240,7 +240,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
                 {/* Sticky footer — never scrolls */}
                 <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-800 shrink-0">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-50 transition-colors">
                         Cancel
                     </button>
                     <button type="submit" form="create-partner-form" disabled={saving}
@@ -312,7 +312,7 @@ const PartnersPage = () => {
     };
 
     const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
-        <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+        <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer">
             {label}
             <SortIcon field={field} />
         </button>
@@ -379,7 +379,7 @@ const PartnersPage = () => {
             header: <SortableHeader label="Name" field="contact_name" />,
             accessor: (p: any) => (
                 <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-white">{p.contact_name}</span>
+                    <span className="font-semibold text-slate-50">{p.contact_name}</span>
                     {p.email && <span className="text-xs text-slate-500">{p.email}</span>}
                 </div>
             ),
@@ -430,7 +430,7 @@ const PartnersPage = () => {
         <div className="p-8">
             <header className="mb-8 flex items-start justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Partners</h1>
+                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Partners</h1>
                     <p className="text-slate-400 mt-1">Referral agents, resellers, and dealers who bring in deals</p>
                 </div>
                 <button
@@ -446,19 +446,19 @@ const PartnersPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><UserCheck size={14} /> Total Partners</div>
-                    <div className="text-2xl font-bold text-white">{totals.total}</div>
+                    <div className="text-2xl font-bold text-slate-50">{totals.total}</div>
                 </div>
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><BarChart2 size={14} /> Total Deals</div>
-                    <div className="text-2xl font-bold text-white">{totals.totalDeals}</div>
+                    <div className="text-2xl font-bold text-slate-50">{totals.totalDeals}</div>
                 </div>
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} /> Total Deal Value</div>
-                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(totals.totalValue)}</div>
+                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.totalValue)}</div>
                 </div>
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} /> Commission Pending</div>
-                    <div className="text-xl font-bold text-white">{formatters.formatCurrency(totals.pendingCommission)}</div>
+                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.pendingCommission)}</div>
                 </div>
             </div>
 

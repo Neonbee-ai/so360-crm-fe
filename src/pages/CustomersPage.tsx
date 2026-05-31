@@ -121,7 +121,7 @@ const CustomersPage = () => {
     const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
         <button
             onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
         >
             {label}
             <SortIcon field={field} />
@@ -218,7 +218,7 @@ const CustomersPage = () => {
                 <div className="flex items-center gap-2">
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white">{c.contact_name}</span>
+                            <span className="font-semibold text-slate-50">{c.contact_name}</span>
                             <CategoryBadge category={c.customer_category || 'b2c'} />
                         </div>
                         {c.company_name && c.company_name !== c.contact_name && (
@@ -289,7 +289,7 @@ const CustomersPage = () => {
     return (
         <div className="p-8">
             <header className="mb-8">
-                <h1 className="text-3xl font-bold text-white tracking-tight">Customers</h1>
+                <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Customers</h1>
                 <p className="text-slate-400 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
             </header>
 
@@ -299,14 +299,14 @@ const CustomersPage = () => {
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
                         <Users size={14} /> Total
                     </div>
-                    <div className="text-2xl font-bold text-white">{stats.total || 0}</div>
+                    <div className="text-2xl font-bold text-slate-50">{stats.total || 0}</div>
                 </div>
                 {showModelSplit && (
                     <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                         <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1">
                             <Building2 size={14} /> B2B
                         </div>
-                        <div className="text-2xl font-bold text-white">{stats.b2b_count || 0}</div>
+                        <div className="text-2xl font-bold text-slate-50">{stats.b2b_count || 0}</div>
                     </div>
                 )}
                 {showModelSplit && (
@@ -314,7 +314,7 @@ const CustomersPage = () => {
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
                             <Users size={14} /> B2C
                         </div>
-                        <div className="text-2xl font-bold text-white">{stats.b2c_count || 0}</div>
+                        <div className="text-2xl font-bold text-slate-50">{stats.b2c_count || 0}</div>
                     </div>
                 )}
                 {showWeb && (
@@ -322,7 +322,7 @@ const CustomersPage = () => {
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
                             <Globe size={14} /> Web
                         </div>
-                        <div className="text-2xl font-bold text-white">{stats.storefront_web || 0}</div>
+                        <div className="text-2xl font-bold text-slate-50">{stats.storefront_web || 0}</div>
                     </div>
                 )}
                 {showMobile && (
@@ -330,7 +330,7 @@ const CustomersPage = () => {
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
                             <Smartphone size={14} /> Mobile
                         </div>
-                        <div className="text-2xl font-bold text-white">{stats.storefront_mobile || 0}</div>
+                        <div className="text-2xl font-bold text-slate-50">{stats.storefront_mobile || 0}</div>
                     </div>
                 )}
                 {showOffline && (
@@ -338,7 +338,7 @@ const CustomersPage = () => {
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
                             <ShoppingCart size={14} /> POS
                         </div>
-                        <div className="text-2xl font-bold text-white">{stats.pos || 0}</div>
+                        <div className="text-2xl font-bold text-slate-50">{stats.pos || 0}</div>
                     </div>
                 )}
                 {showOffline && (
@@ -346,7 +346,7 @@ const CustomersPage = () => {
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
                             <UserPlus size={14} /> Manual
                         </div>
-                        <div className="text-2xl font-bold text-white">{stats.manual || 0}</div>
+                        <div className="text-2xl font-bold text-slate-50">{stats.manual || 0}</div>
                     </div>
                 )}
             </div>
