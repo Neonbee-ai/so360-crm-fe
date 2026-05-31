@@ -11,6 +11,7 @@ import {
     File, Download, UploadCloud, FileIcon
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
+import { useCRMFormatters } from '../utils/formatters';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { Trophy, Zap, Info, TrendingUp } from 'lucide-react';
@@ -33,6 +34,7 @@ interface TimelineEvent {
 }
 
 const LeadDetailPage = () => {
+    const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
@@ -219,7 +221,7 @@ const LeadDetailPage = () => {
                 id: d.id,
                 type: 'DEAL',
                 title: 'Deal Created',
-                description: `${d.name} | Value: $${d.value.toLocaleString()} | Stage: ${d.stage}`,
+                description: `${d.name} | Value: ${formatters.formatCurrency(d.value)} | Stage: ${d.stage}`,
                 date: d.created_at || d.expected_close_date,
                 author: d.owner
             });
@@ -1322,13 +1324,13 @@ const LeadDetailPage = () => {
                             <div>
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Earned</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-white">${earned.toLocaleString()}</span>
+                                    <span className="text-2xl font-black text-white">{formatters.formatCurrency(earned)}</span>
                                 </div>
                             </div>
                             <div>
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Pipeline</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-slate-400">${pipeline.toLocaleString()}</span>
+                                    <span className="text-2xl font-black text-slate-400">{formatters.formatCurrency(pipeline)}</span>
                                 </div>
                             </div>
                         </div>
@@ -1358,7 +1360,7 @@ const LeadDetailPage = () => {
                                 </div>
                                 <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
                                     <span className="text-[8px] font-black text-slate-600 uppercase mb-1">Total LTV</span>
-                                    <span className="text-sm font-black text-white">${totalValue.toLocaleString()}</span>
+                                    <span className="text-sm font-black text-white">{formatters.formatCurrency(totalValue)}</span>
                                 </div>
                             </div>
                         </div>
@@ -1387,7 +1389,7 @@ const LeadDetailPage = () => {
                                             <ExternalLink size={12} className="text-slate-600 group-hover:text-blue-400 transition-all" />
                                         </div>
                                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                                            <span className="text-emerald-400/80">${deal.value.toLocaleString()}</span>
+                                            <span className="text-emerald-400/80">{formatters.formatCurrency(deal.value)}</span>
                                             <span className="text-slate-500">{deal.stage}</span>
                                         </div>
                                     </Link>
