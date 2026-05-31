@@ -13,3 +13,25 @@ export const QuotaGate = ({ children }: any) => React.createElement(React.Fragme
 export const QuotaBar = () => null;
 export const Pagination = () => null;
 export const DeleteConfirmDialog = () => null;
+
+// FeatureGate / FeatureRoute — 5-state model
+export type FeatureState = 'enabled' | 'read_only' | 'locked' | 'disabled' | 'hidden';
+export interface FeatureRouteProps {
+  state: string;
+  children: React.ReactNode;
+  hiddenFallback?: React.ReactNode;
+  lockedFallback?: React.ReactNode;
+  disabledFallback?: React.ReactNode;
+}
+export const FeatureRoute = ({ state, children, hiddenFallback = null, lockedFallback, disabledFallback }: FeatureRouteProps): React.ReactElement | null => {
+  if (state === 'hidden') return (hiddenFallback as React.ReactElement) ?? null;
+  if (state === 'locked') return (lockedFallback as React.ReactElement) ?? null;
+  if (state === 'disabled') return (disabledFallback as React.ReactElement) ?? null;
+  return React.createElement(React.Fragment, null, children);
+};
+export interface FeatureGateProps {
+  flag: string;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+export const FeatureGate = ({ children }: FeatureGateProps): React.ReactElement => React.createElement(React.Fragment, null, children);
