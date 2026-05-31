@@ -26,6 +26,7 @@ vi.mock('../../components/common/Toast', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: mockCurrentUser }),
   useNotify: () => ({ emitNotification: (...a: any[]) => mockEmitNotification(...a) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
@@ -490,6 +491,16 @@ describe('TaskModal', () => {
       // The inner modal div (not the overlay) must have the height constraint
       const modalBox = container.querySelector('[class*="max-h-\\[90vh\\]"]');
       expect(modalBox).not.toBeNull();
+    });
+
+    it('When rendered / Then the modal container has overflow-hidden to enforce the max-height clipping', async () => {
+      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('New Task'));
+      // overflow-hidden must live on the same element as max-h-[90vh] so that flex
+      // children cannot push the container past the viewport height cap.
+      const modalBox = container.querySelector('[class*="max-h-\\[90vh\\]"]');
+      expect(modalBox).not.toBeNull();
+      expect(modalBox!.className).toContain('overflow-hidden');
     });
 
     it('When rendered / Then the scrollable content area has overflow-y-auto to allow internal scrolling', async () => {
