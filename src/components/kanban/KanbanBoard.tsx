@@ -100,7 +100,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                 )}
                             </h3>
                             <span className="text-[10px] text-slate-500 font-black tracking-wider">
-                                {formatters.formatCompactCurrency(stageDeals.reduce((sum, d) => sum + d.value, 0))}
+                                {formatters.formatCurrency(stageDeals.reduce((sum, d) => sum + d.value, 0))}
                             </span>
                         </div>
 

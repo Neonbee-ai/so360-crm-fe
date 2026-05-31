@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { crmService } from '../services/crmService';
+import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
 import { useActivity } from '@so360/shell-context';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCampaignDetailPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const navigate = useNavigate();
   const { campaignId } = useParams<{ campaignId: string }>();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
@@ -74,7 +76,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
               { label: 'Click Rate', value: `${Math.round((campaign.click_rate || 0) * 100)}%` },
               { label: 'Sent', value: (campaign.sent_count || 0).toLocaleString() },
               { label: 'Delivered', value: (campaign.delivered || 0).toLocaleString() },
-              { label: 'Revenue', value: (campaign.revenue_attributed || 0).toLocaleString() },
+              { label: 'Revenue', value: formatters.formatCurrency(campaign.revenue_attributed || 0) },
               { label: 'Unsubscribes', value: String(campaign.unsubscribes || 0) },
               { label: 'Clicks', value: String(campaign.clicks || 0) },
               ...(campaign.segment ? [{ label: 'Segment', value: campaign.segment }] : []),
