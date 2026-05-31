@@ -9,10 +9,10 @@ export default defineConfig(({ mode }) => {
     base: env.VITE_BASE_URL || process.env.VITE_BASE_URL || 'http://localhost:3004/',
     resolve: {
         alias: {
-            '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/dist/index.js'),
-            '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/dist/index.js'),
-            '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/dist/index.js'),
-            '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/dist/index.js'),
+            '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/src/index.ts'),
+            '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src/index.ts'),
+            '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/src/index.ts'),
+            '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/src/index.ts'),
         },
     },
     plugins: [
