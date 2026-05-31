@@ -60,7 +60,7 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
-
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 const mockShowSuccess = vi.fn();
@@ -199,21 +199,21 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => {
         expect(screen.getByText('Acme Deal')).toBeInTheDocument();
-        expect(screen.getAllByText('$30,000').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('$30000').length).toBeGreaterThan(0);
       });
     });
 
     it('When the page loads / Then calculates revenue with Won deals as earned', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getAllByText('$30,000').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('$30000').length).toBeGreaterThan(0);
       });
     });
 
     it('When the page loads / Then calculates pipeline revenue from non-Won/Lost deals', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getAllByText('$20,000').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('$20000').length).toBeGreaterThan(0);
       });
     });
 

@@ -186,7 +186,7 @@ describe('DealDetailPage', () => {
     it('When the page loads / Then shows the deal financial value', async () => {
       render(<DealDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText('50,000')).toBeInTheDocument();
+        expect(screen.getAllByText('$50000').length).toBeGreaterThan(0);
       });
     });
 

@@ -22,6 +22,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShellBridge: () => ({
     isFeatureEnabled: (flag: string) => {
       if (flag === 'action:crm:customers:show_model_split') return true;
