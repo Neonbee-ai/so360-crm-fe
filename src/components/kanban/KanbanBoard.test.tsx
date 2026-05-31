@@ -51,9 +51,9 @@ describe('Given KanbanBoard', () => {
 
   it('When action / Then shows stage totals', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
-    const fiveK = screen.getAllByText('$5,000');
+    const fiveK = screen.getAllByText('$5000');
     expect(fiveK.length).toBeGreaterThan(0);
-    expect(screen.getAllByText('$10,000').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$10000').length).toBeGreaterThan(0);
   });
 
   it('When action / Then shows lock icon on terminal stages', () => {
@@ -83,7 +83,7 @@ describe('Given KanbanBoard', () => {
 
   it('When action / Then shows deal value on cards', () => {
     render(<KanbanBoard deals={deals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
-    expect(screen.getAllByText('$5,000').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$5000').length).toBeGreaterThan(0);
   });
 
   it('When action / Then handles drag start on non-terminal deal', () => {

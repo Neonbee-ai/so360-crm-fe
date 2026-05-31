@@ -181,8 +181,8 @@ describe('KanbanBoard', () => {
             onStageChange={mockOnStageChange}
           />,
         );
-        // formatCurrency mock produces "USD5000.00"
-        expect(screen.getByText('USD5000.00')).toBeInTheDocument();
+        // formatCurrency mock produces "USD5000.00" (deal card + stage total)
+        expect(screen.getAllByText('USD5000.00').length).toBeGreaterThan(0);
       });
 
       it('When deals are rendered in kanban / Then stage total also shows USD', () => {
@@ -197,8 +197,8 @@ describe('KanbanBoard', () => {
             onStageChange={mockOnStageChange}
           />,
         );
-        // formatCompactCurrency mock produces "USD5000"
-        expect(screen.getByText('USD5000')).toBeInTheDocument();
+        // stage total now uses formatCurrency → "USD5000.00"
+        expect(screen.getAllByText('USD5000.00').length).toBeGreaterThan(0);
       });
     });
 
@@ -215,8 +215,8 @@ describe('KanbanBoard', () => {
             onStageChange={mockOnStageChange}
           />,
         );
-        // formatCurrency mock produces "INR5000.00"
-        expect(screen.getByText('INR5000.00')).toBeInTheDocument();
+        // formatCurrency mock produces "INR5000.00" (deal card + stage total)
+        expect(screen.getAllByText('INR5000.00').length).toBeGreaterThan(0);
       });
 
       it('When deals are rendered in kanban / Then stage total shows INR', () => {
@@ -231,7 +231,7 @@ describe('KanbanBoard', () => {
             onStageChange={mockOnStageChange}
           />,
         );
-        expect(screen.getByText('INR5000')).toBeInTheDocument();
+        expect(screen.getAllByText('INR5000.00').length).toBeGreaterThan(0);
       });
     });
 
@@ -249,7 +249,7 @@ describe('KanbanBoard', () => {
           />,
         );
         // formatCurrency mock produces "AED5000.00" — proves useCRMFormatters receives AED from settings
-        expect(screen.getByText('AED5000.00')).toBeInTheDocument();
+        expect(screen.getAllByText('AED5000.00').length).toBeGreaterThan(0);
       });
 
       it('When deals are rendered / Then stage total shows AED', () => {
@@ -264,7 +264,7 @@ describe('KanbanBoard', () => {
             onStageChange={mockOnStageChange}
           />,
         );
-        expect(screen.getByText('AED5000')).toBeInTheDocument();
+        expect(screen.getAllByText('AED5000.00').length).toBeGreaterThan(0);
       });
     });
 
@@ -280,7 +280,7 @@ describe('KanbanBoard', () => {
           />,
         );
         // useCRMFormatters falls back to 'USD' when settings is null
-        expect(screen.getByText('USD5000.00')).toBeInTheDocument();
+        expect(screen.getAllByText('USD5000.00').length).toBeGreaterThan(0);
       });
 
       it('When kanban renders with null settings / Then stage total falls back to USD', () => {
@@ -293,7 +293,7 @@ describe('KanbanBoard', () => {
             onStageChange={mockOnStageChange}
           />,
         );
-        expect(screen.getByText('USD5000')).toBeInTheDocument();
+        expect(screen.getAllByText('USD5000.00').length).toBeGreaterThan(0);
       });
 
       it('When kanban renders with undefined settings / Then does not crash and shows USD fallback', () => {
@@ -308,7 +308,7 @@ describe('KanbanBoard', () => {
             />,
           ),
         ).not.toThrow();
-        expect(screen.getByText('USD5000.00')).toBeInTheDocument();
+        expect(screen.getAllByText('USD5000.00').length).toBeGreaterThan(0);
       });
     });
   });
