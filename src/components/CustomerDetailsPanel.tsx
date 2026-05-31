@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Building2, CreditCard, Shield, CheckCircle2, AlertCircle, Loader2, Tag, ShoppingCart } from 'lucide-react';
 import { crmService } from '../services/crmService';
+import { useCRMFormatters } from '../utils/formatters';
 
 interface CustomerDetailsPanelProps {
     lead: any;
@@ -17,6 +18,7 @@ const ACQUISITION_SOURCE_LABELS: Record<string, string> = {
 };
 
 const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpdate, showToast }) => {
+    const formatters = useCRMFormatters();
     const [taxIdInput, setTaxIdInput] = useState(lead.tax_id || '');
     const [creditLimitInput, setCreditLimitInput] = useState(String(lead.credit_limit || 0));
     const [isValidatingTax, setIsValidatingTax] = useState(false);
@@ -161,7 +163,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         </div>
                         {parseFloat(lead.credit_balance) > 0 && (
                             <div className="mt-2 text-xs text-slate-400">
-                                Current balance: {parseFloat(lead.credit_balance).toLocaleString()}
+                                Current balance: {formatters.formatCurrency(parseFloat(lead.credit_balance))}
                             </div>
                         )}
                     </div>
