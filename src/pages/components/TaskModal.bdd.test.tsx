@@ -11,12 +11,16 @@ const mockUpdateTask = vi.fn();
 const mockRecordActivity = vi.fn();
 const mockShowError = vi.fn();
 const mockEmitNotification = vi.fn();
+const mockGetLeads = vi.fn();
+const mockGetDeals = vi.fn();
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
     getUsers: (...a: any[]) => mockGetUsers(...a),
     createTask: (...a: any[]) => mockCreateTask(...a),
     updateTask: (...a: any[]) => mockUpdateTask(...a),
+    getLeads: (...a: any[]) => mockGetLeads(...a),
+    getDeals: (...a: any[]) => mockGetDeals(...a),
   },
 }));
 
@@ -75,6 +79,15 @@ const selects       = () => document.querySelectorAll('select');
 // select indices in REMINDER mode:    [0]=type, [1]=reminderMinutes, [2]=assignee
 // select indices in edit/TODO mode:   [0]=type, [1]=assignee, [2]=status
 
+const MOCK_LEADS = [
+  { id: 'lead-1', company_name: 'Acme Corp', contact_name: 'Alice' },
+  { id: 'lead-2', company_name: '',           contact_name: 'Bob Smith' },
+];
+const MOCK_DEALS = [
+  { id: 'deal-1', name: 'Enterprise Deal', company_name: 'Acme Corp' },
+  { id: 'deal-2', name: '',                company_name: 'Beta Ltd' },
+];
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockCurrentUser = { id: 'u1', full_name: 'Test User', email: 'test@test.com' };
@@ -83,6 +96,8 @@ beforeEach(() => {
   mockUpdateTask.mockResolvedValue({ id: 't1', title: 'Updated', status: 'OPEN' });
   mockRecordActivity.mockResolvedValue(undefined);
   mockEmitNotification.mockResolvedValue(undefined);
+  mockGetLeads.mockResolvedValue(MOCK_LEADS);
+  mockGetDeals.mockResolvedValue(MOCK_DEALS);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -535,6 +550,175 @@ describe('TaskModal', () => {
       // X button is the first button rendered (header); no accessible name (SVG only)
       fireEvent.click(screen.getAllByRole('button')[0]);
       expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  // ── Associate With picker ─────────────────────────────────────────────────
+  describe('Given the Associate With picker', () => {
+    it('When no leadId/dealId and not editing / Then shows "Associate With" section', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => expect(screen.getByText(/associate with/i)).toBeInTheDocument());
+    });
+
+    it('When leadId prop is provided / Then hides "Associate With" section', async () => {
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('New Task'));
+      expect(screen.queryByText(/associate with/i)).not.toBeInTheDocument();
+    });
+
+    it('When dealId prop is provided / Then hides "Associate With" section', async () => {
+      render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('New Task'));
+      expect(screen.queryByText(/associate with/i)).not.toBeInTheDocument();
+    });
+
+    it('When editing an existing task / Then hides "Associate With" section', async () => {
+      render(<TaskModal task={BASE_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText('Edit Task'));
+      expect(screen.queryByText(/associate with/i)).not.toBeInTheDocument();
+    });
+
+    it('When type set to Lead / Then second select shows lead options from API', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      // associate type select is the last select rendered after type + assignee selects
+      const allSelects = document.querySelectorAll('select');
+      // find the one with "None / Lead / Deal" options
+      const typeSelect = Array.from(allSelects).find(s =>
+        Array.from(s.options).some(o => o.value === 'lead')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'lead' } });
+      await waitFor(() =>
+        expect(screen.getByText('Acme Corp')).toBeInTheDocument()
+      );
+    });
+
+    it('When type set to Deal / Then second select shows deal options from API', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      const allSelects = document.querySelectorAll('select');
+      const typeSelect = Array.from(allSelects).find(s =>
+        Array.from(s.options).some(o => o.value === 'deal')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'deal' } });
+      await waitFor(() =>
+        expect(screen.getByText('Enterprise Deal')).toBeInTheDocument()
+      );
+    });
+
+    it('When lead with empty company_name / Then shows contact_name as label', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      const allSelects = document.querySelectorAll('select');
+      const typeSelect = Array.from(allSelects).find(s =>
+        Array.from(s.options).some(o => o.value === 'lead')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'lead' } });
+      await waitFor(() =>
+        expect(screen.getByText('Bob Smith')).toBeInTheDocument()
+      );
+    });
+
+    it('When deal with empty name / Then shows company_name as label', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      const allSelects = document.querySelectorAll('select');
+      const typeSelect = Array.from(allSelects).find(s =>
+        Array.from(s.options).some(o => o.value === 'deal')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'deal' } });
+      await waitFor(() =>
+        expect(screen.getByText('Beta Ltd')).toBeInTheDocument()
+      );
+    });
+
+    it('When changing type from Lead to Deal / Then resets the entity select', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      const allSelects = document.querySelectorAll('select');
+      const typeSelect = Array.from(allSelects).find(s =>
+        Array.from(s.options).some(o => o.value === 'lead')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'lead' } });
+      await waitFor(() => screen.getByText('Acme Corp'));
+      fireEvent.change(typeSelect, { target: { value: 'deal' } });
+      await waitFor(() => screen.getByText('Enterprise Deal'));
+      expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument();
+    });
+
+    it('When lead associated and form submitted / Then payload includes lead_id', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      const allSelects = () => document.querySelectorAll('select');
+      const typeSelect = Array.from(allSelects()).find(s =>
+        Array.from(s.options).some(o => o.value === 'lead')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'lead' } });
+      await waitFor(() => screen.getByText('Acme Corp'));
+      const entitySelect = Array.from(allSelects()).find(s =>
+        Array.from(s.options).some(o => o.value === 'lead-1')
+      )!;
+      fireEvent.change(entitySelect, { target: { value: 'lead-1' } });
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockCreateTask).toHaveBeenCalledWith(
+          expect.objectContaining({ lead_id: 'lead-1' })
+        )
+      );
+    });
+
+    it('When deal associated and form submitted / Then payload includes deal_id', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      const allSelects = () => document.querySelectorAll('select');
+      const typeSelect = Array.from(allSelects()).find(s =>
+        Array.from(s.options).some(o => o.value === 'deal')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'deal' } });
+      await waitFor(() => screen.getByText('Enterprise Deal'));
+      const entitySelect = Array.from(allSelects()).find(s =>
+        Array.from(s.options).some(o => o.value === 'deal-1')
+      )!;
+      fireEvent.change(entitySelect, { target: { value: 'deal-1' } });
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockCreateTask).toHaveBeenCalledWith(
+          expect.objectContaining({ deal_id: 'deal-1' })
+        )
+      );
+    });
+
+    it('When associateType is None / Then payload excludes lead_id and deal_id', async () => {
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        const payload = mockCreateTask.mock.calls[0][0];
+        expect(payload).not.toHaveProperty('lead_id');
+        expect(payload).not.toHaveProperty('deal_id');
+      });
+    });
+
+    it('When getLeads API fails / Then falls back to empty list and picker still renders', async () => {
+      mockGetLeads.mockRejectedValue(new Error('Network'));
+      mockGetDeals.mockRejectedValue(new Error('Network'));
+      render(<TaskModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByText(/associate with/i));
+      const allSelects = document.querySelectorAll('select');
+      const typeSelect = Array.from(allSelects).find(s =>
+        Array.from(s.options).some(o => o.value === 'lead')
+      )!;
+      fireEvent.change(typeSelect, { target: { value: 'lead' } });
+      // entity select renders with just the placeholder option
+      await waitFor(() =>
+        expect(screen.getByText(/select lead/i)).toBeInTheDocument()
+      );
     });
   });
 });

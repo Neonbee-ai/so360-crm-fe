@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown } from 'lucide-react';
+import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
-import { Task, TaskType, User } from '../../types/crm';
+import { Task, TaskType, User, Lead, Deal } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
 import { useShell, useNotify, useActivity } from '@so360/shell-context';
 
@@ -47,6 +47,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const showAssociatePicker = !leadId && !dealId && !isEditing;
+    const [associateType, setAssociateType] = useState<'none' | 'lead' | 'deal'>('none');
+    const [associateId, setAssociateId] = useState('');
+    const [leads, setLeads] = useState<Lead[]>([]);
+    const [deals, setDeals] = useState<Deal[]>([]);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -68,7 +73,17 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                 setAssignedToId(finalUsers[0].id);
             }
         };
+        const fetchAssociateOptions = async () => {
+            if (!showAssociatePicker) return;
+            const [leadsData, dealsData] = await Promise.all([
+                crmService.getLeads({ take: 200 }).catch(() => []),
+                crmService.getDeals().catch(() => []),
+            ]);
+            setLeads(leadsData);
+            setDeals(dealsData);
+        };
         fetchUsers();
+        fetchAssociateOptions();
     }, []);
 
     const handleAssignToMe = () => {
@@ -120,6 +135,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
 
             if (leadId) data.lead_id = leadId;
             if (dealId) data.deal_id = dealId;
+            if (showAssociatePicker && associateId) {
+                if (associateType === 'lead') data.lead_id = associateId;
+                if (associateType === 'deal') data.deal_id = associateId;
+            }
 
             let result: Task;
             if (isEditing && task) {
@@ -280,6 +299,53 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
                                 </button>
                             </div>
                         </div>
+
+                        {showAssociatePicker && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Link2 size={12} />
+                                    Associate With
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="relative">
+                                        <select
+                                            value={associateType}
+                                            onChange={(e) => { setAssociateType(e.target.value as any); setAssociateId(''); }}
+                                            className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                        >
+                                            <option value="none">None</option>
+                                            <option value="lead">Lead</option>
+                                            <option value="deal">Deal</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                    </div>
+                                    {associateType !== 'none' && (
+                                        <div className="relative">
+                                            <select
+                                                value={associateId}
+                                                onChange={(e) => setAssociateId(e.target.value)}
+                                                className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                            >
+                                                <option value="">Select {associateType === 'lead' ? 'Lead' : 'Deal'}…</option>
+                                                {associateType === 'lead'
+                                                    ? leads.map(l => (
+                                                        <option key={l.id} value={l.id}>
+                                                            {l.company_name || l.contact_name}
+                                                        </option>
+                                                    ))
+                                                    : deals.map(d => (
+                                                        <option key={d.id} value={d.id}>
+                                                            {d.name || d.company_name}
+                                                        </option>
+                                                    ))
+                                                }
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {isEditing && (
                             <div className="space-y-2">

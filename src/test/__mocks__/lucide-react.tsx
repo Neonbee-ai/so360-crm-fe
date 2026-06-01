@@ -79,3 +79,4 @@ export const ToggleRight = createIcon('ToggleRight');
 export const Printer = createIcon('Printer');
 export const UserCheck = createIcon('UserCheck');
 export const BarChart2 = createIcon('BarChart2');
+export const Link2 = createIcon('Link2');

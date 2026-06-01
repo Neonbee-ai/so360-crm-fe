@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2 } from 'lucide-react';
+import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import TaskModal from './components/TaskModal';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
@@ -33,6 +34,7 @@ const TasksPage = () => {
     const [sortDirection, setSortDirection] = useState<SortDirection>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -355,6 +357,15 @@ const TasksPage = () => {
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>
                     <p className="text-slate-400 mt-2">Personal execution discipline and daily tasks</p>
                 </div>
+                {canCreateTask && (
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
+                    >
+                        <Plus size={16} />
+                        Create Task
+                    </button>
+                )}
             </header>
 
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
@@ -457,6 +468,18 @@ const TasksPage = () => {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Create Task Modal */}
+            {showCreateModal && (
+                <TaskModal
+                    task={null}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={(newTask) => {
+                        setTasks(prev => [newTask, ...prev]);
+                        setShowCreateModal(false);
+                    }}
+                />
             )}
 
             {/* Delete Confirmation Dialog */}
