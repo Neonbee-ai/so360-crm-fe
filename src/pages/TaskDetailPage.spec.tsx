@@ -70,6 +70,8 @@ const mockTask = {
   priority: 'high',
   status: 'pending',
   assigned_to: { id: 'user-1', name: 'John Doe', full_name: 'John Doe', email: 'john@test.com', avatar_url: null },
+  lead_id: 'lead-abc',
+  lead: { id: 'lead-abc', company_name: 'Acme Corp', contact_name: 'Alice' },
   deal: { id: 'deal-1', title: 'Enterprise Deal' },
   customer: { id: 'cust-1', name: 'Acme Corp' },
   created_at: '2024-01-20T00:00:00Z',
@@ -137,6 +139,18 @@ describe('Given TaskDetailPage — Task Detail and Management', () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
       expect(screen.queryAllByText(/task|back to tasks/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given linked lead / When rendered / Then "View Lead" link points to /crm/leads/:id not /leads/:id', async () => {
+    render(<TaskDetailPage />);
+    await waitFor(() => {
+      const link = screen.queryByRole('link', { name: /view lead/i });
+      if (link) {
+        const href = link.getAttribute('href');
+        expect(href).toMatch(/\/crm\/leads\//);
+        expect(href).not.toMatch(/^\/leads\//);
+      }
     });
   });
 

@@ -204,7 +204,7 @@ const TaskDetailPage = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Related Lead</span>
-                                        <Link to={`/leads/${task.lead_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
+                                        <Link to={`/crm/leads/${task.lead_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
                                             View Lead
                                         </Link>
                                     </div>
