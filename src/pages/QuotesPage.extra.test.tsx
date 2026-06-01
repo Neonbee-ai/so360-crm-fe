@@ -241,7 +241,7 @@ describe('Given QuotesPage — create quote modal', () => {
     fireEvent.click(screen.getByText('Select a deal...'));
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument();
-      expect(screen.getByText('Acme Deal')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Acme Deal/i })).toBeInTheDocument();
     });
   });
 
@@ -251,7 +251,7 @@ describe('Given QuotesPage — create quote modal', () => {
     fireEvent.click(screen.getByText('New Quote'));
     await waitFor(() => screen.getByText('Select a deal...'));
     fireEvent.click(screen.getByText('Select a deal...'));
-    await waitFor(() => screen.getByText('Acme Deal'));
+    await waitFor(() => screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByText(/^Create Quote$/));
     await waitFor(() => {
@@ -265,7 +265,7 @@ describe('Given QuotesPage — create quote modal', () => {
     fireEvent.click(screen.getByText('New Quote'));
     await waitFor(() => screen.getByText('Select a deal...'));
     fireEvent.click(screen.getByText('Select a deal...'));
-    await waitFor(() => screen.getByText('Acme Deal'));
+    await waitFor(() => screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByText(/^Create Quote$/));
     await waitFor(() => {
