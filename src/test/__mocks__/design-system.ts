@@ -18,6 +18,7 @@ export const DeleteConfirmDialog = () => null;
 export type FeatureState = 'enabled' | 'read_only' | 'locked' | 'disabled' | 'hidden';
 export interface FeatureRouteProps {
   state: string;
+  loading?: boolean;
   children: React.ReactNode;
   hiddenFallback?: React.ReactNode;
   lockedFallback?: React.ReactNode;
