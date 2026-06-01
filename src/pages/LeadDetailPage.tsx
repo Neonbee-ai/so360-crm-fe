@@ -921,6 +921,7 @@ const LeadDetailPage = () => {
                                                 type="file"
                                                 className="hidden"
                                                 disabled={isUploading}
+                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.png,.jpg,.jpeg,.svg,.webp,.gif"
                                                 onChange={async (e) => {
                                                     const file = e.target.files?.[0];
                                                     if (file && lead) {
@@ -933,7 +934,7 @@ const LeadDetailPage = () => {
                                                             });
                                                         } catch (err) {
                                                             const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
-                                                            alert(msg);
+                                                            showError(msg);
                                                         } finally {
                                                             setIsUploading(false);
                                                             e.target.value = '';

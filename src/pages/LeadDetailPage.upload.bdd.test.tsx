@@ -75,9 +75,10 @@ vi.mock('../utils/formatters', () => ({
     }),
 }));
 
+const mockShowError = vi.fn();
 vi.mock('../components/common/Toast', () => ({
     ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
+    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: mockShowError, dismissToast: vi.fn() }),
 }));
 
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));
@@ -150,7 +151,7 @@ describe('LeadDetailPage — document upload handler', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         defaultServiceMocks();
-        vi.stubGlobal('alert', vi.fn());
+        mockShowError.mockReset();
     });
 
     describe('Given the Documents tab is active and the user selects a file', () => {
@@ -184,7 +185,7 @@ describe('LeadDetailPage — document upload handler', () => {
             expect(screen.getByText(/Upload Document/i)).toBeInTheDocument();
         });
 
-        it('When the upload succeeds / Then no alert is shown', async () => {
+        it('When the upload succeeds / Then no error toast is shown', async () => {
             mockUploadDocument.mockResolvedValue(makeAttachment());
             await renderAndOpenDocumentsTab();
 
@@ -194,12 +195,12 @@ describe('LeadDetailPage — document upload handler', () => {
             });
 
             await waitFor(() => expect(mockUploadDocument).toHaveBeenCalled());
-            expect(window.alert).not.toHaveBeenCalled();
+            expect(mockShowError).not.toHaveBeenCalled();
         });
     });
 
     describe('Given the upload API rejects', () => {
-        it('When uploadDocument throws / Then alert is shown with the error message', async () => {
+        it('When uploadDocument throws / Then showError is called with the error message', async () => {
             mockUploadDocument.mockRejectedValue(new Error('Tenant not found'));
             await renderAndOpenDocumentsTab();
 
@@ -208,10 +209,10 @@ describe('LeadDetailPage — document upload handler', () => {
                 fireEvent.change(fileInput, { target: { files: [new File(['x'], 'fail.pdf')] } });
             });
 
-            await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Tenant not found'));
+            await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Tenant not found'));
         });
 
-        it('When uploadDocument throws a non-Error / Then alert shows generic message', async () => {
+        it('When uploadDocument throws a non-Error / Then showError shows generic message', async () => {
             mockUploadDocument.mockRejectedValue('unexpected');
             await renderAndOpenDocumentsTab();
 
@@ -221,7 +222,7 @@ describe('LeadDetailPage — document upload handler', () => {
             });
 
             await waitFor(() =>
-                expect(window.alert).toHaveBeenCalledWith('Upload failed. Please try again.')
+                expect(mockShowError).toHaveBeenCalledWith('Upload failed. Please try again.')
             );
         });
 
@@ -247,7 +248,7 @@ describe('LeadDetailPage — document upload handler', () => {
                 fireEvent.change(fileInput, { target: { files: [new File(['x'], 'fail.pdf')] } });
             });
 
-            await waitFor(() => expect(window.alert).toHaveBeenCalled());
+            await waitFor(() => expect(mockShowError).toHaveBeenCalled());
             expect(screen.getByText(/No documents attached/i)).toBeInTheDocument();
         });
     });
