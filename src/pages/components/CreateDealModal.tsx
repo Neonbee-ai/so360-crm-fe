@@ -6,18 +6,18 @@ import { ToastContainer, useToast } from '../../components/common/Toast';
 import { useActivity, usePeople } from '@so360/shell-context';
 
 interface CreateDealModalProps {
-    leadId: string;
-    leadName: string;
-    companyName: string;
+    leadId?: string;
+    leadName?: string;
+    companyName?: string;
     onClose: () => void;
     onSuccess: (deal: Deal) => void;
 }
 
-const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName, onClose, onSuccess }) => {
+const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
     const { toasts, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { people } = usePeople();
-    const [name, setName] = useState(`${companyName} Deal`);
+    const [name, setName] = useState(companyName ? `${companyName} Deal` : '');
     const [value, setValue] = useState<string>('');
     const [stage, setStage] = useState<DealStage>('Lead');
     const [startDate, setStartDate] = useState<string>('');
@@ -59,7 +59,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                 owner_person_id: ownerPersonId || undefined,
                 start_date: startDate ? new Date(startDate).toISOString() : undefined,
                 expected_close: expectedClose ? new Date(expectedClose).toISOString() : undefined,
-                lead_id: leadId,
+                lead_id: leadId || undefined,
             });
             recordActivity({ eventType: 'deal.created', eventCategory: 'crm', description: `Created deal "${name}" for ${companyName}`, resourceType: 'deal', resourceId: deal?.id }).catch(() => {});
             onSuccess(deal);
