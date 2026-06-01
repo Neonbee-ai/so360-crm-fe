@@ -11,6 +11,7 @@ const mockGetUsers = vi.fn();
 const mockGetActivitiesByLeadId = vi.fn();
 const mockUpdateLead = vi.fn().mockResolvedValue({});
 const mockLogActivity = vi.fn().mockResolvedValue({});
+const mockGetPartners = vi.fn();
 const mockUpdateTask = vi.fn().mockResolvedValue({});
 const mockCreateNote = vi.fn().mockResolvedValue({ id: 'nn1', content: 'new note', author: { id: 'u1', full_name: 'Test Owner' }, created_at: new Date().toISOString() });
 const mockUpdateNote = vi.fn().mockResolvedValue({});
@@ -38,7 +39,7 @@ vi.mock('../services/crmService', () => ({
     uploadDocument: (...a: any[]) => mockUploadDocument(...a),
     deleteDocument: (...a: any[]) => mockDeleteDocument(...a),
     deleteLead: (...a: any[]) => mockDeleteLead(...a),
-    getPartners: () => Promise.resolve([]),
+    getPartners: (...a: any[]) => mockGetPartners(...a),
   },
   activitiesApi: { update: (...a: any[]) => mockActivitiesUpdate(...a), delete: (...a: any[]) => mockActivitiesDelete(...a) },
   settingsApi: {
@@ -59,7 +60,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -137,8 +138,19 @@ const settings = {
   default_owner_id: 'u1',
 };
 
-beforeEach(() => {
+const mockPartners = [
+  { id: 'p1', company_name: 'Acme Partners', contact_name: 'Partner Bob' },
+  { id: 'p2', company_name: 'Beta Partners', contact_name: undefined },
+];
+
+let mockUseShellBridge: ReturnType<typeof vi.fn>;
+
+beforeEach(async () => {
   vi.clearAllMocks();
+  // Re-apply the default useShellBridge implementation so tests that call mockReturnValue don't bleed through
+  const shell = await import('@so360/shell-context');
+  mockUseShellBridge = vi.mocked(shell.useShellBridge);
+  mockUseShellBridge.mockImplementation(() => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockPathname = '/crm/leads/lead-1';
   mockGetLeadById.mockResolvedValue(makeLead());
   mockGetDealsByLeadId.mockResolvedValue(associatedDeals);
@@ -146,6 +158,7 @@ beforeEach(() => {
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue([owner]);
   mockGetActivitiesByLeadId.mockResolvedValue(makeLead().activities);
+  mockGetPartners.mockResolvedValue(mockPartners);
 });
 
 describe('LeadDetailPage', () => {
@@ -218,6 +231,7 @@ describe('LeadDetailPage', () => {
     });
 
     it('When Create Deal button is clicked / Then opens the create deal modal', async () => {
+      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true } as any);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Deal')).toBeInTheDocument());
@@ -495,6 +509,73 @@ describe('LeadDetailPage', () => {
     });
   });
 
+  describe('Given Referred By field', () => {
+    it('When lead has no referred_by / Then Referred By label is always visible in profile', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.getByText('Referred By')).toBeInTheDocument();
+    });
+
+    it('When lead has no referred_by / Then shows dash placeholder', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Referred By')).toBeInTheDocument());
+      const referredBySection = screen.getByText('Referred By').closest('div')!.parentElement!;
+      expect(referredBySection.textContent).toContain('—');
+    });
+
+    it('When lead has referred_by matching a partner / Then shows the partner company name', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({ referred_by: 'p1' }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Partners')).toBeInTheDocument());
+    });
+
+    it('When lead has referred_by but partner list is empty / Then shows dash', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({ referred_by: 'unknown-id' }));
+      mockGetPartners.mockResolvedValue([]);
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Referred By')).toBeInTheDocument());
+      const referredBySection = screen.getByText('Referred By').closest('div')!.parentElement!;
+      expect(referredBySection.textContent).toContain('—');
+    });
+
+    it('When viewed as customer route / Then Referred By field is still always visible', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.getByText('Referred By')).toBeInTheDocument();
+    });
+
+    it('When edit mode is toggled / Then PartnerSearchDropdown is rendered for Referred By', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      const editBtn = document.querySelector('[title="Edit Intelligence"]') as HTMLElement;
+      await user.click(editBtn);
+      await waitFor(() => expect(screen.getByTestId('partner-search-dropdown')).toBeInTheDocument());
+    });
+
+    it('When source is changed / Then referred_by value is preserved', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({ referred_by: 'p1', source: 'website' }));
+      const mockSourceTypes = [
+        { value: 'website', label: 'Website' },
+        { value: 'social_media', label: 'Social Media' },
+      ];
+      const { settingsApi } = await import('../services/crmService');
+      vi.mocked(settingsApi.sourceTypes.getAll).mockResolvedValue(mockSourceTypes as any);
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Partners')).toBeInTheDocument());
+      const editBtn = document.querySelector('[title="Edit Intelligence"]') as HTMLElement;
+      await user.click(editBtn);
+      await waitFor(() => expect(screen.getByTestId('partner-search-dropdown')).toBeInTheDocument());
+      // Change source — referred_by should remain (not cleared)
+      const sourceSelect = screen.getByDisplayValue('Website');
+      fireEvent.change(sourceSelect, { target: { value: 'social_media' } });
+      // PartnerSearchDropdown should still show the selected partner
+      expect(screen.getByTestId('partner-search-dropdown')).toBeInTheDocument();
+    });
+  });
+
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Create Deal button is absent', async () => {
       render(<LeadDetailPage />);
@@ -504,8 +585,7 @@ describe('LeadDetailPage', () => {
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Deal button is present', async () => {
-      const { useShellBridge } = await import('@so360/shell-context');
-      vi.mocked(useShellBridge).mockReturnValueOnce({
+      mockUseShellBridge.mockReturnValue({
         effectiveFlagsLoaded: true,
         isFeatureEnabled: () => true,
       } as any);

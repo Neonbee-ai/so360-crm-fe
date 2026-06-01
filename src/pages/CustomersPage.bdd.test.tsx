@@ -6,6 +6,7 @@ import React from 'react';
 const mockGetCustomers = vi.fn();
 const mockGetCustomerStats = vi.fn();
 const mockGetCustomerSegmentCustomers = vi.fn();
+const mockGetPartners = vi.fn();
 const mockNavigate = vi.fn();
 
 vi.mock('../services/crmService', () => ({
@@ -13,6 +14,7 @@ vi.mock('../services/crmService', () => ({
     getCustomers: (...args: any[]) => mockGetCustomers(...args),
     getCustomerStats: (...args: any[]) => mockGetCustomerStats(...args),
     getCustomerSegmentCustomers: (...args: any[]) => mockGetCustomerSegmentCustomers(...args),
+    getPartners: (...args: any[]) => mockGetPartners(...args),
   },
 }));
 
@@ -23,7 +25,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-  useShellBridge: () => ({
+  useShellBridge: vi.fn(() => ({
     isFeatureEnabled: (flag: string) => {
       if (flag === 'action:crm:customers:show_model_split') return true;
       if (flag === 'action:crm:customers:kpi_channel_web') return true;
@@ -31,7 +33,7 @@ vi.mock('@so360/shell-context', () => ({
       if (flag === 'action:crm:customers:kpi_channel_offline') return true;
       return true;
     },
-  }),
+  })),
   useActivity: () => ({ recordActivity: async () => {} }),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
@@ -57,10 +59,15 @@ vi.mock('../components/common/Table', () => ({
 
 import CustomersPage from './CustomersPage';
 
+const mockPartners = [
+  { id: 'p1', company_name: 'Acme Partners', contact_name: 'Partner Bob' },
+  { id: 'p2', company_name: 'Beta Partners' },
+];
+
 const customers = [
-  { id: 'c1', contact_name: 'Alice Johnson', email: 'alice@test.com', phone: '555-0001', company_name: 'AliceCo', channel: 'storefront_web', customer_category: 'b2c', acquisition_source: 'storefront_registration', created_at: '2025-01-15T10:00:00Z', credit_limit: '0', tax_id: null, tax_id_verified: false },
-  { id: 'c2', contact_name: 'Bob Smith', email: 'bob@corp.com', phone: '555-0002', company_name: 'BobCorp', channel: 'pos', customer_category: 'b2b', acquisition_source: 'pos_inline', created_at: '2025-02-20T10:00:00Z', credit_limit: '10000', tax_id: 'TAX123', tax_id_verified: true },
-  { id: 'c3', contact_name: 'Charlie Brown', email: 'charlie@web.com', phone: null, company_name: 'Charlie Brown', channel: 'manual', customer_category: 'b2c', acquisition_source: 'manual_entry', created_at: '2025-03-10T10:00:00Z', credit_limit: '0', tax_id: null, tax_id_verified: false },
+  { id: 'c1', contact_name: 'Alice Johnson', email: 'alice@test.com', phone: '555-0001', company_name: 'AliceCo', channel: 'storefront_web', customer_category: 'b2c', acquisition_source: 'storefront_registration', created_at: '2025-01-15T10:00:00Z', credit_limit: '0', tax_id: null, tax_id_verified: false, referred_by: undefined },
+  { id: 'c2', contact_name: 'Bob Smith', email: 'bob@corp.com', phone: '555-0002', company_name: 'BobCorp', channel: 'pos', customer_category: 'b2b', acquisition_source: 'pos_inline', created_at: '2025-02-20T10:00:00Z', credit_limit: '10000', tax_id: 'TAX123', tax_id_verified: true, referred_by: 'p1' },
+  { id: 'c3', contact_name: 'Charlie Brown', email: 'charlie@web.com', phone: null, company_name: 'Charlie Brown', channel: 'manual', customer_category: 'b2c', acquisition_source: 'manual_entry', created_at: '2025-03-10T10:00:00Z', credit_limit: '0', tax_id: null, tax_id_verified: false, referred_by: undefined },
 ];
 
 const stats = {
@@ -73,11 +80,27 @@ const stats = {
   manual: 1,
 };
 
-beforeEach(() => {
+let mockUseShellBridge: ReturnType<typeof vi.fn>;
+
+const defaultShellImpl = () => ({
+  isFeatureEnabled: (flag: string) => {
+    if (flag === 'action:crm:customers:show_model_split') return true;
+    if (flag === 'action:crm:customers:kpi_channel_web') return true;
+    if (flag === 'action:crm:customers:kpi_channel_mobile') return true;
+    if (flag === 'action:crm:customers:kpi_channel_offline') return true;
+    return true;
+  },
+});
+
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  mockUseShellBridge = vi.mocked(shell.useShellBridge);
+  mockUseShellBridge.mockImplementation(defaultShellImpl);
   tableProps = {};
   mockGetCustomers.mockResolvedValue(customers);
   mockGetCustomerStats.mockResolvedValue(stats);
+  mockGetPartners.mockResolvedValue(mockPartners);
 });
 
 describe('CustomersPage', () => {
@@ -342,28 +365,86 @@ describe('CustomersPage', () => {
     });
   });
 
-  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
-    it('When effectiveFlagsLoaded is false / Then KPI cards are absent (no flicker)', async () => {
-      const { unmount } = render(<CustomersPage />);
-      // Before flags resolve the cards should not be rendered
-      expect(screen.queryByText('Web')).not.toBeInTheDocument();
-      expect(screen.queryByText('Mobile')).not.toBeInTheDocument();
-      expect(screen.queryByText('POS')).not.toBeInTheDocument();
-      unmount();
+  describe('Given Referred By column', () => {
+    it('When page loads / Then calls getPartners to resolve partner names', async () => {
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
+      expect(mockGetPartners).toHaveBeenCalled();
     });
 
-    it('When effectiveFlagsLoaded is true and flags return true / Then KPI cards are present', async () => {
-      // Override mock so shell is loaded and flags are enabled
-      const { useShellBridge } = await import('@so360/shell-context');
-      vi.mocked(useShellBridge).mockReturnValueOnce({
+    it('When columns render / Then Referred By column is present', async () => {
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
+      const referredByCol = tableProps.columns.find((c: any) => c.header === 'Referred By');
+      expect(referredByCol).toBeDefined();
+    });
+
+    it('When customer has no referred_by / Then column shows dash', async () => {
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
+      const referredByCol = tableProps.columns.find((c: any) => c.header === 'Referred By');
+      const cell = referredByCol.accessor(customers[0]);
+      const { container } = render(cell);
+      expect(container.textContent).toBe('—');
+    });
+
+    it('When customer has referred_by matching a partner / Then column accessor contains partner company name', async () => {
+      render(<CustomersPage />);
+      // waitFor retries until partners are loaded into the column closure
+      await waitFor(() => {
+        const col = tableProps.columns?.find((c: any) => c.header === 'Referred By');
+        if (!col) throw new Error('Column not found');
+        const cell = col.accessor(customers[1]);
+        const children = cell?.props?.children;
+        const texts = (Array.isArray(children) ? children : [children])
+          .filter((c: any) => typeof c === 'string');
+        if (!texts.join('').includes('Acme Partners')) throw new Error('Partner name not yet resolved');
+        expect(texts.join('')).toContain('Acme Partners');
+      });
+    });
+
+    it('When referred_by id does not match any partner / Then column accessor falls back to raw id', async () => {
+      const customerWithUnknownPartner = { ...customers[0], referred_by: 'unknown-partner-id' };
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
+      const referredByCol = tableProps.columns.find((c: any) => c.header === 'Referred By');
+      const cell = referredByCol.accessor(customerWithUnknownPartner);
+      const children = cell?.props?.children;
+      const texts = (Array.isArray(children) ? children : [children])
+        .filter((c: any) => typeof c === 'string');
+      expect(texts.join('')).toContain('unknown-partner-id');
+    });
+
+    it('When getPartners fails / Then page still loads with partners defaulting to empty', async () => {
+      mockGetPartners.mockRejectedValue(new Error('Partners unavailable'));
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
+      // Page still renders without crashing
+      const referredByCol = tableProps.columns.find((c: any) => c.header === 'Referred By');
+      expect(referredByCol).toBeDefined();
+    });
+  });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then channel KPI cards are absent (no flicker)', async () => {
+      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, isFeatureEnabled: () => false } as any);
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByText('Customers')).toBeInTheDocument());
+      // 'Web' appears once in the channel filter dropdown option when KPI card is NOT rendered.
+      // When the KPI card IS rendered it would appear twice (dropdown + card heading).
+      expect(screen.queryAllByText('Web').length).toBe(1);
+      expect(screen.queryAllByText('Mobile').length).toBe(1);
+    });
+
+    it('When effectiveFlagsLoaded is true and flags return true / Then channel KPI cards are present', async () => {
+      mockUseShellBridge.mockReturnValue({
         effectiveFlagsLoaded: true,
         isFeatureEnabled: () => true,
       } as any);
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByText('Customers')).toBeInTheDocument());
-      // At minimum the Total card is always rendered; when flags are loaded and true the Web card appears too
-      const allText = document.body.textContent || '';
-      expect(allText).toContain('Total');
+      // Web KPI card now rendered → 'Web' appears twice (dropdown option + card heading)
+      await waitFor(() => expect(screen.queryAllByText('Web').length).toBeGreaterThan(1));
     });
   });
 });
