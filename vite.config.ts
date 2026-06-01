@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
         alias: {
             '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/src/index.ts'),
+            '@so360/cross-link': path.resolve(__dirname, '../../so360-shell-fe/packages/cross-link/src/index.ts'),
             '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src/index.ts'),
             '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/src/index.ts'),
             '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/src/index.ts'),
@@ -33,6 +34,7 @@ export default defineConfig(({ mode }) => {
                 'framer-motion': { singleton: true },
                 'lucide-react': { singleton: true },
                 '@so360/shell-context': { singleton: true },
+                '@so360/cross-link': { singleton: true },
                 '@so360/design-system': { singleton: true },
                 '@so360/event-bus': { singleton: true },
                 '@so360/formatters': { singleton: true },
