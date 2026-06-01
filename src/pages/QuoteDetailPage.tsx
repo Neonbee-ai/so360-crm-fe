@@ -7,7 +7,7 @@ import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection } from '../types/
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
-import { printQuote } from '../utils/printQuote';
+import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -23,9 +23,9 @@ const QuoteDetailPage = () => {
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
-    const canCreateQuote = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
-    const canApproveQuote = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true);
-    const canConvertQuote = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true);
+    const canCreateQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
+    const canApproveQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true);
+    const canConvertQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true);
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -412,12 +412,10 @@ const QuoteDetailPage = () => {
                     )}
                     {!isEditing && (
                         <button
-                            onClick={() => printQuote(
-                                quote,
-                                { formatCurrency, formatDate },
-                                {
-                                    name: currentOrg?.name,
-                                    logo_url: (currentOrg as any)?.logo_url,
+                            onClick={() => shell?.printDocument('sales_quote', quoteToDocumentData(quote, {
+                                currency: settings?.base_currency || 'XXX',
+                                seller: {
+                                    name: currentOrg?.name || '',
                                     address: (currentOrg as any)?.billing_address
                                         ? [
                                             (currentOrg as any).billing_address.street,
@@ -425,10 +423,9 @@ const QuoteDetailPage = () => {
                                             (currentOrg as any).billing_address.country,
                                           ].filter(Boolean).join(', ')
                                         : undefined,
-                                    tax_id: (currentOrg as any)?.tax_id,
+                                    tax_number: (currentOrg as any)?.tax_id,
                                 },
-                                settings?.document_settings,
-                            )}
+                            }))}
                             className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
                         >
                             <Printer className="w-4 h-4" />
