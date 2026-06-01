@@ -52,7 +52,7 @@ describe('Given Modal', () => {
     render(<Modal {...defaultProps} onClose={onClose} />);
 
     // Modal renders via portal into document.body — query there
-    const backdrop = document.body.querySelector('.bg-slate-950\\/80');
+    const backdrop = document.body.querySelector('.bg-black\\/60');
     expect(backdrop).toBeTruthy();
     fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalledTimes(1);
