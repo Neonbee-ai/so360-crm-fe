@@ -610,4 +610,23 @@ describe('QuoteStatusCell', () => {
       expect(screen.getByRole('button')).toBeDisabled();
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then New Quote button is absent', async () => {
+      renderPage();
+      expect(screen.queryByText('New Quote')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then New Quote button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+        currentOrg: { id: 'org-1' },
+      } as any);
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
+      expect(screen.getByText('New Quote')).toBeInTheDocument();
+    });
+  });
 });

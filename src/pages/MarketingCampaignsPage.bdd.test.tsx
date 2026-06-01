@@ -300,4 +300,22 @@ describe('MarketingCampaignsPage BDD', () => {
       });
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then New Campaign button is absent', async () => {
+      renderPage();
+      expect(screen.queryByText('New Campaign')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then New Campaign button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Campaigns')).toBeInTheDocument());
+      expect(screen.getByText('New Campaign')).toBeInTheDocument();
+    });
+  });
 });

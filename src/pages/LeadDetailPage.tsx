@@ -42,10 +42,10 @@ const LeadDetailPage = () => {
     const { recordActivity } = useActivity();
     const { isModuleEnabled } = useShell();
     const shell = useShellBridge();
-    const canCreateDeal = shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true;
-    const canPromoteLead = shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true;
-    const canQualifyLead = shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true;
-    const canConvertLead = shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true;
+    const canCreateDeal = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
+    const canPromoteLead = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
+    const canQualifyLead = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
+    const canConvertLead = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';

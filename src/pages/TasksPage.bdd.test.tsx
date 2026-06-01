@@ -324,4 +324,30 @@ describe('TasksPage', () => {
       expect(container.textContent).toContain('Big Deal');
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then delete button in action column is absent', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      // canCreateTask is false before flags resolve — the delete column renders nothing
+      const actionsCol = tableProps.columns[tableProps.columns.length - 1];
+      const cell = actionsCol.accessor(makeTasks()[0]);
+      const { container } = render(cell);
+      expect(container.querySelector('button')).toBeNull();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then delete button in action column is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const actionsCol = tableProps.columns[tableProps.columns.length - 1];
+      const cell = actionsCol.accessor(makeTasks()[0]);
+      const { container } = render(cell);
+      expect(container.querySelector('button')).not.toBeNull();
+    });
+  });
 });

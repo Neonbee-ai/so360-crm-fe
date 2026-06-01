@@ -461,4 +461,24 @@ describe('QuoteDetailPage', () => {
       });
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Edit button is absent (no flicker)', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());
+      // canCreateQuote is false before flags resolve — Edit button must not flash
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Edit button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<QuoteDetailPage />);
+      await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());
+      expect(screen.getByText('Edit')).toBeInTheDocument();
+    });
+  });
 });

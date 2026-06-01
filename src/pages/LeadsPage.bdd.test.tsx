@@ -306,4 +306,24 @@ describe('LeadsPage', () => {
       await waitFor(() => expect(screen.getByText('Network error')).toBeInTheDocument());
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Create Lead button is absent', async () => {
+      render(<LeadsPage />);
+      // Buttons gated by canCreateLead must not flash before flags resolve
+      expect(screen.queryByText('Create Lead')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Lead button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+        currentOrg: { id: 'org-1' },
+      } as any);
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+      expect(screen.getByText('Create Lead')).toBeInTheDocument();
+    });
+  });
 });

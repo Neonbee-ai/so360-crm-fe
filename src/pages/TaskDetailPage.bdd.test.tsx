@@ -249,4 +249,27 @@ describe('TaskDetailPage', () => {
       });
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Delete button is absent (no flicker)', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Test Task')).toBeInTheDocument());
+      // canCreateTask is false before flags resolve — delete button must not flash
+      const deleteBtn = screen.queryByTitle('Delete');
+      expect(deleteBtn).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Delete button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Test Task')).toBeInTheDocument());
+      // The delete Trash2 icon button is rendered when canCreateTask is true
+      const trashBtn = document.querySelector('button svg.lucide-trash-2')?.closest('button');
+      expect(trashBtn).toBeTruthy();
+    });
+  });
 });

@@ -396,4 +396,22 @@ describe('MarketingSegmentsPage', () => {
       expect(screen.getByTestId('store-picker')).toBeInTheDocument();
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Create Segment button is absent', async () => {
+      render(<MarketingSegmentsPage />);
+      expect(screen.queryByText('Create Segment')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Segment button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<MarketingSegmentsPage />);
+      await waitFor(() => expect(screen.getByText('Customer Segments')).toBeInTheDocument());
+      expect(screen.getByText('Create Segment')).toBeInTheDocument();
+    });
+  });
 });

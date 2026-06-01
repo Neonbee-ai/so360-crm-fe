@@ -30,10 +30,12 @@ const CustomersPage = () => {
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 
     // Feature-flag-driven KPI visibility
-    const showModelSplit = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false;
-    const showWeb        = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_web') : true;
-    const showMobile     = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_mobile') : true;
-    const showOffline    = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true;
+    // Guard on effectiveFlagsLoaded to prevent "visible then snaps hidden" flicker
+    const flagsReady     = shell?.effectiveFlagsLoaded ?? false;
+    const showModelSplit = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false);
+    const showWeb        = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_web') : true);
+    const showMobile     = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_mobile') : true);
+    const showOffline    = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
     const [isLoading, setIsLoading] = useState(true);

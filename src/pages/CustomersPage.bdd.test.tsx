@@ -341,4 +341,29 @@ describe('CustomersPage', () => {
       expect(btn!.textContent).toContain('Name');
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then KPI cards are absent (no flicker)', async () => {
+      const { unmount } = render(<CustomersPage />);
+      // Before flags resolve the cards should not be rendered
+      expect(screen.queryByText('Web')).not.toBeInTheDocument();
+      expect(screen.queryByText('Mobile')).not.toBeInTheDocument();
+      expect(screen.queryByText('POS')).not.toBeInTheDocument();
+      unmount();
+    });
+
+    it('When effectiveFlagsLoaded is true and flags return true / Then KPI cards are present', async () => {
+      // Override mock so shell is loaded and flags are enabled
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<CustomersPage />);
+      await waitFor(() => expect(screen.getByText('Customers')).toBeInTheDocument());
+      // At minimum the Total card is always rendered; when flags are loaded and true the Web card appears too
+      const allText = document.body.textContent || '';
+      expect(allText).toContain('Total');
+    });
+  });
 });

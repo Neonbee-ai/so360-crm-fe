@@ -21,7 +21,7 @@ const initialForm = {
 const MarketingCampaignsPage: React.FC = () => {
   const navigate = useNavigate();
   const shell = useShellBridge();
-  const canCreateMarketing = shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true;
+  const canCreateMarketing = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

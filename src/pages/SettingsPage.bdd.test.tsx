@@ -300,4 +300,24 @@ describe('SettingsPage BDD', () => {
       });
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Save Configuration button is absent', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      // canWriteSettings is false before flags resolve — save button must not flash
+      expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Save Configuration button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+    });
+  });
 });

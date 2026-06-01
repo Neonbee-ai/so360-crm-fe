@@ -494,4 +494,24 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Due Reminders')).toBeInTheDocument());
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Create Deal button is absent', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      // canCreateDeal is false when effectiveFlagsLoaded is false (default mock has no effectiveFlagsLoaded)
+      expect(screen.queryByText('Create Deal')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Deal button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.getByText('Create Deal')).toBeInTheDocument();
+    });
+  });
 });

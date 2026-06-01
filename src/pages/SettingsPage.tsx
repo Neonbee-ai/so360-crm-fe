@@ -10,7 +10,7 @@ type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 's
 const SettingsPage = () => {
     const { toasts, showSuccess, showError, dismissToast } = useToast();
     const shell = useShellBridge();
-    const canWriteSettings = shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true;
+    const canWriteSettings = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const [settings, setSettings] = useState<CRMSettings | null>(null);
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);

@@ -150,4 +150,22 @@ describe('MarketingNewsletterPage', () => {
       await waitFor(() => expect(screen.getByText(/Fetching audience/)).toBeInTheDocument());
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Add Subscriber button is absent', async () => {
+      render(<MarketingNewsletterPage />);
+      expect(screen.queryByText('Add Subscriber')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Add Subscriber button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<MarketingNewsletterPage />);
+      await waitFor(() => expect(screen.getByText('Newsletter Subscribers')).toBeInTheDocument());
+      expect(screen.getByText('Add Subscriber')).toBeInTheDocument();
+    });
+  });
 });

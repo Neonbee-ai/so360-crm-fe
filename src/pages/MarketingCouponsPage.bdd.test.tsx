@@ -322,4 +322,22 @@ describe('MarketingCouponsPage BDD', () => {
       });
     });
   });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Create Coupon button is absent', async () => {
+      renderPage();
+      expect(screen.queryByText('Create Coupon')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Coupon button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Discount Coupons')).toBeInTheDocument());
+      expect(screen.getByText('Create Coupon')).toBeInTheDocument();
+    });
+  });
 });
