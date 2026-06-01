@@ -412,7 +412,7 @@ const QuoteDetailPage = () => {
                     )}
                     {!isEditing && (
                         <button
-                            onClick={() => shell?.printDocument('sales_quote', quoteToDocumentData(quote, {
+                            onClick={() => shell?.printDocument?.('sales_quote', quoteToDocumentData(quote, {
                                 currency: settings?.base_currency || 'XXX',
                                 seller: {
                                     name: currentOrg?.name || '',
