@@ -8,7 +8,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon
+    File, Download, UploadCloud, FileIcon, Eye
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
@@ -969,12 +969,23 @@ const LeadDetailPage = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-2">
-                                                        <button
+                                                        <a
+                                                            href={doc.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                            title="View"
+                                                        >
+                                                            <Eye size={16} />
+                                                        </a>
+                                                        <a
+                                                            href={doc.url}
+                                                            download={doc.name}
                                                             className="p-2 text-slate-500 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-all"
                                                             title="Download"
                                                         >
                                                             <Download size={16} />
-                                                        </button>
+                                                        </a>
                                                         <button
                                                             onClick={async () => {
                                                                 if (confirm('Delete this document?')) {

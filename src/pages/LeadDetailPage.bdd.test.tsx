@@ -108,7 +108,7 @@ const makeLead = (overrides: any = {}) => ({
     { id: 'n2', content: 'Needs follow up', author: owner, created_at: '2025-01-03T10:00:00Z' },
   ],
   documents: [
-    { id: 'doc1', name: 'requirements.pdf', size: 5242880, uploaded_at: '2025-01-04T10:00:00Z', created_at: '2025-01-04T10:00:00Z', uploaded_by: owner },
+    { id: 'doc1', name: 'requirements.pdf', size: 5242880, url: 'https://cdn.example.com/requirements.pdf', uploaded_at: '2025-01-04T10:00:00Z', created_at: '2025-01-04T10:00:00Z', uploaded_by: owner },
   ],
   custom_fields: { cf1: 'High' },
   ...overrides,
@@ -388,6 +388,30 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Documents \(0\)/));
       await waitFor(() => expect(screen.getByText('No documents attached')).toBeInTheDocument());
+    });
+
+    it('When documents tab is open / Then View link opens document URL in a new tab', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText(/Documents \(1\)/));
+      await waitFor(() => expect(screen.getByText('requirements.pdf')).toBeInTheDocument());
+      const viewLink = screen.getByTitle('View');
+      expect(viewLink.tagName).toBe('A');
+      expect(viewLink).toHaveAttribute('href', 'https://cdn.example.com/requirements.pdf');
+      expect(viewLink).toHaveAttribute('target', '_blank');
+    });
+
+    it('When documents tab is open / Then Download link carries the document URL and filename', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText(/Documents \(1\)/));
+      await waitFor(() => expect(screen.getByText('requirements.pdf')).toBeInTheDocument());
+      const downloadLink = screen.getByTitle('Download');
+      expect(downloadLink.tagName).toBe('A');
+      expect(downloadLink).toHaveAttribute('href', 'https://cdn.example.com/requirements.pdf');
+      expect(downloadLink).toHaveAttribute('download', 'requirements.pdf');
     });
   });
 
