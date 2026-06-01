@@ -50,6 +50,7 @@ vi.mock('@so360/shell-context', () => ({
         user: { id: 'u1', full_name: 'Test User', email: 'test@test.com' },
         tenant: { id: 'tenant-1' },
         org: { id: 'org-1', name: 'Test Org' },
+        isModuleEnabled: () => false,
     }),
     useActivity: () => ({ recordActivity: vi.fn() }),
     useShellBridge: vi.fn(() => ({
