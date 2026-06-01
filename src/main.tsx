@@ -68,6 +68,8 @@ const MockShellProvider = ({ children }: { children: React.ReactNode }) => {
         },
         businessSettingsLoading: false,
         refreshBusinessSettings: async () => { console.log('Mock refreshBusinessSettings'); },
+        printDocument: async () => { console.log('Mock printDocument'); },
+        getDocumentTemplate: async () => ({ key: '', html: '', css: '' } as any),
     };
 
     return (
