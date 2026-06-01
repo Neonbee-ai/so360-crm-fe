@@ -145,7 +145,7 @@ describe('TaskDetailPage', () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('View Lead')).toBeInTheDocument());
       const link = screen.getByText('View Lead').closest('a');
-      expect(link?.getAttribute('href')).toBe('/leads/lead-1');
+      expect(link?.getAttribute('href')).toBe('/crm/leads/lead-1');
     });
   });
 
