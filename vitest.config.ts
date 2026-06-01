@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@so360/shell-context': path.join(stubs, 'shell-context.ts'),
+      '@so360/cross-link': path.join(stubs, 'cross-link.ts'),
       '@so360/design-system': path.join(stubs, 'design-system.ts'),
       '@so360/formatters': path.join(stubs, 'formatters.ts'),
       '@so360/event-bus': path.join(stubs, 'event-bus.ts'),

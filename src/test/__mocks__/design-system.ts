@@ -13,6 +13,9 @@ export const QuotaGate = ({ children }: any) => React.createElement(React.Fragme
 export const QuotaBar = () => null;
 export const Pagination = () => null;
 export const DeleteConfirmDialog = () => null;
+export const CrossLinkChip = ({ label, id }: any) =>
+  React.createElement('span', { 'data-testid': 'cross-link-chip' }, label ?? id ?? '');
+export const RelatedRecordsPanel = () => null;
 
 // FeatureGate / FeatureRoute — 5-state model
 export type FeatureState = 'enabled' | 'read_only' | 'locked' | 'disabled' | 'hidden';
