@@ -23,6 +23,7 @@
         "baseUrl": ".",
         "paths": {
             "@so360/shell-context": ["../../so360-shell-fe/packages/shell-context/dist", "src/types/stubs/shell-context"],
+            "@so360/cross-link": ["../../so360-shell-fe/packages/cross-link/dist"],
             "@so360/design-system": ["../../so360-shell-fe/packages/design-system/dist", "src/types/stubs/design-system"],
             "@so360/event-bus": ["../../so360-shell-fe/packages/event-bus/dist"],
             "@so360/formatters": ["../../so360-shell-fe/packages/formatters/dist", "src/types/stubs/formatters"]
