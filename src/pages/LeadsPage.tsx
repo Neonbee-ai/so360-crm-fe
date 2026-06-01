@@ -141,10 +141,10 @@ const LeadsPage = () => {
     };
 
     const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-600" />;
+        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-400" />;
         if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
         if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
-        return <ChevronsUpDown size={14} className="text-slate-600" />;
+        return <ChevronsUpDown size={14} className="text-slate-400" />;
     };
 
     const sortedAndFilteredLeads = useMemo(() => {
@@ -323,7 +323,7 @@ const LeadsPage = () => {
                         <select
                             value={currentStageId}
                             onChange={(e) => handleStatusChange(lead, e.target.value)}
-                            className={`px-2 py-1 rounded-full text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 focus:ring-blue-500 ${colorClass}`}
+                            className={`px-2 py-1 rounded-full text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 ${colorClass}`}
                         >
                             {leadStages.map(stage => (
                                 <option key={stage.id} value={stage.id} className="bg-slate-900 text-slate-300">
@@ -414,7 +414,7 @@ const LeadsPage = () => {
                 existingLeads={leads.map(l => l.company_name)}
             />
 
-            <div className="flex flex-col gap-4 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+            <div className="flex flex-col gap-4 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                     {activeSegmentName && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
@@ -429,7 +429,7 @@ const LeadsPage = () => {
                             placeholder="Search leads..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-950 border border-slate-700/50 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                         />
                     </div>
                 </div>
@@ -443,7 +443,7 @@ const LeadsPage = () => {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                         <option value="All">All Statuses</option>
                         {leadStages.map(stage => (
@@ -454,7 +454,7 @@ const LeadsPage = () => {
                     <select
                         value={ownerFilter}
                         onChange={(e) => setOwnerFilter(e.target.value)}
-                        className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                         <option value="All">All Owners</option>
                         {users.map(user => (
@@ -465,7 +465,7 @@ const LeadsPage = () => {
                     <select
                         value={creatorFilter}
                         onChange={(e) => setCreatorFilter(e.target.value)}
-                        className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                         <option value="All">Created By: All</option>
                         {users.map(user => (
@@ -476,7 +476,7 @@ const LeadsPage = () => {
                     <select
                         value={dateRangeFilter}
                         onChange={(e) => setDateRangeFilter(e.target.value)}
-                        className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                         <option value="All">All Time</option>
                         <option value="Today">Today</option>
@@ -489,19 +489,19 @@ const LeadsPage = () => {
                     </select>
 
                     {dateRangeFilter === 'Custom' && (
-                        <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1">
+                        <div className="flex items-center gap-2 bg-slate-950 border border-slate-700/50 rounded-lg px-2 py-1">
                             <input
                                 type="date"
                                 value={customDateStart}
                                 onChange={(e) => setCustomDateStart(e.target.value)}
-                                className="bg-transparent text-slate-300 text-xs focus:outline-none [&::-webkit-calendar-picker-indicator]:invert"
+                                className="bg-transparent text-slate-300 text-xs focus:outline-none"
                             />
                             <span className="text-slate-500">-</span>
                             <input
                                 type="date"
                                 value={customDateEnd}
                                 onChange={(e) => setCustomDateEnd(e.target.value)}
-                                className="bg-transparent text-slate-300 text-xs focus:outline-none [&::-webkit-calendar-picker-indicator]:invert"
+                                className="bg-transparent text-slate-300 text-xs focus:outline-none"
                             />
                         </div>
                     )}
@@ -534,13 +534,13 @@ const LeadsPage = () => {
 
             {/* Pagination Controls */}
             {sandboxLimitedLeads.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
+                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-lg shadow-sm">
                     <div className="flex items-center gap-2 text-sm text-slate-400">
                         <span>Show</span>
                         <select
                             value={pageSize}
                             onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200"
+                            className="bg-slate-800 border border-slate-600/50 rounded px-2 py-1 text-slate-200 shadow-sm"
                         >
                             {[10, 25, 50, 100].map(size => (
                                 <option key={size} value={size}>{size}</option>
@@ -552,14 +552,14 @@ const LeadsPage = () => {
                         <button
                             onClick={() => setCurrentPage(1)}
                             disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         >
                             First
                         </button>
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         >
                             Prev
                         </button>
@@ -569,14 +569,14 @@ const LeadsPage = () => {
                         <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         >
                             Next
                         </button>
                         <button
                             onClick={() => setCurrentPage(totalPages)}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         >
                             Last
                         </button>
@@ -586,8 +586,8 @@ const LeadsPage = () => {
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-lg shadow-2xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Lead</h2>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this lead? This will also remove all associated notes, activities, and documents. This action cannot be undone.

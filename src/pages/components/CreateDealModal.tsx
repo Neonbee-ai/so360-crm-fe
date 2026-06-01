@@ -75,9 +75,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     return (
         <>
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                    <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between">
                         <h2 className="text-xl font-black text-slate-50 uppercase tracking-tight flex items-center gap-2">
                             <Briefcase className="text-blue-500" size={24} />
                             New Deal

@@ -208,7 +208,7 @@ const SettingsPage = () => {
                 </button>}
             </header>
 
-            <div className="flex gap-1 mb-8 bg-slate-900/50 p-1 rounded-xl border border-slate-800 w-fit">
+            <div className="flex gap-1 mb-8 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 shadow-sm w-fit">
                 <button
                     onClick={() => setActiveTab('pipeline')}
                     className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pipeline' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
@@ -243,8 +243,8 @@ const SettingsPage = () => {
 
             <div className="space-y-10">
                 {activeTab === 'pipeline' && (
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                    <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                             <div>
                                 <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Deal Pipeline Stages</h3>
                                 <p className="text-[10px] text-slate-500 font-bold mt-1">THE ORDER DEFINES YOUR SALES FUNNEL</p>
@@ -259,7 +259,7 @@ const SettingsPage = () => {
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.deal_stages.map((stage, idx) => (
-                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-800 p-3 rounded-xl group hover:border-slate-700 transition-all">
+                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl group hover:border-slate-600/60 transition-all shadow-sm">
                                         <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">
                                             {idx + 1}
                                         </div>
@@ -269,7 +269,7 @@ const SettingsPage = () => {
                                                 value={stage.name}
                                                 onChange={(e) => updateStageName(idx, e.target.value)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-700"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-500"
                                             />
                                         </div>
                                         <select
@@ -291,7 +291,7 @@ const SettingsPage = () => {
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => removeStage(stage.id)}
-                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all"
+                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-400 transition-all"
                                                 title="Remove Stage"
                                             >
                                                 <Trash2 size={16} />
@@ -305,8 +305,8 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'lead-stages' && (
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                    <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                             <div>
                                 <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
                                 <p className="text-[10px] text-slate-500 font-bold mt-1">THE ORDER DEFINES YOUR LEAD JOURNEY</p>
@@ -321,7 +321,7 @@ const SettingsPage = () => {
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
-                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-800 p-3 rounded-xl group hover:border-slate-700 transition-all">
+                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl group hover:border-slate-600/60 transition-all shadow-sm">
                                         <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">
                                             {idx + 1}
                                         </div>
@@ -331,13 +331,13 @@ const SettingsPage = () => {
                                                 value={stage.name}
                                                 onChange={(e) => updateLeadStageName(idx, e.target.value)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-700"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-500"
                                             />
                                         </div>
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => removeLeadStage(stage.id)}
-                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all"
+                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-400 transition-all"
                                                 title="Remove Stage"
                                             >
                                                 <Trash2 size={16} />
@@ -353,8 +353,8 @@ const SettingsPage = () => {
                 {activeTab === 'custom-fields' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Lead Custom Fields */}
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
-                            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
+                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                                 <div>
                                     <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Fields</h3>
                                 </div>
@@ -417,8 +417,8 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Deal Custom Fields */}
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
-                            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
+                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                                 <div>
                                     <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Deal Fields</h3>
                                 </div>
@@ -481,8 +481,8 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Partner Custom Fields */}
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl h-fit">
-                            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
+                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                                 <div>
                                     <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Partner Fields</h3>
                                 </div>
@@ -550,8 +550,8 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'sources' && (
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-800 bg-slate-900/50">
+                    <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
                             <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Source Types</h3>
                             <p className="text-[10px] text-slate-500 font-bold mt-1">WHERE DO YOUR LEADS COME FROM? SYSTEM TYPES CANNOT BE DELETED.</p>
                         </div>
@@ -612,8 +612,8 @@ const SettingsPage = () => {
                     </section>
                 )}
                 {activeTab === 'scoring' && (
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                    <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                             <div>
                                 <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs flex items-center gap-2">
                                     <Trophy size={14} className="text-amber-400" />
@@ -691,7 +691,7 @@ const SettingsPage = () => {
                                                         lead_scoring: settings.lead_scoring.filter(r => r.id !== rule.id)
                                                     });
                                                 }}
-                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all"
+                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-400 transition-all"
                                             >
                                                 <Trash2 size={16} />
                                             </button>

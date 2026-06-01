@@ -369,7 +369,7 @@ const TaskDetailPage = () => {
                             </button>
                             <button
                                 onClick={() => setIsRescheduling(true)}
-                                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700"
+                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50"
                             >
                                 Reschedule
                             </button>
@@ -428,7 +428,7 @@ const TaskDetailPage = () => {
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setEditingNote(null)}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-700"
+                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50"
                             >
                                 Cancel
                             </button>
@@ -476,7 +476,7 @@ const TaskDetailPage = () => {
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setDeleteNoteId(null)}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-700"
+                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50"
                             >
                                 Cancel
                             </button>
@@ -504,8 +504,8 @@ const TaskDetailPage = () => {
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md p-6 shadow-2xl">
                         <h3 className="text-lg font-bold text-slate-50 mb-2">Delete Task</h3>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this task? This action cannot be undone.

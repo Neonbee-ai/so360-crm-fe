@@ -295,7 +295,7 @@ const QuoteDetailPage = () => {
         return (
             <div className="p-8">
                 <div className="text-center py-16">
-                    <FileText className="w-16 h-16 mx-auto text-slate-600 mb-4" />
+                    <FileText className="w-16 h-16 mx-auto text-slate-400 mb-4" />
                     <h2 className="text-xl font-semibold text-slate-300 mb-2">Quote not found</h2>
                     <button
                         onClick={() => navigate('/crm/quotes')}
@@ -534,7 +534,7 @@ const QuoteDetailPage = () => {
                                                                 <span className="flex-1 min-w-0">
                                                                     <span className="text-slate-200 truncate block">{line.item_name}</span>
                                                                     <span className="flex items-center gap-1 mt-0.5">
-                                                                        <span className="text-xs px-1.5 py-0.5 bg-slate-700 text-slate-400 rounded">{line.sku}</span>
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-slate-400 rounded">{line.sku}</span>
                                                                         {line.sub_sku && line.sub_sku !== 'NIL' && (
                                                                             <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded">{line.sub_sku}</span>
                                                                         )}
@@ -562,7 +562,7 @@ const QuoteDetailPage = () => {
                                                             <span className="text-slate-200 block">{line.description}</span>
                                                             {line.sku && (
                                                                 <span className="flex items-center gap-1 mt-0.5">
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-slate-700/80 text-slate-400 rounded">{line.sku}</span>
+                                                                    <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-slate-400 rounded">{line.sku}</span>
                                                                     {line.sub_sku && line.sub_sku !== 'NIL' && (
                                                                         <span className="text-xs px-1.5 py-0.5 bg-blue-900/40 text-blue-400 rounded">{line.sub_sku}</span>
                                                                     )}
@@ -584,7 +584,7 @@ const QuoteDetailPage = () => {
                                                         <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{stock} avail</span>
                                                     )
                                                 ) : (
-                                                    <span className="text-xs text-slate-600">—</span>
+                                                    <span className="text-xs text-slate-400">—</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right">

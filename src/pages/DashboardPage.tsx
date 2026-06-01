@@ -124,31 +124,31 @@ const DashboardPage = () => {
                         }
                     </p>
                 </div>
-                <div className="flex gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <div className="flex gap-2 bg-slate-900 p-1 rounded-xl border border-slate-700/50 shadow-inner">
                     <button
                         onClick={() => setPeriod('yearly')}
                         className={`px-4 py-2 ${period === 'yearly'
-                            ? 'bg-slate-800 text-slate-50'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
                             : 'text-slate-500 hover:text-slate-300'
-                            } rounded-lg text-xs font-black uppercase tracking-widest transition-colors shadow-sm`}
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-sm`}
                     >
                         Yearly
                     </button>
                     <button
                         onClick={() => setPeriod('quarterly')}
                         className={`px-4 py-2 ${period === 'quarterly'
-                            ? 'bg-slate-800 text-slate-50'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
                             : 'text-slate-500 hover:text-slate-300'
-                            } rounded-lg text-xs font-black uppercase tracking-widest transition-colors`}
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
                     >
                         Quarterly
                     </button>
                     <button
                         onClick={() => setPeriod('monthly')}
                         className={`px-4 py-2 ${period === 'monthly'
-                            ? 'bg-slate-800 text-slate-50'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
                             : 'text-slate-500 hover:text-slate-300'
-                            } rounded-lg text-xs font-black uppercase tracking-widest transition-colors`}
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
                     >
                         Monthly
                     </button>
@@ -159,7 +159,7 @@ const DashboardPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-blue-500/50 transition-all">
+                <div className="bg-slate-900 border border-slate-700/50 p-6 rounded-2xl relative overflow-hidden group hover:border-blue-500/50 transition-all shadow-sm">
                     <div className="absolute right-0 top-0 p-32 bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-500/10 transition-all" />
                     <div className="relative">
                         <div className="flex items-center gap-3 mb-4 text-blue-400">
@@ -187,7 +187,7 @@ const DashboardPage = () => {
                 )}
 
                 {showPipeline && (
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-purple-500/50 transition-all">
+                <div className="bg-slate-900 border border-slate-700/50 p-6 rounded-2xl relative overflow-hidden group hover:border-purple-500/50 transition-all shadow-sm">
                     <div className="absolute right-0 top-0 p-32 bg-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/10 transition-all" />
                     <div className="relative">
                         <div className="flex items-center gap-3 mb-4 text-purple-400">
@@ -208,7 +208,7 @@ const DashboardPage = () => {
                 )}
 
                 {showPipeline && (
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+                <div className="bg-slate-900 border border-slate-700/50 p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/50 transition-all shadow-sm">
                     <div className="absolute right-0 top-0 p-32 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/10 transition-all" />
                     <div className="relative">
                         <div className="flex items-center gap-3 mb-4 text-emerald-400">
@@ -229,7 +229,7 @@ const DashboardPage = () => {
                 )}
 
                 {showPipeline && (
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl relative overflow-hidden group hover:border-amber-500/50 transition-all">
+                <div className="bg-slate-900 border border-slate-700/50 p-6 rounded-2xl relative overflow-hidden group hover:border-amber-500/50 transition-all shadow-sm">
                     <div className="absolute right-0 top-0 p-32 bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-amber-500/10 transition-all" />
                     <div className="relative">
                         <div className="flex items-center gap-3 mb-4 text-amber-400">
@@ -249,7 +249,7 @@ const DashboardPage = () => {
 
             {/* Commerce Performance — DailyStore gated */}
             {isDailyStoreEnabled && (
-                <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+                <section className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 bg-purple-500/10 rounded-lg">
                             <ShoppingBag size={16} className="text-purple-400" />
@@ -265,7 +265,7 @@ const DashboardPage = () => {
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         {/* 1. Ecommerce Revenue */}
-                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/50 transition-all">
+                        <div className="bg-slate-900 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden group hover:border-purple-500/50 transition-all shadow-sm">
                             <div className="absolute right-0 top-0 p-24 bg-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/10 transition-all" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3 text-purple-400">
@@ -280,7 +280,7 @@ const DashboardPage = () => {
                         </div>
 
                         {/* 2. Orders Count */}
-                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-cyan-500/50 transition-all">
+                        <div className="bg-slate-900 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden group hover:border-cyan-500/50 transition-all shadow-sm">
                             <div className="absolute right-0 top-0 p-24 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-cyan-500/10 transition-all" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3 text-cyan-400">
@@ -295,7 +295,7 @@ const DashboardPage = () => {
                         </div>
 
                         {/* 3. AOV */}
-                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-violet-500/50 transition-all">
+                        <div className="bg-slate-900 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden group hover:border-violet-500/50 transition-all shadow-sm">
                             <div className="absolute right-0 top-0 p-24 bg-violet-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-violet-500/10 transition-all" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3 text-violet-400">
@@ -310,7 +310,7 @@ const DashboardPage = () => {
                         </div>
 
                         {/* 4. Repeat Purchase % */}
-                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+                        <div className="bg-slate-900 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/50 transition-all shadow-sm">
                             <div className="absolute right-0 top-0 p-24 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/10 transition-all" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3 text-emerald-400">
@@ -325,7 +325,7 @@ const DashboardPage = () => {
                         </div>
 
                         {/* 5. Refund % */}
-                        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl relative overflow-hidden group hover:border-rose-500/50 transition-all">
+                        <div className="bg-slate-900 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden group hover:border-rose-500/50 transition-all shadow-sm">
                             <div className="absolute right-0 top-0 p-24 bg-rose-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-rose-500/10 transition-all" />
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3 text-rose-400">
@@ -342,24 +342,24 @@ const DashboardPage = () => {
 
                     {/* Orders Distribution chart */}
                     {commerceKPIs?.orderChartData && commerceKPIs.orderChartData.values.length > 0 && (
-                        <div className="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <div className="mt-6 bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-sm">
                             <div className="flex justify-between items-center mb-6">
                                 <div>
                                     <h3 className="text-base font-black text-slate-50 tracking-tight">Orders Distribution</h3>
                                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Order volume by period</p>
                                 </div>
-                                <div className="px-3 py-1 bg-slate-800 rounded-lg flex items-center gap-2 text-xs font-bold text-slate-400">
+                                <div className="px-3 py-1 bg-slate-400/15 rounded-lg flex items-center gap-2 text-xs font-bold text-slate-400">
                                     <div className="w-2 h-2 rounded-full bg-cyan-500" /> DailyStore Orders
                                 </div>
                             </div>
 
                             <div className="h-48 flex items-end justify-between gap-2 px-4 relative">
                                 {/* Grid lines */}
-                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 z-0">
-                                    <div className="w-full h-px bg-slate-700 border-t border-dashed" />
-                                    <div className="w-full h-px bg-slate-700 border-t border-dashed" />
-                                    <div className="w-full h-px bg-slate-700 border-t border-dashed" />
-                                    <div className="w-full h-px bg-slate-700 border-t border-dashed" />
+                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40 z-0">
+                                    <div className="w-full h-px bg-slate-400/40 border-t border-dashed border-slate-400/30" />
+                                    <div className="w-full h-px bg-slate-400/40 border-t border-dashed border-slate-400/30" />
+                                    <div className="w-full h-px bg-slate-400/40 border-t border-dashed border-slate-400/30" />
+                                    <div className="w-full h-px bg-slate-400/40 border-t border-dashed border-slate-400/30" />
                                 </div>
 
                                 {commerceKPIs.orderChartData.values.map((val: number, idx: number) => {
@@ -370,7 +370,7 @@ const DashboardPage = () => {
                                                 className="w-full bg-cyan-500/20 border-t-2 border-cyan-500 rounded-t-sm hover:bg-cyan-500/40 transition-all relative group-hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
                                                 style={{ height: `${heightPct}%` }}
                                             >
-                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-50 text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none border border-slate-700">
+                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/90 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
                                                     {val} orders
                                                 </div>
                                             </div>
@@ -398,7 +398,7 @@ const DashboardPage = () => {
                         <div key={task.id} className="flex-shrink-0 w-72 flex flex-col gap-2">
                         <Link
                             to={`../tasks/${task.id}`}
-                            className="bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-blue-500/50 transition-all group"
+                            className="bg-slate-900 border border-slate-700/50 p-4 rounded-xl hover:border-blue-500/50 transition-all group shadow-sm"
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
@@ -409,8 +409,8 @@ const DashboardPage = () => {
                             </div>
                             <h4 className="text-sm font-bold text-slate-50 group-hover:text-blue-400 transition-colors truncate mb-1">{task.title}</h4>
                             <p className="text-[11px] text-slate-500 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
-                            <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-800/50">
-                                <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-black border border-slate-700">
+                            <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-400/15">
+                                <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black border border-slate-400/30">
                                     {task.assigned_to?.avatar_url ? (
                                         <img src={task.assigned_to.avatar_url} className="w-full h-full rounded-full" />
                                     ) : task.assigned_to?.full_name?.charAt(0)}
@@ -423,7 +423,7 @@ const DashboardPage = () => {
                         )}
                         </div>
                     )) : (
-                        <div className="w-full py-8 text-center bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl">
+                        <div className="w-full py-8 text-center bg-slate-900/40 border border-dashed border-slate-400/30 rounded-2xl">
                             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">No active reminders</p>
                         </div>
                     )}
@@ -433,14 +433,14 @@ const DashboardPage = () => {
 
             <div className={`grid grid-cols-1 ${showLeads ? 'lg:grid-cols-3' : ''} gap-8`}>
                 {/* Revenue Chart */}
-                <div className={`${showLeads ? 'lg:col-span-2' : ''} bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm`}>
+                <div className={`${showLeads ? 'lg:col-span-2' : ''} bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-sm`}>
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <h3 className="text-lg font-black text-slate-50 tracking-tight">Revenue Performance</h3>
                             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Monthly Revenue Distribution</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                            <div className="px-3 py-1 bg-slate-800 rounded-lg flex items-center gap-2">
+                            <div className="px-3 py-1 bg-slate-400/15 rounded-lg flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-500" /> Current Year
                             </div>
                         </div>
@@ -464,7 +464,7 @@ const DashboardPage = () => {
                                         className="w-full bg-blue-500/20 border-t-2 border-blue-500 rounded-t-sm hover:bg-blue-500/40 transition-all relative group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]"
                                         style={{ height: `${heightPercentage}%` }}
                                     >
-                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-50 text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none border border-slate-700">
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/90 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
                                             {formatCurrency(val)}
                                         </div>
                                     </div>
@@ -476,22 +476,22 @@ const DashboardPage = () => {
                 </div>
 
                 {/* Team Leaderboard */}
-                {showLeads && <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
+                {showLeads && <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
                     <h3 className="text-lg font-black text-slate-50 tracking-tight mb-1">Top Performers</h3>
                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">Revenue Leaders</p>
 
                     <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
                         {teamStats.map((stat: any, index: number) => (
-                            <div key={stat.user.id} className="flex items-center gap-4 p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 transition-all group">
+                            <div key={stat.user.id} className="flex items-center gap-4 p-3 rounded-xl bg-slate-950 border border-slate-700/40 hover:border-slate-600/60 transition-all group shadow-sm">
                                 <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-black text-xs ${index === 0 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' :
-                                    index === 1 ? 'bg-slate-700 text-slate-300' :
-                                        index === 2 ? 'bg-slate-800 text-slate-400' :
-                                            'bg-transparent text-slate-600'
+                                    index === 1 ? 'bg-slate-500/40 text-slate-300' :
+                                        index === 2 ? 'bg-slate-400/25 text-slate-400' :
+                                            'bg-transparent text-slate-400'
                                     }`}>
                                     {index + 1}
                                 </div>
 
-                                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
+                                <div className="w-10 h-10 rounded-full bg-slate-500/30 flex items-center justify-center overflow-hidden border border-slate-400/30">
                                     {stat.user.avatar_url ? (
                                         <img src={stat.user.avatar_url} alt={stat.user.full_name} className="w-full h-full object-cover" />
                                     ) : (
@@ -503,7 +503,7 @@ const DashboardPage = () => {
                                     <h4 className="text-sm font-bold text-slate-50 truncate group-hover:text-blue-400 transition-colors">{stat.user.full_name}</h4>
                                     <div className="flex items-center gap-3 text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-0.5">
                                         <span>{stat.dealCount} Deals</span>
-                                        <span className="w-1 h-1 bg-slate-700 rounded-full" />
+                                        <span className="w-1 h-1 bg-slate-400/50 rounded-full" />
                                         <span>{stat.activeLeads} Leads</span>
                                     </div>
                                 </div>
@@ -518,7 +518,7 @@ const DashboardPage = () => {
             </div>
 
             {/* Employee Performance Visualization */}
-            {showPipeline && <section className="bg-slate-900 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
+            {showPipeline && <section className="bg-slate-900 border border-slate-700/50 rounded-3xl p-8 relative overflow-hidden shadow-sm">
                 <div className="absolute top-0 right-0 p-64 bg-blue-500/5 rounded-full blur-[120px] shadow-2xl pointer-events-none" />
                 <div className="relative z-10">
                     <div className="flex justify-between items-center mb-8">
@@ -530,9 +530,9 @@ const DashboardPage = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {teamStats.slice(0, 4).map((stat: any) => (
-                            <div key={stat.user.id} className="bg-slate-950/50 border border-slate-800/80 p-5 rounded-2xl hover:border-slate-700 transition-all">
+                            <div key={stat.user.id} className="bg-slate-950/50 border border-slate-700/40 p-5 rounded-2xl hover:border-slate-600/60 transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden">
+                                    <div className="w-8 h-8 rounded-full bg-slate-500/30 flex items-center justify-center overflow-hidden">
                                         {stat.user.avatar_url ? <img src={stat.user.avatar_url} /> : stat.user.full_name.charAt(0)}
                                     </div>
                                     <div className="flex flex-col">
@@ -547,7 +547,7 @@ const DashboardPage = () => {
                                             <span className="text-slate-500">Activity Level</span>
                                             <span className="text-blue-400">{stat.activityCount} pts</span>
                                         </div>
-                                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="h-1.5 bg-slate-400/25 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all duration-1000"
                                                 style={{ width: `${(stat.activityCount / maxActivity) * 100}%` }}
@@ -560,7 +560,7 @@ const DashboardPage = () => {
                                             <span className="text-slate-500">Conversion Rate</span>
                                             <span className="text-emerald-400">{stat.conversionRate.toFixed(1)}%</span>
                                         </div>
-                                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="h-1.5 bg-slate-400/25 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-1000"
                                                 style={{ width: `${Math.min(stat.conversionRate * 2, 100)}%` }} // Scaling for visual impact
@@ -570,11 +570,11 @@ const DashboardPage = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2 mt-6">
-                                    <div className="bg-slate-900/50 p-2 rounded-lg text-center">
+                                    <div className="bg-slate-400/10 p-2 rounded-lg text-center">
                                         <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Won</div>
                                         <div className="text-sm font-black text-slate-50">{stat.dealCount}</div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded-lg text-center">
+                                    <div className="bg-slate-400/10 p-2 rounded-lg text-center">
                                         <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Leads</div>
                                         <div className="text-sm font-black text-slate-50">{stat.activeLeads}</div>
                                     </div>

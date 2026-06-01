@@ -71,7 +71,7 @@ const MarketingReviewsPage: React.FC = () => {
             <div className="md:col-span-5">
               <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Search Feed</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   value={search}
@@ -106,9 +106,9 @@ const MarketingReviewsPage: React.FC = () => {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
-              <MessageSquare className="mx-auto mb-4 text-slate-700 w-12 h-12 opacity-20" />
+              <MessageSquare className="mx-auto mb-4 text-slate-400 w-12 h-12 opacity-20" />
               <p className="text-sm font-bold uppercase text-slate-500 tracking-widest">No reviews found</p>
-              <p className="text-[10px] text-slate-600 uppercase mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
+              <p className="text-[10px] text-slate-400 uppercase mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -123,7 +123,7 @@ const MarketingReviewsPage: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <div className="flex text-yellow-500">
                           {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-700'} />
+                            <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-400'} />
                           ))}
                         </div>
                         <h3 className="text-sm font-black text-slate-50 uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
@@ -157,8 +157,8 @@ const MarketingReviewsPage: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 ml-auto">
-                        <Clock className="w-3 h-3 text-slate-600" />
-                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{new Date(rev.created_at).toLocaleDateString()}</span>
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(rev.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
 
@@ -166,7 +166,7 @@ const MarketingReviewsPage: React.FC = () => {
                       <a 
                         href="/dailystore/reviews" 
                         target="_blank"
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-50 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-700 flex items-center gap-2"
+                        className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-600/50 flex items-center gap-2 shadow-sm"
                       >
                         <ShieldCheck size={12} /> Moderate in DailyStore
                       </a>

@@ -347,7 +347,7 @@ const LeadDetailPage = () => {
                                             Partner
                                         </span>
                                     )}
-                                    <Edit2 size={12} className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <Edit2 size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             )}
                         </div>
@@ -761,7 +761,7 @@ const LeadDetailPage = () => {
                                                         <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                            <span className="text-[10px] text-slate-600 font-bold">{new Date(note.created_at).toLocaleDateString()}</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold">{new Date(note.created_at).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -772,7 +772,7 @@ const LeadDetailPage = () => {
                                                 placeholder="Add a private note about this lead..."
                                                 value={newNoteContent}
                                                 onChange={(e) => setNewNoteContent(e.target.value)}
-                                                className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-50 focus:ring-0 resize-none h-24 mb-3 placeholder:text-slate-700"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-50 focus:ring-0 resize-none h-24 mb-3 placeholder:text-slate-500"
                                             />
                                             <div className="flex justify-end">
                                                 <button
@@ -786,7 +786,7 @@ const LeadDetailPage = () => {
                                                         setNewNoteContent('');
                                                     }}
                                                     disabled={!newNoteContent.trim()}
-                                                    className="bg-slate-800 hover:bg-slate-700 text-slate-50 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700 disabled:opacity-50"
+                                                    className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50 shadow-sm"
                                                 >
                                                     Save Note
                                                 </button>
@@ -889,7 +889,7 @@ const LeadDetailPage = () => {
 
                                                             {task.deal_name && (
                                                                 <>
-                                                                    <span className="w-1 h-1 bg-slate-700 rounded-full" />
+                                                                    <span className="w-1 h-1 bg-slate-400/50 rounded-full" />
                                                                     <span className="text-blue-500/70 lowercase italic">{task.deal_name}</span>
                                                                 </>
                                                             )}
@@ -948,7 +948,7 @@ const LeadDetailPage = () => {
                                         <div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
                                             <FileIcon size={48} className="mx-auto mb-4 opacity-10" />
                                             <p className="text-sm font-bold uppercase tracking-widest mb-1">No documents attached</p>
-                                            <p className="text-xs text-slate-600 lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
+                                            <p className="text-xs text-slate-400 lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
                                         </div>
                                     ) : (
                                         <div className="grid gap-3">
@@ -959,7 +959,7 @@ const LeadDetailPage = () => {
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h4 className="text-sm font-bold text-slate-50 truncate group-hover:text-blue-400 transition-colors">{doc.name}</h4>
-                                                        <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
+                                                        <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                                             <span>{(doc.size / (1024 * 1024)).toFixed(2)} MB</span>
                                                             <span className="w-1 h-1 bg-slate-800 rounded-full" />
                                                             <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
@@ -1180,7 +1180,7 @@ const LeadDetailPage = () => {
                                     </div>
                                     <div>
                                         <p className="text-xs font-black text-slate-500 uppercase tracking-tight">Unassigned</p>
-                                        <p className="text-[9px] text-slate-600 uppercase tracking-widest">Click CHANGE to assign</p>
+                                        <p className="text-[9px] text-slate-400 uppercase tracking-widest">Click CHANGE to assign</p>
                                     </div>
                                 </div>
                             )}
@@ -1209,14 +1209,14 @@ const LeadDetailPage = () => {
                                             <Users size={16} className="text-emerald-400" />
                                         </div>
                                         <div className="flex-1">
-                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block">Stage</span>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Stage</span>
                                             <p className="font-black text-slate-50 text-xs uppercase tracking-tight mt-1">Customer</p>
                                         </div>
                                         <span className="text-[8px] bg-slate-800 text-slate-500 px-2 py-1 rounded font-black uppercase tracking-widest">
                                             Locked
                                         </span>
                                     </div>
-                                    <p className="text-[9px] text-slate-600 mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
+                                    <p className="text-[9px] text-slate-400 mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
                                 </>
                             ) : isChangingStage ? (
                                 <div className="space-y-1">
@@ -1264,7 +1264,7 @@ const LeadDetailPage = () => {
                                         <TrendingUp size={16} />
                                     </div>
                                     <div className="flex-1">
-                                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block leading-none">Status</span>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Status</span>
                                         <p className="font-black text-slate-50 text-xs uppercase tracking-tight mt-1">
                                             {lead.status}
                                         </p>
@@ -1278,7 +1278,7 @@ const LeadDetailPage = () => {
                             <div className="space-y-3">
                                 <button
                                     onClick={() => setIsCreatingTask(true)}
-                                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-700/50"
+                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
                                 >
                                     <Clock size={14} /> Schedule Follow-up
                                 </button>
@@ -1298,7 +1298,7 @@ const LeadDetailPage = () => {
                                             showError(error.message || 'Failed to log email.');
                                         }
                                     }}
-                                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-700/50"
+                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
                                 >
                                     <Mail size={14} /> Send Email
                                 </button> */}
@@ -1350,11 +1350,11 @@ const LeadDetailPage = () => {
 
                             <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
                                 <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-slate-600 uppercase mb-1">Active Deals</span>
+                                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Active Deals</span>
                                     <span className="text-sm font-black text-blue-400">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</span>
                                 </div>
                                 <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-slate-600 uppercase mb-1">Total LTV</span>
+                                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Total LTV</span>
                                     <span className="text-sm font-black text-slate-50">{formatters.formatCurrency(totalValue)}</span>
                                 </div>
                             </div>
@@ -1381,7 +1381,7 @@ const LeadDetailPage = () => {
                                     >
                                         <div className="flex justify-between items-start mb-2">
                                             <h4 className="text-xs font-bold text-slate-50 group-hover:text-blue-400 transition-colors uppercase tracking-tight">{deal.name}</h4>
-                                            <ExternalLink size={12} className="text-slate-600 group-hover:text-blue-400 transition-all" />
+                                            <ExternalLink size={12} className="text-slate-400 group-hover:text-blue-400 transition-all" />
                                         </div>
                                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                                             <span className="text-emerald-400/80">{formatters.formatCurrency(deal.value)}</span>
@@ -1433,7 +1433,7 @@ const LeadDetailPage = () => {
             {/* Delete Lead Confirmation Modal */}
             {showDeleteConfirm && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
                         <h2 className="text-xl font-bold text-slate-100 mb-2">Delete Lead</h2>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this lead? This will remove all associated deals, notes, activities, tasks, and documents. This action cannot be undone.

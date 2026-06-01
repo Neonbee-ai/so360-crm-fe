@@ -1112,7 +1112,7 @@ const DealDetailPage = () => {
 
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
                             <h3 className="text-slate-50 font-black uppercase tracking-widest text-xs flex items-center gap-2">
