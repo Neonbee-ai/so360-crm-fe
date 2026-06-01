@@ -1906,6 +1906,7 @@ export const crmService = {
     // Configuration
     setTenantId: (id: string) => {
         apiClient.setTenantId(id);
+        coreClient.setTenantId(id);
         dailystoreClient.setTenantId(id);
         inventoryClient.setTenantId(id);
         fulfillmentClient.setTenantId(id);

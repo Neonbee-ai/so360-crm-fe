@@ -392,6 +392,7 @@ const LeadsPage = () => {
 
             {quotaData && (
                 <QuotaBar
+                    className="mb-4"
                     label="Contacts"
                     used={quotaData.current_usage}
                     limit={quotaData.limit}

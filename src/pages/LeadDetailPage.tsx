@@ -931,8 +931,12 @@ const LeadDetailPage = () => {
                                                                 ...lead,
                                                                 documents: [...(lead.documents || []), newDoc]
                                                             });
+                                                        } catch (err) {
+                                                            const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
+                                                            alert(msg);
                                                         } finally {
                                                             setIsUploading(false);
+                                                            e.target.value = '';
                                                         }
                                                     }
                                                 }}
