@@ -374,7 +374,7 @@ const LeadsPage = () => {
                     <QuotaGate
                         quotaKey="max_contacts"
                         moduleCode="crm"
-                        used={quotaData?.current_usage ?? 0}
+                        used={leads.length}
                         limit={quotaData?.limit ?? 0}
                         isUnlimited={quotaData?.is_unlimited}
                         disableOnExceeded
@@ -393,8 +393,8 @@ const LeadsPage = () => {
             {quotaData && (
                 <QuotaBar
                     className="mb-4"
-                    label="Contacts"
-                    used={quotaData.current_usage}
+                    label="Leads"
+                    used={leads.length}
                     limit={quotaData.limit}
                     isUnlimited={quotaData.is_unlimited}
                 />

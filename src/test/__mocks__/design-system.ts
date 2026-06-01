@@ -10,7 +10,8 @@ export const Badge = (props: any) => props;
 export const Spinner = (props: any) => props;
 export const Tooltip = (props: any) => props;
 export const QuotaGate = ({ children }: any) => React.createElement(React.Fragment, null, children);
-export const QuotaBar = () => null;
+export const QuotaBar = ({ used, limit, isUnlimited, label }: any) =>
+  React.createElement('div', { 'data-testid': 'quota-bar', 'data-used': String(used ?? 0), 'data-unlimited': String(!!isUnlimited) }, `${label ?? ''}: ${used ?? 0}`);
 export const Pagination = () => null;
 export const DeleteConfirmDialog = () => null;
 export const CrossLinkChip = ({ label, id }: any) =>

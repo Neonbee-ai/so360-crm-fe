@@ -34,7 +34,7 @@ vi.mock('@so360/shell-context', () => ({
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
   useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
-  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useQuota: vi.fn().mockReturnValue({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 let tableProps: any = {};
@@ -306,6 +306,69 @@ describe('LeadsPage', () => {
       mockGetUsers.mockRejectedValue(new Error('Network error'));
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByText('Network error')).toBeInTheDocument());
+    });
+  });
+
+  describe('Given the leads quota counter', () => {
+    const staleQuotaData = { current_usage: 1, limit: -1, is_unlimited: true };
+
+    beforeEach(async () => {
+      // Override useQuota so quotaData is non-null with current_usage=1 (stale),
+      // while leads.length=3 — lets us verify the counter uses DB count not event-sourced usage.
+      const shellContext = await import('@so360/shell-context');
+      vi.mocked(shellContext.useQuota).mockReturnValue({
+        quotas: [],
+        isLoading: false,
+        error: null,
+        isExceeded: () => false,
+        getQuota: () => staleQuotaData,
+        getPercentage: () => 0,
+        refresh: async () => {},
+      });
+    });
+
+    it('When 3 leads are loaded / Then QuotaBar used equals leads.length not quotaData.current_usage', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const bar = screen.getByTestId('quota-bar');
+      // leads.length = 3; quotaData.current_usage = 1 — must show 3
+      expect(bar.getAttribute('data-used')).toBe('3');
+    });
+
+    it('When a lead is deleted / Then QuotaBar used decrements to reflect the new leads.length', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('3');
+
+      // Trigger delete via column accessor (same pattern as existing delete test)
+      const deleteCol = tableProps.columns[tableProps.columns.length - 1];
+      const cell = deleteCol.accessor(leads[0]);
+      const { container } = render(cell);
+      fireEvent.click(container.querySelector('button')!);
+      await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
+      const confirmBtn = screen.getAllByText('Delete').find(
+        el => el.closest('button')?.className.includes('bg-red'),
+      );
+      fireEvent.click(confirmBtn!);
+      await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
+
+      // After delete, leads state has 2 items → QuotaBar should show 2
+      await waitFor(() =>
+        expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('2'),
+      );
+    });
+
+    it('When no leads exist / Then QuotaBar used is 0', async () => {
+      mockGetLeads.mockResolvedValue([]);
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('quota-bar')).toBeInTheDocument());
+      expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('0');
+    });
+
+    it('When QuotaBar label is rendered / Then it shows Leads not Contacts', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('quota-bar')).toBeInTheDocument());
+      expect(screen.getByTestId('quota-bar').textContent).toContain('Leads');
     });
   });
 
