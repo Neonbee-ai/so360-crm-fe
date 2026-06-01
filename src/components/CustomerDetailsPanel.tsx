@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
-import { Building2, CreditCard, Shield, CheckCircle2, AlertCircle, Loader2, Tag, ShoppingCart } from 'lucide-react';
+import { Building2, CreditCard, Shield, CheckCircle2, AlertCircle, Loader2, Tag, ShoppingCart, Users } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
+
+interface Partner {
+    id: string;
+    company_name: string;
+    contact_name?: string;
+}
 
 interface CustomerDetailsPanelProps {
     lead: any;
     onUpdate: (updatedLead: any) => void;
     showToast: (message: string, type: 'success' | 'error') => void;
+    partners?: Partner[];
 }
 
 const ACQUISITION_SOURCE_LABELS: Record<string, string> = {
@@ -17,7 +24,7 @@ const ACQUISITION_SOURCE_LABELS: Record<string, string> = {
     lead_promotion: 'Lead Promotion',
 };
 
-const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpdate, showToast }) => {
+const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpdate, showToast, partners = [] }) => {
     const formatters = useCRMFormatters();
     const [taxIdInput, setTaxIdInput] = useState(lead.tax_id || '');
     const [creditLimitInput, setCreditLimitInput] = useState(String(lead.credit_limit || 0));
@@ -84,6 +91,18 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     {ACQUISITION_SOURCE_LABELS[lead.acquisition_source] || lead.acquisition_source || lead.channel || '-'}
                 </span>
             </div>
+
+            {/* Referred By */}
+            {lead.referred_by && (
+                <div className="flex items-center gap-3">
+                    <span className="text-xs text-slate-500 w-24 flex items-center gap-1">
+                        <Users size={11} /> Referred By
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                        {partners.find(p => p.id === lead.referred_by)?.company_name || lead.referred_by}
+                    </span>
+                </div>
+            )}
 
             {/* First Order */}
             {lead.first_order_id && (

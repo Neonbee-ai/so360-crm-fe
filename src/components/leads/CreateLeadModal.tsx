@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
+import { PartnerSearchDropdown } from '../common/PartnerSearchDropdown';
 import { crmService, settingsApi } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
 import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types/crm';
@@ -212,7 +213,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <label className="text-sm font-medium text-slate-400">Lead Source</label>
                         <select
                             value={formData.source}
-                            onChange={(e) => setFormData({ ...formData, source: e.target.value, referred_by: '' })}
+                            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                             className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
                         >
                             <option value="">— Select source —</option>
@@ -236,23 +237,15 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </div>
                 </div>
 
-                {(formData.source === 'customer_referral' || formData.source === 'architect_referral') && (
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Referred By (Partner)</label>
-                        <select
-                            value={formData.referred_by}
-                            onChange={(e) => setFormData({ ...formData, referred_by: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
-                        >
-                            <option value="">— Select partner —</option>
-                            {partners.map(p => (
-                                <option key={p.id} value={p.id}>
-                                    {p.company_name}{p.contact_name ? ` (${p.contact_name})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-slate-400">Referred By</label>
+                    <PartnerSearchDropdown
+                        partners={partners}
+                        value={formData.referred_by}
+                        onChange={(id) => setFormData({ ...formData, referred_by: id })}
+                        placeholder="Search and select partner..."
+                    />
+                </div>
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-slate-400">Owner</label>

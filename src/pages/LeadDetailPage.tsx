@@ -11,6 +11,7 @@ import {
     File, Download, UploadCloud, FileIcon
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
+import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
@@ -482,10 +483,7 @@ const LeadDetailPage = () => {
                                                 {isEditingInfo ? (
                                                     <select
                                                         value={lead.source}
-                                                        onChange={(e) => {
-                                                            const isReferral = e.target.value === 'customer_referral' || e.target.value === 'architect_referral';
-                                                            setLead({ ...lead, source: e.target.value, referred_by: isReferral ? lead.referred_by : undefined });
-                                                        }}
+                                                        onChange={(e) => setLead({ ...lead, source: e.target.value })}
                                                         className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     >
                                                         <option value="">— Select source —</option>
@@ -501,34 +499,27 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
 
-                                        {(lead.source === 'customer_referral' || lead.source === 'architect_referral' || lead.referred_by) && (
-                                            <div className="flex items-center gap-4 text-slate-300">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
-                                                    <Users size={18} />
-                                                </div>
-                                                <div className="flex flex-col flex-1">
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Referred By</span>
-                                                    {isEditingInfo ? (
-                                                        <select
-                                                            value={lead.referred_by || ''}
-                                                            onChange={(e) => setLead({ ...lead, referred_by: e.target.value || undefined })}
-                                                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
-                                                        >
-                                                            <option value="">— None —</option>
-                                                            {partners.map(p => (
-                                                                <option key={p.id} value={p.id}>
-                                                                    {p.company_name}{p.contact_name ? ` (${p.contact_name})` : ''}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        <span className="text-sm font-bold uppercase tracking-tight">
-                                                            {partners.find(p => p.id === lead.referred_by)?.company_name || '—'}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                        <div className="flex items-center gap-4 text-slate-300">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
+                                                <Users size={18} />
                                             </div>
-                                        )}
+                                            <div className="flex flex-col flex-1">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Referred By</span>
+                                                {isEditingInfo ? (
+                                                    <PartnerSearchDropdown
+                                                        partners={partners}
+                                                        value={lead.referred_by || ''}
+                                                        onChange={(id) => setLead({ ...lead, referred_by: id || undefined })}
+                                                        placeholder="Search and select partner..."
+                                                        inputClassName="text-sm font-bold"
+                                                    />
+                                                ) : (
+                                                    <span className="text-sm font-bold uppercase tracking-tight">
+                                                        {partners.find(p => p.id === lead.referred_by)?.company_name || '—'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
 
                                         {isEditingInfo && (
                                             <div className="flex items-center gap-4 text-slate-300">

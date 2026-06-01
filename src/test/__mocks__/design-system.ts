@@ -23,7 +23,8 @@ export interface FeatureRouteProps {
   lockedFallback?: React.ReactNode;
   disabledFallback?: React.ReactNode;
 }
-export const FeatureRoute = ({ state, children, hiddenFallback = null, lockedFallback, disabledFallback }: FeatureRouteProps): React.ReactElement | null => {
+export const FeatureRoute = ({ state, loading, children, hiddenFallback = null, lockedFallback, disabledFallback }: FeatureRouteProps): React.ReactElement | null => {
+  if (loading) return null;
   if (state === 'hidden') return (hiddenFallback as React.ReactElement) ?? null;
   if (state === 'locked') return (lockedFallback as React.ReactElement) ?? null;
   if (state === 'disabled') return (disabledFallback as React.ReactElement) ?? null;
@@ -34,4 +35,4 @@ export interface FeatureGateProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }
-export const FeatureGate = ({ children }: FeatureGateProps): React.ReactElement => React.createElement(React.Fragment, null, children);
+export const FeatureGate = ({ loading, children }: any): any => loading ? null : React.createElement(React.Fragment, null, children);

@@ -22,7 +22,13 @@ const baseLead = {
   credit_limit: 0,
   channel: 'storefront_web',
   acquisition_source: 'storefront_registration',
+  referred_by: undefined as string | undefined,
 };
+
+const mockPartners = [
+  { id: 'p1', company_name: 'Acme Corp', contact_name: 'John' },
+  { id: 'p2', company_name: 'Beta LLC' },
+];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -40,6 +46,32 @@ describe('CustomerDetailsPanel', () => {
     it('When rendered / Then shows the acquisition source label', () => {
       render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
       expect(screen.getByText('Storefront Registration')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given referred_by data', () => {
+    it('When customer has a referred_by / Then shows Referred By row with partner name', () => {
+      const lead = { ...baseLead, referred_by: 'p1' };
+      render(<CustomerDetailsPanel lead={lead} onUpdate={vi.fn()} showToast={vi.fn()} partners={mockPartners} />);
+      expect(screen.getByText('Referred By')).toBeInTheDocument();
+      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+    });
+
+    it('When customer has no referred_by / Then does not show Referred By row', () => {
+      render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} partners={mockPartners} />);
+      expect(screen.queryByText('Referred By')).not.toBeInTheDocument();
+    });
+
+    it('When referred_by id has no matching partner / Then shows the raw id as fallback', () => {
+      const lead = { ...baseLead, referred_by: 'unknown-id' };
+      render(<CustomerDetailsPanel lead={lead} onUpdate={vi.fn()} showToast={vi.fn()} partners={mockPartners} />);
+      expect(screen.getByText('unknown-id')).toBeInTheDocument();
+    });
+
+    it('When no partners prop is passed / Then falls back to showing raw referred_by id', () => {
+      const lead = { ...baseLead, referred_by: 'p1' };
+      render(<CustomerDetailsPanel lead={lead} onUpdate={vi.fn()} showToast={vi.fn()} />);
+      expect(screen.getByText('p1')).toBeInTheDocument();
     });
   });
 

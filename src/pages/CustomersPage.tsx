@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag } from 'lucide-react';
+import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
@@ -38,6 +38,7 @@ const CustomersPage = () => {
     const showOffline    = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
+    const [partners, setPartners] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -64,6 +65,7 @@ const CustomersPage = () => {
                 .filter(Boolean);
 
             const statsPromise = crmService.getCustomerStats();
+            const partnersPromise = crmService.getPartners().catch(() => [] as any[]);
             let customersData: any[] = [];
 
             if (segmentId) {
@@ -84,9 +86,10 @@ const CustomersPage = () => {
                 setActiveSegmentName(null);
             }
 
-            const statsData = await statsPromise;
+            const [statsData, partnersData] = await Promise.all([statsPromise, partnersPromise]);
             setCustomers(customersData || []);
             setStats(statsData || {});
+            setPartners(partnersData || []);
         } catch (err: any) {
             console.error('Failed to fetch customers', err);
             setError(err.message || 'Failed to load customers');
@@ -276,6 +279,19 @@ const CustomersPage = () => {
         {
             header: 'Source',
             accessor: (c: any) => <AcquisitionBadge source={c.acquisition_source} />,
+        },
+        {
+            header: 'Referred By',
+            accessor: (c: any) => {
+                if (!c.referred_by) return <span className="text-slate-600 text-sm">—</span>;
+                const partner = partners.find((p: any) => p.id === c.referred_by);
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                        <GitMerge size={11} />
+                        {partner?.company_name || c.referred_by}
+                    </span>
+                );
+            },
         },
         {
             header: <SortableHeader label="Joined" field="created_at" />,

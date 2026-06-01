@@ -17,7 +17,10 @@ vi.mock('../../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     createLead: (...a: any[]) => mockCreateLead(...a),
     getUsers: () => Promise.resolve([{ id: 'u1', full_name: 'Test User', email: 't@t.com' }]),
-    getPartners: () => Promise.resolve([]),
+    getPartners: () => Promise.resolve([
+      { id: 'p1', company_name: 'Acme Corp', contact_name: 'John' },
+      { id: 'p2', company_name: 'Beta LLC', contact_name: 'Jane' },
+    ]),
   },
   settingsApi: {
     sourceTypes: {
@@ -81,6 +84,25 @@ describe('CreateLeadModal', () => {
         expect(screen.getByText(/company name/i)).toBeInTheDocument();
         expect(screen.getByText(/contact name/i)).toBeInTheDocument();
         expect(screen.getByText(/contact email/i)).toBeInTheDocument();
+      });
+    });
+
+    it('When rendered / Then always shows Referred By field regardless of source', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => {
+        expect(screen.getByText(/referred by/i)).toBeInTheDocument();
+        expect(screen.getByTestId('partner-search-dropdown')).toBeInTheDocument();
+      });
+    });
+
+    it('When Referred By dropdown is opened / Then shows partner options', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('partner-search-dropdown'));
+      const dropdown = screen.getByTestId('partner-search-dropdown');
+      fireEvent.click(dropdown.querySelector('[role="combobox"]')!);
+      await waitFor(() => {
+        expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+        expect(screen.getByText('Beta LLC')).toBeInTheDocument();
       });
     });
 
