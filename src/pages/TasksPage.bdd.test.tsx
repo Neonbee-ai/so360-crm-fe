@@ -42,11 +42,13 @@ vi.mock('../components/common/Table', () => ({
     tableProps = props;
     if (props.isLoading) return <div data-testid="table">Loading...</div>;
     if (props.data.length === 0) return <div data-testid="table">{props.emptyMessage}</div>;
+    const actionCol = props.columns?.[props.columns.length - 1];
     return (
       <div data-testid="table">
         {props.data.map((task: any) => (
           <div key={task.id} data-testid={`task-row-${task.id}`} onClick={() => props.onRowClick(task)}>
             {task.title} - {task.status}
+            {actionCol?.accessor(task)}
           </div>
         ))}
       </div>
@@ -158,12 +160,7 @@ describe('TasksPage', () => {
     it('When delete confirmed / Then removes task from list', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const columns = tableProps.columns;
-      const deleteCol = columns[columns.length - 1];
-      const cell = deleteCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      const btn = container.querySelector('button');
-      fireEvent.click(btn!);
+      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('t1'));
@@ -173,12 +170,7 @@ describe('TasksPage', () => {
       mockDeleteTask.mockRejectedValue(new Error('Server error'));
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const columns = tableProps.columns;
-      const deleteCol = columns[columns.length - 1];
-      const cell = deleteCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      const btn = container.querySelector('button');
-      fireEvent.click(btn!);
+      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(screen.getByText('Server error')).toBeInTheDocument());
@@ -187,11 +179,7 @@ describe('TasksPage', () => {
     it('When cancel is clicked / Then dismisses delete dialog', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const columns = tableProps.columns;
-      const deleteCol = columns[columns.length - 1];
-      const cell = deleteCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      fireEvent.click(container.querySelector('button')!);
+      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Cancel'));
       await waitFor(() => expect(screen.queryByText('Delete Task')).not.toBeInTheDocument());
