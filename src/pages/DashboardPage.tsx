@@ -6,6 +6,7 @@ import {
     Calendar, User as UserIcon, Loader2, ShoppingBag, Package
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CrossLinkChip } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 
 const DashboardPage = () => {
@@ -394,10 +395,10 @@ const DashboardPage = () => {
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                     {reminders.length > 0 ? reminders.map((task: any) => (
+                        <div key={task.id} className="flex-shrink-0 w-72 flex flex-col gap-2">
                         <Link
-                            key={task.id}
                             to={`../tasks/${task.id}`}
-                            className="flex-shrink-0 w-72 bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-blue-500/50 transition-all group"
+                            className="bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-blue-500/50 transition-all group"
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
@@ -417,6 +418,10 @@ const DashboardPage = () => {
                                 <span className="text-[10px] font-bold text-slate-400 truncate">{task.assigned_to?.full_name}</span>
                             </div>
                         </Link>
+                        {task.deal_id && (
+                            <CrossLinkChip type="crm.deal" id={task.deal_id} label={task.deal_name || task.deal?.name} compact />
+                        )}
+                        </div>
                     )) : (
                         <div className="w-full py-8 text-center bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl">
                             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">No active reminders</p>

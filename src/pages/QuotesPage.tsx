@@ -7,7 +7,7 @@ import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaBar, QuotaGate } from '@so360/design-system';
+import { QuotaBar, QuotaGate, CrossLinkChip } from '@so360/design-system';
 
 const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -271,6 +271,16 @@ const QuotesPage = () => {
             accessor: (quote: Quote) => (
                 <span className="text-slate-300">{quote.customer_name || quote.deal?.company_name || '-'}</span>
             )
+        },
+        {
+            key: 'deal',
+            header: 'Deal',
+            accessor: (quote: Quote) =>
+                quote.deal_id ? (
+                    <CrossLinkChip type="crm.deal" id={quote.deal_id} label={quote.deal?.name} compact />
+                ) : (
+                    <span className="text-slate-500">-</span>
+                )
         },
         {
             key: 'total',

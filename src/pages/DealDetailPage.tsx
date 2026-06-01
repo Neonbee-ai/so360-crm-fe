@@ -7,6 +7,7 @@ import {
     Tag, Edit2, Trash2, X, Download, UploadCloud, FileIcon, File,
     ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap
 } from 'lucide-react';
+import { CrossLinkChip } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
@@ -918,6 +919,22 @@ const DealDetailPage = () => {
 
                 {/* Sidebar Context */}
                 <div className="space-y-8">
+                    {/* Cross-module linked records */}
+                    {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
+                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <ExternalLink size={14} className="text-blue-400" /> Linked Records
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {deal.invoice_id && (
+                                    <CrossLinkChip type="accounting.invoice" id={deal.invoice_id} label={deal.invoice_number || undefined} />
+                                )}
+                                {deal.project_id && <CrossLinkChip type="projects.project" id={deal.project_id} />}
+                                {fulfillmentOrder?.id && <CrossLinkChip type="fulfillment.order" id={fulfillmentOrder.id} />}
+                            </div>
+                        </section>
+                    )}
+
                     {/* Contact Details Card */}
                     {associatedLead && (
                         <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">

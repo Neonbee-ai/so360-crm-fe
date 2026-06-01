@@ -881,6 +881,16 @@ export const crmService = {
         return dailystoreClient.get<Array<{ id: string; name: string; store_code?: string; status?: string }>>('/v1/dailystore/stores');
     },
 
+    // Cross-link resolver — batch-resolve mixed entity refs to display labels via the
+    // Core aggregator (which fans out to each owning module's /links/resolve).
+    resolveLinks: async (
+        refs: Array<{ type: string; id: string }>,
+    ): Promise<Array<{ type: string; id: string; label: string; subtitle?: string; status?: string; deep_link?: string }>> => {
+        if (!refs.length) return [];
+        const res = await coreClient.post<{ links?: any[] }>('/v1/links/resolve', { refs });
+        return Array.isArray(res?.links) ? res.links : [];
+    },
+
     // Leads
     getLeads: async (params?: { skip?: number; take?: number; status?: string; q?: string }): Promise<Lead[]> => {
         return leadsApi.getAll(params);

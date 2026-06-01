@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
 import { FeatureRoute } from '@so360/design-system';
+import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 
 // Synchronizes Shell Context with CRM Service
@@ -45,6 +46,23 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     }
 
     return <>{children}</>;
+};
+
+// Mounts the cross-link resolver/navigation once per MFE. Wires the Core aggregator
+// (via crmService), shell module-enablement gating, and SPA navigation (shared shell
+// router) so every CrossLinkChip / RelatedRecordsPanel below uses one cache + fetch path.
+const CrossLinkBridge = ({ children }: { children: React.ReactNode }) => {
+    const navigate = useNavigate();
+    const shell = useShellBridge();
+    return (
+        <CrossLinkProvider
+            resolve={crmService.resolveLinks}
+            navigate={(path) => navigate(path)}
+            isModuleEnabled={(moduleId) => (shell?.isModuleEnabled ? shell.isModuleEnabled(moduleId) : true)}
+        >
+            {children}
+        </CrossLinkProvider>
+    );
 };
 
 // Route-level upgrade prompt shown when a feature is `locked` (a higher plan unlocks it).
@@ -146,6 +164,7 @@ const App = () => {
     return (
         <Layout>
             <CrmShellInitializer>
+                <CrossLinkBridge>
                 <Routes>
                     <Route path="/" element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
@@ -173,6 +192,7 @@ const App = () => {
                     <Route path="marketing/reviews" element={<ModuleGuard moduleId="dailystore"><MarketingReviewsPage /></ModuleGuard>} />
                     <Route path="marketing/wishlist" element={<ModuleGuard moduleId="dailystore"><MarketingWishlistPage /></ModuleGuard>} />
                 </Routes>
+                </CrossLinkBridge>
             </CrmShellInitializer>
         </Layout>
     );
