@@ -26,7 +26,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: { id: 'user-1', full_name: 'Test User' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
@@ -67,8 +67,10 @@ const makeUsers = () => [
   { id: 'user-2', full_name: 'Other User' },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   tableProps = {};
   mockGetTasks.mockResolvedValue(makeTasks());
   mockGetUsers.mockResolvedValue(makeUsers());
@@ -327,6 +329,11 @@ describe('TasksPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then delete button in action column is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       // canCreateTask is false before flags resolve — the delete column renders nothing
@@ -338,7 +345,7 @@ describe('TasksPage', () => {
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then delete button in action column is present', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
-      vi.mocked(useShellBridge).mockReturnValueOnce({
+      vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: true,
         isFeatureEnabled: () => true,
       } as any);

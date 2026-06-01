@@ -26,6 +26,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShellBridge: vi.fn(() => ({
+    effectiveFlagsLoaded: true,
     isFeatureEnabled: (flag: string) => {
       if (flag === 'action:crm:customers:show_model_split') return true;
       if (flag === 'action:crm:customers:kpi_channel_web') return true;
@@ -83,6 +84,7 @@ const stats = {
 let mockUseShellBridge: ReturnType<typeof vi.fn>;
 
 const defaultShellImpl = () => ({
+  effectiveFlagsLoaded: true,
   isFeatureEnabled: (flag: string) => {
     if (flag === 'action:crm:customers:show_model_split') return true;
     if (flag === 'action:crm:customers:kpi_channel_web') return true;

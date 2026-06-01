@@ -26,7 +26,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
@@ -64,8 +64,10 @@ const deals = [
   { id: 'd3', name: 'No Company Deal', company_name: '' },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetQuotes.mockResolvedValue(quotes);
   mockGetDeals.mockResolvedValue(deals);
   mockCreateQuote.mockResolvedValue({ id: 'q-new' });
@@ -613,7 +615,12 @@ describe('QuoteStatusCell', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then New Quote button is absent', async () => {
-      renderPage();
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
+      render(<QuotesPage />);
       expect(screen.queryByText('New Quote')).not.toBeInTheDocument();
     });
 
@@ -624,7 +631,7 @@ describe('QuoteStatusCell', () => {
         isFeatureEnabled: () => true,
         currentOrg: { id: 'org-1' },
       } as any);
-      renderPage();
+      render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('Quotes')).toBeInTheDocument());
       expect(screen.getByText('New Quote')).toBeInTheDocument();
     });

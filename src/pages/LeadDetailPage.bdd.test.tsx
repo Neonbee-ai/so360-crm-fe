@@ -60,7 +60,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -150,7 +150,7 @@ beforeEach(async () => {
   // Re-apply the default useShellBridge implementation so tests that call mockReturnValue don't bleed through
   const shell = await import('@so360/shell-context');
   mockUseShellBridge = vi.mocked(shell.useShellBridge);
-  mockUseShellBridge.mockImplementation(() => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockPathname = '/crm/leads/lead-1';
   mockGetLeadById.mockResolvedValue(makeLead());
   mockGetDealsByLeadId.mockResolvedValue(associatedDeals);
@@ -231,7 +231,6 @@ describe('LeadDetailPage', () => {
     });
 
     it('When Create Deal button is clicked / Then opens the create deal modal', async () => {
-      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true } as any);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Deal')).toBeInTheDocument());
@@ -577,18 +576,14 @@ describe('LeadDetailPage', () => {
   });
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
-    it('When effectiveFlagsLoaded is false / Then Create Deal button is absent', async () => {
+    it('When effectiveFlagsLoaded is explicitly false / Then Create Deal button is absent', async () => {
+      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, isFeatureEnabled: () => true } as any);
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      // canCreateDeal is false when effectiveFlagsLoaded is false (default mock has no effectiveFlagsLoaded)
       expect(screen.queryByText('Create Deal')).not.toBeInTheDocument();
     });
 
-    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Deal button is present', async () => {
-      mockUseShellBridge.mockReturnValue({
-        effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
-      } as any);
+    it('When effectiveFlagsLoaded is true / Then Create Deal button is present', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       expect(screen.getByText('Create Deal')).toBeInTheDocument();

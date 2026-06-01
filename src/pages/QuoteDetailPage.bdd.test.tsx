@@ -32,7 +32,7 @@ vi.mock('@so360/shell-context', () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useOrganization: () => ({ currentOrg: { id: 'org-1', name: 'Test Org' } }),
@@ -58,8 +58,10 @@ const quoteData = {
   customer: { id: 'c1', company_name: 'Acme' },
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetQuoteById.mockResolvedValue(quoteData);
   mockGetStockAvailability.mockResolvedValue({ items: [{ item_id: 'i1', available_quantity: 100 }] });
   mockUpdateQuote.mockResolvedValue(quoteData);
@@ -464,6 +466,11 @@ describe('QuoteDetailPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Edit button is absent (no flicker)', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       render(<QuoteDetailPage />);
       await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());
       // canCreateQuote is false before flags resolve — Edit button must not flash
@@ -472,7 +479,7 @@ describe('QuoteDetailPage', () => {
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Edit button is present', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
-      vi.mocked(useShellBridge).mockReturnValueOnce({
+      vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: true,
         isFeatureEnabled: () => true,
       } as any);

@@ -9,7 +9,7 @@ const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingNewsletterPage: React.FC = () => {
   const shell = useShellBridge();
-  const canCreateMarketing = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
+  const canCreateMarketing = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

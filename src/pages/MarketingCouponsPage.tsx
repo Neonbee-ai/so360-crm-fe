@@ -12,7 +12,7 @@ const MarketingCouponsPage: React.FC = () => {
   const { settings } = useBusinessSettings();
   const { recordActivity } = useActivity();
   const shell = useShellBridge();
-  const canCreateMarketing = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
+  const canCreateMarketing = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const currencyCode = settings?.base_currency || 'INR';
   const locale = settings?.document_language || 'en-IN';
 

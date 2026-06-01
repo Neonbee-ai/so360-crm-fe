@@ -41,7 +41,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
   useShell: () => ({ isModuleEnabled: (m: string) => m === 'dailystore' }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -91,8 +91,10 @@ const inactiveCustomers = {
   ],
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   localStorage.setItem('crm_marketing_store_id', 'store-1');
   mockGetCustomerSegments.mockResolvedValue(manualSegments);
   mockGetMarketingSegments.mockResolvedValue(storefrontSegments);
@@ -399,8 +401,14 @@ describe('MarketingSegmentsPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Create Segment button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       render(<MarketingSegmentsPage />);
       expect(screen.queryByText('Create Segment')).not.toBeInTheDocument();
+      vi.mocked(useShellBridge).mockReturnValue({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false } as any);
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Segment button is present', async () => {

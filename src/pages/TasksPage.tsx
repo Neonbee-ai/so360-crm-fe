@@ -16,7 +16,7 @@ const TasksPage = () => {
     const navigate = useNavigate();
     const shell = useShell();
     const shellBridge = useShellBridge();
-    const canCreateTask = (shellBridge?.effectiveFlagsLoaded ?? false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;

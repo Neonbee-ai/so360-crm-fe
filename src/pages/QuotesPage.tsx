@@ -104,7 +104,7 @@ const QuotesPage = () => {
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
-    const canCreateQuote = (shell?.effectiveFlagsLoaded ?? false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
+    const canCreateQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
     const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_quotes' }], []);
     const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
     const quotaData = getQuota('max_quotes');

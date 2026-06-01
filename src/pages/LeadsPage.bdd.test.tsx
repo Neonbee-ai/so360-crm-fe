@@ -32,7 +32,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
@@ -83,8 +83,10 @@ const leads = [
   { id: 'l3', company_name: 'Gamma LLC', contact_name: 'Bob Brown', contact_email: 'bob@gamma.com', status: 'New', source: 'Website', owner: users[0], creator: users[0], created_at: '2025-03-10T10:00:00Z' },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   tableProps = {};
   mockGetLeads.mockResolvedValue(leads);
   mockGetSettings.mockResolvedValue(settings);
@@ -309,6 +311,11 @@ describe('LeadsPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Create Lead button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       render(<LeadsPage />);
       // Buttons gated by canCreateLead must not flash before flags resolve
       expect(screen.queryByText('Create Lead')).not.toBeInTheDocument();

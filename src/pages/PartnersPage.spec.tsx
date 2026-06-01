@@ -37,6 +37,7 @@ vi.mock('@so360/shell-context', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    effectiveFlagsLoaded: true,
     isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
   useShell: () => ({
@@ -62,6 +63,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    effectiveFlagsLoaded: true,
     isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
 }));

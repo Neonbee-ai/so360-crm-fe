@@ -28,7 +28,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' }, base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
-  useShellBridge: () => ({ tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee', orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d', userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc', isFeatureEnabled: vi.fn().mockReturnValue(true) }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee', orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d', userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc', isFeatureEnabled: vi.fn().mockReturnValue(true) }),
   useShell: () => ({ tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee', orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d', userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc', isModuleEnabled: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }),
   useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
   useNotify: () => ({ notify: vi.fn(), emitNotification: vi.fn() }),
@@ -43,6 +43,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    effectiveFlagsLoaded: true,
     isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
 }));

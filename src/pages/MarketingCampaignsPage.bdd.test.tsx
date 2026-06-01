@@ -79,6 +79,13 @@ vi.mock('@so360/design-system', () => ({
   ),
 }));
 
+vi.mock('@so360/shell-context', () => ({
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
+  useActivity: () => ({ recordActivity: async () => {} }),
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+}));
+
 import MarketingCampaignsPage from './MarketingCampaignsPage';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────
@@ -124,8 +131,10 @@ function renderPage(storeId = 'store-1') {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('MarketingCampaignsPage BDD', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
     mockGetCampaigns.mockResolvedValue({ data: campaigns });
     mockCreateCampaign.mockResolvedValue({ id: 'camp-new' });
     mockSendCampaignNow.mockResolvedValue({});
@@ -303,8 +312,14 @@ describe('MarketingCampaignsPage BDD', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then New Campaign button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       renderPage();
       expect(screen.queryByText('New Campaign')).not.toBeInTheDocument();
+      vi.mocked(useShellBridge).mockReturnValue({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false } as any);
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then New Campaign button is present', async () => {

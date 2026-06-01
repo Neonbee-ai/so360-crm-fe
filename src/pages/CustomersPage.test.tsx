@@ -11,6 +11,7 @@ vi.mock('../services/crmService', () => ({
     getCustomers: (...args: any[]) => mockGetCustomers(...args),
     getCustomerStats: (...args: any[]) => mockGetCustomerStats(...args),
     getCustomerSegmentCustomers: (...args: any[]) => mockGetCustomerSegmentCustomers(...args),
+    getPartners: () => Promise.resolve([]),
   },
 }));
 

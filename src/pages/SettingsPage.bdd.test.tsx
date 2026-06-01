@@ -52,7 +52,7 @@ vi.mock('../components/common/Toast', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 }));
 
 import SettingsPage from './SettingsPage';
@@ -92,8 +92,10 @@ const mockSettings = {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('SettingsPage BDD', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
     mockGetSettings.mockResolvedValue(mockSettings);
     mockUpdateSettings.mockResolvedValue(mockSettings);
   });
@@ -303,6 +305,11 @@ describe('SettingsPage BDD', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Save Configuration button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
       // canWriteSettings is false before flags resolve — save button must not flash
@@ -311,7 +318,7 @@ describe('SettingsPage BDD', () => {
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Save Configuration button is present', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
-      vi.mocked(useShellBridge).mockReturnValueOnce({
+      vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: true,
         isFeatureEnabled: () => true,
       } as any);

@@ -33,6 +33,13 @@ vi.mock('../components/common/Toast', () => ({
   useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
 }));
 
+vi.mock('@so360/shell-context', () => ({
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
+  useActivity: () => ({ recordActivity: async () => {} }),
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+}));
+
 import MarketingNewsletterPage from './MarketingNewsletterPage';
 
 const makeSubscribers = () => [
@@ -40,8 +47,10 @@ const makeSubscribers = () => [
   { id: 's2', email: 'bob@example.com', source: 'Manual', subscribed_at: '2026-01-05', unsubscribed_at: '2026-02-01' },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   localStorage.clear();
   mockGetSubscribers.mockResolvedValue(makeSubscribers());
   mockAddSubscriber.mockResolvedValue({});
@@ -153,8 +162,15 @@ describe('MarketingNewsletterPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Add Subscriber button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       render(<MarketingNewsletterPage />);
-      expect(screen.queryByText('Add Subscriber')).not.toBeInTheDocument();
+      // canCreateMarketing is false — the Add Subscriber action buttons must not appear
+      const addBtns = screen.queryAllByRole('button').filter(b => b.textContent?.includes('Add Subscriber'));
+      expect(addBtns.length).toBe(0);
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Add Subscriber button is present', async () => {
@@ -165,7 +181,8 @@ describe('MarketingNewsletterPage', () => {
       } as any);
       render(<MarketingNewsletterPage />);
       await waitFor(() => expect(screen.getByText('Newsletter Subscribers')).toBeInTheDocument());
-      expect(screen.getByText('Add Subscriber')).toBeInTheDocument();
+      const addBtns = screen.queryAllByRole('button').filter(b => b.textContent?.includes('Add Subscriber'));
+      expect(addBtns.length).toBeGreaterThan(0);
     });
   });
 });

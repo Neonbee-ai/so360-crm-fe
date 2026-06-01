@@ -35,7 +35,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: { Consumer: ({ children }: any) => children({ user: { id: 'user-1' } }) },
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -72,8 +72,10 @@ const makeNotes = () => [
   { id: 'n2', content: 'Second note', created_at: '2026-01-11', author: { id: 'user-2', full_name: 'Other User' } },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetTaskById.mockResolvedValue(makeTask());
   mockGetUsers.mockResolvedValue([]);
   mockGetTaskNotes.mockResolvedValue(makeNotes());
@@ -252,8 +254,13 @@ describe('TaskDetailPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Delete button is absent (no flicker)', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       render(<TaskDetailPage />);
-      await waitFor(() => expect(screen.getByText('Test Task')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
       // canCreateTask is false before flags resolve — delete button must not flash
       const deleteBtn = screen.queryByTitle('Delete');
       expect(deleteBtn).not.toBeInTheDocument();
@@ -266,9 +273,9 @@ describe('TaskDetailPage', () => {
         isFeatureEnabled: () => true,
       } as any);
       render(<TaskDetailPage />);
-      await waitFor(() => expect(screen.getByText('Test Task')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
       // The delete Trash2 icon button is rendered when canCreateTask is true
-      const trashBtn = document.querySelector('button svg.lucide-trash-2')?.closest('button');
+      const trashBtn = document.querySelector('[data-testid="icon-Trash2"]')?.closest('button');
       expect(trashBtn).toBeTruthy();
     });
   });

@@ -14,7 +14,7 @@ const MarketingSegmentsPage: React.FC = () => {
   const navigate = useNavigate();
   const shell = useShell();
   const shellBridge = useShellBridge();
-  const canCreateMarketing = (shellBridge?.effectiveFlagsLoaded ?? false) && (shellBridge?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
+  const canCreateMarketing = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const { settings } = useBusinessSettings();
   const currencyCode = settings?.base_currency;
   const locale = settings?.document_language || 'en-US';

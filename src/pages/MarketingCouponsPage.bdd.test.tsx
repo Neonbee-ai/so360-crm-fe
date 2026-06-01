@@ -60,7 +60,7 @@ vi.mock('@so360/shell-context', () => ({
     settings: { base_currency: 'USD', document_language: 'en-US' },
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -118,8 +118,10 @@ function renderPage(storeId = 'store-1') {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('MarketingCouponsPage BDD', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
     window.confirm = vi.fn(() => true);
     mockGetCoupons.mockResolvedValue(coupons);
     mockCreateCoupon.mockResolvedValue({ id: 'coupon-new' });
@@ -325,8 +327,14 @@ describe('MarketingCouponsPage BDD', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is false / Then Create Coupon button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
       renderPage();
       expect(screen.queryByText('Create Coupon')).not.toBeInTheDocument();
+      vi.mocked(useShellBridge).mockReturnValue({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false } as any);
     });
 
     it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Coupon button is present', async () => {
