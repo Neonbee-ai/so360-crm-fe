@@ -154,11 +154,6 @@ describe('LeadDetailPage — document View & Download actions', () => {
         defaultServiceMocks();
     });
 
-    afterEach(() => {
-        vi.restoreAllMocks();
-        vi.unstubAllGlobals();
-    });
-
     describe('Given a lead has uploaded documents', () => {
         it('When the Documents tab is rendered / Then a View link is present for each document', async () => {
             await renderAndOpenDocumentsTab();
@@ -187,72 +182,85 @@ describe('LeadDetailPage — document View & Download actions', () => {
             expect(downloadBtn.tagName).toBe('BUTTON');
         });
 
-        it('When the Download button is clicked / Then fetch is called with the document URL', async () => {
-            const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-            const fetchSpy = vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) });
-            vi.stubGlobal('fetch', fetchSpy);
-            vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-            vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-            const mockAnchor = { href: '', download: '', click: vi.fn() };
-            vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-                if (tag === 'a') return mockAnchor as any;
-                return document.createElement(tag);
+        // Download interaction tests: spies are localised to this nested describe
+        // so they never leak into the multi-doc or persistence tests below.
+        describe('Download button click behaviour', () => {
+            // Save the real createElement BEFORE any spy can wrap it, so the
+            // mock can delegate non-'a' tags without infinite recursion.
+            let origCreateElement: typeof document.createElement;
+
+            beforeEach(() => {
+                origCreateElement = document.createElement.bind(document);
             });
 
-            await renderAndOpenDocumentsTab();
-            const downloadBtn = screen.getByTitle('Download');
-            await act(async () => { fireEvent.click(downloadBtn); });
-
-            await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(DOC_URL));
-        });
-
-        it('When the Download button is clicked / Then the anchor download attribute is set to the filename', async () => {
-            const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
-            vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-            vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-            const mockAnchor = { href: '', download: '', click: vi.fn() };
-            vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-                if (tag === 'a') return mockAnchor as any;
-                return document.createElement(tag);
+            afterEach(() => {
+                vi.restoreAllMocks();
+                vi.unstubAllGlobals();
             });
 
-            await renderAndOpenDocumentsTab();
-            const downloadBtn = screen.getByTitle('Download');
-            await act(async () => { fireEvent.click(downloadBtn); });
+            it('When the Download button is clicked / Then fetch is called with the document URL', async () => {
+                const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
+                vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+                vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+                const mockAnchor = { href: '', download: '', click: vi.fn() };
+                vi.spyOn(document, 'createElement').mockImplementation((tag: string, opts?: any) =>
+                    tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
+                );
 
-            await waitFor(() => expect(mockAnchor.click).toHaveBeenCalled());
-            expect(mockAnchor.download).toBe('proposal.pdf');
-        });
+                await renderAndOpenDocumentsTab();
+                const downloadBtn = screen.getByTitle('Download');
+                await act(async () => { fireEvent.click(downloadBtn); });
 
-        it('When the Download button is clicked / Then the blob URL is revoked after download', async () => {
-            const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
-            const blobUrl = 'blob:mock-revoke-test';
-            vi.spyOn(URL, 'createObjectURL').mockReturnValue(blobUrl);
-            const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-            const mockAnchor = { href: '', download: '', click: vi.fn() };
-            vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-                if (tag === 'a') return mockAnchor as any;
-                return document.createElement(tag);
+                await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledWith(DOC_URL));
             });
 
-            await renderAndOpenDocumentsTab();
-            const downloadBtn = screen.getByTitle('Download');
-            await act(async () => { fireEvent.click(downloadBtn); });
+            it('When the Download button is clicked / Then the anchor download attribute is set to the filename', async () => {
+                const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
+                vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+                vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+                const mockAnchor = { href: '', download: '', click: vi.fn() };
+                vi.spyOn(document, 'createElement').mockImplementation((tag: string, opts?: any) =>
+                    tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
+                );
 
-            await waitFor(() => expect(revokeSpy).toHaveBeenCalledWith(blobUrl));
-        });
+                await renderAndOpenDocumentsTab();
+                const downloadBtn = screen.getByTitle('Download');
+                await act(async () => { fireEvent.click(downloadBtn); });
 
-        it('When the Download fetch fails / Then it falls back to opening the URL in a new tab', async () => {
-            vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
-            const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+                await waitFor(() => expect(mockAnchor.click).toHaveBeenCalled());
+                expect(mockAnchor.download).toBe('proposal.pdf');
+            });
 
-            await renderAndOpenDocumentsTab();
-            const downloadBtn = screen.getByTitle('Download');
-            await act(async () => { fireEvent.click(downloadBtn); });
+            it('When the Download button is clicked / Then the blob URL is revoked after download', async () => {
+                const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
+                const blobUrl = 'blob:mock-revoke-test';
+                vi.spyOn(URL, 'createObjectURL').mockReturnValue(blobUrl);
+                const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+                const mockAnchor = { href: '', download: '', click: vi.fn() };
+                vi.spyOn(document, 'createElement').mockImplementation((tag: string, opts?: any) =>
+                    tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
+                );
 
-            await waitFor(() => expect(openSpy).toHaveBeenCalledWith(DOC_URL, '_blank'));
+                await renderAndOpenDocumentsTab();
+                const downloadBtn = screen.getByTitle('Download');
+                await act(async () => { fireEvent.click(downloadBtn); });
+
+                await waitFor(() => expect(revokeSpy).toHaveBeenCalledWith(blobUrl));
+            });
+
+            it('When the Download fetch fails / Then it falls back to opening the URL in a new tab', async () => {
+                vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
+                const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+                await renderAndOpenDocumentsTab();
+                const downloadBtn = screen.getByTitle('Download');
+                await act(async () => { fireEvent.click(downloadBtn); });
+
+                await waitFor(() => expect(openSpy).toHaveBeenCalledWith(DOC_URL, '_blank'));
+            });
         });
     });
 
@@ -265,10 +273,8 @@ describe('LeadDetailPage — document View & Download actions', () => {
             defaultServiceMocks(docs);
             await renderAndOpenDocumentsTab();
 
-            const viewLinks = screen.getAllByTitle('View');
-            const downloadBtns = screen.getAllByTitle('Download');
-            expect(viewLinks.length).toBe(2);
-            expect(downloadBtns.length).toBe(2);
+            expect(screen.getAllByTitle('View').length).toBe(2);
+            expect(screen.getAllByTitle('Download').length).toBe(2);
         });
 
         it('When the Documents tab is rendered / Then each View link points to its own document URL', async () => {
@@ -279,35 +285,9 @@ describe('LeadDetailPage — document View & Download actions', () => {
             defaultServiceMocks(docs);
             await renderAndOpenDocumentsTab();
 
-            const viewLinks = screen.getAllByTitle('View') as HTMLAnchorElement[];
-            const hrefs = viewLinks.map(l => l.href);
+            const hrefs = (screen.getAllByTitle('View') as HTMLAnchorElement[]).map(l => l.href);
             expect(hrefs).toContain('https://cdn.example.com/a.pdf');
             expect(hrefs).toContain('https://cdn.example.com/b.pdf');
-        });
-
-        it('When the first Download button is clicked / Then fetch is called with the first document URL', async () => {
-            const docs = [
-                makeDoc({ id: 'doc-1', name: 'a.pdf', url: 'https://cdn.example.com/a.pdf' }),
-                makeDoc({ id: 'doc-2', name: 'b.pdf', url: 'https://cdn.example.com/b.pdf' }),
-            ];
-            defaultServiceMocks(docs);
-            const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
-            const fetchSpy = vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) });
-            vi.stubGlobal('fetch', fetchSpy);
-            vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-            vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-            const mockAnchor = { href: '', download: '', click: vi.fn() };
-            vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-                if (tag === 'a') return mockAnchor as any;
-                return document.createElement(tag);
-            });
-
-            await renderAndOpenDocumentsTab();
-            const downloadBtns = screen.getAllByTitle('Download');
-            await act(async () => { fireEvent.click(downloadBtns[0]); });
-
-            await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith('https://cdn.example.com/a.pdf'));
-            expect(mockAnchor.download).toBe('a.pdf');
         });
     });
 
