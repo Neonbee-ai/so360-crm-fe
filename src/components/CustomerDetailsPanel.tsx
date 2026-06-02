@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Building2, CreditCard, Shield, CheckCircle2, AlertCircle, Loader2, Tag, ShoppingCart, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Building2, CreditCard, Shield, CheckCircle2, AlertCircle, Loader2, Tag, ShoppingCart, Users, MapPin, Pencil, Save, X } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -8,6 +8,51 @@ interface Partner {
     company_name: string;
     contact_name?: string;
 }
+
+interface AddressShape {
+    street?: string;
+    street2?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+}
+
+interface BusinessProfileShape {
+    business_name?: string;
+    gst_number?: string;
+    gst_treatment?: string;
+    place_of_supply?: string;
+    business_type?: string;
+    pan_number?: string;
+    billing_address?: AddressShape | null;
+    shipping_address?: AddressShape | null;
+}
+
+const GST_TREATMENT_OPTIONS: { label: string; value: string }[] = [
+    { label: 'Registered Business', value: 'registered_business' },
+    { label: 'Unregistered Business', value: 'unregistered_business' },
+    { label: 'Consumer', value: 'consumer' },
+    { label: 'Composition Dealer', value: 'composition_dealer' },
+    { label: 'SEZ', value: 'sez' },
+    { label: 'SEZ Developer', value: 'sez_developer' },
+    { label: 'Overseas', value: 'overseas' },
+    { label: 'Government Body', value: 'government_body' },
+];
+
+const GST_TREATMENT_LABELS: Record<string, string> = Object.fromEntries(
+    GST_TREATMENT_OPTIONS.map(o => [o.value, o.label]),
+);
+
+const emptyAddress = (): AddressShape => ({ street: '', street2: '', city: '', state: '', postal_code: '', country: '' });
+
+const addressIsEmpty = (a?: AddressShape | null): boolean =>
+    !a || !(a.street || a.street2 || a.city || a.state || a.postal_code || a.country);
+
+const formatAddress = (a?: AddressShape | null): string => {
+    if (addressIsEmpty(a)) return '—';
+    return [a!.street, a!.street2, a!.city, a!.state, a!.postal_code, a!.country].filter(Boolean).join(', ');
+};
 
 interface CustomerDetailsPanelProps {
     lead: any;
@@ -61,6 +106,80 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             showToast(err?.message || 'Failed to update credit limit', 'error');
         } finally {
             setIsSavingCredit(false);
+        }
+    };
+
+    // ─── Business Profile (canonical Core partners row, shared with Accounting) ───
+    const [profile, setProfile] = useState<BusinessProfileShape | null>(null);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [draft, setDraft] = useState<BusinessProfileShape>({});
+    const [shippingSame, setShippingSame] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            if (!lead?.id) return;
+            setIsLoadingProfile(true);
+            try {
+                const data = await crmService.getCustomerBusinessProfile(lead.id);
+                if (!cancelled) setProfile(data || {});
+            } catch {
+                if (!cancelled) setProfile({});
+            } finally {
+                if (!cancelled) setIsLoadingProfile(false);
+            }
+        };
+        load();
+        return () => { cancelled = true; };
+    }, [lead?.id]);
+
+    const beginEditProfile = () => {
+        const billing = { ...emptyAddress(), ...(profile?.billing_address || {}) };
+        const shipping = { ...emptyAddress(), ...(profile?.shipping_address || {}) };
+        const sameAsBilling = addressIsEmpty(profile?.shipping_address);
+        setDraft({
+            business_name: profile?.business_name || '',
+            gst_number: profile?.gst_number || '',
+            gst_treatment: profile?.gst_treatment || '',
+            place_of_supply: profile?.place_of_supply || '',
+            business_type: profile?.business_type || '',
+            pan_number: profile?.pan_number || '',
+            billing_address: billing,
+            shipping_address: shipping,
+        });
+        setShippingSame(sameAsBilling);
+        setIsEditingProfile(true);
+    };
+
+    const setDraftField = (patch: Partial<BusinessProfileShape>) => setDraft(prev => ({ ...prev, ...patch }));
+    const setDraftBilling = (patch: Partial<AddressShape>) =>
+        setDraft(prev => ({ ...prev, billing_address: { ...(prev.billing_address || {}), ...patch } }));
+    const setDraftShipping = (patch: Partial<AddressShape>) =>
+        setDraft(prev => ({ ...prev, shipping_address: { ...(prev.shipping_address || {}), ...patch } }));
+
+    const handleSaveProfile = async () => {
+        setIsSavingProfile(true);
+        try {
+            const payload: BusinessProfileShape = {
+                business_name: draft.business_name?.trim() || undefined,
+                gst_number: draft.gst_number?.trim() || undefined,
+                gst_treatment: draft.gst_treatment || undefined,
+                place_of_supply: draft.place_of_supply?.trim() || undefined,
+                business_type: draft.business_type?.trim() || undefined,
+                pan_number: draft.pan_number?.trim() || undefined,
+                billing_address: draft.billing_address || emptyAddress(),
+                shipping_address: shippingSame ? (draft.billing_address || emptyAddress()) : (draft.shipping_address || emptyAddress()),
+            };
+            const updated = await crmService.updateCustomerBusinessProfile(lead.id, payload);
+            setProfile(updated || payload);
+            setIsEditingProfile(false);
+            showToast('Business profile saved', 'success');
+        } catch (err: any) {
+            showToast(err?.response?.data?.message || err?.message || 'Failed to save business profile', 'error');
+        } finally {
+            setIsSavingProfile(false);
         }
     };
 
@@ -188,6 +307,136 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     </div>
                 </>
             )}
+
+            {/* ─── Business Information (canonical Core partners row) ─── */}
+            <div className="border-t border-slate-800 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Building2 size={12} className="text-emerald-400" /> Business Information
+                    </span>
+                    {!isEditingProfile ? (
+                        <button
+                            onClick={beginEditProfile}
+                            disabled={isLoadingProfile}
+                            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                            <Pencil size={12} /> Edit
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setIsEditingProfile(false)}
+                                disabled={isSavingProfile}
+                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-400 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                            >
+                                <X size={12} /> Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveProfile}
+                                disabled={isSavingProfile}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-slate-50 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                            >
+                                {isSavingProfile ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {isLoadingProfile ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Loader2 size={12} className="animate-spin" /> Loading profile…
+                    </div>
+                ) : !isEditingProfile ? (
+                    <div className="space-y-2">
+                        {[
+                            ['Business Name', profile?.business_name],
+                            ['GST Treatment', profile?.gst_treatment ? (GST_TREATMENT_LABELS[profile.gst_treatment] || profile.gst_treatment) : ''],
+                            ['GST Number', profile?.gst_number],
+                            ['Place of Supply', profile?.place_of_supply],
+                            ['PAN Number', profile?.pan_number],
+                            ['Business Type', profile?.business_type],
+                        ].map(([label, value]) => (
+                            <div key={label as string} className="flex items-start gap-3">
+                                <span className="text-xs text-slate-500 w-28 shrink-0">{label}</span>
+                                <span className="text-xs text-slate-200 break-words">{value || '—'}</span>
+                            </div>
+                        ))}
+                        <div className="flex items-start gap-3 pt-1">
+                            <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1"><MapPin size={11} /> Billing</span>
+                            <span className="text-xs text-slate-200 break-words">{formatAddress(profile?.billing_address)}</span>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <span className="text-xs text-slate-500 w-28 shrink-0 flex items-center gap-1"><MapPin size={11} /> Shipping</span>
+                            <span className="text-xs text-slate-200 break-words">
+                                {addressIsEmpty(profile?.shipping_address) ? 'Same as billing' : formatAddress(profile?.shipping_address)}
+                            </span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="col-span-2">
+                                <label className="text-[11px] text-slate-500 mb-1 block">Business Name</label>
+                                <input value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} className="w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            </div>
+                            <div>
+                                <label className="text-[11px] text-slate-500 mb-1 block">GST Treatment</label>
+                                <select value={draft.gst_treatment || ''} onChange={e => setDraftField({ gst_treatment: e.target.value })} className="w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                                    <option value="">Select…</option>
+                                    {GST_TREATMENT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[11px] text-slate-500 mb-1 block">GST Number</label>
+                                <input value={draft.gst_number || ''} onChange={e => setDraftField({ gst_number: e.target.value.toUpperCase() })} placeholder="29ABCDE1234F1Z5" className="w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            </div>
+                            <div>
+                                <label className="text-[11px] text-slate-500 mb-1 block">Place of Supply</label>
+                                <input value={draft.place_of_supply || ''} onChange={e => setDraftField({ place_of_supply: e.target.value })} className="w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            </div>
+                            <div>
+                                <label className="text-[11px] text-slate-500 mb-1 block">PAN Number</label>
+                                <input value={draft.pan_number || ''} onChange={e => setDraftField({ pan_number: e.target.value.toUpperCase() })} placeholder="ABCDE1234F" className="w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="text-[11px] text-slate-500 mb-1 block">Business Type</label>
+                                <input value={draft.business_type || ''} onChange={e => setDraftField({ business_type: e.target.value })} placeholder="e.g. Private Limited" className="w-full bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="text-[11px] font-semibold text-slate-400 mb-1.5 flex items-center gap-1"><MapPin size={11} /> Billing Address</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2 bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                <input value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2 bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                <input value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                <input value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                <input value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="PIN Code" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                <input value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            </div>
+                        </div>
+
+                        <label className="flex items-center gap-2 text-xs text-slate-400">
+                            <input type="checkbox" checked={shippingSame} onChange={e => setShippingSame(e.target.checked)} className="rounded border-slate-700 bg-slate-950" />
+                            Shipping same as Billing
+                        </label>
+
+                        {!shippingSame && (
+                            <div>
+                                <div className="text-[11px] font-semibold text-slate-400 mb-1.5 flex items-center gap-1"><MapPin size={11} /> Shipping Address</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2 bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                    <input value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2 bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                    <input value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                    <input value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                    <input value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="PIN Code" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                    <input value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" className="bg-slate-950 border border-slate-800 text-slate-200 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

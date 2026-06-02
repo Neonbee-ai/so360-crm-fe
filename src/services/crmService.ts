@@ -479,6 +479,20 @@ export const customersApi = {
     updateCreditLimit: async (customerId: string, creditLimit: number): Promise<any> => {
         return apiClient.patch<any>(`/leads/customers/${customerId}/credit-limit`, { credit_limit: creditLimit });
     },
+
+    /**
+     * GET /leads/customers/:id/business-profile - Read business profile from canonical Core partners row
+     */
+    getBusinessProfile: async (customerId: string): Promise<any> => {
+        return apiClient.get<any>(`/leads/customers/${customerId}/business-profile`);
+    },
+
+    /**
+     * PATCH /leads/customers/:id/business-profile - Update business profile on Core partners (single source of truth)
+     */
+    updateBusinessProfile: async (customerId: string, profile: Record<string, any>): Promise<any> => {
+        return apiClient.patch<any>(`/leads/customers/${customerId}/business-profile`, profile);
+    },
 };
 
 // ============================================================================
@@ -1730,6 +1744,14 @@ export const crmService = {
 
     updateCustomerCreditLimit: async (customerId: string, creditLimit: number): Promise<any> => {
         return customersApi.updateCreditLimit(customerId, creditLimit);
+    },
+
+    getCustomerBusinessProfile: async (customerId: string): Promise<any> => {
+        return customersApi.getBusinessProfile(customerId);
+    },
+
+    updateCustomerBusinessProfile: async (customerId: string, profile: Record<string, any>): Promise<any> => {
+        return customersApi.updateBusinessProfile(customerId, profile);
     },
 
     // Customer Segments
