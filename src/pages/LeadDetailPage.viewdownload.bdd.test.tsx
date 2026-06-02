@@ -157,8 +157,7 @@ describe('LeadDetailPage — document View & Download actions', () => {
     describe('Given a lead has uploaded documents', () => {
         it('When the Documents tab is rendered / Then a View link is present for each document', async () => {
             await renderAndOpenDocumentsTab();
-            const viewLinks = screen.getAllByTitle('View');
-            expect(viewLinks.length).toBe(1);
+            expect(screen.getAllByTitle('View').length).toBe(1);
         });
 
         it('When the Documents tab is rendered / Then the View link opens the document URL in a new tab', async () => {
@@ -172,45 +171,54 @@ describe('LeadDetailPage — document View & Download actions', () => {
 
         it('When the Documents tab is rendered / Then a Download button is present for each document', async () => {
             await renderAndOpenDocumentsTab();
-            const downloadBtns = screen.getAllByTitle('Download');
-            expect(downloadBtns.length).toBe(1);
+            expect(screen.getAllByTitle('Download').length).toBe(1);
         });
 
         it('When the Documents tab is rendered / Then the Download action is a button (not an anchor)', async () => {
             await renderAndOpenDocumentsTab();
-            const downloadBtn = screen.getByTitle('Download');
-            expect(downloadBtn.tagName).toBe('BUTTON');
+            expect(screen.getByTitle('Download').tagName).toBe('BUTTON');
         });
 
-        // Download interaction tests: spies are localised to this nested describe
-        // so they never leak into the multi-doc or persistence tests below.
+        // Download interaction: spies are tracked and restored explicitly so that
+        // vi.restoreAllMocks() is never needed — that would reset private vi.fn()
+        // mocks inside the factory (e.g. settingsApi.sourceTypes.getAll) and break
+        // subsequent tests that rely on them still returning resolved values.
         describe('Download button click behaviour', () => {
-            // Save the real createElement BEFORE any spy can wrap it, so the
-            // mock can delegate non-'a' tags without infinite recursion.
+            // Save the real createElement BEFORE any spy wraps it to avoid
+            // infinite recursion when the mock delegates non-'a' tags.
             let origCreateElement: typeof document.createElement;
+            let mockAnchor: { href: string; download: string; click: ReturnType<typeof vi.fn> };
+            let createObjectURLSpy: ReturnType<typeof vi.spyOn>;
+            let revokeObjectURLSpy: ReturnType<typeof vi.spyOn>;
+            let createElementSpy: ReturnType<typeof vi.spyOn>;
+            let openSpy: ReturnType<typeof vi.spyOn> | undefined;
 
             beforeEach(() => {
                 origCreateElement = document.createElement.bind(document);
+                mockAnchor = { href: '', download: '', click: vi.fn() };
+                createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+                revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+                createElementSpy = vi.spyOn(document, 'createElement').mockImplementation(
+                    (tag: string, opts?: any) =>
+                        tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
+                );
+                openSpy = undefined;
             });
 
             afterEach(() => {
-                vi.restoreAllMocks();
-                vi.unstubAllGlobals();
+                createObjectURLSpy.mockRestore();
+                revokeObjectURLSpy.mockRestore();
+                createElementSpy.mockRestore();
+                openSpy?.mockRestore();
+                vi.unstubAllGlobals(); // cleans up vi.stubGlobal('fetch')
             });
 
             it('When the Download button is clicked / Then fetch is called with the document URL', async () => {
                 const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
                 vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
-                vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-                vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-                const mockAnchor = { href: '', download: '', click: vi.fn() };
-                vi.spyOn(document, 'createElement').mockImplementation((tag: string, opts?: any) =>
-                    tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
-                );
 
                 await renderAndOpenDocumentsTab();
-                const downloadBtn = screen.getByTitle('Download');
-                await act(async () => { fireEvent.click(downloadBtn); });
+                await act(async () => { fireEvent.click(screen.getByTitle('Download')); });
 
                 await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalledWith(DOC_URL));
             });
@@ -218,16 +226,9 @@ describe('LeadDetailPage — document View & Download actions', () => {
             it('When the Download button is clicked / Then the anchor download attribute is set to the filename', async () => {
                 const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
                 vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
-                vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-                vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-                const mockAnchor = { href: '', download: '', click: vi.fn() };
-                vi.spyOn(document, 'createElement').mockImplementation((tag: string, opts?: any) =>
-                    tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
-                );
 
                 await renderAndOpenDocumentsTab();
-                const downloadBtn = screen.getByTitle('Download');
-                await act(async () => { fireEvent.click(downloadBtn); });
+                await act(async () => { fireEvent.click(screen.getByTitle('Download')); });
 
                 await waitFor(() => expect(mockAnchor.click).toHaveBeenCalled());
                 expect(mockAnchor.download).toBe('proposal.pdf');
@@ -236,28 +237,19 @@ describe('LeadDetailPage — document View & Download actions', () => {
             it('When the Download button is clicked / Then the blob URL is revoked after download', async () => {
                 const mockBlob = new Blob(['pdf'], { type: 'application/pdf' });
                 vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) }));
-                const blobUrl = 'blob:mock-revoke-test';
-                vi.spyOn(URL, 'createObjectURL').mockReturnValue(blobUrl);
-                const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-                const mockAnchor = { href: '', download: '', click: vi.fn() };
-                vi.spyOn(document, 'createElement').mockImplementation((tag: string, opts?: any) =>
-                    tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
-                );
 
                 await renderAndOpenDocumentsTab();
-                const downloadBtn = screen.getByTitle('Download');
-                await act(async () => { fireEvent.click(downloadBtn); });
+                await act(async () => { fireEvent.click(screen.getByTitle('Download')); });
 
-                await waitFor(() => expect(revokeSpy).toHaveBeenCalledWith(blobUrl));
+                await waitFor(() => expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock'));
             });
 
             it('When the Download fetch fails / Then it falls back to opening the URL in a new tab', async () => {
                 vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
-                const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+                openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
                 await renderAndOpenDocumentsTab();
-                const downloadBtn = screen.getByTitle('Download');
-                await act(async () => { fireEvent.click(downloadBtn); });
+                await act(async () => { fireEvent.click(screen.getByTitle('Download')); });
 
                 await waitFor(() => expect(openSpy).toHaveBeenCalledWith(DOC_URL, '_blank'));
             });
