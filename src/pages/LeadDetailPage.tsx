@@ -76,7 +76,7 @@ const LeadDetailPage = () => {
 
     const fetchLeadData = useCallback(async () => {
         try {
-            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData, partnersData, fetchedSourceTypes] = await Promise.all([
+            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData, partnersData, fetchedSourceTypes, documentsData] = await Promise.all([
                 crmService.getLeadById(id),
                 crmService.getDealsByLeadId(id),
                 crmService.getTasksByLeadId(id),
@@ -85,10 +85,11 @@ const LeadDetailPage = () => {
                 crmService.getActivitiesByLeadId(id),
                 crmService.getPartners(),
                 settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
+                crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
             ]);
             setLead(leadData || null);
             if (leadData) {
-                setLead({ ...leadData, activities: activitiesData });
+                setLead({ ...leadData, activities: activitiesData, documents: documentsData });
             }
             setAssociatedDeals(dealsData);
             setAssociatedTasks(tasksData);
@@ -978,14 +979,26 @@ const LeadDetailPage = () => {
                                                         >
                                                             <Eye size={16} />
                                                         </a>
-                                                        <a
-                                                            href={doc.url}
-                                                            download={doc.name}
+                                                        <button
+                                                            onClick={async () => {
+                                                                try {
+                                                                    const res = await fetch(doc.url);
+                                                                    const blob = await res.blob();
+                                                                    const blobUrl = URL.createObjectURL(blob);
+                                                                    const a = document.createElement('a');
+                                                                    a.href = blobUrl;
+                                                                    a.download = doc.name;
+                                                                    a.click();
+                                                                    URL.revokeObjectURL(blobUrl);
+                                                                } catch {
+                                                                    window.open(doc.url, '_blank');
+                                                                }
+                                                            }}
                                                             className="p-2 text-slate-500 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-all"
                                                             title="Download"
                                                         >
                                                             <Download size={16} />
-                                                        </a>
+                                                        </button>
                                                         <button
                                                             onClick={async () => {
                                                                 if (confirm('Delete this document?')) {
