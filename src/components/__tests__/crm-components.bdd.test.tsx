@@ -28,13 +28,21 @@ vi.mock('lucide-react', () => ({
   XCircle:       () => <span data-testid="icon-x-circle" />,
   Calendar:      () => <span data-testid="icon-calendar" />,
   TrendingUp:    () => <span data-testid="icon-trending-up" />,
-  Lock:          () => <span data-testid="icon-lock" />,
+  Lock:          () => <span data-testid="icon-Lock" />,
+  // icons added by the Business Information section
+  MapPin:        () => <span data-testid="icon-map-pin" />,
+  Pencil:        () => <span data-testid="icon-pencil" />,
+  Save:          () => <span data-testid="icon-save" />,
+  X:             () => <span data-testid="icon-x" />,
+  Users:         () => <span data-testid="icon-users" />,
 }));
 
 // ── crmService mock ────────────────────────────────────────────────────────────
 const mockCrmService = vi.hoisted(() => ({
-  validateCustomerTaxId:    vi.fn(),
-  updateCustomerCreditLimit: vi.fn(),
+  validateCustomerTaxId:        vi.fn(),
+  updateCustomerCreditLimit:    vi.fn(),
+  getCustomerBusinessProfile:   vi.fn().mockResolvedValue(null),
+  updateCustomerBusinessProfile: vi.fn().mockResolvedValue({}),
 }));
 
 vi.mock('../../services/crmService', () => ({
