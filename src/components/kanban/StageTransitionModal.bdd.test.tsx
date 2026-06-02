@@ -115,5 +115,89 @@ describe('StageTransitionModal', () => {
       );
       expect(screen.getByText(/reason for lost/i)).toBeInTheDocument();
     });
+
+    it('When rendered / Then the reason textarea is marked required', () => {
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Lost" />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('required');
+    });
+
+    it('When a reason is typed and submitted / Then calls onConfirm with that reason', async () => {
+      const onConfirm = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={onConfirm} deal={deal} newStage="Lost" />,
+      );
+      await user.type(screen.getByRole('textbox'), 'No response from client');
+      fireEvent.submit(document.querySelector('form')!);
+      expect(onConfirm).toHaveBeenCalledWith('No response from client');
+    });
+  });
+
+  describe('Given the reason field — required validation', () => {
+    it('Given Won stage / When rendered with empty textarea / Then the field is invalid (required)', () => {
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Won" />,
+      );
+      expect(screen.getByRole('textbox')).toBeInvalid();
+    });
+
+    it('Given Lost stage / When rendered with empty textarea / Then the field is invalid (required)', () => {
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Lost" />,
+      );
+      expect(screen.getByRole('textbox')).toBeInvalid();
+    });
+
+    it('Given Won stage / When a reason is typed / Then the field becomes valid', async () => {
+      const user = userEvent.setup();
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Won" />,
+      );
+      const textarea = screen.getByRole('textbox');
+      expect(textarea).toBeInvalid();
+      await user.type(textarea, 'Signed contract');
+      expect(textarea).toBeValid();
+    });
+
+    it('Given a regular stage / When rendered / Then there is no required textarea', () => {
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Negotiation" />,
+      );
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given state management — reason field reset', () => {
+    it('Given a reason was typed / When form is submitted / Then the reason field resets to empty', async () => {
+      const user = userEvent.setup();
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={vi.fn()} deal={deal} newStage="Won" />,
+      );
+      const textarea = screen.getByRole('textbox');
+      await user.type(textarea, 'Budget cut');
+      expect(textarea).toHaveValue('Budget cut');
+      fireEvent.submit(document.querySelector('form')!);
+      expect(textarea).toHaveValue('');
+    });
+
+    it('Given Won modal / When cancel is clicked / Then onConfirm is NOT called', () => {
+      const onConfirm = vi.fn();
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={onConfirm} deal={deal} newStage="Won" />,
+      );
+      fireEvent.click(screen.getByText('Cancel'));
+      expect(onConfirm).not.toHaveBeenCalled();
+    });
+
+    it('Given Lost modal / When cancel is clicked / Then onConfirm is NOT called', () => {
+      const onConfirm = vi.fn();
+      render(
+        <StageTransitionModal isOpen={true} onClose={vi.fn()} onConfirm={onConfirm} deal={deal} newStage="Lost" />,
+      );
+      fireEvent.click(screen.getByText('Cancel'));
+      expect(onConfirm).not.toHaveBeenCalled();
+    });
   });
 });

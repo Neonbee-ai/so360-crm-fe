@@ -358,7 +358,7 @@ describe('Given KanbanBoard', () => {
     expect(hints.length).toBeGreaterThan(0);
   });
 
-  it('Given a terminal stage with no deals / When rendered / Then win/lose instruction is shown', () => {
+  it('Given a terminal stage with no deals / When rendered / Then drop-here hint is shown (terminal stages are now droppable)', () => {
     render(
       <KanbanBoard
         deals={deals.filter(d => d.current_flow_state !== 'won')}
@@ -368,6 +368,7 @@ describe('Given KanbanBoard', () => {
       />
     );
 
-    expect(screen.getByText(/Win\/Lose via/i)).toBeTruthy();
+    const hints = screen.getAllByText(/Drop here/i);
+    expect(hints.length).toBeGreaterThan(0);
   });
 });

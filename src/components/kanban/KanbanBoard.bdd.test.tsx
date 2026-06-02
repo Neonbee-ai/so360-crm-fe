@@ -110,8 +110,20 @@ describe('KanbanBoard', () => {
       // Deal must be visible
       expect(screen.getByText('Mismatched Deal')).toBeInTheDocument();
 
-      // Won column is terminal and empty → shows the lock/empty message
-      expect(screen.getByText(/Win\/Lose via/i)).toBeInTheDocument();
+      // Won column is empty → shows the standard "Drop here" empty state
+      expect(screen.getByText(/Drop here/i)).toBeInTheDocument();
+    });
+
+    it('Given a deal in any stage / When dropped onto a terminal (Won) stage / Then onStageChange fires', () => {
+      const moveDeal: any = { ...deals[0], id: 'tw', name: 'Terminal Drop Deal', current_flow_state: 'new', stage: 'New' };
+      const { container } = render(<KanbanBoard deals={[moveDeal]} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const columns = container.querySelectorAll('.w-80');
+      const wonColumn = columns[2]; // Won is 3rd column
+      const dropZone = wonColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: (k: string) => k === 'dealId' ? 'tw' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      fireEvent.drop(dropZone, { dataTransfer: dt } as any);
+      expect(mockOnStageChange).toHaveBeenCalledWith(moveDeal, 'won');
     });
 
     it('Given a deal with NO current_flow_state but stage "Qualified" / When rendered / Then falls back to Qualified column by name', () => {
@@ -148,6 +160,123 @@ describe('KanbanBoard', () => {
       fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
       fireEvent.drop(dropZone, { dataTransfer: dt } as any);
       expect(mockOnStageChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Terminal stage drag-and-drop unlock (Won/Lost now droppable)', () => {
+    const stagesWithLost = [
+      { id: 'new', name: 'New', color: '#3B82F6', is_terminal: false },
+      { id: 'won', name: 'Won', color: '#22C55E', is_terminal: true },
+      { id: 'lost', name: 'Lost', color: '#EF4444', is_terminal: true },
+    ];
+
+    it('Given a deal in New / When dropped onto the Lost terminal column / Then onStageChange fires with "lost"', () => {
+      const deal: any = { ...deals[0], id: 'lt1', name: 'Lost Deal', current_flow_state: 'new', stage: 'New' };
+      const { container } = render(
+        <KanbanBoard deals={[deal]} stages={stagesWithLost} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const columns = container.querySelectorAll('.w-80');
+      const lostColumn = columns[2];
+      const dropZone = lostColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: (k: string) => k === 'dealId' ? 'lt1' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      fireEvent.drop(dropZone, { dataTransfer: dt } as any);
+      expect(mockOnStageChange).toHaveBeenCalledWith(deal, 'lost');
+    });
+
+    it('Given a deal already in Won / When dropped back onto Won / Then onStageChange is NOT called', () => {
+      const wonDeal: any = { ...deals[0], id: 'w2w', name: 'Already Won', current_flow_state: 'won', stage: 'Won' };
+      const { container } = render(
+        <KanbanBoard deals={[wonDeal]} stages={stagesWithLost} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const columns = container.querySelectorAll('.w-80');
+      const wonColumn = columns[1];
+      const dropZone = wonColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: (k: string) => k === 'dealId' ? 'w2w' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      fireEvent.drop(dropZone, { dataTransfer: dt } as any);
+      expect(mockOnStageChange).not.toHaveBeenCalled();
+    });
+
+    it('Given a deal already in Lost / When dropped back onto Lost / Then onStageChange is NOT called', () => {
+      const lostDeal: any = { ...deals[0], id: 'l2l', name: 'Already Lost', current_flow_state: 'lost', stage: 'Lost' };
+      const { container } = render(
+        <KanbanBoard deals={[lostDeal]} stages={stagesWithLost} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const columns = container.querySelectorAll('.w-80');
+      const lostColumn = columns[2];
+      const dropZone = lostColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: (k: string) => k === 'dealId' ? 'l2l' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      fireEvent.drop(dropZone, { dataTransfer: dt } as any);
+      expect(mockOnStageChange).not.toHaveBeenCalled();
+    });
+
+    it('Given a deal in the Won stage / When it is rendered / Then the card has draggable=true', () => {
+      const wonDeal: any = { ...deals[0], id: 'wdrag', name: 'Draggable Won', current_flow_state: 'won', stage: 'Won' };
+      render(
+        <KanbanBoard deals={[wonDeal]} stages={stagesWithLost} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const card = screen.getByText('Draggable Won').closest('[draggable]');
+      expect(card).toBeTruthy();
+      expect(card?.getAttribute('draggable')).toBe('true');
+    });
+
+    it('Given a deal in Won / When moved out to Lost via drag / Then onStageChange fires with "lost"', () => {
+      const wonDeal: any = { ...deals[0], id: 'w2l', name: 'Won to Lost', current_flow_state: 'won', stage: 'Won' };
+      const { container } = render(
+        <KanbanBoard deals={[wonDeal]} stages={stagesWithLost} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const columns = container.querySelectorAll('.w-80');
+      const lostColumn = columns[2];
+      const dropZone = lostColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: (k: string) => k === 'dealId' ? 'w2l' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      fireEvent.drop(dropZone, { dataTransfer: dt } as any);
+      expect(mockOnStageChange).toHaveBeenCalledWith(wonDeal, 'lost');
+    });
+
+    it('Given an empty terminal column / When a deal is dragged over it / Then the column shows active drop styling', () => {
+      const { container } = render(
+        <KanbanBoard deals={[]} stages={stagesWithLost} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const columns = container.querySelectorAll('.w-80');
+      const wonColumn = columns[1];
+      const dropZone = wonColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: vi.fn(), setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+
+      expect(dropZone.className).not.toMatch(/ring-2/);
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      expect(dropZone.className).toMatch(/ring-2/);
+    });
+
+    it('Given a deal dragged over a terminal column / When drag leaves / Then active drop styling clears', () => {
+      const deal: any = { ...deals[0], id: 'dl2', name: 'Drag Leave', current_flow_state: 'new', stage: 'New' };
+      const { container } = render(
+        <KanbanBoard deals={[deal]} stages={stagesWithLost} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const columns = container.querySelectorAll('.w-80');
+      const wonColumn = columns[1];
+      const dropZone = wonColumn.querySelector('[class*="min-h-"]')!;
+      const dt = { getData: vi.fn(), setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+
+      fireEvent.dragOver(dropZone, { dataTransfer: dt } as any);
+      expect(dropZone.className).toMatch(/ring-2/);
+
+      fireEvent.dragLeave(dropZone, { relatedTarget: document.body } as any);
+      expect(dropZone.className).not.toMatch(/ring-2/);
+    });
+
+    it('Given all stages are terminal / When all columns are empty / Then every column shows "Drop here"', () => {
+      const allTerminal = [
+        { id: 'won', name: 'Won', color: '#22C55E', is_terminal: true },
+        { id: 'lost', name: 'Lost', color: '#EF4444', is_terminal: true },
+      ];
+      render(
+        <KanbanBoard deals={[]} stages={allTerminal} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />,
+      );
+      const hints = screen.getAllByText(/Drop here/i);
+      expect(hints).toHaveLength(2);
     });
   });
 

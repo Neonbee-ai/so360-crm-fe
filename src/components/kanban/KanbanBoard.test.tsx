@@ -147,10 +147,10 @@ describe('Given KanbanBoard', () => {
     }
   });
 
-  it('When action / Then terminal stages show empty state message', () => {
+  it('When action / Then terminal stages show drop here empty state', () => {
     const emptyDeals = deals.filter((d: any) => d.current_flow_state !== 'won');
     render(<KanbanBoard deals={emptyDeals} stages={stages} onDealClick={vi.fn()} onStageChange={vi.fn()} />);
-    expect(screen.getByText(/win\/lose via/i)).toBeInTheDocument();
+    expect(screen.getByText(/drop here/i)).toBeInTheDocument();
   });
 
   it('When action / Then terminal stage deals are clickable', () => {

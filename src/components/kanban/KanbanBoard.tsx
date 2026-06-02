@@ -105,121 +105,66 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                         </div>
 
                         {/* Drop Zone */}
-                        {stage.is_terminal ? (
-                            /* Terminal columns: no drag handlers — Win/Lose via deal button */
-                            <div
-                                className="flex-1 flex flex-col gap-3 rounded-2xl p-3 min-h-[550px] bg-slate-900/40 border border-slate-700/40 shadow-sm"
-                                style={{ borderTopColor: accentColor, borderTopWidth: '3px', borderTopStyle: 'solid' }}
-                            >
-                                {stageDeals.map((deal) => (
-                                    <div
-                                        key={deal.id}
-                                        onClick={() => onDealClick(deal)}
-                                        className="bg-slate-800 border-2 border-slate-700/40 p-4 rounded-xl shadow-md transition-all cursor-pointer group hover:border-slate-600/60 hover:shadow-xl"
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-sm text-slate-50 group-hover:text-blue-400 transition-colors truncate">
-                                                {deal.name}
-                                            </h4>
-                                        </div>
-
-                                        <p className="text-[11px] text-slate-500 mb-4 line-clamp-1 flex items-center gap-1">
-                                            <TrendingUp size={10} className="text-slate-500" />
-                                            {deal.company_name}
-                                        </p>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-400/30">
-                                                    {deal.owner.avatar_url ? (
-                                                        <img src={deal.owner.avatar_url} alt={deal.owner.full_name} />
-                                                    ) : (
-                                                        deal.owner.full_name.charAt(0)
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-black text-slate-100">{formatters.formatCurrency(deal.value)}</span>
-                                                </div>
-                                            </div>
-                                            <span className="text-[9px] text-slate-500 font-bold flex items-center gap-1 bg-slate-400/10 px-1.5 py-0.5 rounded">
-                                                <Calendar size={10} className="text-slate-500" /> {deal.expected_close_date}
-                                            </span>
-                                        </div>
+                        <div
+                            onDragOver={(e) => handleDragOver(e, stage.id)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, stage.id)}
+                            className={`flex-1 flex flex-col gap-3 rounded-2xl p-3 min-h-[550px] transition-all duration-200 ${isOver
+                                ? 'bg-blue-600/10 ring-2 ring-blue-500/50 ring-dashed border-transparent'
+                                : 'bg-slate-900/40 border border-slate-700/40 shadow-sm'
+                                }`}
+                            style={!isOver ? { borderTopColor: accentColor, borderTopWidth: '3px', borderTopStyle: 'solid' } : undefined}
+                        >
+                            {stageDeals.map((deal) => (
+                                <div
+                                    key={deal.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, deal)}
+                                    onDragEnd={handleDragEnd}
+                                    onClick={() => onDealClick(deal)}
+                                    className={`bg-slate-800 border-2 p-4 rounded-xl shadow-md transition-all cursor-grab active:cursor-grabbing group ${draggedDealId === deal.id
+                                        ? 'border-blue-500/50 scale-95'
+                                        : 'border-slate-700/40 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-900/20'
+                                        }`}
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className="font-bold text-sm text-slate-50 group-hover:text-blue-400 transition-colors truncate">
+                                            {deal.name}
+                                        </h4>
                                     </div>
-                                ))}
 
-                                {stageDeals.length === 0 && (
-                                    <div className="flex-1 flex flex-col items-center justify-center gap-2">
-                                        <Lock size={16} className="text-slate-400" />
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
-                                            Win/Lose via<br />deal button
+                                    <p className="text-[11px] text-slate-500 mb-4 line-clamp-1 flex items-center gap-1">
+                                        <TrendingUp size={10} className="text-slate-500" />
+                                        {deal.company_name}
+                                    </p>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-400/30">
+                                                {deal.owner.avatar_url ? (
+                                                    <img src={deal.owner.avatar_url} alt={deal.owner.full_name} />
+                                                ) : (
+                                                    deal.owner.full_name.charAt(0)
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-slate-100">{formatters.formatCurrency(deal.value)}</span>
+                                            </div>
+                                        </div>
+                                        <span className="text-[9px] text-slate-500 font-bold flex items-center gap-1 bg-slate-400/10 px-1.5 py-0.5 rounded">
+                                            <Calendar size={10} className="text-slate-500" /> {deal.expected_close_date}
                                         </span>
                                     </div>
-                                )}
-                            </div>
-                        ) : (
-                            /* Non-terminal columns: full drag-and-drop */
-                            <div
-                                onDragOver={(e) => handleDragOver(e, stage.id)}
-                                onDragLeave={handleDragLeave}
-                                onDrop={(e) => handleDrop(e, stage.id)}
-                                className={`flex-1 flex flex-col gap-3 rounded-2xl p-3 min-h-[550px] transition-all duration-200 ${isOver
-                                    ? 'bg-blue-600/10 ring-2 ring-blue-500/50 ring-dashed border-transparent'
-                                    : 'bg-slate-900/40 border border-slate-700/40 shadow-sm'
-                                    }`}
-                                style={!isOver ? { borderTopColor: accentColor, borderTopWidth: '3px', borderTopStyle: 'solid' } : undefined}
-                            >
-                                {stageDeals.map((deal) => (
-                                    <div
-                                        key={deal.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, deal)}
-                                        onDragEnd={handleDragEnd}
-                                        onClick={() => onDealClick(deal)}
-                                        className={`bg-slate-800 border-2 p-4 rounded-xl shadow-md transition-all cursor-grab active:cursor-grabbing group ${draggedDealId === deal.id
-                                            ? 'border-blue-500/50 scale-95'
-                                            : 'border-slate-700/40 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-900/20'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-sm text-slate-50 group-hover:text-blue-400 transition-colors truncate">
-                                                {deal.name}
-                                            </h4>
-                                        </div>
+                                </div>
+                            ))}
 
-                                        <p className="text-[11px] text-slate-500 mb-4 line-clamp-1 flex items-center gap-1">
-                                            <TrendingUp size={10} className="text-slate-500" />
-                                            {deal.company_name}
-                                        </p>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-400/30">
-                                                    {deal.owner.avatar_url ? (
-                                                        <img src={deal.owner.avatar_url} alt={deal.owner.full_name} />
-                                                    ) : (
-                                                        deal.owner.full_name.charAt(0)
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-black text-slate-100">{formatters.formatCurrency(deal.value)}</span>
-                                                </div>
-                                            </div>
-                                            <span className="text-[9px] text-slate-500 font-bold flex items-center gap-1 bg-slate-400/10 px-1.5 py-0.5 rounded">
-                                                <Calendar size={10} className="text-slate-500" /> {deal.expected_close_date}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {/* Empty state hint */}
-                                {stageDeals.length === 0 && !isOver && (
-                                    <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-400/30 rounded-xl">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Drop here</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                            {/* Empty state hint */}
+                            {stageDeals.length === 0 && !isOver && (
+                                <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-400/30 rounded-xl">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Drop here</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 );
             })}
