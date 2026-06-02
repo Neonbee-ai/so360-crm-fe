@@ -184,20 +184,28 @@ describe('LeadDetailPage — document View & Download actions', () => {
         // mocks inside the factory (e.g. settingsApi.sourceTypes.getAll) and break
         // subsequent tests that rely on them still returning resolved values.
         describe('Download button click behaviour', () => {
-            // Save the real createElement BEFORE any spy wraps it to avoid
-            // infinite recursion when the mock delegates non-'a' tags.
+            // URL.createObjectURL/revokeObjectURL do not exist in JSDOM — we assign
+            // them directly rather than using vi.spyOn (which throws on missing methods).
+            // We save and restore manually so no global state leaks to other tests.
+            let origCreateObjectURL: typeof URL.createObjectURL | undefined;
+            let origRevokeObjectURL: typeof URL.revokeObjectURL | undefined;
             let origCreateElement: typeof document.createElement;
             let mockAnchor: { href: string; download: string; click: ReturnType<typeof vi.fn> };
-            let createObjectURLSpy: ReturnType<typeof vi.spyOn>;
-            let revokeObjectURLSpy: ReturnType<typeof vi.spyOn>;
             let createElementSpy: ReturnType<typeof vi.spyOn>;
             let openSpy: ReturnType<typeof vi.spyOn> | undefined;
 
             beforeEach(() => {
+                // @ts-ignore – save originals (undefined in JSDOM)
+                origCreateObjectURL = URL.createObjectURL;
+                // @ts-ignore
+                origRevokeObjectURL = URL.revokeObjectURL;
+                URL.createObjectURL = vi.fn().mockReturnValue('blob:mock');
+                URL.revokeObjectURL = vi.fn();
+
+                // Save the real createElement BEFORE the spy wraps it to avoid
+                // infinite recursion when the mock delegates non-'a' tags.
                 origCreateElement = document.createElement.bind(document);
                 mockAnchor = { href: '', download: '', click: vi.fn() };
-                createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-                revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
                 createElementSpy = vi.spyOn(document, 'createElement').mockImplementation(
                     (tag: string, opts?: any) =>
                         tag === 'a' ? (mockAnchor as any) : origCreateElement(tag, opts)
@@ -206,8 +214,10 @@ describe('LeadDetailPage — document View & Download actions', () => {
             });
 
             afterEach(() => {
-                createObjectURLSpy.mockRestore();
-                revokeObjectURLSpy.mockRestore();
+                // @ts-ignore – restore originals (undefined restores JSDOM to no-op state)
+                URL.createObjectURL = origCreateObjectURL;
+                // @ts-ignore
+                URL.revokeObjectURL = origRevokeObjectURL;
                 createElementSpy.mockRestore();
                 openSpy?.mockRestore();
                 vi.unstubAllGlobals(); // cleans up vi.stubGlobal('fetch')
@@ -241,7 +251,7 @@ describe('LeadDetailPage — document View & Download actions', () => {
                 await renderAndOpenDocumentsTab();
                 await act(async () => { fireEvent.click(screen.getByTitle('Download')); });
 
-                await waitFor(() => expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock'));
+                await waitFor(() => expect(vi.mocked(URL.revokeObjectURL)).toHaveBeenCalledWith('blob:mock'));
             });
 
             it('When the Download fetch fails / Then it falls back to opening the URL in a new tab', async () => {

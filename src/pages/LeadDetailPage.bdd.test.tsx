@@ -9,6 +9,7 @@ const mockGetTasksByLeadId = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
 const mockGetActivitiesByLeadId = vi.fn();
+const mockGetDocumentsByLeadId = vi.fn();
 const mockUpdateLead = vi.fn().mockResolvedValue({});
 const mockLogActivity = vi.fn().mockResolvedValue({});
 const mockGetPartners = vi.fn();
@@ -40,6 +41,7 @@ vi.mock('../services/crmService', () => ({
     deleteDocument: (...a: any[]) => mockDeleteDocument(...a),
     deleteLead: (...a: any[]) => mockDeleteLead(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
+    getDocumentsByLeadId: (...a: any[]) => mockGetDocumentsByLeadId(...a),
   },
   activitiesApi: { update: (...a: any[]) => mockActivitiesUpdate(...a), delete: (...a: any[]) => mockActivitiesDelete(...a) },
   settingsApi: {
@@ -159,6 +161,7 @@ beforeEach(async () => {
   mockGetUsers.mockResolvedValue([owner]);
   mockGetActivitiesByLeadId.mockResolvedValue(makeLead().activities);
   mockGetPartners.mockResolvedValue(mockPartners);
+  mockGetDocumentsByLeadId.mockResolvedValue([]);
 });
 
 describe('LeadDetailPage', () => {
