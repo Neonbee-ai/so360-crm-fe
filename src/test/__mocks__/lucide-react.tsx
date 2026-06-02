@@ -81,3 +81,4 @@ export const UserCheck = createIcon('UserCheck');
 export const BarChart2 = createIcon('BarChart2');
 export const Link2 = createIcon('Link2');
 export const Eye = createIcon('Eye');
+export const MapPin = createIcon('MapPin');

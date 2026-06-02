@@ -4,11 +4,15 @@ import React from 'react';
 
 const mockValidateTaxId = vi.fn();
 const mockUpdateCreditLimit = vi.fn();
+const mockGetBusinessProfile = vi.fn();
+const mockUpdateBusinessProfile = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
     validateCustomerTaxId: (...a: any[]) => mockValidateTaxId(...a),
     updateCustomerCreditLimit: (...a: any[]) => mockUpdateCreditLimit(...a),
+    getCustomerBusinessProfile: (...a: any[]) => mockGetBusinessProfile(...a),
+    updateCustomerBusinessProfile: (...a: any[]) => mockUpdateBusinessProfile(...a),
   },
 }));
 
@@ -34,6 +38,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockValidateTaxId.mockResolvedValue({ ...baseLead, tax_id: 'TAX123', tax_id_verified: true });
   mockUpdateCreditLimit.mockResolvedValue({ ...baseLead, credit_limit: 5000 });
+  mockGetBusinessProfile.mockResolvedValue(null);
+  mockUpdateBusinessProfile.mockResolvedValue({});
 });
 
 describe('CustomerDetailsPanel', () => {
