@@ -161,7 +161,7 @@ beforeEach(async () => {
   mockGetUsers.mockResolvedValue([owner]);
   mockGetActivitiesByLeadId.mockResolvedValue(makeLead().activities);
   mockGetPartners.mockResolvedValue(mockPartners);
-  mockGetDocumentsByLeadId.mockResolvedValue([]);
+  mockGetDocumentsByLeadId.mockResolvedValue(makeLead().documents);
 });
 
 describe('LeadDetailPage', () => {
@@ -386,6 +386,7 @@ describe('LeadDetailPage', () => {
 
     it('When no documents exist / Then shows no documents message', async () => {
       mockGetLeadById.mockResolvedValue(makeLead({ documents: [] }));
+      mockGetDocumentsByLeadId.mockResolvedValue([]);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
@@ -405,16 +406,14 @@ describe('LeadDetailPage', () => {
       expect(viewLink).toHaveAttribute('target', '_blank');
     });
 
-    it('When documents tab is open / Then Download link carries the document URL and filename', async () => {
+    it('When documents tab is open / Then Download action is a button (blob-fetch download)', async () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Documents \(1\)/));
       await waitFor(() => expect(screen.getByText('requirements.pdf')).toBeInTheDocument());
-      const downloadLink = screen.getByTitle('Download');
-      expect(downloadLink.tagName).toBe('A');
-      expect(downloadLink).toHaveAttribute('href', 'https://cdn.example.com/requirements.pdf');
-      expect(downloadLink).toHaveAttribute('download', 'requirements.pdf');
+      const downloadBtn = screen.getByTitle('Download');
+      expect(downloadBtn.tagName).toBe('BUTTON');
     });
   });
 
