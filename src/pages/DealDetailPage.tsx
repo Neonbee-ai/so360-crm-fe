@@ -283,7 +283,7 @@ const DealDetailPage = () => {
         if (deal.name) params.set('deal_name', deal.name);
         if (deal.company_name) params.set('customer_name', deal.company_name);
         if (deal.value != null) params.set('amount', String(deal.value));
-        window.location.href = `/accounting/invoices?${params.toString()}`;
+        navigate(`/accounting/invoices?${params.toString()}`);
     };
 
     const handleOpenProjectModal = async () => {

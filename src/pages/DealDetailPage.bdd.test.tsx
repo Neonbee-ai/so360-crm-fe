@@ -467,15 +467,156 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
     });
 
-    it('When Create Invoice is clicked / Then navigates to Accounting invoices with deal params', async () => {
-      const assignHref = vi.fn();
-      Object.defineProperty(window, 'location', { value: { ...window.location, set href(v: string) { assignHref(v); } }, writable: true });
+    it('When Create Invoice is clicked / Then soft-navigates to Accounting invoices with deal params', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
       await user.click(screen.getByText('Create Invoice'));
-      expect(assignHref).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
-      expect(assignHref).toHaveBeenCalledWith(expect.stringContaining('create=true'));
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
+    });
+  });
+
+  describe('Given Create Invoice navigation from Deal Detail', () => {
+    describe('When the feature flag is enabled', () => {
+      it('Then the Create Invoice button is visible on the page', async () => {
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+      });
+
+      it('When Create Invoice is clicked / Then calls navigate() for soft SPA navigation', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalled();
+      });
+
+      it('When Create Invoice is clicked / Then navigates to /accounting/invoices route', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
+      });
+
+      it('When Create Invoice is clicked / Then includes create=true in URL params', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
+      });
+
+      it('When Create Invoice is clicked / Then includes deal_id from route params in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('deal_id=deal-1'));
+      });
+
+      it('When Create Invoice is clicked / Then includes deal_name from the deal in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).toContain('deal_name=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Big Deal');
+      });
+
+      it('When Create Invoice is clicked / Then includes customer_name from deal company_name in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).toContain('customer_name=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Acme Corp');
+      });
+
+      it('When Create Invoice is clicked / Then includes amount from deal value in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('amount=50000'));
+      });
+
+      it('When Create Invoice is clicked / Then navigate is called exactly once', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const invoiceNavigateCalls = mockNavigate.mock.calls.filter(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/invoices')
+        );
+        expect(invoiceNavigateCalls).toHaveLength(1);
+      });
+
+      it('When Create Invoice is clicked / Then all required params are in the single URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).toContain('create=true');
+        expect(url).toContain('deal_id=deal-1');
+        expect(url).toContain('deal_name=');
+        expect(url).toContain('customer_name=');
+        expect(url).toContain('amount=50000');
+      });
+    });
+
+    describe('When deal has missing optional fields', () => {
+      it('When deal has no company_name / Then customer_name is omitted from URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ company_name: null }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).not.toContain('customer_name');
+      });
+
+      it('When deal value is null / Then amount is omitted from URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ value: null }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).not.toContain('amount');
+      });
+
+      it('When deal value is 0 / Then amount=0 is included in URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ value: 0 }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('amount=0'));
+      });
+
+      it('When deal has empty company_name string / Then customer_name is omitted from URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ company_name: '' }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).not.toContain('customer_name');
+      });
+    });
+
+    describe('When deal data is not yet loaded', () => {
+      it('When deal is null / Then clicking Create Invoice does nothing', async () => {
+        mockGetDealById.mockResolvedValue(null);
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.queryByText('Create Invoice')).not.toBeInTheDocument());
+        expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
+      });
     });
   });
 
