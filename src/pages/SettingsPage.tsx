@@ -82,7 +82,7 @@ const SettingsPage = () => {
             showSuccess('Configuration saved!');
         } catch (error) {
             console.error('Failed to save settings', error);
-            showError('Error saving settings.');
+            showError(error instanceof Error ? error.message : 'Error saving settings.');
         } finally {
             setIsSaving(false);
         }
@@ -118,37 +118,6 @@ const SettingsPage = () => {
         const newStages = [...settings.deal_stages];
         newStages[idx].name = name;
         setSettings({ ...settings, deal_stages: newStages });
-    };
-
-    const addLeadStage = () => {
-        if (!settings) return;
-        const newStage = {
-            id: `st-${Date.now()}`,
-            name: 'New Lead Stage'
-        };
-        setSettings({
-            ...settings,
-            lead_stages: [...settings.lead_stages, newStage]
-        });
-    };
-
-    const removeLeadStage = (id: string) => {
-        if (!settings) return;
-        if (settings.lead_stages.length <= 1) {
-            showError('Lead stages must have at least one stage.');
-            return;
-        }
-        setSettings({
-            ...settings,
-            lead_stages: settings.lead_stages.filter(s => s.id !== id)
-        });
-    };
-
-    const updateLeadStageName = (idx: number, name: string) => {
-        if (!settings) return;
-        const newStages = [...settings.lead_stages];
-        newStages[idx].name = name;
-        setSettings({ ...settings, lead_stages: newStages });
     };
 
     const addSource = () => {
@@ -306,42 +275,19 @@ const SettingsPage = () => {
 
                 {activeTab === 'lead-stages' && (
                     <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
-                            <div>
-                                <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
-                                <p className="text-[10px] text-slate-500 font-bold mt-1">THE ORDER DEFINES YOUR LEAD JOURNEY</p>
-                            </div>
-                            <button
-                                onClick={addLeadStage}
-                                className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95"
-                            >
-                                <Plus size={12} /> ADD STAGE
-                            </button>
+                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
+                            <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
+                            <p className="text-[10px] text-slate-500 font-bold mt-1">MANAGED IN THE FLOW MODULE — EDIT THE CRM LEAD WORKFLOW TO CHANGE THESE STAGES</p>
                         </div>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
-                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl group hover:border-slate-600/60 transition-all shadow-sm">
+                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl shadow-sm">
                                         <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
-                                            <input
-                                                type="text"
-                                                value={stage.name}
-                                                onChange={(e) => updateLeadStageName(idx, e.target.value)}
-                                                placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-500"
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => removeLeadStage(stage.id)}
-                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-400 transition-all"
-                                                title="Remove Stage"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            <span className="text-sm font-bold text-slate-50">{stage.name}</span>
                                         </div>
                                     </div>
                                 ))}

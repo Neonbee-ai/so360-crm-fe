@@ -83,8 +83,18 @@ describe('Given SettingsPage', () => {
     });
   });
 
-  it('When action / Then shows error when save fails', async () => {
-    mockUpdateSettings.mockRejectedValue(new Error('fail'));
+  it('When save fails with an Error / Then the actual error message is surfaced', async () => {
+    mockUpdateSettings.mockRejectedValue(new Error('Failed to save: Deal Fields'));
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByDisplayValue('Lead'));
+    fireEvent.click(screen.getByText(/save configuration/i));
+    await waitFor(() => {
+      expect(mockShowError).toHaveBeenCalledWith('Failed to save: Deal Fields');
+    });
+  });
+
+  it('When save fails with a non-Error rejection / Then the generic message is shown', async () => {
+    mockUpdateSettings.mockRejectedValue('boom');
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/save configuration/i));
@@ -140,53 +150,26 @@ describe('Given SettingsPage', () => {
     expect(screen.getByDisplayValue('LOST')).toBeInTheDocument();
   });
 
-  it('When action / Then switches to lead-stages tab', async () => {
+  it('When action / Then switches to lead-stages tab and shows read-only Flow-sourced stages', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead stages/i));
     await waitFor(() => {
-      expect(screen.getByDisplayValue('New')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Contacted')).toBeInTheDocument();
+      // Stages are rendered as plain text (read-only), not editable inputs
+      expect(screen.getByText('New')).toBeInTheDocument();
+      expect(screen.getByText('Contacted')).toBeInTheDocument();
+      expect(screen.getByText(/managed in the flow module/i)).toBeInTheDocument();
     });
   });
 
-  it('When action / Then adds and removes lead stages', async () => {
+  it('When action / Then lead stages tab exposes no add/remove/edit controls', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead stages/i));
-    await waitFor(() => screen.getByDisplayValue('New'));
-
-    // Add
-    const addButtons = screen.getAllByText(/add stage/i);
-    fireEvent.click(addButtons[addButtons.length - 1]);
-    expect(screen.getByDisplayValue('New Lead Stage')).toBeInTheDocument();
-
-    // Remove one
-    const removeButtons = screen.getAllByTitle('Remove Stage');
-    fireEvent.click(removeButtons[0]);
-  });
-
-  it('When action / Then prevents removing last lead stage', async () => {
-    mockGetSettings.mockResolvedValue({
-      ...makeSettings(),
-      lead_stages: [{ id: 'ls1', name: 'Only' }],
-    });
-    render(<SettingsPage />);
-    await waitFor(() => screen.getByDisplayValue('Lead'));
-    fireEvent.click(screen.getByText(/lead stages/i));
-    await waitFor(() => screen.getByDisplayValue('Only'));
-    const removeButtons = screen.getAllByTitle('Remove Stage');
-    fireEvent.click(removeButtons[0]);
-    expect(mockShowError).toHaveBeenCalledWith('Lead stages must have at least one stage.');
-  });
-
-  it('When action / Then edits lead stage name', async () => {
-    render(<SettingsPage />);
-    await waitFor(() => screen.getByDisplayValue('Lead'));
-    fireEvent.click(screen.getByText(/lead stages/i));
-    await waitFor(() => screen.getByDisplayValue('New'));
-    fireEvent.change(screen.getByDisplayValue('New'), { target: { value: 'Fresh' } });
-    expect(screen.getByDisplayValue('Fresh')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('New'));
+    // No editable inputs and no remove buttons for lead stages
+    expect(screen.queryByDisplayValue('New')).not.toBeInTheDocument();
+    expect(screen.queryAllByTitle('Remove Stage')).toHaveLength(0);
   });
 
   it('When action / Then switches to custom-fields tab and shows lead/deal fields', async () => {

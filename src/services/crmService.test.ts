@@ -1035,7 +1035,7 @@ describe('Given crmService (legacy layer)', () => {
     expect(result.lead_stages).toEqual([]);
   });
 
-  it('When action / Then updateSettings syncs pipeline stages, lead stages, and custom fields', async () => {
+  it('When action / Then updateSettings syncs pipeline stages and custom fields (lead stages are read-only, not written)', async () => {
     // Current pipeline-stages
     mockFetchSuccess([{ id: 'existing-1', name: 'Old', order: 1 }]);
     // POST new stage (st- prefix)
@@ -1044,10 +1044,7 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess({ id: 'existing-1', name: 'Updated' });
     // DELETE removed stage - none in this test
 
-    // Current lead-stages
-    mockFetchSuccess([{ id: 'ls-old', name: 'OldLS' }]);
-    // No new lead stages, update existing
-    mockFetchSuccess({ id: 'ls-old', name: 'UpdatedLS' });
+    // Lead stages are owned by the Flow module — updateSettings makes NO lead-stage calls
 
     // Current lead custom fields
     mockFetchSuccess([{ id: 'lcf-old', label: 'Old', entity_type: 'LEAD' }]);
@@ -1077,11 +1074,119 @@ describe('Given crmService (legacy layer)', () => {
 
     const result = await crmService.updateSettings(newSettings);
     expect(result).toEqual(newSettings);
+    // Lead stages are owned by the Flow module — save must never call the lead-stages API
+    expect(
+      fetchMock.mock.calls.some(([url]: any[]) => String(url).includes('/settings/lead-stages')),
+    ).toBe(false);
   });
 
   it('When action / Then updateSettings throws on error', async () => {
     mockFetchNetworkError();
     await expect(crmService.updateSettings({ deal_stages: [] } as any)).rejects.toThrow();
+  });
+
+  it('Given the Pipeline Stages API fails / When updateSettings runs / Then the other categories are still attempted and the error names only the failed category', async () => {
+    // Section 1 — Pipeline Stages GET fails (whole section aborts before any write)
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Section 2 — Lead custom fields GET (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 3 — Deal custom fields GET (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 4 — Partner custom fields GET (empty → no writes)
+    mockFetchSuccess([]);
+
+    const settings = {
+      deal_stages: [{ id: 'st-x', name: 'X', type: 'OPEN' }],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      partner_custom_fields: [],
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    await expect(crmService.updateSettings(settings)).rejects.toThrow('Failed to save: Pipeline Stages');
+
+    // Isolation: the remaining categories were still attempted despite the pipeline failure
+    const urls = fetchMock.mock.calls.map(([url]: any[]) => String(url));
+    expect(urls.some(u => u.includes('custom-fields?entity_type=LEAD'))).toBe(true);
+    expect(urls.some(u => u.includes('custom-fields?entity_type=DEAL'))).toBe(true);
+    expect(urls.some(u => u.includes('custom-fields?entity_type=PARTNER'))).toBe(true);
+  });
+
+  it('Given a Custom Fields category fails / When updateSettings runs / Then the error names that category and later categories still run', async () => {
+    // Section 1 — Pipeline Stages GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 2 — Lead custom fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 3 — Deal custom fields GET fails
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Section 4 — Partner custom fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+
+    const settings = {
+      deal_stages: [],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      partner_custom_fields: [],
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    await expect(crmService.updateSettings(settings)).rejects.toThrow('Failed to save: Deal Fields');
+
+    // The category after the failing one still ran
+    const urls = fetchMock.mock.calls.map(([url]: any[]) => String(url));
+    expect(urls.some(u => u.includes('custom-fields?entity_type=PARTNER'))).toBe(true);
+  });
+
+  it('Given multiple categories fail / When updateSettings runs / Then the error lists every failed category', async () => {
+    // Pipeline GET fails
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Lead fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+    // Deal fields GET fails
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Partner fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+
+    const settings = {
+      deal_stages: [],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      partner_custom_fields: [],
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    await expect(crmService.updateSettings(settings)).rejects.toThrow('Failed to save: Pipeline Stages, Deal Fields');
+  });
+
+  it('Given partner_custom_fields is undefined / When updateSettings runs / Then it defaults to an empty list without error', async () => {
+    // All four section GETs succeed (empty → no writes)
+    mockFetchSuccess([]); // pipeline
+    mockFetchSuccess([]); // lead fields
+    mockFetchSuccess([]); // deal fields
+    mockFetchSuccess([]); // partner fields
+
+    const settings = {
+      deal_stages: [],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      // partner_custom_fields intentionally omitted
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    const result = await crmService.updateSettings(settings);
+    expect(result).toBe(settings);
   });
 
   it('When action / Then getNotesByLeadId delegates to notesApi.getAllByLead', async () => {

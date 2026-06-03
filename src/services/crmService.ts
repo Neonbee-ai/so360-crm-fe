@@ -1314,14 +1314,16 @@ export const crmService = {
     },
 
     updateSettings: async (settings: CRMSettings): Promise<CRMSettings> => {
-        console.log('crmService.updateSettings called', settings);
+        // Each settings category is saved independently so a failure in one (e.g. an
+        // API error in Custom Fields) cannot abort the others. Lead stages are NOT
+        // written here — they are owned by the Flow module and surfaced read-only.
+        const failures: string[] = [];
+
+        // 1. Pipeline (Deal) Stages
         try {
-            console.log('Syncing pipeline stages...');
             const currentStages = await apiClient.get<any[]>('/settings/pipeline-stages');
-            console.log('Current stages from server:', currentStages);
             const newStages = settings.deal_stages;
 
-            // Identify changes
             const stagesToCreate = newStages.filter(s => s.id.startsWith('st-'));
             const stagesToUpdate = newStages.filter(s => !s.id.startsWith('st-'));
             const stagesToDelete = currentStages.filter(cs => !newStages.find(ns => ns.id === cs.id));
@@ -1340,23 +1342,13 @@ export const crmService = {
                 })),
                 ...stagesToDelete.map(s => apiClient.delete(`/settings/pipeline-stages/${s.id}`))
             ]);
+        } catch (error) {
+            console.error('[CRM] Failed to save Pipeline Stages', error);
+            failures.push('Pipeline Stages');
+        }
 
-            // 1.b Sync Lead Stages
-            console.log('Syncing lead stages...');
-            const currentLeadStages = await apiClient.get<any[]>('/settings/lead-stages');
-            const newLeadStages = settings.lead_stages;
-
-            const lsToCreate = newLeadStages.filter(s => s.id.startsWith('st-'));
-            const lsToUpdate = newLeadStages.filter(s => !s.id.startsWith('st-'));
-            const lsToDelete = currentLeadStages.filter(cs => !newLeadStages.find(ns => ns.id === cs.id));
-
-            await Promise.all([
-                ...lsToCreate.map(s => apiClient.post('/settings/lead-stages', { name: s.name, order: newLeadStages.indexOf(s) + 1, color: '#3b82f6' })),
-                ...lsToUpdate.map(s => apiClient.patch(`/settings/lead-stages/${s.id}`, { name: s.name, order: newLeadStages.indexOf(s) + 1 })),
-                ...lsToDelete.map(s => apiClient.delete(`/settings/lead-stages/${s.id}`))
-            ]);
-
-            // 2. Sync Custom Fields (Lead)
+        // 2. Custom Fields (Lead)
+        try {
             const currentLeadFields = await apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD');
             const newLeadFields = settings.lead_custom_fields;
 
@@ -1378,8 +1370,13 @@ export const crmService = {
                 })),
                 ...lfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
             ]);
+        } catch (error) {
+            console.error('[CRM] Failed to save Lead Fields', error);
+            failures.push('Lead Fields');
+        }
 
-            // 3. Sync Custom Fields (Deal)
+        // 3. Custom Fields (Deal)
+        try {
             const currentDealFields = await apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL');
             const newDealFields = settings.deal_custom_fields;
 
@@ -1401,8 +1398,13 @@ export const crmService = {
                 })),
                 ...dfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
             ]);
+        } catch (error) {
+            console.error('[CRM] Failed to save Deal Fields', error);
+            failures.push('Deal Fields');
+        }
 
-            // 4. Sync Custom Fields (Partner)
+        // 4. Custom Fields (Partner)
+        try {
             const currentPartnerFields = await apiClient.get<any[]>('/settings/custom-fields?entity_type=PARTNER');
             const newPartnerFields = settings.partner_custom_fields || [];
 
@@ -1426,12 +1428,16 @@ export const crmService = {
                 })),
                 ...pfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
             ]);
-
-            return settings;
         } catch (error) {
-            console.error('Failed to update settings', error);
-            throw error;
+            console.error('[CRM] Failed to save Partner Fields', error);
+            failures.push('Partner Fields');
         }
+
+        if (failures.length > 0) {
+            throw new Error(`Failed to save: ${failures.join(', ')}`);
+        }
+
+        return settings;
     },
 
     // Notes
