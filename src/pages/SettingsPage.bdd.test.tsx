@@ -151,8 +151,10 @@ describe('SettingsPage BDD', () => {
 
       await user.click(screen.getByRole('button', { name: /lead stages/i }));
       await waitFor(() => {
-        expect(screen.getByDisplayValue('New Lead')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Contacted')).toBeInTheDocument();
+        // Lead stages are read-only (owned by the Flow module) — rendered as text, not inputs
+        expect(screen.getByText('New Lead')).toBeInTheDocument();
+        expect(screen.getByText('Contacted')).toBeInTheDocument();
+        expect(screen.getByText(/managed in the flow module/i)).toBeInTheDocument();
       });
     });
 
@@ -261,7 +263,7 @@ describe('SettingsPage BDD', () => {
       });
     });
 
-    it('When save fails / Then shows error toast', async () => {
+    it('When save fails with an Error / Then surfaces the actual error message', async () => {
       mockUpdateSettings.mockRejectedValue(new Error('Server error'));
       const user = userEvent.setup();
       render(<SettingsPage />);
@@ -269,7 +271,7 @@ describe('SettingsPage BDD', () => {
 
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
       await waitFor(() => {
-        expect(mockShowError).toHaveBeenCalledWith('Error saving settings.');
+        expect(mockShowError).toHaveBeenCalledWith('Server error');
       });
     });
 
