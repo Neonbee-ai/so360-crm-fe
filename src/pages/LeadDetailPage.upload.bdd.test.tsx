@@ -72,8 +72,10 @@ vi.mock('../utils/formatters', () => ({
     useCRMFormatters: () => ({
         formatCurrency: (v: number) => `$${v}`,
         formatDate: (d: string) => d,
+        formatDateTime: (d: string) => d,
         formatPhone: (p: string) => p,
     }),
+    useCRMCurrencySymbol: () => '$',
 }));
 
 const mockShowError = vi.fn();
