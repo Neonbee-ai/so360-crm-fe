@@ -8,7 +8,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, FileSignature
+    File, Download, UploadCloud, FileIcon, Eye, FileSignature, Package
 } from 'lucide-react';
 import SignRequestModal from '../components/sign/SignRequestModal';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
@@ -21,8 +21,9 @@ import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
+import LeadProductsTab from './components/LeadProductsTab';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products';
 
 interface TimelineEvent {
     id: string;
@@ -75,6 +76,8 @@ const LeadDetailPage = () => {
     const [partners, setPartners] = useState<Lead[]>([]);
     const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
     const [signOpen, setSignOpen] = useState(false);
+    const [productCount, setProductCount] = useState(0);
+    const [productValue, setProductValue] = useState(0);
 
     const fetchLeadData = useCallback(async () => {
         try {
@@ -618,6 +621,9 @@ const LeadDetailPage = () => {
                             <button onClick={() => setActiveTab('documents')} className={tabCls('documents')}>
                                 <File size={14} /> Documents ({lead.documents?.length || 0})
                             </button>
+                            <button onClick={() => setActiveTab('products')} className={tabCls('products')}>
+                                <Package size={14} /> Products {productCount > 0 ? `(${productCount})` : ''}
+                            </button>
                         </div>
 
                         <div className="p-6">
@@ -1031,6 +1037,16 @@ const LeadDetailPage = () => {
                                 </div>
                             )}
 
+                            {activeTab === 'products' && lead && (
+                                <LeadProductsTab
+                                    leadId={lead.id}
+                                    onStatsChange={(count, value) => {
+                                        setProductCount(count);
+                                        setProductValue(value);
+                                    }}
+                                />
+                            )}
+
                         </div>
                     </div>
 
@@ -1392,6 +1408,18 @@ const LeadDetailPage = () => {
                                     <span className="text-sm font-black text-slate-50">{formatters.formatCurrency(totalValue)}</span>
                                 </div>
                             </div>
+                            {productCount > 0 && (
+                                <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
+                                    <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Products Interested</span>
+                                        <span className="text-sm font-black text-blue-400">{productCount}</span>
+                                    </div>
+                                    <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Est. Revenue</span>
+                                        <span className="text-sm font-black text-emerald-400">{formatters.formatCurrency(productValue)}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </section>
 

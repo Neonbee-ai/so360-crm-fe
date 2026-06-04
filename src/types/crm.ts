@@ -274,3 +274,38 @@ export interface QuoteFilters {
     customer_id?: string;
 }
 
+// ─── Lead / Deal Products ─────────────────────────────────────────────────────
+
+export type ProductInterestStatus = 'interested' | 'quoted' | 'approved' | 'ordered' | 'cancelled';
+
+export interface LeadProduct {
+    id: string;
+    lead_id: string;
+    item_id: string;
+    item_name: string;
+    item_sku?: string;
+    category_name?: string;
+    quantity: number;
+    unit_price: number;
+    status: ProductInterestStatus;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface DealProduct {
+    id: string;
+    deal_id: string;
+    lead_product_id?: string;
+    item_id: string;
+    item_name: string;
+    item_sku?: string;
+    category_name?: string;
+    quantity: number;
+    unit_price: number;
+    status: ProductInterestStatus;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+

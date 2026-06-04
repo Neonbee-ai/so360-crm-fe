@@ -8,6 +8,7 @@ import {
     ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature
 } from 'lucide-react';
 import SignRequestModal from '../components/sign/SignRequestModal';
+import DealProductsTab from './components/DealProductsTab';
 import { CrossLinkChip } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -17,7 +18,7 @@ import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products';
 
 const DealDetailPage = () => {
     const formatters = useCRMFormatters();
@@ -650,6 +651,7 @@ const DealDetailPage = () => {
                                 { id: 'notes', name: 'Notes', icon: FileText },
                                 { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
                                 { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
+                                { id: 'products', name: 'Products', icon: Briefcase },
                                 { id: 'custom', name: 'Additional Info', icon: Tag }
                             ].map(tab => (
                                 <button
@@ -921,6 +923,13 @@ const DealDetailPage = () => {
                                         ))
                                     )}
                                 </div>
+                            )}
+
+                            {activeTab === 'products' && (
+                                <DealProductsTab
+                                    dealId={deal.id}
+                                    leadId={deal.lead_id}
+                                />
                             )}
                         </div>
                     </div>

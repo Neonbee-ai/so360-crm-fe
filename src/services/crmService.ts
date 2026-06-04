@@ -1,4 +1,4 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct } from '../types/crm';
 
 export interface TimelineEvent {
     id: string;
@@ -1938,6 +1938,63 @@ export const crmService = {
             return orders.length > 0 ? orders[0] : null;
         } catch {
             return null;
+        }
+    },
+
+    // ─── Lead Products ────────────────────────────────────────────────────────
+
+    getLeadProducts: async (leadId: string): Promise<LeadProduct[]> => {
+        return apiClient.get<LeadProduct[]>(`/leads/${leadId}/products`);
+    },
+
+    addLeadProduct: async (leadId: string, data: {
+        item_id: string; item_name: string; item_sku?: string; category_name?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string;
+    }): Promise<LeadProduct> => {
+        return apiClient.post<LeadProduct>(`/leads/${leadId}/products`, data);
+    },
+
+    updateLeadProduct: async (leadId: string, productId: string, data: {
+        quantity?: number; unit_price?: number; status?: string; notes?: string;
+    }): Promise<LeadProduct> => {
+        return apiClient.patch<LeadProduct>(`/leads/${leadId}/products/${productId}`, data);
+    },
+
+    removeLeadProduct: async (leadId: string, productId: string): Promise<{ deleted: boolean }> => {
+        return apiClient.delete<{ deleted: boolean }>(`/leads/${leadId}/products/${productId}`);
+    },
+
+    // ─── Deal Products ────────────────────────────────────────────────────────
+
+    getDealProducts: async (dealId: string): Promise<DealProduct[]> => {
+        return apiClient.get<DealProduct[]>(`/deals/${dealId}/products`);
+    },
+
+    addDealProduct: async (dealId: string, data: {
+        item_id: string; item_name: string; item_sku?: string; category_name?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
+    }): Promise<DealProduct> => {
+        return apiClient.post<DealProduct>(`/deals/${dealId}/products`, data);
+    },
+
+    updateDealProduct: async (dealId: string, productId: string, data: {
+        quantity?: number; unit_price?: number; status?: string; notes?: string;
+    }): Promise<DealProduct> => {
+        return apiClient.patch<DealProduct>(`/deals/${dealId}/products/${productId}`, data);
+    },
+
+    removeDealProduct: async (dealId: string, productId: string): Promise<{ deleted: boolean }> => {
+        return apiClient.delete<{ deleted: boolean }>(`/deals/${dealId}/products/${productId}`);
+    },
+
+    // ─── Deals by Project ─────────────────────────────────────────────────────
+
+    getDealsByProjectId: async (projectId: string): Promise<Deal[]> => {
+        try {
+            const result = await apiClient.get<any>(`/deals`, { project_id: projectId });
+            return Array.isArray(result) ? result : (result?.data || []);
+        } catch {
+            return [];
         }
     },
 
