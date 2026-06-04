@@ -10,6 +10,9 @@ vi.mock('@so360/formatters', () => ({
     useFormatters: vi.fn((config: any) => ({
         formatCurrency: (v: number) => `${config.currency}${v.toFixed(2)}`,
         formatDate: (d: string) => `[${config.timezone}]${d}`,
+        formatDateTime: (d: string) => `[${config.timezone}]${d}`,
+        formatNumber: (n: number) => String(n),
+        formatPercent: (n: number) => `${n}%`,
     })),
 }));
 
