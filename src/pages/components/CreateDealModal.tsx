@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, DollarSign, Briefcase, Calendar, ChevronDown } from 'lucide-react';
+import { X, Loader2, Briefcase, Calendar, ChevronDown } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
 import { useActivity, usePeople } from '@so360/shell-context';
+import { useCRMCurrencySymbol } from '../../utils/formatters';
 
 interface CreateDealModalProps {
     leadId?: string;
@@ -17,6 +18,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     const { toasts, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { people } = usePeople();
+    const currencySymbol = useCRMCurrencySymbol();
     const [name, setName] = useState(companyName ? `${companyName} Deal` : '');
     const [value, setValue] = useState<string>('');
     const [stage, setStage] = useState<DealStage>('Lead');
@@ -102,12 +104,12 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Value</label>
                                 <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold select-none pointer-events-none">{currencySymbol}</span>
                                     <input
                                         type="number"
                                         value={value}
                                         onChange={(e) => setValue(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                         required
                                         min="0"
                                     />

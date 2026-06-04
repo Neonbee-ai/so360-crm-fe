@@ -6,6 +6,8 @@ const mockGetUsers = vi.fn();
 const mockGetSettings = vi.fn();
 const mockCreateDeal = vi.fn();
 const mockRecordActivity = vi.fn();
+const mockUseBusinessSettings = vi.fn();
+const mockShowError = vi.fn();
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
@@ -19,20 +21,22 @@ vi.mock('../../services/crmService', () => ({
 
 vi.mock('../../components/common/Toast', () => ({
   ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showError: vi.fn(), dismissToast: vi.fn() }),
+  useToast: () => ({ toasts: [], showError: (...a: any[]) => mockShowError(...a), dismissToast: vi.fn() }),
 }));
 
 vi.mock('@so360/shell-context', () => ({
-  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
+  useBusinessSettings: (...a: any[]) => mockUseBusinessSettings(...a),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
   usePeople: () => ({ people: [] }),
-
-  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+}));
 
 import CreateDealModal from './CreateDealModal';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockShowError.mockReset();
+  mockUseBusinessSettings.mockReturnValue({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } });
   mockGetUsers.mockResolvedValue([
     { id: 'u1', full_name: 'Alice Rep', email: 'alice@test.com' },
     { id: 'u2', full_name: 'Bob Manager', email: 'bob@test.com' },
@@ -121,6 +125,98 @@ describe('CreateDealModal', () => {
         expect(mockCreateDeal).toHaveBeenCalledWith(
           expect.objectContaining({ value: 15000 }),
         );
+      });
+    });
+  });
+
+  describe('Given the value field currency symbol', () => {
+    it('When base_currency is USD / Then shows $ text symbol (not a DollarSign SVG icon)', () => {
+      render(<CreateDealModal {...defaultProps} />);
+      expect(screen.getByText('$')).toBeInTheDocument();
+    });
+
+    it('When base_currency is INR / Then shows ₹ symbol instead of $', () => {
+      mockUseBusinessSettings.mockReturnValue({ settings: { base_currency: 'INR', document_language: 'en-IN', timezone: 'Asia/Kolkata' } });
+      render(<CreateDealModal {...defaultProps} />);
+      expect(screen.queryByText('$')).not.toBeInTheDocument();
+      const hasInrSymbol = screen.queryByText('₹') !== null || screen.queryByText('INR') !== null;
+      expect(hasInrSymbol).toBe(true);
+    });
+
+    it('When base_currency is AED / Then shows AED symbol instead of $', () => {
+      mockUseBusinessSettings.mockReturnValue({ settings: { base_currency: 'AED', document_language: 'ar-AE', timezone: 'Asia/Dubai' } });
+      render(<CreateDealModal {...defaultProps} />);
+      expect(screen.queryByText('$')).not.toBeInTheDocument();
+      const hasAedSymbol = screen.queryByText('AED') !== null || screen.queryByText('د.إ') !== null;
+      expect(hasAedSymbol).toBe(true);
+    });
+
+    it('When base_currency is missing / Then falls back to $ symbol', () => {
+      mockUseBusinessSettings.mockReturnValue({ settings: null });
+      render(<CreateDealModal {...defaultProps} />);
+      expect(screen.getByText('$')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given no company name is provided', () => {
+    it('When rendered without companyName / Then deal name field starts empty', () => {
+      render(<CreateDealModal leadId="lead-1" leadName="John" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      const nameInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+      expect(nameInput.value).toBe('');
+    });
+  });
+
+  describe('Given the API call fails during submit', () => {
+    it('When dealsApi.create rejects / Then showError is called with the failure message', async () => {
+      mockCreateDeal.mockRejectedValueOnce(new Error('Network error'));
+      render(<CreateDealModal {...defaultProps} />);
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        expect(mockShowError).toHaveBeenCalledWith('Failed to create deal');
+      });
+    });
+  });
+
+  describe('Given optional date and owner fields are filled', () => {
+    it('When start date and close date are set / Then they are included in the create payload', async () => {
+      render(<CreateDealModal {...defaultProps} />);
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      fireEvent.change(dateInputs[0], { target: { value: '2025-06-01' } });
+      fireEvent.change(dateInputs[1], { target: { value: '2025-09-30' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        expect(mockCreateDeal).toHaveBeenCalledWith(
+          expect.objectContaining({
+            start_date: expect.any(String),
+            expected_close: expect.any(String),
+          }),
+        );
+      });
+    });
+  });
+
+  describe('Given no leadId is provided', () => {
+    it('When submitted / Then lead_id is undefined in the create payload', async () => {
+      render(<CreateDealModal companyName="Acme" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        expect(mockCreateDeal).toHaveBeenCalledWith(
+          expect.objectContaining({ lead_id: undefined }),
+        );
+      });
+    });
+  });
+
+  describe('Given empty deal stages are returned', () => {
+    it('When settings has no deal stages / Then stage select renders empty and submit still works', async () => {
+      mockGetSettings.mockResolvedValueOnce({
+        deal_stages: [],
+        lead_stages: [], lead_custom_fields: [], deal_custom_fields: [], lead_sources: [], lead_scoring: [], default_owner_id: 'u1',
+      });
+      render(<CreateDealModal {...defaultProps} />);
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        expect(mockCreateDeal).toHaveBeenCalled();
       });
     });
   });

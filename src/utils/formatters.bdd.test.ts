@@ -74,8 +74,24 @@ describe('useCRMCurrencySymbol', () => {
         });
     });
 
+    describe('Given org base_currency is INR', () => {
+        it('When called / Then returns the ₹ symbol (or INR code when Intl lacks full ICU)', () => {
+            mockUseBusinessSettings.mockReturnValue({ settings: { base_currency: 'INR' } });
+            const { result } = renderHook(() => useCRMCurrencySymbol());
+            expect(['₹', 'INR']).toContain(result.current);
+        });
+    });
+
+    describe('Given org base_currency is EUR', () => {
+        it('When called / Then returns the € symbol (or EUR code when Intl lacks full ICU)', () => {
+            mockUseBusinessSettings.mockReturnValue({ settings: { base_currency: 'EUR' } });
+            const { result } = renderHook(() => useCRMCurrencySymbol());
+            expect(['€', 'EUR']).toContain(result.current);
+        });
+    });
+
     describe('Given org base_currency is AED', () => {
-        it('When called / Then returns the AED symbol', () => {
+        it('When called / Then returns a non-empty symbol string', () => {
             mockUseBusinessSettings.mockReturnValue({ settings: { base_currency: 'AED' } });
             const { result } = renderHook(() => useCRMCurrencySymbol());
             expect(result.current).toBeTruthy();
@@ -95,6 +111,15 @@ describe('useCRMCurrencySymbol', () => {
             mockUseBusinessSettings.mockReturnValue({ settings: {} });
             const { result } = renderHook(() => useCRMCurrencySymbol());
             expect(result.current).toBe('$');
+        });
+    });
+
+    describe('Given base_currency is an unrecognized code', () => {
+        it('When Intl throws a RangeError / Then catch returns the raw currency code', () => {
+            // An invalid ISO 4217 code causes Intl.NumberFormat to throw — exercises the catch branch
+            mockUseBusinessSettings.mockReturnValue({ settings: { base_currency: 'FAKE_CODE' } });
+            const { result } = renderHook(() => useCRMCurrencySymbol());
+            expect(result.current).toBe('FAKE_CODE');
         });
     });
 });
