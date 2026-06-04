@@ -87,6 +87,27 @@ vi.mock('../components/DealLifecycleStepper', () => ({
   DealLifecycleStepper: ({ currentState }: any) => <div data-testid="lifecycle-stepper">{currentState}</div>,
 }));
 
+// formatters mock uses real Intl so date assertions like 'Jan 20, 2025' work correctly
+vi.mock('../utils/formatters', () => ({
+  useCRMFormatters: () => ({
+    formatCurrency: (v: number) => `$${v}`,
+    formatDate: (d: string) => {
+      if (!d) return d;
+      try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); }
+      catch { return d; }
+    },
+    formatDateTime: (d: string) => {
+      if (!d) return d;
+      try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); }
+      catch { return d; }
+    },
+    formatPhone: (p: string) => p,
+    formatNumber: (n: number) => String(n),
+    formatPercent: (n: number) => `${n}%`,
+  }),
+  useCRMCurrencySymbol: () => '$',
+}));
+
 import DealDetailPage from './DealDetailPage';
 
 const owner = { id: 'u1', full_name: 'Test Owner', email: 'owner@test.com', avatar_url: null };
