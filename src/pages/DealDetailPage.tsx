@@ -5,8 +5,9 @@ import {
     ChevronLeft, Calendar, DollarSign, Clock, MessageSquare,
     AtSign, Phone, FileText, Plus, CheckCircle2, User as UserIcon, Users,
     Tag, Edit2, Trash2, X, Download, UploadCloud, FileIcon, File,
-    ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap
+    ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature
 } from 'lucide-react';
+import SignRequestModal from '../components/sign/SignRequestModal';
 import { CrossLinkChip } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -58,6 +59,7 @@ const DealDetailPage = () => {
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [signOpen, setSignOpen] = useState(false);
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
         title: string;
@@ -502,6 +504,13 @@ const DealDetailPage = () => {
                             className="bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-400 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700 hover:border-red-500/50"
                         >
                             <Trash2 size={14} /> Delete
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSignOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
+                        >
+                            <FileSignature size={14} /> Request Signature
                         </button>
                         {FEATURES.DEAL_INVOICE_REQUEST && (
                             <button
@@ -1109,6 +1118,17 @@ const DealDetailPage = () => {
                     </section>
                 </div>
             </div>
+
+            {/* Sign Request Modal */}
+            {signOpen && (
+                <SignRequestModal
+                    onClose={() => setSignOpen(false)}
+                    prefillName={associatedLead?.contact_name ?? ''}
+                    prefillEmail={associatedLead?.contact_email ?? deal?.contact_email ?? ''}
+                    sourceModel="crm.deal"
+                    sourceId={deal?.id ?? id ?? ''}
+                />
+            )}
 
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (

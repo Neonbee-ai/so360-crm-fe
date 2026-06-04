@@ -8,8 +8,9 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye
+    File, Download, UploadCloud, FileIcon, Eye, FileSignature
 } from 'lucide-react';
+import SignRequestModal from '../components/sign/SignRequestModal';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
@@ -73,6 +74,7 @@ const LeadDetailPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [partners, setPartners] = useState<Lead[]>([]);
     const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
+    const [signOpen, setSignOpen] = useState(false);
 
     const fetchLeadData = useCallback(async () => {
         try {
@@ -364,6 +366,13 @@ const LeadDetailPage = () => {
                         >
                             <Trash2 size={16} />
                             Delete
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSignOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
+                        >
+                            <FileSignature size={16} /> Request Signature
                         </button>
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
@@ -1454,6 +1463,17 @@ const LeadDetailPage = () => {
                     />
                 )
             }
+
+            {/* Sign Request Modal */}
+            {signOpen && (
+                <SignRequestModal
+                    onClose={() => setSignOpen(false)}
+                    prefillName={lead?.contact_name ?? ''}
+                    prefillEmail={lead?.contact_email ?? ''}
+                    sourceModel="crm.lead"
+                    sourceId={lead?.id ?? id ?? ''}
+                />
+            )}
 
             {/* Delete Lead Confirmation Modal */}
             {showDeleteConfirm && createPortal(

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, CreditCard, Shield, CheckCircle2, AlertCircle, Loader2, Tag, ShoppingCart, Users, MapPin, Pencil, Save, X } from 'lucide-react';
+import { Building2, CreditCard, Shield, CheckCircle2, AlertCircle, Loader2, Tag, ShoppingCart, Users, MapPin, Pencil, Save, X, FileSignature } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
+import SignRequestModal from './sign/SignRequestModal';
 
 interface Partner {
     id: string;
@@ -73,6 +74,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
     const formatters = useCRMFormatters();
     const [taxIdInput, setTaxIdInput] = useState(lead.tax_id || '');
     const [creditLimitInput, setCreditLimitInput] = useState(String(lead.credit_limit || 0));
+    const [signOpen, setSignOpen] = useState(false);
     const [isValidatingTax, setIsValidatingTax] = useState(false);
     const [isSavingCredit, setIsSavingCredit] = useState(false);
     const [taxError, setTaxError] = useState<string | null>(null);
@@ -307,6 +309,26 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     </div>
                 </>
             )}
+
+            {/* ─── Request Signature ─── */}
+            <div className="border-t border-slate-800 pt-4">
+                <button
+                    type="button"
+                    onClick={() => setSignOpen(true)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+                >
+                    <FileSignature size={14} /> Request Signature
+                </button>
+                {signOpen && (
+                    <SignRequestModal
+                        onClose={() => setSignOpen(false)}
+                        prefillName={lead?.contact_name ?? ''}
+                        prefillEmail={lead?.contact_email ?? ''}
+                        sourceModel="crm.customer"
+                        sourceId={lead?.id ?? ''}
+                    />
+                )}
+            </div>
 
             {/* ─── Business Information (canonical Core partners row) ─── */}
             <div className="border-t border-slate-800 pt-4">
