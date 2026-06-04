@@ -35,6 +35,10 @@ vi.mock('lucide-react', () => ({
   Save:          () => <span data-testid="icon-save" />,
   X:             () => <span data-testid="icon-x" />,
   Users:         () => <span data-testid="icon-users" />,
+  FileSignature: () => <span data-testid="icon-file-signature" />,
+  DollarSign:    () => <span data-testid="icon-dollar-sign" />,
+  FileText:      () => <span data-testid="icon-file-text" />,
+  Globe:         () => <span data-testid="icon-globe" />,
 }));
 
 // ── crmService mock ────────────────────────────────────────────────────────────
