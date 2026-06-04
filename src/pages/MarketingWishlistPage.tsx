@@ -4,10 +4,12 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { Link } from 'react-router-dom';
+import { useCRMFormatters } from '../utils/formatters';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingWishlistPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -126,7 +128,7 @@ const MarketingWishlistPage: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="w-3 h-3 text-slate-600" />
-                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Added {new Date(item.added_at).toLocaleDateString()}</span>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Added {formatters.formatDate(item.added_at)}</span>
                           </div>
                         </div>
                       </div>

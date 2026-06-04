@@ -4,10 +4,12 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { useShellBridge } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingNewsletterPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const shell = useShellBridge();
   const canCreateMarketing = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
@@ -161,7 +163,7 @@ const MarketingNewsletterPage: React.FC = () => {
                               {s.unsubscribed_at ? 'Unsubscribed' : 'Active'}
                             </span>
                             <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">• {s.source || 'Manual'}</span>
-                            <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">• Subscribed {new Date(s.subscribed_at).toLocaleDateString()}</span>
+                            <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">• Subscribed {formatters.formatDate(s.subscribed_at)}</span>
                           </div>
                         </div>
                       </div>

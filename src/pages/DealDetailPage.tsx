@@ -492,7 +492,7 @@ const DealDetailPage = () => {
                             {deal.expected_close_date && (
                                 <>
                                     <span className="w-1 h-1 bg-slate-700 rounded-full" />
-                                    <span className="text-xs">Closing: {new Date(deal.expected_close_date).toLocaleDateString()}</span>
+                                    <span className="text-xs">Closing: {formatters.formatDate(deal.expected_close_date)}</span>
                                 </>
                             )}
                         </p>
@@ -635,7 +635,7 @@ const DealDetailPage = () => {
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Activity</span>
                                     <p className="text-sm font-bold text-slate-300 flex items-center gap-1.5">
                                         <Clock size={16} className="text-slate-500" />
-                                        {deal.last_activity_at ? new Date(deal.last_activity_at).toLocaleDateString() : 'None'}
+                                        {deal.last_activity_at ? formatters.formatDate(deal.last_activity_at) : 'None'}
                                     </p>
                                 </div>
                             </div>
@@ -722,7 +722,7 @@ const DealDetailPage = () => {
                                                                 </div>
                                                             )}
                                                             <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                {new Date(ev.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                {formatters.formatDateTime(ev.date)}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -772,7 +772,7 @@ const DealDetailPage = () => {
                                                 <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                    <span className="text-[10px] text-slate-600 font-bold">{new Date(note.created_at).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] text-slate-600 font-bold">{formatters.formatDate(note.created_at)}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -830,7 +830,7 @@ const DealDetailPage = () => {
                                                         </div>
                                                         <div className="flex items-center gap-4 mt-3 text-[10px] font-black text-slate-500 uppercase tracking-widest pt-2 border-t border-slate-800/50">
                                                             <span className="flex items-center gap-1 text-rose-400/70">
-                                                                <Clock size={10} /> Due {new Date(task.due_date).toLocaleDateString()}
+                                                                <Clock size={10} /> Due {formatters.formatDate(task.due_date)}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -914,7 +914,7 @@ const DealDetailPage = () => {
                                                     {field.type === 'boolean'
                                                         ? (deal.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                         : field.type === 'date' && deal.custom_fields?.[field.id]
-                                                            ? new Date(deal.custom_fields[field.id]).toLocaleDateString()
+                                                            ? formatters.formatDate(deal.custom_fields[field.id])
                                                             : deal.custom_fields?.[field.id] || '—'}
                                                 </p>
                                             </div>
@@ -1034,7 +1034,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Due Date</span>
                                         <span className="text-[10px] font-bold text-slate-300">
-                                            {new Date(invoiceStatus.due_date).toLocaleDateString()}
+                                            {formatters.formatDate(invoiceStatus.due_date)}
                                         </span>
                                     </div>
                                 )}
@@ -1086,13 +1086,13 @@ const DealDetailPage = () => {
                                             {lastEvent.location && (
                                                 <p className="text-[10px] text-slate-500 mt-0.5">{lastEvent.location}</p>
                                             )}
-                                            <p className="text-[9px] text-slate-600 mt-1">{new Date(lastEvent.occurred_at || lastEvent.created_at).toLocaleString()}</p>
+                                            <p className="text-[9px] text-slate-600 mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
                                         </div>
                                     )}
                                     {fo.estimated_delivery_at && (
                                         <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
                                             <span className="text-[10px] font-black text-slate-500 uppercase">ETA</span>
-                                            <span className="text-[10px] font-bold text-slate-300">{new Date(fo.estimated_delivery_at).toLocaleDateString()}</span>
+                                            <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(fo.estimated_delivery_at)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -1108,7 +1108,7 @@ const DealDetailPage = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
                                 <span className="text-[10px] font-black text-slate-500 uppercase">Created On</span>
-                                <span className="text-[10px] font-bold text-slate-300">{new Date(deal.created_at).toLocaleDateString()}</span>
+                                <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(deal.created_at)}</span>
                             </div>
                             <div className="flex justify-between items-center py-2">
                                 <span className="text-[10px] font-black text-slate-500 uppercase">Last Sync</span>

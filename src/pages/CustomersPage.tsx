@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
 
@@ -26,6 +27,7 @@ const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }
 const CustomersPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const formatters = useCRMFormatters();
     const shell = useShellBridge();
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 
@@ -298,7 +300,7 @@ const CustomersPage = () => {
             accessor: (c: any) => (
                 <span className="text-slate-400 text-sm flex items-center gap-1.5">
                     <Calendar size={14} />
-                    {new Date(c.created_at).toLocaleDateString()}
+                    {formatters.formatDate(c.created_at)}
                 </span>
             ),
         },

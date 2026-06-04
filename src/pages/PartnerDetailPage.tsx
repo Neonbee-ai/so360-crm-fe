@@ -103,6 +103,7 @@ const PartnerDetailPage = () => {
     const formatters = useFormatters({
         currency: settings?.base_currency || 'USD',
         locale: settings?.document_language || 'en-US',
+        timezone: settings?.timezone || 'UTC',
     });
 
     const fetchData = useCallback(async () => {
@@ -502,7 +503,7 @@ const PartnerDetailPage = () => {
                                                             {deal.stage?.name || deal.status || '-'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 text-slate-400">{deal.won_at ? new Date(deal.won_at).toLocaleDateString() : '-'}</td>
+                                                    <td className="px-4 py-3 text-slate-400">{deal.won_at ? formatters.formatDate(deal.won_at) : '-'}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -622,7 +623,7 @@ const PartnerDetailPage = () => {
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm text-slate-50 font-medium">{a.type || 'Activity'}</p>
                                     <p className="text-sm text-slate-400 mt-0.5">{a.notes || '-'}</p>
-                                    <p className="text-xs text-slate-600 mt-1">{a.created_at ? new Date(a.created_at).toLocaleString() : ''}</p>
+                                    <p className="text-xs text-slate-600 mt-1">{a.created_at ? formatters.formatDateTime(a.created_at) : ''}</p>
                                 </div>
                             </div>
                         ))

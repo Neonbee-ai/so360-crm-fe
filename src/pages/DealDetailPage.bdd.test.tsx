@@ -240,11 +240,11 @@ describe('DealDetailPage', () => {
       });
     });
 
-    it('When the page loads / Then shows last activity date', async () => {
+    it('When the page loads / Then shows last activity date formatted in business timezone', async () => {
       render(<DealDetailPage />);
       await waitFor(() => {
-        const dateStr = new Date('2025-01-20T10:00:00Z').toLocaleDateString();
-        expect(screen.getByText(dateStr)).toBeInTheDocument();
+        // formatters.formatDate with UTC timezone and en-US locale renders 'Jan 20, 2025'
+        expect(screen.getByText('Jan 20, 2025')).toBeInTheDocument();
       });
     });
 
@@ -657,11 +657,11 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given deal with expected close date', () => {
-    it('When deal has expected_close_date / Then shows Closing date', async () => {
+    it('When deal has expected_close_date / Then shows Closing date formatted in business timezone', async () => {
       render(<DealDetailPage />);
       await waitFor(() => {
-        const dateText = new Date('2025-06-30').toLocaleDateString();
-        expect(screen.getByText(new RegExp(`Closing: ${dateText}`))).toBeInTheDocument();
+        // formatters.formatDate with UTC timezone and en-US locale renders 'Jun 30, 2025'
+        expect(screen.getByText(/Closing: Jun 30, 2025/)).toBeInTheDocument();
       });
     });
   });

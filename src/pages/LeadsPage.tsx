@@ -6,6 +6,7 @@ import { Lead, User } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { QuotaBar, QuotaGate } from '@so360/design-system';
 
 type SortField = 'company_name' | 'contact_name' | 'status' | 'created_at' | 'owner';
@@ -14,6 +15,7 @@ type SortDirection = 'asc' | 'desc' | null;
 const LeadsPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const formatters = useCRMFormatters();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
@@ -342,7 +344,7 @@ const LeadsPage = () => {
                     <span className="text-slate-300 text-xs font-medium">{lead.creator?.full_name || 'Unknown'}</span>
                     <span className="text-slate-500 text-[10px] flex items-center gap-1">
                         <Calendar size={10} />
-                        {new Date(lead.created_at).toLocaleDateString()}
+                        {formatters.formatDate(lead.created_at)}
                     </span>
                 </div>
             )

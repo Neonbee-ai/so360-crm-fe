@@ -11,10 +11,12 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const formatters = useCRMFormatters();
     const shell = useContext(ShellContext) as any;
     const currentUserId = shell?.user?.id;
     const { recordActivity } = useActivity();
@@ -96,7 +98,7 @@ const TaskDetailPage = () => {
             await crmService.updateTask(task.id, { due_date: date });
             setTask({ ...task, due_date: date });
             setIsRescheduling(false);
-            recordActivity({ eventType: 'task.rescheduled', eventCategory: 'crm', description: `Rescheduled task "${task.title}" to ${new Date(date).toLocaleDateString()}`, resourceType: 'task', resourceId: task.id }).catch(() => {});
+            recordActivity({ eventType: 'task.rescheduled', eventCategory: 'crm', description: `Rescheduled task "${task.title}" to ${formatters.formatDate(date)}`, resourceType: 'task', resourceId: task.id }).catch(() => {});
         } catch (error) {
             console.error('Failed to reschedule task:', error);
         }
@@ -218,7 +220,7 @@ const TaskDetailPage = () => {
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Due Date</span>
                                     <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-50'}`}>
-                                        {new Date(task.due_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        {formatters.formatDate(task.due_date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                     </p>
                                 </div>
                             </div>
@@ -313,7 +315,7 @@ const TaskDetailPage = () => {
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-xs text-slate-500">
-                                                        {new Date(note.created_at).toLocaleDateString()}
+                                                        {formatters.formatDate(note.created_at)}
                                                     </span>
                                                     {isAuthor && (
                                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

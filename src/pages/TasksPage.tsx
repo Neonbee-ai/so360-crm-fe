@@ -6,6 +6,7 @@ import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import TaskModal from './components/TaskModal';
@@ -15,6 +16,7 @@ type SortDirection = 'asc' | 'desc' | null;
 
 const TasksPage = () => {
     const navigate = useNavigate();
+    const formatters = useCRMFormatters();
     const shell = useShell();
     const shellBridge = useShellBridge();
     const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
@@ -239,7 +241,7 @@ const TasksPage = () => {
                 return (
                     <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-400'}`}>
                         {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
-                        {new Date(task.due_date).toLocaleDateString()}
+                        {formatters.formatDate(task.due_date)}
                         {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
                     </div>
                 );

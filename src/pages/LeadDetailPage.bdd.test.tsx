@@ -203,11 +203,11 @@ describe('LeadDetailPage', () => {
       });
     });
 
-    it('When the page loads / Then shows created date', async () => {
+    it('When the page loads / Then shows created date formatted in business timezone', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => {
-        const dateStr = new Date('2025-01-01T10:00:00Z').toLocaleDateString();
-        expect(screen.getByText(dateStr)).toBeInTheDocument();
+        // formatters.formatDate with UTC timezone and en-US locale renders 'Jan 1, 2025'
+        expect(screen.getByText('Jan 1, 2025')).toBeInTheDocument();
       });
     });
 

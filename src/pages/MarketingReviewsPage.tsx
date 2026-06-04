@@ -4,10 +4,12 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { Link } from 'react-router-dom';
+import { useCRMFormatters } from '../utils/formatters';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingReviewsPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -158,7 +160,7 @@ const MarketingReviewsPage: React.FC = () => {
 
                       <div className="flex items-center gap-2 ml-auto">
                         <Clock className="w-3 h-3 text-slate-400" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(rev.created_at).toLocaleDateString()}</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatters.formatDate(rev.created_at)}</span>
                       </div>
                     </div>
 

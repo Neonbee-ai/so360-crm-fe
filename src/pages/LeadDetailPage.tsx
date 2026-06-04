@@ -557,7 +557,7 @@ const LeadDetailPage = () => {
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Created</span>
-                                                <span className="text-sm font-bold uppercase tracking-tight">{new Date(lead.created_at).toLocaleDateString()}</span>
+                                                <span className="text-sm font-bold uppercase tracking-tight">{formatters.formatDate(lead.created_at)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -591,7 +591,7 @@ const LeadDetailPage = () => {
                                                         {field.type === 'boolean'
                                                             ? (lead.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                             : field.type === 'date' && lead.custom_fields?.[field.id]
-                                                                ? new Date(lead.custom_fields[field.id]).toLocaleDateString()
+                                                                ? formatters.formatDate(lead.custom_fields[field.id])
                                                                 : lead.custom_fields?.[field.id] || '—'}
                                                     </span>
                                                 )}
@@ -661,7 +661,7 @@ const LeadDetailPage = () => {
                                                                         <span className="text-[8px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{event.type}</span>
                                                                     </div>
                                                                     <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                        {new Date(event.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                        {formatters.formatDateTime(event.date)}
                                                                     </span>
                                                                 </div>
                                                                 <p className="text-slate-400 text-sm leading-relaxed">{event.description}</p>
@@ -706,7 +706,7 @@ const LeadDetailPage = () => {
                                                                             </div>
                                                                         )}
                                                                         <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                            {new Date(event.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                            {formatters.formatDateTime(event.date)}
                                                                         </span>
                                                                     </div>
                                                                 </div>
@@ -771,7 +771,7 @@ const LeadDetailPage = () => {
                                                         <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                            <span className="text-[10px] text-slate-400 font-bold">{new Date(note.created_at).toLocaleDateString()}</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold">{formatters.formatDate(note.created_at)}</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -841,7 +841,7 @@ const LeadDetailPage = () => {
                                                                 <div className={`w-2 h-2 rounded-full ${new Date(task.due_date) < new Date() ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
                                                                 <span className="text-sm font-bold text-slate-200">{task.title}</span>
                                                                 <span className="text-xs text-slate-500">
-                                                                    {new Date(task.due_date).toLocaleString()}
+                                                                    {formatters.formatDateTime(task.due_date)}
                                                                 </span>
                                                             </div>
                                                             <Link to={`/crm/tasks/${task.id}`} className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1">
@@ -885,7 +885,7 @@ const LeadDetailPage = () => {
                                                         <div className="flex items-center gap-4 mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800/50 pt-2">
                                                             <span className="flex items-center gap-1 text-rose-400/70">
                                                                 <Clock size={10} />
-                                                                Due {new Date(task.due_date).toLocaleDateString()}
+                                                                Due {formatters.formatDate(task.due_date)}
                                                             </span>
 
                                                             {task.assigned_to && (
@@ -973,7 +973,7 @@ const LeadDetailPage = () => {
                                                         <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                                             <span>{(doc.size / (1024 * 1024)).toFixed(2)} MB</span>
                                                             <span className="w-1 h-1 bg-slate-800 rounded-full" />
-                                                            <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                                                            <span>{formatters.formatDate(doc.uploaded_at)}</span>
                                                             <span className="w-1 h-1 bg-slate-800 rounded-full" />
                                                             <span className="text-slate-500">by {doc.uploaded_by.full_name}</span>
                                                         </div>

@@ -8,8 +8,10 @@ import {
 import { Link } from 'react-router-dom';
 import { CrossLinkChip } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 
 const DashboardPage = () => {
+    const formatters = useCRMFormatters();
     const [stats, setStats] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [period, setPeriod] = useState<'yearly' | 'quarterly' | 'monthly'>('yearly');
@@ -405,7 +407,7 @@ const DashboardPage = () => {
                                     <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Upcoming</span>
                                 </div>
-                                <span className="text-[9px] font-bold text-slate-500">{new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-[9px] font-bold text-slate-500">{formatters.formatDate(task.due_date, { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <h4 className="text-sm font-bold text-slate-50 group-hover:text-blue-400 transition-colors truncate mb-1">{task.title}</h4>
                             <p className="text-[11px] text-slate-500 line-clamp-1 mb-3">{task.description || "No description provided"}</p>

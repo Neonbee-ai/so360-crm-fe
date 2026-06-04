@@ -4,11 +4,13 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCouponsPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const { settings } = useBusinessSettings();
   const { recordActivity } = useActivity();
   const shell = useShellBridge();
@@ -354,11 +356,11 @@ const MarketingCouponsPage: React.FC = () => {
                         <div className="flex flex-col items-center gap-1 text-[10px] font-bold">
                           <div className="flex items-center gap-1 text-slate-400">
                             <Calendar size={10} />
-                            {coupon.valid_from ? new Date(coupon.valid_from).toLocaleDateString() : 'Start'}
+                            {coupon.valid_from ? formatters.formatDate(coupon.valid_from) : 'Start'}
                           </div>
                           <div className="flex items-center gap-1 text-slate-500">
                             <Clock size={10} />
-                            {coupon.valid_until ? new Date(coupon.valid_until).toLocaleDateString() : 'Never Expires'}
+                            {coupon.valid_until ? formatters.formatDate(coupon.valid_until) : 'Never Expires'}
                           </div>
                         </div>
                       </td>
