@@ -265,7 +265,8 @@ describe('DealDetailPage', () => {
       render(<DealDetailPage />);
       await waitFor(() => {
         // formatters.formatDate with UTC timezone and en-US locale renders 'Jan 20, 2025'
-        expect(screen.getByText('Jan 20, 2025')).toBeInTheDocument();
+        // getAllByText because activity a2 (2025-01-20) produces the same formatted string
+        expect(screen.getAllByText('Jan 20, 2025').length).toBeGreaterThan(0);
       });
     });
 
