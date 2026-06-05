@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Loader2, Briefcase, Calendar, ChevronDown, Search, User } from 'lucide-react';
+import { X, Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
@@ -213,7 +213,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             {!leadId && (
                                 <div className="space-y-2" ref={searchRef}>
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                        <User size={11} /> Customer / Company <span className="text-rose-500">*</span>
+                                        <UserIcon size={11} /> Customer / Company <span className="text-rose-500">*</span>
                                     </label>
                                     <div className="relative">
                                         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
