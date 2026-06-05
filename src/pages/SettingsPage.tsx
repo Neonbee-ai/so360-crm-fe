@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption } from '../types/crm';
-import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { useShellBridge } from '@so360/shell-context';
 
@@ -317,45 +317,88 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.lead_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="flex items-center gap-3 bg-slate-950/50 border border-slate-800 p-3 rounded-xl group hover:border-slate-700 transition-all">
-                                            <div className="flex-1">
-                                                <input
-                                                    type="text"
-                                                    value={field.label}
+                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                                            <div className="flex items-center gap-3 p-3">
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="text"
+                                                        value={field.label}
+                                                        onChange={(e) => {
+                                                            const newFields = [...settings.lead_custom_fields];
+                                                            newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                            setSettings({ ...settings, lead_custom_fields: newFields });
+                                                        }}
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
+                                                    />
+                                                </div>
+                                                <select
+                                                    value={field.type}
                                                     onChange={(e) => {
                                                         const newFields = [...settings.lead_custom_fields];
-                                                        newFields[idx].label = e.target.value;
+                                                        newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                     }}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
-                                                />
+                                                    className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
+                                                >
+                                                    <option value="text">TEXT</option>
+                                                    <option value="number">NUM</option>
+                                                    <option value="date">DATE</option>
+                                                    <option value="boolean">BOOL</option>
+                                                    <option value="SELECT">SELECT</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => {
+                                                        setSettings({
+                                                            ...settings,
+                                                            lead_custom_fields: settings.lead_custom_fields.filter(f => f.id !== field.id)
+                                                        });
+                                                    }}
+                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </div>
-                                            <select
-                                                value={field.type}
-                                                onChange={(e) => {
-                                                    const newFields = [...settings.lead_custom_fields];
-                                                    newFields[idx].type = e.target.value as any;
-                                                    setSettings({ ...settings, lead_custom_fields: newFields });
-                                                }}
-                                                className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
-                                            >
-                                                <option value="text">TEXT</option>
-                                                <option value="number">NUM</option>
-                                                <option value="date">DATE</option>
-                                                <option value="boolean">BOOL</option>
-                                                <option value="SELECT">SELECT</option>
-                                            </select>
-                                            <button
-                                                onClick={() => {
-                                                    setSettings({
-                                                        ...settings,
-                                                        lead_custom_fields: settings.lead_custom_fields.filter(f => f.id !== field.id)
-                                                    });
-                                                }}
-                                                className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {field.type === 'SELECT' && (
+                                                <div className="px-3 pb-3 border-t border-slate-800/60 pt-2">
+                                                    <div className="space-y-1.5">
+                                                        {((field as any).options || []).map((opt: string, optIdx: number) => (
+                                                            <div key={optIdx} className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={opt}
+                                                                    onChange={(e) => {
+                                                                        const newFields = [...settings.lead_custom_fields];
+                                                                        const newOpts = [...((newFields[idx] as any).options || [])];
+                                                                        newOpts[optIdx] = e.target.value;
+                                                                        newFields[idx] = { ...newFields[idx], options: newOpts } as any;
+                                                                        setSettings({ ...settings, lead_custom_fields: newFields });
+                                                                    }}
+                                                                    className="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-200 px-2 py-1 rounded-lg outline-none focus:border-blue-500"
+                                                                    placeholder={`Option ${optIdx + 1}`}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newFields = [...settings.lead_custom_fields];
+                                                                        newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
+                                                                        setSettings({ ...settings, lead_custom_fields: newFields });
+                                                                    }}
+                                                                    className="p-1 hover:bg-rose-500/10 rounded text-slate-600 hover:text-rose-400 transition-all"
+                                                                ><X size={12} /></button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newFields = [...settings.lead_custom_fields];
+                                                            newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
+                                                            setSettings({ ...settings, lead_custom_fields: newFields });
+                                                        }}
+                                                        className="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-black flex items-center gap-1 transition-colors"
+                                                    ><Plus size={10} /> Add Option</button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -381,45 +424,88 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.deal_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="flex items-center gap-3 bg-slate-950/50 border border-slate-800 p-3 rounded-xl group hover:border-slate-700 transition-all">
-                                            <div className="flex-1">
-                                                <input
-                                                    type="text"
-                                                    value={field.label}
+                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                                            <div className="flex items-center gap-3 p-3">
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="text"
+                                                        value={field.label}
+                                                        onChange={(e) => {
+                                                            const newFields = [...settings.deal_custom_fields];
+                                                            newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                            setSettings({ ...settings, deal_custom_fields: newFields });
+                                                        }}
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
+                                                    />
+                                                </div>
+                                                <select
+                                                    value={field.type}
                                                     onChange={(e) => {
                                                         const newFields = [...settings.deal_custom_fields];
-                                                        newFields[idx].label = e.target.value;
+                                                        newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? ((newFields[idx] as any).options || []) : (newFields[idx] as any).options };
                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                     }}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
-                                                />
+                                                    className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
+                                                >
+                                                    <option value="text">TEXT</option>
+                                                    <option value="number">NUM</option>
+                                                    <option value="date">DATE</option>
+                                                    <option value="boolean">BOOL</option>
+                                                    <option value="SELECT">SELECT</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => {
+                                                        setSettings({
+                                                            ...settings,
+                                                            deal_custom_fields: settings.deal_custom_fields.filter(f => f.id !== field.id)
+                                                        });
+                                                    }}
+                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </div>
-                                            <select
-                                                value={field.type}
-                                                onChange={(e) => {
-                                                    const newFields = [...settings.deal_custom_fields];
-                                                    newFields[idx].type = e.target.value as any;
-                                                    setSettings({ ...settings, deal_custom_fields: newFields });
-                                                }}
-                                                className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
-                                            >
-                                                <option value="text">TEXT</option>
-                                                <option value="number">NUM</option>
-                                                <option value="date">DATE</option>
-                                                <option value="boolean">BOOL</option>
-                                                <option value="SELECT">SELECT</option>
-                                            </select>
-                                            <button
-                                                onClick={() => {
-                                                    setSettings({
-                                                        ...settings,
-                                                        deal_custom_fields: settings.deal_custom_fields.filter(f => f.id !== field.id)
-                                                    });
-                                                }}
-                                                className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {field.type === 'SELECT' && (
+                                                <div className="px-3 pb-3 border-t border-slate-800/60 pt-2">
+                                                    <div className="space-y-1.5">
+                                                        {((field as any).options || []).map((opt: string, optIdx: number) => (
+                                                            <div key={optIdx} className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={opt}
+                                                                    onChange={(e) => {
+                                                                        const newFields = [...settings.deal_custom_fields];
+                                                                        const newOpts = [...((newFields[idx] as any).options || [])];
+                                                                        newOpts[optIdx] = e.target.value;
+                                                                        newFields[idx] = { ...newFields[idx], options: newOpts } as any;
+                                                                        setSettings({ ...settings, deal_custom_fields: newFields });
+                                                                    }}
+                                                                    className="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-200 px-2 py-1 rounded-lg outline-none focus:border-blue-500"
+                                                                    placeholder={`Option ${optIdx + 1}`}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newFields = [...settings.deal_custom_fields];
+                                                                        newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
+                                                                        setSettings({ ...settings, deal_custom_fields: newFields });
+                                                                    }}
+                                                                    className="p-1 hover:bg-rose-500/10 rounded text-slate-600 hover:text-rose-400 transition-all"
+                                                                ><X size={12} /></button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newFields = [...settings.deal_custom_fields];
+                                                            newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
+                                                            setSettings({ ...settings, deal_custom_fields: newFields });
+                                                        }}
+                                                        className="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-black flex items-center gap-1 transition-colors"
+                                                    ><Plus size={10} /> Add Option</button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -445,45 +531,88 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {(settings.partner_custom_fields || []).map((field, idx) => (
-                                        <div key={field.id} className="flex items-center gap-3 bg-slate-950/50 border border-slate-800 p-3 rounded-xl group hover:border-slate-700 transition-all">
-                                            <div className="flex-1">
-                                                <input
-                                                    type="text"
-                                                    value={field.label}
+                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                                            <div className="flex items-center gap-3 p-3">
+                                                <div className="flex-1">
+                                                    <input
+                                                        type="text"
+                                                        value={field.label}
+                                                        onChange={(e) => {
+                                                            const newFields = [...(settings.partner_custom_fields || [])];
+                                                            newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                            setSettings({ ...settings, partner_custom_fields: newFields });
+                                                        }}
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
+                                                    />
+                                                </div>
+                                                <select
+                                                    value={field.type}
                                                     onChange={(e) => {
                                                         const newFields = [...(settings.partner_custom_fields || [])];
-                                                        newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                        newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                     }}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
-                                                />
+                                                    className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
+                                                >
+                                                    <option value="text">TEXT</option>
+                                                    <option value="number">NUM</option>
+                                                    <option value="date">DATE</option>
+                                                    <option value="boolean">BOOL</option>
+                                                    <option value="SELECT">SELECT</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => {
+                                                        setSettings({
+                                                            ...settings,
+                                                            partner_custom_fields: (settings.partner_custom_fields || []).filter(f => f.id !== field.id)
+                                                        });
+                                                    }}
+                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </div>
-                                            <select
-                                                value={field.type}
-                                                onChange={(e) => {
-                                                    const newFields = [...(settings.partner_custom_fields || [])];
-                                                    newFields[idx] = { ...newFields[idx], type: e.target.value as any };
-                                                    setSettings({ ...settings, partner_custom_fields: newFields });
-                                                }}
-                                                className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
-                                            >
-                                                <option value="text">TEXT</option>
-                                                <option value="number">NUM</option>
-                                                <option value="date">DATE</option>
-                                                <option value="boolean">BOOL</option>
-                                                <option value="SELECT">SELECT</option>
-                                            </select>
-                                            <button
-                                                onClick={() => {
-                                                    setSettings({
-                                                        ...settings,
-                                                        partner_custom_fields: (settings.partner_custom_fields || []).filter(f => f.id !== field.id)
-                                                    });
-                                                }}
-                                                className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {field.type === 'SELECT' && (
+                                                <div className="px-3 pb-3 border-t border-slate-800/60 pt-2">
+                                                    <div className="space-y-1.5">
+                                                        {(field.options || []).map((opt: string, optIdx: number) => (
+                                                            <div key={optIdx} className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={opt}
+                                                                    onChange={(e) => {
+                                                                        const newFields = [...(settings.partner_custom_fields || [])];
+                                                                        const newOpts = [...(newFields[idx].options || [])];
+                                                                        newOpts[optIdx] = e.target.value;
+                                                                        newFields[idx] = { ...newFields[idx], options: newOpts };
+                                                                        setSettings({ ...settings, partner_custom_fields: newFields });
+                                                                    }}
+                                                                    className="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-200 px-2 py-1 rounded-lg outline-none focus:border-blue-500"
+                                                                    placeholder={`Option ${optIdx + 1}`}
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newFields = [...(settings.partner_custom_fields || [])];
+                                                                        newFields[idx] = { ...newFields[idx], options: (newFields[idx].options || []).filter((_: any, i: number) => i !== optIdx) };
+                                                                        setSettings({ ...settings, partner_custom_fields: newFields });
+                                                                    }}
+                                                                    className="p-1 hover:bg-rose-500/10 rounded text-slate-600 hover:text-rose-400 transition-all"
+                                                                ><X size={12} /></button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newFields = [...(settings.partner_custom_fields || [])];
+                                                            newFields[idx] = { ...newFields[idx], options: [...(newFields[idx].options || []), ''] };
+                                                            setSettings({ ...settings, partner_custom_fields: newFields });
+                                                        }}
+                                                        className="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-black flex items-center gap-1 transition-colors"
+                                                    ><Plus size={10} /> Add Option</button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                     {(settings.partner_custom_fields || []).length === 0 && (

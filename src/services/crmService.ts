@@ -1361,11 +1361,13 @@ export const crmService = {
                     entity_type: 'LEAD',
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...lfToUpdate.map(f => apiClient.patch(`/settings/custom-fields/${f.id}`, {
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...lfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
@@ -1389,11 +1391,13 @@ export const crmService = {
                     entity_type: 'DEAL',
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...dfToUpdate.map(f => apiClient.patch(`/settings/custom-fields/${f.id}`, {
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...dfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
