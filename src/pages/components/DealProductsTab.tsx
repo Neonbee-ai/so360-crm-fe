@@ -72,7 +72,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead }: A
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-black text-slate-100 uppercase tracking-widest">Add Product to Deal</h3>
                     <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">✕</button>

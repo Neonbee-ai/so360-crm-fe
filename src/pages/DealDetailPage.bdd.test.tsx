@@ -472,6 +472,19 @@ describe('DealDetailPage', () => {
         expect(confirmTexts.length).toBeGreaterThan(1);
       });
     });
+
+    it('When delete confirmation modal opens / Then container has max-h-[90vh]', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('Delete'));
+      await waitFor(() => {
+        const panels = Array.from(document.querySelectorAll('div')).filter(
+          el => el.className.includes('max-h-[90vh]'),
+        );
+        expect(panels.length).toBeGreaterThan(0);
+      });
+    });
   });
 
   describe('Given deal with invoice', () => {
@@ -649,6 +662,19 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
       await user.click(screen.getByText('Create Project'));
       await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    });
+
+    it('When project modal opens / Then container has max-h-[90vh]', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+      await waitFor(() => {
+        const panels = Array.from(document.querySelectorAll('div')).filter(
+          el => el.className.includes('max-h-[90vh]'),
+        );
+        expect(panels.length).toBeGreaterThan(0);
+      });
     });
 
     it('When deal already has project / Then shows Manage Project button', async () => {

@@ -1142,7 +1142,7 @@ const DealDetailPage = () => {
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
                             <h3 className="text-slate-50 font-black uppercase tracking-widest text-xs flex items-center gap-2">
                                 <Briefcase size={16} className="text-blue-400" />
@@ -1280,7 +1280,7 @@ const DealDetailPage = () => {
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <h2 className="text-xl font-bold text-slate-100 mb-2">Delete Deal</h2>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.

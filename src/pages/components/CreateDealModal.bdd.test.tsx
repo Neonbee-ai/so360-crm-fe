@@ -207,6 +207,16 @@ describe('CreateDealModal', () => {
     });
   });
 
+  describe('Given modal size constraint', () => {
+    it('When rendered / Then modal container has max-h-[90vh] to stay within viewport', () => {
+      render(<CreateDealModal {...defaultProps} />);
+      const panels = Array.from(document.querySelectorAll('div')).filter(
+        el => el.className.includes('max-h-[90vh]'),
+      );
+      expect(panels.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('Given empty deal stages are returned', () => {
     it('When settings has no deal stages / Then stage select renders empty and submit still works', async () => {
       mockGetSettings.mockResolvedValueOnce({

@@ -113,6 +113,13 @@ describe('Modal', () => {
       expect(panel.className).toContain('max-h-');
     });
 
+    it('When the modal is open / Then modal panel max-height is exactly 90vh', () => {
+      render(<Modal isOpen={true} onClose={vi.fn()} title="MaxH 90vh"><p>content</p></Modal>);
+      const outer = getOuter();
+      const panel = getPanel(outer);
+      expect(panel.className).toContain('max-h-[90vh]');
+    });
+
     it('When the modal is open / Then modal panel has overflow-hidden to clip internal content', () => {
       render(<Modal isOpen={true} onClose={vi.fn()} title="Clip Test"><p>content</p></Modal>);
       const outer = getOuter();

@@ -272,6 +272,23 @@ describe('Given the send flow', () => {
 });
 
 // ===========================================================================
+// describe: Given modal size constraints
+// ===========================================================================
+describe('Given modal size constraints', () => {
+
+    it('When rendered / Then modal panel has max-h-[90vh] to prevent overflow on short viewports', () => {
+        mockFetch.mockReturnValueOnce(new Promise(() => { /* pending */ }));
+
+        renderModal();
+
+        const panels = Array.from(document.querySelectorAll('div')).filter(
+            el => el.className.includes('max-h-[90vh]'),
+        );
+        expect(panels.length).toBeGreaterThan(0);
+    });
+});
+
+// ===========================================================================
 // describe: Given modal controls
 // ===========================================================================
 describe('Given modal controls', () => {
