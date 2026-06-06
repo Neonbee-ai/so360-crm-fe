@@ -151,9 +151,14 @@ const LeadsPage = () => {
 
     const sortedAndFilteredLeads = useMemo(() => {
         let result = leads.filter(lead => {
+            const fullName = lead.first_name
+                ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
+                : (lead.contact_name || '');
             const matchesSearch =
                 (lead.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (lead.contact_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+                fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (lead.first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (lead.last_name || '').toLowerCase().includes(searchTerm.toLowerCase());
             const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
             const matchesOwner = ownerFilter === 'All' || lead.owner?.id === ownerFilter;
             const matchesCreator = creatorFilter === 'All' || lead.creator?.id === creatorFilter;
@@ -168,7 +173,10 @@ const LeadsPage = () => {
                 let aVal: any, bVal: any;
                 switch (sortField) {
                     case 'company_name': aVal = a.company_name; bVal = b.company_name; break;
-                    case 'contact_name': aVal = a.contact_name; bVal = b.contact_name; break;
+                    case 'contact_name':
+                        aVal = a.first_name ? [a.first_name, a.last_name].filter(Boolean).join(' ') : (a.contact_name || '');
+                        bVal = b.first_name ? [b.first_name, b.last_name].filter(Boolean).join(' ') : (b.contact_name || '');
+                        break;
                     case 'status': aVal = a.status; bVal = b.status; break;
                     case 'created_at': aVal = new Date(a.created_at).getTime(); bVal = new Date(b.created_at).getTime(); break;
                     case 'owner': aVal = a.owner?.full_name || ''; bVal = b.owner?.full_name || ''; break;
@@ -273,7 +281,7 @@ const LeadsPage = () => {
                 <div className="flex flex-col gap-1">
                     <span className="font-semibold text-slate-50">{lead.company_name}</span>
                     <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <UserIcon size={12} /> {lead.contact_name}
+                        <UserIcon size={12} /> {lead.first_name ? [lead.first_name, lead.last_name].filter(Boolean).join(' ') : lead.contact_name}
                     </span>
                 </div>
             )

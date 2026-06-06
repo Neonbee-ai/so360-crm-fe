@@ -34,7 +34,9 @@ export interface Attachment {
 export interface Lead {
     id: string;
     company_name: string;
-    contact_name: string;
+    first_name?: string;
+    last_name?: string;
+    contact_name?: string;
     contact_email: string;
     phone?: string;
     source: string;

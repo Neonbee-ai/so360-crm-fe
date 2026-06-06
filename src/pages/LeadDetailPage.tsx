@@ -25,6 +25,11 @@ import LeadProductsTab from './components/LeadProductsTab';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products';
 
+const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'contact_name'>): string =>
+    lead.first_name
+        ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
+        : (lead.contact_name || '');
+
 interface TimelineEvent {
     id: string;
     type: 'Activity' | 'NOTE' | 'TASK' | 'DOCUMENT' | 'DEAL' | 'STATUS_CHANGE' | 'STAGE_CHANGE' | 'OWNER_CHANGE' | 'PROFILE_UPDATE';
@@ -283,7 +288,7 @@ const LeadDetailPage = () => {
 
     const handleDeleteLead = async () => {
         setIsDeleting(true);
-        const leadName = lead?.contact_name || id;
+        const leadName = lead ? getLeadDisplayName(lead) : id;
         try {
             await crmService.deleteLead(id);
             showSuccess('Lead deleted successfully');
@@ -341,7 +346,7 @@ const LeadDetailPage = () => {
                                 </select>
                             ) : (
                                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
-                                    <h1 className="text-4xl font-black text-slate-50 tracking-tight">{lead.contact_name}</h1>
+                                    <h1 className="text-4xl font-black text-slate-50 tracking-tight">{getLeadDisplayName(lead)}</h1>
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all group-hover:scale-110 ${lead.status === 'Converted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                         lead.status === 'Lost' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
                                             'bg-blue-500/10 text-blue-400 border-blue-500/20'
@@ -427,7 +432,7 @@ const LeadDetailPage = () => {
                                                     notes: 'Lead profile information updated',
                                                     date: new Date().toISOString()
                                                 });
-                                                recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${lead.contact_name}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
+                                                recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${getLeadDisplayName(lead)}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
                                                 fetchLeadData();
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
@@ -448,6 +453,42 @@ const LeadDetailPage = () => {
                             {infoTab === 'profile' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
                                     <div className="space-y-8">
+                                        <div className="flex items-center gap-4 text-slate-300">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shadow-inner">
+                                                <Users size={18} />
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">First Name</span>
+                                                {isEditingInfo ? (
+                                                    <input
+                                                        type="text"
+                                                        value={lead.first_name || ''}
+                                                        onChange={(e) => setLead({ ...lead, first_name: e.target.value })}
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                    />
+                                                ) : (
+                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.first_name || '—'}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-slate-300">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shadow-inner">
+                                                <Users size={18} />
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Last Name</span>
+                                                {isEditingInfo ? (
+                                                    <input
+                                                        type="text"
+                                                        value={lead.last_name || ''}
+                                                        onChange={(e) => setLead({ ...lead, last_name: e.target.value })}
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                    />
+                                                ) : (
+                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.last_name || '—'}</span>
+                                                )}
+                                            </div>
+                                        </div>
                                         <div className="flex items-center gap-4 text-slate-300">
                                             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 shadow-inner">
                                                 <Mail size={18} />
@@ -1482,7 +1523,7 @@ const LeadDetailPage = () => {
                 isCreatingDeal && (
                     <CreateDealModal
                         leadId={lead.id}
-                        leadName={lead.contact_name}
+                        leadName={getLeadDisplayName(lead)}
                         companyName={lead.company_name}
                         onClose={() => setIsCreatingDeal(false)}
                         onSuccess={(deal) => {
@@ -1496,7 +1537,7 @@ const LeadDetailPage = () => {
             {signOpen && (
                 <SignRequestModal
                     onClose={() => setSignOpen(false)}
-                    prefillName={lead?.contact_name ?? ''}
+                    prefillName={lead ? getLeadDisplayName(lead) : ''}
                     prefillEmail={lead?.contact_email ?? ''}
                     sourceModel="crm.lead"
                     sourceId={lead?.id ?? id ?? ''}

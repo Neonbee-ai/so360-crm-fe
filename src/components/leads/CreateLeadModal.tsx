@@ -19,7 +19,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const { user: currentUser } = useIdentity();
     const [formData, setFormData] = useState({
         company_name: '',
-        contact_name: '',
+        first_name: '',
+        last_name: '',
         contact_email: '',
         phone: '',
         alt_phone: '',
@@ -130,15 +131,30 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Contact Name *</label>
+                        <label className="text-sm font-medium text-slate-400">First Name *</label>
                         <input
                             required
+                            minLength={2}
                             type="text"
-                            value={formData.contact_name}
-                            onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                            value={formData.first_name}
+                            onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                             className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            placeholder="e.g. John"
                         />
                     </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-slate-400">Last Name</label>
+                        <input
+                            type="text"
+                            value={formData.last_name}
+                            onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            placeholder="e.g. Doe"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-400">Contact Email *</label>
                         <input
@@ -149,9 +165,6 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
                         />
                     </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-400">Phone</label>
                         <input
@@ -162,6 +175,9 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             placeholder="+91 98765 43210"
                         />
                     </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-slate-400">Alt. Phone</label>
                         <input

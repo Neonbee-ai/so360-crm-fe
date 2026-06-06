@@ -82,9 +82,22 @@ describe('CreateLeadModal', () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => {
         expect(screen.getByText(/company name/i)).toBeInTheDocument();
-        expect(screen.getByText(/contact name/i)).toBeInTheDocument();
+        expect(screen.getByText(/first name/i)).toBeInTheDocument();
+        expect(screen.getByText(/last name/i)).toBeInTheDocument();
         expect(screen.getByText(/contact email/i)).toBeInTheDocument();
       });
+    });
+
+    it('When rendered / Then First Name is required and Last Name is optional', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      expect(screen.getByPlaceholderText('e.g. John')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('e.g. Doe')).toBeInTheDocument();
+      const firstNameInput = screen.getByPlaceholderText('e.g. John');
+      expect(firstNameInput).toHaveAttribute('required');
+      expect(firstNameInput).toHaveAttribute('minLength', '2');
+      const lastNameInput = screen.getByPlaceholderText('e.g. Doe');
+      expect(lastNameInput).not.toHaveAttribute('required');
     });
 
     it('When rendered / Then always shows Referred By field regardless of source', async () => {
