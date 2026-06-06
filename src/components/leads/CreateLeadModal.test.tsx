@@ -79,7 +79,8 @@ describe('Given CreateLeadModal', () => {
   it('When action / Then shows all form fields', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
-      expect(screen.getByText(/contact name/i)).toBeInTheDocument();
+      expect(screen.getByText(/first name/i)).toBeInTheDocument();
+      expect(screen.getByText(/last name/i)).toBeInTheDocument();
       expect(screen.getByText(/contact email/i)).toBeInTheDocument();
       expect(screen.getAllByText(/phone/i).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/lead source/i)).toBeInTheDocument();
