@@ -1,7 +1,8 @@
 /**
  * BDD specs — crmService product API methods
  * Covers: getLeadProducts, addLeadProduct, updateLeadProduct, removeLeadProduct,
- *         getDealProducts, addDealProduct, updateDealProduct, removeDealProduct
+ *         getDealProducts, addDealProduct, updateDealProduct, removeDealProduct,
+ *         searchInventoryItems (Add Product modal → Inventory single source of truth)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -144,6 +145,86 @@ describe('crmService — Deal Product APIs', () => {
             fail(500);
             const result = await crmService.getDealsByProjectId('project-001');
             expect(result).toEqual([]);
+        });
+    });
+});
+
+describe('crmService — searchInventoryItems (Add Product modal)', () => {
+    const sampleItem = { id: ITEM_ID, name: 'Dining Chair', sku: 'CHR-001', stock: 24, unit_price: 4500 };
+
+    // Returns the URL string fetch() was called with on the most recent call.
+    const lastFetchUrl = () => String(fetchMock.mock.calls[0][0]);
+
+    describe('Given the search hits the Inventory integration endpoint', () => {
+        it('When a query is provided / Then it calls the integration search-with-variants route (NOT the non-existent /items/ route)', async () => {
+            ok([sampleItem]);
+            await crmService.searchInventoryItems('chair');
+
+            const url = lastFetchUrl();
+            // Regression guard for the 404 bug: must target inventory/integration, never inventory/items
+            expect(url).toContain('/v1/inventory/integration/search-with-variants');
+            expect(url).not.toContain('/v1/inventory/items/search-with-variants');
+        });
+
+        it('When a query is provided / Then it forwards q as a query param', async () => {
+            ok([sampleItem]);
+            await crmService.searchInventoryItems('dining');
+            expect(lastFetchUrl()).toContain('q=dining');
+        });
+
+        it('When a categoryId is provided / Then it forwards category_id', async () => {
+            ok([sampleItem]);
+            await crmService.searchInventoryItems('chair', 'cat-001');
+            const url = lastFetchUrl();
+            expect(url).toContain('q=chair');
+            expect(url).toContain('category_id=cat-001');
+        });
+
+        it('When no categoryId is provided / Then category_id is omitted from the request', async () => {
+            ok([sampleItem]);
+            await crmService.searchInventoryItems('chair');
+            expect(lastFetchUrl()).not.toContain('category_id');
+        });
+    });
+
+    describe('Given the backend returns various response shapes', () => {
+        it('When the body is a bare array / Then items resolves to that array', async () => {
+            ok([sampleItem]);
+            const result = await crmService.searchInventoryItems('chair');
+            expect(result.items).toHaveLength(1);
+            expect(result.items[0]).toMatchObject({ sku: 'CHR-001' });
+        });
+
+        it('When the body is wrapped in { items } / Then items unwraps it', async () => {
+            ok({ items: [sampleItem] });
+            const result = await crmService.searchInventoryItems('chair');
+            expect(result.items).toHaveLength(1);
+        });
+
+        it('When the body is wrapped in { data } / Then items falls back to data', async () => {
+            ok({ data: [sampleItem] });
+            const result = await crmService.searchInventoryItems('chair');
+            expect(result.items).toHaveLength(1);
+        });
+
+        it('When the body has neither items nor data / Then items resolves to []', async () => {
+            ok({ total: 0 });
+            const result = await crmService.searchInventoryItems('chair');
+            expect(result.items).toEqual([]);
+        });
+    });
+
+    describe('Given the request fails', () => {
+        it('When the endpoint 404s / Then it resolves to { items: [] } (graceful, no throw)', async () => {
+            fail(404);
+            const result = await crmService.searchInventoryItems('chair');
+            expect(result).toEqual({ items: [] });
+        });
+
+        it('When the endpoint 500s / Then it resolves to { items: [] } (graceful, no throw)', async () => {
+            fail(500);
+            const result = await crmService.searchInventoryItems('chair');
+            expect(result).toEqual({ items: [] });
         });
     });
 });

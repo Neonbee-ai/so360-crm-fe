@@ -1734,7 +1734,7 @@ export const crmService = {
         try {
             const params: Record<string, string> = { q };
             if (categoryId) params.category_id = categoryId;
-            const result = await inventoryClient.get<any>('/v1/inventory/items/search-with-variants', params);
+            const result = await inventoryClient.get<any>('/v1/inventory/integration/search-with-variants', params);
             const items: InventoryItem[] = Array.isArray(result) ? result : (result?.items || result?.data || []);
             return { items };
         } catch {
