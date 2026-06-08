@@ -596,7 +596,7 @@ const LeadsPage = () => {
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-slate-900 border border-slate-700/50 rounded-lg shadow-2xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Lead</h2>
                         <p className="text-slate-400 mb-6">
