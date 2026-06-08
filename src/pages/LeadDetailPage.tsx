@@ -63,7 +63,7 @@ const LeadDetailPage = () => {
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
     const [activeTab, setActiveTab] = useState<TabType>('activity');
-    const [infoTab, setInfoTab] = useState<'profile' | 'additional'>('profile');
+    const [infoTab, setInfoTab] = useState<'profile' | 'additional' | 'business'>('profile');
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingInfo, setIsEditingInfo] = useState(false);
     const [isChangingOwner, setIsChangingOwner] = useState(false);
@@ -420,6 +420,12 @@ const LeadDetailPage = () => {
                                     <Info size={14} /> Additional Info
                                 </button>
                             )}
+                            <button
+                                onClick={() => setInfoTab('business')}
+                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'business' ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                                <Building2 size={14} /> Business Profile
+                            </button>
                             <div className="ml-auto flex items-center px-6">
                                 <button
                                     onClick={async () => {
@@ -643,6 +649,14 @@ const LeadDetailPage = () => {
                                         </div>
                                     ))}
                                 </div>
+                            )}
+                            {infoTab === 'business' && (
+                                <CustomerDetailsPanel
+                                    lead={lead}
+                                    onUpdate={(updatedLead) => setLead(updatedLead)}
+                                    showToast={(message, type) => type === 'success' ? showSuccess(message) : showError(message)}
+                                    partners={partners as any}
+                                />
                             )}
                         </div>
                     </section>
