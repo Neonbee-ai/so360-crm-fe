@@ -193,7 +193,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     return (
         <>
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
                 <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
                     {/* Sticky header */}
                     <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0 rounded-t-3xl">
