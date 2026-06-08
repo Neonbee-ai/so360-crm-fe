@@ -198,6 +198,42 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
         return () => { cancelled = true; };
     }, [lead?.id]);
 
+    // ── Customer invoices (Accounting cross-module, read-only) ───────────────
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        const customerId = lead?.core_partner_id || lead?.id;
+        const load = async () => {
+            if (!customerId) return;
+            setIsLoadingInvoices(true);
+            try {
+                const data = await crmService.getCustomerInvoices(customerId);
+                if (!cancelled) setInvoices(Array.isArray(data) ? data : []);
+            } catch {
+                if (!cancelled) setInvoices([]);
+            } finally {
+                if (!cancelled) setIsLoadingInvoices(false);
+            }
+        };
+        load();
+        return () => { cancelled = true; };
+    }, [lead?.core_partner_id, lead?.id]);
+
+    const invoiceCount = invoices.length;
+    const totalPurchaseValue = invoices.reduce(
+        (sum, inv) => sum + (Number(inv?.total_amount) || 0),
+        0,
+    );
+    const recentInvoices = [...invoices]
+        .sort((a, b) => {
+            const da = new Date(a?.issue_date || a?.created_at || 0).getTime();
+            const db = new Date(b?.issue_date || b?.created_at || 0).getTime();
+            return db - da;
+        })
+        .slice(0, 5);
+
     const beginEditProfile = () => {
         const billing = { ...emptyAddress(), ...(profile?.billing_address || {}) };
         const shipping = { ...emptyAddress(), ...(profile?.shipping_address || {}) };
@@ -677,6 +713,49 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     )}
                 </div>
             )}
+
+            {/* ─── Invoices (Accounting cross-module, read-only) ──────────────── */}
+            <div className="border-t border-slate-800 pt-4">
+                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider mb-3">
+                    <FileText size={12} className="text-amber-400" /> Invoices
+                </span>
+
+                {isLoadingInvoices ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Loader2 size={12} className="animate-spin" /> Loading invoices…
+                    </div>
+                ) : invoiceCount === 0 ? (
+                    <div className="text-xs text-slate-500">No invoices for this customer yet.</div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+                                <div className="text-[11px] text-slate-500">Invoice Count</div>
+                                <div className="text-lg font-semibold text-slate-100">{invoiceCount}</div>
+                            </div>
+                            <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+                                <div className="text-[11px] text-slate-500">Total Purchase Value</div>
+                                <div className="text-lg font-semibold text-emerald-400">{formatters.formatCurrency(totalPurchaseValue)}</div>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Recent Invoices</div>
+                            {recentInvoices.map((inv) => (
+                                <div key={inv.id} className="flex items-center justify-between gap-2 bg-slate-950/40 border border-slate-800/60 rounded-lg px-3 py-2">
+                                    <div className="min-w-0">
+                                        <div className="text-xs text-slate-200 font-mono truncate">{inv.invoice_number || inv.id?.substring(0, 8)}</div>
+                                        <div className="text-[11px] text-slate-500">
+                                            {inv.issue_date ? new Date(inv.issue_date).toLocaleDateString() : '—'}
+                                            {inv.status ? <span className="ml-2 capitalize">{inv.status}</span> : null}
+                                        </div>
+                                    </div>
+                                    <div className="text-xs text-slate-200 shrink-0">{formatters.formatCurrency(Number(inv.total_amount) || 0)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
     );
 };

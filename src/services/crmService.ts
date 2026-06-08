@@ -48,6 +48,12 @@ const FULFILLMENT_API_ORIGIN = String(
     'http://localhost:3032'
 ).replace(/\/$/, '');
 
+const ACCOUNTING_API_ORIGIN = String(
+    win.VITE_SO360_ACCOUNTING_API ||
+    env.VITE_SO360_ACCOUNTING_API ||
+    'http://localhost:3008'
+).replace(/\/$/, '');
+
 const API_BASE_URL = CRM_API_ORIGIN;
 let TENANT_ID = 'default-tenant';
 let ORG_ID = 'default-org';
@@ -335,6 +341,7 @@ const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
 const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
 const inventoryClient = new ApiClient(INVENTORY_API_ORIGIN, TENANT_ID);
 const fulfillmentClient = new ApiClient(`${FULFILLMENT_API_ORIGIN}/v1/fulfillment`, TENANT_ID);
+const accountingClient = new ApiClient(ACCOUNTING_API_ORIGIN, TENANT_ID);
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -1760,6 +1767,18 @@ export const crmService = {
         return customersApi.getBusinessProfile(customerId);
     },
 
+    // Accounting cross-module: invoices for a customer (read-only, fail-soft).
+    // customerId = Core partner UUID stored on accounting invoices.customer_id.
+    getCustomerInvoices: async (customerId: string): Promise<any[]> => {
+        if (!customerId) return [];
+        try {
+            const result = await accountingClient.get<any>('/billing/invoices', { customer_id: customerId });
+            return Array.isArray(result) ? result : (result?.data || []);
+        } catch {
+            return [];
+        }
+    },
+
     updateCustomerBusinessProfile: async (customerId: string, profile: Record<string, any>): Promise<any> => {
         return customersApi.updateBusinessProfile(customerId, profile);
     },
@@ -2009,6 +2028,7 @@ export const crmService = {
         dailystoreClient.setTenantId(id);
         inventoryClient.setTenantId(id);
         fulfillmentClient.setTenantId(id);
+        accountingClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         ORG_ID = id;
@@ -2017,6 +2037,7 @@ export const crmService = {
         dailystoreClient.setOrgId(id);
         inventoryClient.setOrgId(id);
         fulfillmentClient.setOrgId(id);
+        accountingClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -2033,5 +2054,6 @@ export const crmService = {
         dailystoreClient.setAccessToken(token);
         inventoryClient.setAccessToken(token);
         fulfillmentClient.setAccessToken(token);
+        accountingClient.setAccessToken(token);
     },
 };

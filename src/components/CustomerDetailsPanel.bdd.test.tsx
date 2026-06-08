@@ -6,6 +6,7 @@ const mockValidateTaxId = vi.fn();
 const mockUpdateCreditLimit = vi.fn();
 const mockGetBusinessProfile = vi.fn();
 const mockUpdateBusinessProfile = vi.fn();
+const mockGetCustomerInvoices = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -13,6 +14,7 @@ vi.mock('../services/crmService', () => ({
     updateCustomerCreditLimit: (...a: any[]) => mockUpdateCreditLimit(...a),
     getCustomerBusinessProfile: (...a: any[]) => mockGetBusinessProfile(...a),
     updateCustomerBusinessProfile: (...a: any[]) => mockUpdateBusinessProfile(...a),
+    getCustomerInvoices: (...a: any[]) => mockGetCustomerInvoices(...a),
   },
 }));
 
@@ -40,6 +42,7 @@ beforeEach(() => {
   mockUpdateCreditLimit.mockResolvedValue({ ...baseLead, credit_limit: 5000 });
   mockGetBusinessProfile.mockResolvedValue(null);
   mockUpdateBusinessProfile.mockResolvedValue({});
+  mockGetCustomerInvoices.mockResolvedValue([]);
 });
 
 describe('CustomerDetailsPanel', () => {
@@ -143,6 +146,53 @@ describe('CustomerDetailsPanel', () => {
       fireEvent.click(screen.getByRole('button', { name: /save|update/i }));
       await waitFor(() => {
         expect(showToast).toHaveBeenCalledWith('Credit limit updated', 'success');
+      });
+    });
+  });
+
+  describe('Given the Invoices section', () => {
+    it('When the customer has a core_partner_id / Then invoices are fetched by that partner id', async () => {
+      const lead = { ...baseLead, core_partner_id: 'partner-9' };
+      render(<CustomerDetailsPanel lead={lead} onUpdate={vi.fn()} showToast={vi.fn()} />);
+      await waitFor(() => {
+        expect(mockGetCustomerInvoices).toHaveBeenCalledWith('partner-9');
+      });
+    });
+
+    it('When no core_partner_id is set / Then it falls back to the lead id', async () => {
+      render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
+      await waitFor(() => {
+        expect(mockGetCustomerInvoices).toHaveBeenCalledWith('lead-1');
+      });
+    });
+
+    it('When invoices exist / Then shows count, total purchase value, and recent invoice numbers', async () => {
+      mockGetCustomerInvoices.mockResolvedValue([
+        { id: 'inv-1', invoice_number: 'INV-0001', total_amount: 1000, status: 'paid', issue_date: '2026-05-01' },
+        { id: 'inv-2', invoice_number: 'INV-0002', total_amount: 500, status: 'sent', issue_date: '2026-05-10' },
+      ]);
+      render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
+      await waitFor(() => {
+        expect(screen.getByText('Invoice Count')).toBeInTheDocument();
+      });
+      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getByText('INV-0001')).toBeInTheDocument();
+      expect(screen.getByText('INV-0002')).toBeInTheDocument();
+    });
+
+    it('When no invoices exist / Then shows the empty state', async () => {
+      mockGetCustomerInvoices.mockResolvedValue([]);
+      render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
+      await waitFor(() => {
+        expect(screen.getByText('No invoices for this customer yet.')).toBeInTheDocument();
+      });
+    });
+
+    it('When the invoice fetch fails / Then it renders without crashing (fail-soft empty state)', async () => {
+      mockGetCustomerInvoices.mockRejectedValue(new Error('accounting down'));
+      render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
+      await waitFor(() => {
+        expect(screen.getByText('No invoices for this customer yet.')).toBeInTheDocument();
       });
     });
   });
