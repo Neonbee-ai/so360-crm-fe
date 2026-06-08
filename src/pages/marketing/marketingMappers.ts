@@ -1,3 +1,5 @@
+import { parseUtcDate } from '../../utils/datetime';
+
 export interface MarketingKpiCard {
   label: string;
   value: string | number;
@@ -46,7 +48,7 @@ export const formatMoney = (
 
 export const formatDateTime = (value?: string | null): string => {
   if (!value) return '-';
-  const d = new Date(value);
+  const d = parseUtcDate(value);
   if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleString();
 };
