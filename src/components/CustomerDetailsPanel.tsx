@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
+import { parseUtcDate } from '../utils/datetime';
 import { useBusinessSettings } from '@so360/shell-context';
 import SignRequestModal from './sign/SignRequestModal';
 
@@ -477,7 +478,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         )}
                         {lead.tax_id_verified && lead.tax_id_verified_at && (
                             <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400">
-                                <CheckCircle2 size={12} /> Verified on {new Date(lead.tax_id_verified_at).toLocaleDateString()}
+                                <CheckCircle2 size={12} /> Verified on {parseUtcDate(lead.tax_id_verified_at).toLocaleDateString()}
                             </div>
                         )}
                     </div>
@@ -745,7 +746,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                                     <div className="min-w-0">
                                         <div className="text-xs text-slate-200 font-mono truncate">{inv.invoice_number || inv.id?.substring(0, 8)}</div>
                                         <div className="text-[11px] text-slate-500">
-                                            {inv.issue_date ? new Date(inv.issue_date).toLocaleDateString() : '—'}
+                                            {inv.issue_date ? parseUtcDate(inv.issue_date).toLocaleDateString() : '—'}
                                             {inv.status ? <span className="ml-2 capitalize">{inv.status}</span> : null}
                                         </div>
                                     </div>
