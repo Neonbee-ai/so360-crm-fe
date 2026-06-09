@@ -182,14 +182,14 @@ const PartnerDetailPage = () => {
         try {
             const updated = await partnersApi.update(id, {
                 ...editForm,
-                grading: editForm.grading || undefined,
+                grading: (['low', 'mid', 'high'] as string[]).includes(editForm.grading) ? editForm.grading : null,
                 commission_rate: parseFloat(editForm.commission_rate) || 0,
-                owner_person_id: editForm.owner_person_id || undefined,
-                poc_primary: editForm.poc_primary || undefined,
-                poc_secondary: editForm.poc_secondary || undefined,
-                customers_connected: editForm.customers_connected === '' ? undefined : parseInt(editForm.customers_connected, 10),
-                value_of_purchase: editForm.value_of_purchase === '' ? undefined : parseFloat(editForm.value_of_purchase),
-                total_purchase_till_date: editForm.total_purchase_till_date === '' ? undefined : parseFloat(editForm.total_purchase_till_date),
+                owner_person_id: editForm.owner_person_id || null,
+                poc_primary: editForm.poc_primary || null,
+                poc_secondary: editForm.poc_secondary || null,
+                customers_connected: editForm.customers_connected === '' ? null : parseInt(editForm.customers_connected, 10),
+                value_of_purchase: editForm.value_of_purchase === '' ? null : parseFloat(editForm.value_of_purchase),
+                total_purchase_till_date: editForm.total_purchase_till_date === '' ? null : parseFloat(editForm.total_purchase_till_date),
             });
             setPartner(updated);
             setIsEditing(false);
@@ -443,71 +443,156 @@ const PartnerDetailPage = () => {
                             </div>
                         </div>
                     ) : (
-                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="space-y-8">
+
+                            {/* Partner Details */}
                             <div>
-                                <dt className={fieldLabelCls}>Partner Type</dt>
-                                <dd className="text-sm text-slate-100">{getTypeLabel(partner.partner_type)}</dd>
-                            </div>
-                            <div>
-                                <dt className={fieldLabelCls}>Architect Grading</dt>
-                                <dd>
-                                    {gradingCfg ? (
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
-                                            {gradingCfg.label}
-                                        </span>
-                                    ) : <span className="text-slate-500 text-sm">-</span>}
-                                </dd>
-                            </div>
-                            <div>
-                                <dt className={fieldLabelCls}>Commission Rate</dt>
-                                <dd className="text-sm text-slate-100">{partner.commission_rate ? `${partner.commission_rate}%` : '-'}</dd>
-                            </div>
-                            <div>
-                                <dt className={fieldLabelCls}>Relationship Manager</dt>
-                                <dd className="text-sm text-slate-100">{getUserName(partner.owner_person_id) || '-'}</dd>
-                            </div>
-                            <div>
-                                <dt className={fieldLabelCls}>Area Served</dt>
-                                <dd className="flex flex-wrap gap-1.5">
-                                    {(partner.area_served || []).length > 0
-                                        ? partner.area_served.map((area: string) => (
-                                            <span key={area} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700">
-                                                <MapPin size={10} />{area}
+                                <div className="flex items-center gap-3 mb-5">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Partner Details</span>
+                                    <span className="flex-1 h-px bg-slate-800" />
+                                </div>
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div>
+                                        <dt className={fieldLabelCls}>Partner Type</dt>
+                                        <dd className="mt-1">
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                                                {getTypeLabel(partner.partner_type)}
                                             </span>
-                                        ))
-                                        : <span className="text-slate-500 text-sm">-</span>
-                                    }
-                                </dd>
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className={fieldLabelCls}>Architect Grading</dt>
+                                        <dd className="mt-1">
+                                            {gradingCfg ? (
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${gradingCfg.color}`}>
+                                                    {gradingCfg.label}
+                                                </span>
+                                            ) : <span className="text-slate-500 text-sm">—</span>}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className={fieldLabelCls}>Commission Rate</dt>
+                                        <dd className="text-sm text-slate-100 mt-1 flex items-center gap-1.5">
+                                            {partner.commission_rate > 0
+                                                ? <><Percent size={13} className="text-slate-400" /><span>{partner.commission_rate}%</span></>
+                                                : <span className="text-slate-500">—</span>}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className={fieldLabelCls}>Relationship Manager</dt>
+                                        <dd className="text-sm text-slate-100 mt-1 flex items-center gap-1.5">
+                                            {getUserName(partner.owner_person_id)
+                                                ? <><User size={13} className="text-slate-400" /><span>{getUserName(partner.owner_person_id)}</span></>
+                                                : <span className="text-slate-500">—</span>}
+                                        </dd>
+                                    </div>
+                                </dl>
                             </div>
+
+                            {/* Geographic Coverage */}
                             <div>
-                                <dt className={fieldLabelCls}>Customers Connected</dt>
-                                <dd className="text-sm text-slate-100">{partner.customers_connected != null ? partner.customers_connected : '-'}</dd>
+                                <div className="flex items-center gap-3 mb-5">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Geographic Coverage</span>
+                                    <span className="flex-1 h-px bg-slate-800" />
+                                </div>
+                                <dl>
+                                    <dt className={fieldLabelCls}>Area Served</dt>
+                                    <dd className="flex flex-wrap gap-2 mt-2">
+                                        {(partner.area_served || []).length > 0
+                                            ? partner.area_served.map((area: string) => (
+                                                <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700">
+                                                    <MapPin size={10} />{area}
+                                                </span>
+                                            ))
+                                            : <span className="text-slate-500 text-sm">—</span>
+                                        }
+                                    </dd>
+                                </dl>
                             </div>
+
+                            {/* Business Metrics */}
                             <div>
-                                <dt className={fieldLabelCls}>Value of Purchase</dt>
-                                <dd className="text-sm text-slate-100">{partner.value_of_purchase != null ? formatters.formatCurrency(partner.value_of_purchase) : '-'}</dd>
+                                <div className="flex items-center gap-3 mb-5">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Business Metrics</span>
+                                    <span className="flex-1 h-px bg-slate-800" />
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                                        <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">
+                                            <Users size={12} />Customers Connected
+                                        </div>
+                                        <div className="text-2xl font-bold text-slate-50">
+                                            {partner.customers_connected != null
+                                                ? partner.customers_connected
+                                                : <span className="text-slate-600 text-base font-normal">—</span>}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                                        <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">
+                                            <DollarSign size={12} />Value of Purchase
+                                        </div>
+                                        <div className="text-xl font-bold text-slate-50">
+                                            {partner.value_of_purchase != null
+                                                ? formatters.formatCurrency(partner.value_of_purchase)
+                                                : <span className="text-slate-600 text-base font-normal">—</span>}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                                        <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">
+                                            <BarChart2 size={12} />Total Purchase Till Date
+                                        </div>
+                                        <div className="text-xl font-bold text-slate-50">
+                                            {partner.total_purchase_till_date != null
+                                                ? formatters.formatCurrency(partner.total_purchase_till_date)
+                                                : <span className="text-slate-600 text-base font-normal">—</span>}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* Contact Information */}
                             <div>
-                                <dt className={fieldLabelCls}>Total Purchase Till Date</dt>
-                                <dd className="text-sm text-slate-100">{partner.total_purchase_till_date != null ? formatters.formatCurrency(partner.total_purchase_till_date) : '-'}</dd>
+                                <div className="flex items-center gap-3 mb-5">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Contact Information</span>
+                                    <span className="flex-1 h-px bg-slate-800" />
+                                </div>
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div>
+                                        <dt className={fieldLabelCls}>1st POC</dt>
+                                        <dd className="text-sm text-slate-200 mt-1 flex items-center gap-1.5">
+                                            {partner.poc_primary
+                                                ? <><User size={13} className="text-slate-500" />{partner.poc_primary}</>
+                                                : <span className="text-slate-500">—</span>}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className={fieldLabelCls}>2nd POC</dt>
+                                        <dd className="text-sm text-slate-200 mt-1 flex items-center gap-1.5">
+                                            {partner.poc_secondary
+                                                ? <><User size={13} className="text-slate-500" />{partner.poc_secondary}</>
+                                                : <span className="text-slate-500">—</span>}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className={fieldLabelCls}>Email</dt>
+                                        <dd className="mt-1">
+                                            {partner.email
+                                                ? <a href={`mailto:${partner.email}`} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1.5 transition-colors"><Mail size={13} />{partner.email}</a>
+                                                : <span className="text-slate-500 text-sm">—</span>}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className={fieldLabelCls}>Phone</dt>
+                                        <dd className="text-sm text-slate-200 mt-1 flex items-center gap-1.5">
+                                            {partner.phone
+                                                ? <><Phone size={13} className="text-slate-500" />{partner.phone}</>
+                                                : <span className="text-slate-500">—</span>}
+                                        </dd>
+                                    </div>
+                                </dl>
                             </div>
-                            <div>
-                                <dt className={fieldLabelCls}>POC Primary</dt>
-                                <dd className="text-sm text-slate-300">{partner.poc_primary || '-'}</dd>
-                            </div>
-                            <div>
-                                <dt className={fieldLabelCls}>POC Secondary</dt>
-                                <dd className="text-sm text-slate-300">{partner.poc_secondary || '-'}</dd>
-                            </div>
-                            <div>
-                                <dt className={fieldLabelCls}>Email</dt>
-                                <dd className="text-sm text-slate-300">{partner.email || '-'}</dd>
-                            </div>
-                            <div>
-                                <dt className={fieldLabelCls}>Phone</dt>
-                                <dd className="text-sm text-slate-300">{partner.phone || '-'}</dd>
-                            </div>
-                        </dl>
+
+                        </div>
                     )}
                 </div>
             )}
