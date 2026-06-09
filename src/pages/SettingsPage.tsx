@@ -1074,9 +1074,9 @@ interface ScoringRuleFormProps {
     getFieldType: (ruleType: string, targetField: string) => string;
 }
 
-const ScoringRuleForm: React.FC<ScoringRuleFormProps> = ({
+function ScoringRuleForm({
     draft, onChange, onSave, onCancel, isSaving, sourceTypes, customFields, getFieldType,
-}) => {
+}: ScoringRuleFormProps) {
     const ruleType = draft.rule_type || 'source';
     const targetField = draft.target_field || '';
     const fieldType = getFieldType(ruleType, targetField);

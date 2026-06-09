@@ -155,9 +155,13 @@ const settings = {
   deal_custom_fields: [],
   lead_sources: [],
   lead_scoring: [
-    { id: 'r1', criteria: 'Source is website', points: 20, type: 'source' },
-    { id: 'r2', criteria: 'Has a call', points: 10, type: 'activity' },
-    { id: 'r3', criteria: 'Field is high', points: 15, type: 'field' },
+    { id: 'r1', name: 'Referral Source', rule_type: 'source', target_field: 'referral', condition: 'equals', value: 'referral', score_points: 20, is_active: true, priority: 0 },
+  ],
+  score_categories: [
+    { id: 'cat-1', label: 'Cold',      min_score: 0,   max_score: 30,  color: '#6b7280', sort_order: 1 },
+    { id: 'cat-2', label: 'Warm',      min_score: 31,  max_score: 60,  color: '#f59e0b', sort_order: 2 },
+    { id: 'cat-3', label: 'Hot',       min_score: 61,  max_score: 100, color: '#f97316', sort_order: 3 },
+    { id: 'cat-4', label: 'Qualified', min_score: 101, max_score: null, color: '#22c55e', sort_order: 4 },
   ],
   default_owner_id: 'u1',
 };
@@ -550,10 +554,11 @@ describe('LeadDetailPage', () => {
   });
 
   describe('Given lead scoring', () => {
-    it('When source scoring rule matches / Then adds points', async () => {
+    it('When lead has auto_score / Then score widget shows the value', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({ auto_score: 50, score_breakdown: [{ rule_id: 'r1', rule_name: 'Referral Source', points: 50 }] }));
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText(/Source is website/)).toBeInTheDocument();
+        expect(screen.getByText('50')).toBeInTheDocument();
       });
     });
   });
