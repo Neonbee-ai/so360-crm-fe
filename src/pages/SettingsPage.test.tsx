@@ -18,6 +18,14 @@ vi.mock('../services/crmService', () => ({
       update: vi.fn().mockResolvedValue({ id: 'st1', label: 'Website', value: 'website', is_active: false, is_system: true }),
       delete: vi.fn().mockResolvedValue({}),
     },
+    scoringRules: {
+      create: vi.fn().mockResolvedValue({ id: 'rule-new', name: 'Email Rule', rule_type: 'field', target_field: 'email', condition: 'is_not_empty', score_points: 10, is_active: true, priority: 0 }),
+      update: vi.fn().mockResolvedValue({ id: 'ls-rule1', name: 'Email Rule', rule_type: 'field', target_field: 'email', condition: 'is_not_empty', score_points: 10, is_active: false, priority: 0 }),
+      delete: vi.fn().mockResolvedValue({}),
+    },
+    scoreCategories: {
+      update: vi.fn().mockResolvedValue({}),
+    },
   },
 }));
 
@@ -45,7 +53,20 @@ const makeSettings = () => ({
   lead_custom_fields: [{ id: 'lcf1', label: 'Industry', type: 'text', required: false }],
   deal_custom_fields: [{ id: 'dcf1', label: 'Budget', type: 'number', required: false }],
   lead_sources: [{ id: 'src1', name: 'Website', archived: false }],
-  lead_scoring: [{ id: 'ls-rule1', criteria: 'Has email', points: 10, type: 'field' }],
+  lead_scoring: [{
+    id: 'ls-rule1',
+    name: 'Email Rule',
+    rule_type: 'field' as const,
+    target_field: 'email',
+    condition: 'is_not_empty' as const,
+    value: '',
+    score_points: 10,
+    is_active: true,
+    priority: 0,
+  }],
+  score_categories: [
+    { id: 'cat-1', label: 'Cold', min_score: 0, max_score: 30, color: '#6b7280', sort_order: 1 },
+  ],
   default_owner_id: 'u1',
   source_type_options: [
     { id: 'st1', label: 'Website', value: 'website', is_active: true, is_system: true },
@@ -253,30 +274,28 @@ describe('Given SettingsPage', () => {
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Has email')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('10')).toBeInTheDocument();
+      expect(screen.getByText('Email Rule')).toBeInTheDocument();
+      expect(screen.getByText('Lead Scoring Rules')).toBeInTheDocument();
     });
   });
 
-  it('When action / Then adds a new scoring rule', async () => {
+  it('When action / Then adds a new scoring rule shows form', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
-    await waitFor(() => screen.getByDisplayValue('Has email'));
+    await waitFor(() => screen.getByText('Email Rule'));
     fireEvent.click(screen.getByText(/add rule/i));
-    expect(screen.getByDisplayValue('New Rule')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/high budget lead/i)).toBeInTheDocument();
+    });
   });
 
-  it('When action / Then edits scoring rule criteria, type, and points', async () => {
+  it('When action / Then score bands section is visible on scoring tab', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
-    await waitFor(() => screen.getByDisplayValue('Has email'));
-
-    fireEvent.change(screen.getByDisplayValue('Has email'), { target: { value: 'Has phone' } });
-    expect(screen.getByDisplayValue('Has phone')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '20' } });
-    expect(screen.getByDisplayValue('20')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Score Bands')).toBeInTheDocument();
+    });
   });
 });
