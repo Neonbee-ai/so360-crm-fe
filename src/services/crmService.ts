@@ -1,4 +1,4 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory } from '../types/crm';
 
 export interface TimelineEvent {
     id: string;
@@ -810,6 +810,30 @@ export const settingsApi = {
             return apiClient.delete<any>(`/settings/partner-types/${id}`);
         },
     },
+
+    scoringRules: {
+        getAll: async (): Promise<LeadScoringRule[]> => {
+            return apiClient.get<LeadScoringRule[]>('/settings/scoring-rules');
+        },
+        create: async (data: Omit<LeadScoringRule, 'id'>): Promise<LeadScoringRule> => {
+            return apiClient.post<LeadScoringRule>('/settings/scoring-rules', data);
+        },
+        update: async (id: string, data: Partial<LeadScoringRule>): Promise<LeadScoringRule> => {
+            return apiClient.patch<LeadScoringRule>(`/settings/scoring-rules/${id}`, data);
+        },
+        delete: async (id: string): Promise<void> => {
+            return apiClient.delete<void>(`/settings/scoring-rules/${id}`);
+        },
+    },
+
+    scoreCategories: {
+        getAll: async (): Promise<ScoreCategory[]> => {
+            return apiClient.get<ScoreCategory[]>('/settings/score-categories');
+        },
+        update: async (id: string, data: Partial<ScoreCategory>): Promise<ScoreCategory> => {
+            return apiClient.patch<ScoreCategory>(`/settings/score-categories/${id}`, data);
+        },
+    },
 };
 
 
@@ -1270,13 +1294,15 @@ export const crmService = {
     // Settings
     getSettings: async (): Promise<CRMSettings> => {
         try {
-            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, partnerFieldsResult, sourceTypesResult] = await Promise.allSettled([
+            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, partnerFieldsResult, sourceTypesResult, scoringRulesResult, scoreCategoriesResult] = await Promise.allSettled([
                 apiClient.get<any[]>('/settings/pipeline-stages'),
                 apiClient.get<any[]>('/settings/lead-stages'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=PARTNER'),
                 apiClient.get<any[]>('/settings/source-types'),
+                apiClient.get<any[]>('/settings/scoring-rules'),
+                apiClient.get<any[]>('/settings/score-categories'),
             ]);
 
             const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
@@ -1285,6 +1311,8 @@ export const crmService = {
             const dealFields = dealFieldsResult.status === 'fulfilled' ? dealFieldsResult.value : [];
             const partnerFields = partnerFieldsResult.status === 'fulfilled' ? partnerFieldsResult.value : [];
             const sourceTypes = sourceTypesResult.status === 'fulfilled' ? sourceTypesResult.value : [];
+            const scoringRules = scoringRulesResult.status === 'fulfilled' ? scoringRulesResult.value : [];
+            const scoreCategories = scoreCategoriesResult.status === 'fulfilled' ? scoreCategoriesResult.value : [];
 
             if (stagesResult.status === 'rejected') console.error('[CRM] Failed to fetch pipeline stages', stagesResult.reason);
             if (leadStagesResult.status === 'rejected') console.error('[CRM] Failed to fetch lead stages', leadStagesResult.reason);
@@ -1302,7 +1330,8 @@ export const crmService = {
                 lead_custom_fields: leadFields,
                 deal_custom_fields: dealFields,
                 partner_custom_fields: partnerFields,
-                lead_scoring: []
+                lead_scoring: scoringRules,
+                score_categories: scoreCategories,
             };
         } catch (error) {
             console.error('Failed to fetch settings', error);
@@ -1315,7 +1344,8 @@ export const crmService = {
                 lead_custom_fields: [],
                 deal_custom_fields: [],
                 partner_custom_fields: [],
-                lead_scoring: []
+                lead_scoring: [],
+                score_categories: [],
             };
         }
     },

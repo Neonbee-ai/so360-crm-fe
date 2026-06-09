@@ -63,6 +63,7 @@ const LeadDetailPage = () => {
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
+    const [scoreCategories, setScoreCategories] = useState<import('../types/crm').ScoreCategory[]>([]);
     const [activeTab, setActiveTab] = useState<TabType>('activity');
     const [infoTab, setInfoTab] = useState<'profile' | 'additional' | 'business'>('profile');
     const [isLoading, setIsLoading] = useState(true);
@@ -106,6 +107,7 @@ const LeadDetailPage = () => {
             setAssociatedTasks(tasksData);
             setCustomFieldDefs(settingsData?.lead_custom_fields || []);
             setScoringRules(settingsData.lead_scoring || []);
+            setScoreCategories(settingsData.score_categories || []);
             setLeadStages(settingsData.lead_stages || []);
             setAllUsers(usersData);
             setPartners(partnersData);
@@ -139,40 +141,26 @@ const LeadDetailPage = () => {
         );
     }
 
-    const calculateScore = () => {
-        let totalScore = 0;
-        const breakdown: { label: string, points: number }[] = [];
+    // Use backend-calculated score stored on the lead
+    const score = lead.auto_score ?? 0;
+    const breakdown = (lead.score_breakdown ?? []).map(item => ({
+        label: item.rule_name,
+        points: item.points,
+    }));
 
-        scoringRules.forEach(rule => {
-            if (rule.type === 'source' && lead.source.toLowerCase().includes(rule.criteria.toLowerCase().split('is ')[1] || '')) {
-                totalScore += rule.points;
-                breakdown.push({ label: rule.criteria, points: rule.points });
-            }
-            if (rule.type === 'activity') {
-                const activityType = rule.criteria.toLowerCase().split('a ')[1] || '';
-                const count = lead.activities.filter(a => a.type.toLowerCase() === activityType).length;
-                if (count > 0) {
-                    const points = rule.points * count;
-                    totalScore += points;
-                    breakdown.push({ label: `${rule.criteria} (${count}x)`, points });
-                }
-            }
-            if (rule.type === 'field') {
-                // Check if any custom field value matches the criteria
-                const isMatch = Object.values(lead.custom_fields || {}).some(val =>
-                    String(val).toLowerCase().includes(rule.criteria.toLowerCase().split('is ')[1] || '')
-                );
-                if (isMatch) {
-                    totalScore += rule.points;
-                    breakdown.push({ label: rule.criteria, points: rule.points });
-                }
-            }
-        });
-
-        return { total: totalScore, breakdown };
+    const getScoreCategory = () => {
+        const defaultCategories = [
+            { label: 'Cold',      min_score: 0,   max_score: 30,  color: '#6b7280' },
+            { label: 'Warm',      min_score: 31,  max_score: 60,  color: '#f59e0b' },
+            { label: 'Hot',       min_score: 61,  max_score: 100, color: '#f97316' },
+            { label: 'Qualified', min_score: 101, max_score: null, color: '#22c55e' },
+        ];
+        const cats = scoreCategories.length > 0 ? scoreCategories : defaultCategories;
+        return cats.find(c => score >= c.min_score && (c.max_score === null || score <= c.max_score))
+            || cats[0];
     };
 
-    const { total: score, breakdown } = calculateScore();
+    const scoreCategory = getScoreCategory();
 
     const getAggregatedTimeline = (): TimelineEvent[] => {
         const events: TimelineEvent[] = [];
@@ -1181,24 +1169,28 @@ const LeadDetailPage = () => {
                             );
                         })() : (
                             <>
-                                <div className="flex items-end gap-3 mb-6">
+                                <div className="flex items-end gap-3 mb-3">
                                     <span className="text-6xl font-black text-slate-50 tracking-tighter leading-none">{score}</span>
                                     <div className="pb-1">
                                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Score</span>
-                                        <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] uppercase tracking-tighter">
-                                            <TrendingUp size={12} />
-                                            <span>Top 10%</span>
+                                        <div
+                                            className="flex items-center gap-1 font-black text-[10px] uppercase tracking-tighter px-2 py-0.5 rounded-md"
+                                            style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
+                                        >
+                                            <span>● {scoreCategory.label}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="space-y-3 pt-6 border-t border-slate-800/50">
                                     {breakdown.length === 0 ? (
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No scoring rules applied yet</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No scoring rules matched</p>
                                     ) : (
                                         breakdown.map((item, idx) => (
                                             <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                <span className="text-slate-400">{item.label}</span>
-                                                <span className="text-emerald-400">+{item.points}</span>
+                                                <span className="text-slate-400 truncate mr-2">{item.label}</span>
+                                                <span className={item.points >= 0 ? 'text-emerald-400 shrink-0' : 'text-rose-400 shrink-0'}>
+                                                    {item.points >= 0 ? '+' : ''}{item.points}
+                                                </span>
                                             </div>
                                         ))
                                     )}
@@ -1206,8 +1198,12 @@ const LeadDetailPage = () => {
                                 <div className="mt-6 pt-4">
                                     <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
-                                            style={{ width: `${Math.min(100, (score / 150) * 100)}%` }}
+                                            className="h-full transition-all duration-1000 ease-out"
+                                            style={{
+                                                width: `${Math.min(100, (score / 150) * 100)}%`,
+                                                backgroundColor: scoreCategory.color,
+                                                boxShadow: `0 0 8px ${scoreCategory.color}80`,
+                                            }}
                                         />
                                     </div>
                                 </div>

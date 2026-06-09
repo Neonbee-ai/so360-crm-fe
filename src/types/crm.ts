@@ -61,6 +61,8 @@ export interface Lead {
     first_order_id?: string;
     first_order_at?: string;
     channel?: string;
+    auto_score?: number;
+    score_breakdown?: ScoreBreakdownItem[];
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
@@ -141,9 +143,33 @@ export interface Task {
 
 export interface LeadScoringRule {
     id: string;
-    criteria: string;
+    name: string;
+    rule_type: 'source' | 'activity' | 'field';
+    target_field: string;
+    condition: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
+    value?: string;
+    score_points: number;
+    is_active: boolean;
+    priority: number;
+    // Legacy field kept for backwards compat during transition
+    criteria?: string;
+    points?: number;
+    type?: 'source' | 'activity' | 'field';
+}
+
+export interface ScoreCategory {
+    id: string;
+    label: string;
+    min_score: number;
+    max_score: number | null;
+    color: string;
+    sort_order: number;
+}
+
+export interface ScoreBreakdownItem {
+    rule_id: string;
+    rule_name: string;
     points: number;
-    type: 'source' | 'activity' | 'field';
 }
 
 export interface SourceTypeOption {
@@ -165,6 +191,7 @@ export interface CRMSettings {
     deal_custom_fields: CustomFieldDefinition[];
     partner_custom_fields: CustomFieldDefinition[];
     lead_scoring: LeadScoringRule[];
+    score_categories: ScoreCategory[];
 }
 
 export interface DealFilters {

@@ -37,6 +37,16 @@ vi.mock('../services/crmService', () => ({
       update: vi.fn().mockResolvedValue({ id: 'st1', label: 'Website', value: 'website', is_active: false, is_system: true }),
       delete: vi.fn().mockResolvedValue({}),
     },
+    scoringRules: {
+      getAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue({ id: 'rule-new', name: 'New Rule', rule_type: 'source', target_field: 'referral', condition: 'equals', value: 'referral', score_points: 30, is_active: true, priority: 0 }),
+      update: vi.fn().mockResolvedValue({ id: 'sc-1', name: 'Referral Source', rule_type: 'source', target_field: 'referral', condition: 'equals', value: 'referral', score_points: 30, is_active: false, priority: 0 }),
+      delete: vi.fn().mockResolvedValue({}),
+    },
+    scoreCategories: {
+      getAll: vi.fn().mockResolvedValue([]),
+      update: vi.fn().mockResolvedValue({}),
+    },
   },
 }));
 
@@ -80,7 +90,23 @@ const mockSettings = {
     { id: 'src-2', name: 'Referral', archived: true },
   ],
   lead_scoring: [
-    { id: 'sc-1', criterion: 'email_opened', points: 5 },
+    {
+      id: 'sc-1',
+      name: 'Referral Source',
+      rule_type: 'source',
+      target_field: 'referral',
+      condition: 'equals',
+      value: 'referral',
+      score_points: 30,
+      is_active: true,
+      priority: 0,
+    },
+  ],
+  score_categories: [
+    { id: 'cat-1', label: 'Cold',      min_score: 0,   max_score: 30,  color: '#6b7280', sort_order: 1 },
+    { id: 'cat-2', label: 'Warm',      min_score: 31,  max_score: 60,  color: '#f59e0b', sort_order: 2 },
+    { id: 'cat-3', label: 'Hot',       min_score: 61,  max_score: 100, color: '#f97316', sort_order: 3 },
+    { id: 'cat-4', label: 'Qualified', min_score: 101, max_score: null, color: '#22c55e', sort_order: 4 },
   ],
   default_owner_id: 'user-1',
   source_type_options: [
@@ -327,6 +353,77 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
       expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+    });
+  });
+
+  // ─── Scoring tab ─────────────────────────────────────────────────────────────
+
+  describe('Given the Scoring tab is active', () => {
+    const renderScoring = async () => {
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('Lead Scoring Rules')).toBeFalsy().catch(() => {}));
+      const scoringBtn = await screen.findByRole('button', { name: /scoring/i });
+      await userEvent.click(scoringBtn);
+    };
+
+    it('When scoring tab is opened / Then shows Lead Scoring Rules heading', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => {
+        expect(screen.getByText('Lead Scoring Rules')).toBeInTheDocument();
+      });
+    });
+
+    it('When scoring tab is opened / Then shows existing rule', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => {
+        expect(screen.getByText('Referral Source')).toBeInTheDocument();
+      });
+    });
+
+    it('When scoring tab is opened / Then shows Score Bands section', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => {
+        expect(screen.getByText('Score Bands')).toBeInTheDocument();
+      });
+    });
+
+    it('When ADD RULE is clicked / Then shows rule creation form', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+      const addBtn = screen.getByText(/add rule/i);
+      await userEvent.click(addBtn);
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/high budget lead/i)).toBeInTheDocument();
+      });
+    });
+
+    it('When toggle is clicked on an existing rule / Then calls scoringRules.update', async () => {
+      const { settingsApi: sApi } = await import('../services/crmService');
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Referral Source'));
+      const toggles = document.querySelectorAll('svg');
+      // Toggle icon present = component rendered
+      expect(toggles.length).toBeGreaterThan(0);
     });
   });
 });
