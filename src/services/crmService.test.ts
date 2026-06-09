@@ -917,6 +917,10 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([]);
     // Settings: source-types (added in P2)
     mockFetchSuccess([]);
+    // Settings: scoring-rules
+    mockFetchSuccess([]);
+    // Settings: score-categories
+    mockFetchSuccess([]);
     // getAll deals
     mockFetchSuccess([{ id: 'd1', value: '0', stage: 'Lead', stage_id: 's1', notes: [], documents: [], activities: [] }]);
     const result = await crmService.getPipeline();
@@ -1002,6 +1006,10 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([{ id: 'cf2', label: 'Budget', type: 'number' }]);
     // source-types (added in P2)
     mockFetchSuccess([]);
+    // scoring-rules
+    mockFetchSuccess([]);
+    // score-categories
+    mockFetchSuccess([]);
 
     const result = await crmService.getSettings();
     expect(result.deal_stages).toHaveLength(1);
@@ -1021,6 +1029,10 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([]);
     mockFetchSuccess([]);
     // source-types (added in P2)
+    mockFetchSuccess([]);
+    // scoring-rules
+    mockFetchSuccess([]);
+    // score-categories
     mockFetchSuccess([]);
     const result = await crmService.getSettings();
     expect(result.deal_stages[0].type).toBe('WON');
@@ -1809,8 +1821,11 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([
       { id: 't1', status: 'open', type: 'REMINDER', due_date: '2099-01-01' },
     ]);
-    // getSettings (5 calls — pipeline-stages, lead-stages, custom-fields LEAD, custom-fields DEAL, source-types)
+    // getSettings (8 calls — pipeline-stages, lead-stages, custom-fields LEAD, custom-fields DEAL, custom-fields PARTNER, source-types, scoring-rules, score-categories)
     mockFetchSuccess([{ id: 's1', name: 'Won', type: 'WON' }, { id: 's2', name: 'Lost', type: 'LOST' }]);
+    mockFetchSuccess([]);
+    mockFetchSuccess([]);
+    mockFetchSuccess([]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
