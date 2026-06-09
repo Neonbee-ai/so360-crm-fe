@@ -4,9 +4,9 @@ import React from 'react';
 import { PartnerSearchDropdown } from './PartnerSearchDropdown';
 
 const mockPartners = [
-    { id: 'p1', company_name: 'Acme Corp', contact_name: 'John Doe' },
-    { id: 'p2', company_name: 'Beta LLC', contact_name: 'Jane Smith' },
-    { id: 'p3', company_name: 'Gamma Inc', contact_name: undefined },
+    { id: 'p1', contact_name: 'John Doe', company_name: 'Acme Corp' },
+    { id: 'p2', contact_name: 'Jane Smith', company_name: 'Beta LLC' },
+    { id: 'p3', contact_name: 'Gamma Contact' },
 ];
 
 describe('PartnerSearchDropdown', () => {
@@ -23,9 +23,9 @@ describe('PartnerSearchDropdown', () => {
     });
 
     describe('Given a partner is selected', () => {
-        it('When rendered / Then shows the selected partner company name', () => {
+        it('When rendered / Then shows the selected partner contact name with company name', () => {
             render(<PartnerSearchDropdown partners={mockPartners} value="p1" onChange={vi.fn()} />);
-            expect(screen.getByText('Acme Corp (John Doe)')).toBeInTheDocument();
+            expect(screen.getByText('John Doe (Acme Corp)')).toBeInTheDocument();
         });
 
         it('When rendered / Then shows clear button', () => {
@@ -50,13 +50,13 @@ describe('PartnerSearchDropdown', () => {
             });
         });
 
-        it('When dropdown opens / Then shows all partners', async () => {
+        it('When dropdown opens / Then shows all partner contact names', async () => {
             render(<PartnerSearchDropdown partners={mockPartners} value="" onChange={vi.fn()} />);
             fireEvent.click(screen.getByRole('combobox'));
             await waitFor(() => {
-                expect(screen.getByText('Acme Corp')).toBeInTheDocument();
-                expect(screen.getByText('Beta LLC')).toBeInTheDocument();
-                expect(screen.getByText('Gamma Inc')).toBeInTheDocument();
+                expect(screen.getByText('John Doe')).toBeInTheDocument();
+                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+                expect(screen.getByText('Gamma Contact')).toBeInTheDocument();
             });
         });
 
@@ -70,22 +70,22 @@ describe('PartnerSearchDropdown', () => {
     });
 
     describe('Given user types in the search input', () => {
-        it('When typing a query / Then filters partners by company name', async () => {
+        it('When typing a contact name query / Then filters partners by contact name', async () => {
             render(<PartnerSearchDropdown partners={mockPartners} value="" onChange={vi.fn()} />);
             fireEvent.click(screen.getByRole('combobox'));
             await waitFor(() => screen.getByTestId('partner-search-input'));
-            fireEvent.change(screen.getByTestId('partner-search-input'), { target: { value: 'Acme' } });
-            expect(screen.getByText('Acme Corp')).toBeInTheDocument();
-            expect(screen.queryByText('Beta LLC')).not.toBeInTheDocument();
+            fireEvent.change(screen.getByTestId('partner-search-input'), { target: { value: 'John' } });
+            expect(screen.getByText('John Doe')).toBeInTheDocument();
+            expect(screen.queryByText('Jane Smith')).not.toBeInTheDocument();
         });
 
-        it('When typing a query / Then filters partners by contact name', async () => {
+        it('When typing a company name query / Then filters partners by company name', async () => {
             render(<PartnerSearchDropdown partners={mockPartners} value="" onChange={vi.fn()} />);
             fireEvent.click(screen.getByRole('combobox'));
             await waitFor(() => screen.getByTestId('partner-search-input'));
-            fireEvent.change(screen.getByTestId('partner-search-input'), { target: { value: 'Jane' } });
-            expect(screen.getByText('Beta LLC')).toBeInTheDocument();
-            expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument();
+            fireEvent.change(screen.getByTestId('partner-search-input'), { target: { value: 'Beta' } });
+            expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+            expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
         });
 
         it('When no partners match / Then shows no partners found message', async () => {
@@ -124,11 +124,11 @@ describe('PartnerSearchDropdown', () => {
         });
     });
 
-    describe('Given a partner without a contact name', () => {
-        it('When selected / Then shows only company name without parentheses', () => {
+    describe('Given a partner without a company name', () => {
+        it('When selected / Then shows only contact name without parentheses', () => {
             render(<PartnerSearchDropdown partners={mockPartners} value="p3" onChange={vi.fn()} />);
-            expect(screen.getByText('Gamma Inc')).toBeInTheDocument();
-            expect(screen.queryByText(/Gamma Inc \(/)).not.toBeInTheDocument();
+            expect(screen.getByText('Gamma Contact')).toBeInTheDocument();
+            expect(screen.queryByText(/Gamma Contact \(/)).not.toBeInTheDocument();
         });
     });
 });

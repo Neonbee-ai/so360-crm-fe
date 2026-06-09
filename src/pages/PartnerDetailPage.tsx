@@ -118,6 +118,9 @@ const PartnerDetailPage = () => {
             setPartnerTypes(typesData || []);
             setUsers(usersData || []);
             setEditForm({
+                first_name: partnerData.first_name || '',
+                last_name: partnerData.last_name || '',
+                company_name: partnerData.company_name || '',
                 contact_name: partnerData.contact_name || '',
                 email: partnerData.email || '',
                 phone: partnerData.phone || '',
@@ -181,7 +184,9 @@ const PartnerDetailPage = () => {
         setSaving(true);
         try {
             const updated = await partnersApi.update(id, {
-                ...editForm,
+                first_name: editForm.first_name,
+                last_name: editForm.last_name,
+                company_name: editForm.company_name || null,
                 grading: (['low', 'mid', 'high'] as string[]).includes(editForm.grading) ? editForm.grading : null,
                 commission_rate: parseFloat(editForm.commission_rate) || 0,
                 owner_person_id: editForm.owner_person_id || null,
@@ -269,7 +274,9 @@ const PartnerDetailPage = () => {
                 <div className="flex items-start justify-between">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-3xl font-bold text-slate-50">{partner.contact_name}</h1>
+                            <h1 className="text-3xl font-bold text-slate-50">
+                                {[partner.first_name, partner.last_name].filter(Boolean).join(' ') || partner.contact_name}
+                            </h1>
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
                                 {getTypeLabel(partner.partner_type)}
                             </span>
@@ -279,6 +286,9 @@ const PartnerDetailPage = () => {
                                 </span>
                             )}
                         </div>
+                        {partner.company_name && (
+                            <p className="text-slate-400 text-sm mb-1">{partner.company_name}</p>
+                        )}
                         <div className="flex flex-wrap items-center gap-4 text-slate-400 text-sm">
                             {partner.email && <span className="flex items-center gap-1.5"><Mail size={14} />{partner.email}</span>}
                             {partner.phone && <span className="flex items-center gap-1.5"><Phone size={14} />{partner.phone}</span>}
@@ -324,10 +334,22 @@ const PartnerDetailPage = () => {
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                                 <div>
-                                    <label className={editLabelCls}>Name</label>
-                                    <input value={editForm.contact_name}
-                                        onChange={e => setEditForm((f: any) => ({ ...f, contact_name: e.target.value }))}
-                                        className={editInputCls} />
+                                    <label className={editLabelCls}>First Name</label>
+                                    <input value={editForm.first_name}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, first_name: e.target.value }))}
+                                        className={editInputCls} placeholder="Dhanooj" />
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>Last Name</label>
+                                    <input value={editForm.last_name}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, last_name: e.target.value }))}
+                                        className={editInputCls} placeholder="B S" />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className={editLabelCls}>Company Name</label>
+                                    <input value={editForm.company_name}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, company_name: e.target.value }))}
+                                        className={editInputCls} placeholder="Moonhive Pvt Ltd" />
                                 </div>
                                 <div>
                                     <label className={editLabelCls}>Partner Type</label>
@@ -557,6 +579,12 @@ const PartnerDetailPage = () => {
                                     <span className="flex-1 h-px bg-slate-800" />
                                 </div>
                                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                    {partner.company_name && (
+                                        <div className="sm:col-span-2">
+                                            <dt className={fieldLabelCls}>Company Name</dt>
+                                            <dd className="text-sm text-slate-200 mt-1">{partner.company_name}</dd>
+                                        </div>
+                                    )}
                                     <div>
                                         <dt className={fieldLabelCls}>1st POC</dt>
                                         <dd className="text-sm text-slate-200 mt-1 flex items-center gap-1.5">

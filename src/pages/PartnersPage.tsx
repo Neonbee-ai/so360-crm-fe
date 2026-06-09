@@ -28,7 +28,9 @@ interface CreatePartnerModalProps {
 
 const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerModalProps) => {
     const [form, setForm] = useState({
-        contact_name: '',
+        first_name: '',
+        last_name: '',
+        company_name: '',
         email: '',
         phone: '',
         alt_phone: '',
@@ -66,8 +68,8 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.contact_name.trim() || !form.partner_type) {
-            setError('Name and partner type are required.');
+        if (!form.first_name.trim() || !form.last_name.trim() || !form.partner_type) {
+            setError('First name, last name, and partner type are required.');
             return;
         }
         const pErr = validatePhone(form.phone);
@@ -79,7 +81,9 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         setError(null);
         try {
             await partnersApi.create({
-                contact_name: form.contact_name,
+                first_name: form.first_name,
+                last_name: form.last_name,
+                company_name: form.company_name || undefined,
                 email: form.email || undefined,
                 phone: form.phone || undefined,
                 alt_phone: form.alt_phone || undefined,
@@ -126,12 +130,28 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                     {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
                     <div className="space-y-4">
 
-                        {/* Name */}
+                        {/* First Name + Last Name */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>First Name *</label>
+                                <input type="text" required value={form.first_name}
+                                    onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                                    className={inputCls} placeholder="Dhanooj" />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Last Name *</label>
+                                <input type="text" required value={form.last_name}
+                                    onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                                    className={inputCls} placeholder="B S" />
+                            </div>
+                        </div>
+
+                        {/* Company Name */}
                         <div>
-                            <label className={labelCls}>Name *</label>
-                            <input type="text" required value={form.contact_name}
-                                onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))}
-                                className={inputCls} placeholder="Partner / architect name" />
+                            <label className={labelCls}>Company Name</label>
+                            <input type="text" value={form.company_name}
+                                onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))}
+                                className={inputCls} placeholder="Moonhive Pvt Ltd" />
                         </div>
 
                         {/* Partner Type */}

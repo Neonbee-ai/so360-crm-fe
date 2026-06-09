@@ -310,7 +310,7 @@ describe('PartnersPage', () => {
 
     // ── Add Partner modal — form validation ───────────────────────────────────
     describe('Given Add Partner form validation', () => {
-        it('When submitted with empty name and type / Then shows validation error', async () => {
+        it('When submitted with empty names and type / Then shows validation error', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
@@ -321,22 +321,23 @@ describe('PartnersPage', () => {
             await act(async () => { fireEvent.submit(form); });
 
             await waitFor(() => {
-                expect(screen.getByText('Name and partner type are required.')).toBeInTheDocument();
+                expect(screen.getByText('First name, last name, and partner type are required.')).toBeInTheDocument();
             });
             expect(mockPartnersCreate).not.toHaveBeenCalled();
         });
 
-        it('When name filled but partner type missing / Then shows validation error', async () => {
+        it('When first name and last name filled but partner type missing / Then shows validation error', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
-            await user.type(screen.getByPlaceholderText('Partner / architect name'), 'Test Partner');
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Test');
+            await user.type(screen.getByPlaceholderText('B S'), 'Partner');
 
             const form = document.querySelector('form#create-partner-form')!;
             await act(async () => { fireEvent.submit(form); });
 
             await waitFor(() => {
-                expect(screen.getByText('Name and partner type are required.')).toBeInTheDocument();
+                expect(screen.getByText('First name, last name, and partner type are required.')).toBeInTheDocument();
             });
             expect(mockPartnersCreate).not.toHaveBeenCalled();
         });
@@ -361,7 +362,8 @@ describe('PartnersPage', () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
-            await user.type(screen.getByPlaceholderText('Partner / architect name'), 'Test Partner');
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Test');
+            await user.type(screen.getByPlaceholderText('B S'), 'Partner');
             await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
             await user.selectOptions(screen.getByDisplayValue('Select type...'), 'referral');
             await user.type(screen.getByPlaceholderText('+91 98765 43210'), 'badphone');
@@ -380,14 +382,15 @@ describe('PartnersPage', () => {
 
     // ── Add Partner modal — successful submission ──────────────────────────────
     describe('Given Add Partner form successful submission', () => {
-        it('When valid form submitted / Then calls create API and closes modal', async () => {
+        it('When valid form submitted / Then calls create API with first_name and last_name and closes modal', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             // Click the page-level "Add Partner" button (the one with an SVG icon)
             const addBtn = screen.getByRole('button', { name: /add partner/i });
             await user.click(addBtn);
 
-            await user.type(screen.getByPlaceholderText('Partner / architect name'), 'Gamma Ltd');
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Gamma');
+            await user.type(screen.getByPlaceholderText('B S'), 'Ltd');
             await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
             await user.selectOptions(screen.getByDisplayValue('Select type...'), 'referral');
 
@@ -395,7 +398,7 @@ describe('PartnersPage', () => {
 
             await waitFor(() => {
                 expect(mockPartnersCreate).toHaveBeenCalledWith(
-                    expect.objectContaining({ contact_name: 'Gamma Ltd', partner_type: 'referral' })
+                    expect.objectContaining({ first_name: 'Gamma', last_name: 'Ltd', partner_type: 'referral' })
                 );
             });
             await waitFor(() => {
@@ -404,12 +407,38 @@ describe('PartnersPage', () => {
             expect(mockPartnersGetAll).toHaveBeenCalledTimes(2); // initial load + post-create refresh
         });
 
+        it('When company name filled / Then it is included in the API call', async () => {
+            const user = userEvent.setup();
+            render(<PartnersPage />);
+            await user.click(screen.getByRole('button', { name: /add partner/i }));
+
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Dhanooj');
+            await user.type(screen.getByPlaceholderText('B S'), 'B S');
+            await user.type(screen.getByPlaceholderText('Moonhive Pvt Ltd'), 'Moonhive Pvt Ltd');
+            await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
+            await user.selectOptions(screen.getByDisplayValue('Select type...'), 'referral');
+
+            await user.click(screen.getByRole('button', { name: /create partner/i }));
+
+            await waitFor(() => {
+                expect(mockPartnersCreate).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        first_name: 'Dhanooj',
+                        last_name: 'B S',
+                        company_name: 'Moonhive Pvt Ltd',
+                        partner_type: 'referral',
+                    })
+                );
+            });
+        });
+
         it('When optional fields are filled / Then they are included in the API call', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            await user.type(screen.getByPlaceholderText('Partner / architect name'), 'Delta Org');
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Delta');
+            await user.type(screen.getByPlaceholderText('B S'), 'Org');
             await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
             await user.selectOptions(screen.getByDisplayValue('Select type...'), 'reseller');
             await user.type(screen.getByPlaceholderText('email@example.com'), 'delta@org.com');
@@ -421,7 +450,8 @@ describe('PartnersPage', () => {
             await waitFor(() => {
                 expect(mockPartnersCreate).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        contact_name: 'Delta Org',
+                        first_name: 'Delta',
+                        last_name: 'Org',
                         partner_type: 'reseller',
                         email: 'delta@org.com',
                         address: '123 Main St',
@@ -440,7 +470,8 @@ describe('PartnersPage', () => {
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            await user.type(screen.getByPlaceholderText('Partner / architect name'), 'Error Partner');
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Error');
+            await user.type(screen.getByPlaceholderText('B S'), 'Partner');
             await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
             await user.selectOptions(screen.getByDisplayValue('Select type...'), 'referral');
             await user.click(screen.getByRole('button', { name: /create partner/i }));

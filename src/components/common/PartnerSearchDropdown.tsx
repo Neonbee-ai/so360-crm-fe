@@ -3,8 +3,8 @@ import { Search, X, ChevronDown } from 'lucide-react';
 
 interface Partner {
     id: string;
-    company_name: string;
     contact_name?: string;
+    company_name?: string;
 }
 
 interface PartnerSearchDropdownProps {
@@ -32,10 +32,13 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
 
     const selected = partners.find(p => p.id === value);
 
+    const getPrimaryName = (p: Partner) => p.contact_name || p.company_name || '';
+    const getSecondaryName = (p: Partner) => p.contact_name && p.company_name ? p.company_name : null;
+
     const filtered = query
         ? partners.filter(p =>
-              p.company_name.toLowerCase().includes(query.toLowerCase()) ||
-              (p.contact_name || '').toLowerCase().includes(query.toLowerCase())
+              getPrimaryName(p).toLowerCase().includes(query.toLowerCase()) ||
+              (p.company_name || '').toLowerCase().includes(query.toLowerCase())
           )
         : partners;
 
@@ -84,7 +87,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder={selected ? selected.company_name : placeholder}
+                        placeholder={selected ? getPrimaryName(selected) : placeholder}
                         onClick={(e) => e.stopPropagation()}
                         className="flex-1 bg-transparent text-sm text-slate-50 outline-none placeholder:text-slate-500 min-w-0"
                         data-testid="partner-search-input"
@@ -92,7 +95,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                 ) : (
                     <span className={`flex-1 text-sm truncate ${selected ? 'text-slate-50' : 'text-slate-500'}`}>
                         {selected
-                            ? `${selected.company_name}${selected.contact_name ? ` (${selected.contact_name})` : ''}`
+                            ? `${getPrimaryName(selected)}${getSecondaryName(selected) ? ` (${getSecondaryName(selected)})` : ''}`
                             : placeholder}
                     </span>
                 )}
@@ -148,10 +151,10 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                                             : 'text-slate-200 hover:bg-slate-800'}`}
                                     data-testid={`partner-option-${p.id}`}
                                 >
-                                    <span className="font-medium truncate">{p.company_name}</span>
-                                    {p.contact_name && (
+                                    <span className="font-medium truncate">{getPrimaryName(p)}</span>
+                                    {getSecondaryName(p) && (
                                         <span className="text-slate-400 text-xs ml-2 shrink-0">
-                                            {p.contact_name}
+                                            {getSecondaryName(p)}
                                         </span>
                                     )}
                                 </button>
