@@ -658,6 +658,10 @@ export const activitiesApi = {
         const activities = await apiClient.get<any[]>(`/activities/lead/${leadId}`);
         return activities.map(mapActivityFromApi);
     },
+    getAllByLeadPaginated: async (leadId: string, limit: number, offset: number): Promise<{ data: Activity[], total: number }> => {
+        const result = await apiClient.get<{ data: any[], total: number }>(`/activities/lead/${leadId}?limit=${limit}&offset=${offset}`);
+        return { data: (result.data || []).map(mapActivityFromApi), total: result.total || 0 };
+    },
     create: async (data: any): Promise<Activity> => {
         const activity = await apiClient.post<any>('/activities', data);
         return mapActivityFromApi(activity);
@@ -1577,6 +1581,10 @@ export const crmService = {
     // Activities
     async getActivitiesByLeadId(leadId: string): Promise<Activity[]> {
         return activitiesApi.getAllByLead(leadId);
+    },
+
+    async getActivitiesByLeadIdPaginated(leadId: string, limit: number, offset: number): Promise<{ data: Activity[], total: number }> {
+        return activitiesApi.getAllByLeadPaginated(leadId, limit, offset);
     },
 
     async getActivitiesByDealId(dealId: string): Promise<Activity[]> {

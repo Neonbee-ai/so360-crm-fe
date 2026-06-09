@@ -8,7 +8,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, FileSignature, Package
+    File, Download, UploadCloud, FileIcon, Eye, FileSignature, Package, ChevronDown
 } from 'lucide-react';
 import SignRequestModal from '../components/sign/SignRequestModal';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
@@ -22,6 +22,7 @@ import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
+import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products';
 
@@ -85,24 +86,33 @@ const LeadDetailPage = () => {
     const [signOpen, setSignOpen] = useState(false);
     const [productCount, setProductCount] = useState(0);
     const [productValue, setProductValue] = useState(0);
+    const [activityTotal, setActivityTotal] = useState(0);
+    const [activityOffset, setActivityOffset] = useState(0);
+    const [isLoadingMoreActivities, setIsLoadingMoreActivities] = useState(false);
+    const [showActivityDrawer, setShowActivityDrawer] = useState(false);
+
+    const INITIAL_ACTIVITY_LOAD = 7;
+    const LOAD_MORE_BATCH = 20;
 
     const fetchLeadData = useCallback(async () => {
         try {
-            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData, partnersData, fetchedSourceTypes, documentsData] = await Promise.all([
+            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData] = await Promise.all([
                 crmService.getLeadById(id),
                 crmService.getDealsByLeadId(id),
                 crmService.getTasksByLeadId(id),
                 crmService.getSettings(),
                 crmService.getUsers(),
-                crmService.getActivitiesByLeadId(id),
+                crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0),
                 crmService.getPartners(),
                 settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
                 crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
             ]);
             setLead(leadData || null);
             if (leadData) {
-                setLead({ ...leadData, activities: activitiesData, documents: documentsData });
+                setLead({ ...leadData, activities: activitiesResult.data, documents: documentsData });
             }
+            setActivityTotal(activitiesResult.total);
+            setActivityOffset(activitiesResult.data.length);
             setAssociatedDeals(dealsData);
             setAssociatedTasks(tasksData);
             setCustomFieldDefs(settingsData?.lead_custom_fields || []);
@@ -118,6 +128,20 @@ const LeadDetailPage = () => {
             setIsLoading(false);
         }
     }, [id]);
+
+    const loadMoreActivities = useCallback(async () => {
+        if (!lead || isLoadingMoreActivities) return;
+        setIsLoadingMoreActivities(true);
+        try {
+            const result = await crmService.getActivitiesByLeadIdPaginated(id, LOAD_MORE_BATCH, activityOffset);
+            setLead(prev => prev ? { ...prev, activities: [...(prev.activities || []), ...result.data] } : prev);
+            setActivityOffset(prev => prev + result.data.length);
+        } catch (error) {
+            console.error('Failed to load more activities', error);
+        } finally {
+            setIsLoadingMoreActivities(false);
+        }
+    }, [id, activityOffset, isLoadingMoreActivities, lead]);
 
     useEffect(() => {
         fetchLeadData();
@@ -674,14 +698,33 @@ const LeadDetailPage = () => {
 
                         <div className="p-6">
                             {activeTab === 'activity' && (
-                                <div className="space-y-8">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Activity Timeline</p>
+                                <div className="space-y-6">
+                                    {/* Header */}
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Activity Timeline</p>
+                                            <p className="text-[10px] text-slate-600 mt-0.5">
+                                                Showing latest {timeline.length} · Total: {activityTotal}
+                                            </p>
+                                        </div>
+                                        {activityTotal > 0 && (
+                                            <button
+                                                onClick={() => setShowActivityDrawer(true)}
+                                                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                                            >
+                                                <ExternalLink size={11} />
+                                                View All History
+                                            </button>
+                                        )}
                                     </div>
 
+                                    {/* Timeline */}
                                     <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-800 ml-1">
                                         {timeline.length === 0 ? (
-                                            <p className="text-center text-slate-500 py-4 ml-6 italic text-sm">No activities logged yet.</p>
+                                            <div className="text-center py-8 ml-6">
+                                                <p className="text-slate-500 italic text-sm">No activities logged yet.</p>
+                                                <p className="text-slate-600 text-[10px] mt-1">Activities will appear here automatically when users interact with this lead.</p>
+                                            </div>
                                         ) : (
                                             timeline.map((event) => (
                                                 <div key={event.id} className="relative pl-10">
@@ -778,6 +821,28 @@ const LeadDetailPage = () => {
                                             ))
                                         )}
                                     </div>
+
+                                    {/* Load More / View All */}
+                                    {activityOffset < activityTotal && (
+                                        <div className="flex flex-col items-center gap-3 pt-2">
+                                            <button
+                                                onClick={loadMoreActivities}
+                                                disabled={isLoadingMoreActivities}
+                                                className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50 w-full justify-center"
+                                            >
+                                                {isLoadingMoreActivities
+                                                    ? <><Loader2 size={12} className="animate-spin" /> Loading…</>
+                                                    : <><ChevronDown size={12} /> View Older Activities ({activityTotal - activityOffset} more)</>
+                                                }
+                                            </button>
+                                            <button
+                                                onClick={() => setShowActivityDrawer(true)}
+                                                className="text-[10px] text-slate-600 hover:text-blue-400 transition-colors font-bold uppercase tracking-widest"
+                                            >
+                                                View All Activity History →
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {activeTab === 'notes' && (
@@ -1586,6 +1651,14 @@ const LeadDetailPage = () => {
                 </div>,
                 document.body
             )}
+            <ActivityHistoryDrawer
+                isOpen={showActivityDrawer}
+                onClose={() => setShowActivityDrawer(false)}
+                leadId={lead.id}
+                lead={lead}
+                associatedTasks={associatedTasks}
+                associatedDeals={associatedDeals}
+            />
         </div >
     );
 };
