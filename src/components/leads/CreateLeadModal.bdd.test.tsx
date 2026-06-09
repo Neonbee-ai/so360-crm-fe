@@ -171,6 +171,21 @@ describe('CreateLeadModal', () => {
       });
     });
 
+    it('When submitted / Then passes first_name and last_name (not contact_name) to createLead', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
+      fireEvent.change(screen.getByPlaceholderText('e.g. John'), { target: { value: 'Alice' } });
+      fireEvent.change(screen.getByPlaceholderText('e.g. Doe'), { target: { value: 'Smith' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        const payload = mockCreateLead.mock.calls[0][0];
+        expect(payload.first_name).toBe('Alice');
+        expect(payload.last_name).toBe('Smith');
+        expect(payload).not.toHaveProperty('contact_name');
+      });
+    });
+
     it('When submission fails / Then shows error message', async () => {
       mockCreateLead.mockRejectedValue(new Error('Server error'));
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);

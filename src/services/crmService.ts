@@ -1112,12 +1112,18 @@ export const crmService = {
     createLead: async (lead: Omit<Lead, 'id' | 'created_at' | 'owner'> & { owner_id?: string }): Promise<Lead> => {
         return leadsApi.create({
             company_name: lead.company_name,
-            contact_name: lead.contact_name,
+            first_name: (lead as any).first_name,
+            last_name: (lead as any).last_name,
             email: lead.contact_email,
             phone: lead.phone,
+            alt_phone: (lead as any).alt_phone,
+            address: (lead as any).address,
+            city: (lead as any).city,
+            pin_code: (lead as any).pin_code,
             status: lead.status || 'New',
             source: lead.source,
             owner_id: lead.owner_id || USER_ID,
+            referred_by: (lead as any).referred_by,
             meta_data: lead.custom_fields,
         });
     },
