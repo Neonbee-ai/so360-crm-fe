@@ -55,6 +55,7 @@ const LeadDetailPage = () => {
     const canQualifyLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
     const canConvertLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
+    const isSignEnabled = isModuleEnabled('sign');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const [lead, setLead] = useState<Lead | null>(null);
@@ -375,13 +376,15 @@ const LeadDetailPage = () => {
                             <Trash2 size={16} />
                             Delete
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => setSignOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
-                        >
-                            <FileSignature size={16} /> Request Signature
-                        </button>
+                        {isSignEnabled && (
+                            <button
+                                type="button"
+                                onClick={() => setSignOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
+                            >
+                                <FileSignature size={16} /> Request Signature
+                            </button>
+                        )}
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"

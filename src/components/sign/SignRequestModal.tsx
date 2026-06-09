@@ -19,11 +19,16 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
     const [phase, setPhase] = useState<'loading' | 'idle' | 'sending' | 'done' | 'error'>('loading');
     const [error, setError] = useState<string | null>(null);
 
-    // Get sign API base URL from window-injected config (same as signService in sign module)
+    // Resolve Sign BE origin: window override → build-time env → localhost dev fallback (3038).
+    // Mirrors the *_API_ORIGIN resolution used across crmService.ts so it works inside the shell.
     function getSignApiBase(): string {
-        const w = (window as any).VITE_SO360_SIGN_API;
-        if (typeof w === 'string' && w.trim()) return w.replace(/\/$/, '');
-        return '';
+        const env = (import.meta as any)?.env || {};
+        const win = typeof window !== 'undefined' ? (window as any) : {};
+        return String(
+            win.VITE_SO360_SIGN_API ||
+            env.VITE_SO360_SIGN_API ||
+            'http://localhost:3038'
+        ).replace(/\/$/, '');
     }
 
     function getAuthHeaders(): HeadersInit {
@@ -40,7 +45,6 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
 
     useEffect(() => {
         const base = getSignApiBase();
-        if (!base) { setPhase('error'); setError('Sign service not configured'); return; }
         fetch(`${base}/v1/sign/templates`, { headers: getAuthHeaders() })
             .then(r => r.json())
             .then(data => {

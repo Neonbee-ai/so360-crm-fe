@@ -7,7 +7,7 @@ import {
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { parseUtcDate } from '../utils/datetime';
-import { useBusinessSettings } from '@so360/shell-context';
+import { useBusinessSettings, useShell } from '@so360/shell-context';
 import SignRequestModal from './sign/SignRequestModal';
 
 interface Partner {
@@ -137,6 +137,8 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
     const [taxIdInput, setTaxIdInput] = useState(lead.tax_id || '');
     const [creditLimitInput, setCreditLimitInput] = useState(String(lead.credit_limit || 0));
     const [signOpen, setSignOpen] = useState(false);
+    const { isModuleEnabled } = useShell();
+    const isSignEnabled = isModuleEnabled('sign');
     const [isValidatingTax, setIsValidatingTax] = useState(false);
     const [isSavingCredit, setIsSavingCredit] = useState(false);
     const [taxError, setTaxError] = useState<string | null>(null);
@@ -516,6 +518,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             )}
 
             {/* Request Signature */}
+            {isSignEnabled && (
             <div className="border-t border-slate-800 pt-4">
                 <button
                     type="button"
@@ -534,6 +537,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     />
                 )}
             </div>
+            )}
 
             {/* ─── Business Information ────────────────────────────────────────── */}
             <div className="border-t border-slate-800 pt-4">

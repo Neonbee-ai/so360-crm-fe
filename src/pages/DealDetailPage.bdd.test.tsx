@@ -79,6 +79,12 @@ vi.mock('../components/common/Toast', () => ({
 
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
+const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
+vi.mock('@so360/shell-context', () => ({
+  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled }),
+  useActivity: () => ({ recordActivity: async () => {} }),
+}));
+
 vi.mock('../config/features', () => ({
   FEATURES: { DEAL_INVOICE_REQUEST: true, DEAL_PROJECT_CREATION: true },
 }));
@@ -175,6 +181,7 @@ const settings = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  shellCtl.signEnabled = false;
   mockGetDealById.mockResolvedValue(makeDeal());
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue([owner, owner2]);
@@ -188,6 +195,22 @@ beforeEach(() => {
 });
 
 describe('DealDetailPage', () => {
+  describe('Given the Sign module gating', () => {
+    it('When the Sign module is disabled / Then the Request Signature button is hidden', async () => {
+      shellCtl.signEnabled = false;
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: /request signature/i })).not.toBeInTheDocument();
+    });
+
+    it('When the Sign module is enabled / Then the Request Signature button is shown', async () => {
+      shellCtl.signEnabled = true;
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByRole('button', { name: /request signature/i })).toBeInTheDocument();
+    });
+  });
+
   describe('Given a deal with timeline data', () => {
     it('When the page loads / Then shows the deal name and stage badge', async () => {
       render(<DealDetailPage />);

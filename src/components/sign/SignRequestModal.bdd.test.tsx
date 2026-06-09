@@ -87,14 +87,15 @@ function renderModal(props: Partial<React.ComponentProps<typeof SignRequestModal
 // ===========================================================================
 describe('Given SignRequestModal renders', () => {
 
-    it('When VITE_SO360_SIGN_API is not set, Then error "Sign service not configured" is shown', () => {
-        // Remove before render — no fetch should be called
+    it('When the window override is absent, Then it falls back to the localhost:3038 Sign origin and still fetches templates', async () => {
+        // Remove the window override — resolution should fall back to the dev default
         delete (window as any).VITE_SO360_SIGN_API;
+        mockTemplatesFetch();
 
         renderModal();
 
-        expect(screen.getByText('Sign service not configured')).toBeInTheDocument();
-        expect(mockFetch).not.toHaveBeenCalled();
+        await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+        expect(mockFetch.mock.calls[0][0]).toBe('http://localhost:3038/v1/sign/templates');
     });
 
     it('When templates are loading, Then template select shows "Loading…"', () => {

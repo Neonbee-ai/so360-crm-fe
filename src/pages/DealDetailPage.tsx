@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useActivity } from '@so360/shell-context';
+import { useActivity, useShell } from '@so360/shell-context';
 import {
     ChevronLeft, Calendar, DollarSign, Clock, MessageSquare,
     AtSign, Phone, FileText, Plus, CheckCircle2, User as UserIcon, Users,
@@ -61,6 +61,8 @@ const DealDetailPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [signOpen, setSignOpen] = useState(false);
+    const { isModuleEnabled } = useShell();
+    const isSignEnabled = isModuleEnabled('sign');
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
         title: string;
@@ -506,13 +508,15 @@ const DealDetailPage = () => {
                         >
                             <Trash2 size={14} /> Delete
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => setSignOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
-                        >
-                            <FileSignature size={14} /> Request Signature
-                        </button>
+                        {isSignEnabled && (
+                            <button
+                                type="button"
+                                onClick={() => setSignOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
+                            >
+                                <FileSignature size={14} /> Request Signature
+                            </button>
+                        )}
                         {FEATURES.DEAL_INVOICE_REQUEST && (
                             <button
                                 onClick={handleCreateInvoice}
