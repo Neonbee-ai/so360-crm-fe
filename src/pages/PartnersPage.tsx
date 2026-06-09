@@ -18,6 +18,8 @@ const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
     high: { label: 'High', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
 };
 
+const AREA_OPTIONS = ['South India', 'North India', 'Central India', 'East India', 'West India'];
+
 interface CreatePartnerModalProps {
     partnerTypes: any[];
     onClose: () => void;
@@ -34,8 +36,15 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         city: '',
         pin_code: '',
         partner_type: '',
+        grading: '',
+        area_served: [] as string[],
         commission_rate: '',
         owner_person_id: '',
+        poc_primary: '',
+        poc_secondary: '',
+        customers_connected: '',
+        value_of_purchase: '',
+        total_purchase_till_date: '',
         custom_fields: {} as Record<string, any>,
     });
     const [users, setUsers] = useState<any[]>([]);
@@ -78,8 +87,15 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 city: form.city || undefined,
                 pin_code: form.pin_code || undefined,
                 partner_type: form.partner_type,
+                grading: form.grading || undefined,
+                area_served: form.area_served.length ? form.area_served : undefined,
                 commission_rate: form.commission_rate ? parseFloat(form.commission_rate) : 0,
                 owner_person_id: form.owner_person_id || undefined,
+                poc_primary: form.poc_primary || undefined,
+                poc_secondary: form.poc_secondary || undefined,
+                customers_connected: form.customers_connected ? parseInt(form.customers_connected, 10) : undefined,
+                value_of_purchase: form.value_of_purchase ? parseFloat(form.value_of_purchase) : undefined,
+                total_purchase_till_date: form.total_purchase_till_date ? parseFloat(form.total_purchase_till_date) : undefined,
                 meta_data: Object.keys(form.custom_fields).length ? form.custom_fields : undefined,
             });
             onCreated();
@@ -129,6 +145,57 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                     <option key={pt.value} value={pt.value}>{pt.label}</option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* Architect Grading + Commission Rate */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>Architect Grading</label>
+                                <select value={form.grading}
+                                    onChange={e => setForm(f => ({ ...f, grading: e.target.value }))}
+                                    className={inputCls}>
+                                    <option value="">Select grading...</option>
+                                    <option value="low">Low</option>
+                                    <option value="mid">Mid</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Commission Rate (%)</label>
+                                <input type="number" min="0" max="100" step="0.5"
+                                    value={form.commission_rate}
+                                    onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
+                                    className={inputCls} placeholder="0" />
+                            </div>
+                        </div>
+
+                        {/* Area Served */}
+                        <div>
+                            <label className={labelCls}>Area Served</label>
+                            <div className="flex flex-wrap gap-2">
+                                {AREA_OPTIONS.map(area => {
+                                    const selected = form.area_served.includes(area);
+                                    return (
+                                        <button
+                                            key={area}
+                                            type="button"
+                                            onClick={() => setForm(f => ({
+                                                ...f,
+                                                area_served: selected
+                                                    ? f.area_served.filter(a => a !== area)
+                                                    : [...f.area_served, area],
+                                            }))}
+                                            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                                selected
+                                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                                            }`}
+                                        >
+                                            {area}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* Email + Phone */}
@@ -194,12 +261,43 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             </select>
                         </div>
 
-                        {/* Commission Rate */}
+                        {/* POC Primary + Secondary */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>1st POC</label>
+                                <input type="text" value={form.poc_primary}
+                                    onChange={e => setForm(f => ({ ...f, poc_primary: e.target.value }))}
+                                    className={inputCls} placeholder="Primary contact" />
+                            </div>
+                            <div>
+                                <label className={labelCls}>2nd POC</label>
+                                <input type="text" value={form.poc_secondary}
+                                    onChange={e => setForm(f => ({ ...f, poc_secondary: e.target.value }))}
+                                    className={inputCls} placeholder="Secondary contact" />
+                            </div>
+                        </div>
+
+                        {/* Customers Connected + Value of Purchase */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelCls}>Customers Connected</label>
+                                <input type="number" min="0" step="1" value={form.customers_connected}
+                                    onChange={e => setForm(f => ({ ...f, customers_connected: e.target.value }))}
+                                    className={inputCls} placeholder="0" />
+                            </div>
+                            <div>
+                                <label className={labelCls}>Value of Purchase</label>
+                                <input type="number" min="0" step="0.01" value={form.value_of_purchase}
+                                    onChange={e => setForm(f => ({ ...f, value_of_purchase: e.target.value }))}
+                                    className={inputCls} placeholder="0" />
+                            </div>
+                        </div>
+
+                        {/* Total Purchase Till Date */}
                         <div>
-                            <label className={labelCls}>Commission Rate (%)</label>
-                            <input type="number" min="0" max="100" step="0.5"
-                                value={form.commission_rate}
-                                onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
+                            <label className={labelCls}>Total Purchase Till Date</label>
+                            <input type="number" min="0" step="0.01" value={form.total_purchase_till_date}
+                                onChange={e => setForm(f => ({ ...f, total_purchase_till_date: e.target.value }))}
                                 className={inputCls} placeholder="0" />
                         </div>
 

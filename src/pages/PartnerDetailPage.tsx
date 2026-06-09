@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     ChevronLeft, Mail, Phone, Edit2, Loader2, Check, X,
-    BarChart2, DollarSign, Trophy, MapPin, Percent, Users,
+    BarChart2, DollarSign, Trophy, MapPin, Percent, Users, User,
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
@@ -88,6 +88,7 @@ const PartnerDetailPage = () => {
 
     const [partner, setPartner] = useState<any>(null);
     const [partnerTypes, setPartnerTypes] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [deals, setDeals] = useState<any>(null);
     const [commissions, setCommissions] = useState<any>(null);
     const [activities, setActivities] = useState<any[]>([]);
@@ -108,12 +109,14 @@ const PartnerDetailPage = () => {
 
     const fetchData = useCallback(async () => {
         try {
-            const [partnerData, typesData] = await Promise.all([
+            const [partnerData, typesData, usersData] = await Promise.all([
                 partnersApi.getOne(id),
                 settingsApi.partnerTypes.getAll().catch(() => []),
+                crmService.getUsers().catch(() => []),
             ]);
             setPartner(partnerData);
             setPartnerTypes(typesData || []);
+            setUsers(usersData || []);
             setEditForm({
                 contact_name: partnerData.contact_name || '',
                 email: partnerData.email || '',
@@ -122,8 +125,12 @@ const PartnerDetailPage = () => {
                 grading: partnerData.grading || '',
                 area_served: partnerData.area_served || [],
                 commission_rate: partnerData.commission_rate ?? 0,
+                owner_person_id: partnerData.owner_person_id || '',
                 poc_primary: partnerData.poc_primary || '',
                 poc_secondary: partnerData.poc_secondary || '',
+                customers_connected: partnerData.customers_connected ?? '',
+                value_of_purchase: partnerData.value_of_purchase ?? '',
+                total_purchase_till_date: partnerData.total_purchase_till_date ?? '',
             });
         } catch (err: any) {
             showError('Failed to load partner');
@@ -175,9 +182,14 @@ const PartnerDetailPage = () => {
         try {
             const updated = await partnersApi.update(id, {
                 ...editForm,
+                grading: editForm.grading || undefined,
                 commission_rate: parseFloat(editForm.commission_rate) || 0,
+                owner_person_id: editForm.owner_person_id || undefined,
                 poc_primary: editForm.poc_primary || undefined,
                 poc_secondary: editForm.poc_secondary || undefined,
+                customers_connected: editForm.customers_connected === '' ? undefined : parseInt(editForm.customers_connected, 10),
+                value_of_purchase: editForm.value_of_purchase === '' ? undefined : parseFloat(editForm.value_of_purchase),
+                total_purchase_till_date: editForm.total_purchase_till_date === '' ? undefined : parseFloat(editForm.total_purchase_till_date),
             });
             setPartner(updated);
             setIsEditing(false);
@@ -207,6 +219,12 @@ const PartnerDetailPage = () => {
         return found?.label || value || '-';
     };
 
+    const getUserName = (userId?: string) => {
+        if (!userId) return null;
+        const found = users.find(u => u.id === userId);
+        return found?.full_name || null;
+    };
+
     const tabCls = (tab: TabType) =>
         `flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
             activeTab === tab
@@ -234,6 +252,10 @@ const PartnerDetailPage = () => {
 
     const gradingCfg = GRADING_CONFIG[partner.grading] || null;
 
+    const fieldLabelCls = 'text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5';
+    const editLabelCls = 'text-xs text-slate-400 mb-1 block';
+    const editInputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+
     return (
         <div className="p-8">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -257,11 +279,14 @@ const PartnerDetailPage = () => {
                                 </span>
                             )}
                         </div>
-                        <div className="flex items-center gap-4 text-slate-400 text-sm">
+                        <div className="flex flex-wrap items-center gap-4 text-slate-400 text-sm">
                             {partner.email && <span className="flex items-center gap-1.5"><Mail size={14} />{partner.email}</span>}
                             {partner.phone && <span className="flex items-center gap-1.5"><Phone size={14} />{partner.phone}</span>}
                             {partner.commission_rate > 0 && (
                                 <span className="flex items-center gap-1.5"><Percent size={14} />{partner.commission_rate}% commission</span>
+                            )}
+                            {getUserName(partner.owner_person_id) && (
+                                <span className="flex items-center gap-1.5"><User size={14} />{getUserName(partner.owner_person_id)}</span>
                             )}
                         </div>
                     </div>
@@ -278,178 +303,212 @@ const PartnerDetailPage = () => {
 
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-semibold text-slate-50 uppercase tracking-wider">Partner Profile</h2>
-                            {isEditing ? (
-                                <div className="flex gap-2">
-                                    <button onClick={() => { setIsEditing(false); }} className="p-1.5 rounded text-slate-400 hover:text-slate-50"><X size={16} /></button>
-                                    <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium disabled:opacity-50">
-                                        <Check size={14} />{saving ? 'Saving...' : 'Save'}
-                                    </button>
-                                </div>
-                            ) : (
-                                <button onClick={() => setIsEditing(true)} className="p-1.5 rounded text-slate-500 hover:text-slate-50 transition-colors">
-                                    <Edit2 size={16} />
-                                </button>
-                            )}
-                        </div>
-
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-sm font-semibold text-slate-50 uppercase tracking-wider">Partner Information</h2>
                         {isEditing ? (
-                            <div className="space-y-4">
+                            <div className="flex gap-2">
+                                <button onClick={() => { setIsEditing(false); }} className="p-1.5 rounded text-slate-400 hover:text-slate-50"><X size={16} /></button>
+                                <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium disabled:opacity-50">
+                                    <Check size={14} />{saving ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        ) : (
+                            <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-50 border border-slate-700 hover:border-slate-600 text-xs font-medium transition-colors">
+                                <Edit2 size={14} /> Edit
+                            </button>
+                        )}
+                    </div>
+
+                    {isEditing ? (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Name</label>
-                                    <input
-                                        value={editForm.contact_name}
+                                    <label className={editLabelCls}>Name</label>
+                                    <input value={editForm.contact_name}
                                         onChange={e => setEditForm((f: any) => ({ ...f, contact_name: e.target.value }))}
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Email</label>
-                                        <input
-                                            type="email"
-                                            value={editForm.email}
-                                            onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))}
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Phone</label>
-                                        <input
-                                            type="tel"
-                                            maxLength={20}
-                                            value={editForm.phone}
-                                            onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                            className={`w-full bg-slate-950 border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`}
-                                        />
-                                        {phoneError && <p className="text-rose-400 text-xs mt-1">{phoneError}</p>}
-                                    </div>
+                                        className={editInputCls} />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Partner Type</label>
-                                    <select
-                                        value={editForm.partner_type}
+                                    <label className={editLabelCls}>Partner Type</label>
+                                    <select value={editForm.partner_type}
                                         onChange={e => setEditForm((f: any) => ({ ...f, partner_type: e.target.value }))}
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                    >
+                                        className={editInputCls}>
                                         <option value="">Select...</option>
                                         {partnerTypes.map(pt => (
                                             <option key={pt.value} value={pt.value}>{pt.label}</option>
                                         ))}
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Grading</label>
-                                        <select
-                                            value={editForm.grading}
-                                            onChange={e => setEditForm((f: any) => ({ ...f, grading: e.target.value }))}
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                        >
-                                            <option value="">Select...</option>
-                                            <option value="low">Low</option>
-                                            <option value="mid">Mid</option>
-                                            <option value="high">High</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Commission Rate (%)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            step="0.5"
-                                            value={editForm.commission_rate}
-                                            onChange={e => setEditForm((f: any) => ({ ...f, commission_rate: e.target.value }))}
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                        />
-                                    </div>
+                                <div>
+                                    <label className={editLabelCls}>Email</label>
+                                    <input type="email" value={editForm.email}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))}
+                                        className={editInputCls} />
                                 </div>
                                 <div>
-                                    <label className="text-xs text-slate-400 mb-1 block">Area Served</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {AREA_OPTIONS.map(area => {
-                                            const selected = (editForm.area_served || []).includes(area);
-                                            return (
-                                                <button
-                                                    key={area}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setEditForm((f: any) => ({
-                                                            ...f,
-                                                            area_served: selected
-                                                                ? (f.area_served || []).filter((a: string) => a !== area)
-                                                                : [...(f.area_served || []), area],
-                                                        }));
-                                                    }}
-                                                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                                        selected
-                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                                                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
-                                                    }`}
-                                                >
-                                                    {area}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                    <label className={editLabelCls}>Phone</label>
+                                    <input type="tel" maxLength={20} value={editForm.phone}
+                                        onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
+                                        className={`w-full bg-slate-950 border rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`} />
+                                    {phoneError && <p className="text-rose-400 text-xs mt-1">{phoneError}</p>}
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>Architect Grading</label>
+                                    <select value={editForm.grading}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, grading: e.target.value }))}
+                                        className={editInputCls}>
+                                        <option value="">Select...</option>
+                                        <option value="low">Low</option>
+                                        <option value="mid">Mid</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>Commission Rate (%)</label>
+                                    <input type="number" min="0" max="100" step="0.5" value={editForm.commission_rate}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, commission_rate: e.target.value }))}
+                                        className={editInputCls} />
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>Relationship Manager</label>
+                                    <select value={editForm.owner_person_id}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, owner_person_id: e.target.value }))}
+                                        className={editInputCls}>
+                                        <option value="">— Assign RM —</option>
+                                        {users.map(u => (
+                                            <option key={u.id} value={u.id}>{u.full_name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>Customers Connected</label>
+                                    <input type="number" min="0" step="1" value={editForm.customers_connected}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, customers_connected: e.target.value }))}
+                                        className={editInputCls} />
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>Value of Purchase</label>
+                                    <input type="number" min="0" step="0.01" value={editForm.value_of_purchase}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, value_of_purchase: e.target.value }))}
+                                        className={editInputCls} />
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>Total Purchase Till Date</label>
+                                    <input type="number" min="0" step="0.01" value={editForm.total_purchase_till_date}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, total_purchase_till_date: e.target.value }))}
+                                        className={editInputCls} />
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>1st POC</label>
+                                    <input type="text" value={editForm.poc_primary}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, poc_primary: e.target.value }))}
+                                        className={editInputCls} placeholder="Primary contact" />
+                                </div>
+                                <div>
+                                    <label className={editLabelCls}>2nd POC</label>
+                                    <input type="text" value={editForm.poc_secondary}
+                                        onChange={e => setEditForm((f: any) => ({ ...f, poc_secondary: e.target.value }))}
+                                        className={editInputCls} placeholder="Secondary contact" />
                                 </div>
                             </div>
-                        ) : (
-                            <dl className="space-y-3">
-                                <div className="flex justify-between">
-                                    <dt className="text-xs text-slate-500">Partner Type</dt>
-                                    <dd className="text-sm text-slate-50">{getTypeLabel(partner.partner_type)}</dd>
+                            <div>
+                                <label className={editLabelCls}>Area Served</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {AREA_OPTIONS.map(area => {
+                                        const selected = (editForm.area_served || []).includes(area);
+                                        return (
+                                            <button
+                                                key={area}
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditForm((f: any) => ({
+                                                        ...f,
+                                                        area_served: selected
+                                                            ? (f.area_served || []).filter((a: string) => a !== area)
+                                                            : [...(f.area_served || []), area],
+                                                    }));
+                                                }}
+                                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                                    selected
+                                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                                                }`}
+                                            >
+                                                {area}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                                <div className="flex justify-between">
-                                    <dt className="text-xs text-slate-500">Grading</dt>
-                                    <dd>
-                                        {gradingCfg ? (
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
-                                                {gradingCfg.label}
+                            </div>
+                        </div>
+                    ) : (
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                            <div>
+                                <dt className={fieldLabelCls}>Partner Type</dt>
+                                <dd className="text-sm text-slate-100">{getTypeLabel(partner.partner_type)}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Architect Grading</dt>
+                                <dd>
+                                    {gradingCfg ? (
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
+                                            {gradingCfg.label}
+                                        </span>
+                                    ) : <span className="text-slate-500 text-sm">-</span>}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Commission Rate</dt>
+                                <dd className="text-sm text-slate-100">{partner.commission_rate ? `${partner.commission_rate}%` : '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Relationship Manager</dt>
+                                <dd className="text-sm text-slate-100">{getUserName(partner.owner_person_id) || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Area Served</dt>
+                                <dd className="flex flex-wrap gap-1.5">
+                                    {(partner.area_served || []).length > 0
+                                        ? partner.area_served.map((area: string) => (
+                                            <span key={area} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700">
+                                                <MapPin size={10} />{area}
                                             </span>
-                                        ) : <span className="text-slate-500 text-sm">-</span>}
-                                    </dd>
-                                </div>
-                                <div className="flex justify-between">
-                                    <dt className="text-xs text-slate-500">Commission Rate</dt>
-                                    <dd className="text-sm text-slate-50">{partner.commission_rate ? `${partner.commission_rate}%` : '-'}</dd>
-                                </div>
-                                <div className="flex justify-between">
-                                    <dt className="text-xs text-slate-500">Email</dt>
-                                    <dd className="text-sm text-slate-300">{partner.email || '-'}</dd>
-                                </div>
-                                <div className="flex justify-between">
-                                    <dt className="text-xs text-slate-500">Phone</dt>
-                                    <dd className="text-sm text-slate-300">{partner.phone || '-'}</dd>
-                                </div>
-                                <div className="flex justify-between items-start">
-                                    <dt className="text-xs text-slate-500">Area Served</dt>
-                                    <dd className="flex flex-wrap gap-1 justify-end max-w-[60%]">
-                                        {(partner.area_served || []).length > 0
-                                            ? partner.area_served.map((area: string) => (
-                                                <span key={area} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border bg-slate-800 text-slate-300 border-slate-700">
-                                                    <MapPin size={10} />{area}
-                                                </span>
-                                            ))
-                                            : <span className="text-slate-500 text-sm">-</span>
-                                        }
-                                    </dd>
-                                </div>
-                                <div className="flex justify-between">
-                                    <dt className="text-xs text-slate-500">POC Primary</dt>
-                                    <dd className="text-sm text-slate-300">{partner.poc_primary || '-'}</dd>
-                                </div>
-                                <div className="flex justify-between">
-                                    <dt className="text-xs text-slate-500">POC Secondary</dt>
-                                    <dd className="text-sm text-slate-300">{partner.poc_secondary || '-'}</dd>
-                                </div>
-                            </dl>
-                        )}
-                    </div>
+                                        ))
+                                        : <span className="text-slate-500 text-sm">-</span>
+                                    }
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Customers Connected</dt>
+                                <dd className="text-sm text-slate-100">{partner.customers_connected != null ? partner.customers_connected : '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Value of Purchase</dt>
+                                <dd className="text-sm text-slate-100">{partner.value_of_purchase != null ? formatters.formatCurrency(partner.value_of_purchase) : '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Total Purchase Till Date</dt>
+                                <dd className="text-sm text-slate-100">{partner.total_purchase_till_date != null ? formatters.formatCurrency(partner.total_purchase_till_date) : '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>POC Primary</dt>
+                                <dd className="text-sm text-slate-300">{partner.poc_primary || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>POC Secondary</dt>
+                                <dd className="text-sm text-slate-300">{partner.poc_secondary || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Email</dt>
+                                <dd className="text-sm text-slate-300">{partner.email || '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className={fieldLabelCls}>Phone</dt>
+                                <dd className="text-sm text-slate-300">{partner.phone || '-'}</dd>
+                            </div>
+                        </dl>
+                    )}
                 </div>
             )}
 
