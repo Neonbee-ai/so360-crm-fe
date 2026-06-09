@@ -9,6 +9,7 @@ const mockGetTasksByLeadId = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
 const mockGetActivitiesByLeadId = vi.fn();
+const mockGetActivitiesByLeadIdPaginated = vi.fn();
 const mockGetDocumentsByLeadId = vi.fn();
 const mockUpdateLead = vi.fn().mockResolvedValue({});
 const mockLogActivity = vi.fn().mockResolvedValue({});
@@ -31,6 +32,7 @@ vi.mock('../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getActivitiesByLeadId: (...a: any[]) => mockGetActivitiesByLeadId(...a),
+    getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivitiesByLeadIdPaginated(...a),
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     updateTask: (...a: any[]) => mockUpdateTask(...a),
@@ -74,6 +76,11 @@ vi.mock('../components/common/Toast', () => ({
   useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
 }));
 
+vi.mock('./components/ActivityHistoryDrawer', () => ({
+  default: ({ isOpen, onClose }: any) => isOpen
+    ? <div data-testid="activity-history-drawer"><button onClick={onClose}>Close Drawer</button></div>
+    : null,
+}));
 vi.mock('./components/CreateDealModal', () => ({
   default: ({ onClose, isOpen }: any) => isOpen !== false ? <div data-testid="create-deal-modal"><button onClick={onClose}>Close</button></div> : null,
 }));
@@ -187,6 +194,7 @@ beforeEach(async () => {
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue([owner]);
   mockGetActivitiesByLeadId.mockResolvedValue(makeLead().activities);
+  mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: makeLead().activities.length });
   mockGetPartners.mockResolvedValue(mockPartners);
   mockGetDocumentsByLeadId.mockResolvedValue(makeLead().documents);
 });
@@ -658,6 +666,114 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       expect(screen.getByText('Create Deal')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given activity timeline pagination', () => {
+    it('When page loads / Then calls getActivitiesByLeadIdPaginated with limit=7 and offset=0', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(mockGetActivitiesByLeadIdPaginated).toHaveBeenCalledWith('lead-1', 7, 0);
+    });
+
+    it('When page loads / Then shows "Showing latest N · Total: X" in header', async () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 42 });
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/Showing latest/)).toBeInTheDocument());
+      expect(screen.getByText(/Total: 42/)).toBeInTheDocument();
+    });
+
+    it('When there are more activities than loaded / Then shows View Older Activities button', async () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 50 });
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/View Older Activities/)).toBeInTheDocument());
+      expect(screen.getByText(/44 more/)).toBeInTheDocument();
+    });
+
+    it('When offset equals total / Then does NOT show View Older Activities button', async () => {
+      const acts = makeLead().activities;
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: acts, total: acts.length });
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('CALL Logged')).toBeInTheDocument());
+      expect(screen.queryByText(/View Older Activities/)).not.toBeInTheDocument();
+    });
+
+    it('When View Older Activities is clicked / Then calls getActivitiesByLeadIdPaginated with offset', async () => {
+      const firstBatch = makeLead().activities;
+      const secondBatch = [
+        { id: 'a7', type: 'CALL', notes: 'Follow-up call', date: '2024-12-01T10:00:00Z', created_at: '2024-12-01T10:00:00Z', author: owner },
+      ];
+      mockGetActivitiesByLeadIdPaginated
+        .mockResolvedValueOnce({ data: firstBatch, total: 50 })
+        .mockResolvedValueOnce({ data: secondBatch, total: 50 });
+
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/View Older Activities/)).toBeInTheDocument());
+      await user.click(screen.getByText(/View Older Activities/));
+
+      await waitFor(() =>
+        expect(mockGetActivitiesByLeadIdPaginated).toHaveBeenCalledWith('lead-1', 20, firstBatch.length)
+      );
+    });
+
+    it('When View Older Activities is clicked / Then appended activities appear in timeline', async () => {
+      const firstBatch = makeLead().activities;
+      const secondBatch = [
+        { id: 'a8', type: 'EMAIL', notes: 'Additional follow-up', date: '2024-11-01T10:00:00Z', created_at: '2024-11-01T10:00:00Z', author: owner },
+      ];
+      mockGetActivitiesByLeadIdPaginated
+        .mockResolvedValueOnce({ data: firstBatch, total: 50 })
+        .mockResolvedValueOnce({ data: secondBatch, total: 50 });
+
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/View Older Activities/)).toBeInTheDocument());
+      await user.click(screen.getByText(/View Older Activities/));
+
+      await waitFor(() => expect(screen.getByText('Additional follow-up')).toBeInTheDocument());
+    });
+
+    it('When no activities exist / Then shows empty state message', async () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
+      mockGetLeadById.mockResolvedValue(makeLead({ activities: [] }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
+    });
+
+    it('When View All History button is shown / Then opens ActivityHistoryDrawer on click', async () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 20 });
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('View All History')).toBeInTheDocument());
+      await user.click(screen.getByText('View All History'));
+      await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
+    });
+
+    it('When View All History is absent (no activities) / Then drawer does not open', async () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.queryByText('View All History')).not.toBeInTheDocument());
+    });
+
+    it('When View All Activity History link is clicked / Then opens the drawer', async () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 50 });
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('View All Activity History →')).toBeInTheDocument());
+      await user.click(screen.getByText('View All Activity History →'));
+      await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
+    });
+
+    it('When drawer is open and Close Drawer is clicked / Then drawer is dismissed', async () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 50 });
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('View All Activity History →')).toBeInTheDocument());
+      await user.click(screen.getByText('View All Activity History →'));
+      await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
+      await user.click(screen.getByText('Close Drawer'));
+      await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
     });
   });
 });
