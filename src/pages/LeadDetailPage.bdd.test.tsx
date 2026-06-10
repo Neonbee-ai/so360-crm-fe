@@ -496,6 +496,7 @@ describe('LeadDetailPage', () => {
       mockGetDealsByLeadId.mockResolvedValue([]);
       mockGetTasksByLeadId.mockResolvedValue([]);
       mockGetActivitiesByLeadId.mockResolvedValue([]);
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
       mockGetDocumentsByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
