@@ -735,8 +735,13 @@ describe('LeadDetailPage', () => {
     });
 
     it('When no activities exist / Then shows empty state message', async () => {
+      // The timeline aggregates activities + notes + documents + tasks + deals,
+      // so every source must be empty for the empty state to render.
       mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
-      mockGetLeadById.mockResolvedValue(makeLead({ activities: [] }));
+      mockGetLeadById.mockResolvedValue(makeLead({ activities: [], notes: [], documents: [] }));
+      mockGetDocumentsByLeadId.mockResolvedValue([]);
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
     });
