@@ -1,16 +1,16 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ActivityHistoryDrawer from './ActivityHistoryDrawer';
 import { activitiesApi } from '../../services/crmService';
-import { useCRMFormatters } from '../../utils/formatters';
 
-jest.mock('../../services/crmService', () => ({
+vi.mock('../../services/crmService', () => ({
     activitiesApi: {
-        getAllByLeadPaginated: jest.fn(),
+        getAllByLeadPaginated: vi.fn(),
     },
 }));
 
-jest.mock('../../utils/formatters', () => ({
+vi.mock('../../utils/formatters', () => ({
     useCRMFormatters: () => ({
         formatDateTime: (d: string) => d,
         formatCurrency: (v: number) => `$${v}`,
@@ -32,7 +32,7 @@ const mockLead = {
 
 const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     leadId: 'lead-1',
     lead: mockLead,
     associatedTasks: [],
@@ -41,8 +41,8 @@ const defaultProps = {
 
 describe('ActivityHistoryDrawer', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-        (activitiesApi.getAllByLeadPaginated as jest.Mock).mockResolvedValue({
+        vi.clearAllMocks();
+        vi.mocked(activitiesApi.getAllByLeadPaginated).mockResolvedValue({
             data: mockActivities,
             total: 3,
         });
@@ -136,7 +136,7 @@ describe('ActivityHistoryDrawer', () => {
 
     describe('Given the close button', () => {
         it('When close button is clicked / Then calls onClose', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             render(<ActivityHistoryDrawer {...defaultProps} onClose={onClose} />);
             await waitFor(() => screen.getByText('Activity History'));
 
@@ -145,7 +145,7 @@ describe('ActivityHistoryDrawer', () => {
         });
 
         it('When overlay is clicked / Then calls onClose', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             render(<ActivityHistoryDrawer {...defaultProps} onClose={onClose} />);
             await waitFor(() => screen.getByText('Activity History'));
 
@@ -158,7 +158,7 @@ describe('ActivityHistoryDrawer', () => {
 
     describe('Given API returns no activities', () => {
         it('When no activities exist / Then shows empty state', async () => {
-            (activitiesApi.getAllByLeadPaginated as jest.Mock).mockResolvedValue({ data: [], total: 0 });
+            vi.mocked(activitiesApi.getAllByLeadPaginated).mockResolvedValue({ data: [], total: 0 });
             const emptyLead = { ...mockLead, notes: [], documents: [] };
 
             render(<ActivityHistoryDrawer {...defaultProps} lead={emptyLead} associatedTasks={[]} associatedDeals={[]} />);
@@ -168,7 +168,7 @@ describe('ActivityHistoryDrawer', () => {
 
     describe('Given hasMore is true (more activities available)', () => {
         it('When rendered / Then shows Load More button', async () => {
-            (activitiesApi.getAllByLeadPaginated as jest.Mock).mockResolvedValue({
+            vi.mocked(activitiesApi.getAllByLeadPaginated).mockResolvedValue({
                 data: mockActivities,
                 total: 100,
             });
