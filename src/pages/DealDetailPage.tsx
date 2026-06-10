@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { eventBus } from '@so360/event-bus';
 import { useActivity, useShell } from '@so360/shell-context';
 import {
     ChevronLeft, Calendar, DollarSign, Clock, MessageSquare,
@@ -19,6 +20,28 @@ import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products';
+
+// Notify other MFEs (e.g. the Documents module) that a CRM deal document changed
+// so they can refresh linked-document views. Uses the shared event bus with a
+// window CustomEvent fallback for environments where the bus is unavailable.
+export function publishDealDocumentsChanged(dealId: string) {
+    const payload = { source: 'crm', entity_type: 'crm:deal', entity_id: dealId };
+    try {
+        eventBus.publish('documents:changed', payload);
+    } catch {
+        window.dispatchEvent(new CustomEvent('documents:changed', { detail: payload }));
+    }
+}
+
+// Open a deal document: DMS-backed docs resolve a (signed) URL on demand; legacy
+// docs fall back to their stored `url`.
+export async function openDealDocument(doc: Attachment) {
+    let url = doc.url;
+    if (doc.dmsDocumentId) {
+        url = await crmService.getDocumentDownloadUrl(doc.id);
+    }
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
 
 const DealDetailPage = () => {
     const formatters = useCRMFormatters();
@@ -873,6 +896,7 @@ const DealDetailPage = () => {
                                                     setIsUploading(true);
                                                     try {
                                                         await crmService.uploadDocument({ dealId: id }, file);
+                                                        publishDealDocumentsChanged(id);
                                                         fetchData();
                                                     } finally { setIsUploading(false); }
                                                 }
@@ -890,11 +914,20 @@ const DealDetailPage = () => {
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={doc.url} download className="p-2 text-slate-500 hover:text-slate-50 transition-colors"><Download size={16} /></a>
+                                                    {doc.dmsDocumentId ? (
+                                                        <button
+                                                            onClick={() => { void openDealDocument(doc); }}
+                                                            className="p-2 text-slate-500 hover:text-slate-50 transition-colors"
+                                                            title="Download"
+                                                        ><Download size={16} /></button>
+                                                    ) : (
+                                                        <a href={doc.url} download title="Download" className="p-2 text-slate-500 hover:text-slate-50 transition-colors"><Download size={16} /></a>
+                                                    )}
                                                     <button
                                                         onClick={async () => {
                                                             if (confirm('Delete file?')) {
                                                                 await crmService.deleteDocument(id, doc.id);
+                                                                publishDealDocumentsChanged(id);
                                                                 fetchData();
                                                             }
                                                         }}

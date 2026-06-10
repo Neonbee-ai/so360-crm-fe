@@ -136,7 +136,13 @@ const mapActivityFromApi = (apiActivity: any): Activity => ({
 const mapDocumentFromApi = (apiDoc: any): Attachment => ({
     ...apiDoc,
     uploaded_by: mapUser(apiDoc.uploaded_by || apiDoc.creator, apiDoc.uploaded_by_id || apiDoc.created_by),
-    uploaded_at: apiDoc.uploaded_at || apiDoc.created_at
+    uploaded_at: apiDoc.uploaded_at || apiDoc.created_at,
+    // DMS-backed rows may omit size/type (DMS uses file_size/mime_type) and may
+    // not carry a direct `url` (downloads are resolved on demand). Tolerate all.
+    size: apiDoc.size ?? apiDoc.file_size ?? 0,
+    type: apiDoc.type ?? apiDoc.mime_type ?? '',
+    url: apiDoc.url ?? '',
+    dmsDocumentId: apiDoc.dms_document_id ?? apiDoc.dmsDocumentId ?? undefined,
 });
 
 const mapDealFromApi = (apiDeal: any): Deal => {
@@ -314,8 +320,24 @@ class ApiClient {
     // sets Content-Type: application/json. fetch() must set the multipart
     // boundary itself, so we send no Content-Type header here.
     async uploadFile(endpoint: string, file: File): Promise<{ url: string; media_id?: string }> {
+        return this.uploadMultipart<{ url: string; media_id?: string }>(endpoint, file);
+    }
+
+    // Generic multipart upload — like uploadFile but allows extra form fields
+    // (e.g. lead_id / deal_id) to be sent alongside the file. Never sets a
+    // Content-Type header so fetch can emit the multipart boundary itself.
+    async uploadMultipart<T = any>(
+        endpoint: string,
+        file: File,
+        fields: Record<string, string | undefined> = {},
+    ): Promise<T> {
         const formData = new FormData();
         formData.append('file', file);
+        for (const [key, value] of Object.entries(fields)) {
+            if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
+        }
         const headers: HeadersInit = {
             'X-Tenant-Id': this.tenantId,
             ...(this.orgId ? { 'X-Org-Id': this.orgId } : {}),
@@ -909,6 +931,21 @@ export const documentsApi = {
     create: async (data: any): Promise<Attachment> => {
         const doc = await apiClient.post<any>('/documents', data);
         return mapDocumentFromApi(doc);
+    },
+    // Single-step DMS upload — pushes the file straight to the CRM BE, which
+    // streams it into the Document Management Service and creates the documents
+    // row (carrying dms_document_id) in one round-trip.
+    upload: async (file: File, entity: { lead_id?: string; deal_id?: string }): Promise<Attachment> => {
+        const doc = await apiClient.uploadMultipart<any>('/documents/upload', file, {
+            lead_id: entity.lead_id,
+            deal_id: entity.deal_id,
+        });
+        return mapDocumentFromApi(doc);
+    },
+    // Resolves a (signed) download URL for a DMS-backed document.
+    getDownloadUrl: async (id: string): Promise<string> => {
+        const res = await apiClient.get<{ url: string; source?: string }>(`/documents/${id}/download-url`);
+        return res.url;
     },
     delete: async (id: string): Promise<void> => {
         return apiClient.delete<void>(`/documents/${id}`);
@@ -1557,21 +1594,20 @@ export const crmService = {
         return documentsApi.getAllByDeal(dealId);
     },
     uploadDocument: async (entity: string | { leadId?: string, dealId?: string }, file: File): Promise<Attachment> => {
-        // Push the file to Core BE's DigitalOcean Spaces pipe, then store the
-        // returned CDN URL in the documents table. Previously this used
-        // URL.createObjectURL() which creates an in-memory blob URL that
-        // dies on page reload — attachments looked uploaded but vanished.
-        const { url } = await coreClient.uploadFile('/v1/media/upload', file);
+        // Single-step DMS upload: CRM BE accepts the multipart file plus the
+        // lead_id/deal_id, streams it into the Document Management Service, and
+        // creates the documents row (with dms_document_id) atomically. This
+        // replaces the old two-step Core /v1/media/upload + POST /documents flow.
         const entityObj = typeof entity === 'string' ? { leadId: entity } : entity;
-        return documentsApi.create({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            url,
+        return documentsApi.upload(file, {
             lead_id: entityObj.leadId,
             deal_id: entityObj.dealId,
-            uploaded_by_id: USER_ID,
         });
+    },
+
+    // Resolve a (signed) download URL for a DMS-backed document.
+    getDocumentDownloadUrl: async (documentId: string): Promise<string> => {
+        return documentsApi.getDownloadUrl(documentId);
     },
 
     deleteDocument: async (entityId: string, documentId: string): Promise<void> => {

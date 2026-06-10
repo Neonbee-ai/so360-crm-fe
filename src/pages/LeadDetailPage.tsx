@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { eventBus } from '@so360/event-bus';
 import { useShell, useActivity, useShellBridge } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -30,6 +31,28 @@ const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'conta
     lead.first_name
         ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
         : (lead.contact_name || '');
+
+// Notify other MFEs (e.g. the Documents module) that a CRM document changed so
+// they can refresh their linked-document views. Uses the shared event bus with a
+// window CustomEvent fallback for environments where the bus is unavailable.
+export function publishLeadDocumentsChanged(leadId: string) {
+    const payload = { source: 'crm', entity_type: 'crm:lead', entity_id: leadId };
+    try {
+        eventBus.publish('documents:changed', payload);
+    } catch {
+        window.dispatchEvent(new CustomEvent('documents:changed', { detail: payload }));
+    }
+}
+
+// Open a document: DMS-backed docs resolve a (signed) URL on demand; legacy docs
+// fall back to their stored `url`.
+export async function openLeadDocument(doc: Attachment) {
+    let url = doc.url;
+    if (doc.dmsDocumentId) {
+        url = await crmService.getDocumentDownloadUrl(doc.id);
+    }
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
 
 interface TimelineEvent {
     id: string;
@@ -1059,6 +1082,7 @@ const LeadDetailPage = () => {
                                                                 ...lead,
                                                                 documents: [...(lead.documents || []), newDoc]
                                                             });
+                                                            publishLeadDocumentsChanged(lead.id);
                                                         } catch (err) {
                                                             const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
                                                             showError(msg);
@@ -1096,19 +1120,32 @@ const LeadDetailPage = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-2">
-                                                        <a
-                                                            href={doc.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
-                                                            title="View"
-                                                        >
-                                                            <Eye size={16} />
-                                                        </a>
+                                                        {doc.dmsDocumentId ? (
+                                                            <button
+                                                                onClick={() => { void openLeadDocument(doc); }}
+                                                                className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                                title="View"
+                                                            >
+                                                                <Eye size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <a
+                                                                href={doc.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                                title="View"
+                                                            >
+                                                                <Eye size={16} />
+                                                            </a>
+                                                        )}
                                                         <button
                                                             onClick={async () => {
                                                                 try {
-                                                                    const res = await fetch(doc.url);
+                                                                    const fetchUrl = doc.dmsDocumentId
+                                                                        ? await crmService.getDocumentDownloadUrl(doc.id)
+                                                                        : doc.url;
+                                                                    const res = await fetch(fetchUrl);
                                                                     const blob = await res.blob();
                                                                     const blobUrl = URL.createObjectURL(blob);
                                                                     const a = document.createElement('a');
@@ -1117,7 +1154,11 @@ const LeadDetailPage = () => {
                                                                     a.click();
                                                                     URL.revokeObjectURL(blobUrl);
                                                                 } catch {
-                                                                    window.open(doc.url, '_blank');
+                                                                    if (doc.dmsDocumentId) {
+                                                                        void openLeadDocument(doc);
+                                                                    } else {
+                                                                        window.open(doc.url, '_blank');
+                                                                    }
                                                                 }
                                                             }}
                                                             className="p-2 text-slate-500 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-all"
@@ -1133,6 +1174,7 @@ const LeadDetailPage = () => {
                                                                         ...lead,
                                                                         documents: lead.documents?.filter(d => d.id !== doc.id)
                                                                     });
+                                                                    publishLeadDocumentsChanged(lead.id);
                                                                 }
                                                             }}
                                                             className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"

@@ -29,6 +29,10 @@ export interface Attachment {
     uploaded_by: User;
     url: string;
     created_at: string;
+    /** DMS document id when the file is stored via the Document Management Service.
+     *  When present, downloads must be resolved via a signed download-url endpoint
+     *  rather than the (possibly absent) legacy `url`. */
+    dmsDocumentId?: string;
 }
 
 export interface Lead {

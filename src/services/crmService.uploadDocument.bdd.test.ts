@@ -1,27 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { crmService, documentsApi } from './crmService';
+import { crmService } from './crmService';
 
 const REAL_TENANT = '3cf1c619-c8f6-49ac-9207-447418d5beee';
 
 const makeFile = (name = 'test.pdf', type = 'application/pdf') =>
     new File(['content'], name, { type });
 
-const makeAttachment = (overrides: Record<string, unknown> = {}) => ({
+// CRM BE /documents/upload returns the persisted documents row (carrying
+// dms_document_id). mapDocumentFromApi normalises it into an Attachment.
+const makeUploadResponse = (overrides: Record<string, unknown> = {}) => ({
     id: 'doc-1',
     name: 'test.pdf',
-    size: 1024,
-    type: 'application/pdf',
-    url: 'https://cdn.example.com/test.pdf',
+    file_size: 1024,
+    mime_type: 'application/pdf',
+    dms_document_id: 'dms-abc',
     uploaded_at: '2026-06-01T00:00:00Z',
     uploaded_by: { id: 'u1', full_name: 'Alice', email: 'alice@test.com' },
     created_at: '2026-06-01T00:00:00Z',
     ...overrides,
 });
 
-const mockFetchOk = (url: string) =>
+const mockFetchOk = (body: Record<string, unknown>) =>
     vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ url }),
+        json: async () => body,
     });
 
 const mockFetchFail = (status: number, message: string) =>
@@ -31,86 +33,75 @@ const mockFetchFail = (status: number, message: string) =>
         json: async () => ({ message }),
     });
 
-describe('crmService.setTenantId — coreClient propagation', () => {
-    let createSpy: ReturnType<typeof vi.spyOn>;
-
-    beforeEach(() => {
-        createSpy = vi.spyOn(documentsApi, 'create').mockResolvedValue(makeAttachment());
-    });
-
+describe('crmService.uploadDocument — single-step DMS upload', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
-        createSpy.mockRestore();
     });
 
     describe('Given setTenantId is called with a real UUID', () => {
-        it('When uploadDocument is called / Then coreClient sends the correct X-Tenant-Id header', async () => {
-            const fetchSpy = mockFetchOk('https://cdn.example.com/test.pdf');
+        it('When uploadDocument is called / Then it POSTs to /documents/upload with the X-Tenant-Id header', async () => {
+            const fetchSpy = mockFetchOk(makeUploadResponse());
             vi.stubGlobal('fetch', fetchSpy);
 
             crmService.setTenantId(REAL_TENANT);
             await crmService.uploadDocument('lead-abc', makeFile());
 
             expect(fetchSpy).toHaveBeenCalledWith(
-                expect.stringContaining('/v1/media/upload'),
+                expect.stringContaining('/documents/upload'),
                 expect.objectContaining({
                     headers: expect.objectContaining({ 'X-Tenant-Id': REAL_TENANT }),
                 })
             );
         });
-
-        it('When uploadDocument is called / Then documentsApi.create receives the CDN URL', async () => {
-            const cdnUrl = 'https://cdn.example.com/contract.pdf';
-            vi.stubGlobal('fetch', mockFetchOk(cdnUrl));
-
-            crmService.setTenantId(REAL_TENANT);
-            await crmService.uploadDocument('lead-xyz', makeFile('contract.pdf'));
-
-            expect(createSpy).toHaveBeenCalledWith(
-                expect.objectContaining({ url: cdnUrl, lead_id: 'lead-xyz', name: 'contract.pdf' })
-            );
-        });
-    });
-});
-
-describe('crmService.uploadDocument', () => {
-    let createSpy: ReturnType<typeof vi.spyOn>;
-
-    beforeEach(() => {
-        vi.stubGlobal('fetch', mockFetchOk('https://cdn.example.com/test.pdf'));
-        createSpy = vi.spyOn(documentsApi, 'create').mockResolvedValue(makeAttachment());
-    });
-
-    afterEach(() => {
-        vi.unstubAllGlobals();
-        createSpy.mockRestore();
     });
 
     describe('Given a successful upload', () => {
-        it('When called with a leadId string / Then returns the created Attachment', async () => {
+        beforeEach(() => {
+            crmService.setTenantId(REAL_TENANT);
+        });
+
+        it('When called with a leadId string / Then returns the mapped Attachment with dmsDocumentId', async () => {
+            vi.stubGlobal('fetch', mockFetchOk(makeUploadResponse()));
             const result = await crmService.uploadDocument('lead-1', makeFile());
-            expect(result).toMatchObject({ id: 'doc-1', name: 'test.pdf' });
+            expect(result).toMatchObject({ id: 'doc-1', name: 'test.pdf', dmsDocumentId: 'dms-abc' });
         });
 
-        it('When called with an entity object / Then passes lead_id correctly', async () => {
+        it('When called with a leadId string / Then lead_id is sent in the multipart body', async () => {
+            const fetchSpy = mockFetchOk(makeUploadResponse());
+            vi.stubGlobal('fetch', fetchSpy);
+
+            await crmService.uploadDocument('lead-xyz', makeFile());
+
+            const [, init] = fetchSpy.mock.calls[0];
+            const form = init.body as FormData;
+            expect(form.get('lead_id')).toBe('lead-xyz');
+            expect(form.get('deal_id')).toBeNull();
+            expect(form.get('file')).toBeInstanceOf(File);
+        });
+
+        it('When called with a lead entity object / Then lead_id is sent', async () => {
+            const fetchSpy = mockFetchOk(makeUploadResponse());
+            vi.stubGlobal('fetch', fetchSpy);
+
             await crmService.uploadDocument({ leadId: 'lead-2' }, makeFile());
-            expect(createSpy).toHaveBeenCalledWith(
-                expect.objectContaining({ lead_id: 'lead-2', deal_id: undefined })
-            );
+
+            const form = (fetchSpy.mock.calls[0][1].body) as FormData;
+            expect(form.get('lead_id')).toBe('lead-2');
         });
 
-        it('When called with a deal entity / Then passes deal_id correctly', async () => {
+        it('When called with a deal entity object / Then deal_id is sent', async () => {
+            const fetchSpy = mockFetchOk(makeUploadResponse());
+            vi.stubGlobal('fetch', fetchSpy);
+
             await crmService.uploadDocument({ dealId: 'deal-99' }, makeFile());
-            expect(createSpy).toHaveBeenCalledWith(
-                expect.objectContaining({ deal_id: 'deal-99', lead_id: undefined })
-            );
+
+            const form = (fetchSpy.mock.calls[0][1].body) as FormData;
+            expect(form.get('deal_id')).toBe('deal-99');
+            expect(form.get('lead_id')).toBeNull();
         });
 
         it('When called / Then multipart POST is used (no Content-Type header override)', async () => {
-            const fetchSpy = vi.fn().mockResolvedValue({
-                ok: true,
-                json: async () => ({ url: 'https://cdn.example.com/test.pdf' }),
-            });
+            const fetchSpy = mockFetchOk(makeUploadResponse());
             vi.stubGlobal('fetch', fetchSpy);
 
             await crmService.uploadDocument('lead-1', makeFile());
@@ -122,7 +113,7 @@ describe('crmService.uploadDocument', () => {
         });
     });
 
-    describe('Given the Core API rejects the upload', () => {
+    describe('Given the CRM API rejects the upload', () => {
         it('When the response is not ok / Then the error message propagates to the caller', async () => {
             vi.stubGlobal('fetch', mockFetchFail(403, 'Tenant not found'));
             await expect(crmService.uploadDocument('lead-1', makeFile())).rejects.toThrow('Tenant not found');
