@@ -861,6 +861,9 @@ export const settingsApi = {
         delete: async (id: string): Promise<void> => {
             return apiClient.delete<void>(`/settings/scoring-rules/${id}`);
         },
+        recalculate: async (): Promise<{ recalculated: number }> => {
+            return apiClient.post<{ recalculated: number }>('/settings/scoring-rules/recalculate', {});
+        },
     },
 
     scoreCategories: {

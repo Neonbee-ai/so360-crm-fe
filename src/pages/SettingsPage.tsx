@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
-import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check } from 'lucide-react';
+import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { useShellBridge } from '@so360/shell-context';
 
@@ -97,6 +97,7 @@ const SettingsPage = () => {
     const [isAddingRule, setIsAddingRule] = useState(false);
     const [draftRule, setDraftRule] = useState<Partial<LeadScoringRule>>(BLANK_RULE);
     const [isSavingRule, setIsSavingRule] = useState(false);
+    const [isRecalculating, setIsRecalculating] = useState(false);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -240,6 +241,18 @@ const SettingsPage = () => {
         }
     };
 
+    const handleRecalculateScores = async () => {
+        setIsRecalculating(true);
+        try {
+            await settingsApi.scoringRules.recalculate();
+            showSuccess('Lead scores recalculated successfully.');
+        } catch {
+            showError('Failed to recalculate lead scores');
+        } finally {
+            setIsRecalculating(false);
+        }
+    };
+
     const handleUpdateCategory = async (cat: ScoreCategory, data: Partial<ScoreCategory>) => {
         try {
             const updated = await settingsApi.scoreCategories.update(cat.id, data);
@@ -255,6 +268,11 @@ const SettingsPage = () => {
         const cond = conditions.find(c => c.value === rule.condition)?.label || rule.condition;
         const noValue = ['is_empty', 'is_not_empty'].includes(rule.condition);
         if (noValue) return cond;
+        if (rule.rule_type === 'source') {
+            // Source rules match against the selected Source option (target_field)
+            const sourceLabel = sourceTypes.find(s => s.value === rule.target_field)?.label || rule.target_field || rule.value;
+            return `${cond} "${sourceLabel}"`;
+        }
         return `${cond} "${rule.value}"`;
     };
 
@@ -894,14 +912,26 @@ const SettingsPage = () => {
                                     </h3>
                                     <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tight">RULE-BASED AUTO-SCORING ENGINE</p>
                                 </div>
-                                {!isAddingRule && (
+                                <div className="flex items-center gap-2">
                                     <button
-                                        onClick={handleStartAddRule}
-                                        className="text-[10px] bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                        onClick={handleRecalculateScores}
+                                        disabled={isRecalculating}
+                                        className="text-[10px] border border-slate-700 hover:border-amber-500 text-slate-300 hover:text-amber-400 px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
                                     >
-                                        <Plus size={12} /> ADD RULE
+                                        {isRecalculating
+                                            ? <Loader2 size={12} className="animate-spin" />
+                                            : <RefreshCw size={12} />
+                                        } RECALCULATE SCORES
                                     </button>
-                                )}
+                                    {!isAddingRule && (
+                                        <button
+                                            onClick={handleStartAddRule}
+                                            className="text-[10px] bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                        >
+                                            <Plus size={12} /> ADD RULE
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className="p-6 space-y-3">
                                 {/* Add-rule form */}
@@ -1081,7 +1111,8 @@ function ScoringRuleForm({
     const targetField = draft.target_field || '';
     const fieldType = getFieldType(ruleType, targetField);
     const conditions = getConditions(ruleType, fieldType);
-    const hideValue = ['is_empty', 'is_not_empty'].includes(draft.condition || '');
+    // Source rules compare against the selected Source option itself — no separate value needed
+    const hideValue = ['is_empty', 'is_not_empty'].includes(draft.condition || '') || ruleType === 'source';
 
     const inputCls = 'w-full bg-slate-950/60 border border-slate-700 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-amber-500 transition-colors';
     const labelCls = 'text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 block';

@@ -22,6 +22,7 @@ vi.mock('../services/crmService', () => ({
       create: vi.fn().mockResolvedValue({ id: 'rule-new', name: 'Email Rule', rule_type: 'field', target_field: 'email', condition: 'is_not_empty', score_points: 10, is_active: true, priority: 0 }),
       update: vi.fn().mockResolvedValue({ id: 'ls-rule1', name: 'Email Rule', rule_type: 'field', target_field: 'email', condition: 'is_not_empty', score_points: 10, is_active: false, priority: 0 }),
       delete: vi.fn().mockResolvedValue({}),
+      recalculate: vi.fn().mockResolvedValue({ recalculated: 0 }),
     },
     scoreCategories: {
       update: vi.fn().mockResolvedValue({}),

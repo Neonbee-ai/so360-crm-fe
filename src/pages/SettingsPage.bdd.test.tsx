@@ -42,6 +42,7 @@ vi.mock('../services/crmService', () => ({
       create: vi.fn().mockResolvedValue({ id: 'rule-new', name: 'New Rule', rule_type: 'source', target_field: 'referral', condition: 'equals', value: 'referral', score_points: 30, is_active: true, priority: 0 }),
       update: vi.fn().mockResolvedValue({ id: 'sc-1', name: 'Referral Source', rule_type: 'source', target_field: 'referral', condition: 'equals', value: 'referral', score_points: 30, is_active: false, priority: 0 }),
       delete: vi.fn().mockResolvedValue({}),
+      recalculate: vi.fn().mockResolvedValue({ recalculated: 3 }),
     },
     scoreCategories: {
       getAll: vi.fn().mockResolvedValue([]),
@@ -424,6 +425,53 @@ describe('SettingsPage BDD', () => {
       const toggles = document.querySelectorAll('svg');
       // Toggle icon present = component rendered
       expect(toggles.length).toBeGreaterThan(0);
+    });
+
+    it('When ADD RULE is clicked with Source rule type / Then the redundant Value input is hidden (Source dropdown is the value)', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+      await userEvent.click(screen.getByText(/add rule/i));
+      await waitFor(() => screen.getByPlaceholderText(/high budget lead/i));
+      // Default rule type is "source" — Value input must not render
+      expect(screen.queryByPlaceholderText(/compare value/i)).not.toBeInTheDocument();
+    });
+
+    it('When RECALCULATE SCORES is clicked / Then calls the recalculate API and shows a success toast', async () => {
+      const { settingsApi: sApi } = await import('../services/crmService');
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+
+      await userEvent.click(screen.getByText(/recalculate scores/i));
+
+      await waitFor(() => {
+        expect(sApi.scoringRules.recalculate).toHaveBeenCalled();
+        expect(mockShowSuccess).toHaveBeenCalledWith('Lead scores recalculated successfully.');
+      });
+    });
+
+    it('When RECALCULATE SCORES fails / Then shows an error toast', async () => {
+      const { settingsApi: sApi } = await import('../services/crmService');
+      (sApi.scoringRules.recalculate as any).mockRejectedValueOnce(new Error('boom'));
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+
+      await userEvent.click(screen.getByText(/recalculate scores/i));
+
+      await waitFor(() => {
+        expect(mockShowError).toHaveBeenCalledWith('Failed to recalculate lead scores');
+      });
     });
   });
 });
