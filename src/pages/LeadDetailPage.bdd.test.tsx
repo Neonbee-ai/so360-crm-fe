@@ -61,9 +61,8 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
 vi.mock('@so360/shell-context', () => ({
-  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled }),
+  useShell: () => ({ isModuleEnabled: () => false }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
@@ -182,7 +181,6 @@ let mockUseShellBridge: ReturnType<typeof vi.fn>;
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  shellCtl.signEnabled = false;
   // Re-apply the default useShellBridge implementation so tests that call mockReturnValue don't bleed through
   const shell = await import('@so360/shell-context');
   mockUseShellBridge = vi.mocked(shell.useShellBridge);
@@ -200,22 +198,6 @@ beforeEach(async () => {
 });
 
 describe('LeadDetailPage', () => {
-  describe('Given the Sign module gating', () => {
-    it('When the Sign module is disabled / Then the Request Signature button is hidden', async () => {
-      shellCtl.signEnabled = false;
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      expect(screen.queryByRole('button', { name: /request signature/i })).not.toBeInTheDocument();
-    });
-
-    it('When the Sign module is enabled / Then the Request Signature button is shown', async () => {
-      shellCtl.signEnabled = true;
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      expect(screen.getByRole('button', { name: /request signature/i })).toBeInTheDocument();
-    });
-  });
-
   describe('Given a lead with contact info and deals', () => {
     it('When the page loads / Then displays the contact name and company', async () => {
       render(<LeadDetailPage />);

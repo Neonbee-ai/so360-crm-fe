@@ -9,9 +9,8 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, FileSignature, Package, ChevronDown
+    File, Download, UploadCloud, FileIcon, Eye, Package, ChevronDown
 } from 'lucide-react';
-import SignRequestModal from '../components/sign/SignRequestModal';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
@@ -79,7 +78,6 @@ const LeadDetailPage = () => {
     const canQualifyLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
     const canConvertLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
-    const isSignEnabled = isModuleEnabled('sign');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const [lead, setLead] = useState<Lead | null>(null);
@@ -106,7 +104,6 @@ const LeadDetailPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [partners, setPartners] = useState<Lead[]>([]);
     const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
-    const [signOpen, setSignOpen] = useState(false);
     const [productCount, setProductCount] = useState(0);
     const [productValue, setProductValue] = useState(0);
     const [activityTotal, setActivityTotal] = useState(0);
@@ -411,15 +408,6 @@ const LeadDetailPage = () => {
                             <Trash2 size={16} />
                             Delete
                         </button>
-                        {isSignEnabled && (
-                            <button
-                                type="button"
-                                onClick={() => setSignOpen(true)}
-                                className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
-                            >
-                                <FileSignature size={16} /> Request Signature
-                            </button>
-                        )}
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
@@ -1652,17 +1640,6 @@ const LeadDetailPage = () => {
                     />
                 )
             }
-
-            {/* Sign Request Modal */}
-            {signOpen && (
-                <SignRequestModal
-                    onClose={() => setSignOpen(false)}
-                    prefillName={lead ? getLeadDisplayName(lead) : ''}
-                    prefillEmail={lead?.contact_email ?? ''}
-                    sourceModel="crm.lead"
-                    sourceId={lead?.id ?? id ?? ''}
-                />
-            )}
 
             {/* Delete Lead Confirmation Modal */}
             {showDeleteConfirm && createPortal(
