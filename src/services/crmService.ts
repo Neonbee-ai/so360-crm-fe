@@ -1,4 +1,11 @@
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory } from '../types/crm';
+import { createRequestCache } from './requestCache';
+
+// Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
+// requests) and the user list on mount. Both are org-static within a session,
+// so coalesce concurrent reads and serve a short TTL keyed by org. updateSettings
+// invalidates so edits show immediately. Exported so tests can reset it.
+export const orgStaticCache = createRequestCache({ defaultTtlMs: 30_000, maxEntries: 50 });
 
 export interface TimelineEvent {
     id: string;
@@ -209,6 +216,10 @@ class ApiClient {
             console.warn(`ApiClient: Org ID "${id}" is not a valid UUID. This may cause backend syntax errors.`);
         }
         this.orgId = id;
+    }
+
+    getOrgId(): string {
+        return this.orgId;
     }
 
     setUserId(id: string) {
@@ -1340,6 +1351,7 @@ export const crmService = {
 
     // Settings
     getSettings: async (): Promise<CRMSettings> => {
+      return orgStaticCache.run(`settings|${apiClient.getOrgId()}`, async () => {
         try {
             const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, partnerFieldsResult, sourceTypesResult, scoringRulesResult, scoreCategoriesResult] = await Promise.allSettled([
                 apiClient.get<any[]>('/settings/pipeline-stages'),
@@ -1395,6 +1407,7 @@ export const crmService = {
                 score_categories: [],
             };
         }
+      });
     },
 
     updateSettings: async (settings: CRMSettings): Promise<CRMSettings> => {
@@ -1521,6 +1534,9 @@ export const crmService = {
             failures.push('Partner Fields');
         }
 
+        // Settings just changed — drop the cached copy so the next read is fresh.
+        orgStaticCache.invalidate('settings|');
+
         if (failures.length > 0) {
             throw new Error(`Failed to save: ${failures.join(', ')}`);
         }
@@ -1556,6 +1572,7 @@ export const crmService = {
 
     // Users
     getUsers: async (): Promise<User[]> => {
+      return orgStaticCache.run(`users|${apiClient.getOrgId()}`, async () => {
         try {
             // Fetch users from CRM backend (works without shell context)
             const users = await apiClient.get<any[]>('/v1/users/profiles');
@@ -1584,6 +1601,7 @@ export const crmService = {
             // Fallback to current user if available
             return CURRENT_USER ? [CURRENT_USER] : [];
         }
+      });
     },
 
     // Documents

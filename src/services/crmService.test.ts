@@ -18,6 +18,7 @@ import {
   activitiesApi,
   settingsApi,
   crmService,
+  orgStaticCache,
 } from './crmService';
 
 // Helper to create a successful fetch response
@@ -55,6 +56,9 @@ function mockFetchNetworkError() {
 
 beforeEach(() => {
   fetchMock.mockReset();
+  // getSettings/getUsers are now coalesced + TTL-cached via a module singleton;
+  // clear it so each test starts from a clean cache miss.
+  orgStaticCache.invalidate();
 });
 
 afterEach(() => {

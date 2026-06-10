@@ -53,6 +53,9 @@ const CustomersPage = () => {
     const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
     const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
 
+    // Only the customer list depends on the search params. Stats and partners are
+    // org-static, so they are fetched once (see the mount effect below) instead of
+    // re-firing on every filter/search change.
     const fetchData = async () => {
         setIsLoading(true);
         setError(null);
@@ -66,8 +69,6 @@ const CustomersPage = () => {
                 .map((id) => id.trim())
                 .filter(Boolean);
 
-            const statsPromise = crmService.getCustomerStats();
-            const partnersPromise = crmService.getPartners().catch(() => [] as any[]);
             let customersData: any[] = [];
 
             if (segmentId) {
@@ -88,10 +89,7 @@ const CustomersPage = () => {
                 setActiveSegmentName(null);
             }
 
-            const [statsData, partnersData] = await Promise.all([statsPromise, partnersPromise]);
             setCustomers(customersData || []);
-            setStats(statsData || {});
-            setPartners(partnersData || []);
         } catch (err: any) {
             console.error('Failed to fetch customers', err);
             setError(err.message || 'Failed to load customers');
@@ -106,6 +104,19 @@ const CustomersPage = () => {
         setCategoryFilter(queryParams.get('category') || 'All');
         fetchData();
     }, [location.search]);
+
+    useEffect(() => {
+        let cancelled = false;
+        Promise.all([
+            crmService.getCustomerStats().catch(() => ({})),
+            crmService.getPartners().catch(() => [] as any[]),
+        ]).then(([statsData, partnersData]) => {
+            if (cancelled) return;
+            setStats(statsData || {});
+            setPartners(partnersData || []);
+        });
+        return () => { cancelled = true; };
+    }, []);
 
     const toggleSort = (field: SortField) => {
         if (sortField === field) {
