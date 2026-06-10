@@ -8,6 +8,7 @@ const mockGetUsers = vi.fn();
 const mockGetDealsByLeadId = vi.fn();
 const mockGetTasksByLeadId = vi.fn();
 const mockGetActivitiesByLeadId = vi.fn();
+const mockGetActivitiesByLeadIdPaginated = vi.fn();
 const mockGetNotesByLeadId = vi.fn();
 const mockGetDocumentsByLeadId = vi.fn();
 const mockUpdateLead = vi.fn();
@@ -24,6 +25,7 @@ vi.mock('../services/crmService', () => ({
     getDealsByLeadId: (...a: any[]) => mockGetDealsByLeadId(...a),
     getTasksByLeadId: (...a: any[]) => mockGetTasksByLeadId(...a),
     getActivitiesByLeadId: (...a: any[]) => mockGetActivitiesByLeadId(...a),
+    getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivitiesByLeadIdPaginated(...a),
     getNotesByLeadId: (...a: any[]) => mockGetNotesByLeadId(...a),
     getDocumentsByLeadId: (...a: any[]) => mockGetDocumentsByLeadId(...a),
     updateLead: (...a: any[]) => mockUpdateLead(...a),
@@ -108,6 +110,12 @@ beforeEach(() => {
   mockGetActivitiesByLeadId.mockResolvedValue([
     { id: 'a1', type: 'CALL', notes: 'Called', created_at: '2024-01-02', author: { id: 'u1', full_name: 'Test' } },
   ]);
+  mockGetActivitiesByLeadIdPaginated.mockResolvedValue({
+    data: [
+      { id: 'a1', type: 'CALL', notes: 'Called', created_at: '2024-01-02', author: { id: 'u1', full_name: 'Test' } },
+    ],
+    total: 1,
+  });
   mockGetNotesByLeadId.mockResolvedValue([
     { id: 'n1', content: 'Initial note', created_at: '2024-01-01', author: { id: 'u1', full_name: 'Test' } },
   ]);

@@ -10,6 +10,7 @@ const mockGetTasksByLeadId = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
 const mockGetActivitiesByLeadId = vi.fn();
+const mockGetActivitiesByLeadIdPaginated = vi.fn();
 const mockGetPartners = vi.fn();
 const mockGetDocumentsByLeadId = vi.fn();
 
@@ -21,6 +22,7 @@ vi.mock('../services/crmService', () => ({
         getSettings: (...a: any[]) => mockGetSettings(...a),
         getUsers: (...a: any[]) => mockGetUsers(...a),
         getActivitiesByLeadId: (...a: any[]) => mockGetActivitiesByLeadId(...a),
+        getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivitiesByLeadIdPaginated(...a),
         getPartners: (...a: any[]) => mockGetPartners(...a),
         uploadDocument: (...a: any[]) => mockUploadDocument(...a),
         deleteDocument: vi.fn().mockResolvedValue(undefined),
@@ -137,6 +139,7 @@ const defaultServiceMocks = () => {
     mockGetSettings.mockResolvedValue({ lead_custom_fields: [], lead_scoring: [], lead_stages: [] });
     mockGetUsers.mockResolvedValue([]);
     mockGetActivitiesByLeadId.mockResolvedValue([]);
+    mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
     mockGetPartners.mockResolvedValue([]);
 };
 

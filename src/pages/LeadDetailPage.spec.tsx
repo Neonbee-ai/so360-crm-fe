@@ -9,6 +9,7 @@ const mockCrmService = vi.hoisted(() => ({
   deleteLead: vi.fn(),
   deleteNote: vi.fn(),
   getActivitiesByLeadId: vi.fn(),
+  getActivitiesByLeadIdPaginated: vi.fn(),
   getDealsByLeadId: vi.fn(),
   getLeadById: vi.fn(),
   getPartners: vi.fn(),
@@ -93,6 +94,7 @@ describe('Given LeadDetailPage — Lead Detail View', () => {
     mockCrmService.getLeadById.mockResolvedValue(mockLead);
     mockCrmService.getNotesByLeadId?.mockResolvedValue([]);
     mockCrmService.getActivitiesByLeadId.mockResolvedValue([]);
+    mockCrmService.getActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
     mockCrmService.getTasksByLeadId.mockResolvedValue([]);
     mockCrmService.getDealsByLeadId.mockResolvedValue([]);
     mockCrmService.getUsers.mockResolvedValue([]);
