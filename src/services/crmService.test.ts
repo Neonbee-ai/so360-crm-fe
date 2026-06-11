@@ -931,12 +931,15 @@ describe('Given crmService (legacy layer)', () => {
     expect(result.stages).toHaveLength(1);
   });
 
-  it('When action / Then getDealsByLeadId filters deals by lead_id', async () => {
+  it('When action / Then getDealsByLeadId requests deals filtered server-side by lead_id', async () => {
+    // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
       { id: 'd1', lead_id: 'l1', value: '0', notes: [], documents: [], activities: [] },
-      { id: 'd2', lead_id: 'l2', value: '0', notes: [], documents: [], activities: [] },
     ]);
     const result = await crmService.getDealsByLeadId('l1');
+    const calledUrl = fetchMock.mock.calls[0][0];
+    expect(String(calledUrl)).toContain('/deals');
+    expect(String(calledUrl)).toContain('lead_id=l1');
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('d1');
   });
@@ -975,21 +978,27 @@ describe('Given crmService (legacy layer)', () => {
     expect(body.reminder_minutes_before).toBe(15);
   });
 
-  it('When action / Then getTasksByLeadId filters tasks by lead_id', async () => {
+  it('When action / Then getTasksByLeadId requests tasks filtered server-side by lead_id', async () => {
+    // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
       { id: 't1', lead_id: 'l1', title: 'A', status: 'open' },
-      { id: 't2', lead_id: 'l2', title: 'B', status: 'open' },
     ]);
     const result = await crmService.getTasksByLeadId('l1');
+    const calledUrl = fetchMock.mock.calls[0][0];
+    expect(String(calledUrl)).toContain('/tasks');
+    expect(String(calledUrl)).toContain('lead_id=l1');
     expect(result).toHaveLength(1);
   });
 
-  it('When action / Then getTasksByDealId filters tasks by deal_id', async () => {
+  it('When action / Then getTasksByDealId requests tasks filtered server-side by deal_id', async () => {
+    // Backend already filters by deal_id, so the FE returns the response verbatim.
     mockFetchSuccess([
       { id: 't1', deal_id: 'd1', title: 'A', status: 'open' },
-      { id: 't2', deal_id: 'd2', title: 'B', status: 'open' },
     ]);
     const result = await crmService.getTasksByDealId('d1');
+    const calledUrl = fetchMock.mock.calls[0][0];
+    expect(String(calledUrl)).toContain('/tasks');
+    expect(String(calledUrl)).toContain('deal_id=d1');
     expect(result).toHaveLength(1);
   });
 

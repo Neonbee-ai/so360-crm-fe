@@ -47,9 +47,15 @@ const PipelinePage = () => {
         return () => clearTimeout(timeoutId);
     }, [filters, pollTick]);
 
-    // Auto-refresh pipeline every 60 seconds
+    // Auto-refresh pipeline every 60 seconds, but skip the heavy refetch while
+    // the tab is hidden — the data is re-fetched on the next visible tick.
     useEffect(() => {
-        const pollInterval = setInterval(() => setPollTick(t => t + 1), 60 * 1000);
+        const pollInterval = setInterval(() => {
+            if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+                return;
+            }
+            setPollTick(t => t + 1);
+        }, 60 * 1000);
         return () => clearInterval(pollInterval);
     }, []);
 

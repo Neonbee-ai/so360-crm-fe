@@ -632,6 +632,8 @@ export const tasksApi = {
     getAll: async (params?: {
         status?: string;
         overdue?: boolean;
+        lead_id?: string;
+        deal_id?: string;
     }): Promise<Task[]> => {
         const tasks = await apiClient.get<any[]>('/tasks', params);
         return tasks.map(mapTaskFromApi);
@@ -1296,8 +1298,9 @@ export const crmService = {
     },
 
     getDealsByLeadId: async (leadId: string): Promise<Deal[]> => {
-        const allDeals = await dealsApi.getAll();
-        return allDeals.filter((d) => d.lead_id === leadId);
+        // Filter server-side (backend GET /deals honors lead_id) instead of
+        // downloading the whole org dataset and filtering in the browser.
+        return dealsApi.getAll({ lead_id: leadId });
     },
 
     deleteDeal: async (id: string): Promise<void> => {
@@ -1339,13 +1342,15 @@ export const crmService = {
     },
 
     async getTasksByLeadId(leadId: string): Promise<Task[]> {
-        const allTasks = await tasksApi.getAll();
-        return allTasks.filter((t) => t.lead_id === leadId);
+        // Filter server-side (backend GET /tasks honors lead_id) instead of
+        // downloading the whole org dataset and filtering in the browser.
+        return tasksApi.getAll({ lead_id: leadId });
     },
 
     async getTasksByDealId(dealId: string): Promise<Task[]> {
-        const allTasks = await tasksApi.getAll();
-        return allTasks.filter((t) => t.deal_id === dealId);
+        // Filter server-side (backend GET /tasks honors deal_id) instead of
+        // downloading the whole org dataset and filtering in the browser.
+        return tasksApi.getAll({ deal_id: dealId });
     },
 
     async deleteTask(id: string): Promise<void> {
