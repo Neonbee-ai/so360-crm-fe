@@ -84,3 +84,4 @@ export const Eye = createIcon('Eye');
 export const MapPin = createIcon('MapPin');
 export const FileSignature = createIcon('FileSignature');
 export const Check = createIcon('Check');
+export const RefreshCw = createIcon('RefreshCw');
