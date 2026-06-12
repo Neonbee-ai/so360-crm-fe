@@ -453,7 +453,7 @@ describe('SettingsPage BDD', () => {
 
       await waitFor(() => {
         expect(sApi.scoringRules.recalculate).toHaveBeenCalled();
-        expect(mockShowSuccess).toHaveBeenCalledWith('Lead scores recalculated successfully.');
+        expect(mockShowSuccess).toHaveBeenCalledWith('Lead scores recalculated successfully. 3 lead(s) updated.');
       });
     });
 
