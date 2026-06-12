@@ -118,9 +118,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 )}
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-400">Company Name *</label>
+                    <label className="text-sm font-medium text-slate-400">Company Name</label>
                     <input
-                        required
                         type="text"
                         value={formData.company_name}
                         onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
