@@ -244,8 +244,13 @@ const SettingsPage = () => {
     const handleRecalculateScores = async () => {
         setIsRecalculating(true);
         try {
-            await settingsApi.scoringRules.recalculate();
-            showSuccess('Lead scores recalculated successfully.');
+            const result = await settingsApi.scoringRules.recalculate();
+            const count = result?.recalculated ?? 0;
+            if (count === 0) {
+                showSuccess('Scores recalculated — no active leads found or no active rules.');
+            } else {
+                showSuccess(`Lead scores recalculated successfully. ${count} lead(s) updated.`);
+            }
         } catch {
             showError('Failed to recalculate lead scores');
         } finally {

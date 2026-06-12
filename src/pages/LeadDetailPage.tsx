@@ -16,7 +16,7 @@ import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdow
 import { useCRMFormatters } from '../utils/formatters';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
-import { Trophy, Zap, Info, TrendingUp } from 'lucide-react';
+import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
@@ -86,6 +86,7 @@ const LeadDetailPage = () => {
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
     const [scoreCategories, setScoreCategories] = useState<import('../types/crm').ScoreCategory[]>([]);
+    const [isRecalculatingScore, setIsRecalculatingScore] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('activity');
     const [infoTab, setInfoTab] = useState<'profile' | 'additional' | 'business'>('profile');
     const [isLoading, setIsLoading] = useState(true);
@@ -162,6 +163,19 @@ const LeadDetailPage = () => {
             setIsLoadingMoreActivities(false);
         }
     }, [id, activityOffset, isLoadingMoreActivities, lead]);
+
+    const handleRecalculateScore = useCallback(async () => {
+        if (!lead || isRecalculatingScore) return;
+        setIsRecalculatingScore(true);
+        try {
+            await settingsApi.scoringRules.recalculate();
+            await fetchLeadData();
+        } catch {
+            // fetchLeadData handles display; silently continue
+        } finally {
+            setIsRecalculatingScore(false);
+        }
+    }, [lead, isRecalculatingScore, fetchLeadData]);
 
     useEffect(() => {
         fetchLeadData();
@@ -1200,8 +1214,20 @@ const LeadDetailPage = () => {
                             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                                 {isCustomerDetailRoute ? 'Customer Potential' : 'Lead Potential'}
                             </h3>
-                            <div className="bg-amber-500/10 text-amber-500 p-1.5 rounded-lg">
-                                <Zap size={14} className="fill-amber-500" />
+                            <div className="flex items-center gap-2">
+                                {!isCustomerDetailRoute && (
+                                    <button
+                                        onClick={handleRecalculateScore}
+                                        disabled={isRecalculatingScore}
+                                        title="Recalculate score"
+                                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all disabled:opacity-40"
+                                    >
+                                        <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                    </button>
+                                )}
+                                <div className="bg-amber-500/10 text-amber-500 p-1.5 rounded-lg">
+                                    <Zap size={14} className="fill-amber-500" />
+                                </div>
                             </div>
                         </div>
 
@@ -1276,18 +1302,40 @@ const LeadDetailPage = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="space-y-3 pt-6 border-t border-slate-800/50">
+                                <div className="space-y-2 pt-5 border-t border-slate-800/50">
                                     {breakdown.length === 0 ? (
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No scoring rules matched</p>
+                                        <div className="text-center py-3">
+                                            {scoringRules.filter(r => r.is_active).length === 0 ? (
+                                                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">No active scoring rules configured</p>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
+                                                    <button
+                                                        onClick={handleRecalculateScore}
+                                                        disabled={isRecalculatingScore}
+                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-amber-500/70 hover:text-amber-400 transition-colors flex items-center gap-1 mx-auto disabled:opacity-40"
+                                                    >
+                                                        <RefreshCw size={9} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                                        Recalculate
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     ) : (
-                                        breakdown.map((item, idx) => (
-                                            <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                <span className="text-slate-400 truncate mr-2">{item.label}</span>
-                                                <span className={item.points >= 0 ? 'text-emerald-400 shrink-0' : 'text-rose-400 shrink-0'}>
-                                                    {item.points >= 0 ? '+' : ''}{item.points}
-                                                </span>
-                                            </div>
-                                        ))
+                                        <>
+                                            <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] mb-2">Matched Rules</p>
+                                            {breakdown.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="flex items-center gap-1.5 text-slate-400 truncate mr-2">
+                                                        <span className="text-emerald-500 shrink-0">✓</span>
+                                                        <span className="truncate">{item.label}</span>
+                                                    </span>
+                                                    <span className={item.points >= 0 ? 'text-emerald-400 shrink-0' : 'text-rose-400 shrink-0'}>
+                                                        {item.points >= 0 ? '+' : ''}{item.points}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </>
                                     )}
                                 </div>
                                 <div className="mt-6 pt-4">
