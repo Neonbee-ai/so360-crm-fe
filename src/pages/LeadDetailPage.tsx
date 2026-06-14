@@ -170,9 +170,13 @@ const LeadDetailPage = () => {
         setIsRecalculatingScore(true);
         try {
             await settingsApi.scoringRules.recalculate();
+        } catch {
+            // recalculate failure is non-critical; still refresh so UI shows latest stored score
+        }
+        try {
             await fetchLeadData();
         } catch {
-            // fetchLeadData handles display; silently continue
+            // fetchLeadData handles its own display errors
         } finally {
             setIsRecalculatingScore(false);
         }
