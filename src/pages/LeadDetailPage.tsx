@@ -23,8 +23,9 @@ import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback';
 
 const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'contact_name'>): string =>
     lead.first_name
@@ -719,6 +720,9 @@ const LeadDetailPage = () => {
                             <button onClick={() => setActiveTab('products')} className={tabCls('products')}>
                                 <Package size={14} /> Products {productCount > 0 ? `(${productCount})` : ''}
                             </button>
+                            <button onClick={() => setActiveTab('feedback')} className={tabCls('feedback')}>
+                                <MessageSquare size={14} /> Feedback
+                            </button>
                         </div>
 
                         <div className="p-6">
@@ -1200,6 +1204,10 @@ const LeadDetailPage = () => {
                                         setProductValue(value);
                                     }}
                                 />
+                            )}
+
+                            {activeTab === 'feedback' && lead && (
+                                <CustomerFeedbackTab leadId={lead.id} />
                             )}
 
                         </div>

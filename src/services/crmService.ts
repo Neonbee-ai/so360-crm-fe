@@ -1640,6 +1640,22 @@ export const crmService = {
         return documentsApi.delete(documentId);
     },
 
+    // Customer Feedback (Forms module integration)
+    async getCustomerFeedback(
+        leadId: string,
+        params: { page?: number; limit?: number } = {},
+    ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+        const qs = new URLSearchParams();
+        if (params.page) qs.set('page', String(params.page));
+        if (params.limit) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs}` : '';
+        try {
+            return await apiClient.get<any>(`/leads/${leadId}/feedback${suffix}`);
+        } catch {
+            return { data: [], total: 0, page: 1, limit: 20 };
+        }
+    },
+
     // Activities
     async getActivitiesByLeadId(leadId: string): Promise<Activity[]> {
         return activitiesApi.getAllByLead(leadId);
