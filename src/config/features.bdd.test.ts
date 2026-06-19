@@ -4,6 +4,10 @@ import type { FeatureFlag } from './features';
 
 describe('isFeatureEnabled', () => {
   describe('Given a feature that is enabled in the registry', () => {
+    it('When DEAL_ESTIMATE_REQUEST is checked / Then returns true', () => {
+      expect(isFeatureEnabled('DEAL_ESTIMATE_REQUEST')).toBe(true);
+    });
+
     it('When DEAL_INVOICE_REQUEST is checked / Then returns true', () => {
       expect(isFeatureEnabled('DEAL_INVOICE_REQUEST')).toBe(true);
     });

@@ -5,6 +5,7 @@
 
 export const FEATURES = {
     // Deal Actions
+    DEAL_ESTIMATE_REQUEST: true,  // Show create estimate button → navigates to Accounting Estimations
     DEAL_INVOICE_REQUEST: true,   // Show invoice request button (with graceful error handling)
     DEAL_PROJECT_CREATION: true,  // Show project creation button (with graceful error handling)
     DEAL_PROJECT_LINKING: true,   // Enable when /deals/:id/link-project is implemented
