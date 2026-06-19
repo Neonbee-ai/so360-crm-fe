@@ -86,7 +86,7 @@ vi.mock('@so360/shell-context', () => ({
 }));
 
 vi.mock('../config/features', () => ({
-  FEATURES: { DEAL_INVOICE_REQUEST: true, DEAL_PROJECT_CREATION: true },
+  FEATURES: { DEAL_ESTIMATE_REQUEST: true, DEAL_INVOICE_REQUEST: true, DEAL_PROJECT_CREATION: true },
 }));
 
 vi.mock('../components/DealLifecycleStepper', () => ({
@@ -733,6 +733,82 @@ describe('DealDetailPage', () => {
       await waitFor(() => {
         // formatters.formatDate with UTC timezone and en-US locale renders 'Jun 30, 2025'
         expect(screen.getByText(/Closing: Jun 30, 2025/)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Given Create Estimate navigation from Deal Detail', () => {
+    describe('When DEAL_ESTIMATE_REQUEST feature flag is enabled', () => {
+      it('Then Create Estimate button is visible on the page', async () => {
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      });
+
+      it('When Create Estimate is clicked / Then calls navigate()', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        expect(mockNavigate).toHaveBeenCalled();
+      });
+
+      it('When Create Estimate is clicked / Then navigates to /accounting/estimations', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/estimations'));
+      });
+
+      it('When Create Estimate is clicked / Then includes create=true in URL params', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
+      });
+
+      it('When Create Estimate is clicked / Then includes opportunity_ref from deal name in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        const url = mockNavigate.mock.calls.find(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
+        )?.[0] as string;
+        expect(url).toContain('opportunity_ref=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Big Deal');
+      });
+
+      it('When Create Estimate is clicked / Then includes customer_name from deal company_name in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        const url = mockNavigate.mock.calls.find(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
+        )?.[0] as string;
+        expect(url).toContain('customer_name=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Acme Corp');
+      });
+
+      it('When deal has no company_name / Then customer_name is omitted from estimate URL', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ company_name: null }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        const url = mockNavigate.mock.calls.find(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
+        )?.[0] as string;
+        expect(url).not.toContain('customer_name');
+      });
+
+      it('When deal is null / Then clicking Create Estimate does nothing', async () => {
+        mockGetDealById.mockResolvedValue(null);
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.queryByText('Create Estimate')).not.toBeInTheDocument());
+        expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/accounting/estimations'));
       });
     });
   });
