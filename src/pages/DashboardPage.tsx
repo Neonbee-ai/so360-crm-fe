@@ -14,13 +14,20 @@ const DashboardPage = () => {
     const formatters = useCRMFormatters();
     const [stats, setStats] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [period, setPeriod] = useState<'yearly' | 'quarterly' | 'monthly'>('yearly');
+    const [period, setPeriod] = useState<'yearly' | 'quarterly' | 'monthly' | 'weekly'>('yearly');
     const [year, setYear] = useState(new Date().getFullYear());
     const [quarter, setQuarter] = useState(() => {
         const month = new Date().getMonth() + 1;
         return Math.ceil(month / 3); // Current quarter
     });
     const [month, setMonth] = useState(new Date().getMonth() + 1);
+    const [week, setWeek] = useState(() => {
+        const now = new Date();
+        const jan4 = new Date(now.getFullYear(), 0, 4);
+        const startOfWeek1 = new Date(jan4);
+        startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+        return Math.floor((now.getTime() - startOfWeek1.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+    });
     const { settings } = useBusinessSettings();
     const { isModuleEnabled, isFeatureHidden } = useShell();
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
@@ -44,6 +51,7 @@ const DashboardPage = () => {
                     year,
                     quarter: period === 'quarterly' ? quarter : undefined,
                     month: period === 'monthly' ? month : undefined,
+                    week: period === 'weekly' ? week : undefined,
                 });
                 setStats(data);
             } catch (error) {
@@ -53,7 +61,7 @@ const DashboardPage = () => {
             }
         };
         fetchStats();
-    }, [period, year, quarter, month]);
+    }, [period, year, quarter, month, week]);
 
     useEffect(() => {
         if (!isDailyStoreEnabled) return;
@@ -65,6 +73,7 @@ const DashboardPage = () => {
                     year,
                     quarter: period === 'quarterly' ? quarter : undefined,
                     month: period === 'monthly' ? month : undefined,
+                    week: period === 'weekly' ? week : undefined,
                 });
                 setCommerceKPIs(data);
             } catch (err) {
@@ -74,7 +83,7 @@ const DashboardPage = () => {
             }
         };
         fetchCommerce();
-    }, [isDailyStoreEnabled, period, year, quarter, month]);
+    }, [isDailyStoreEnabled, period, year, quarter, month, week]);
 
     if (isLoading) {
         return (
@@ -122,7 +131,19 @@ const DashboardPage = () => {
                                 ? `${year}`
                                 : period === 'quarterly'
                                     ? `Q${quarter} ${year}`
-                                    : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+                                    : period === 'weekly'
+                                        ? (() => {
+                                            const jan4 = new Date(year, 0, 4);
+                                            const startOfWeek1 = new Date(jan4);
+                                            startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+                                            const wStart = new Date(startOfWeek1);
+                                            wStart.setDate(startOfWeek1.getDate() + (week - 1) * 7);
+                                            const wEnd = new Date(wStart);
+                                            wEnd.setDate(wStart.getDate() + 6);
+                                            const fmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+                                            return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
+                                        })()
+                                        : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
                         }
                     </p>
                 </div>
@@ -153,6 +174,15 @@ const DashboardPage = () => {
                             } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
                     >
                         Monthly
+                    </button>
+                    <button
+                        onClick={() => setPeriod('weekly')}
+                        className={`px-4 py-2 ${period === 'weekly'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
+                            : 'text-slate-500 hover:text-slate-300'
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
+                    >
+                        Weekly
                     </button>
                 </div>
             </header>

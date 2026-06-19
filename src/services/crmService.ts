@@ -999,10 +999,11 @@ export const crmService = {
     },
 
     getDashboardStats: async (params?: {
-        period?: 'yearly' | 'quarterly' | 'monthly';
+        period?: 'yearly' | 'quarterly' | 'monthly' | 'weekly';
         year?: number;
         quarter?: number;
         month?: number;
+        week?: number;
     }) => {
         try {
             // If period filtering is requested, use the new backend endpoint
@@ -1012,6 +1013,7 @@ export const crmService = {
                 if (params.year) queryParams.append('year', params.year.toString());
                 if (params.quarter) queryParams.append('quarter', params.quarter.toString());
                 if (params.month) queryParams.append('month', params.month.toString());
+                if (params.week) queryParams.append('week', params.week.toString());
 
                 const [periodStats, performanceStats, tasks] = await Promise.all([
                     apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`),
@@ -2061,10 +2063,11 @@ export const crmService = {
     },
 
     getCommerceKPIs: async (params?: {
-        period?: 'yearly' | 'quarterly' | 'monthly';
+        period?: 'yearly' | 'quarterly' | 'monthly' | 'weekly';
         year?: number;
         quarter?: number;
         month?: number;
+        week?: number;
     }): Promise<{
         revenue: number;
         orderCount: number;
