@@ -1198,6 +1198,8 @@ export const crmService = {
     updateLead: async (id: string, updates: Partial<Lead>): Promise<Lead> => {
         // Whitelist updateable fields to avoid sending relation objects to backend
         const data: any = {};
+        if ((updates as any).first_name !== undefined) data.first_name = (updates as any).first_name;
+        if ((updates as any).last_name !== undefined) data.last_name = (updates as any).last_name;
         if (updates.contact_name !== undefined) data.contact_name = updates.contact_name;
         if (updates.company_name !== undefined) data.company_name = updates.company_name;
         if (updates.contact_email !== undefined) data.email = updates.contact_email;

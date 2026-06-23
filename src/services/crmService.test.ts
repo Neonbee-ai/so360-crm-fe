@@ -845,6 +845,35 @@ describe('Given crmService (legacy layer)', () => {
     expect(body.owner_id).toBe('u3');
   });
 
+  it('Given first_name and last_name edits / When updateLead runs / Then both are forwarded in the PATCH body (regression: name edits were silently dropped)', async () => {
+    mockFetchSuccess({ id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
+    await crmService.updateLead('l1', { first_name: 'Jane', last_name: 'Roe' } as any);
+    const [url, opts] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/leads/l1');
+    expect(opts.method).toBe('PATCH');
+    const body = JSON.parse(opts.body);
+    expect(body.first_name).toBe('Jane');
+    expect(body.last_name).toBe('Roe');
+  });
+
+  it('Given a first_name set to empty string / When updateLead runs / Then it is still forwarded (clearing a name persists)', async () => {
+    mockFetchSuccess({ id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
+    await crmService.updateLead('l1', { first_name: '' } as any);
+    const [, opts] = fetchMock.mock.calls[0];
+    const body = JSON.parse(opts.body);
+    expect(body).toHaveProperty('first_name', '');
+  });
+
+  it('Given an update without name fields / When updateLead runs / Then first_name and last_name are omitted from the body', async () => {
+    mockFetchSuccess({ id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
+    await crmService.updateLead('l1', { phone: '555' } as any);
+    const [, opts] = fetchMock.mock.calls[0];
+    const body = JSON.parse(opts.body);
+    expect(body).not.toHaveProperty('first_name');
+    expect(body).not.toHaveProperty('last_name');
+    expect(body.phone).toBe('555');
+  });
+
   it('When action / Then deleteLead delegates to leadsApi.delete', async () => {
     mockFetchSuccess({});
     await crmService.deleteLead('l1');
