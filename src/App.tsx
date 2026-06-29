@@ -4,6 +4,7 @@ import { useShellBridge } from '@so360/shell-context';
 import { FeatureRoute } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
+import { salesTargetService } from './services/salesTargetService';
 
 // Synchronizes Shell Context with CRM Service
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
@@ -31,6 +32,10 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
                     avatar_url: shell.user.avatar_url
                 });
             }
+
+            salesTargetService.setTenantId(shell.currentTenant.id);
+            salesTargetService.setOrgId(shell.currentOrg.id);
+            salesTargetService.setAccessToken(shell.accessToken);
 
             setIsSynced(true);
         }
@@ -147,6 +152,10 @@ const MarketingReviewsPage = lazy(() => import('./pages/MarketingReviewsPage'));
 const MarketingWishlistPage = lazy(() => import('./pages/MarketingWishlistPage'));
 const PartnersPage = lazy(() => import('./pages/PartnersPage'));
 const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
+const AdminTaskTypesPage = lazy(() => import('./pages/sales-targets/AdminTaskTypesPage'));
+const AdminTargetsPage = lazy(() => import('./pages/sales-targets/AdminTargetsPage'));
+const MyScorecardPage = lazy(() => import('./pages/sales-targets/MyScorecardPage'));
+const LeaderboardPage = lazy(() => import('./pages/sales-targets/LeaderboardPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -181,6 +190,10 @@ const App = () => {
                     <Route path="quotes" element={<FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard>} />
                     <Route path="quotes/:id" element={<FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard>} />
                     <Route path="settings" element={<SettingsPage />} />
+                    <Route path="sales-targets/task-types" element={<FlagGuard flagKey="submodule:crm:sales_targets"><AdminTaskTypesPage /></FlagGuard>} />
+                    <Route path="sales-targets/targets" element={<FlagGuard flagKey="action:crm:sales_targets:manage"><AdminTargetsPage /></FlagGuard>} />
+                    <Route path="sales-targets/scorecard" element={<FlagGuard flagKey="submodule:crm:sales_targets"><MyScorecardPage /></FlagGuard>} />
+                    <Route path="sales-targets/leaderboard" element={<FlagGuard flagKey="submodule:crm:sales_targets"><LeaderboardPage /></FlagGuard>} />
                     <Route path="marketing/overview" element={<ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard>} />
                     <Route path="marketing/abandoned-carts" element={<ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard>} />
                     <Route path="marketing/abandoned-carts/:cartId" element={<ModuleGuard moduleId="dailystore"><MarketingAbandonedCartDetailPage /></ModuleGuard>} />
