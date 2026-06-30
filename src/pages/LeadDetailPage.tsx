@@ -1216,6 +1216,10 @@ const LeadDetailPage = () => {
 
                         </div>
                     </div>
+                </div>
+
+                {/* Sidebar Context */}
+                <div className="space-y-8">
 
                     {/* Lead / Customer Potential Score Card */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">

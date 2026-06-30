@@ -764,4 +764,61 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
     });
   });
+
+  // Regression: the detail cards must be split across a two-column grid (main
+  // workspace + context sidebar). Before the fix the page rendered only the
+  // `lg:col-span-2` main column, leaving the third grid track empty so every
+  // card stacked into a single column. The Deal detail page never regressed.
+  describe('Given the detail page layout', () => {
+    // Returns the outer grid that wraps the detail cards (parent of col-span-2).
+    const getDetailGrid = (container: HTMLElement): HTMLElement => {
+      const mainColumn = container.querySelector('.lg\\:col-span-2');
+      expect(mainColumn).not.toBeNull();
+      return mainColumn!.parentElement as HTMLElement;
+    };
+
+    it('When the lead loads / Then the cards are wrapped in a 3-track responsive grid', async () => {
+      const { container } = render(<LeadDetailPage />);
+      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
+      expect(getDetailGrid(container).className).toContain('lg:grid-cols-3');
+    });
+
+    it('When the lead loads / Then the grid renders TWO columns (main + sidebar), not one', async () => {
+      const { container } = render(<LeadDetailPage />);
+      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
+      // Pre-fix this was 1 (single column); the fix adds the sidebar sibling.
+      expect(getDetailGrid(container).children.length).toBe(2);
+    });
+
+    it('When the lead loads / Then the first column is the main col-span-2 workspace', async () => {
+      const { container } = render(<LeadDetailPage />);
+      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
+      const grid = getDetailGrid(container);
+      expect((grid.children[0] as HTMLElement).className).toContain('lg:col-span-2');
+    });
+
+    it('When the lead loads / Then the second column is the context sidebar (not col-span-2)', async () => {
+      const { container } = render(<LeadDetailPage />);
+      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
+      const sidebar = getDetailGrid(container).children[1] as HTMLElement;
+      expect(sidebar.className).toContain('space-y-8');
+      expect(sidebar.className).not.toContain('lg:col-span-2');
+    });
+
+    it('When the lead loads / Then context cards (Assigned Owner) live in the sidebar, not the main column', async () => {
+      const { container } = render(<LeadDetailPage />);
+      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
+      const sidebar = getDetailGrid(container).children[1] as HTMLElement;
+      expect(sidebar.textContent).toContain('Assigned Owner');
+    });
+
+    it('When viewed as a customer route (same component) / Then it also renders the two-column grid', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      const { container } = render(<LeadDetailPage />);
+      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
+      const grid = getDetailGrid(container);
+      expect(grid.className).toContain('lg:grid-cols-3');
+      expect(grid.children.length).toBe(2);
+    });
+  });
 });
