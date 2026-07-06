@@ -181,7 +181,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 </select>
                             </div>
                             <div>
-                                <label className={labelCls}>Commission Rate (%)</label>
+                                <label className={labelCls}>Royalty Rate (%)</label>
                                 <input type="number" min="0" max="100" step="0.5"
                                     value={form.commission_rate}
                                     onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
@@ -529,7 +529,7 @@ const PartnersPage = () => {
             ),
         },
         {
-            header: 'Commission Pending',
+            header: 'Royalty Pending',
             accessor: (p: any) => (
                 <span className={`text-sm font-medium ${(p.pending_commission || 0) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
                     {formatters.formatCurrency(p.pending_commission || 0)}
@@ -537,7 +537,7 @@ const PartnersPage = () => {
             ),
         },
         {
-            header: 'Rate',
+            header: 'Royalty Rate',
             accessor: (p: any) => (
                 <span className="text-slate-400 text-sm">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
             ),
@@ -575,7 +575,7 @@ const PartnersPage = () => {
                     <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.totalValue)}</div>
                 </div>
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} /> Commission Pending</div>
+                    <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} /> Royalty Pending</div>
                     <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.pendingCommission)}</div>
                 </div>
             </div>

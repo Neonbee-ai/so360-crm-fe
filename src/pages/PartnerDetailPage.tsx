@@ -55,7 +55,7 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
     return createPortal(
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60">
             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-                <h2 className="text-base font-semibold text-slate-50 mb-4">Mark Commission as Paid</h2>
+                <h2 className="text-base font-semibold text-slate-50 mb-4">Mark Royalty as Paid</h2>
                 {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -210,10 +210,10 @@ const PartnerDetailPage = () => {
         setApprovingId(commissionId);
         try {
             await partnersApi.updateCommission(commissionId, { status: 'approved' });
-            showSuccess('Commission approved');
+            showSuccess('Royalty approved');
             fetchCommissions();
         } catch (err: any) {
-            showError(err.message || 'Failed to approve commission');
+            showError(err.message || 'Failed to approve royalty');
         } finally {
             setApprovingId(null);
         }
@@ -293,7 +293,7 @@ const PartnerDetailPage = () => {
                             {partner.email && <span className="flex items-center gap-1.5"><Mail size={14} />{partner.email}</span>}
                             {partner.phone && <span className="flex items-center gap-1.5"><Phone size={14} />{partner.phone}</span>}
                             {partner.commission_rate > 0 && (
-                                <span className="flex items-center gap-1.5"><Percent size={14} />{partner.commission_rate}% commission</span>
+                                <span className="flex items-center gap-1.5"><Percent size={14} />{partner.commission_rate}% royalty</span>
                             )}
                             {getUserName(partner.owner_person_id) && (
                                 <span className="flex items-center gap-1.5"><User size={14} />{getUserName(partner.owner_person_id)}</span>
@@ -307,7 +307,7 @@ const PartnerDetailPage = () => {
             <div className="border-b border-slate-800 mb-6 flex overflow-x-auto">
                 <button className={tabCls('overview')} onClick={() => setActiveTab('overview')}>Overview</button>
                 <button className={tabCls('deals')} onClick={() => setActiveTab('deals')}>Referred Deals</button>
-                <button className={tabCls('commissions')} onClick={() => setActiveTab('commissions')}>Commissions</button>
+                <button className={tabCls('commissions')} onClick={() => setActiveTab('commissions')}>Royalties</button>
                 <button className={tabCls('activity')} onClick={() => setActiveTab('activity')}>Activity</button>
             </div>
 
@@ -387,7 +387,7 @@ const PartnerDetailPage = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={editLabelCls}>Commission Rate (%)</label>
+                                    <label className={editLabelCls}>Royalty Rate (%)</label>
                                     <input type="number" min="0" max="100" step="0.5" value={editForm.commission_rate}
                                         onChange={e => setEditForm((f: any) => ({ ...f, commission_rate: e.target.value }))}
                                         className={editInputCls} />
@@ -493,7 +493,7 @@ const PartnerDetailPage = () => {
                                         </dd>
                                     </div>
                                     <div>
-                                        <dt className={fieldLabelCls}>Commission Rate</dt>
+                                        <dt className={fieldLabelCls}>Royalty Rate</dt>
                                         <dd className="text-sm text-slate-100 mt-1 flex items-center gap-1.5">
                                             {partner.commission_rate > 0
                                                 ? <><Percent size={13} className="text-slate-400" /><span>{partner.commission_rate}%</span></>
@@ -720,7 +720,7 @@ const PartnerDetailPage = () => {
                                                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Deal</th>
                                                 <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Deal Amount</th>
                                                 <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rate</th>
-                                                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Commission</th>
+                                                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Royalty</th>
                                                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                                                 <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                                             </tr>
@@ -769,12 +769,12 @@ const PartnerDetailPage = () => {
                                 </div>
                             ) : (
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-slate-500">
-                                    No commissions yet. Commissions are created automatically when a referred deal is won.
+                                    No royalties yet. Royalties are created automatically when a referred deal is won.
                                 </div>
                             )}
                         </>
                     ) : (
-                        <div className="flex items-center gap-3 text-slate-500 p-8"><Loader2 className="animate-spin" /> Loading commissions...</div>
+                        <div className="flex items-center gap-3 text-slate-500 p-8"><Loader2 className="animate-spin" /> Loading royalties...</div>
                     )}
                 </div>
             )}
@@ -807,7 +807,7 @@ const PartnerDetailPage = () => {
                 <MarkPaidModal
                     commissionId={markPaidId}
                     onClose={() => setMarkPaidId(null)}
-                    onPaid={() => { setMarkPaidId(null); showSuccess('Commission marked as paid'); fetchCommissions(); }}
+                    onPaid={() => { setMarkPaidId(null); showSuccess('Royalty marked as paid'); fetchCommissions(); }}
                 />
             )}
         </div>

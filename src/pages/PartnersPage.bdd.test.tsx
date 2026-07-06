@@ -523,21 +523,35 @@ describe('PartnersPage', () => {
             expect(container.textContent).toContain('alpha@test.com');
         });
 
-        it('When Rate column renders / Then shows commission rate percentage', async () => {
+        it('When Royalty Rate column renders / Then shows royalty rate percentage', async () => {
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const rateCol = tableProps.columns.find((c: any) => c.header === 'Rate');
+            const rateCol = tableProps.columns.find((c: any) => c.header === 'Royalty Rate');
             expect(rateCol).toBeDefined();
             const { container } = render(rateCol.accessor(partners[0]));
             expect(container.textContent).toContain('5%');
         });
 
-        it('When Rate column renders partner with no rate / Then shows dash', async () => {
+        it('When Royalty Rate column renders partner with no rate / Then shows dash', async () => {
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
-            const rateCol = tableProps.columns.find((c: any) => c.header === 'Rate');
+            const rateCol = tableProps.columns.find((c: any) => c.header === 'Royalty Rate');
             const { container } = render(rateCol.accessor({ ...partners[0], commission_rate: 0 }));
             expect(container.textContent).toContain('-');
+        });
+
+        it('When Royalty Pending column exists / Then header label is "Royalty Pending"', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            const pendingCol = tableProps.columns.find((c: any) => c.header === 'Royalty Pending');
+            expect(pendingCol).toBeDefined();
+        });
+
+        it('When KPI cards render / Then shows "Royalty Pending" card label', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => {
+                expect(screen.getByText('Royalty Pending')).toBeInTheDocument();
+            });
         });
     });
 });
