@@ -150,7 +150,7 @@ describe('Given PartnerDetailPage — overview tab', () => {
   test('Given overview tab / When rendered / Then "Royalty Rate" label appears in details section', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('ROYALTY RATE')).toBeInTheDocument();
+      expect(screen.getByText('Royalty Rate')).toBeInTheDocument();
     });
   });
 
