@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../common/Modal';
 import { PartnerSearchDropdown } from '../common/PartnerSearchDropdown';
 import { crmService, settingsApi } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
 import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types/crm';
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
+import { validatePhone, validatePhoneRequired } from '../../utils/phoneValidation';
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -65,12 +66,15 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             }
         };
         if (isOpen) {
+            setPhoneError(null);
             fetchSettings();
         }
     }, [isOpen]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [phoneError, setPhoneError] = useState<string | null>(null);
+    const phoneInputRef = useRef<HTMLInputElement>(null);
 
     const isDuplicate = existingLeads.some(
         name => name && (name as string).toLowerCase() === (formData.company_name || '').toLowerCase() && (formData.company_name || '').length > 0
@@ -79,11 +83,20 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        const phoneValidErr = validatePhoneRequired(formData.phone);
+        if (phoneValidErr) {
+            setPhoneError(phoneValidErr);
+            phoneInputRef.current?.focus();
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
             const newLead = await crmService.createLead({
                 ...formData,
+                phone: formData.phone.trim(),
                 activities: [],
                 notes: [],
                 owner_id: formData.owner_id,
@@ -165,14 +178,24 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Phone</label>
+                        <label className="text-sm font-medium text-slate-400">Phone <span className="text-red-400">*</span></label>
                         <input
+                            ref={phoneInputRef}
                             type="tel"
                             value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setFormData({ ...formData, phone: val });
+                                setPhoneError(val.trim() ? validatePhone(val) : null);
+                            }}
+                            className={`w-full bg-slate-950 border ${phoneError ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'} px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-slate-50 placeholder:text-slate-500`}
                             placeholder="+91 98765 43210"
+                            aria-required="true"
+                            aria-invalid={!!phoneError}
                         />
+                        {phoneError && (
+                            <p className="text-xs text-red-400 mt-1">{phoneError}</p>
+                        )}
                     </div>
                 </div>
 

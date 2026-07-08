@@ -113,6 +113,7 @@ describe('Given CreateLeadModal', () => {
     await waitFor(() => screen.getByTestId('modal'));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
 
     const form = screen.getByTestId('modal').querySelector('form');
     if (form) {
@@ -131,6 +132,7 @@ describe('Given CreateLeadModal', () => {
     await waitFor(() => screen.getByTestId('modal'));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
     const form = screen.getByTestId('modal').querySelector('form');
     if (form) fireEvent.submit(form);
 

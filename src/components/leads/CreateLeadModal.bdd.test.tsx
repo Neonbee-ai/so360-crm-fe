@@ -163,6 +163,7 @@ describe('CreateLeadModal', () => {
       render(<CreateLeadModal isOpen={true} onClose={onClose} onSuccess={onSuccess} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
       fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         expect(mockCreateLead).toHaveBeenCalled();
@@ -177,6 +178,7 @@ describe('CreateLeadModal', () => {
       fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
       fireEvent.change(screen.getByPlaceholderText('e.g. John'), { target: { value: 'Alice' } });
       fireEvent.change(screen.getByPlaceholderText('e.g. Doe'), { target: { value: 'Smith' } });
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         const payload = mockCreateLead.mock.calls[0][0];
@@ -186,15 +188,95 @@ describe('CreateLeadModal', () => {
       });
     });
 
+    it('When submitted with valid phone / Then phone is trimmed before saving', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '  +91 9876543210  ' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        const payload = mockCreateLead.mock.calls[0][0];
+        expect(payload.phone).toBe('+91 9876543210');
+      });
+    });
+
     it('When submission fails / Then shows error message', async () => {
       mockCreateLead.mockRejectedValue(new Error('Server error'));
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
       fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         expect(screen.getByText(/failed to create lead/i)).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Given the Primary Mobile Number mandatory validation', () => {
+    it('When phone label is rendered / Then shows required asterisk (*)', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      expect(screen.getByText('*')).toBeInTheDocument();
+    });
+
+    it('When form is submitted with empty phone / Then shows required error and does not call createLead', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.submit(document.querySelector('form')!);
+      expect(screen.getByText('Primary Mobile Number is required.')).toBeInTheDocument();
+      expect(mockCreateLead).not.toHaveBeenCalled();
+    });
+
+    it('When form is submitted with whitespace-only phone / Then shows required error', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '   ' } });
+      fireEvent.submit(document.querySelector('form')!);
+      expect(screen.getByText('Primary Mobile Number is required.')).toBeInTheDocument();
+      expect(mockCreateLead).not.toHaveBeenCalled();
+    });
+
+    it('When form is submitted with invalid phone format / Then shows format error', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: 'abc' } });
+      fireEvent.submit(document.querySelector('form')!);
+      expect(screen.getByText(/7.*20 digits/i)).toBeInTheDocument();
+      expect(mockCreateLead).not.toHaveBeenCalled();
+    });
+
+    it('When phone is typed with invalid format / Then shows inline format error immediately', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: 'bad!!phone' } });
+      expect(screen.getByText(/7.*20 digits/i)).toBeInTheDocument();
+    });
+
+    it('When phone field is cleared after an error / Then clears the inline error', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: 'bad' } });
+      expect(screen.getByText(/7.*20 digits/i)).toBeInTheDocument();
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '' } });
+      expect(screen.queryByText(/7.*20 digits/i)).not.toBeInTheDocument();
+    });
+
+    it('When a valid phone is entered / Then no format error is shown', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
+      expect(screen.queryByText(/required/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/7.*20 digits/i)).not.toBeInTheDocument();
+    });
+
+    it('When alt phone is not filled / Then form can still submit with only primary phone', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockCreateLead).toHaveBeenCalled());
+      const payload = mockCreateLead.mock.calls[0][0];
+      expect(payload.alt_phone).toBe('');
     });
   });
 });
