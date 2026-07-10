@@ -299,6 +299,48 @@ class ApiClient {
         });
     }
 
+    /**
+     * GET that also surfaces the X-Total-Count response header, for server-side
+     * paging. Returns { data, total }; total is null when the header is absent
+     * (e.g. an older backend), so callers can fall back to client-side counting.
+     */
+    async getWithMeta<T>(endpoint: string, params?: Record<string, any>): Promise<{ data: T; total: number | null }> {
+        const queryString = params
+            ? '?' + new URLSearchParams(
+                Object.entries(params).reduce((acc, [key, value]) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = String(value);
+                    }
+                    return acc;
+                }, {} as Record<string, string>)
+            ).toString()
+            : '';
+        const url = `${this.baseURL}${endpoint}${queryString}`;
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+            'X-Tenant-Id': this.tenantId,
+            ...(this.orgId ? { 'X-Org-Id': this.orgId } : {}),
+            ...(this.userId ? { 'X-User-Id': this.userId } : {}),
+            ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
+        };
+        const response = await fetch(url, { method: 'GET', headers });
+        const text = await response.text();
+        if (!response.ok) {
+            let errorMessage = `API Error: ${response.status}`;
+            try {
+                const errorJson = JSON.parse(text);
+                errorMessage = Array.isArray(errorJson.message)
+                    ? errorJson.message.join(', ')
+                    : (errorJson.message || errorJson.error || errorMessage);
+            } catch { errorMessage = text || errorMessage; }
+            throw new Error(errorMessage);
+        }
+        const rawTotal = response.headers.get('X-Total-Count');
+        const parsedTotal = rawTotal != null ? parseInt(rawTotal, 10) : NaN;
+        const data = text ? JSON.parse(text) : ([] as unknown as T);
+        return { data: data as T, total: Number.isNaN(parsedTotal) ? null : parsedTotal };
+    }
+
     async post<T>(endpoint: string, data: any): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
@@ -468,6 +510,90 @@ export const leadsApi = {
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/leads/${id}`);
     },
+
+    /**
+     * GET /leads with server-side paging/sort/filter/projection + total count.
+     * `filter` is a JSON string of the advanced filter tree; `sort` is
+     * "field:dir,field2:dir". Returns { data, total } — total is null on an
+     * older backend so the caller can fall back to client-side counting.
+     */
+    getPaged: async (params: {
+        skip?: number;
+        take?: number;
+        q?: string;
+        status?: string;
+        source?: string;
+        sort?: string;
+        filter?: string;
+        fields?: string;
+    }): Promise<{ data: Lead[]; total: number | null }> => {
+        const apiParams: Record<string, any> = { ...params, meta: 'true' };
+        if (params.status && STATUS_MAP_FE_TO_BE[params.status]) {
+            apiParams.status = STATUS_MAP_FE_TO_BE[params.status];
+        }
+        const res = await apiClient.getWithMeta<any[]>('/leads', apiParams);
+        return { data: (res.data || []).map(mapLeadFromApi), total: res.total };
+    },
+
+    /**
+     * POST /leads/bulk/update — apply a patch (owner/status/source/campaign/
+     * priority) to many leads. Returns { requested, updated, failed }.
+     */
+    bulkUpdate: async (ids: string[], patch: Record<string, any>): Promise<{ requested: number; updated: string[]; failed: Array<{ id: string; error: string }> }> => {
+        let effective = patch;
+        if (patch.status && STATUS_MAP_FE_TO_BE[patch.status]) {
+            effective = { ...patch, status: STATUS_MAP_FE_TO_BE[patch.status] };
+        }
+        return apiClient.post('/leads/bulk/update', { ids, patch: effective });
+    },
+
+    /** POST /leads/bulk/delete — delete many leads. */
+    bulkDelete: async (ids: string[]): Promise<{ requested: number; deleted: string[]; failed: Array<{ id: string; error: string }> }> => {
+        return apiClient.post('/leads/bulk/delete', { ids });
+    },
+
+    /** POST /leads/bulk/tags — add/remove tag pills across many leads. */
+    bulkTags: async (ids: string[], add?: string[], remove?: string[]): Promise<{ requested: number; updated: string[]; failed: Array<{ id: string; error: string }> }> => {
+        return apiClient.post('/leads/bulk/tags', { ids, add, remove });
+    },
+};
+
+// ============================================================================
+// GRID PREFERENCES API (saved views + column layout)
+// ============================================================================
+export interface GridView {
+    id: string;
+    name: string;
+    entity_type: string;
+    config: Record<string, any>;
+    is_shared: boolean;
+    is_default: boolean;
+    user_id: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export const gridPrefsApi = {
+    listViews: (entityType = 'lead'): Promise<GridView[]> =>
+        apiClient.get<GridView[]>('/grid/views', { entity_type: entityType }),
+    createView: (dto: { name: string; entity_type?: string; config?: Record<string, any>; is_shared?: boolean; is_default?: boolean }): Promise<GridView> =>
+        apiClient.post<GridView>('/grid/views', dto),
+    getView: (id: string): Promise<GridView> =>
+        apiClient.get<GridView>(`/grid/views/${id}`),
+    updateView: (id: string, dto: Partial<Pick<GridView, 'name' | 'config' | 'is_shared' | 'is_default'>>): Promise<GridView> =>
+        apiClient.patch<GridView>(`/grid/views/${id}`, dto),
+    duplicateView: (id: string): Promise<GridView> =>
+        apiClient.post<GridView>(`/grid/views/${id}/duplicate`, {}),
+    setDefaultView: (id: string): Promise<GridView> =>
+        apiClient.post<GridView>(`/grid/views/${id}/default`, {}),
+    deleteView: (id: string): Promise<{ deleted: boolean }> =>
+        apiClient.delete<{ deleted: boolean }>(`/grid/views/${id}`),
+    getColumns: (entityType = 'lead'): Promise<{ prefs: Record<string, any> } | null> =>
+        apiClient.get<{ prefs: Record<string, any> } | null>('/grid/columns', { entity_type: entityType }),
+    saveColumns: (prefs: Record<string, any>, entityType = 'lead'): Promise<{ prefs: Record<string, any> }> =>
+        apiClient.put<{ prefs: Record<string, any> }>('/grid/columns', { entity_type: entityType, prefs }),
+    resetColumns: (entityType = 'lead'): Promise<{ reset: boolean }> =>
+        apiClient.delete<{ reset: boolean }>(`/grid/columns?entity_type=${encodeURIComponent(entityType)}`),
 };
 
 // ============================================================================
@@ -996,6 +1122,35 @@ export const crmService = {
     // Leads
     getLeads: async (params?: { skip?: number; take?: number; status?: string; q?: string }): Promise<Lead[]> => {
         return leadsApi.getAll(params);
+    },
+
+    // Leads — server-side paged/sorted/filtered variant (enterprise grid)
+    getLeadsPaged: async (params: {
+        skip?: number; take?: number; q?: string; status?: string; source?: string;
+        sort?: string; filter?: string; fields?: string;
+    }): Promise<{ data: Lead[]; total: number | null }> => {
+        return leadsApi.getPaged(params);
+    },
+
+    // Bulk lead operations
+    bulkUpdateLeads: (ids: string[], patch: Record<string, any>) => leadsApi.bulkUpdate(ids, patch),
+    bulkDeleteLeads: (ids: string[]) => leadsApi.bulkDelete(ids),
+    bulkTagLeads: (ids: string[], add?: string[], remove?: string[]) => leadsApi.bulkTags(ids, add, remove),
+
+    // Grid preferences (saved views + column layout), delegated to gridPrefsApi
+    gridViews: {
+        list: (entityType = 'lead') => gridPrefsApi.listViews(entityType),
+        create: (dto: { name: string; entity_type?: string; config?: Record<string, any>; is_shared?: boolean; is_default?: boolean }) => gridPrefsApi.createView(dto),
+        get: (id: string) => gridPrefsApi.getView(id),
+        update: (id: string, dto: Partial<Pick<GridView, 'name' | 'config' | 'is_shared' | 'is_default'>>) => gridPrefsApi.updateView(id, dto),
+        duplicate: (id: string) => gridPrefsApi.duplicateView(id),
+        setDefault: (id: string) => gridPrefsApi.setDefaultView(id),
+        remove: (id: string) => gridPrefsApi.deleteView(id),
+    },
+    gridColumns: {
+        get: (entityType = 'lead') => gridPrefsApi.getColumns(entityType),
+        save: (prefs: Record<string, any>, entityType = 'lead') => gridPrefsApi.saveColumns(prefs, entityType),
+        reset: (entityType = 'lead') => gridPrefsApi.resetColumns(entityType),
     },
 
     getDashboardStats: async (params?: {
