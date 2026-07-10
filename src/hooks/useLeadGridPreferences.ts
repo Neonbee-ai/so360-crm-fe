@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { crmService } from '../services/crmService';
 
 export type GridDensity = 'compact' | 'comfortable' | 'spacious';
 
@@ -80,6 +81,10 @@ function loadPrefs(): GridPreferences {
 
 export function useLeadGridPreferences() {
   const [prefs, setPrefs] = useState<GridPreferences>(loadPrefs);
+  // Becomes true after the first backend hydration attempt (success or failure),
+  // so we never push a save before we've had a chance to pull.
+  const [hydrated, setHydrated] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     try {
@@ -88,6 +93,44 @@ export function useLeadGridPreferences() {
       /* ignore */
     }
   }, [prefs]);
+
+  // Cross-device hydration: pull the saved column layout from the backend once
+  // on mount. localStorage already gave us an immediate render and remains the
+  // offline fallback; backend values win when present. Any failure (offline,
+  // migration not applied, older backend) silently keeps the local state.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await crmService.gridColumns.get('lead');
+        const rp = (remote as { prefs?: Partial<GridPreferences> } | null)?.prefs;
+        if (!cancelled && rp && Array.isArray(rp.columns) && rp.columns.length) {
+          const keys = new Set(rp.columns.map((c) => c.key));
+          const merged = [...rp.columns, ...DEFAULT_COLUMNS.filter((c) => !keys.has(c.key))];
+          setPrefs((prev) => ({ ...prev, columns: merged, density: rp.density ?? prev.density }));
+        }
+      } catch {
+        /* keep localStorage-backed state */
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Debounced push of the column layout to the backend after user changes, so a
+  // burst of resize/reorder events collapses into a single write. Fire-and-forget
+  // — a failure never disrupts the UI (localStorage is authoritative locally).
+  useEffect(() => {
+    if (!hydrated) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      crmService.gridColumns
+        .save({ columns: prefs.columns, density: prefs.density }, 'lead')
+        .catch(() => { /* offline — localStorage keeps the layout */ });
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [prefs.columns, prefs.density, hydrated]);
 
   const updateColumn = useCallback((key: string, updates: Partial<ColumnPreference>) => {
     setPrefs((prev) => ({
@@ -114,6 +157,7 @@ export function useLeadGridPreferences() {
 
   const resetToDefaults = useCallback(() => {
     setPrefs((prev) => ({ ...prev, columns: DEFAULT_COLUMNS, density: 'comfortable' }));
+    crmService.gridColumns.reset('lead').catch(() => { /* offline — local reset still applies */ });
   }, []);
 
   const saveView = useCallback(

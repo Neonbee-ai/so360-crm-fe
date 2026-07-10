@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useLeadGridPreferences, DEFAULT_COLUMNS } from './useLeadGridPreferences';
 
 const STORAGE_KEY = 'crm_leads_grid_prefs_v2';
@@ -14,6 +14,14 @@ beforeEach(() => {
     removeItem: (k: string) => { delete mockStorage[k]; },
     clear: () => Object.keys(mockStorage).forEach((k) => delete mockStorage[k]),
   });
+  // Default: backend is "offline" so the hook falls back to localStorage. This
+  // keeps every existing test purely local; BE-sync tests override fetch below.
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('useLeadGridPreferences — initial state', () => {
@@ -180,5 +188,62 @@ describe('useLeadGridPreferences — visibleColumns', () => {
       expect(visible[i].order).toBeGreaterThanOrEqual(visible[i - 1].order);
     }
     expect(visible.every((c) => c.visible)).toBe(true);
+  });
+});
+
+describe('useLeadGridPreferences — backend sync', () => {
+  const okJson = (body: unknown) => ({ ok: true, status: 200, text: async () => JSON.stringify(body) });
+
+  it('hydrates the column layout from the backend on mount', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      okJson({ prefs: { columns: [{ key: 'company', visible: true, width: 999, pinned: true, order: 1 }], density: 'spacious' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() => useLeadGridPreferences());
+
+    await waitFor(() => expect(result.current.density).toBe('spacious'));
+    expect(result.current.columns.find((c) => c.key === 'company')?.width).toBe(999);
+    // defaults not present in the remote payload are merged back in
+    expect(result.current.columns.some((c) => c.key === 'email')).toBe(true);
+  });
+
+  it('keeps localStorage state when the backend is offline', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('offline'));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useLeadGridPreferences());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(result.current.columns.length).toBe(DEFAULT_COLUMNS.length);
+  });
+
+  it('pushes column changes to the backend (debounced)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okJson({}));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useLeadGridPreferences());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    act(() => { result.current.updateColumn('company', { width: 321 }); });
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+      expect(put).toBeTruthy();
+      expect(String(put![0])).toContain('/grid/columns');
+      const body = JSON.parse(put![1].body);
+      expect(body.prefs.columns.find((c: { key: string; width: number }) => c.key === 'company').width).toBe(321);
+    }, { timeout: 2000 });
+  });
+
+  it('clears the backend layout on reset', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okJson({}));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useLeadGridPreferences());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    act(() => { result.current.resetToDefaults(); });
+
+    await waitFor(() => {
+      const del = fetchMock.mock.calls.find(([url, init]) => init?.method === 'DELETE' && String(url).includes('/grid/columns'));
+      expect(del).toBeTruthy();
+    }, { timeout: 2000 });
   });
 });
