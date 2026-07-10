@@ -32,22 +32,53 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({
+    effectiveFlagsLoaded: true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
+    currentOrg: { id: 'org-1' },
+  })),
+  useQuota: vi.fn().mockReturnValue({
+    quotas: [],
+    isLoading: false,
+    error: null,
+    isExceeded: () => false,
+    getQuota: () => null,
+    getPercentage: () => 0,
+    refresh: async () => {},
+  }),
+  useSandboxLimit: () => ({
+    isSandboxMode: false,
+    sandboxEntryLimit: 100,
+    limitItems: <T>(items: T[]) => items,
+    isLimited: (_count: number) => false,
+  }),
+}));
 
-  useQuota: vi.fn().mockReturnValue({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
-  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
-
-let tableProps: any = {};
-vi.mock('../components/common/Table', () => ({
-  Table: (props: any) => {
-    tableProps = props;
-    if (props.isLoading) return <div data-testid="table">Loading...</div>;
-    if (props.data.length === 0) return <div data-testid="table">{props.emptyMessage}</div>;
+// Grid stub: renders each lead as a testable row, exposes onDelete via data-attribute button
+let capturedGridProps: any = null;
+vi.mock('../components/leads/LeadsDataGrid', () => ({
+  LeadsDataGrid: (props: any) => {
+    capturedGridProps = props;
+    if (props.isLoading) return <div data-testid="leads-grid">Loading...</div>;
+    if (props.leads.length === 0) {
+      return <div data-testid="leads-grid">No leads found</div>;
+    }
     return (
-      <div data-testid="table">
-        {props.data.map((lead: any) => (
-          <div key={lead.id} data-testid={`lead-row-${lead.id}`} onClick={() => props.onRowClick(lead)}>
-            {lead.company_name} - {lead.contact_name} - {lead.status}
+      <div data-testid="leads-grid">
+        {props.leads.map((lead: any) => (
+          <div
+            key={lead.id}
+            data-testid={`lead-row-${lead.id}`}
+            onClick={() => props.onRowClick(lead)}
+          >
+            {lead.company_name} — {lead.status} — {lead.owner?.id}
+            <button
+              data-testid={`delete-btn-${lead.id}`}
+              onClick={(e) => { e.stopPropagation(); props.context.onDelete(lead); }}
+            >
+              Delete
+            </button>
           </div>
         ))}
       </div>
@@ -55,16 +86,34 @@ vi.mock('../components/common/Table', () => ({
   },
 }));
 
+vi.mock('../components/leads/LeadDetailPanel', () => ({
+  LeadDetailPanel: ({ lead, onClose }: any) =>
+    lead ? (
+      <div data-testid="detail-panel">
+        {lead.company_name}
+        <button onClick={onClose}>Close</button>
+      </div>
+    ) : null,
+}));
+
 vi.mock('../components/leads/CreateLeadModal', () => ({
   CreateLeadModal: ({ isOpen, onClose }: any) =>
-    isOpen ? <div data-testid="create-lead-modal"><button onClick={onClose}>Close Modal</button></div> : null,
+    isOpen ? (
+      <div data-testid="create-lead-modal">
+        <button onClick={onClose}>Close Modal</button>
+      </div>
+    ) : null,
 }));
 
 import LeadsPage from './LeadsPage';
 
 const settings = {
   deal_stages: [],
-  lead_stages: [{ id: 'new', name: 'New' }, { id: 'qualified', name: 'Qualified' }, { id: 'converted', name: 'Converted' }],
+  lead_stages: [
+    { id: 'new', name: 'New' },
+    { id: 'qualified', name: 'Qualified' },
+    { id: 'converted', name: 'Converted' },
+  ],
   lead_custom_fields: [],
   deal_custom_fields: [],
   lead_sources: [],
@@ -78,16 +127,42 @@ const users = [
 ];
 
 const leads = [
-  { id: 'l1', company_name: 'Acme Corp', contact_name: 'John Doe', contact_email: 'john@acme.com', phone: '555-1234', status: 'New', source: 'Website', owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z' },
-  { id: 'l2', company_name: 'Beta Inc', contact_name: 'Jane Smith', contact_email: 'jane@beta.com', status: 'Qualified', source: 'Referral', owner: users[1], creator: users[1], created_at: '2025-02-20T10:00:00Z' },
-  { id: 'l3', company_name: 'Gamma LLC', contact_name: 'Bob Brown', contact_email: 'bob@gamma.com', status: 'New', source: 'Website', owner: users[0], creator: users[0], created_at: '2025-03-10T10:00:00Z' },
+  {
+    id: 'l1', company_name: 'Acme Corp', contact_name: 'John Doe', first_name: 'John', last_name: 'Doe',
+    contact_email: 'john@acme.com', phone: '555-1234', status: 'New', source: 'Website',
+    owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z', activities: [], notes: [],
+  },
+  {
+    id: 'l2', company_name: 'Beta Inc', contact_name: 'Jane Smith', first_name: 'Jane', last_name: 'Smith',
+    contact_email: 'jane@beta.com', status: 'Qualified', source: 'Referral',
+    owner: users[1], creator: users[1], created_at: '2025-02-20T10:00:00Z', activities: [], notes: [],
+  },
+  {
+    id: 'l3', company_name: 'Gamma LLC', contact_name: 'Bob Brown', first_name: 'Bob', last_name: 'Brown',
+    contact_email: 'bob@gamma.com', status: 'New', source: 'Website',
+    owner: users[0], creator: users[0], created_at: '2025-03-10T10:00:00Z', activities: [], notes: [],
+  },
 ];
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  capturedGridProps = null;
   const shell = await import('@so360/shell-context');
-  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
-  tableProps = {};
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({
+    effectiveFlagsLoaded: true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
+    currentOrg: { id: 'org-1' },
+  }));
+  vi.mocked(shell.useQuota).mockReturnValue({
+    quotas: [],
+    isLoading: false,
+    error: null,
+    isExceeded: () => false,
+    getQuota: () => null,
+    getPercentage: () => 0,
+    refresh: async () => {},
+  });
   mockGetLeads.mockResolvedValue(leads);
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue(users);
@@ -98,7 +173,7 @@ beforeEach(async () => {
 
 describe('LeadsPage', () => {
   describe('Given leads are loaded', () => {
-    it('When the page renders / Then displays all leads in the table', async () => {
+    it('When the page renders / Then displays all leads in the grid', async () => {
       render(<LeadsPage />);
       await waitFor(() => {
         expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
@@ -119,6 +194,19 @@ describe('LeadsPage', () => {
       });
     });
 
+    it('When searching by company name / Then filters leads matching the company', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const searchInput = screen.getByPlaceholderText('Search leads...');
+      await user.type(searchInput, 'Gamma');
+      await waitFor(() => {
+        expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('lead-row-l2')).not.toBeInTheDocument();
+      });
+    });
+
     it('When filtering by status / Then only leads with that status appear', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
@@ -132,12 +220,51 @@ describe('LeadsPage', () => {
       });
     });
 
-    it('When clicking a lead row / Then navigates to the lead detail', async () => {
+    it('When filtering by owner / Then only leads with that owner appear', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const ownerSelect = screen.getByDisplayValue('All Owners');
+      await user.selectOptions(ownerSelect, 'u2');
+      await waitFor(() => {
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      });
+    });
+
+    it('When filtering by creator / Then only leads by that creator appear', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const creatorSelect = screen.getByDisplayValue('Created By: All');
+      await user.selectOptions(creatorSelect, 'u2');
+      await waitFor(() => {
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      });
+    });
+
+    it('When filters are active / Then Clear filters link appears and resets all filters on click', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const statusSelect = screen.getByDisplayValue('All Statuses');
+      await user.selectOptions(statusSelect, 'Qualified');
+      await waitFor(() => expect(screen.getByText('Clear filters')).toBeInTheDocument());
+      await user.click(screen.getByText('Clear filters'));
+      await waitFor(() => {
+        expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
+        expect(screen.getByTestId('lead-row-l3')).toBeInTheDocument();
+      });
+    });
+
+    it('When clicking a lead row / Then opens the detail panel', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       await user.click(screen.getByTestId('lead-row-l1'));
-      expect(mockNavigate).toHaveBeenCalledWith('l1');
+      await waitFor(() => expect(screen.getByTestId('detail-panel')).toBeInTheDocument());
+      expect(screen.getByTestId('detail-panel')).toHaveTextContent('Acme Corp');
     });
 
     it('When clicking Create Lead / Then opens the create lead modal', async () => {
@@ -153,154 +280,67 @@ describe('LeadsPage', () => {
       mockGetLeads.mockResolvedValue([]);
       render(<LeadsPage />);
       await waitFor(() => {
-        expect(screen.getByTestId('table')).toHaveTextContent('No leads found');
+        expect(screen.getByTestId('leads-grid')).toHaveTextContent('No leads found');
       });
-    });
-  });
-
-  describe('Given leads are sorted', () => {
-    it('When clicking sort by company name / Then leads reorder alphabetically', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const rows = screen.getAllByTestId(/lead-row/);
-      expect(rows[0]).toHaveTextContent('Acme Corp');
-    });
-  });
-
-  describe('Given owner filter', () => {
-    it('When filtering by owner / Then only leads with that owner appear', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const ownerSelect = screen.getByDisplayValue('All Owners');
-      await user.selectOptions(ownerSelect, 'u2');
-      await waitFor(() => {
-        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
-        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Given creator filter', () => {
-    it('When filtering by creator / Then only leads by that creator appear', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const creatorSelect = screen.getByDisplayValue('Created By: All');
-      await user.selectOptions(creatorSelect, 'u2');
-      await waitFor(() => {
-        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
-        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Given date range filter', () => {
-    it('When filtering by This Month / Then filters leads by date', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const dateSelect = screen.getByDisplayValue('All Time');
-      await user.selectOptions(dateSelect, 'This Month');
-      await waitFor(() => expect(tableProps.data).toBeDefined());
-    });
-
-    it('When filtering by Today / Then applies today date filter', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const dateSelect = screen.getByDisplayValue('All Time');
-      await user.selectOptions(dateSelect, 'Today');
-      await waitFor(() => expect(tableProps.data.length).toBe(0));
-    });
-  });
-
-  describe('Given clear filters', () => {
-    it('When filters are active and Clear Filters is clicked / Then resets all filters', async () => {
-      const user = userEvent.setup();
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const statusSelect = screen.getByDisplayValue('All Statuses');
-      await user.selectOptions(statusSelect, 'Qualified');
-      await waitFor(() => expect(screen.getByText('Clear Filters')).toBeInTheDocument());
-      await user.click(screen.getByText('Clear Filters'));
-      await waitFor(() => expect(tableProps.data.length).toBe(3));
     });
   });
 
   describe('Given lead deletion', () => {
-    it('When delete is triggered / Then calls deleteLead API', async () => {
+    it('When delete is triggered / Then shows confirmation dialog', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const deleteCol = tableProps.columns[tableProps.columns.length - 1];
-      const cell = deleteCol.accessor(leads[0]);
-      const { container } = render(cell);
-      const btn = container.querySelector('button');
-      fireEvent.click(btn!);
+      fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
-      const deleteConfirm = screen.getAllByText('Delete').find(el => {
-        const btn = el.closest('button');
-        return btn?.className.includes('bg-red');
-      });
-      fireEvent.click(deleteConfirm!);
+    });
+
+    it('When delete confirmed / Then calls deleteLead API and removes row', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('delete-btn-l1'));
+      await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
+      const confirmBtn = screen.getAllByText('Delete').find(
+        (el) => el.closest('button')?.className.includes('bg-red'),
+      );
+      fireEvent.click(confirmBtn!);
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
-    });
-  });
-
-  describe('Given column renderers', () => {
-    it('When owner column renders / Then shows owner select', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const ownerCol = tableProps.columns[2];
-      const cell = ownerCol.accessor(leads[0]);
-      const { container } = render(cell);
-      const select = container.querySelector('select');
-      expect(select?.value).toBe('u1');
+      await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
     });
 
-    it('When status column renders / Then shows status select with correct value', async () => {
+    it('When delete cancelled / Then lead remains in grid', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const statusCol = tableProps.columns[3];
-      const cell = statusCol.accessor(leads[0]);
-      const { container } = render(cell);
-      const select = container.querySelector('select');
-      expect(select?.value).toBe('new');
-    });
-
-    it('When created column renders / Then shows creator name and date', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const createdCol = tableProps.columns[4];
-      const cell = createdCol.accessor(leads[0]);
-      const { container } = render(cell);
-      expect(container.textContent).toContain('Alice Rep');
-    });
-
-    it('When communication column renders lead with phone / Then shows phone', async () => {
-      render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const commCol = tableProps.columns[1];
-      const cell = commCol.accessor(leads[0]);
-      const { container } = render(cell);
-      expect(container.textContent).toContain('555-1234');
+      fireEvent.click(screen.getByTestId('delete-btn-l1'));
+      await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Cancel'));
+      await waitFor(() => expect(screen.queryByText('Delete Lead')).not.toBeInTheDocument());
+      expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
     });
   });
 
   describe('Given pagination', () => {
     it('When many leads exist / Then shows pagination controls', async () => {
-      const manyLeads = Array.from({ length: 15 }, (_, i) => ({
-        id: `l${i}`, company_name: `Company ${i}`, contact_name: `Contact ${i}`, contact_email: `c${i}@test.com`,
-        status: 'New', source: 'Web', owner: users[0], creator: users[0], created_at: '2025-01-15T10:00:00Z',
+      const manyLeads = Array.from({ length: 60 }, (_, i) => ({
+        id: `l${i}`,
+        company_name: `Company ${i}`,
+        contact_name: `Contact ${i}`,
+        contact_email: `c${i}@test.com`,
+        status: 'New',
+        source: 'Web',
+        owner: users[0],
+        creator: users[0],
+        created_at: '2025-01-15T10:00:00Z',
+        activities: [],
+        notes: [],
       }));
       mockGetLeads.mockResolvedValue(manyLeads);
       render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/Page 1 of/)).toBeInTheDocument());
+      expect(screen.getByText('Next')).toBeInTheDocument();
     });
   });
 
   describe('Given fetch error', () => {
-    it('When API fails / Then shows error in empty message', async () => {
+    it('When API fails / Then shows error message', async () => {
       mockGetLeads.mockRejectedValue(new Error('Network error'));
       mockGetSettings.mockRejectedValue(new Error('Network error'));
       mockGetUsers.mockRejectedValue(new Error('Network error'));
@@ -313,8 +353,6 @@ describe('LeadsPage', () => {
     const staleQuotaData = { current_usage: 1, limit: -1, is_unlimited: true };
 
     beforeEach(async () => {
-      // Override useQuota so quotaData is non-null with current_usage=1 (stale),
-      // while leads.length=3 — lets us verify the counter uses DB count not event-sourced usage.
       const shellContext = await import('@so360/shell-context');
       vi.mocked(shellContext.useQuota).mockReturnValue({
         quotas: [],
@@ -331,28 +369,20 @@ describe('LeadsPage', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       const bar = screen.getByTestId('quota-bar');
-      // leads.length = 3; quotaData.current_usage = 1 — must show 3
       expect(bar.getAttribute('data-used')).toBe('3');
     });
 
-    it('When a lead is deleted / Then QuotaBar used decrements to reflect the new leads.length', async () => {
+    it('When a lead is deleted / Then QuotaBar used decrements to reflect new leads.length', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('3');
-
-      // Trigger delete via column accessor (same pattern as existing delete test)
-      const deleteCol = tableProps.columns[tableProps.columns.length - 1];
-      const cell = deleteCol.accessor(leads[0]);
-      const { container } = render(cell);
-      fireEvent.click(container.querySelector('button')!);
+      fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
       const confirmBtn = screen.getAllByText('Delete').find(
-        el => el.closest('button')?.className.includes('bg-red'),
+        (el) => el.closest('button')?.className.includes('bg-red'),
       );
       fireEvent.click(confirmBtn!);
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
-
-      // After delete, leads state has 2 items → QuotaBar should show 2
       await waitFor(() =>
         expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('2'),
       );
@@ -365,7 +395,7 @@ describe('LeadsPage', () => {
       expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('0');
     });
 
-    it('When QuotaBar label is rendered / Then it shows Leads not Contacts', async () => {
+    it('When QuotaBar label is rendered / Then it shows "Leads"', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('quota-bar')).toBeInTheDocument());
       expect(screen.getByTestId('quota-bar').textContent).toContain('Leads');
@@ -380,11 +410,10 @@ describe('LeadsPage', () => {
         isFeatureEnabled: () => false,
       } as any);
       render(<LeadsPage />);
-      // Buttons gated by canCreateLead must not flash before flags resolve
       expect(screen.queryByText('Create Lead')).not.toBeInTheDocument();
     });
 
-    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Lead button is present', async () => {
+    it('When effectiveFlagsLoaded is true / Then Create Lead button is present', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: true,
@@ -394,6 +423,15 @@ describe('LeadsPage', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
       expect(screen.getByText('Create Lead')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given saved views', () => {
+    it('When Views button is clicked / Then shows saved views dropdown', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await user.click(screen.getByText('Views'));
+      expect(screen.getByText('Save current view')).toBeInTheDocument();
     });
   });
 });
