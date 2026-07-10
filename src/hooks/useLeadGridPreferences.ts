@@ -54,8 +54,11 @@ export const DEFAULT_COLUMNS: ColumnPreference[] = [
   { key: 'website',    visible: false, width: 180, pinned: false, order: 15 },
   { key: 'priority',   visible: false, width: 100, pinned: false, order: 16 },
   { key: 'deal_value', visible: false, width: 130, pinned: false, order: 17 },
-  { key: 'tags',       visible: false, width: 200, pinned: false, order: 18 },
-  { key: 'actions',    visible: true,  width: 56,  pinned: false, order: 99 },
+  { key: 'tags',           visible: false, width: 200, pinned: false, order: 18 },
+  { key: 'lead_health',    visible: true,  width: 110, pinned: false, order: 19 },
+  { key: 'next_follow_up', visible: true,  width: 150, pinned: false, order: 20 },
+  { key: 'last_activity',  visible: false, width: 140, pinned: false, order: 21 },
+  { key: 'actions',        visible: true,  width: 56,  pinned: false, order: 99 },
 ];
 
 function loadPrefs(): GridPreferences {

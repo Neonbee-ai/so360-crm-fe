@@ -40,6 +40,7 @@ import {
   useLeadGridPreferences,
 } from '../../hooks/useLeadGridPreferences';
 import { useCRMFormatters } from '../../utils/formatters';
+import { computeLeadHealth, describeNextFollowUp, describeLastActivity } from './leadIndicators';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -470,7 +471,14 @@ const COL_DEFS: ColDef[] = [
     minWidth: 120,
     render: (lead) => {
       const cf = lead.custom_fields ?? {};
-      const tags: string[] = Array.isArray(cf.tags) ? cf.tags : (cf.tags ? String(cf.tags).split(',').map((t: string) => t.trim()) : []);
+      // Prefer the first-class tags[] column (written by bulk tagging); fall
+      // back to the legacy custom_fields.tags for older records.
+      const leadTags = (lead as { tags?: unknown }).tags;
+      const tags: string[] = Array.isArray(leadTags)
+        ? (leadTags as string[])
+        : Array.isArray(cf.tags)
+        ? cf.tags
+        : cf.tags ? String(cf.tags).split(',').map((t: string) => t.trim()) : [];
       return tags.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {tags.slice(0, 3).map((tag) => (
@@ -490,6 +498,58 @@ const COL_DEFS: ColDef[] = [
       ) : (
         <span className="text-slate-600 text-sm">—</span>
       );
+    },
+  },
+  {
+    key: 'lead_health',
+    label: 'Health',
+    defaultWidth: 110,
+    minWidth: 90,
+    render: (lead) => {
+      const h = computeLeadHealth(lead);
+      const pill: Record<string, string> = {
+        hot: 'bg-emerald-500/15 text-emerald-400',
+        warm: 'bg-amber-500/15 text-amber-400',
+        cold: 'bg-rose-500/15 text-rose-400',
+      };
+      const dot: Record<string, string> = {
+        hot: 'bg-emerald-400', warm: 'bg-amber-400', cold: 'bg-rose-400',
+      };
+      return (
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${pill[h.level]}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${dot[h.level]}`} />
+          {h.label}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'next_follow_up',
+    label: 'Next Follow-up',
+    defaultWidth: 150,
+    minWidth: 110,
+    sortKey: 'next_follow_up',
+    render: (lead) => {
+      const f = describeNextFollowUp(lead);
+      if (f.tone === 'none') return <span className="text-slate-600 text-sm">—</span>;
+      const tone: Record<string, string> = {
+        overdue: 'text-rose-400',
+        today: 'text-amber-400',
+        tomorrow: 'text-blue-400',
+        upcoming: 'text-slate-300',
+      };
+      return <span className={`text-xs font-medium ${tone[f.tone]}`}>{f.label}</span>;
+    },
+  },
+  {
+    key: 'last_activity',
+    label: 'Last Activity',
+    defaultWidth: 140,
+    minWidth: 110,
+    sortKey: 'last_activity_at',
+    render: (lead) => {
+      const a = describeLastActivity(lead);
+      return <span className={`text-xs ${a.stale ? 'text-rose-400/80' : 'text-slate-300'}`}>{a.label}</span>;
     },
   },
 ];
