@@ -50,7 +50,7 @@ vi.mock('@so360/shell-context', () => ({
   useSandboxLimit: () => ({
     isSandboxMode: false,
     sandboxEntryLimit: 100,
-    limitItems: <T>(items: T[]) => items,
+    limitItems: (items: any[]) => items,
     isLimited: (_count: number) => false,
   }),
 }));
