@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useMemo,
   useEffect,
+  useLayoutEffect,
   ReactNode,
 } from 'react';
 import {
@@ -686,6 +687,57 @@ const DENSITY_CELL_PY: Record<GridDensity, string> = {
   spacious: 'py-4',
 };
 
+// Fixed row heights (px) per density — used only when virtualization is active.
+// Kept in sync with DENSITY_CELL_PY so windowing math matches the rendered rows.
+const DENSITY_ROW_HEIGHT: Record<GridDensity, number> = {
+  compact: 44,
+  comfortable: 56,
+  spacious: 72,
+};
+
+// Below this row count the grid renders every row (identical to the original
+// behaviour). At or above it we window the DOM so thousands of rows stay smooth.
+const VIRTUALIZE_THRESHOLD = 60;
+const VIRTUALIZE_OVERSCAN = 8;
+
+export interface RowWindow {
+  virtualize: boolean;
+  startIndex: number;
+  endIndex: number;
+  topPad: number;
+  bottomPad: number;
+}
+
+/**
+ * Pure windowing math for the leads grid. Given the total row count, fixed row
+ * height, current scrollTop and viewport height, returns which slice of rows to
+ * mount plus the spacer heights that reserve the full scroll extent. Windowing
+ * is disabled (all rows) below the threshold or before the viewport is measured.
+ * Kept pure and exported so it can be unit-tested without a DOM.
+ */
+export function computeRowWindow(
+  total: number,
+  rowHeight: number,
+  scrollTop: number,
+  viewportHeight: number,
+  overscan = VIRTUALIZE_OVERSCAN,
+  threshold = VIRTUALIZE_THRESHOLD,
+): RowWindow {
+  const virtualize = total > threshold && viewportHeight > 0 && rowHeight > 0;
+  if (!virtualize) {
+    return { virtualize: false, startIndex: 0, endIndex: total, topPad: 0, bottomPad: 0 };
+  }
+  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+  const endIndex = Math.min(total, Math.ceil((scrollTop + viewportHeight) / rowHeight) + overscan);
+  return {
+    virtualize: true,
+    startIndex,
+    endIndex,
+    topPad: startIndex * rowHeight,
+    bottomPad: (total - endIndex) * rowHeight,
+  };
+}
+
 // ─── Main Grid ────────────────────────────────────────────────────────────────
 
 export function LeadsDataGrid({
@@ -863,6 +915,31 @@ export function LeadsDataGrid({
 
   const cellPy = DENSITY_CELL_PY[density];
 
+  // ── DOM windowing (dependency-free virtualization) ─────────────────────────
+  // Only rows within the visible viewport (plus a small overscan) are mounted;
+  // spacer divs above/below reserve the full scroll height. Activates only past
+  // VIRTUALIZE_THRESHOLD so small lists render exactly as before.
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportH, setViewportH] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setViewportH(el.clientHeight);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  const rowH = DENSITY_ROW_HEIGHT[density];
+  const { virtualize, startIndex, endIndex, topPad, bottomPad } = computeRowWindow(
+    sortedLeads.length,
+    rowH,
+    scrollTop,
+    viewportH,
+  );
+  const visibleRows = virtualize ? sortedLeads.slice(startIndex, endIndex) : sortedLeads;
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
@@ -943,6 +1020,7 @@ export function LeadsDataGrid({
         className="rounded-xl border border-slate-700/50 overflow-auto bg-slate-950"
         style={{ maxHeight: 'calc(100vh - 320px)' }}
         onContextMenu={(e) => e.preventDefault()}
+        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
       >
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
@@ -1041,7 +1119,9 @@ export function LeadsDataGrid({
               <p className="text-sm">No leads found</p>
             </div>
           ) : (
-            sortedLeads.map((lead) => {
+            <>
+            {topPad > 0 && <div style={{ height: topPad }} aria-hidden="true" />}
+            {visibleRows.map((lead) => {
               const isSelected = selectedIds.has(lead.id);
               const isHovered = hoveredRowId === lead.id;
 
@@ -1049,13 +1129,15 @@ export function LeadsDataGrid({
                 <div
                   key={lead.id}
                   className={`flex border-b border-slate-800/60 cursor-pointer transition-colors group/row ${
+                    virtualize ? 'overflow-hidden' : ''
+                  } ${
                     isSelected
                       ? 'bg-blue-600/8'
                       : isHovered
                       ? 'bg-slate-800/50'
                       : 'hover:bg-slate-800/30'
                   }`}
-                  style={{ minWidth: `${totalWidth}px` }}
+                  style={{ minWidth: `${totalWidth}px`, ...(virtualize ? { height: rowH } : {}) }}
                   onClick={() => onRowClick(lead)}
                   onMouseEnter={() => setHoveredRowId(lead.id)}
                   onMouseLeave={() => setHoveredRowId(null)}
@@ -1129,7 +1211,9 @@ export function LeadsDataGrid({
                   })}
                 </div>
               );
-            })
+            })}
+            {bottomPad > 0 && <div style={{ height: bottomPad }} aria-hidden="true" />}
+            </>
           )}
         </div>
       </div>
