@@ -766,7 +766,10 @@ export function LeadsDataGrid({
           case 'lead_score': av = a.auto_score ?? 0; bv = b.auto_score ?? 0; break;
           default: return 0;
         }
-        const cmp = typeof av === 'number' ? av - bv : av.localeCompare(String(bv));
+        const cmp =
+          typeof av === 'number' && typeof bv === 'number'
+            ? av - bv
+            : String(av).localeCompare(String(bv));
         if (cmp !== 0) return s.direction === 'asc' ? cmp : -cmp;
       }
       return 0;

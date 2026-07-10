@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 export type GridDensity = 'compact' | 'comfortable' | 'spacious';
 
@@ -61,15 +61,15 @@ function loadPrefs(): GridPreferences {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored) as GridPreferences;
-      const storedKeys = new Set((parsed.columns || []).map((c) => c.key));
+      const parsed = JSON.parse(stored) as Partial<GridPreferences>;
+      const storedCols = parsed.columns ?? [];
+      const storedKeys = new Set(storedCols.map((c) => c.key));
       const newDefaults = DEFAULT_COLUMNS.filter((c) => !storedKeys.has(c.key));
       return {
-        density: 'comfortable',
-        savedViews: [],
-        activeViewId: null,
-        ...parsed,
-        columns: [...(parsed.columns || DEFAULT_COLUMNS), ...newDefaults],
+        density: parsed.density ?? 'comfortable',
+        savedViews: parsed.savedViews ?? [],
+        activeViewId: parsed.activeViewId ?? null,
+        columns: [...storedCols, ...newDefaults],
       };
     }
   } catch {
