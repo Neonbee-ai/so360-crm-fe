@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -9,6 +9,9 @@ const mockGetUsers = vi.fn();
 const mockUpdateLead = vi.fn();
 const mockLogActivity = vi.fn();
 const mockDeleteLead = vi.fn();
+const mockBulkDeleteLeads = vi.fn();
+const mockBulkUpdateLeads = vi.fn();
+const mockBulkTagLeads = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -19,6 +22,9 @@ vi.mock('../services/crmService', () => ({
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     deleteLead: (...a: any[]) => mockDeleteLead(...a),
+    bulkDeleteLeads: (...a: any[]) => mockBulkDeleteLeads(...a),
+    bulkUpdateLeads: (...a: any[]) => mockBulkUpdateLeads(...a),
+    bulkTagLeads: (...a: any[]) => mockBulkTagLeads(...a),
   },
 }));
 
@@ -169,6 +175,9 @@ beforeEach(async () => {
   mockUpdateLead.mockResolvedValue({});
   mockLogActivity.mockResolvedValue({});
   mockDeleteLead.mockResolvedValue({});
+  mockBulkDeleteLeads.mockResolvedValue({ requested: 1, deleted: ['l1'], failed: [] });
+  mockBulkUpdateLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
+  mockBulkTagLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
 });
 
 describe('LeadsPage', () => {
@@ -433,5 +442,40 @@ describe('LeadsPage', () => {
       await user.click(screen.getByText('Views'));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
     });
+  });
+});
+
+describe('LeadsPage — bulk actions', () => {
+  const getBulkAction = (label: string) =>
+    capturedGridProps.bulkActions.find((a: { label: string }) => a.label === label);
+
+  it('When the bulk Delete action fires / Then it calls the bulk delete endpoint once and removes confirmed rows', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1']); });
+
+    expect(mockBulkDeleteLeads).toHaveBeenCalledWith(['l1']);
+    expect(mockBulkDeleteLeads).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
+  });
+
+  it('When the bulk Assign action fires / Then it sends owner_id via the bulk update endpoint', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Assign').onClick(['l1']); });
+
+    expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { owner_id: 'u1' });
+  });
+
+  it('When the bulk delete endpoint fails / Then rows are still optimistically removed', async () => {
+    mockBulkDeleteLeads.mockRejectedValueOnce(new Error('offline'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1']); });
+
+    await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
   });
 });

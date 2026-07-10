@@ -297,19 +297,28 @@ const LeadsPage = () => {
   }, []);
 
   const handleBulkDelete = useCallback(async (ids: string[]) => {
-    for (const id of ids) {
-      try { await crmService.deleteLead(id); } catch { /* ignore */ }
+    // Single bulk request (server processes per-id and reports partial success)
+    // instead of N client round-trips. Only remove the rows the server confirms.
+    try {
+      const res = await crmService.bulkDeleteLeads(ids);
+      const removed = res?.deleted?.length ? res.deleted : ids;
+      setLeads((prev) => prev.filter((l) => !removed.includes(l.id)));
+    } catch {
+      setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
     }
-    setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
   }, []);
 
   const handleBulkOwnerChange = useCallback(async (ids: string[], ownerId: string) => {
     const owner = users.find((u) => u.id === ownerId);
     if (!owner) return;
-    for (const id of ids) {
-      try { await crmService.updateLead(id, { owner }); } catch { /* ignore */ }
+    // Send owner_id (the column the backend actually persists) via one bulk call.
+    try {
+      const res = await crmService.bulkUpdateLeads(ids, { owner_id: ownerId });
+      const changed = res?.updated?.length ? res.updated : ids;
+      setLeads((prev) => prev.map((l) => changed.includes(l.id) ? { ...l, owner } : l));
+    } catch {
+      setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, owner } : l));
     }
-    setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, owner } : l));
   }, [users]);
 
   // Saved views
