@@ -12,6 +12,9 @@ const mockDeleteLead = vi.fn();
 const mockBulkDeleteLeads = vi.fn();
 const mockBulkUpdateLeads = vi.fn();
 const mockBulkTagLeads = vi.fn();
+const mockViewsList = vi.fn();
+const mockViewsCreate = vi.fn();
+const mockViewsRemove = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -25,6 +28,11 @@ vi.mock('../services/crmService', () => ({
     bulkDeleteLeads: (...a: any[]) => mockBulkDeleteLeads(...a),
     bulkUpdateLeads: (...a: any[]) => mockBulkUpdateLeads(...a),
     bulkTagLeads: (...a: any[]) => mockBulkTagLeads(...a),
+    gridViews: {
+      list: (...a: any[]) => mockViewsList(...a),
+      create: (...a: any[]) => mockViewsCreate(...a),
+      remove: (...a: any[]) => mockViewsRemove(...a),
+    },
   },
 }));
 
@@ -178,6 +186,9 @@ beforeEach(async () => {
   mockBulkDeleteLeads.mockResolvedValue({ requested: 1, deleted: ['l1'], failed: [] });
   mockBulkUpdateLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
   mockBulkTagLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
+  mockViewsList.mockResolvedValue([]);
+  mockViewsCreate.mockResolvedValue({ id: 'srv-1', name: 'Server View', config: { filters: {} } });
+  mockViewsRemove.mockResolvedValue({ deleted: true });
 });
 
 describe('LeadsPage', () => {
@@ -477,5 +488,47 @@ describe('LeadsPage — bulk actions', () => {
     await act(async () => { getBulkAction('Delete').onClick(['l1']); });
 
     await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
+  });
+});
+
+describe('LeadsPage — saved views (backend)', () => {
+  it('hydrates saved views from the backend on mount', async () => {
+    mockViewsList.mockResolvedValueOnce([
+      { id: 'srv-9', name: 'Server View', config: { filters: {} }, is_default: false },
+    ]);
+    const user = userEvent.setup();
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    await user.click(screen.getByText('Views'));
+    await waitFor(() => expect(screen.getByText('Server View')).toBeInTheDocument());
+  });
+
+  it('creates a view on the backend when saving', async () => {
+    const user = userEvent.setup();
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText('Save current view'));
+    await user.type(screen.getByPlaceholderText('View name...'), 'My Hot Leads');
+    await user.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(mockViewsCreate).toHaveBeenCalledWith(expect.objectContaining({ name: 'My Hot Leads' })),
+    );
+  });
+
+  it('deletes a view on the backend', async () => {
+    mockViewsList.mockResolvedValueOnce([
+      { id: 'srv-9', name: 'Doomed View', config: { filters: {} } },
+    ]);
+    const user = userEvent.setup();
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    await user.click(screen.getByText('Views'));
+    await waitFor(() => expect(screen.getByText('Doomed View')).toBeInTheDocument());
+    // The delete (X) button sits next to the view name in the dropdown row.
+    const row = screen.getByText('Doomed View').closest('div')!;
+    const delBtn = row.querySelector('button:last-child')!;
+    await user.click(delBtn);
+    await waitFor(() => expect(mockViewsRemove).toHaveBeenCalledWith('srv-9'));
   });
 });

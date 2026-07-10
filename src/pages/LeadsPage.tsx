@@ -69,6 +69,11 @@ function persistSavedViews(views: SavedFilterView[]) {
   }
 }
 
+// Map a backend grid view (opaque config JSON) to the page's SavedFilterView.
+function mapBeView(v: { id: string; name: string; config?: { filters?: FilterState } }): SavedFilterView {
+  return { id: v.id, name: v.name, filters: (v?.config?.filters ?? {}) as FilterState };
+}
+
 // ─── Date range helper ────────────────────────────────────────────────────────
 
 function isDateInRange(
@@ -321,20 +326,31 @@ const LeadsPage = () => {
     }
   }, [users]);
 
-  // Saved views
-  const handleSaveView = useCallback(() => {
-    if (!saveViewName.trim()) return;
-    const view: SavedFilterView = {
-      id: `v_${Date.now()}`,
-      name: saveViewName.trim(),
-      filters,
-    };
-    const updated = [...savedViews, view];
-    setSavedViews(updated);
-    persistSavedViews(updated);
-    setActiveViewId(view.id);
+  // Saved views — persisted to the backend (cross-device) with an optimistic
+  // localStorage fallback so it still works offline / on an older backend.
+  const handleSaveView = useCallback(async () => {
+    const name = saveViewName.trim();
+    if (!name) return;
+    const localView: SavedFilterView = { id: `v_${Date.now()}`, name, filters };
+    const withLocal = [...savedViews, localView];
+    setSavedViews(withLocal);
+    persistSavedViews(withLocal);
+    setActiveViewId(localView.id);
     setSaveViewName('');
     setShowSaveViewInput(false);
+    try {
+      const created = await crmService.gridViews?.create?.({ name, config: { filters } });
+      if (created?.id) {
+        setSavedViews((prev) => {
+          const reconciled = prev.map((v) => (v.id === localView.id ? mapBeView(created) : v));
+          persistSavedViews(reconciled);
+          return reconciled;
+        });
+        setActiveViewId(created.id);
+      }
+    } catch {
+      /* offline — the optimistic local view stands */
+    }
   }, [saveViewName, filters, savedViews]);
 
   const handleDeleteView = useCallback((id: string) => {
@@ -342,12 +358,31 @@ const LeadsPage = () => {
     setSavedViews(updated);
     persistSavedViews(updated);
     if (activeViewId === id) setActiveViewId(null);
+    crmService.gridViews?.remove?.(id)?.catch?.(() => { /* offline / local-only view */ });
   }, [savedViews, activeViewId]);
 
   const handleApplyView = useCallback((view: SavedFilterView) => {
     setFilters(view.filters);
     setActiveViewId(view.id);
     setShowViewsDropdown(false);
+  }, []);
+
+  // Hydrate saved views from the backend on mount (cross-device). Only overwrite
+  // the localStorage-backed list when the backend actually has views, so a user
+  // with local-only views (before the feature shipped) never loses them.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve(crmService.gridViews?.list?.('lead'))
+      .then((views) => {
+        if (cancelled || !Array.isArray(views) || views.length === 0) return;
+        const mapped = views.map(mapBeView);
+        setSavedViews(mapped);
+        persistSavedViews(mapped);
+        const def = (views as Array<{ id: string; is_default?: boolean }>).find((v) => v.is_default);
+        if (def) setActiveViewId(def.id);
+      })
+      .catch(() => { /* offline — keep localStorage views */ });
+    return () => { cancelled = true; };
   }, []);
 
   // Grid context
