@@ -27,15 +27,44 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({
+    effectiveFlagsLoaded: true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
+    currentOrg: { id: 'org-1' },
+  }),
+  useQuota: () => ({
+    quotas: [],
+    isLoading: false,
+    error: null,
+    isExceeded: () => false,
+    getQuota: () => null,
+    getPercentage: () => 0,
+    refresh: async () => {},
+  }),
+  useSandboxLimit: () => ({
+    isSandboxMode: false,
+    sandboxEntryLimit: 100,
+    limitItems: <T>(items: T[]) => items,
+    isLimited: (_count: number) => false,
+  }),
+}));
 
-  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
-  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
-
-vi.mock('../components/common/Table', () => ({
-  Table: ({ data, isLoading, emptyMessage }: any) => (
-    <div data-testid="table">{isLoading ? 'Loading...' : data.length === 0 ? emptyMessage : `${data.length} rows`}</div>
+// Stub the new grid with a testable proxy
+vi.mock('../components/leads/LeadsDataGrid', () => ({
+  LeadsDataGrid: ({ leads, isLoading }: any) => (
+    <div data-testid="leads-grid">
+      {isLoading
+        ? 'Loading...'
+        : leads.length === 0
+        ? 'No leads found'
+        : leads.map((l: any) => <div key={l.id} data-testid="lead-row">{l.company_name}</div>)}
+    </div>
   ),
+}));
+
+vi.mock('../components/leads/LeadDetailPanel', () => ({
+  LeadDetailPanel: () => null,
 }));
 
 vi.mock('../components/leads/CreateLeadModal', () => ({
@@ -45,8 +74,13 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
 import LeadsPage from './LeadsPage';
 
 const settings = {
-  deal_stages: [], lead_stages: [{ id: 'new', name: 'New' }],
-  lead_custom_fields: [], deal_custom_fields: [], lead_sources: [], lead_scoring: [], default_owner_id: 'u1',
+  deal_stages: [],
+  lead_stages: [{ id: 'new', name: 'New' }],
+  lead_custom_fields: [],
+  deal_custom_fields: [],
+  lead_sources: [],
+  lead_scoring: [],
+  default_owner_id: 'u1',
 };
 
 beforeEach(() => {
@@ -57,30 +91,40 @@ beforeEach(() => {
 });
 
 describe('Given LeadsPage', () => {
-  it('When action / Then renders header', async () => {
+  it('When loaded / Then renders header', async () => {
     render(<LeadsPage />);
     expect(screen.getByText('Leads & Accounts')).toBeInTheDocument();
   });
 
-  it('When action / Then shows Create Lead button', async () => {
+  it('When loaded / Then shows Create Lead button', async () => {
     render(<LeadsPage />);
     expect(screen.getByText('Create Lead')).toBeInTheDocument();
   });
 
-  it('When action / Then shows empty state when no leads', async () => {
+  it('When no leads / Then shows empty state', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('table')).toHaveTextContent('No leads found');
+      expect(screen.getByTestId('leads-grid')).toHaveTextContent('No leads found');
     });
   });
 
-  it('When action / Then shows rows when leads loaded', async () => {
+  it('When leads loaded / Then shows company names in grid', async () => {
     mockGetLeads.mockResolvedValue([
-      { id: 'l1', company_name: 'Acme', contact_name: 'John', status: 'New', owner: { id: 'u1', full_name: 'Test' }, creator: { id: 'u1', full_name: 'Test' }, created_at: '2024-01-01' },
+      {
+        id: 'l1',
+        company_name: 'Acme Corp',
+        contact_name: 'John',
+        status: 'New',
+        owner: { id: 'u1', full_name: 'Test' },
+        creator: { id: 'u1', full_name: 'Test' },
+        created_at: '2024-01-01T00:00:00Z',
+        activities: [],
+        notes: [],
+      },
     ]);
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('table')).toHaveTextContent('1 rows');
+      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     });
   });
 });
