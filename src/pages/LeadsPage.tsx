@@ -601,6 +601,13 @@ const LeadsPage = () => {
         </div>
       </div>
 
+      {/* Error state */}
+      {error && !isLoading && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-rose-500/10 border border-rose-500/25 rounded-lg text-rose-400 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Data grid */}
       <LeadsDataGrid
         leads={paginatedLeads}
