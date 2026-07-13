@@ -288,3 +288,55 @@ describe('LeadsDataGrid — lead count display', () => {
     expect(screen.getByText('1 lead')).toBeDefined();
   });
 });
+
+describe('LeadsDataGrid — group by', () => {
+  const twoStatuses = () => [
+    makeLead({ id: 'g1', company_name: 'Acme Corp', status: 'New' }),
+    makeLead({ id: 'g2', company_name: 'Beta LLC', status: 'Qualified' }),
+    makeLead({ id: 'g3', company_name: 'Gamma Inc', status: 'New' }),
+  ];
+
+  it('is ungrouped by default (no group headers)', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    expect(document.querySelector('[data-testid^="lead-group-"]')).toBeNull();
+  });
+
+  const pickGroup = (label: string) => {
+    fireEvent.click(screen.getByTitle('Group by'));
+    const menu = screen.getByTestId('group-by-menu');
+    fireEvent.click(within(menu).getByText(label));
+  };
+
+  it('renders collapsible group headers with counts when grouping by status', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    pickGroup('Status');
+    const newGroup = document.querySelector('[data-testid="lead-group-New"]') as HTMLElement;
+    const qGroup = document.querySelector('[data-testid="lead-group-Qualified"]') as HTMLElement;
+    expect(newGroup).toBeTruthy();
+    expect(qGroup).toBeTruthy();
+    // New has two leads, Qualified one.
+    expect(within(newGroup).getByText('2')).toBeDefined();
+    expect(within(qGroup).getByText('1')).toBeDefined();
+    expect(within(newGroup).getByText('Acme Corp')).toBeDefined();
+    expect(within(newGroup).getByText('Gamma Inc')).toBeDefined();
+  });
+
+  it('collapses a group when its header is clicked, hiding its rows', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    pickGroup('Status');
+    const newGroup = document.querySelector('[data-testid="lead-group-New"]') as HTMLElement;
+    expect(within(newGroup).getByText('Acme Corp')).toBeDefined();
+    // Header button is the first button inside the group.
+    fireEvent.click(within(newGroup).getAllByRole('button')[0]);
+    expect(within(newGroup).queryByText('Acme Corp')).toBeNull();
+  });
+
+  it('returns to a flat list when grouping is set back to none', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    pickGroup('Status');
+    expect(document.querySelector('[data-testid^="lead-group-"]')).toBeTruthy();
+    pickGroup('No grouping');
+    expect(document.querySelector('[data-testid^="lead-group-"]')).toBeNull();
+    expect(screen.getByText('Acme Corp')).toBeDefined();
+  });
+});

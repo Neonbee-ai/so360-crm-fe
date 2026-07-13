@@ -31,6 +31,7 @@ import {
   Globe,
   Star,
   TrendingUp,
+  Layers,
 } from 'lucide-react';
 import { Lead, User } from '../../types/crm';
 import {
@@ -41,6 +42,7 @@ import {
 } from '../../hooks/useLeadGridPreferences';
 import { useCRMFormatters } from '../../utils/formatters';
 import { computeLeadHealth, describeNextFollowUp, describeLastActivity } from './leadIndicators';
+import { groupLeadsBy, GROUP_BY_OPTIONS, type GroupByKey } from './leadGrouping';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -826,10 +828,15 @@ export function LeadsDataGrid({
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [showDensityMenu, setShowDensityMenu] = useState(false);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+  // Group By — display-only transform. 'none' keeps the exact virtualized path.
+  const [groupBy, setGroupBy] = useState<GroupByKey>('none');
+  const [showGroupMenu, setShowGroupMenu] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const resizing = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
   const draggingHeader = useRef<string | null>(null);
   const densityMenuRef = useRef<HTMLDivElement>(null);
+  const groupMenuRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Build dynamic custom field columns
@@ -1000,6 +1007,124 @@ export function LeadsDataGrid({
   );
   const visibleRows = virtualize ? sortedLeads.slice(startIndex, endIndex) : sortedLeads;
 
+  // Grouping is a pure view over the sorted list. Only computed when active so
+  // the ungrouped path pays nothing.
+  const grouped = groupBy !== 'none';
+  const groups = useMemo(
+    () => (grouped ? groupLeadsBy(sortedLeads, groupBy) : []),
+    [grouped, sortedLeads, groupBy],
+  );
+
+  const toggleGroup = useCallback((key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!showGroupMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (groupMenuRef.current && !groupMenuRef.current.contains(e.target as Node)) {
+        setShowGroupMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showGroupMenu]);
+
+  // A single lead row, shared by the virtualized (ungrouped) and grouped paths so
+  // markup never diverges. In grouped mode `virtualize` is false, so rows render
+  // at natural height exactly like a small ungrouped list.
+  const renderRow = (lead: Lead) => {
+    const isSelected = selectedIds.has(lead.id);
+    const isHovered = hoveredRowId === lead.id;
+    return (
+      <div
+        key={lead.id}
+        className={`flex border-b border-slate-800/60 cursor-pointer transition-colors group/row ${
+          virtualize && !grouped ? 'overflow-hidden' : ''
+        } ${
+          isSelected ? 'bg-blue-600/8' : isHovered ? 'bg-slate-800/50' : 'hover:bg-slate-800/30'
+        }`}
+        style={{ minWidth: `${totalWidth}px`, ...(virtualize && !grouped ? { height: rowH } : {}) }}
+        onClick={() => onRowClick(lead)}
+        onMouseEnter={() => setHoveredRowId(lead.id)}
+        onMouseLeave={() => setHoveredRowId(null)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setContextMenu({ lead, x: e.clientX, y: e.clientY });
+        }}
+      >
+        {orderedCols.map((col) => {
+          const def = colDefMap.get(col.key);
+          const isSticky = col.pinned;
+
+          if (col.key === 'select') {
+            return (
+              <div
+                key="select"
+                className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
+                  isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'
+                }`}
+                style={{ width: col.width, left: colLeftOffsets['select'] }}
+                onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
+              >
+                <div
+                  className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${
+                    isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  {isSelected && <Check size={10} className="text-white" />}
+                </div>
+              </div>
+            );
+          }
+
+          if (col.key === 'actions') {
+            return (
+              <div
+                key="actions"
+                className={`flex items-center justify-center shrink-0 ${cellPy}`}
+                style={{ width: col.width }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setContextMenu({ lead, x: e.clientX, y: e.clientY });
+                  }}
+                  className="p-1.5 text-slate-600 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover/row:opacity-100"
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={col.key}
+              className={`flex items-center shrink-0 px-3 overflow-hidden ${cellPy} ${
+                isSticky
+                  ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'}`
+                  : ''
+              }`}
+              style={{
+                width: col.width,
+                ...(isSticky ? { left: colLeftOffsets[col.key] } : {}),
+              }}
+            >
+              {def ? def.render(lead, context, fmt) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
@@ -1034,6 +1159,41 @@ export function LeadsDataGrid({
           )}
         </span>
         <div className="flex items-center gap-2">
+          {/* Group by */}
+          <div className="relative" ref={groupMenuRef}>
+            <button
+              onClick={() => setShowGroupMenu((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${
+                grouped
+                  ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+              }`}
+              title="Group by"
+            >
+              <Layers size={14} />
+              <span>{GROUP_BY_OPTIONS.find((o) => o.key === groupBy)?.label ?? 'Group'}</span>
+            </button>
+            {showGroupMenu && (
+              <div
+                data-testid="group-by-menu"
+                className="absolute right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[160px]"
+              >
+                {GROUP_BY_OPTIONS.map((o) => (
+                  <button
+                    key={o.key}
+                    onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                      groupBy === o.key ? 'text-blue-400 bg-blue-500/10' : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    {groupBy === o.key && <Check size={12} />}
+                    <span className={groupBy === o.key ? '' : 'ml-4'}>{o.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Density picker */}
           <div className="relative" ref={densityMenuRef}>
             <button
@@ -1178,101 +1338,39 @@ export function LeadsDataGrid({
               <TrendingUp size={40} className="mb-3 opacity-30" />
               <p className="text-sm">No leads found</p>
             </div>
+          ) : grouped ? (
+            /* Grouped view — collapsible headers, virtualization disabled. */
+            <>
+              {groups.map((g) => {
+                const isCollapsed = collapsedGroups.has(g.key);
+                return (
+                  <div key={g.key} data-testid={`lead-group-${g.key}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(g.key)}
+                      className="flex items-center gap-2 w-full sticky left-0 px-3 py-2 bg-slate-900/80 border-b border-slate-700/50 text-sm text-slate-200 hover:bg-slate-800/60 transition-colors"
+                      style={{ minWidth: `${totalWidth}px` }}
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown size={14} className="-rotate-90 text-slate-400" />
+                      ) : (
+                        <ChevronDown size={14} className="text-slate-400" />
+                      )}
+                      <span className="font-semibold">{g.label}</span>
+                      <span className="text-xs text-slate-500 bg-slate-800 rounded-full px-2 py-0.5">
+                        {g.count}
+                      </span>
+                    </button>
+                    {!isCollapsed && g.leads.map(renderRow)}
+                  </div>
+                );
+              })}
+            </>
           ) : (
             <>
-            {topPad > 0 && <div style={{ height: topPad }} aria-hidden="true" />}
-            {visibleRows.map((lead) => {
-              const isSelected = selectedIds.has(lead.id);
-              const isHovered = hoveredRowId === lead.id;
-
-              return (
-                <div
-                  key={lead.id}
-                  className={`flex border-b border-slate-800/60 cursor-pointer transition-colors group/row ${
-                    virtualize ? 'overflow-hidden' : ''
-                  } ${
-                    isSelected
-                      ? 'bg-blue-600/8'
-                      : isHovered
-                      ? 'bg-slate-800/50'
-                      : 'hover:bg-slate-800/30'
-                  }`}
-                  style={{ minWidth: `${totalWidth}px`, ...(virtualize ? { height: rowH } : {}) }}
-                  onClick={() => onRowClick(lead)}
-                  onMouseEnter={() => setHoveredRowId(lead.id)}
-                  onMouseLeave={() => setHoveredRowId(null)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setContextMenu({ lead, x: e.clientX, y: e.clientY });
-                  }}
-                >
-                  {orderedCols.map((col) => {
-                    const def = colDefMap.get(col.key);
-                    const isSticky = col.pinned;
-
-                    if (col.key === 'select') {
-                      return (
-                        <div
-                          key="select"
-                          className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
-                            isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'
-                          }`}
-                          style={{ width: col.width, left: colLeftOffsets['select'] }}
-                          onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
-                        >
-                          <div
-                            className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${
-                              isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-600 hover:border-slate-400'
-                            }`}
-                          >
-                            {isSelected && <Check size={10} className="text-white" />}
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    if (col.key === 'actions') {
-                      return (
-                        <div
-                          key="actions"
-                          className={`flex items-center justify-center shrink-0 ${cellPy}`}
-                          style={{ width: col.width }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setContextMenu({ lead, x: e.clientX, y: e.clientY });
-                            }}
-                            className="p-1.5 text-slate-600 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover/row:opacity-100"
-                          >
-                            <MoreHorizontal size={16} />
-                          </button>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={col.key}
-                        className={`flex items-center shrink-0 px-3 overflow-hidden ${cellPy} ${
-                          isSticky
-                            ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'}`
-                            : ''
-                        }`}
-                        style={{
-                          width: col.width,
-                          ...(isSticky ? { left: colLeftOffsets[col.key] } : {}),
-                        }}
-                      >
-                        {def ? def.render(lead, context, fmt) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-            {bottomPad > 0 && <div style={{ height: bottomPad }} aria-hidden="true" />}
+              {topPad > 0 && <div style={{ height: topPad }} aria-hidden="true" />}
+              {visibleRows.map(renderRow)}
+              {bottomPad > 0 && <div style={{ height: bottomPad }} aria-hidden="true" />}
             </>
           )}
         </div>
