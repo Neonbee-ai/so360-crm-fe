@@ -84,6 +84,46 @@ describe('groupLeadsBy lead_health', () => {
   });
 });
 
+describe('groupLeadsBy source', () => {
+  it('buckets by source and sends blanks to "No source" last', () => {
+    const leads = [
+      lead({ source: 'Website' }),
+      lead({ source: '' }),
+      lead({ source: 'Website' }),
+    ];
+    const groups = groupLeadsBy(leads, 'source');
+    expect(groups[0]).toMatchObject({ key: 'Website', count: 2 });
+    expect(groups[groups.length - 1].label).toBe('No source');
+  });
+});
+
+describe('groupLeadsBy priority — missing value', () => {
+  it('sends null/undefined/empty priority to "No priority"', () => {
+    const leads = [
+      lead({ priority: null } as Partial<Lead>),
+      lead({ priority: 3 } as Partial<Lead>),
+    ];
+    const groups = groupLeadsBy(leads, 'priority');
+    expect(groups[groups.length - 1].label).toBe('No priority');
+  });
+});
+
+describe('groupLeadsBy owner — label fallbacks', () => {
+  it('falls back to email when the owner has no name', () => {
+    const leads = [lead({ owner: { id: 'u9', full_name: '', email: 'x@t.com' } as any })];
+    const groups = groupLeadsBy(leads, 'owner');
+    expect(groups[0]).toMatchObject({ key: 'u9', label: 'x@t.com' });
+  });
+});
+
+describe('group ordering — equal counts', () => {
+  it('breaks ties alphabetically by label', () => {
+    const leads = [lead({ source: 'Zeta' }), lead({ source: 'Alpha' })];
+    const groups = groupLeadsBy(leads, 'source');
+    expect(groups.map((g) => g.label)).toEqual(['Alpha', 'Zeta']);
+  });
+});
+
 describe('purity', () => {
   it('does not mutate the input array', () => {
     const leads = [lead({ status: 'New' as any }), lead({ status: 'Lost' as any })];

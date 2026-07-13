@@ -206,3 +206,76 @@ describe('immutable tree edits', () => {
     expect(root.combinator).toBe('or');
   });
 });
+
+describe('edge cases & full-branch coverage', () => {
+  it('operatorsForType maps boolean to the enum operator set', () => {
+    expect(operatorsForType('boolean')).toEqual(operatorsForType('enum'));
+  });
+
+  it('createGroup honours an explicit combinator', () => {
+    expect(createGroup('or')).toEqual({ combinator: 'or', rules: [] });
+  });
+
+  it('isRuleComplete rejects a rule with no field or op', () => {
+    expect(isRuleComplete({ field: '', op: 'eq', value: 'x' } as FilterRule)).toBe(false);
+    expect(isRuleComplete({ field: 'company_name', op: '' as any, value: 'x' })).toBe(false);
+  });
+
+  it('serializeFilter returns null for a null root', () => {
+    expect(serializeFilter(null)).toBeNull();
+  });
+
+  it('addRule/addGroup target a nested group by path', () => {
+    let root = addGroup(emptyFilter()); // root.rules[0] is a group
+    root = addGroup(root, [0]); // nest a group inside it
+    root = addRule(root, [0, 0]); // add a rule to the deeply-nested group
+    const inner = (root.rules[0] as FilterGroup).rules[0] as FilterGroup;
+    expect(isGroup(inner)).toBe(true);
+    expect(inner.rules).toHaveLength(1);
+    expect(isGroup(inner.rules[0])).toBe(false);
+  });
+
+  it('editing helpers are no-ops when the path points at a leaf rule', () => {
+    let root = addRule(emptyFilter()); // rules[0] is a rule, not a group
+    // Descending into a rule (path [0,0]) can add nothing.
+    root = addRule(root, [0, 0]);
+    expect((root.rules[0] as FilterGroup).rules).toBeUndefined();
+    expect(root.rules).toHaveLength(1);
+  });
+
+  it('removeNode ignores an out-of-range index', () => {
+    const root = addRule(emptyFilter());
+    expect(removeNode(root, [9]).rules).toHaveLength(1);
+  });
+
+  it('updateRule is a no-op when the path lands on a group', () => {
+    const root = addGroup(emptyFilter());
+    const next = updateRule(root, [0], { value: 'x' });
+    expect(next.rules[0]).toEqual({ combinator: 'and', rules: [] });
+  });
+
+  it('updateRule keeps the operator when the new field shares its type', () => {
+    let root = addRule(emptyFilter()); // company_name / contains
+    root = updateRule(root, [0], { value: 'ac' });
+    root = updateRule(root, [0], { field: 'email' }); // still text
+    const rule = root.rules[0] as FilterRule;
+    expect(rule.field).toBe('email');
+    expect(rule.op).toBe('contains');
+    expect(rule.value).toBe('');
+  });
+
+  it('updateRule reshapes the value to an empty list for the "in" operator', () => {
+    let root = addRule(emptyFilter());
+    root = updateRule(root, [0], { field: 'status' }); // enum supports "in"
+    root = updateRule(root, [0], { op: 'in' });
+    expect((root.rules[0] as FilterRule).value).toEqual([]);
+  });
+
+  it('updateRule collapses a two-value array back to a scalar for scalar ops', () => {
+    let root = addRule(emptyFilter());
+    root = updateRule(root, [0], { field: 'score' });
+    root = updateRule(root, [0], { op: 'between' }); // value -> ['', '']
+    root = updateRule(root, [0], { op: 'eq' }); // scalar op -> ''
+    expect((root.rules[0] as FilterRule).value).toBe('');
+  });
+});
