@@ -15,10 +15,12 @@ const mockBulkTagLeads = vi.fn();
 const mockViewsList = vi.fn();
 const mockViewsCreate = vi.fn();
 const mockViewsRemove = vi.fn();
+const mockGetLeadsPaged = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
+    getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
@@ -186,6 +188,7 @@ beforeEach(async () => {
   mockBulkDeleteLeads.mockResolvedValue({ requested: 1, deleted: ['l1'], failed: [] });
   mockBulkUpdateLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
   mockBulkTagLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
+  mockGetLeadsPaged.mockResolvedValue({ data: [leads[1]], total: 1 });
   mockViewsList.mockResolvedValue([]);
   mockViewsCreate.mockResolvedValue({ id: 'srv-1', name: 'Server View', config: { filters: {} } });
   mockViewsRemove.mockResolvedValue({ deleted: true });
@@ -530,5 +533,36 @@ describe('LeadsPage — saved views (backend)', () => {
     const delBtn = row.querySelector('button:last-child')!;
     await user.click(delBtn);
     await waitFor(() => expect(mockViewsRemove).toHaveBeenCalledWith('srv-9'));
+  });
+
+  describe('Advanced (server-side) filtering', () => {
+    it('applies a nested filter tree via the paged endpoint and swaps the list', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+      await user.click(screen.getByText('Advanced'));
+      await user.click(screen.getByText(/add condition/i));
+      const rule = screen.getByTestId('filter-rule');
+      fireEvent.change(rule.querySelector('input[aria-label="Value"]')!, { target: { value: 'Beta' } });
+      await user.click(screen.getByText(/^apply/i));
+
+      await waitFor(() =>
+        expect(mockGetLeadsPaged).toHaveBeenCalledWith(
+          expect.objectContaining({ filter: expect.stringContaining('company_name') }),
+        ),
+      );
+      // Server returned only Beta Inc (l2) — the grid reflects the filtered set.
+      await waitFor(() => {
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+      });
+    });
+
+    it('does not call the paged endpoint when no advanced filter is set', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(mockGetLeadsPaged).not.toHaveBeenCalled();
+    });
   });
 });

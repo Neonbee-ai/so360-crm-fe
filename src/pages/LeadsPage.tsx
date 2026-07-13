@@ -19,6 +19,8 @@ import { Lead, User } from '../types/crm';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
+import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
+import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { QuotaBar, QuotaGate } from '@so360/design-system';
@@ -147,6 +149,11 @@ const LeadsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  // Advanced (server-side) filter tree. null = feature inactive, the normal
+  // fetchInitialData list governs. Non-null triggers a server-side refetch via
+  // getLeadsPaged so nested AND/OR filters run against the whole dataset, not
+  // just the currently-loaded page.
+  const [advancedFilter, setAdvancedFilter] = useState<FilterGroup | null>(null);
 
   // Filters
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -220,6 +227,42 @@ const LeadsPage = () => {
   useEffect(() => {
     fetchInitialData();
   }, [fetchInitialData]);
+
+  // Advanced server-side filter: whenever a non-null tree is applied, refetch the
+  // leads list through the paged endpoint with the serialized filter. Clearing
+  // the tree (Apply with nothing complete) re-runs the normal initial fetch.
+  useEffect(() => {
+    if (!advancedFilter) return;
+    let cancelled = false;
+    (async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data } = await crmService.getLeadsPaged({
+          filter: JSON.stringify(advancedFilter),
+          take: 1000,
+        });
+        if (!cancelled) setLeads(data);
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message ?? 'Failed to apply advanced filters');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [advancedFilter]);
+
+  const handleApplyAdvancedFilter = useCallback((tree: FilterGroup | null) => {
+    setShowAdvancedFilters(false);
+    setCurrentPage(1);
+    if (tree) {
+      setAdvancedFilter(tree);
+    } else if (advancedFilter) {
+      // Cleared an active advanced filter — fall back to the standard list.
+      setAdvancedFilter(null);
+      fetchInitialData();
+    }
+  }, [advancedFilter, fetchInitialData]);
 
   // Filtering
   const filteredLeads = useMemo(() => {
@@ -555,6 +598,36 @@ const LeadsPage = () => {
                     </button>
                   )}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Advanced filter builder */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAdvancedFilters((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
+                advancedFilter
+                  ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+              }`}
+            >
+              <SlidersHorizontal size={14} />
+              Advanced
+              {advancedFilter && (
+                <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5">
+                  {countActiveRules(advancedFilter)}
+                </span>
+              )}
+            </button>
+
+            {showAdvancedFilters && (
+              <div className="absolute right-0 top-full mt-1.5 z-50">
+                <LeadFilterBuilder
+                  value={advancedFilter}
+                  onApply={handleApplyAdvancedFilter}
+                  onClose={() => setShowAdvancedFilters(false)}
+                />
               </div>
             )}
           </div>
