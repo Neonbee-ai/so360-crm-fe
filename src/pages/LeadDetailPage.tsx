@@ -353,7 +353,7 @@ const LeadDetailPage = () => {
     };
 
     const tabCls = (tab: TabType) =>
-        `flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+        `flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
             activeTab === tab
                 ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5'
                 : 'text-slate-500 hover:text-slate-300'
@@ -708,7 +708,7 @@ const LeadDetailPage = () => {
 
                     {/* Workspace Tabs - Now below Profile Data */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="flex border-b border-slate-800 bg-slate-900/50">
+                        <div className="flex overflow-x-auto scrollbar-hide border-b border-slate-800 bg-slate-900/50">
                             <button onClick={() => setActiveTab('activity')} className={tabCls('activity')}>
                                 <MessageSquare size={14} /> Activity
                             </button>

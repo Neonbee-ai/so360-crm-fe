@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Hide scrollbar visually while keeping horizontal scroll functional ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;   /* IE and legacy Edge */
+  scrollbar-width: none;      /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;              /* Chrome, Safari, and Chromium Edge */
+}
+
 /* ── Light theme: calendar/date picker icon should NOT be inverted ── */
 /* Default (dark): invert the icon so it appears light on dark inputs   */
 input[type="date"]::-webkit-calendar-picker-indicator,
