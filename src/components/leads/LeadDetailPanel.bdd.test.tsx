@@ -113,6 +113,28 @@ describe('LeadDetailPanel — Marketing tab', () => {
     expect(screen.getByText('Acquisition Source')).toBeInTheDocument();
     expect(mockGetDeals).not.toHaveBeenCalled();
   });
+
+  it('shows the empty-attribution note when only a source exists', () => {
+    render_(makeLead()); // source only, no acquisition/channel/campaign/referral
+    fireEvent.click(screen.getByText('Marketing'));
+    expect(screen.getByText(/no additional marketing attribution/i)).toBeInTheDocument();
+  });
+});
+
+describe('LeadDetailPanel — Sales tab (optional fields)', () => {
+  it('renders a deal that has no close date or invoice ref', async () => {
+    mockGetDeals.mockResolvedValue([
+      {
+        id: 'd2', name: 'Lean Deal', value: 100, stage: 'Lead',
+        owner: { id: 'u1', full_name: 'Alice' }, notes: [], activities: [], created_at: '2026-01-01T00:00:00Z',
+      },
+    ]);
+    render_(makeLead());
+    fireEvent.click(screen.getByText('Sales'));
+    expect(await screen.findByText('Lean Deal')).toBeInTheDocument();
+    expect(screen.getByText('$100')).toBeInTheDocument();
+    expect(screen.queryByText(/Close /)).toBeNull();
+  });
 });
 
 describe('LeadDetailPanel — Audit tab', () => {

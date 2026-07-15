@@ -74,4 +74,29 @@ describe('LeadCardList', () => {
     setup([]);
     expect(screen.getByTestId('lead-card-list')).toHaveTextContent(/no leads found/i);
   });
+
+  it('colours the score by tier (hot / warm / cold)', () => {
+    setup([makeLead({ auto_score: 80 })]);
+    expect(screen.getByText('80').className).toContain('text-emerald-400');
+  });
+
+  it('colours a warm score amber', () => {
+    setup([makeLead({ auto_score: 50 })]);
+    expect(screen.getByText('50').className).toContain('text-amber-400');
+  });
+
+  it('colours a cold score rose', () => {
+    setup([makeLead({ auto_score: 20 })]);
+    expect(screen.getByText('20').className).toContain('text-rose-400');
+  });
+
+  it('hides the score badge when the score is zero', () => {
+    setup([makeLead({ auto_score: 0 })]);
+    expect(screen.queryByText('0')).toBeNull();
+  });
+
+  it('builds the contact name from first/last when present', () => {
+    setup([makeLead({ contact_name: undefined, first_name: 'John', last_name: 'Roe' })]);
+    expect(screen.getByText('John Roe')).toBeInTheDocument();
+  });
 });
