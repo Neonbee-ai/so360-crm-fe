@@ -194,6 +194,56 @@ describe('LeadsDataGrid — row selection', () => {
   });
 });
 
+describe('LeadsDataGrid — bulk action menus', () => {
+  const selectAll = () => fireEvent.click(screen.getByTestId('bulk-select-all'));
+
+  it('runs an immediate (onClick) bulk action', () => {
+    const onExport = vi.fn();
+    render(
+      <LeadsDataGrid
+        leads={[makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })]}
+        context={buildContext()}
+        onRowClick={vi.fn()}
+        bulkActions={[{ label: 'Export', icon: null, onClick: onExport }]}
+      />,
+    );
+    selectAll();
+    fireEvent.click(screen.getByText('Export'));
+    expect(onExport).toHaveBeenCalledWith(['lead-1', 'l2']);
+  });
+
+  it('opens an options popover and calls onSelect with the chosen value', () => {
+    const onSelect = vi.fn();
+    render(
+      <LeadsDataGrid
+        leads={[makeLead()]}
+        context={buildContext()}
+        onRowClick={vi.fn()}
+        bulkActions={[
+          {
+            label: 'Status',
+            icon: null,
+            options: [
+              { label: 'New', value: 'New' },
+              { label: 'Qualified', value: 'Qualified' },
+            ],
+            onSelect,
+          },
+        ]}
+      />,
+    );
+    selectAll();
+    // Menu closed initially.
+    expect(screen.queryByTestId('bulk-menu-Status')).toBeNull();
+    fireEvent.click(screen.getByText('Status'));
+    const menu = screen.getByTestId('bulk-menu-Status');
+    fireEvent.click(within(menu).getByText('Qualified'));
+    expect(onSelect).toHaveBeenCalledWith(['lead-1'], 'Qualified');
+    // Menu closes after selection.
+    expect(screen.queryByTestId('bulk-menu-Status')).toBeNull();
+  });
+});
+
 describe('LeadsDataGrid — column controls', () => {
   it('opens column manager modal on Columns button click', () => {
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);

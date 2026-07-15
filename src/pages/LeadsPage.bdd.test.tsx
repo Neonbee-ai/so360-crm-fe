@@ -132,7 +132,11 @@ const settings = {
   ],
   lead_custom_fields: [],
   deal_custom_fields: [],
-  lead_sources: [],
+  lead_sources: [
+    { id: 's1', name: 'Website', archived: false },
+    { id: 's2', name: 'Referral', archived: false },
+    { id: 's3', name: 'Legacy', archived: true },
+  ],
   lead_scoring: [],
   default_owner_id: 'u1',
 };
@@ -563,6 +567,62 @@ describe('LeadsPage — saved views (backend)', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       expect(mockGetLeadsPaged).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Bulk actions wiring', () => {
+    const bulkAction = (label: string) =>
+      capturedGridProps.bulkActions.find((a: any) => a.label === label);
+
+    const readyGrid = async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    };
+
+    it('exposes owner/status/source/export/delete bulk actions', async () => {
+      await readyGrid();
+      const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+      expect(labels).toEqual(expect.arrayContaining(['Assign', 'Status', 'Source', 'Export', 'Delete']));
+    });
+
+    it('offers only non-archived sources as options', async () => {
+      await readyGrid();
+      const values = bulkAction('Source').options.map((o: any) => o.value);
+      expect(values).toEqual(['Website', 'Referral']);
+    });
+
+    it('bulk status change calls the paged bulk-update with a status patch', async () => {
+      await readyGrid();
+      bulkAction('Status').onSelect(['l1', 'l3'], 'Qualified');
+      await waitFor(() =>
+        expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1', 'l3'], { status: 'Qualified' }),
+      );
+    });
+
+    it('bulk source change calls bulk-update with a source patch', async () => {
+      await readyGrid();
+      bulkAction('Source').onSelect(['l1'], 'Website');
+      await waitFor(() =>
+        expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { source: 'Website' }),
+      );
+    });
+
+    it('bulk assign calls bulk-update with owner_id', async () => {
+      await readyGrid();
+      bulkAction('Assign').onSelect(['l1'], 'u2');
+      await waitFor(() =>
+        expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { owner_id: 'u2' }),
+      );
+    });
+
+    it('export downloads a CSV of the selected rows', async () => {
+      await readyGrid();
+      const createUrl = vi.fn(() => 'blob:mock');
+      const revokeUrl = vi.fn();
+      vi.stubGlobal('URL', { ...URL, createObjectURL: createUrl, revokeObjectURL: revokeUrl });
+      bulkAction('Export').onClick(['l1']);
+      expect(createUrl).toHaveBeenCalled();
+      vi.unstubAllGlobals();
     });
   });
 });

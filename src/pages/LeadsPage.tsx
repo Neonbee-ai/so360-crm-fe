@@ -8,6 +8,8 @@ import {
   UserCheck,
   Trash2,
   Archive,
+  Download,
+  Flag,
   X,
   ChevronDown,
   BookmarkPlus,
@@ -21,6 +23,7 @@ import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
+import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { QuotaBar, QuotaGate } from '@so360/design-system';
@@ -139,6 +142,7 @@ const LeadsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leadStages, setLeadStages] = useState<{ id: string; name: string }[]>([]);
+  const [leadSources, setLeadSources] = useState<string[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [customFields, setCustomFields] = useState<{ id: string; label: string }[]>([]);
   const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
@@ -207,6 +211,12 @@ const LeadsPage = () => {
 
       setLeads(leadsData);
       setLeadStages(settingsData?.lead_stages ?? []);
+      setLeadSources(
+        (settingsData?.lead_sources ?? [])
+          .filter((s: any) => s && !s.archived)
+          .map((s: any) => s.name)
+          .filter(Boolean),
+      );
       setCustomFields(
         (settingsData?.lead_custom_fields ?? []).map((cf: any) => ({
           id: cf.id,
@@ -369,6 +379,33 @@ const LeadsPage = () => {
     }
   }, [users]);
 
+  const handleBulkStatusChange = useCallback(async (ids: string[], statusName: string) => {
+    try {
+      const res = await crmService.bulkUpdateLeads(ids, { status: statusName });
+      const changed = res?.updated?.length ? res.updated : ids;
+      setLeads((prev) => prev.map((l) => changed.includes(l.id) ? { ...l, status: statusName as any } : l));
+    } catch {
+      setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, status: statusName as any } : l));
+    }
+  }, []);
+
+  const handleBulkSourceChange = useCallback(async (ids: string[], source: string) => {
+    try {
+      const res = await crmService.bulkUpdateLeads(ids, { source });
+      const changed = res?.updated?.length ? res.updated : ids;
+      setLeads((prev) => prev.map((l) => changed.includes(l.id) ? { ...l, source } : l));
+    } catch {
+      setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, source } : l));
+    }
+  }, []);
+
+  const handleBulkExport = useCallback((ids: string[]) => {
+    const chosen = leads.filter((l) => ids.includes(l.id));
+    const rows = chosen.length ? chosen : leads;
+    const csv = leadsToCsv(rows);
+    downloadCsv(`leads-export-${rows.length}.csv`, csv);
+  }, [leads]);
+
   // Saved views — persisted to the backend (cross-device) with an optimistic
   // localStorage fallback so it still works offline / on an older backend.
   const handleSaveView = useCallback(async () => {
@@ -444,10 +481,25 @@ const LeadsPage = () => {
     {
       label: 'Assign',
       icon: <UserCheck size={14} />,
-      onClick: (ids: string[]) => {
-        const ownerId = users[0]?.id;
-        if (ownerId) handleBulkOwnerChange(ids, ownerId);
-      },
+      options: users.map((u) => ({ label: u.full_name || u.email, value: u.id })),
+      onSelect: (ids: string[], ownerId: string) => handleBulkOwnerChange(ids, ownerId),
+    },
+    {
+      label: 'Status',
+      icon: <Flag size={14} />,
+      options: leadStages.map((s) => ({ label: s.name, value: s.name })),
+      onSelect: (ids: string[], statusName: string) => handleBulkStatusChange(ids, statusName),
+    },
+    {
+      label: 'Source',
+      icon: <Filter size={14} />,
+      options: leadSources.map((s) => ({ label: s, value: s })),
+      onSelect: (ids: string[], source: string) => handleBulkSourceChange(ids, source),
+    },
+    {
+      label: 'Export',
+      icon: <Download size={14} />,
+      onClick: (ids: string[]) => handleBulkExport(ids),
     },
     {
       label: 'Delete',
@@ -455,7 +507,8 @@ const LeadsPage = () => {
       variant: 'danger' as const,
       onClick: (ids: string[]) => handleBulkDelete(ids),
     },
-  ], [users, handleBulkOwnerChange, handleBulkDelete]);
+  ].filter((a: any) => !a.options || a.options.length > 0),
+  [users, leadStages, leadSources, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
   return (
     <div className="p-6 pb-16">

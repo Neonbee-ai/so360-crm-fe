@@ -61,7 +61,15 @@ interface BulkAction {
   label: string;
   icon: ReactNode;
   variant?: 'danger' | 'default';
-  onClick: (ids: string[]) => void;
+  /** Immediate action (export, delete, …). Optional when `options` is provided. */
+  onClick?: (ids: string[]) => void;
+  /**
+   * When present, the button opens a small popover listing these options; picking
+   * one calls `onSelect(ids, value)`. Used for owner / status / source pickers.
+   * Backward compatible — actions with only `onClick` render as plain buttons.
+   */
+  options?: Array<{ label: string; value: string }>;
+  onSelect?: (ids: string[], value: string) => void;
 }
 
 export interface LeadsDataGridProps {
@@ -655,24 +663,60 @@ interface BulkActionsBarProps {
 }
 
 function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBarProps) {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenu]);
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl shadow-black/40">
       <span className="text-sm text-slate-200 font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-slate-600" />
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          onClick={() => action.onClick(selectedIds)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            action.variant === 'danger'
-              ? 'text-rose-400 hover:bg-rose-500/10'
-              : 'text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          {action.icon}
-          {action.label}
-        </button>
-      ))}
+      {actions.map((action) => {
+        const hasMenu = !!action.options?.length;
+        return (
+          <div key={action.label} className="relative" ref={openMenu === action.label ? menuRef : undefined}>
+            <button
+              onClick={() => {
+                if (hasMenu) setOpenMenu((m) => (m === action.label ? null : action.label));
+                else action.onClick?.(selectedIds);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                action.variant === 'danger'
+                  ? 'text-rose-400 hover:bg-rose-500/10'
+                  : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {action.icon}
+              {action.label}
+              {hasMenu && <ChevronDown size={13} className="opacity-60" />}
+            </button>
+            {hasMenu && openMenu === action.label && (
+              <div
+                data-testid={`bulk-menu-${action.label}`}
+                className="absolute bottom-full mb-2 left-0 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[180px] max-h-64 overflow-y-auto"
+              >
+                {action.options!.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { action.onSelect?.(selectedIds, opt.value); setOpenMenu(null); }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
       <div className="w-px h-5 bg-slate-600" />
       <button
         onClick={onClear}
@@ -1261,6 +1305,7 @@ export function LeadsDataGrid({
                     style={{ width: col.width, left: colLeftOffsets['select'] }}
                   >
                     <button
+                      data-testid="bulk-select-all"
                       onClick={toggleSelectAll}
                       className="text-slate-400 hover:text-slate-100 transition-colors"
                     >
