@@ -250,6 +250,30 @@ describe('LeadsDataGrid — inline cell editing', () => {
   });
 });
 
+describe('LeadsDataGrid — responsive', () => {
+  const setWidth = (w: number) =>
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: w });
+
+  it('renders the desktop grid on a wide viewport', () => {
+    setWidth(1200);
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    expect(screen.getByRole('grid')).toBeInTheDocument();
+    expect(screen.queryByTestId('lead-card-list')).toBeNull();
+  });
+
+  it('renders a card list (not the grid) on a narrow viewport', () => {
+    setWidth(500);
+    try {
+      render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+      expect(screen.getByTestId('lead-card-list')).toBeInTheDocument();
+      expect(screen.getByTestId('lead-card-lead-1')).toBeInTheDocument();
+      expect(screen.queryByRole('grid')).toBeNull();
+    } finally {
+      setWidth(1024);
+    }
+  });
+});
+
 describe('LeadsDataGrid — keyboard navigation', () => {
   const twoLeads = () => [makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })];
 

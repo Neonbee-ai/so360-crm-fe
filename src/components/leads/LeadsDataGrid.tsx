@@ -44,6 +44,8 @@ import { useCRMFormatters } from '../../utils/formatters';
 import { computeLeadHealth, describeNextFollowUp, describeLastActivity } from './leadIndicators';
 import { groupLeadsBy, GROUP_BY_OPTIONS, type GroupByKey } from './leadGrouping';
 import { nextFocusIndex, scrollToRevealIndex } from './leadKeyboardNav';
+import { useIsNarrow } from './useIsNarrow';
+import LeadCardList from './LeadCardList';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -939,6 +941,8 @@ export function LeadsDataGrid({
   const [editing, setEditing] = useState<{ leadId: string; key: string } | null>(null);
   // Keyboard-focused row index (-1 = none). Only active in the ungrouped view.
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  // Below the md breakpoint, swap the dense table for a tap-friendly card list.
+  const isNarrow = useIsNarrow();
 
   const resizing = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
   const draggingHeader = useRef<string | null>(null);
@@ -1395,7 +1399,15 @@ export function LeadsDataGrid({
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Grid (desktop) / card list (narrow) */}
+      {isNarrow ? (
+        <LeadCardList
+          leads={sortedLeads}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onRowClick={onRowClick}
+        />
+      ) : (
       <div
         ref={containerRef}
         className="rounded-xl border border-slate-700/50 overflow-auto bg-slate-950"
@@ -1541,6 +1553,7 @@ export function LeadsDataGrid({
           )}
         </div>
       </div>
+      )}
 
       {/* Bulk actions */}
       {selectedIds.size > 0 && (
