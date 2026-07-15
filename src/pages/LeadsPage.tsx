@@ -548,6 +548,26 @@ const LeadsPage = () => {
   }, []);
 
   // Grid context
+  // Inline cell edit — optimistic local update, persisted via updateLead, reverted
+  // on failure. `field` is a Lead property key (updateLead maps it to the column).
+  const handleInlineEdit = useCallback(async (lead: Lead, field: string, value: string) => {
+    const previous = (lead as any)[field];
+    if (previous === value) return;
+    setLeads((ls) => ls.map((l) => (l.id === lead.id ? ({ ...l, [field]: value } as Lead) : l)));
+    try {
+      await crmService.updateLead(lead.id, { [field]: value } as any);
+      recordActivity({
+        eventType: 'lead.updated',
+        eventCategory: 'crm',
+        description: `Updated ${field.replace(/_/g, ' ')} on "${lead.company_name}"`,
+        resourceType: 'lead',
+        resourceId: lead.id,
+      }).catch(() => {});
+    } catch {
+      setLeads((ls) => ls.map((l) => (l.id === lead.id ? ({ ...l, [field]: previous } as Lead) : l)));
+    }
+  }, [recordActivity]);
+
   const gridContext = useMemo<GridContext>(() => ({
     users,
     leadStages,
@@ -557,7 +577,8 @@ const LeadsPage = () => {
     onDelete: (lead) => setShowDeleteConfirm(lead.id),
     onOpen: (lead) => navigate(`${lead.id}`),
     formatDate: formatters.formatDate,
-  }), [users, leadStages, canUpdateLead, handleOwnerChange, handleStatusChange, navigate, formatters]);
+    onInlineEdit: handleInlineEdit,
+  }), [users, leadStages, canUpdateLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
 
   const bulkActions = useMemo(() => [
     {

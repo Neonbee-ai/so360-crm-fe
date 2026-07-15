@@ -72,6 +72,7 @@ function buildContext(overrides: Partial<GridContext> = {}): GridContext {
     onDelete: vi.fn(),
     onOpen: vi.fn(),
     formatDate: (d) => new Date(d).toLocaleDateString(),
+    onInlineEdit: vi.fn(),
     ...overrides,
   };
 }
@@ -191,6 +192,61 @@ describe('LeadsDataGrid — row selection', () => {
       fireEvent.click(headerSelectArea);
       expect(screen.queryByText(/selected/i)).toBeDefined();
     }
+  });
+});
+
+describe('LeadsDataGrid — inline cell editing', () => {
+  it('opens an editor on double-click of an editable cell and commits on Enter', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    const input = screen.getByLabelText('Edit cell') as HTMLInputElement;
+    expect(input.value).toBe('Acme Corp');
+    fireEvent.change(input, { target: { value: 'Acme Global' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onInlineEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'lead-1' }),
+      'company_name',
+      'Acme Global',
+    );
+  });
+
+  it('does not make non-editable cells (email) editable', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('jane@acme.com'));
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
+  });
+
+  it('cancels on Escape without committing', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    const input = screen.getByLabelText('Edit cell');
+    fireEvent.change(input, { target: { value: 'Discard me' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onInlineEdit).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
+  });
+
+  it('does not fire a write when the value is unchanged (blur)', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    fireEvent.blur(screen.getByLabelText('Edit cell'));
+    expect(onInlineEdit).not.toHaveBeenCalled();
+  });
+
+  it('is inert when the context has no onInlineEdit handler', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit: undefined })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
+  });
+
+  it('is inert when the user lacks update permission', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ canUpdate: false })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
   });
 });
 

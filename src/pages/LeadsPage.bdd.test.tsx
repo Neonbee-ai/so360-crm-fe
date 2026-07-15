@@ -690,4 +690,31 @@ describe('LeadsPage — saved views (backend)', () => {
       await waitFor(() => expect(screen.getByLabelText('Default view')).toBeInTheDocument());
     });
   });
+
+  describe('Inline cell editing wiring', () => {
+    it('persists an inline edit via updateLead and reflects it optimistically', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+      capturedGridProps.context.onInlineEdit(lead, 'company_name', 'Acme Global');
+      await waitFor(() =>
+        expect(mockUpdateLead).toHaveBeenCalledWith('l1', { company_name: 'Acme Global' }),
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Global'),
+      );
+    });
+
+    it('reverts the optimistic change when the update fails', async () => {
+      mockUpdateLead.mockRejectedValueOnce(new Error('boom'));
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+      capturedGridProps.context.onInlineEdit(lead, 'company_name', 'Broken');
+      await waitFor(() => expect(mockUpdateLead).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Corp'),
+      );
+    });
+  });
 });

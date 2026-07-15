@@ -55,7 +55,22 @@ export interface GridContext {
   onDelete: (lead: Lead) => void;
   onOpen: (lead: Lead) => void;
   formatDate: (d: string) => string;
+  /** Commit an inline cell edit. Optional so existing callers keep working. */
+  onInlineEdit?: (lead: Lead, field: string, value: string) => void;
 }
+
+/**
+ * Columns that support double-click inline editing, mapped to the Lead property
+ * the value is read from and written to. Deliberately limited to unambiguous,
+ * single-field text columns; ambiguous/derived columns (name split, custom_field
+ * backed) are excluded. `updateLead` translates these prop names to the backend.
+ */
+const EDITABLE_CELLS: Record<string, { prop: keyof Lead; type: 'text' }> = {
+  // Plain-text primary column: safe to inline-edit without link/interaction
+  // conflicts. email/phone carry mailto:/tel: links and are handled separately
+  // in a later pass; custom_field-backed columns (city/state/…) too.
+  company: { prop: 'company_name', type: 'text' },
+};
 
 interface BulkAction {
   label: string;
@@ -662,6 +677,49 @@ interface BulkActionsBarProps {
   onClear: () => void;
 }
 
+// ─── Inline cell editor ───────────────────────────────────────────────────────
+
+interface InlineCellEditorProps {
+  initial: string;
+  type: 'text';
+  onCommit: (value: string) => void;
+  onCancel: () => void;
+}
+
+/**
+ * A single-cell inline editor. Commits on Enter or blur, cancels on Escape, and
+ * only fires onCommit when the value actually changed (no needless write).
+ */
+function InlineCellEditor({ initial, type, onCommit, onCancel }: InlineCellEditorProps) {
+  const [value, setValue] = useState(initial);
+  const committed = useRef(false);
+
+  const commit = () => {
+    if (committed.current) return;
+    committed.current = true;
+    if (value.trim() !== initial.trim()) onCommit(value.trim());
+    else onCancel();
+  };
+
+  return (
+    <input
+      autoFocus
+      type={type}
+      aria-label="Edit cell"
+      value={value}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') { committed.current = true; onCancel(); }
+      }}
+      className="w-full bg-slate-800 border border-blue-500 rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+    />
+  );
+}
+
 function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBarProps) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -876,6 +934,8 @@ export function LeadsDataGrid({
   const [groupBy, setGroupBy] = useState<GroupByKey>('none');
   const [showGroupMenu, setShowGroupMenu] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  // Which cell (if any) is being inline-edited.
+  const [editing, setEditing] = useState<{ leadId: string; key: string } | null>(null);
 
   const resizing = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
   const draggingHeader = useRef<string | null>(null);
@@ -1148,10 +1208,16 @@ export function LeadsDataGrid({
             );
           }
 
+          const editable = EDITABLE_CELLS[col.key];
+          const canEditCell = editable && context.canUpdate && !!context.onInlineEdit;
+          const isEditingCell = canEditCell && editing?.leadId === lead.id && editing?.key === col.key;
+
           return (
             <div
               key={col.key}
               className={`flex items-center shrink-0 px-3 overflow-hidden ${cellPy} ${
+                canEditCell ? 'cursor-text' : ''
+              } ${
                 isSticky
                   ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'}`
                   : ''
@@ -1160,8 +1226,24 @@ export function LeadsDataGrid({
                 width: col.width,
                 ...(isSticky ? { left: colLeftOffsets[col.key] } : {}),
               }}
+              onClick={canEditCell ? (e) => e.stopPropagation() : undefined}
+              onDoubleClick={
+                canEditCell
+                  ? (e) => { e.stopPropagation(); setEditing({ leadId: lead.id, key: col.key }); }
+                  : undefined
+              }
             >
-              {def ? def.render(lead, context, fmt) : null}
+              {isEditingCell ? (
+                <InlineCellEditor
+                  initial={String(lead[editable!.prop] ?? '')}
+                  type={editable!.type}
+                  onCommit={(value) => {
+                    context.onInlineEdit?.(lead, editable!.prop as string, value);
+                    setEditing(null);
+                  }}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : def ? def.render(lead, context, fmt) : null}
             </div>
           );
         })}
