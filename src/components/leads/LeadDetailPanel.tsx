@@ -16,13 +16,29 @@ import {
   Clock,
   CheckSquare,
   ChevronRight,
-  MessageSquare,
   Star,
+  Briefcase,
+  Megaphone,
+  ShieldCheck,
+  Loader2,
 } from 'lucide-react';
-import { Lead, Activity as ActivityType } from '../../types/crm';
+import { Lead, Activity as ActivityType, Deal, Task } from '../../types/crm';
+import { crmService } from '../../services/crmService';
 import { useCRMFormatters } from '../../utils/formatters';
 
-type PanelTab = 'overview' | 'timeline' | 'tasks';
+type PanelTab = 'overview' | 'timeline' | 'sales' | 'tasks' | 'marketing' | 'audit';
+
+const PANEL_TABS: Array<{ key: PanelTab; label: string }> = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'timeline', label: 'Activity' },
+  { key: 'sales', label: 'Sales' },
+  { key: 'tasks', label: 'Tasks' },
+  { key: 'marketing', label: 'Marketing' },
+  { key: 'audit', label: 'Audit' },
+];
+
+/** Activity types that represent auditable system/state changes (Audit tab). */
+const AUDIT_TYPES = new Set(['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE']);
 
 interface LeadDetailPanelProps {
   lead: Lead | null;
@@ -92,9 +108,43 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
   const formatters = useCRMFormatters();
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Lazily-loaded linked records — fetched only when their tab is first opened
+  // for the current lead. null = not yet loaded; [] = loaded-but-empty.
+  const [deals, setDeals] = useState<Deal[] | null>(null);
+  const [dealsLoading, setDealsLoading] = useState(false);
+  const [tasks, setTasks] = useState<Task[] | null>(null);
+  const [tasksLoading, setTasksLoading] = useState(false);
+
   useEffect(() => {
     if (lead) setTab('overview');
+    // Reset linked-record caches when the lead changes.
+    setDeals(null);
+    setTasks(null);
   }, [lead?.id]);
+
+  // Lazy fetch: load deals/tasks the first time their tab is shown.
+  useEffect(() => {
+    if (!lead) return;
+    let cancelled = false;
+    if (tab === 'sales' && deals === null && !dealsLoading) {
+      setDealsLoading(true);
+      crmService
+        .getDealsByLeadId(lead.id)
+        .then((d) => { if (!cancelled) setDeals(d ?? []); })
+        .catch(() => { if (!cancelled) setDeals([]); })
+        .finally(() => { if (!cancelled) setDealsLoading(false); });
+    }
+    if (tab === 'tasks' && tasks === null && !tasksLoading) {
+      setTasksLoading(true);
+      crmService
+        .getTasksByLeadId(lead.id)
+        .then((t) => { if (!cancelled) setTasks(t ?? []); })
+        .catch(() => { if (!cancelled) setTasks([]); })
+        .finally(() => { if (!cancelled) setTasksLoading(false); });
+    }
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, lead?.id]);
 
   // Close on Escape
   useEffect(() => {
@@ -120,6 +170,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       )
     : [];
+
+  // Audit trail = the subset of activities that record a system/state change.
+  const auditActivities = sortedActivities.filter((a) => AUDIT_TYPES.has(a.type));
 
   return (
     <>
@@ -225,18 +278,18 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-800/60">
-              {(['overview', 'timeline', 'tasks'] as PanelTab[]).map((t) => (
+            <div className="flex border-b border-slate-800/60 overflow-x-auto scrollbar-none">
+              {PANEL_TABS.map((t) => (
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
-                    tab === t
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`shrink-0 px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                    tab === t.key
                       ? 'text-blue-400 border-b-2 border-blue-400 -mb-px'
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  {t}
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -418,19 +471,162 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
                 </div>
               )}
 
-              {/* Tasks */}
+              {/* Sales — linked deals */}
+              {tab === 'sales' && (
+                <div className="px-5 py-4">
+                  {dealsLoading || deals === null ? (
+                    <div className="flex items-center justify-center py-10 text-slate-500">
+                      <Loader2 size={20} className="animate-spin" />
+                    </div>
+                  ) : deals.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 text-slate-600">
+                      <Briefcase size={32} className="mb-2 opacity-40" />
+                      <p className="text-sm">No deals linked to this lead</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {deals.map((deal) => (
+                        <button
+                          key={deal.id}
+                          onClick={() => onNavigate(lead)}
+                          className="w-full text-left bg-slate-900/60 border border-slate-800 rounded-lg p-3 hover:border-slate-700 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold text-slate-200 truncate">{deal.name}</span>
+                            <span className="text-sm font-bold text-emerald-400 shrink-0">
+                              {formatters.formatCurrency(deal.value ?? 0)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[10px] uppercase tracking-wider text-slate-500 bg-slate-800 rounded px-1.5 py-0.5">
+                              {deal.stage}
+                            </span>
+                            {deal.expected_close_date && (
+                              <span className="text-[10px] text-slate-500">
+                                Close {formatters.formatDate(deal.expected_close_date)}
+                              </span>
+                            )}
+                            {deal.invoice_number && (
+                              <span className="text-[10px] text-slate-500">· {deal.invoice_number}</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tasks — linked tasks */}
               {tab === 'tasks' && (
                 <div className="px-5 py-4">
-                  <div className="flex flex-col items-center py-10 text-slate-600">
-                    <CheckSquare size={32} className="mb-2 opacity-40" />
-                    <p className="text-sm">View tasks in the full profile</p>
-                    <button
-                      onClick={() => onNavigate(lead)}
-                      className="mt-3 text-xs text-blue-400 hover:underline"
-                    >
-                      Open full profile →
-                    </button>
+                  {tasksLoading || tasks === null ? (
+                    <div className="flex items-center justify-center py-10 text-slate-500">
+                      <Loader2 size={20} className="animate-spin" />
+                    </div>
+                  ) : tasks.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 text-slate-600">
+                      <CheckSquare size={32} className="mb-2 opacity-40" />
+                      <p className="text-sm">No tasks for this lead</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {tasks.map((task) => (
+                        <div
+                          key={task.id}
+                          className="flex items-start gap-2.5 bg-slate-900/60 border border-slate-800 rounded-lg p-3"
+                        >
+                          <CheckSquare
+                            size={14}
+                            className={`mt-0.5 shrink-0 ${task.status === 'DONE' ? 'text-emerald-400' : 'text-slate-500'}`}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-sm truncate ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+                              {task.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                                {task.status.replace(/_/g, ' ').toLowerCase()}
+                              </span>
+                              {task.due_date && (
+                                <span className="text-[10px] text-slate-500">
+                                  Due {formatters.formatDate(task.due_date)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Marketing — attribution from the lead record (no fetch) */}
+              {tab === 'marketing' && (
+                <div className="px-5 py-1">
+                  <div className="mb-4 mt-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Attribution
+                    </p>
+                    <InfoRow icon={<Megaphone size={14} />} label="Source" value={lead.source || '—'} />
+                    {lead.acquisition_source && (
+                      <InfoRow icon={<TrendingUp size={14} />} label="Acquisition Source" value={lead.acquisition_source} />
+                    )}
+                    {lead.channel && (
+                      <InfoRow icon={<Globe size={14} />} label="Channel" value={lead.channel} />
+                    )}
+                    {lead.custom_fields?.campaign && (
+                      <InfoRow icon={<Tag size={14} />} label="Campaign" value={String(lead.custom_fields.campaign)} />
+                    )}
+                    {lead.referred_by && (
+                      <InfoRow icon={<User size={14} />} label="Referred By" value={lead.referred_by} />
+                    )}
+                    {lead.first_order_at && (
+                      <InfoRow icon={<Calendar size={14} />} label="First Order" value={formatters.formatDate(lead.first_order_at)} />
+                    )}
                   </div>
+                  {!lead.acquisition_source && !lead.channel && !lead.custom_fields?.campaign && !lead.referred_by && (
+                    <p className="text-xs text-slate-600 px-1">No additional marketing attribution recorded.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Audit — system/state-change events */}
+              {tab === 'audit' && (
+                <div className="px-5 py-4">
+                  {auditActivities.length === 0 ? (
+                    <div className="flex flex-col items-center py-10 text-slate-600">
+                      <ShieldCheck size={32} className="mb-2 opacity-40" />
+                      <p className="text-sm">No audit events recorded</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {auditActivities.map((activity: ActivityType) => (
+                        <div key={activity.id} className="flex items-start gap-2.5 bg-slate-900/60 border border-slate-800 rounded-lg p-3">
+                          <div className="mt-0.5 shrink-0">
+                            {ACTIVITY_ICONS[activity.type] ?? <Activity size={12} className="text-slate-400" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-slate-300 capitalize">
+                                {activity.type.replace(/_/g, ' ').toLowerCase()}
+                              </span>
+                              <span className="text-[10px] text-slate-500 shrink-0">
+                                {formatters.formatDate(activity.created_at)}
+                              </span>
+                            </div>
+                            {activity.notes && (
+                              <p className="text-xs text-slate-400 mt-0.5">{activity.notes}</p>
+                            )}
+                            {activity.author && (
+                              <p className="text-[10px] text-slate-600 mt-0.5">by {activity.author.full_name}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
