@@ -43,6 +43,7 @@ import {
 import { useCRMFormatters } from '../../utils/formatters';
 import { computeLeadHealth, describeNextFollowUp, describeLastActivity } from './leadIndicators';
 import { groupLeadsBy, GROUP_BY_OPTIONS, type GroupByKey } from './leadGrouping';
+import { nextFocusIndex, scrollToRevealIndex } from './leadKeyboardNav';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -936,6 +937,8 @@ export function LeadsDataGrid({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Which cell (if any) is being inline-edited.
   const [editing, setEditing] = useState<{ leadId: string; key: string } | null>(null);
+  // Keyboard-focused row index (-1 = none). Only active in the ungrouped view.
+  const [focusedIndex, setFocusedIndex] = useState(-1);
 
   const resizing = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
   const draggingHeader = useRef<string | null>(null);
@@ -1119,6 +1122,33 @@ export function LeadsDataGrid({
     [grouped, sortedLeads, groupBy],
   );
 
+  // Keyboard navigation over the (ungrouped) row list. Arrow/Home/End move the
+  // focus ring and keep it in view; Enter opens the focused lead, Space toggles
+  // its selection, Escape clears focus. Typing inside an editor is never hijacked.
+  const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (grouped || sortedLeads.length === 0) return;
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+    const nav = nextFocusIndex(focusedIndex, e.key, sortedLeads.length);
+    if (nav !== null) {
+      e.preventDefault();
+      setFocusedIndex(nav);
+      const el = containerRef.current;
+      if (el) {
+        const next = scrollToRevealIndex(nav, rowH, el.scrollTop, el.clientHeight);
+        if (next !== el.scrollTop) { el.scrollTop = next; setScrollTop(next); }
+      }
+      return;
+    }
+
+    if (focusedIndex < 0 || focusedIndex >= sortedLeads.length) return;
+    const lead = sortedLeads[focusedIndex];
+    if (e.key === 'Enter') { e.preventDefault(); onRowClick(lead); }
+    else if (e.key === ' ') { e.preventDefault(); toggleSelect(lead.id); }
+    else if (e.key === 'Escape') { e.preventDefault(); setFocusedIndex(-1); }
+  }, [grouped, sortedLeads, focusedIndex, rowH, onRowClick, toggleSelect]);
+
   const toggleGroup = useCallback((key: string) => {
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
@@ -1139,19 +1169,24 @@ export function LeadsDataGrid({
     return () => document.removeEventListener('mousedown', handler);
   }, [showGroupMenu]);
 
+  // Reset the keyboard focus when the underlying data or grouping changes, so a
+  // stale index can never point past the end of the list.
+  useEffect(() => { setFocusedIndex(-1); }, [leads, groupBy]);
+
   // A single lead row, shared by the virtualized (ungrouped) and grouped paths so
   // markup never diverges. In grouped mode `virtualize` is false, so rows render
   // at natural height exactly like a small ungrouped list.
-  const renderRow = (lead: Lead) => {
+  const renderRow = (lead: Lead, absIndex = -1) => {
     const isSelected = selectedIds.has(lead.id);
     const isHovered = hoveredRowId === lead.id;
+    const isFocused = absIndex >= 0 && absIndex === focusedIndex;
     return (
       <div
         key={lead.id}
         className={`flex border-b border-slate-800/60 cursor-pointer transition-colors group/row ${
           virtualize && !grouped ? 'overflow-hidden' : ''
         } ${
-          isSelected ? 'bg-blue-600/8' : isHovered ? 'bg-slate-800/50' : 'hover:bg-slate-800/30'
+          isFocused ? 'ring-1 ring-inset ring-blue-500/70 bg-blue-600/10' : isSelected ? 'bg-blue-600/8' : isHovered ? 'bg-slate-800/50' : 'hover:bg-slate-800/30'
         }`}
         style={{ minWidth: `${totalWidth}px`, ...(virtualize && !grouped ? { height: rowH } : {}) }}
         onClick={() => onRowClick(lead)}
@@ -1367,6 +1402,10 @@ export function LeadsDataGrid({
         style={{ maxHeight: 'calc(100vh - 320px)' }}
         onContextMenu={(e) => e.preventDefault()}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+        tabIndex={0}
+        role="grid"
+        aria-label="Leads"
+        onKeyDown={handleGridKeyDown}
       >
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
@@ -1488,7 +1527,7 @@ export function LeadsDataGrid({
                         {g.count}
                       </span>
                     </button>
-                    {!isCollapsed && g.leads.map(renderRow)}
+                    {!isCollapsed && g.leads.map((l) => renderRow(l))}
                   </div>
                 );
               })}
@@ -1496,7 +1535,7 @@ export function LeadsDataGrid({
           ) : (
             <>
               {topPad > 0 && <div style={{ height: topPad }} aria-hidden="true" />}
-              {visibleRows.map(renderRow)}
+              {visibleRows.map((lead, i) => renderRow(lead, (virtualize ? startIndex : 0) + i))}
               {bottomPad > 0 && <div style={{ height: bottomPad }} aria-hidden="true" />}
             </>
           )}

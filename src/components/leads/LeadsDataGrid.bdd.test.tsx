@@ -250,6 +250,58 @@ describe('LeadsDataGrid — inline cell editing', () => {
   });
 });
 
+describe('LeadsDataGrid — keyboard navigation', () => {
+  const twoLeads = () => [makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })];
+
+  it('ArrowDown focuses the first row and Enter opens it', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'lead-1' }));
+  });
+
+  it('ArrowDown twice then Enter opens the second row', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'l2' }));
+  });
+
+  it('Space toggles selection of the focused row', () => {
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={vi.fn()} bulkActions={[]} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: ' ' });
+    expect(screen.getByText(/1 selected/)).toBeInTheDocument();
+  });
+
+  it('Escape clears focus so a subsequent Enter does nothing', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Escape' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate while grouped', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    fireEvent.click(screen.getByTitle('Group by'));
+    fireEvent.click(within(screen.getByTestId('group-by-menu')).getByText('Status'));
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+});
+
 describe('LeadsDataGrid — bulk action menus', () => {
   const selectAll = () => fireEvent.click(screen.getByTestId('bulk-select-all'));
 
