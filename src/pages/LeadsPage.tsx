@@ -15,6 +15,10 @@ import {
   BookmarkPlus,
   Bookmark,
   SlidersHorizontal,
+  Pencil,
+  Copy,
+  Star,
+  Share2,
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
@@ -56,6 +60,8 @@ interface SavedFilterView {
   id: string;
   name: string;
   filters: FilterState;
+  is_default?: boolean;
+  is_shared?: boolean;
 }
 
 function loadSavedViews(): SavedFilterView[] {
@@ -75,8 +81,20 @@ function persistSavedViews(views: SavedFilterView[]) {
 }
 
 // Map a backend grid view (opaque config JSON) to the page's SavedFilterView.
-function mapBeView(v: { id: string; name: string; config?: { filters?: FilterState } }): SavedFilterView {
-  return { id: v.id, name: v.name, filters: (v?.config?.filters ?? {}) as FilterState };
+function mapBeView(v: {
+  id: string;
+  name: string;
+  config?: { filters?: FilterState };
+  is_default?: boolean;
+  is_shared?: boolean;
+}): SavedFilterView {
+  return {
+    id: v.id,
+    name: v.name,
+    filters: (v?.config?.filters ?? {}) as FilterState,
+    is_default: v.is_default,
+    is_shared: v.is_shared,
+  };
 }
 
 // ─── Date range helper ────────────────────────────────────────────────────────
@@ -168,6 +186,8 @@ const LeadsPage = () => {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [saveViewName, setSaveViewName] = useState('');
   const [showSaveViewInput, setShowSaveViewInput] = useState(false);
+  const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -447,6 +467,68 @@ const LeadsPage = () => {
     setShowViewsDropdown(false);
   }, []);
 
+  // Rename — optimistic local update, persisted to the backend (no-op offline).
+  const handleRenameView = useCallback((id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSavedViews((prev) => {
+      const updated = prev.map((v) => (v.id === id ? { ...v, name: trimmed } : v));
+      persistSavedViews(updated);
+      return updated;
+    });
+    crmService.gridViews?.update?.(id, { name: trimmed })?.catch?.(() => { /* offline */ });
+  }, []);
+
+  // Duplicate — the backend clones the view (config + name "(copy)"); reconcile
+  // the returned server view into the list. Falls back to a local clone offline.
+  const handleDuplicateView = useCallback(async (id: string) => {
+    const source = savedViews.find((v) => v.id === id);
+    if (!source) return;
+    try {
+      const created = await crmService.gridViews?.duplicate?.(id);
+      if (created?.id) {
+        setSavedViews((prev) => {
+          const next = [...prev, mapBeView(created)];
+          persistSavedViews(next);
+          return next;
+        });
+        return;
+      }
+    } catch {
+      /* offline — fall through to a local clone */
+    }
+    setSavedViews((prev) => {
+      const next = [...prev, { ...source, id: `v_${Date.now()}`, name: `${source.name} (copy)`, is_default: false }];
+      persistSavedViews(next);
+      return next;
+    });
+  }, [savedViews]);
+
+  // Set default — exactly one default; clear the flag on the others locally.
+  const handleSetDefaultView = useCallback((id: string) => {
+    setSavedViews((prev) => {
+      const updated = prev.map((v) => ({ ...v, is_default: v.id === id }));
+      persistSavedViews(updated);
+      return updated;
+    });
+    crmService.gridViews?.setDefault?.(id)?.catch?.(() => { /* offline */ });
+  }, []);
+
+  // Share — flip visibility for the whole org (team-shared view).
+  const handleToggleShareView = useCallback((id: string) => {
+    let nextShared = false;
+    setSavedViews((prev) => {
+      const updated = prev.map((v) => {
+        if (v.id !== id) return v;
+        nextShared = !v.is_shared;
+        return { ...v, is_shared: nextShared };
+      });
+      persistSavedViews(updated);
+      return updated;
+    });
+    crmService.gridViews?.update?.(id, { is_shared: nextShared })?.catch?.(() => { /* offline */ });
+  }, []);
+
   // Hydrate saved views from the backend on mount (cross-device). Only overwrite
   // the localStorage-backed list when the backend actually has views, so a user
   // with local-only views (before the feature shipped) never loses them.
@@ -607,24 +689,82 @@ const LeadsPage = () => {
             </button>
 
             {showViewsDropdown && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[220px] py-1.5">
+              <div className="absolute left-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[300px] py-1.5">
                 {savedViews.length === 0 && (
                   <p className="px-4 py-2 text-xs text-slate-500">No saved views yet</p>
                 )}
                 {savedViews.map((view) => (
-                  <div key={view.id} className="flex items-center group">
-                    <button
-                      onClick={() => handleApplyView(view)}
-                      className={`flex-1 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}
-                    >
-                      {view.name}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteView(view.id)}
-                      className="px-2 opacity-0 group-hover:opacity-100 text-slate-600 hover:text-rose-400 transition-all"
-                    >
-                      <X size={12} />
-                    </button>
+                  <div key={view.id} className="group" data-testid={`saved-view-${view.id}`}>
+                    {renamingViewId === view.id ? (
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <input
+                          autoFocus
+                          type="text"
+                          aria-label="Rename view"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') { handleRenameView(view.id, renameValue); setRenamingViewId(null); }
+                            if (e.key === 'Escape') setRenamingViewId(null);
+                          }}
+                          className="flex-1 bg-slate-800 border border-slate-600 text-slate-200 px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={() => { handleRenameView(view.id, renameValue); setRenamingViewId(null); }}
+                          className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => handleApplyView(view)}
+                          className={`flex-1 flex items-center gap-1.5 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}
+                        >
+                          {view.is_default && <Star size={11} className="text-amber-400 fill-amber-400 shrink-0" />}
+                          <span className="truncate">{view.name}</span>
+                          {view.is_shared && <Share2 size={10} className="text-slate-500 shrink-0" title="Shared with your team" />}
+                        </button>
+                        <div className="flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            aria-label="Rename view"
+                            onClick={() => { setRenamingViewId(view.id); setRenameValue(view.name); }}
+                            className="p-1 text-slate-500 hover:text-slate-200"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            aria-label="Duplicate view"
+                            onClick={() => handleDuplicateView(view.id)}
+                            className="p-1 text-slate-500 hover:text-slate-200"
+                          >
+                            <Copy size={12} />
+                          </button>
+                          <button
+                            aria-label={view.is_default ? 'Default view' : 'Set as default'}
+                            onClick={() => handleSetDefaultView(view.id)}
+                            className={`p-1 ${view.is_default ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'}`}
+                          >
+                            <Star size={12} className={view.is_default ? 'fill-amber-400' : ''} />
+                          </button>
+                          <button
+                            aria-label={view.is_shared ? 'Unshare view' : 'Share view'}
+                            onClick={() => handleToggleShareView(view.id)}
+                            className={`p-1 ${view.is_shared ? 'text-blue-400' : 'text-slate-500 hover:text-blue-300'}`}
+                          >
+                            <Share2 size={12} />
+                          </button>
+                          <button
+                            aria-label="Delete view"
+                            onClick={() => handleDeleteView(view.id)}
+                            className="p-1 text-slate-500 hover:text-rose-400"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div className="border-t border-slate-700/50 mt-1 pt-1">

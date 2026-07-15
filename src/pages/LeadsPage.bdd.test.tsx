@@ -15,6 +15,9 @@ const mockBulkTagLeads = vi.fn();
 const mockViewsList = vi.fn();
 const mockViewsCreate = vi.fn();
 const mockViewsRemove = vi.fn();
+const mockViewsUpdate = vi.fn();
+const mockViewsDuplicate = vi.fn();
+const mockViewsSetDefault = vi.fn();
 const mockGetLeadsPaged = vi.fn();
 
 vi.mock('../services/crmService', () => ({
@@ -34,6 +37,9 @@ vi.mock('../services/crmService', () => ({
       list: (...a: any[]) => mockViewsList(...a),
       create: (...a: any[]) => mockViewsCreate(...a),
       remove: (...a: any[]) => mockViewsRemove(...a),
+      update: (...a: any[]) => mockViewsUpdate(...a),
+      duplicate: (...a: any[]) => mockViewsDuplicate(...a),
+      setDefault: (...a: any[]) => mockViewsSetDefault(...a),
     },
   },
 }));
@@ -196,6 +202,9 @@ beforeEach(async () => {
   mockViewsList.mockResolvedValue([]);
   mockViewsCreate.mockResolvedValue({ id: 'srv-1', name: 'Server View', config: { filters: {} } });
   mockViewsRemove.mockResolvedValue({ deleted: true });
+  mockViewsUpdate.mockResolvedValue({ id: 'srv-1', name: 'Renamed', config: { filters: {} } });
+  mockViewsDuplicate.mockResolvedValue({ id: 'srv-dup', name: 'Server View (copy)', config: { filters: {} } });
+  mockViewsSetDefault.mockResolvedValue({ id: 'srv-1', is_default: true });
 });
 
 describe('LeadsPage', () => {
@@ -623,6 +632,62 @@ describe('LeadsPage — saved views (backend)', () => {
       bulkAction('Export').onClick(['l1']);
       expect(createUrl).toHaveBeenCalled();
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe('Saved view operations (rename/duplicate/set-default/share)', () => {
+    const withView = (over: Record<string, any> = {}) => {
+      mockViewsList.mockResolvedValue([
+        { id: 'srv-1', name: 'Alpha', config: { filters: {} }, is_default: false, is_shared: false, ...over },
+      ]);
+    };
+    const openViews = async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Views'));
+      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
+    };
+
+    it('renames a view via the backend update', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Rename view')); // pencil
+      const input = screen.getByLabelText('Rename view'); // now the input
+      fireEvent.change(input, { target: { value: 'Beta' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      await waitFor(() => expect(mockViewsUpdate).toHaveBeenCalledWith('srv-1', { name: 'Beta' }));
+      expect(screen.getByText('Beta')).toBeInTheDocument();
+    });
+
+    it('duplicates a view and appends the server copy', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Duplicate view'));
+      await waitFor(() => expect(mockViewsDuplicate).toHaveBeenCalledWith('srv-1'));
+      await waitFor(() => expect(screen.getByText('Server View (copy)')).toBeInTheDocument());
+    });
+
+    it('sets a view as the default', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Set as default'));
+      await waitFor(() => expect(mockViewsSetDefault).toHaveBeenCalledWith('srv-1'));
+    });
+
+    it('shares a view with the team', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Share view'));
+      await waitFor(() => expect(mockViewsUpdate).toHaveBeenCalledWith('srv-1', { is_shared: true }));
+    });
+
+    it('marks the default view once it is hydrated from the backend', async () => {
+      withView({ is_default: true });
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument()); // active-view chip
+      fireEvent.click(screen.getByText('Alpha'));
+      await waitFor(() => expect(screen.getByLabelText('Default view')).toBeInTheDocument());
     });
   });
 });
