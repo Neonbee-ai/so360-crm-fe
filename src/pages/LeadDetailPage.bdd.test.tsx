@@ -275,6 +275,9 @@ describe('LeadDetailPage', () => {
     });
 
     it('When the page loads / Then shows the activity timeline with entries', async () => {
+      // Isolate to activities+notes+documents (9 items) so all 6 activities land within the latest-7 preview.
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       await waitFor(() => {
         expect(screen.getByText('CALL Logged')).toBeInTheDocument();
@@ -283,6 +286,8 @@ describe('LeadDetailPage', () => {
     });
 
     it('When activity timeline includes EMAIL / Then shows email entry', async () => {
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       await waitFor(() => {
         expect(screen.getByText('EMAIL Logged')).toBeInTheDocument();
@@ -291,6 +296,8 @@ describe('LeadDetailPage', () => {
     });
 
     it('When activity timeline includes MEETING / Then shows meeting entry', async () => {
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       await waitFor(() => {
         expect(screen.getByText('MEETING Logged')).toBeInTheDocument();
@@ -298,6 +305,8 @@ describe('LeadDetailPage', () => {
     });
 
     it('When timeline has system events / Then shows STATUS_CHANGE and OWNER_CHANGE entries', async () => {
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       await waitFor(() => {
         expect(screen.getByText('STATUS CHANGE')).toBeInTheDocument();
@@ -659,62 +668,12 @@ describe('LeadDetailPage', () => {
       expect(mockGetActivitiesByLeadIdPaginated).toHaveBeenCalledWith('lead-1', 7, 0);
     });
 
-    it('When page loads / Then shows "Showing latest N · Total: X" in header', async () => {
+    it('When page loads / Then shows "Showing latest N · Total: X" combining activities, notes, documents, tasks and deals', async () => {
       mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 42 });
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText(/Showing latest/)).toBeInTheDocument());
-      expect(screen.getByText(/Total: 42/)).toBeInTheDocument();
-    });
-
-    it('When there are more activities than loaded / Then shows View Older Activities button', async () => {
-      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 50 });
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText(/View Older Activities/)).toBeInTheDocument());
-      expect(screen.getByText(/44 more/)).toBeInTheDocument();
-    });
-
-    it('When offset equals total / Then does NOT show View Older Activities button', async () => {
-      const acts = makeLead().activities;
-      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: acts, total: acts.length });
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('CALL Logged')).toBeInTheDocument());
-      expect(screen.queryByText(/View Older Activities/)).not.toBeInTheDocument();
-    });
-
-    it('When View Older Activities is clicked / Then calls getActivitiesByLeadIdPaginated with offset', async () => {
-      const firstBatch = makeLead().activities;
-      const secondBatch = [
-        { id: 'a7', type: 'CALL', notes: 'Follow-up call', date: '2024-12-01T10:00:00Z', created_at: '2024-12-01T10:00:00Z', author: owner },
-      ];
-      mockGetActivitiesByLeadIdPaginated
-        .mockResolvedValueOnce({ data: firstBatch, total: 50 })
-        .mockResolvedValueOnce({ data: secondBatch, total: 50 });
-
-      const user = userEvent.setup();
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText(/View Older Activities/)).toBeInTheDocument());
-      await user.click(screen.getByText(/View Older Activities/));
-
-      await waitFor(() =>
-        expect(mockGetActivitiesByLeadIdPaginated).toHaveBeenCalledWith('lead-1', 20, firstBatch.length)
-      );
-    });
-
-    it('When View Older Activities is clicked / Then appended activities appear in timeline', async () => {
-      const firstBatch = makeLead().activities;
-      const secondBatch = [
-        { id: 'a8', type: 'EMAIL', notes: 'Additional follow-up', date: '2024-11-01T10:00:00Z', created_at: '2024-11-01T10:00:00Z', author: owner },
-      ];
-      mockGetActivitiesByLeadIdPaginated
-        .mockResolvedValueOnce({ data: firstBatch, total: 50 })
-        .mockResolvedValueOnce({ data: secondBatch, total: 50 });
-
-      const user = userEvent.setup();
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText(/View Older Activities/)).toBeInTheDocument());
-      await user.click(screen.getByText(/View Older Activities/));
-
-      await waitFor(() => expect(screen.getByText('Additional follow-up')).toBeInTheDocument());
+      // 42 (raw activities total) + 2 notes + 1 document + 2 tasks + 2 deals = 49
+      expect(screen.getByText(/Total: 49/)).toBeInTheDocument();
     });
 
     it('When no activities exist / Then shows empty state message', async () => {
@@ -738,18 +697,34 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
     });
 
-    it('When View All History is absent (no activities) / Then drawer does not open', async () => {
+    it('When there are zero activities, notes, documents, tasks and deals / Then View All History link is absent', async () => {
       mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
+      mockGetLeadById.mockResolvedValue(makeLead({ activities: [], notes: [], documents: [] }));
+      mockGetDocumentsByLeadId.mockResolvedValue([]);
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.queryByText('View All History')).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
+      expect(screen.queryByText('View All History')).not.toBeInTheDocument();
+    });
+
+    it('When there are zero raw activities but notes/tasks/deals exist / Then View All History link is still shown', async () => {
+      // Regression guard: the visibility check must consider the full merged timeline,
+      // not just the raw activities count, or the link wrongly disappears.
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
+      mockGetLeadById.mockResolvedValue(makeLead({ activities: [], documents: [] }));
+      mockGetDocumentsByLeadId.mockResolvedValue([]);
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      expect(screen.getByText('View All History')).toBeInTheDocument();
     });
 
     it('When View All Activity History link is clicked / Then opens the drawer', async () => {
       mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 50 });
       const user = userEvent.setup();
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('View All Activity History →')).toBeInTheDocument());
-      await user.click(screen.getByText('View All Activity History →'));
+      await waitFor(() => expect(screen.getByText(/View All Activity History \(\d+ more\) →/)).toBeInTheDocument());
+      await user.click(screen.getByText(/View All Activity History \(\d+ more\) →/));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
     });
 
@@ -757,11 +732,106 @@ describe('LeadDetailPage', () => {
       mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: makeLead().activities, total: 50 });
       const user = userEvent.setup();
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('View All Activity History →')).toBeInTheDocument());
-      await user.click(screen.getByText('View All Activity History →'));
+      await waitFor(() => expect(screen.getByText(/View All Activity History \(\d+ more\) →/)).toBeInTheDocument());
+      await user.click(screen.getByText(/View All Activity History \(\d+ more\) →/));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
       await user.click(screen.getByText('Close Drawer'));
       await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
+    });
+  });
+
+  describe('Given the merged activity timeline preview is capped at the latest 7 records', () => {
+    // Sources, oldest to newest: 1 activity (Jan 1), 4 notes (Jan 2-5), 3 documents (Jan 6-8) = 8 combined events.
+    const soloActivity = [
+      { id: 'a1', type: 'CALL', notes: 'Solo activity call', date: '2025-01-01T10:00:00Z', created_at: '2025-01-01T10:00:00Z', author: owner },
+    ];
+    const fourNotes = [
+      { id: 'n1', content: 'Note content Two', author: owner, created_at: '2025-01-02T10:00:00Z' },
+      { id: 'n2', content: 'Note content Three', author: owner, created_at: '2025-01-03T10:00:00Z' },
+      { id: 'n3', content: 'Note content Four', author: owner, created_at: '2025-01-04T10:00:00Z' },
+      { id: 'n4', content: 'Note content Five', author: owner, created_at: '2025-01-05T10:00:00Z' },
+    ];
+    const threeDocuments = [
+      { id: 'doc-a', name: 'doc-six.pdf', size: 1048576, uploaded_at: '2025-01-06T10:00:00Z', created_at: '2025-01-06T10:00:00Z', uploaded_by: owner },
+      { id: 'doc-b', name: 'doc-seven.pdf', size: 1048576, uploaded_at: '2025-01-07T10:00:00Z', created_at: '2025-01-07T10:00:00Z', uploaded_by: owner },
+      { id: 'doc-c', name: 'doc-eight.pdf', size: 1048576, uploaded_at: '2025-01-08T10:00:00Z', created_at: '2025-01-08T10:00:00Z', uploaded_by: owner },
+    ];
+
+    const setUpEightCombinedEvents = () => {
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: soloActivity, total: 1 });
+      mockGetLeadById.mockResolvedValue(makeLead({ activities: soloActivity, notes: fourNotes, documents: threeDocuments }));
+      mockGetDocumentsByLeadId.mockResolvedValue(threeDocuments);
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
+    };
+
+    it('When combined activities+notes+documents exceed 7 / Then only the newest 7 are rendered', async () => {
+      setUpEightCombinedEvents();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/doc-eight\.pdf/)).toBeInTheDocument());
+      expect(screen.getByText(/doc-seven\.pdf/)).toBeInTheDocument();
+      expect(screen.getByText(/doc-six\.pdf/)).toBeInTheDocument();
+      expect(screen.getByText('Note content Five')).toBeInTheDocument();
+      expect(screen.getByText('Note content Four')).toBeInTheDocument();
+      expect(screen.getByText('Note content Three')).toBeInTheDocument();
+      expect(screen.getByText('Note content Two')).toBeInTheDocument();
+    });
+
+    it('When combined activities+notes+documents exceed 7 / Then the oldest overflow record is excluded from the preview', async () => {
+      setUpEightCombinedEvents();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/doc-eight\.pdf/)).toBeInTheDocument());
+      expect(screen.queryByText('Solo activity call')).not.toBeInTheDocument();
+    });
+
+    it('When combined events total 8 / Then header shows "Showing latest 7 · Total: 8"', async () => {
+      setUpEightCombinedEvents();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/Showing latest 7/)).toBeInTheDocument());
+      expect(screen.getByText(/Total: 8/)).toBeInTheDocument();
+    });
+
+    it('When combined events total 8 / Then footer shows "View All Activity History (1 more)"', async () => {
+      setUpEightCombinedEvents();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('View All Activity History (1 more) →')).toBeInTheDocument());
+    });
+
+    it('When combined activities+notes+documents+tasks+deals total fewer than 7 / Then every available record is shown', async () => {
+      const twoNotes = [
+        { id: 'n1', content: 'Only note one', author: owner, created_at: '2025-01-02T10:00:00Z' },
+        { id: 'n2', content: 'Only note two', author: owner, created_at: '2025-01-03T10:00:00Z' },
+      ];
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: soloActivity, total: 1 });
+      mockGetLeadById.mockResolvedValue(makeLead({ activities: soloActivity, notes: twoNotes, documents: [] }));
+      mockGetDocumentsByLeadId.mockResolvedValue([]);
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Solo activity call')).toBeInTheDocument());
+      expect(screen.getByText('Only note one')).toBeInTheDocument();
+      expect(screen.getByText('Only note two')).toBeInTheDocument();
+      expect(screen.getByText(/Showing latest 3/)).toBeInTheDocument();
+      expect(screen.getByText(/Total: 3/)).toBeInTheDocument();
+    });
+
+    it('When combined total is exactly 7 / Then the "View All Activity History" footer link is absent', async () => {
+      const sixNotes = [
+        { id: 'n1', content: 'Note A', author: owner, created_at: '2025-01-02T10:00:00Z' },
+        { id: 'n2', content: 'Note B', author: owner, created_at: '2025-01-03T10:00:00Z' },
+        { id: 'n3', content: 'Note C', author: owner, created_at: '2025-01-04T10:00:00Z' },
+        { id: 'n4', content: 'Note D', author: owner, created_at: '2025-01-05T10:00:00Z' },
+        { id: 'n5', content: 'Note E', author: owner, created_at: '2025-01-06T10:00:00Z' },
+        { id: 'n6', content: 'Note F', author: owner, created_at: '2025-01-07T10:00:00Z' },
+      ];
+      mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: soloActivity, total: 1 });
+      mockGetLeadById.mockResolvedValue(makeLead({ activities: soloActivity, notes: sixNotes, documents: [] }));
+      mockGetDocumentsByLeadId.mockResolvedValue([]);
+      mockGetDealsByLeadId.mockResolvedValue([]);
+      mockGetTasksByLeadId.mockResolvedValue([]);
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText(/Total: 7/)).toBeInTheDocument());
+      expect(screen.queryByText(/View All Activity History/)).not.toBeInTheDocument();
     });
   });
 
