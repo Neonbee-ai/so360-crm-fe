@@ -156,6 +156,43 @@ describe('ActivityHistoryDrawer', () => {
         });
     });
 
+    describe('Given the drawer positioning relative to the fixed shell header', () => {
+        it('When open / Then the panel starts below the 56px glass-nav header (top-14, not top-0)', async () => {
+            render(<ActivityHistoryDrawer {...defaultProps} />);
+            await waitFor(() => screen.getByText('Activity History'));
+
+            const panel = document.querySelector('.fixed.right-0');
+            expect(panel).not.toBeNull();
+            // Must clear the shell's h-14 (56px) fixed header so the drawer header/controls are never hidden.
+            expect(panel).toHaveClass('top-14');
+            expect(panel).not.toHaveClass('top-0');
+        });
+
+        it('When open / Then the panel height is the remaining viewport below the header, not full height', async () => {
+            render(<ActivityHistoryDrawer {...defaultProps} />);
+            await waitFor(() => screen.getByText('Activity History'));
+
+            const panel = document.querySelector('.fixed.right-0');
+            expect(panel).not.toBeNull();
+            expect(panel).toHaveClass('h-[calc(100vh-3.5rem)]');
+            expect(panel).not.toHaveClass('h-full');
+        });
+
+        it('When open / Then the close button lives inside the below-header panel and is reachable', async () => {
+            const onClose = vi.fn();
+            render(<ActivityHistoryDrawer {...defaultProps} onClose={onClose} />);
+            await waitFor(() => screen.getByText('Activity History'));
+
+            const panel = document.querySelector('.fixed.right-0.top-14') as HTMLElement | null;
+            expect(panel).not.toBeNull();
+            // The X close button is the icon button rendered within the (now unclipped) drawer header.
+            const closeBtn = panel!.querySelector('button');
+            expect(closeBtn).not.toBeNull();
+            fireEvent.click(closeBtn!);
+            expect(onClose).toHaveBeenCalled();
+        });
+    });
+
     describe('Given API returns no activities', () => {
         it('When no activities exist / Then shows empty state', async () => {
             vi.mocked(activitiesApi.getAllByLeadPaginated).mockResolvedValue({ data: [], total: 0 });

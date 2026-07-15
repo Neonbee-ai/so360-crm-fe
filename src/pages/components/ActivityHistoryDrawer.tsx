@@ -235,8 +235,8 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, leadId, lead,
                 onClick={onClose}
             />
 
-            {/* Drawer */}
-            <div className="fixed right-0 top-0 h-full w-full sm:w-[480px] lg:w-[520px] bg-slate-950 border-l border-slate-800 z-50 flex flex-col shadow-2xl">
+            {/* Drawer — starts below the shell's fixed 56px (h-14) glass-nav header so the title/close controls are never clipped */}
+            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-slate-950 border-l border-slate-800 z-50 flex flex-col shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
                     <div>
