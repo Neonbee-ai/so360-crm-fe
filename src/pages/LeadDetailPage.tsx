@@ -9,7 +9,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
     DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, Package, ChevronDown
+    File, Download, UploadCloud, FileIcon, Eye, Package
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
@@ -109,12 +109,9 @@ const LeadDetailPage = () => {
     const [productCount, setProductCount] = useState(0);
     const [productValue, setProductValue] = useState(0);
     const [activityTotal, setActivityTotal] = useState(0);
-    const [activityOffset, setActivityOffset] = useState(0);
-    const [isLoadingMoreActivities, setIsLoadingMoreActivities] = useState(false);
     const [showActivityDrawer, setShowActivityDrawer] = useState(false);
 
     const INITIAL_ACTIVITY_LOAD = 7;
-    const LOAD_MORE_BATCH = 20;
 
     const fetchLeadData = useCallback(async () => {
         try {
@@ -134,7 +131,6 @@ const LeadDetailPage = () => {
                 setLead({ ...leadData, activities: activitiesResult.data, documents: documentsData });
             }
             setActivityTotal(activitiesResult.total);
-            setActivityOffset(activitiesResult.data.length);
             setAssociatedDeals(dealsData);
             setAssociatedTasks(tasksData);
             setCustomFieldDefs(settingsData?.lead_custom_fields || []);
@@ -150,20 +146,6 @@ const LeadDetailPage = () => {
             setIsLoading(false);
         }
     }, [id]);
-
-    const loadMoreActivities = useCallback(async () => {
-        if (!lead || isLoadingMoreActivities) return;
-        setIsLoadingMoreActivities(true);
-        try {
-            const result = await crmService.getActivitiesByLeadIdPaginated(id, LOAD_MORE_BATCH, activityOffset);
-            setLead(prev => prev ? { ...prev, activities: [...(prev.activities || []), ...result.data] } : prev);
-            setActivityOffset(prev => prev + result.data.length);
-        } catch (error) {
-            console.error('Failed to load more activities', error);
-        } finally {
-            setIsLoadingMoreActivities(false);
-        }
-    }, [id, activityOffset, isLoadingMoreActivities, lead]);
 
     const handleRecalculateScore = useCallback(async () => {
         if (!lead || isRecalculatingScore) return;
@@ -294,7 +276,10 @@ const LeadDetailPage = () => {
         return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     };
 
-    const timeline = getAggregatedTimeline();
+    const MAX_TIMELINE_PREVIEW = 7;
+    const fullTimeline = getAggregatedTimeline();
+    const timelineTotal = activityTotal + lead.notes.length + (lead.documents?.length || 0) + associatedTasks.length + associatedDeals.length;
+    const timeline = fullTimeline.slice(0, MAX_TIMELINE_PREVIEW);
 
     const calculateLegacyRevenue = () => {
         const earned = associatedDeals
@@ -737,10 +722,10 @@ const LeadDetailPage = () => {
                                         <div>
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Activity Timeline</p>
                                             <p className="text-[10px] text-slate-600 mt-0.5">
-                                                Showing latest {timeline.length} · Total: {activityTotal}
+                                                Showing latest {timeline.length} · Total: {timelineTotal}
                                             </p>
                                         </div>
-                                        {activityTotal > 0 && (
+                                        {timelineTotal > 0 && (
                                             <button
                                                 onClick={() => setShowActivityDrawer(true)}
                                                 className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
@@ -855,24 +840,14 @@ const LeadDetailPage = () => {
                                         )}
                                     </div>
 
-                                    {/* Load More / View All */}
-                                    {activityOffset < activityTotal && (
+                                    {/* View All */}
+                                    {timelineTotal > MAX_TIMELINE_PREVIEW && (
                                         <div className="flex flex-col items-center gap-3 pt-2">
-                                            <button
-                                                onClick={loadMoreActivities}
-                                                disabled={isLoadingMoreActivities}
-                                                className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50 w-full justify-center"
-                                            >
-                                                {isLoadingMoreActivities
-                                                    ? <><Loader2 size={12} className="animate-spin" /> Loading…</>
-                                                    : <><ChevronDown size={12} /> View Older Activities ({activityTotal - activityOffset} more)</>
-                                                }
-                                            </button>
                                             <button
                                                 onClick={() => setShowActivityDrawer(true)}
                                                 className="text-[10px] text-slate-600 hover:text-blue-400 transition-colors font-bold uppercase tracking-widest"
                                             >
-                                                View All Activity History →
+                                                View All Activity History ({timelineTotal - MAX_TIMELINE_PREVIEW} more) →
                                             </button>
                                         </div>
                                     )}
