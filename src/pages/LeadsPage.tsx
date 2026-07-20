@@ -516,18 +516,16 @@ const LeadsPage = () => {
 
   // Share — flip visibility for the whole org (team-shared view).
   const handleToggleShareView = useCallback((id: string) => {
-    let nextShared = false;
+    const current = savedViews.find((v) => v.id === id);
+    if (!current) return;
+    const nextShared = !current.is_shared;
     setSavedViews((prev) => {
-      const updated = prev.map((v) => {
-        if (v.id !== id) return v;
-        nextShared = !v.is_shared;
-        return { ...v, is_shared: nextShared };
-      });
+      const updated = prev.map((v) => (v.id === id ? { ...v, is_shared: nextShared } : v));
       persistSavedViews(updated);
       return updated;
     });
     crmService.gridViews?.update?.(id, { is_shared: nextShared })?.catch?.(() => { /* offline */ });
-  }, []);
+  }, [savedViews]);
 
   // Hydrate saved views from the backend on mount (cross-device). Only overwrite
   // the localStorage-backed list when the backend actually has views, so a user
