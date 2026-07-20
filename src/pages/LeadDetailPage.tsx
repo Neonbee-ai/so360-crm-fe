@@ -24,8 +24,14 @@ import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
+import NoteEditor from '../components/notes/NoteEditor';
+import NoteContent from '../components/notes/NoteContent';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback';
+
+// Tiptap emits '<p></p>' for an empty editor rather than '', so a plain
+// .trim() check isn't enough — strip tags first to see if there's real content.
+const isNoteContentEmpty = (html: string): boolean => html.replace(/<[^>]*>/g, '').trim().length === 0;
 
 const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'contact_name'>): string =>
     lead.first_name
@@ -102,6 +108,11 @@ const LeadDetailPage = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [leadStages, setLeadStages] = useState<{ id: string, name: string }[]>([]);
     const [newNoteContent, setNewNoteContent] = useState('');
+    // Tiptap only seeds `content` on initial mount — bump this key to force a
+    // fresh editor instance (and thus a visibly cleared editor) after saving.
+    const [noteEditorKey, setNoteEditorKey] = useState(0);
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [editingNoteContent, setEditingNoteContent] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [partners, setPartners] = useState<Lead[]>([]);
@@ -861,39 +872,70 @@ const LeadDetailPage = () => {
                                         ) : (
                                             <div className="space-y-4">
                                                 {lead.notes.map(note => (
-                                                    <div className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group/note relative">
-                                                        <div className="absolute right-0 top-0 opacity-0 group-hover/note:opacity-100 transition-opacity flex gap-2">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    const newContent = prompt('Edit note:', note.content);
-                                                                    if (newContent !== null) {
-                                                                        await crmService.updateNote(note.id, newContent);
-                                                                        setLead({
-                                                                            ...lead,
-                                                                            notes: lead.notes.map(n => n.id === note.id ? { ...n, content: newContent } : n)
-                                                                        });
-                                                                    }
-                                                                }}
-                                                                className="text-slate-500 hover:text-blue-400"
-                                                            >
-                                                                <Edit2 size={12} />
-                                                            </button>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    if (confirm('Delete this note?')) {
-                                                                        await crmService.deleteNote(note.id);
-                                                                        setLead({
-                                                                            ...lead,
-                                                                            notes: lead.notes.filter(n => n.id !== note.id)
-                                                                        });
-                                                                    }
-                                                                }}
-                                                                className="text-slate-500 hover:text-rose-400"
-                                                            >
-                                                                <Trash2 size={12} />
-                                                            </button>
-                                                        </div>
-                                                        <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
+                                                    <div key={note.id} className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group/note relative">
+                                                        {editingNoteId === note.id ? (
+                                                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-2">
+                                                                <NoteEditor value={editingNoteContent} onChange={setEditingNoteContent} autoFocus />
+                                                                <div className="flex justify-end gap-2 mt-3">
+                                                                    <button
+                                                                        onClick={() => setEditingNoteId(null)}
+                                                                        className="text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            if (isNoteContentEmpty(editingNoteContent)) return;
+                                                                            await crmService.updateNote(note.id, editingNoteContent);
+                                                                            setLead({
+                                                                                ...lead,
+                                                                                notes: lead.notes.map(n => n.id === note.id ? { ...n, content: editingNoteContent } : n)
+                                                                            });
+                                                                            setEditingNoteId(null);
+                                                                        }}
+                                                                        disabled={isNoteContentEmpty(editingNoteContent)}
+                                                                        className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50"
+                                                                    >
+                                                                        Save
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="absolute right-0 top-0 opacity-0 group-hover/note:opacity-100 transition-opacity flex gap-2">
+                                                                    <button
+                                                                        aria-label="Edit note"
+                                                                        data-testid={`edit-note-${note.id}`}
+                                                                        onClick={() => {
+                                                                            setEditingNoteId(note.id);
+                                                                            setEditingNoteContent(note.content);
+                                                                        }}
+                                                                        className="text-slate-500 hover:text-blue-400"
+                                                                    >
+                                                                        <Edit2 size={12} />
+                                                                    </button>
+                                                                    <button
+                                                                        aria-label="Delete note"
+                                                                        data-testid={`delete-note-${note.id}`}
+                                                                        onClick={async () => {
+                                                                            if (confirm('Delete this note?')) {
+                                                                                await crmService.deleteNote(note.id);
+                                                                                setLead({
+                                                                                    ...lead,
+                                                                                    notes: lead.notes.filter(n => n.id !== note.id)
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="text-slate-500 hover:text-rose-400"
+                                                                    >
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="mb-2 pr-12">
+                                                                    <NoteContent html={note.content} />
+                                                                </div>
+                                                            </>
+                                                        )}
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
                                                             <span className="text-[10px] text-slate-400 font-bold">{formatters.formatDate(note.created_at)}</span>
@@ -903,24 +945,25 @@ const LeadDetailPage = () => {
                                             </div>
                                         )}
                                         <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
-                                            <textarea
-                                                placeholder="Add a private note about this lead..."
+                                            <NoteEditor
+                                                key={noteEditorKey}
                                                 value={newNoteContent}
-                                                onChange={(e) => setNewNoteContent(e.target.value)}
-                                                className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-50 focus:ring-0 resize-none h-24 mb-3 placeholder:text-slate-500"
+                                                onChange={setNewNoteContent}
+                                                placeholder="Add a private note about this lead..."
                                             />
-                                            <div className="flex justify-end">
+                                            <div className="flex justify-end mt-3">
                                                 <button
                                                     onClick={async () => {
-                                                        if (!newNoteContent.trim()) return;
+                                                        if (isNoteContentEmpty(newNoteContent)) return;
                                                         const freshNote = await crmService.createNote({ lead_id: lead.id, content: newNoteContent });
                                                         setLead({
                                                             ...lead,
                                                             notes: [...(lead.notes || []), freshNote]
                                                         });
                                                         setNewNoteContent('');
+                                                        setNoteEditorKey((k) => k + 1);
                                                     }}
-                                                    disabled={!newNoteContent.trim()}
+                                                    disabled={isNoteContentEmpty(newNoteContent)}
                                                     className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50 shadow-sm"
                                                 >
                                                     Save Note

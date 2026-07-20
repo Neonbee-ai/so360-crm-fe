@@ -88,6 +88,22 @@ vi.mock('../components/CustomerDetailsPanel', () => ({ default: () => null }));
 vi.mock('../components/LeadJourneyStepper', () => ({
   LeadJourneyStepper: ({ currentState }: any) => <div data-testid="journey-stepper">{currentState}</div>,
 }));
+// Real Tiptap rendering is covered in NoteEditor.bdd.test.tsx — here we only
+// need to verify LeadDetailPage wires value/onChange/create/edit/delete correctly.
+vi.mock('../components/notes/NoteEditor', () => ({
+  default: ({ value, onChange, placeholder, autoFocus }: any) => (
+    <textarea
+      data-testid="note-editor-mock"
+      placeholder={placeholder}
+      value={value}
+      autoFocus={autoFocus}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+vi.mock('../components/notes/NoteContent', () => ({
+  default: ({ html }: any) => <div data-testid="note-content">{html}</div>,
+}));
 
 // formatters mock uses real Intl so date assertions like 'Jan 1, 2025' work correctly
 vi.mock('../utils/formatters', () => ({
@@ -355,6 +371,69 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
       await waitFor(() => expect(screen.getByText('No notes captured for this lead yet.')).toBeInTheDocument());
+    });
+
+    it('When a note\'s edit button is clicked / Then an editor pre-filled with its content replaces the display', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByTestId('edit-note-n1')).toBeInTheDocument());
+      await user.click(screen.getByTestId('edit-note-n1'));
+      const editors = screen.getAllByTestId('note-editor-mock');
+      expect((editors[0] as HTMLTextAreaElement).value).toBe('Hot lead from conference');
+    });
+
+    it('When an edited note is saved / Then it calls updateNote and shows the updated content', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByTestId('edit-note-n1')).toBeInTheDocument());
+      await user.click(screen.getByTestId('edit-note-n1'));
+      const editors = screen.getAllByTestId('note-editor-mock');
+      fireEvent.change(editors[0], { target: { value: 'Updated note content' } });
+      await user.click(screen.getByText('Save'));
+      await waitFor(() => expect(mockUpdateNote).toHaveBeenCalledWith('n1', 'Updated note content'));
+      await waitFor(() => expect(screen.getByText('Updated note content')).toBeInTheDocument());
+    });
+
+    it('When edit is cancelled / Then updateNote is not called and the original content remains', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByTestId('edit-note-n1')).toBeInTheDocument());
+      await user.click(screen.getByTestId('edit-note-n1'));
+      await user.click(screen.getByText('Cancel'));
+      expect(mockUpdateNote).not.toHaveBeenCalled();
+      expect(screen.getByText('Hot lead from conference')).toBeInTheDocument();
+    });
+
+    it('When a note is deleted and confirmed / Then it calls deleteNote and removes the note', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByTestId('delete-note-n1')).toBeInTheDocument());
+      await user.click(screen.getByTestId('delete-note-n1'));
+      await waitFor(() => expect(mockDeleteNote).toHaveBeenCalledWith('n1'));
+      await waitFor(() => expect(screen.queryByText('Hot lead from conference')).not.toBeInTheDocument());
+      vi.restoreAllMocks();
+    });
+
+    it('When a note delete is not confirmed / Then deleteNote is not called', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByTestId('delete-note-n1')).toBeInTheDocument());
+      await user.click(screen.getByTestId('delete-note-n1'));
+      expect(mockDeleteNote).not.toHaveBeenCalled();
+      expect(screen.getByText('Hot lead from conference')).toBeInTheDocument();
+      vi.restoreAllMocks();
     });
   });
 
