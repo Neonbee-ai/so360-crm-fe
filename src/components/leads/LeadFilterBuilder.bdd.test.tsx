@@ -78,7 +78,7 @@ describe('LeadFilterBuilder', () => {
   it('flips the root combinator to OR', () => {
     const { onApply } = setup();
     fireEvent.click(screen.getByText(/add condition/i));
-    fireEvent.click(screen.getByText('OR'));
+    fireEvent.click(screen.getByText(/^or$/i));
     const rule = screen.getByTestId('filter-rule');
     fireEvent.change(within(rule).getByLabelText('Value'), { target: { value: 'x' } });
     fireEvent.click(screen.getByText(/^apply/i));

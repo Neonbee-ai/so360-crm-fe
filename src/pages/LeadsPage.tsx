@@ -745,7 +745,11 @@ const LeadsPage = () => {
                         >
                           {view.is_default && <Star size={11} className="text-amber-400 fill-amber-400 shrink-0" />}
                           <span className="truncate">{view.name}</span>
-                          {view.is_shared && <Share2 size={10} className="text-slate-500 shrink-0" title="Shared with your team" />}
+                          {view.is_shared && (
+                            <span title="Shared with your team">
+                              <Share2 size={10} className="text-slate-500 shrink-0" />
+                            </span>
+                          )}
                         </button>
                         <div className="flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button

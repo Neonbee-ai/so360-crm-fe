@@ -136,7 +136,9 @@ describe('LeadsDataGrid — row interaction', () => {
     const onRowClick = vi.fn();
     const lead = makeLead();
     render(<LeadsDataGrid leads={[lead]} context={buildContext()} onRowClick={onRowClick} />);
-    fireEvent.click(screen.getByText('Acme Corp'));
+    // Company is the inline-editable cell and stops single-click propagation
+    // (double-click starts editing instead) — click a non-editable cell.
+    fireEvent.click(screen.getByText('Jane Doe'));
     expect(onRowClick).toHaveBeenCalledWith(lead);
   });
 
@@ -367,7 +369,7 @@ describe('LeadsDataGrid — bulk action menus', () => {
     selectAll();
     // Menu closed initially.
     expect(screen.queryByTestId('bulk-menu-Status')).toBeNull();
-    fireEvent.click(screen.getByText('Status'));
+    fireEvent.click(within(screen.getByTestId('bulk-actions-bar')).getByText('Status'));
     const menu = screen.getByTestId('bulk-menu-Status');
     fireEvent.click(within(menu).getByText('Qualified'));
     expect(onSelect).toHaveBeenCalledWith(['lead-1'], 'Qualified');

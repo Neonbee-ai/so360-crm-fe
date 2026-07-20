@@ -737,7 +737,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
   }, [openMenu]);
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl shadow-black/40">
+    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl shadow-black/40">
       <span className="text-sm text-slate-200 font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-slate-600" />
       {actions.map((action) => {
