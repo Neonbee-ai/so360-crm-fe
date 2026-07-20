@@ -22,7 +22,7 @@ describe('NoteContent', () => {
 
   describe('Given an onerror handler attribute', () => {
     it('When it renders / Then the handler attribute is stripped', () => {
-      const { container } = render(<NoteContent html="<p onerror=\"alert(1)\">hi</p>" />);
+      const { container } = render(<NoteContent html={'<p onerror="alert(1)">hi</p>'} />);
       expect(container.querySelector('p')?.getAttribute('onerror')).toBeNull();
     });
   });

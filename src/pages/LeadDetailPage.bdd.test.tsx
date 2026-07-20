@@ -411,7 +411,7 @@ describe('LeadDetailPage', () => {
     });
 
     it('When a note is deleted and confirmed / Then it calls deleteNote and removes the note', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
@@ -420,11 +420,11 @@ describe('LeadDetailPage', () => {
       await user.click(screen.getByTestId('delete-note-n1'));
       await waitFor(() => expect(mockDeleteNote).toHaveBeenCalledWith('n1'));
       await waitFor(() => expect(screen.queryByText('Hot lead from conference')).not.toBeInTheDocument());
-      vi.restoreAllMocks();
+      confirmSpy.mockRestore();
     });
 
     it('When a note delete is not confirmed / Then deleteNote is not called', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
@@ -433,7 +433,7 @@ describe('LeadDetailPage', () => {
       await user.click(screen.getByTestId('delete-note-n1'));
       expect(mockDeleteNote).not.toHaveBeenCalled();
       expect(screen.getByText('Hot lead from conference')).toBeInTheDocument();
-      vi.restoreAllMocks();
+      confirmSpy.mockRestore();
     });
   });
 
