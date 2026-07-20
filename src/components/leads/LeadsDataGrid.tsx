@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useMemo,
   useEffect,
+  useLayoutEffect,
   ReactNode,
 } from 'react';
 import {
@@ -30,6 +31,7 @@ import {
   Globe,
   Star,
   TrendingUp,
+  Layers,
 } from 'lucide-react';
 import { Lead, User } from '../../types/crm';
 import {
@@ -39,6 +41,11 @@ import {
   useLeadGridPreferences,
 } from '../../hooks/useLeadGridPreferences';
 import { useCRMFormatters } from '../../utils/formatters';
+import { computeLeadHealth, describeNextFollowUp, describeLastActivity } from './leadIndicators';
+import { groupLeadsBy, GROUP_BY_OPTIONS, type GroupByKey } from './leadGrouping';
+import { nextFocusIndex, scrollToRevealIndex } from './leadKeyboardNav';
+import { useIsNarrow } from './useIsNarrow';
+import LeadCardList from './LeadCardList';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,13 +58,36 @@ export interface GridContext {
   onDelete: (lead: Lead) => void;
   onOpen: (lead: Lead) => void;
   formatDate: (d: string) => string;
+  /** Commit an inline cell edit. Optional so existing callers keep working. */
+  onInlineEdit?: (lead: Lead, field: string, value: string) => void;
 }
+
+/**
+ * Columns that support double-click inline editing, mapped to the Lead property
+ * the value is read from and written to. Deliberately limited to unambiguous,
+ * single-field text columns; ambiguous/derived columns (name split, custom_field
+ * backed) are excluded. `updateLead` translates these prop names to the backend.
+ */
+const EDITABLE_CELLS: Record<string, { prop: keyof Lead; type: 'text' }> = {
+  // Plain-text primary column: safe to inline-edit without link/interaction
+  // conflicts. email/phone carry mailto:/tel: links and are handled separately
+  // in a later pass; custom_field-backed columns (city/state/…) too.
+  company: { prop: 'company_name', type: 'text' },
+};
 
 interface BulkAction {
   label: string;
   icon: ReactNode;
   variant?: 'danger' | 'default';
-  onClick: (ids: string[]) => void;
+  /** Immediate action (export, delete, …). Optional when `options` is provided. */
+  onClick?: (ids: string[]) => void;
+  /**
+   * When present, the button opens a small popover listing these options; picking
+   * one calls `onSelect(ids, value)`. Used for owner / status / source pickers.
+   * Backward compatible — actions with only `onClick` render as plain buttons.
+   */
+  options?: Array<{ label: string; value: string }>;
+  onSelect?: (ids: string[], value: string) => void;
 }
 
 export interface LeadsDataGridProps {
@@ -469,7 +499,14 @@ const COL_DEFS: ColDef[] = [
     minWidth: 120,
     render: (lead) => {
       const cf = lead.custom_fields ?? {};
-      const tags: string[] = Array.isArray(cf.tags) ? cf.tags : (cf.tags ? String(cf.tags).split(',').map((t: string) => t.trim()) : []);
+      // Prefer the first-class tags[] column (written by bulk tagging); fall
+      // back to the legacy custom_fields.tags for older records.
+      const leadTags = (lead as { tags?: unknown }).tags;
+      const tags: string[] = Array.isArray(leadTags)
+        ? (leadTags as string[])
+        : Array.isArray(cf.tags)
+        ? cf.tags
+        : cf.tags ? String(cf.tags).split(',').map((t: string) => t.trim()) : [];
       return tags.length > 0 ? (
         <div className="flex flex-wrap gap-1">
           {tags.slice(0, 3).map((tag) => (
@@ -489,6 +526,58 @@ const COL_DEFS: ColDef[] = [
       ) : (
         <span className="text-slate-600 text-sm">—</span>
       );
+    },
+  },
+  {
+    key: 'lead_health',
+    label: 'Health',
+    defaultWidth: 110,
+    minWidth: 90,
+    render: (lead) => {
+      const h = computeLeadHealth(lead);
+      const pill: Record<string, string> = {
+        hot: 'bg-emerald-500/15 text-emerald-400',
+        warm: 'bg-amber-500/15 text-amber-400',
+        cold: 'bg-rose-500/15 text-rose-400',
+      };
+      const dot: Record<string, string> = {
+        hot: 'bg-emerald-400', warm: 'bg-amber-400', cold: 'bg-rose-400',
+      };
+      return (
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${pill[h.level]}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${dot[h.level]}`} />
+          {h.label}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'next_follow_up',
+    label: 'Next Follow-up',
+    defaultWidth: 150,
+    minWidth: 110,
+    sortKey: 'next_follow_up',
+    render: (lead) => {
+      const f = describeNextFollowUp(lead);
+      if (f.tone === 'none') return <span className="text-slate-600 text-sm">—</span>;
+      const tone: Record<string, string> = {
+        overdue: 'text-rose-400',
+        today: 'text-amber-400',
+        tomorrow: 'text-blue-400',
+        upcoming: 'text-slate-300',
+      };
+      return <span className={`text-xs font-medium ${tone[f.tone]}`}>{f.label}</span>;
+    },
+  },
+  {
+    key: 'last_activity',
+    label: 'Last Activity',
+    defaultWidth: 140,
+    minWidth: 110,
+    sortKey: 'last_activity_at',
+    render: (lead) => {
+      const a = describeLastActivity(lead);
+      return <span className={`text-xs ${a.stale ? 'text-rose-400/80' : 'text-slate-300'}`}>{a.label}</span>;
     },
   },
 ];
@@ -591,25 +680,104 @@ interface BulkActionsBarProps {
   onClear: () => void;
 }
 
+// ─── Inline cell editor ───────────────────────────────────────────────────────
+
+interface InlineCellEditorProps {
+  initial: string;
+  type: 'text';
+  onCommit: (value: string) => void;
+  onCancel: () => void;
+}
+
+/**
+ * A single-cell inline editor. Commits on Enter or blur, cancels on Escape, and
+ * only fires onCommit when the value actually changed (no needless write).
+ */
+function InlineCellEditor({ initial, type, onCommit, onCancel }: InlineCellEditorProps) {
+  const [value, setValue] = useState(initial);
+  const committed = useRef(false);
+
+  const commit = () => {
+    if (committed.current) return;
+    committed.current = true;
+    if (value.trim() !== initial.trim()) onCommit(value.trim());
+    else onCancel();
+  };
+
+  return (
+    <input
+      autoFocus
+      type={type}
+      aria-label="Edit cell"
+      value={value}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') { committed.current = true; onCancel(); }
+      }}
+      className="w-full bg-slate-800 border border-blue-500 rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+    />
+  );
+}
+
 function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBarProps) {
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenu]);
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl shadow-black/40">
       <span className="text-sm text-slate-200 font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-slate-600" />
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          onClick={() => action.onClick(selectedIds)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            action.variant === 'danger'
-              ? 'text-rose-400 hover:bg-rose-500/10'
-              : 'text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          {action.icon}
-          {action.label}
-        </button>
-      ))}
+      {actions.map((action) => {
+        const hasMenu = !!action.options?.length;
+        return (
+          <div key={action.label} className="relative" ref={openMenu === action.label ? menuRef : undefined}>
+            <button
+              onClick={() => {
+                if (hasMenu) setOpenMenu((m) => (m === action.label ? null : action.label));
+                else action.onClick?.(selectedIds);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                action.variant === 'danger'
+                  ? 'text-rose-400 hover:bg-rose-500/10'
+                  : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {action.icon}
+              {action.label}
+              {hasMenu && <ChevronDown size={13} className="opacity-60" />}
+            </button>
+            {hasMenu && openMenu === action.label && (
+              <div
+                data-testid={`bulk-menu-${action.label}`}
+                className="absolute bottom-full mb-2 left-0 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[180px] max-h-64 overflow-y-auto"
+              >
+                {action.options!.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { action.onSelect?.(selectedIds, opt.value); setOpenMenu(null); }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
       <div className="w-px h-5 bg-slate-600" />
       <button
         onClick={onClear}
@@ -686,6 +854,57 @@ const DENSITY_CELL_PY: Record<GridDensity, string> = {
   spacious: 'py-4',
 };
 
+// Fixed row heights (px) per density — used only when virtualization is active.
+// Kept in sync with DENSITY_CELL_PY so windowing math matches the rendered rows.
+const DENSITY_ROW_HEIGHT: Record<GridDensity, number> = {
+  compact: 44,
+  comfortable: 56,
+  spacious: 72,
+};
+
+// Below this row count the grid renders every row (identical to the original
+// behaviour). At or above it we window the DOM so thousands of rows stay smooth.
+const VIRTUALIZE_THRESHOLD = 60;
+const VIRTUALIZE_OVERSCAN = 8;
+
+export interface RowWindow {
+  virtualize: boolean;
+  startIndex: number;
+  endIndex: number;
+  topPad: number;
+  bottomPad: number;
+}
+
+/**
+ * Pure windowing math for the leads grid. Given the total row count, fixed row
+ * height, current scrollTop and viewport height, returns which slice of rows to
+ * mount plus the spacer heights that reserve the full scroll extent. Windowing
+ * is disabled (all rows) below the threshold or before the viewport is measured.
+ * Kept pure and exported so it can be unit-tested without a DOM.
+ */
+export function computeRowWindow(
+  total: number,
+  rowHeight: number,
+  scrollTop: number,
+  viewportHeight: number,
+  overscan = VIRTUALIZE_OVERSCAN,
+  threshold = VIRTUALIZE_THRESHOLD,
+): RowWindow {
+  const virtualize = total > threshold && viewportHeight > 0 && rowHeight > 0;
+  if (!virtualize) {
+    return { virtualize: false, startIndex: 0, endIndex: total, topPad: 0, bottomPad: 0 };
+  }
+  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+  const endIndex = Math.min(total, Math.ceil((scrollTop + viewportHeight) / rowHeight) + overscan);
+  return {
+    virtualize: true,
+    startIndex,
+    endIndex,
+    topPad: startIndex * rowHeight,
+    bottomPad: (total - endIndex) * rowHeight,
+  };
+}
+
 // ─── Main Grid ────────────────────────────────────────────────────────────────
 
 export function LeadsDataGrid({
@@ -714,10 +933,21 @@ export function LeadsDataGrid({
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [showDensityMenu, setShowDensityMenu] = useState(false);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+  // Group By — display-only transform. 'none' keeps the exact virtualized path.
+  const [groupBy, setGroupBy] = useState<GroupByKey>('none');
+  const [showGroupMenu, setShowGroupMenu] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  // Which cell (if any) is being inline-edited.
+  const [editing, setEditing] = useState<{ leadId: string; key: string } | null>(null);
+  // Keyboard-focused row index (-1 = none). Only active in the ungrouped view.
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  // Below the md breakpoint, swap the dense table for a tap-friendly card list.
+  const isNarrow = useIsNarrow();
 
   const resizing = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
   const draggingHeader = useRef<string | null>(null);
   const densityMenuRef = useRef<HTMLDivElement>(null);
+  const groupMenuRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Build dynamic custom field columns
@@ -863,6 +1093,203 @@ export function LeadsDataGrid({
 
   const cellPy = DENSITY_CELL_PY[density];
 
+  // ── DOM windowing (dependency-free virtualization) ─────────────────────────
+  // Only rows within the visible viewport (plus a small overscan) are mounted;
+  // spacer divs above/below reserve the full scroll height. Activates only past
+  // VIRTUALIZE_THRESHOLD so small lists render exactly as before.
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportH, setViewportH] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setViewportH(el.clientHeight);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  const rowH = DENSITY_ROW_HEIGHT[density];
+  const { virtualize, startIndex, endIndex, topPad, bottomPad } = computeRowWindow(
+    sortedLeads.length,
+    rowH,
+    scrollTop,
+    viewportH,
+  );
+  const visibleRows = virtualize ? sortedLeads.slice(startIndex, endIndex) : sortedLeads;
+
+  // Grouping is a pure view over the sorted list. Only computed when active so
+  // the ungrouped path pays nothing.
+  const grouped = groupBy !== 'none';
+  const groups = useMemo(
+    () => (grouped ? groupLeadsBy(sortedLeads, groupBy) : []),
+    [grouped, sortedLeads, groupBy],
+  );
+
+  // Keyboard navigation over the (ungrouped) row list. Arrow/Home/End move the
+  // focus ring and keep it in view; Enter opens the focused lead, Space toggles
+  // its selection, Escape clears focus. Typing inside an editor is never hijacked.
+  const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (grouped || sortedLeads.length === 0) return;
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+
+    const nav = nextFocusIndex(focusedIndex, e.key, sortedLeads.length);
+    if (nav !== null) {
+      e.preventDefault();
+      setFocusedIndex(nav);
+      const el = containerRef.current;
+      if (el) {
+        const next = scrollToRevealIndex(nav, rowH, el.scrollTop, el.clientHeight);
+        if (next !== el.scrollTop) { el.scrollTop = next; setScrollTop(next); }
+      }
+      return;
+    }
+
+    if (focusedIndex < 0 || focusedIndex >= sortedLeads.length) return;
+    const lead = sortedLeads[focusedIndex];
+    if (e.key === 'Enter') { e.preventDefault(); onRowClick(lead); }
+    else if (e.key === ' ') { e.preventDefault(); toggleSelect(lead.id); }
+    else if (e.key === 'Escape') { e.preventDefault(); setFocusedIndex(-1); }
+  }, [grouped, sortedLeads, focusedIndex, rowH, onRowClick, toggleSelect]);
+
+  const toggleGroup = useCallback((key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!showGroupMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (groupMenuRef.current && !groupMenuRef.current.contains(e.target as Node)) {
+        setShowGroupMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showGroupMenu]);
+
+  // Reset the keyboard focus when the underlying data or grouping changes, so a
+  // stale index can never point past the end of the list.
+  useEffect(() => { setFocusedIndex(-1); }, [leads, groupBy]);
+
+  // A single lead row, shared by the virtualized (ungrouped) and grouped paths so
+  // markup never diverges. In grouped mode `virtualize` is false, so rows render
+  // at natural height exactly like a small ungrouped list.
+  const renderRow = (lead: Lead, absIndex = -1) => {
+    const isSelected = selectedIds.has(lead.id);
+    const isHovered = hoveredRowId === lead.id;
+    const isFocused = absIndex >= 0 && absIndex === focusedIndex;
+    return (
+      <div
+        key={lead.id}
+        className={`flex border-b border-slate-800/60 cursor-pointer transition-colors group/row ${
+          virtualize && !grouped ? 'overflow-hidden' : ''
+        } ${
+          isFocused ? 'ring-1 ring-inset ring-blue-500/70 bg-blue-600/10' : isSelected ? 'bg-blue-600/8' : isHovered ? 'bg-slate-800/50' : 'hover:bg-slate-800/30'
+        }`}
+        style={{ minWidth: `${totalWidth}px`, ...(virtualize && !grouped ? { height: rowH } : {}) }}
+        onClick={() => onRowClick(lead)}
+        onMouseEnter={() => setHoveredRowId(lead.id)}
+        onMouseLeave={() => setHoveredRowId(null)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setContextMenu({ lead, x: e.clientX, y: e.clientY });
+        }}
+      >
+        {orderedCols.map((col) => {
+          const def = colDefMap.get(col.key);
+          const isSticky = col.pinned;
+
+          if (col.key === 'select') {
+            return (
+              <div
+                key="select"
+                className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
+                  isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'
+                }`}
+                style={{ width: col.width, left: colLeftOffsets['select'] }}
+                onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
+              >
+                <div
+                  className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${
+                    isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  {isSelected && <Check size={10} className="text-white" />}
+                </div>
+              </div>
+            );
+          }
+
+          if (col.key === 'actions') {
+            return (
+              <div
+                key="actions"
+                className={`flex items-center justify-center shrink-0 ${cellPy}`}
+                style={{ width: col.width }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setContextMenu({ lead, x: e.clientX, y: e.clientY });
+                  }}
+                  className="p-1.5 text-slate-600 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover/row:opacity-100"
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+              </div>
+            );
+          }
+
+          const editable = EDITABLE_CELLS[col.key];
+          const canEditCell = editable && context.canUpdate && !!context.onInlineEdit;
+          const isEditingCell = canEditCell && editing?.leadId === lead.id && editing?.key === col.key;
+
+          return (
+            <div
+              key={col.key}
+              className={`flex items-center shrink-0 px-3 overflow-hidden ${cellPy} ${
+                canEditCell ? 'cursor-text' : ''
+              } ${
+                isSticky
+                  ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'}`
+                  : ''
+              }`}
+              style={{
+                width: col.width,
+                ...(isSticky ? { left: colLeftOffsets[col.key] } : {}),
+              }}
+              onClick={canEditCell ? (e) => e.stopPropagation() : undefined}
+              onDoubleClick={
+                canEditCell
+                  ? (e) => { e.stopPropagation(); setEditing({ leadId: lead.id, key: col.key }); }
+                  : undefined
+              }
+            >
+              {isEditingCell ? (
+                <InlineCellEditor
+                  initial={String(lead[editable!.prop] ?? '')}
+                  type={editable!.type}
+                  onCommit={(value) => {
+                    context.onInlineEdit?.(lead, editable!.prop as string, value);
+                    setEditing(null);
+                  }}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : def ? def.render(lead, context, fmt) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
@@ -897,6 +1324,41 @@ export function LeadsDataGrid({
           )}
         </span>
         <div className="flex items-center gap-2">
+          {/* Group by */}
+          <div className="relative" ref={groupMenuRef}>
+            <button
+              onClick={() => setShowGroupMenu((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${
+                grouped
+                  ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+              }`}
+              title="Group by"
+            >
+              <Layers size={14} />
+              <span>{GROUP_BY_OPTIONS.find((o) => o.key === groupBy)?.label ?? 'Group'}</span>
+            </button>
+            {showGroupMenu && (
+              <div
+                data-testid="group-by-menu"
+                className="absolute right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[160px]"
+              >
+                {GROUP_BY_OPTIONS.map((o) => (
+                  <button
+                    key={o.key}
+                    onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                      groupBy === o.key ? 'text-blue-400 bg-blue-500/10' : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    {groupBy === o.key && <Check size={12} />}
+                    <span className={groupBy === o.key ? '' : 'ml-4'}>{o.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Density picker */}
           <div className="relative" ref={densityMenuRef}>
             <button
@@ -937,12 +1399,25 @@ export function LeadsDataGrid({
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Grid (desktop) / card list (narrow) */}
+      {isNarrow ? (
+        <LeadCardList
+          leads={sortedLeads}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onRowClick={onRowClick}
+        />
+      ) : (
       <div
         ref={containerRef}
         className="rounded-xl border border-slate-700/50 overflow-auto bg-slate-950"
         style={{ maxHeight: 'calc(100vh - 320px)' }}
         onContextMenu={(e) => e.preventDefault()}
+        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+        tabIndex={0}
+        role="grid"
+        aria-label="Leads"
+        onKeyDown={handleGridKeyDown}
       >
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
@@ -963,6 +1438,7 @@ export function LeadsDataGrid({
                     style={{ width: col.width, left: colLeftOffsets['select'] }}
                   >
                     <button
+                      data-testid="bulk-select-all"
                       onClick={toggleSelectAll}
                       className="text-slate-400 hover:text-slate-100 transition-colors"
                     >
@@ -1040,99 +1516,44 @@ export function LeadsDataGrid({
               <TrendingUp size={40} className="mb-3 opacity-30" />
               <p className="text-sm">No leads found</p>
             </div>
+          ) : grouped ? (
+            /* Grouped view — collapsible headers, virtualization disabled. */
+            <>
+              {groups.map((g) => {
+                const isCollapsed = collapsedGroups.has(g.key);
+                return (
+                  <div key={g.key} data-testid={`lead-group-${g.key}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(g.key)}
+                      className="flex items-center gap-2 w-full sticky left-0 px-3 py-2 bg-slate-900/80 border-b border-slate-700/50 text-sm text-slate-200 hover:bg-slate-800/60 transition-colors"
+                      style={{ minWidth: `${totalWidth}px` }}
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown size={14} className="-rotate-90 text-slate-400" />
+                      ) : (
+                        <ChevronDown size={14} className="text-slate-400" />
+                      )}
+                      <span className="font-semibold">{g.label}</span>
+                      <span className="text-xs text-slate-500 bg-slate-800 rounded-full px-2 py-0.5">
+                        {g.count}
+                      </span>
+                    </button>
+                    {!isCollapsed && g.leads.map((l) => renderRow(l))}
+                  </div>
+                );
+              })}
+            </>
           ) : (
-            sortedLeads.map((lead) => {
-              const isSelected = selectedIds.has(lead.id);
-              const isHovered = hoveredRowId === lead.id;
-
-              return (
-                <div
-                  key={lead.id}
-                  className={`flex border-b border-slate-800/60 cursor-pointer transition-colors group/row ${
-                    isSelected
-                      ? 'bg-blue-600/8'
-                      : isHovered
-                      ? 'bg-slate-800/50'
-                      : 'hover:bg-slate-800/30'
-                  }`}
-                  style={{ minWidth: `${totalWidth}px` }}
-                  onClick={() => onRowClick(lead)}
-                  onMouseEnter={() => setHoveredRowId(lead.id)}
-                  onMouseLeave={() => setHoveredRowId(null)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setContextMenu({ lead, x: e.clientX, y: e.clientY });
-                  }}
-                >
-                  {orderedCols.map((col) => {
-                    const def = colDefMap.get(col.key);
-                    const isSticky = col.pinned;
-
-                    if (col.key === 'select') {
-                      return (
-                        <div
-                          key="select"
-                          className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
-                            isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'
-                          }`}
-                          style={{ width: col.width, left: colLeftOffsets['select'] }}
-                          onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
-                        >
-                          <div
-                            className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${
-                              isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-600 hover:border-slate-400'
-                            }`}
-                          >
-                            {isSelected && <Check size={10} className="text-white" />}
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    if (col.key === 'actions') {
-                      return (
-                        <div
-                          key="actions"
-                          className={`flex items-center justify-center shrink-0 ${cellPy}`}
-                          style={{ width: col.width }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setContextMenu({ lead, x: e.clientX, y: e.clientY });
-                            }}
-                            className="p-1.5 text-slate-600 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover/row:opacity-100"
-                          >
-                            <MoreHorizontal size={16} />
-                          </button>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={col.key}
-                        className={`flex items-center shrink-0 px-3 overflow-hidden ${cellPy} ${
-                          isSticky
-                            ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'}`
-                            : ''
-                        }`}
-                        style={{
-                          width: col.width,
-                          ...(isSticky ? { left: colLeftOffsets[col.key] } : {}),
-                        }}
-                      >
-                        {def ? def.render(lead, context, fmt) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })
+            <>
+              {topPad > 0 && <div style={{ height: topPad }} aria-hidden="true" />}
+              {visibleRows.map((lead, i) => renderRow(lead, (virtualize ? startIndex : 0) + i))}
+              {bottomPad > 0 && <div style={{ height: bottomPad }} aria-hidden="true" />}
+            </>
           )}
         </div>
       </div>
+      )}
 
       {/* Bulk actions */}
       {selectedIds.size > 0 && (

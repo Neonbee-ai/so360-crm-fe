@@ -72,6 +72,7 @@ function buildContext(overrides: Partial<GridContext> = {}): GridContext {
     onDelete: vi.fn(),
     onOpen: vi.fn(),
     formatDate: (d) => new Date(d).toLocaleDateString(),
+    onInlineEdit: vi.fn(),
     ...overrides,
   };
 }
@@ -194,6 +195,187 @@ describe('LeadsDataGrid — row selection', () => {
   });
 });
 
+describe('LeadsDataGrid — inline cell editing', () => {
+  it('opens an editor on double-click of an editable cell and commits on Enter', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    const input = screen.getByLabelText('Edit cell') as HTMLInputElement;
+    expect(input.value).toBe('Acme Corp');
+    fireEvent.change(input, { target: { value: 'Acme Global' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onInlineEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'lead-1' }),
+      'company_name',
+      'Acme Global',
+    );
+  });
+
+  it('does not make non-editable cells (email) editable', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('jane@acme.com'));
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
+  });
+
+  it('cancels on Escape without committing', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    const input = screen.getByLabelText('Edit cell');
+    fireEvent.change(input, { target: { value: 'Discard me' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onInlineEdit).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
+  });
+
+  it('does not fire a write when the value is unchanged (blur)', () => {
+    const onInlineEdit = vi.fn();
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    fireEvent.blur(screen.getByLabelText('Edit cell'));
+    expect(onInlineEdit).not.toHaveBeenCalled();
+  });
+
+  it('is inert when the context has no onInlineEdit handler', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ onInlineEdit: undefined })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
+  });
+
+  it('is inert when the user lacks update permission', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext({ canUpdate: false })} onRowClick={vi.fn()} />);
+    fireEvent.doubleClick(screen.getByText('Acme Corp'));
+    expect(screen.queryByLabelText('Edit cell')).toBeNull();
+  });
+});
+
+describe('LeadsDataGrid — responsive', () => {
+  const setWidth = (w: number) =>
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: w });
+
+  it('renders the desktop grid on a wide viewport', () => {
+    setWidth(1200);
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    expect(screen.getByRole('grid')).toBeInTheDocument();
+    expect(screen.queryByTestId('lead-card-list')).toBeNull();
+  });
+
+  it('renders a card list (not the grid) on a narrow viewport', () => {
+    setWidth(500);
+    try {
+      render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+      expect(screen.getByTestId('lead-card-list')).toBeInTheDocument();
+      expect(screen.getByTestId('lead-card-lead-1')).toBeInTheDocument();
+      expect(screen.queryByRole('grid')).toBeNull();
+    } finally {
+      setWidth(1024);
+    }
+  });
+});
+
+describe('LeadsDataGrid — keyboard navigation', () => {
+  const twoLeads = () => [makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })];
+
+  it('ArrowDown focuses the first row and Enter opens it', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'lead-1' }));
+  });
+
+  it('ArrowDown twice then Enter opens the second row', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'l2' }));
+  });
+
+  it('Space toggles selection of the focused row', () => {
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={vi.fn()} bulkActions={[]} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: ' ' });
+    expect(screen.getByText(/1 selected/)).toBeInTheDocument();
+  });
+
+  it('Escape clears focus so a subsequent Enter does nothing', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Escape' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate while grouped', () => {
+    const onRowClick = vi.fn();
+    render(<LeadsDataGrid leads={twoLeads()} context={buildContext()} onRowClick={onRowClick} />);
+    fireEvent.click(screen.getByTitle('Group by'));
+    fireEvent.click(within(screen.getByTestId('group-by-menu')).getByText('Status'));
+    const grid = screen.getByRole('grid');
+    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    fireEvent.keyDown(grid, { key: 'Enter' });
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+});
+
+describe('LeadsDataGrid — bulk action menus', () => {
+  const selectAll = () => fireEvent.click(screen.getByTestId('bulk-select-all'));
+
+  it('runs an immediate (onClick) bulk action', () => {
+    const onExport = vi.fn();
+    render(
+      <LeadsDataGrid
+        leads={[makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })]}
+        context={buildContext()}
+        onRowClick={vi.fn()}
+        bulkActions={[{ label: 'Export', icon: null, onClick: onExport }]}
+      />,
+    );
+    selectAll();
+    fireEvent.click(screen.getByText('Export'));
+    expect(onExport).toHaveBeenCalledWith(['lead-1', 'l2']);
+  });
+
+  it('opens an options popover and calls onSelect with the chosen value', () => {
+    const onSelect = vi.fn();
+    render(
+      <LeadsDataGrid
+        leads={[makeLead()]}
+        context={buildContext()}
+        onRowClick={vi.fn()}
+        bulkActions={[
+          {
+            label: 'Status',
+            icon: null,
+            options: [
+              { label: 'New', value: 'New' },
+              { label: 'Qualified', value: 'Qualified' },
+            ],
+            onSelect,
+          },
+        ]}
+      />,
+    );
+    selectAll();
+    // Menu closed initially.
+    expect(screen.queryByTestId('bulk-menu-Status')).toBeNull();
+    fireEvent.click(screen.getByText('Status'));
+    const menu = screen.getByTestId('bulk-menu-Status');
+    fireEvent.click(within(menu).getByText('Qualified'));
+    expect(onSelect).toHaveBeenCalledWith(['lead-1'], 'Qualified');
+    // Menu closes after selection.
+    expect(screen.queryByTestId('bulk-menu-Status')).toBeNull();
+  });
+});
+
 describe('LeadsDataGrid — column controls', () => {
   it('opens column manager modal on Columns button click', () => {
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
@@ -286,5 +468,57 @@ describe('LeadsDataGrid — lead count display', () => {
   it('shows singular form for one lead', () => {
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
     expect(screen.getByText('1 lead')).toBeDefined();
+  });
+});
+
+describe('LeadsDataGrid — group by', () => {
+  const twoStatuses = () => [
+    makeLead({ id: 'g1', company_name: 'Acme Corp', status: 'New' }),
+    makeLead({ id: 'g2', company_name: 'Beta LLC', status: 'Qualified' }),
+    makeLead({ id: 'g3', company_name: 'Gamma Inc', status: 'New' }),
+  ];
+
+  it('is ungrouped by default (no group headers)', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    expect(document.querySelector('[data-testid^="lead-group-"]')).toBeNull();
+  });
+
+  const pickGroup = (label: string) => {
+    fireEvent.click(screen.getByTitle('Group by'));
+    const menu = screen.getByTestId('group-by-menu');
+    fireEvent.click(within(menu).getByText(label));
+  };
+
+  it('renders collapsible group headers with counts when grouping by status', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    pickGroup('Status');
+    const newGroup = document.querySelector('[data-testid="lead-group-New"]') as HTMLElement;
+    const qGroup = document.querySelector('[data-testid="lead-group-Qualified"]') as HTMLElement;
+    expect(newGroup).toBeTruthy();
+    expect(qGroup).toBeTruthy();
+    // New has two leads, Qualified one.
+    expect(within(newGroup).getByText('2')).toBeDefined();
+    expect(within(qGroup).getByText('1')).toBeDefined();
+    expect(within(newGroup).getByText('Acme Corp')).toBeDefined();
+    expect(within(newGroup).getByText('Gamma Inc')).toBeDefined();
+  });
+
+  it('collapses a group when its header is clicked, hiding its rows', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    pickGroup('Status');
+    const newGroup = document.querySelector('[data-testid="lead-group-New"]') as HTMLElement;
+    expect(within(newGroup).getByText('Acme Corp')).toBeDefined();
+    // Header button is the first button inside the group.
+    fireEvent.click(within(newGroup).getAllByRole('button')[0]);
+    expect(within(newGroup).queryByText('Acme Corp')).toBeNull();
+  });
+
+  it('returns to a flat list when grouping is set back to none', () => {
+    render(<LeadsDataGrid leads={twoStatuses()} context={buildContext()} onRowClick={vi.fn()} />);
+    pickGroup('Status');
+    expect(document.querySelector('[data-testid^="lead-group-"]')).toBeTruthy();
+    pickGroup('No grouping');
+    expect(document.querySelector('[data-testid^="lead-group-"]')).toBeNull();
+    expect(screen.getByText('Acme Corp')).toBeDefined();
   });
 });

@@ -8,17 +8,26 @@ import {
   UserCheck,
   Trash2,
   Archive,
+  Download,
+  Flag,
   X,
   ChevronDown,
   BookmarkPlus,
   Bookmark,
   SlidersHorizontal,
+  Pencil,
+  Copy,
+  Star,
+  Share2,
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
+import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
+import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
+import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { QuotaBar, QuotaGate } from '@so360/design-system';
@@ -51,6 +60,8 @@ interface SavedFilterView {
   id: string;
   name: string;
   filters: FilterState;
+  is_default?: boolean;
+  is_shared?: boolean;
 }
 
 function loadSavedViews(): SavedFilterView[] {
@@ -67,6 +78,23 @@ function persistSavedViews(views: SavedFilterView[]) {
   } catch {
     /* ignore */
   }
+}
+
+// Map a backend grid view (opaque config JSON) to the page's SavedFilterView.
+function mapBeView(v: {
+  id: string;
+  name: string;
+  config?: { filters?: FilterState };
+  is_default?: boolean;
+  is_shared?: boolean;
+}): SavedFilterView {
+  return {
+    id: v.id,
+    name: v.name,
+    filters: (v?.config?.filters ?? {}) as FilterState,
+    is_default: v.is_default,
+    is_shared: v.is_shared,
+  };
 }
 
 // ─── Date range helper ────────────────────────────────────────────────────────
@@ -132,6 +160,7 @@ const LeadsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [leadStages, setLeadStages] = useState<{ id: string; name: string }[]>([]);
+  const [leadSources, setLeadSources] = useState<string[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [customFields, setCustomFields] = useState<{ id: string; label: string }[]>([]);
   const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
@@ -142,6 +171,11 @@ const LeadsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  // Advanced (server-side) filter tree. null = feature inactive, the normal
+  // fetchInitialData list governs. Non-null triggers a server-side refetch via
+  // getLeadsPaged so nested AND/OR filters run against the whole dataset, not
+  // just the currently-loaded page.
+  const [advancedFilter, setAdvancedFilter] = useState<FilterGroup | null>(null);
 
   // Filters
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -152,6 +186,8 @@ const LeadsPage = () => {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [saveViewName, setSaveViewName] = useState('');
   const [showSaveViewInput, setShowSaveViewInput] = useState(false);
+  const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -195,6 +231,12 @@ const LeadsPage = () => {
 
       setLeads(leadsData);
       setLeadStages(settingsData?.lead_stages ?? []);
+      setLeadSources(
+        (settingsData?.lead_sources ?? [])
+          .filter((s: any) => s && !s.archived)
+          .map((s: any) => s.name)
+          .filter(Boolean),
+      );
       setCustomFields(
         (settingsData?.lead_custom_fields ?? []).map((cf: any) => ({
           id: cf.id,
@@ -215,6 +257,42 @@ const LeadsPage = () => {
   useEffect(() => {
     fetchInitialData();
   }, [fetchInitialData]);
+
+  // Advanced server-side filter: whenever a non-null tree is applied, refetch the
+  // leads list through the paged endpoint with the serialized filter. Clearing
+  // the tree (Apply with nothing complete) re-runs the normal initial fetch.
+  useEffect(() => {
+    if (!advancedFilter) return;
+    let cancelled = false;
+    (async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data } = await crmService.getLeadsPaged({
+          filter: JSON.stringify(advancedFilter),
+          take: 1000,
+        });
+        if (!cancelled) setLeads(data);
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message ?? 'Failed to apply advanced filters');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [advancedFilter]);
+
+  const handleApplyAdvancedFilter = useCallback((tree: FilterGroup | null) => {
+    setShowAdvancedFilters(false);
+    setCurrentPage(1);
+    if (tree) {
+      setAdvancedFilter(tree);
+    } else if (advancedFilter) {
+      // Cleared an active advanced filter — fall back to the standard list.
+      setAdvancedFilter(null);
+      fetchInitialData();
+    }
+  }, [advancedFilter, fetchInitialData]);
 
   // Filtering
   const filteredLeads = useMemo(() => {
@@ -297,35 +375,82 @@ const LeadsPage = () => {
   }, []);
 
   const handleBulkDelete = useCallback(async (ids: string[]) => {
-    for (const id of ids) {
-      try { await crmService.deleteLead(id); } catch { /* ignore */ }
+    // Single bulk request (server processes per-id and reports partial success)
+    // instead of N client round-trips. Only remove the rows the server confirms.
+    try {
+      const res = await crmService.bulkDeleteLeads(ids);
+      const removed = res?.deleted?.length ? res.deleted : ids;
+      setLeads((prev) => prev.filter((l) => !removed.includes(l.id)));
+    } catch {
+      setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
     }
-    setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
   }, []);
 
   const handleBulkOwnerChange = useCallback(async (ids: string[], ownerId: string) => {
     const owner = users.find((u) => u.id === ownerId);
     if (!owner) return;
-    for (const id of ids) {
-      try { await crmService.updateLead(id, { owner }); } catch { /* ignore */ }
+    // Send owner_id (the column the backend actually persists) via one bulk call.
+    try {
+      const res = await crmService.bulkUpdateLeads(ids, { owner_id: ownerId });
+      const changed = res?.updated?.length ? res.updated : ids;
+      setLeads((prev) => prev.map((l) => changed.includes(l.id) ? { ...l, owner } : l));
+    } catch {
+      setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, owner } : l));
     }
-    setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, owner } : l));
   }, [users]);
 
-  // Saved views
-  const handleSaveView = useCallback(() => {
-    if (!saveViewName.trim()) return;
-    const view: SavedFilterView = {
-      id: `v_${Date.now()}`,
-      name: saveViewName.trim(),
-      filters,
-    };
-    const updated = [...savedViews, view];
-    setSavedViews(updated);
-    persistSavedViews(updated);
-    setActiveViewId(view.id);
+  const handleBulkStatusChange = useCallback(async (ids: string[], statusName: string) => {
+    try {
+      const res = await crmService.bulkUpdateLeads(ids, { status: statusName });
+      const changed = res?.updated?.length ? res.updated : ids;
+      setLeads((prev) => prev.map((l) => changed.includes(l.id) ? { ...l, status: statusName as any } : l));
+    } catch {
+      setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, status: statusName as any } : l));
+    }
+  }, []);
+
+  const handleBulkSourceChange = useCallback(async (ids: string[], source: string) => {
+    try {
+      const res = await crmService.bulkUpdateLeads(ids, { source });
+      const changed = res?.updated?.length ? res.updated : ids;
+      setLeads((prev) => prev.map((l) => changed.includes(l.id) ? { ...l, source } : l));
+    } catch {
+      setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, source } : l));
+    }
+  }, []);
+
+  const handleBulkExport = useCallback((ids: string[]) => {
+    const chosen = leads.filter((l) => ids.includes(l.id));
+    const rows = chosen.length ? chosen : leads;
+    const csv = leadsToCsv(rows);
+    downloadCsv(`leads-export-${rows.length}.csv`, csv);
+  }, [leads]);
+
+  // Saved views — persisted to the backend (cross-device) with an optimistic
+  // localStorage fallback so it still works offline / on an older backend.
+  const handleSaveView = useCallback(async () => {
+    const name = saveViewName.trim();
+    if (!name) return;
+    const localView: SavedFilterView = { id: `v_${Date.now()}`, name, filters };
+    const withLocal = [...savedViews, localView];
+    setSavedViews(withLocal);
+    persistSavedViews(withLocal);
+    setActiveViewId(localView.id);
     setSaveViewName('');
     setShowSaveViewInput(false);
+    try {
+      const created = await crmService.gridViews?.create?.({ name, config: { filters } });
+      if (created?.id) {
+        setSavedViews((prev) => {
+          const reconciled = prev.map((v) => (v.id === localView.id ? mapBeView(created) : v));
+          persistSavedViews(reconciled);
+          return reconciled;
+        });
+        setActiveViewId(created.id);
+      }
+    } catch {
+      /* offline — the optimistic local view stands */
+    }
   }, [saveViewName, filters, savedViews]);
 
   const handleDeleteView = useCallback((id: string) => {
@@ -333,6 +458,7 @@ const LeadsPage = () => {
     setSavedViews(updated);
     persistSavedViews(updated);
     if (activeViewId === id) setActiveViewId(null);
+    crmService.gridViews?.remove?.(id)?.catch?.(() => { /* offline / local-only view */ });
   }, [savedViews, activeViewId]);
 
   const handleApplyView = useCallback((view: SavedFilterView) => {
@@ -341,7 +467,107 @@ const LeadsPage = () => {
     setShowViewsDropdown(false);
   }, []);
 
+  // Rename — optimistic local update, persisted to the backend (no-op offline).
+  const handleRenameView = useCallback((id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSavedViews((prev) => {
+      const updated = prev.map((v) => (v.id === id ? { ...v, name: trimmed } : v));
+      persistSavedViews(updated);
+      return updated;
+    });
+    crmService.gridViews?.update?.(id, { name: trimmed })?.catch?.(() => { /* offline */ });
+  }, []);
+
+  // Duplicate — the backend clones the view (config + name "(copy)"); reconcile
+  // the returned server view into the list. Falls back to a local clone offline.
+  const handleDuplicateView = useCallback(async (id: string) => {
+    const source = savedViews.find((v) => v.id === id);
+    if (!source) return;
+    try {
+      const created = await crmService.gridViews?.duplicate?.(id);
+      if (created?.id) {
+        setSavedViews((prev) => {
+          const next = [...prev, mapBeView(created)];
+          persistSavedViews(next);
+          return next;
+        });
+        return;
+      }
+    } catch {
+      /* offline — fall through to a local clone */
+    }
+    setSavedViews((prev) => {
+      const next = [...prev, { ...source, id: `v_${Date.now()}`, name: `${source.name} (copy)`, is_default: false }];
+      persistSavedViews(next);
+      return next;
+    });
+  }, [savedViews]);
+
+  // Set default — exactly one default; clear the flag on the others locally.
+  const handleSetDefaultView = useCallback((id: string) => {
+    setSavedViews((prev) => {
+      const updated = prev.map((v) => ({ ...v, is_default: v.id === id }));
+      persistSavedViews(updated);
+      return updated;
+    });
+    crmService.gridViews?.setDefault?.(id)?.catch?.(() => { /* offline */ });
+  }, []);
+
+  // Share — flip visibility for the whole org (team-shared view).
+  const handleToggleShareView = useCallback((id: string) => {
+    let nextShared = false;
+    setSavedViews((prev) => {
+      const updated = prev.map((v) => {
+        if (v.id !== id) return v;
+        nextShared = !v.is_shared;
+        return { ...v, is_shared: nextShared };
+      });
+      persistSavedViews(updated);
+      return updated;
+    });
+    crmService.gridViews?.update?.(id, { is_shared: nextShared })?.catch?.(() => { /* offline */ });
+  }, []);
+
+  // Hydrate saved views from the backend on mount (cross-device). Only overwrite
+  // the localStorage-backed list when the backend actually has views, so a user
+  // with local-only views (before the feature shipped) never loses them.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve(crmService.gridViews?.list?.('lead'))
+      .then((views) => {
+        if (cancelled || !Array.isArray(views) || views.length === 0) return;
+        const mapped = views.map(mapBeView);
+        setSavedViews(mapped);
+        persistSavedViews(mapped);
+        const def = (views as Array<{ id: string; is_default?: boolean }>).find((v) => v.is_default);
+        if (def) setActiveViewId(def.id);
+      })
+      .catch(() => { /* offline — keep localStorage views */ });
+    return () => { cancelled = true; };
+  }, []);
+
   // Grid context
+  // Inline cell edit — optimistic local update, persisted via updateLead, reverted
+  // on failure. `field` is a Lead property key (updateLead maps it to the column).
+  const handleInlineEdit = useCallback(async (lead: Lead, field: string, value: string) => {
+    const previous = (lead as any)[field];
+    if (previous === value) return;
+    setLeads((ls) => ls.map((l) => (l.id === lead.id ? ({ ...l, [field]: value } as Lead) : l)));
+    try {
+      await crmService.updateLead(lead.id, { [field]: value } as any);
+      recordActivity({
+        eventType: 'lead.updated',
+        eventCategory: 'crm',
+        description: `Updated ${field.replace(/_/g, ' ')} on "${lead.company_name}"`,
+        resourceType: 'lead',
+        resourceId: lead.id,
+      }).catch(() => {});
+    } catch {
+      setLeads((ls) => ls.map((l) => (l.id === lead.id ? ({ ...l, [field]: previous } as Lead) : l)));
+    }
+  }, [recordActivity]);
+
   const gridContext = useMemo<GridContext>(() => ({
     users,
     leadStages,
@@ -351,16 +577,32 @@ const LeadsPage = () => {
     onDelete: (lead) => setShowDeleteConfirm(lead.id),
     onOpen: (lead) => navigate(`${lead.id}`),
     formatDate: formatters.formatDate,
-  }), [users, leadStages, canUpdateLead, handleOwnerChange, handleStatusChange, navigate, formatters]);
+    onInlineEdit: handleInlineEdit,
+  }), [users, leadStages, canUpdateLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
 
   const bulkActions = useMemo(() => [
     {
       label: 'Assign',
       icon: <UserCheck size={14} />,
-      onClick: (ids: string[]) => {
-        const ownerId = users[0]?.id;
-        if (ownerId) handleBulkOwnerChange(ids, ownerId);
-      },
+      options: users.map((u) => ({ label: u.full_name || u.email, value: u.id })),
+      onSelect: (ids: string[], ownerId: string) => handleBulkOwnerChange(ids, ownerId),
+    },
+    {
+      label: 'Status',
+      icon: <Flag size={14} />,
+      options: leadStages.map((s) => ({ label: s.name, value: s.name })),
+      onSelect: (ids: string[], statusName: string) => handleBulkStatusChange(ids, statusName),
+    },
+    {
+      label: 'Source',
+      icon: <Filter size={14} />,
+      options: leadSources.map((s) => ({ label: s, value: s })),
+      onSelect: (ids: string[], source: string) => handleBulkSourceChange(ids, source),
+    },
+    {
+      label: 'Export',
+      icon: <Download size={14} />,
+      onClick: (ids: string[]) => handleBulkExport(ids),
     },
     {
       label: 'Delete',
@@ -368,7 +610,8 @@ const LeadsPage = () => {
       variant: 'danger' as const,
       onClick: (ids: string[]) => handleBulkDelete(ids),
     },
-  ], [users, handleBulkOwnerChange, handleBulkDelete]);
+  ].filter((a: any) => !a.options || a.options.length > 0),
+  [users, leadStages, leadSources, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
   return (
     <div className="p-6 pb-16">
@@ -467,24 +710,82 @@ const LeadsPage = () => {
             </button>
 
             {showViewsDropdown && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[220px] py-1.5">
+              <div className="absolute left-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[300px] py-1.5">
                 {savedViews.length === 0 && (
                   <p className="px-4 py-2 text-xs text-slate-500">No saved views yet</p>
                 )}
                 {savedViews.map((view) => (
-                  <div key={view.id} className="flex items-center group">
-                    <button
-                      onClick={() => handleApplyView(view)}
-                      className={`flex-1 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}
-                    >
-                      {view.name}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteView(view.id)}
-                      className="px-2 opacity-0 group-hover:opacity-100 text-slate-600 hover:text-rose-400 transition-all"
-                    >
-                      <X size={12} />
-                    </button>
+                  <div key={view.id} className="group" data-testid={`saved-view-${view.id}`}>
+                    {renamingViewId === view.id ? (
+                      <div className="flex items-center gap-2 px-3 py-2">
+                        <input
+                          autoFocus
+                          type="text"
+                          aria-label="Rename view"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') { handleRenameView(view.id, renameValue); setRenamingViewId(null); }
+                            if (e.key === 'Escape') setRenamingViewId(null);
+                          }}
+                          className="flex-1 bg-slate-800 border border-slate-600 text-slate-200 px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={() => { handleRenameView(view.id, renameValue); setRenamingViewId(null); }}
+                          className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => handleApplyView(view)}
+                          className={`flex-1 flex items-center gap-1.5 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}
+                        >
+                          {view.is_default && <Star size={11} className="text-amber-400 fill-amber-400 shrink-0" />}
+                          <span className="truncate">{view.name}</span>
+                          {view.is_shared && <Share2 size={10} className="text-slate-500 shrink-0" title="Shared with your team" />}
+                        </button>
+                        <div className="flex items-center pr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            aria-label="Rename view"
+                            onClick={() => { setRenamingViewId(view.id); setRenameValue(view.name); }}
+                            className="p-1 text-slate-500 hover:text-slate-200"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            aria-label="Duplicate view"
+                            onClick={() => handleDuplicateView(view.id)}
+                            className="p-1 text-slate-500 hover:text-slate-200"
+                          >
+                            <Copy size={12} />
+                          </button>
+                          <button
+                            aria-label={view.is_default ? 'Default view' : 'Set as default'}
+                            onClick={() => handleSetDefaultView(view.id)}
+                            className={`p-1 ${view.is_default ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'}`}
+                          >
+                            <Star size={12} className={view.is_default ? 'fill-amber-400' : ''} />
+                          </button>
+                          <button
+                            aria-label={view.is_shared ? 'Unshare view' : 'Share view'}
+                            onClick={() => handleToggleShareView(view.id)}
+                            className={`p-1 ${view.is_shared ? 'text-blue-400' : 'text-slate-500 hover:text-blue-300'}`}
+                          >
+                            <Share2 size={12} />
+                          </button>
+                          <button
+                            aria-label="Delete view"
+                            onClick={() => handleDeleteView(view.id)}
+                            className="p-1 text-slate-500 hover:text-rose-400"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div className="border-t border-slate-700/50 mt-1 pt-1">
@@ -511,6 +812,36 @@ const LeadsPage = () => {
                     </button>
                   )}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Advanced filter builder */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAdvancedFilters((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
+                advancedFilter
+                  ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+              }`}
+            >
+              <SlidersHorizontal size={14} />
+              Advanced
+              {advancedFilter && (
+                <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5">
+                  {countActiveRules(advancedFilter)}
+                </span>
+              )}
+            </button>
+
+            {showAdvancedFilters && (
+              <div className="absolute right-0 top-full mt-1.5 z-50">
+                <LeadFilterBuilder
+                  value={advancedFilter}
+                  onApply={handleApplyAdvancedFilter}
+                  onClose={() => setShowAdvancedFilters(false)}
+                />
               </div>
             )}
           </div>

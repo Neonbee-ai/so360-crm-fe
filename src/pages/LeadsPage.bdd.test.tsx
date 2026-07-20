@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -9,16 +9,38 @@ const mockGetUsers = vi.fn();
 const mockUpdateLead = vi.fn();
 const mockLogActivity = vi.fn();
 const mockDeleteLead = vi.fn();
+const mockBulkDeleteLeads = vi.fn();
+const mockBulkUpdateLeads = vi.fn();
+const mockBulkTagLeads = vi.fn();
+const mockViewsList = vi.fn();
+const mockViewsCreate = vi.fn();
+const mockViewsRemove = vi.fn();
+const mockViewsUpdate = vi.fn();
+const mockViewsDuplicate = vi.fn();
+const mockViewsSetDefault = vi.fn();
+const mockGetLeadsPaged = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
+    getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     deleteLead: (...a: any[]) => mockDeleteLead(...a),
+    bulkDeleteLeads: (...a: any[]) => mockBulkDeleteLeads(...a),
+    bulkUpdateLeads: (...a: any[]) => mockBulkUpdateLeads(...a),
+    bulkTagLeads: (...a: any[]) => mockBulkTagLeads(...a),
+    gridViews: {
+      list: (...a: any[]) => mockViewsList(...a),
+      create: (...a: any[]) => mockViewsCreate(...a),
+      remove: (...a: any[]) => mockViewsRemove(...a),
+      update: (...a: any[]) => mockViewsUpdate(...a),
+      duplicate: (...a: any[]) => mockViewsDuplicate(...a),
+      setDefault: (...a: any[]) => mockViewsSetDefault(...a),
+    },
   },
 }));
 
@@ -116,7 +138,11 @@ const settings = {
   ],
   lead_custom_fields: [],
   deal_custom_fields: [],
-  lead_sources: [],
+  lead_sources: [
+    { id: 's1', name: 'Website', archived: false },
+    { id: 's2', name: 'Referral', archived: false },
+    { id: 's3', name: 'Legacy', archived: true },
+  ],
   lead_scoring: [],
   default_owner_id: 'u1',
 };
@@ -169,6 +195,16 @@ beforeEach(async () => {
   mockUpdateLead.mockResolvedValue({});
   mockLogActivity.mockResolvedValue({});
   mockDeleteLead.mockResolvedValue({});
+  mockBulkDeleteLeads.mockResolvedValue({ requested: 1, deleted: ['l1'], failed: [] });
+  mockBulkUpdateLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
+  mockBulkTagLeads.mockResolvedValue({ requested: 1, updated: ['l1'], failed: [] });
+  mockGetLeadsPaged.mockResolvedValue({ data: [leads[1]], total: 1 });
+  mockViewsList.mockResolvedValue([]);
+  mockViewsCreate.mockResolvedValue({ id: 'srv-1', name: 'Server View', config: { filters: {} } });
+  mockViewsRemove.mockResolvedValue({ deleted: true });
+  mockViewsUpdate.mockResolvedValue({ id: 'srv-1', name: 'Renamed', config: { filters: {} } });
+  mockViewsDuplicate.mockResolvedValue({ id: 'srv-dup', name: 'Server View (copy)', config: { filters: {} } });
+  mockViewsSetDefault.mockResolvedValue({ id: 'srv-1', is_default: true });
 });
 
 describe('LeadsPage', () => {
@@ -432,6 +468,253 @@ describe('LeadsPage', () => {
       render(<LeadsPage />);
       await user.click(screen.getByText('Views'));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('LeadsPage — bulk actions', () => {
+  const getBulkAction = (label: string) =>
+    capturedGridProps.bulkActions.find((a: { label: string }) => a.label === label);
+
+  it('When the bulk Delete action fires / Then it calls the bulk delete endpoint once and removes confirmed rows', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1']); });
+
+    expect(mockBulkDeleteLeads).toHaveBeenCalledWith(['l1']);
+    expect(mockBulkDeleteLeads).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
+  });
+
+  it('When the bulk Assign action fires / Then it sends owner_id via the bulk update endpoint', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Assign').onClick(['l1']); });
+
+    expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { owner_id: 'u1' });
+  });
+
+  it('When the bulk delete endpoint fails / Then rows are still optimistically removed', async () => {
+    mockBulkDeleteLeads.mockRejectedValueOnce(new Error('offline'));
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1']); });
+
+    await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
+  });
+});
+
+describe('LeadsPage — saved views (backend)', () => {
+  it('hydrates saved views from the backend on mount', async () => {
+    mockViewsList.mockResolvedValueOnce([
+      { id: 'srv-9', name: 'Server View', config: { filters: {} }, is_default: false },
+    ]);
+    const user = userEvent.setup();
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    await user.click(screen.getByText('Views'));
+    await waitFor(() => expect(screen.getByText('Server View')).toBeInTheDocument());
+  });
+
+  it('creates a view on the backend when saving', async () => {
+    const user = userEvent.setup();
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    await user.click(screen.getByText('Views'));
+    await user.click(screen.getByText('Save current view'));
+    await user.type(screen.getByPlaceholderText('View name...'), 'My Hot Leads');
+    await user.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(mockViewsCreate).toHaveBeenCalledWith(expect.objectContaining({ name: 'My Hot Leads' })),
+    );
+  });
+
+  it('deletes a view on the backend', async () => {
+    mockViewsList.mockResolvedValueOnce([
+      { id: 'srv-9', name: 'Doomed View', config: { filters: {} } },
+    ]);
+    const user = userEvent.setup();
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    await user.click(screen.getByText('Views'));
+    await waitFor(() => expect(screen.getByText('Doomed View')).toBeInTheDocument());
+    // The delete (X) button sits next to the view name in the dropdown row.
+    const row = screen.getByText('Doomed View').closest('div')!;
+    const delBtn = row.querySelector('button:last-child')!;
+    await user.click(delBtn);
+    await waitFor(() => expect(mockViewsRemove).toHaveBeenCalledWith('srv-9'));
+  });
+
+  describe('Advanced (server-side) filtering', () => {
+    it('applies a nested filter tree via the paged endpoint and swaps the list', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+      await user.click(screen.getByText('Advanced'));
+      await user.click(screen.getByText(/add condition/i));
+      const rule = screen.getByTestId('filter-rule');
+      fireEvent.change(rule.querySelector('input[aria-label="Value"]')!, { target: { value: 'Beta' } });
+      await user.click(screen.getByText(/^apply/i));
+
+      await waitFor(() =>
+        expect(mockGetLeadsPaged).toHaveBeenCalledWith(
+          expect.objectContaining({ filter: expect.stringContaining('company_name') }),
+        ),
+      );
+      // Server returned only Beta Inc (l2) — the grid reflects the filtered set.
+      await waitFor(() => {
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+      });
+    });
+
+    it('does not call the paged endpoint when no advanced filter is set', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(mockGetLeadsPaged).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Bulk actions wiring', () => {
+    const bulkAction = (label: string) =>
+      capturedGridProps.bulkActions.find((a: any) => a.label === label);
+
+    const readyGrid = async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    };
+
+    it('exposes owner/status/source/export/delete bulk actions', async () => {
+      await readyGrid();
+      const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+      expect(labels).toEqual(expect.arrayContaining(['Assign', 'Status', 'Source', 'Export', 'Delete']));
+    });
+
+    it('offers only non-archived sources as options', async () => {
+      await readyGrid();
+      const values = bulkAction('Source').options.map((o: any) => o.value);
+      expect(values).toEqual(['Website', 'Referral']);
+    });
+
+    it('bulk status change calls the paged bulk-update with a status patch', async () => {
+      await readyGrid();
+      bulkAction('Status').onSelect(['l1', 'l3'], 'Qualified');
+      await waitFor(() =>
+        expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1', 'l3'], { status: 'Qualified' }),
+      );
+    });
+
+    it('bulk source change calls bulk-update with a source patch', async () => {
+      await readyGrid();
+      bulkAction('Source').onSelect(['l1'], 'Website');
+      await waitFor(() =>
+        expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { source: 'Website' }),
+      );
+    });
+
+    it('bulk assign calls bulk-update with owner_id', async () => {
+      await readyGrid();
+      bulkAction('Assign').onSelect(['l1'], 'u2');
+      await waitFor(() =>
+        expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { owner_id: 'u2' }),
+      );
+    });
+
+    it('export downloads a CSV of the selected rows', async () => {
+      await readyGrid();
+      const createUrl = vi.fn(() => 'blob:mock');
+      const revokeUrl = vi.fn();
+      vi.stubGlobal('URL', { ...URL, createObjectURL: createUrl, revokeObjectURL: revokeUrl });
+      bulkAction('Export').onClick(['l1']);
+      expect(createUrl).toHaveBeenCalled();
+      vi.unstubAllGlobals();
+    });
+  });
+
+  describe('Saved view operations (rename/duplicate/set-default/share)', () => {
+    const withView = (over: Record<string, any> = {}) => {
+      mockViewsList.mockResolvedValue([
+        { id: 'srv-1', name: 'Alpha', config: { filters: {} }, is_default: false, is_shared: false, ...over },
+      ]);
+    };
+    const openViews = async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Views'));
+      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
+    };
+
+    it('renames a view via the backend update', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Rename view')); // pencil
+      const input = screen.getByLabelText('Rename view'); // now the input
+      fireEvent.change(input, { target: { value: 'Beta' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      await waitFor(() => expect(mockViewsUpdate).toHaveBeenCalledWith('srv-1', { name: 'Beta' }));
+      expect(screen.getByText('Beta')).toBeInTheDocument();
+    });
+
+    it('duplicates a view and appends the server copy', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Duplicate view'));
+      await waitFor(() => expect(mockViewsDuplicate).toHaveBeenCalledWith('srv-1'));
+      await waitFor(() => expect(screen.getByText('Server View (copy)')).toBeInTheDocument());
+    });
+
+    it('sets a view as the default', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Set as default'));
+      await waitFor(() => expect(mockViewsSetDefault).toHaveBeenCalledWith('srv-1'));
+    });
+
+    it('shares a view with the team', async () => {
+      withView();
+      await openViews();
+      fireEvent.click(screen.getByLabelText('Share view'));
+      await waitFor(() => expect(mockViewsUpdate).toHaveBeenCalledWith('srv-1', { is_shared: true }));
+    });
+
+    it('marks the default view once it is hydrated from the backend', async () => {
+      withView({ is_default: true });
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument()); // active-view chip
+      fireEvent.click(screen.getByText('Alpha'));
+      await waitFor(() => expect(screen.getByLabelText('Default view')).toBeInTheDocument());
+    });
+  });
+
+  describe('Inline cell editing wiring', () => {
+    it('persists an inline edit via updateLead and reflects it optimistically', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+      capturedGridProps.context.onInlineEdit(lead, 'company_name', 'Acme Global');
+      await waitFor(() =>
+        expect(mockUpdateLead).toHaveBeenCalledWith('l1', { company_name: 'Acme Global' }),
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Global'),
+      );
+    });
+
+    it('reverts the optimistic change when the update fails', async () => {
+      mockUpdateLead.mockRejectedValueOnce(new Error('boom'));
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      const lead = capturedGridProps.leads.find((l: any) => l.id === 'l1');
+      capturedGridProps.context.onInlineEdit(lead, 'company_name', 'Broken');
+      await waitFor(() => expect(mockUpdateLead).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Corp'),
+      );
     });
   });
 });
