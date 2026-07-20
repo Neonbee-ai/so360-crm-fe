@@ -41,7 +41,7 @@ describe('LeadCardList', () => {
     expect(screen.getByTestId('lead-card-l2')).toBeInTheDocument();
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     expect(within(screen.getByTestId('lead-card-l1')).getByText('Jane Doe')).toBeInTheDocument();
-    expect(screen.getByText('72')).toBeInTheDocument();
+    expect(within(screen.getByTestId('lead-card-l1')).getByText('72')).toBeInTheDocument();
   });
 
   it('opens a lead when its card is tapped', () => {
