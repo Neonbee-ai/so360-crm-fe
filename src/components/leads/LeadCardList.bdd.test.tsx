@@ -40,7 +40,7 @@ describe('LeadCardList', () => {
     expect(screen.getByTestId('lead-card-l1')).toBeInTheDocument();
     expect(screen.getByTestId('lead-card-l2')).toBeInTheDocument();
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
-    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    expect(within(screen.getByTestId('lead-card-l1')).getByText('Jane Doe')).toBeInTheDocument();
     expect(screen.getByText('72')).toBeInTheDocument();
   });
 

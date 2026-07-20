@@ -491,7 +491,7 @@ describe('LeadsPage — bulk actions', () => {
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
 
-    await act(async () => { getBulkAction('Assign').onClick(['l1']); });
+    await act(async () => { getBulkAction('Assign').onSelect(['l1'], 'u1'); });
 
     expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { owner_id: 'u1' });
   });
