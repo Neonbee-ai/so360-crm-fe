@@ -67,6 +67,8 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
     onUpdate: ({ editor: e }) => onChange(e.getHTML()),
     editorProps: {
       attributes: {
+        role: 'textbox',
+        'aria-multiline': 'true',
         class:
           'min-h-[6rem] text-sm text-slate-50 focus:outline-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-400 [&_a]:underline [&_code]:bg-slate-800 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-slate-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto',
       },
