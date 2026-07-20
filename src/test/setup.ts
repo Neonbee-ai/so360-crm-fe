@@ -16,3 +16,9 @@ document.createRange = () => {
   }) as unknown as DOMRectList;
   return range;
 };
+
+// jsdom doesn't implement elementFromPoint, which ProseMirror calls on
+// mousedown to resolve a document position — without this it throws an
+// uncaught async TypeError that can corrupt unrelated tests sharing the
+// same worker.
+document.elementFromPoint = () => null;
