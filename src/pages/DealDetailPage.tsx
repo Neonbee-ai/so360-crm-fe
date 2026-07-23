@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import SignRequestModal from '../components/sign/SignRequestModal';
 import DealProductsTab from './components/DealProductsTab';
+import CallsTab from './components/CallsTab';
 import { CrossLinkChip } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -19,7 +20,7 @@ import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls';
 
 // Notify other MFEs (e.g. the Documents module) that a CRM deal document changed
 // so they can refresh linked-document views. Uses the shared event bus with a
@@ -695,7 +696,8 @@ const DealDetailPage = () => {
                                 { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
                                 { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
                                 { id: 'products', name: 'Products', icon: Briefcase },
-                                { id: 'custom', name: 'Additional Info', icon: Tag }
+                                { id: 'custom', name: 'Additional Info', icon: Tag },
+                                { id: 'calls', name: 'Calls', icon: Phone }
                             ].map(tab => (
                                 <button
                                     key={tab.id}
@@ -983,6 +985,10 @@ const DealDetailPage = () => {
                                     dealId={deal.id}
                                     leadId={deal.lead_id}
                                 />
+                            )}
+
+                            {activeTab === 'calls' && (
+                                <CallsTab dealId={deal.id} />
                             )}
                         </div>
                     </div>

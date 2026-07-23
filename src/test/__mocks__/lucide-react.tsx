@@ -109,3 +109,4 @@ export const Underline = createIcon('Underline');
 export const List = createIcon('List');
 export const ListOrdered = createIcon('ListOrdered');
 export const Code2 = createIcon('Code2');
+export const Play = createIcon('Play');

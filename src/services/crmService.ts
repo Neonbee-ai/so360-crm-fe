@@ -1095,6 +1095,87 @@ export const documentsApi = {
 };
 
 // ============================================================================
+// CALLS API — call recordings, transcripts, emotion/sentiment analysis
+// ============================================================================
+export interface CallRecord {
+    id: string;
+    tenant_id: string;
+    org_id: string;
+    lead_id: string | null;
+    deal_id: string | null;
+    direction: 'inbound' | 'outbound';
+    occurred_at: string;
+    duration_seconds: number | null;
+    phone_number: string | null;
+    owner_person_id: string | null;
+    dms_document_id: string | null;
+    transcript: any;
+    transcript_text: string | null;
+    sentiment: 'positive' | 'neutral' | 'negative' | 'mixed' | null;
+    emotion_scores: Record<string, number> | null;
+    external_call_id: string | null;
+    source: string;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CallUploadFields {
+    lead_id?: string;
+    deal_id?: string;
+    direction?: 'inbound' | 'outbound';
+    occurred_at?: string;
+    duration_seconds?: number;
+    phone_number?: string;
+    owner_person_id?: string;
+    transcript_text?: string;
+    sentiment?: 'positive' | 'neutral' | 'negative' | 'mixed';
+    external_call_id?: string;
+    source?: string;
+}
+
+export const callsApi = {
+    getAllByLead: async (leadId: string): Promise<CallRecord[]> => {
+        return apiClient.get<CallRecord[]>(`/calls/lead/${leadId}`);
+    },
+    getAllByDeal: async (dealId: string): Promise<CallRecord[]> => {
+        return apiClient.get<CallRecord[]>(`/calls/deal/${dealId}`);
+    },
+    getOne: async (id: string): Promise<CallRecord> => {
+        return apiClient.get<CallRecord>(`/calls/${id}`);
+    },
+    // Single-step upload — pushes the audio file straight to the CRM BE, which
+    // streams it into the Document Management Service and creates the
+    // crm_call_records row (carrying dms_document_id) in one round-trip.
+    upload: async (file: File, fields: CallUploadFields): Promise<CallRecord> => {
+        return apiClient.uploadMultipart<CallRecord>('/calls/upload', file, {
+            lead_id: fields.lead_id,
+            deal_id: fields.deal_id,
+            direction: fields.direction,
+            occurred_at: fields.occurred_at,
+            duration_seconds: fields.duration_seconds !== undefined ? String(fields.duration_seconds) : undefined,
+            phone_number: fields.phone_number,
+            owner_person_id: fields.owner_person_id,
+            transcript_text: fields.transcript_text,
+            sentiment: fields.sentiment,
+            external_call_id: fields.external_call_id,
+            source: fields.source,
+        });
+    },
+    // Resolves a signed playback URL for a DMS-backed recording. Resolved on
+    // demand — callers should not fetch until the user clicks play.
+    getPlaybackUrl: async (id: string): Promise<{ url: string; expires_in: number }> => {
+        return apiClient.get<{ url: string; expires_in: number }>(`/calls/${id}/playback-url`);
+    },
+    update: async (id: string, data: Partial<Pick<CallRecord, 'transcript_text' | 'sentiment' | 'emotion_scores' | 'duration_seconds'>>): Promise<CallRecord> => {
+        return apiClient.patch<CallRecord>(`/calls/${id}`, data);
+    },
+    delete: async (id: string): Promise<void> => {
+        return apiClient.delete<void>(`/calls/${id}`);
+    },
+};
+
+// ============================================================================
 // USERS API
 // ============================================================================
 
@@ -1797,6 +1878,26 @@ export const crmService = {
 
     deleteDocument: async (entityId: string, documentId: string): Promise<void> => {
         return documentsApi.delete(documentId);
+    },
+
+    // Calls
+    async getCallsByLeadId(leadId: string): Promise<CallRecord[]> {
+        return callsApi.getAllByLead(leadId);
+    },
+    async getCallsByDealId(dealId: string): Promise<CallRecord[]> {
+        return callsApi.getAllByDeal(dealId);
+    },
+    uploadCallRecording: async (file: File, fields: CallUploadFields): Promise<CallRecord> => {
+        return callsApi.upload(file, fields);
+    },
+    getCallPlaybackUrl: async (id: string): Promise<{ url: string; expires_in: number }> => {
+        return callsApi.getPlaybackUrl(id);
+    },
+    updateCallRecord: async (id: string, data: Partial<Pick<CallRecord, 'transcript_text' | 'sentiment' | 'emotion_scores' | 'duration_seconds'>>): Promise<CallRecord> => {
+        return callsApi.update(id, data);
+    },
+    deleteCallRecord: async (id: string): Promise<void> => {
+        return callsApi.delete(id);
     },
 
     // Customer Feedback (Forms module integration)

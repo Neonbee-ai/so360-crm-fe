@@ -24,10 +24,11 @@ import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
+import CallsTab from './components/CallsTab';
 import NoteEditor from '../components/notes/NoteEditor';
 import NoteContent from '../components/notes/NoteContent';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls';
 
 // Tiptap emits '<p></p>' for an empty editor rather than '', so a plain
 // .trim() check isn't enough — strip tags first to see if there's real content.
@@ -723,6 +724,9 @@ const LeadDetailPage = () => {
                             <button onClick={() => setActiveTab('feedback')} className={tabCls('feedback')}>
                                 <MessageSquare size={14} /> Feedback
                             </button>
+                            <button onClick={() => setActiveTab('calls')} className={tabCls('calls')}>
+                                <Phone size={14} /> Calls
+                            </button>
                         </div>
 
                         <div className="p-6">
@@ -1230,6 +1234,10 @@ const LeadDetailPage = () => {
 
                             {activeTab === 'feedback' && lead && (
                                 <CustomerFeedbackTab leadId={lead.id} />
+                            )}
+
+                            {activeTab === 'calls' && lead && (
+                                <CallsTab leadId={lead.id} />
                             )}
 
                         </div>
