@@ -272,7 +272,8 @@ describe('LeadsPage', () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const creatorSelect = screen.getByDisplayValue('Created By: All');
+      await user.click(screen.getByText('More Filters'));
+      const creatorSelect = screen.getByDisplayValue('All');
       await user.selectOptions(creatorSelect, 'u2');
       await waitFor(() => {
         expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
@@ -303,11 +304,46 @@ describe('LeadsPage', () => {
       expect(screen.getByTestId('detail-panel')).toHaveTextContent('Acme Corp');
     });
 
-    it('When clicking Create Lead / Then opens the create lead modal', async () => {
+    it('When clicking New Lead / Then opens the create lead modal', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
-      await user.click(screen.getByText('Create Lead'));
+      await user.click(screen.getByText('New Lead'));
       expect(screen.getByTestId('create-lead-modal')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given the compact KPI status chips', () => {
+    it('When the page renders / Then each chip shows the count for its stage', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(screen.getByText('3 Total')).toBeInTheDocument();
+      expect(screen.getByText('2 New')).toBeInTheDocument();
+      expect(screen.getByText('1 Qualified')).toBeInTheDocument();
+      expect(screen.getByText('0 Converted')).toBeInTheDocument();
+    });
+
+    it('When a stage chip is clicked / Then it applies the same status filter as the Status select', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      await user.click(screen.getByText('1 Qualified'));
+      await waitFor(() => {
+        expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      });
+    });
+
+    it('When an active stage chip is clicked again / Then it resets the status filter to All', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      await user.click(screen.getByText('1 Qualified'));
+      await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
+      await user.click(screen.getByText('1 Qualified'));
+      await waitFor(() => {
+        expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
+        expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
+      });
     });
   });
 
@@ -385,33 +421,17 @@ describe('LeadsPage', () => {
     });
   });
 
-  describe('Given the leads quota counter', () => {
-    const staleQuotaData = { current_usage: 1, limit: -1, is_unlimited: true };
-
-    beforeEach(async () => {
-      const shellContext = await import('@so360/shell-context');
-      vi.mocked(shellContext.useQuota).mockReturnValue({
-        quotas: [],
-        isLoading: false,
-        error: null,
-        isExceeded: () => false,
-        getQuota: () => staleQuotaData,
-        getPercentage: () => 0,
-        refresh: async () => {},
-      });
-    });
-
-    it('When 3 leads are loaded / Then QuotaBar used equals leads.length not quotaData.current_usage', async () => {
+  describe('Given the leads KPI total chip (replaces the removed quota progress bar)', () => {
+    it('When 3 leads are loaded / Then the Total chip shows leads.length', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      const bar = screen.getByTestId('quota-bar');
-      expect(bar.getAttribute('data-used')).toBe('3');
+      expect(screen.getByText('3 Total')).toBeInTheDocument();
     });
 
-    it('When a lead is deleted / Then QuotaBar used decrements to reflect new leads.length', async () => {
+    it('When a lead is deleted / Then the Total chip decrements to reflect the new leads.length', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('3');
+      expect(screen.getByText('3 Total')).toBeInTheDocument();
       fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
       const confirmBtn = screen.getAllByText('Delete').find(
@@ -419,37 +439,34 @@ describe('LeadsPage', () => {
       );
       fireEvent.click(confirmBtn!);
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
-      await waitFor(() =>
-        expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('2'),
-      );
+      await waitFor(() => expect(screen.getByText('2 Total')).toBeInTheDocument());
     });
 
-    it('When no leads exist / Then QuotaBar used is 0', async () => {
+    it('When no leads exist / Then the Total chip shows 0', async () => {
       mockGetLeads.mockResolvedValue([]);
       render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('quota-bar')).toBeInTheDocument());
-      expect(screen.getByTestId('quota-bar').getAttribute('data-used')).toBe('0');
+      await waitFor(() => expect(screen.getByText('0 Total')).toBeInTheDocument());
     });
 
-    it('When QuotaBar label is rendered / Then it shows "Leads"', async () => {
+    it('When the page loads / Then no quota progress bar is rendered', async () => {
       render(<LeadsPage />);
-      await waitFor(() => expect(screen.getByTestId('quota-bar')).toBeInTheDocument());
-      expect(screen.getByTestId('quota-bar').textContent).toContain('Leads');
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(screen.queryByTestId('quota-bar')).not.toBeInTheDocument();
     });
   });
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
-    it('When effectiveFlagsLoaded is false / Then Create Lead button is absent', async () => {
+    it('When effectiveFlagsLoaded is false / Then New Lead button is absent', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: false,
         isFeatureEnabled: () => false,
       } as any);
       render(<LeadsPage />);
-      expect(screen.queryByText('Create Lead')).not.toBeInTheDocument();
+      expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
     });
 
-    it('When effectiveFlagsLoaded is true / Then Create Lead button is present', async () => {
+    it('When effectiveFlagsLoaded is true / Then New Lead button is present', async () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: true,
@@ -458,7 +475,7 @@ describe('LeadsPage', () => {
       } as any);
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
-      expect(screen.getByText('Create Lead')).toBeInTheDocument();
+      expect(screen.getByText('New Lead')).toBeInTheDocument();
     });
   });
 

@@ -30,7 +30,7 @@ import { countActiveRules, type FilterGroup } from '../components/leads/leadFilt
 import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import { QuotaBar, QuotaGate } from '@so360/design-system';
+import { QuotaGate } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
@@ -171,6 +171,7 @@ const LeadsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   // Advanced (server-side) filter tree. null = feature inactive, the normal
   // fetchInitialData list governs. Non-null triggers a server-side refetch via
   // getLeadsPaged so nested AND/OR filters run against the whole dataset, not
@@ -317,6 +318,21 @@ const LeadsPage = () => {
       return true;
     });
   }, [leads, filters]);
+
+  // KPI chip counts — derived purely for display, computed off the full unpaginated
+  // list (not filteredLeads) so the chips always reflect totals regardless of the
+  // active filter/search state.
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const lead of leads) counts[lead.status] = (counts[lead.status] ?? 0) + 1;
+    return counts;
+  }, [leads]);
+
+  const kpiStages = useMemo(() => leadStages.slice(0, 4), [leadStages]);
+
+  const toggleStatusChip = useCallback((stageName: string) => {
+    setFilter('status', filters.status === stageName ? 'All' : stageName);
+  }, [filters.status, setFilter]);
 
   const sandboxLeads = useMemo(
     () => (isSandboxMode ? filteredLeads.slice(0, sandboxEntryLimit) : filteredLeads),
@@ -612,12 +628,14 @@ const LeadsPage = () => {
   [users, leadStages, leadSources, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
   return (
-    <div className="p-6 pb-16">
-      {/* Header */}
-      <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-50 tracking-tight">Leads & Accounts</h1>
-          <p className="text-slate-400 mt-0.5 text-sm">Enterprise CRM workspace</p>
+    <div className="px-4 pt-3 pb-6 md:px-6">
+      {/* Compact header */}
+      <header className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-baseline gap-2.5 min-w-0">
+          <h1 className="text-lg font-bold text-slate-50 tracking-tight truncate">Leads & Accounts</h1>
+          <span className="text-sm text-slate-500 shrink-0">
+            {leads.length} Lead{leads.length !== 1 ? 's' : ''}
+          </span>
         </div>
         {canCreateLead && (
           <QuotaGate
@@ -630,29 +648,45 @@ const LeadsPage = () => {
           >
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+              className="flex items-center gap-1.5 h-10 bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg font-semibold text-sm transition-all shadow-lg shadow-blue-900/20 active:scale-95 shrink-0"
             >
-              <Plus size={18} />
-              Create Lead
+              <Plus size={16} />
+              New Lead
             </button>
           </QuotaGate>
         )}
       </header>
 
-      {/* Quota bar */}
-      {quotaData && (
-        <QuotaBar
-          className="mb-4"
-          label="Leads"
-          used={leads.length}
-          limit={quotaData.limit}
-          isUnlimited={quotaData.is_unlimited}
-        />
-      )}
+      {/* KPI chips */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        <button
+          onClick={() => setFilter('status', 'All')}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+            filters.status === 'All'
+              ? 'bg-blue-500/10 text-blue-300 border-blue-500/40'
+              : 'bg-slate-900/60 text-slate-400 border-slate-700/50 hover:text-slate-200'
+          }`}
+        >
+          {leads.length} Total
+        </button>
+        {kpiStages.map((stage) => (
+          <button
+            key={stage.id}
+            onClick={() => toggleStatusChip(stage.name)}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+              filters.status === stage.name
+                ? 'bg-blue-500/10 text-blue-300 border-blue-500/40'
+                : 'bg-slate-900/60 text-slate-400 border-slate-700/50 hover:text-slate-200'
+            }`}
+          >
+            {statusCounts[stage.name] ?? 0} {stage.name}
+          </button>
+        ))}
+      </div>
 
       {/* Sandbox notice */}
       {isSandboxMode && isLimited(filteredLeads.length) && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-400 text-sm">
+        <div className="mb-3 flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-400 text-sm">
           <span className="font-semibold">Sandbox:</span>
           <span>Showing {sandboxEntryLimit} of {filteredLeads.length} leads. Switch to Production to view all records.</span>
         </div>
@@ -666,38 +700,138 @@ const LeadsPage = () => {
         existingLeads={leads.map((l) => l.company_name)}
       />
 
-      {/* Toolbar */}
-      <div className="flex flex-col gap-3 mb-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-        {/* Row 1: search + segment + saved views */}
-        <div className="flex flex-wrap items-center gap-3">
-          {activeSegmentName && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
-              <Tag size={12} />
-              Segment: {activeSegmentName}
-            </span>
+      {/* Toolbar — single consolidated row wherever width permits */}
+      <div className="flex flex-wrap items-center gap-2 mb-3 bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/50">
+        {activeSegmentName && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20 shrink-0">
+            <Tag size={12} />
+            Segment: {activeSegmentName}
+          </span>
+        )}
+
+        <div className="flex-1 min-w-[180px] relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+          <input
+            type="text"
+            placeholder="Search leads..."
+            value={filters.search}
+            onChange={(e) => setFilter('search', e.target.value)}
+            className="w-full bg-slate-950 border border-slate-700/50 text-slate-200 pl-10 pr-4 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          />
+          {filters.search && (
+            <button
+              onClick={() => setFilter('search', '')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+            >
+              <X size={14} />
+            </button>
           )}
+        </div>
 
-          <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+        <select
+          value={filters.status}
+          onChange={(e) => setFilter('status', e.target.value)}
+          className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
+        >
+          <option value="All">All Statuses</option>
+          {leadStages.map((stage) => (
+            <option key={stage.id} value={stage.name}>{stage.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={filters.owner}
+          onChange={(e) => setFilter('owner', e.target.value)}
+          className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
+        >
+          <option value="All">All Owners</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>{user.full_name}</option>
+          ))}
+        </select>
+
+        <select
+          value={filters.dateRange}
+          onChange={(e) => setFilter('dateRange', e.target.value)}
+          className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
+        >
+          <option value="All">All Time</option>
+          <option value="Today">Today</option>
+          <option value="Yesterday">Yesterday</option>
+          <option value="This Week">This Week</option>
+          <option value="Last Week">Last Week</option>
+          <option value="This Month">This Month</option>
+          <option value="Last Month">Last Month</option>
+          <option value="Custom">Custom Range</option>
+        </select>
+
+        {filters.dateRange === 'Custom' && (
+          <div className="flex items-center gap-2 bg-slate-950 border border-slate-700/50 rounded-lg px-2 py-1 shrink-0">
             <input
-              type="text"
-              placeholder="Search leads..."
-              value={filters.search}
-              onChange={(e) => setFilter('search', e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/50 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              type="date"
+              value={filters.customDateStart}
+              onChange={(e) => setFilter('customDateStart', e.target.value)}
+              className="bg-transparent text-slate-300 text-xs focus:outline-none"
             />
-            {filters.search && (
-              <button
-                onClick={() => setFilter('search', '')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-              >
-                <X size={14} />
-              </button>
-            )}
+            <span className="text-slate-500">–</span>
+            <input
+              type="date"
+              value={filters.customDateEnd}
+              onChange={(e) => setFilter('customDateEnd', e.target.value)}
+              className="bg-transparent text-slate-300 text-xs focus:outline-none"
+            />
           </div>
+        )}
 
-          {/* Saved views */}
-          <div className="relative">
+        {/* More filters — Created By */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowMoreFilters((v) => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
+              filters.creator !== 'All'
+                ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+            }`}
+          >
+            <Filter size={13} />
+            More Filters
+            {filters.creator !== 'All' && (
+              <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5">1</span>
+            )}
+            <ChevronDown size={13} />
+          </button>
+
+          {showMoreFilters && (
+            <div className="absolute right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[220px] p-3">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Created By</label>
+              <select
+                value={filters.creator}
+                onChange={(e) => setFilter('creator', e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              >
+                <option value="All">All</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>{user.full_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {hasActiveFilters && (
+          <button
+            onClick={clearFilters}
+            className="text-xs text-rose-400 hover:text-rose-300 underline flex items-center gap-1 shrink-0"
+          >
+            <X size={12} />
+            Clear filters
+          </button>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Saved views */}
+        <div className="relative shrink-0">
             <button
               onClick={() => setShowViewsDropdown((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-700/50 transition-colors"
@@ -847,91 +981,6 @@ const LeadsPage = () => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Row 2: Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Filter size={14} className="text-slate-500" />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Filters:</span>
-          </div>
-
-          <select
-            value={filters.status}
-            onChange={(e) => setFilter('status', e.target.value)}
-            className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          >
-            <option value="All">All Statuses</option>
-            {leadStages.map((stage) => (
-              <option key={stage.id} value={stage.name}>{stage.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={filters.owner}
-            onChange={(e) => setFilter('owner', e.target.value)}
-            className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          >
-            <option value="All">All Owners</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>{user.full_name}</option>
-            ))}
-          </select>
-
-          <select
-            value={filters.creator}
-            onChange={(e) => setFilter('creator', e.target.value)}
-            className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          >
-            <option value="All">Created By: All</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>{user.full_name}</option>
-            ))}
-          </select>
-
-          <select
-            value={filters.dateRange}
-            onChange={(e) => setFilter('dateRange', e.target.value)}
-            className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          >
-            <option value="All">All Time</option>
-            <option value="Today">Today</option>
-            <option value="Yesterday">Yesterday</option>
-            <option value="This Week">This Week</option>
-            <option value="Last Week">Last Week</option>
-            <option value="This Month">This Month</option>
-            <option value="Last Month">Last Month</option>
-            <option value="Custom">Custom Range</option>
-          </select>
-
-          {filters.dateRange === 'Custom' && (
-            <div className="flex items-center gap-2 bg-slate-950 border border-slate-700/50 rounded-lg px-2 py-1">
-              <input
-                type="date"
-                value={filters.customDateStart}
-                onChange={(e) => setFilter('customDateStart', e.target.value)}
-                className="bg-transparent text-slate-300 text-xs focus:outline-none"
-              />
-              <span className="text-slate-500">–</span>
-              <input
-                type="date"
-                value={filters.customDateEnd}
-                onChange={(e) => setFilter('customDateEnd', e.target.value)}
-                className="bg-transparent text-slate-300 text-xs focus:outline-none"
-              />
-            </div>
-          )}
-
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-xs text-rose-400 hover:text-rose-300 underline flex items-center gap-1"
-            >
-              <X size={12} />
-              Clear filters
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Error state */}

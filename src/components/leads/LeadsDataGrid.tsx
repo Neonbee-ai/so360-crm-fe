@@ -1411,7 +1411,7 @@ export function LeadsDataGrid({
       <div
         ref={containerRef}
         className="rounded-xl border border-slate-700/50 overflow-auto bg-slate-950"
-        style={{ maxHeight: 'calc(100vh - 320px)' }}
+        style={{ maxHeight: 'calc(100vh - 210px)' }}
         onContextMenu={(e) => e.preventDefault()}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
         tabIndex={0}

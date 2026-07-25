@@ -96,9 +96,9 @@ describe('Given LeadsPage', () => {
     expect(screen.getByText('Leads & Accounts')).toBeInTheDocument();
   });
 
-  it('When loaded / Then shows Create Lead button', async () => {
+  it('When loaded / Then shows New Lead button', async () => {
     render(<LeadsPage />);
-    expect(screen.getByText('Create Lead')).toBeInTheDocument();
+    expect(screen.getByText('New Lead')).toBeInTheDocument();
   });
 
   it('When no leads / Then shows empty state', async () => {
