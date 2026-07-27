@@ -123,6 +123,8 @@ export interface Note {
     content: string;
     author: User;
     created_at: string;
+    parent_note_id?: string | null;
+    replies?: Note[];
 }
 
 export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
@@ -340,5 +342,88 @@ export interface DealProduct {
     notes?: string;
     created_at: string;
     updated_at: string;
+}
+
+// ============================================================================
+// Stakeholder Management (Task 6)
+// ============================================================================
+export type StakeholderRole =
+    | 'decision_maker' | 'economic_buyer' | 'technical_evaluator' | 'end_user'
+    | 'project_sponsor' | 'procurement' | 'finance' | 'legal' | 'influencer'
+    | 'champion' | 'gatekeeper';
+
+export type BuyingCommitteeRole = 'primary_decision_maker' | 'strong_supporter' | 'neutral' | 'opposed' | 'unknown';
+export type RelationshipStrength = 'very_strong' | 'strong' | 'moderate' | 'weak' | 'no_relationship';
+
+export interface Stakeholder {
+    id: string;
+    lead_id: string;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+    job_title?: string;
+    department?: string;
+    company_id?: string;
+    company_name?: string;
+    email?: string;
+    phone?: string;
+    mobile_phone?: string;
+    linkedin_url?: string;
+    preferred_communication_method?: string;
+    time_zone?: string;
+    is_active: boolean;
+    is_primary_contact: boolean;
+    buying_committee_role: BuyingCommitteeRole;
+    relationship_strength: RelationshipStrength;
+    relationship_confidence_score?: number;
+    reports_to_stakeholder_id?: string | null;
+    preferred_language?: string;
+    preferred_contact_time?: string;
+    do_not_contact: boolean;
+    marketing_opt_out: boolean;
+    roles: StakeholderRole[];
+    created_at: string;
+    updated_at: string;
+}
+
+// ============================================================================
+// Meetings (Task 3)
+// ============================================================================
+export type MeetingStatus = 'upcoming' | 'completed' | 'cancelled' | 'missed';
+
+export interface MeetingAttendee {
+    person_id?: string;
+    external_email?: string;
+    name?: string;
+    response?: string;
+}
+
+export interface Meeting {
+    id: string;
+    lead_id?: string | null;
+    deal_id?: string | null;
+    stakeholder_id?: string | null;
+    title: string;
+    scheduled_at: string;
+    duration_minutes: number;
+    location?: string;
+    agenda?: string;
+    attendees: MeetingAttendee[];
+    outcome?: string;
+    next_steps?: string;
+    status: MeetingStatus;
+    owner_person_id?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface StakeholderActivitySummary {
+    last_call: string | null;
+    last_email: string | null;
+    last_meeting: string | null;
+    last_interaction: string | null;
+    open_tasks: number;
+    associated_deals: { deal_id: string; involvement_role: string; deal: { id: string; name: string; company: string; status: string } | null }[];
+    meeting_history: any[];
 }
 

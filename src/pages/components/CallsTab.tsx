@@ -8,6 +8,7 @@ import { crmService } from '../../services/crmService';
 interface Props {
     leadId?: string;
     dealId?: string;
+    autoOpenForm?: boolean;
 }
 
 interface CallRecord {
@@ -226,10 +227,10 @@ function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
     );
 }
 
-export default function CallsTab({ leadId, dealId }: Props) {
+export default function CallsTab({ leadId, dealId, autoOpenForm }: Props) {
     const [calls, setCalls] = useState<CallRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [showUploadForm, setShowUploadForm] = useState(false);
+    const [showUploadForm, setShowUploadForm] = useState(Boolean(autoOpenForm));
     const [selected, setSelected] = useState<CallRecord | null>(null);
     const [playbackUrls, setPlaybackUrls] = useState<Record<string, string>>({});
     const [playbackLoadingId, setPlaybackLoadingId] = useState<string | null>(null);
@@ -252,6 +253,10 @@ export default function CallsTab({ leadId, dealId }: Props) {
         setIsLoading(true);
         load().finally(() => setIsLoading(false));
     }, [load]);
+
+    useEffect(() => {
+        if (autoOpenForm) setShowUploadForm(true);
+    }, [autoOpenForm]);
 
     const handleUpload = async (file: File, fields: CallUploadFields) => {
         const created = await crmService.uploadCallRecording(file, {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { eventBus } from '@so360/event-bus';
 import { useShell, useActivity, useShellBridge } from '@so360/shell-context';
@@ -7,9 +7,9 @@ import {
     ChevronLeft, Mail, Phone, Building2,
     Calendar, Tag, Clock, Plus,
     LayoutDashboard, Briefcase, CheckCircle2,
-    Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
-    DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, Package
+    Loader2, ExternalLink, MessageSquare, Users, FileText,
+    DollarSign, PieChart, Edit2, Trash2, X,
+    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Users2, CalendarClock, Search, Settings
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
@@ -17,19 +17,54 @@ import { useCRMFormatters } from '../utils/formatters';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
-import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
+import { Trophy, Zap, Info, TrendingUp, RefreshCw, Sparkles } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import NeuraAiDrawer from './components/NeuraAiDrawer';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab from './components/CallsTab';
+import AuditHistoryTab from './components/AuditHistoryTab';
+import QuickActionBar from './components/QuickActionBar';
+import LeadLayoutSettingsPanel from './components/LeadLayoutSettingsPanel';
+import { useLeadDetailLayoutPreferences } from '../hooks/useLeadDetailLayoutPreferences';
+import StakeholdersTab from '../components/stakeholders/StakeholdersTab';
+import EmailsTab from './components/EmailsTab';
+import MeetingsTab from './components/MeetingsTab';
+import { useEntityTimeline } from './components/timeline/useEntityTimeline';
+import TimelineEventCard from './components/timeline/TimelineEventCard';
+import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
 import NoteEditor from '../components/notes/NoteEditor';
 import NoteContent from '../components/notes/NoteContent';
+import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
+
+interface TabCounts {
+    tasks: number;
+    documents: number;
+    products: number;
+}
+
+// Task 5 (Customizable Layout): the tab bar is now data-driven off
+// useLeadDetailLayoutPreferences() (order/visibility) instead of a fixed
+// JSX sequence — this config maps each section key to its icon/label.
+const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: (counts: TabCounts) => React.ReactNode }> = {
+    activity: { icon: <MessageSquare size={14} />, label: () => 'Activity' },
+    notes: { icon: <FileText size={14} />, label: () => 'Notes' },
+    tasks: { icon: <CheckCircle2 size={14} />, label: (c) => `Tasks (${c.tasks})` },
+    documents: { icon: <File size={14} />, label: (c) => `Documents (${c.documents})` },
+    products: { icon: <Package size={14} />, label: (c) => `Products ${c.products > 0 ? `(${c.products})` : ''}` },
+    feedback: { icon: <MessageSquare size={14} />, label: () => 'Feedback' },
+    calls: { icon: <Phone size={14} />, label: () => 'Calls' },
+    audit: { icon: <ShieldCheck size={14} />, label: () => 'Audit History' },
+    stakeholders: { icon: <Users2 size={14} />, label: () => 'Stakeholders' },
+    emails: { icon: <Mail size={14} />, label: () => 'Emails' },
+    meetings: { icon: <CalendarClock size={14} />, label: () => 'Meetings' },
+};
 
 // Tiptap emits '<p></p>' for an empty editor rather than '', so a plain
 // .trim() check isn't enough — strip tags first to see if there's real content.
@@ -62,17 +97,6 @@ export async function openLeadDocument(doc: Attachment) {
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-interface TimelineEvent {
-    id: string;
-    type: 'Activity' | 'NOTE' | 'TASK' | 'DOCUMENT' | 'DEAL' | 'STATUS_CHANGE' | 'STAGE_CHANGE' | 'OWNER_CHANGE' | 'PROFILE_UPDATE';
-    subType?: string;
-    title: string;
-    description: string;
-    date: string;
-    author?: User;
-    data?: any;
-}
-
 const LeadDetailPage = () => {
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
@@ -86,6 +110,7 @@ const LeadDetailPage = () => {
     const canPromoteLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
     const canQualifyLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
     const canConvertLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
+    const canUseNeuraAi = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
@@ -123,6 +148,46 @@ const LeadDetailPage = () => {
     const [productValue, setProductValue] = useState(0);
     const [activityTotal, setActivityTotal] = useState(0);
     const [showActivityDrawer, setShowActivityDrawer] = useState(false);
+    const [autoOpenCallForm, setAutoOpenCallForm] = useState(false);
+    const [autoOpenMeetingForm, setAutoOpenMeetingForm] = useState(false);
+    const [showLayoutSettings, setShowLayoutSettings] = useState(false);
+    const layoutPrefs = useLeadDetailLayoutPreferences();
+    const [showNeuraAiDrawer, setShowNeuraAiDrawer] = useState(false);
+
+    // Task 4 (Customer Timeline): unified server-side timeline, shared between
+    // the inline preview below and ActivityHistoryDrawer.tsx.
+    const entityTimeline = useEntityTimeline({ entityType: 'lead', entityId: id, pageSize: 7 });
+
+    // Task 3 — communication-wide search: client-side merge across data
+    // already loaded at page level (notes/tasks/deals). Per-lead volumes are
+    // small, so no dedicated backend endpoint. Emails/meetings/calls are
+    // fetched lazily inside their own tabs (not lifted here), so they are
+    // out of scope for this search — a deliberate, documented scope
+    // reduction rather than a silent gap.
+    const [commSearchQuery, setCommSearchQuery] = useState('');
+    const commSearchResults = useMemo(() => {
+        const q = commSearchQuery.trim().toLowerCase();
+        if (!q || !lead) return [];
+        type Result = { id: string; kind: string; title: string; date: string; tab: TabType };
+        const results: Result[] = [];
+        (lead.notes || []).forEach((n) => {
+            const text = n.content.replace(/<[^>]*>/g, '');
+            if (text.toLowerCase().includes(q)) {
+                results.push({ id: `note:${n.id}`, kind: 'Note', title: text.slice(0, 80), date: n.created_at, tab: 'notes' });
+            }
+        });
+        associatedTasks.forEach((t) => {
+            if (t.title.toLowerCase().includes(q)) {
+                results.push({ id: `task:${t.id}`, kind: 'Task', title: t.title, date: t.due_date || t.created_at, tab: 'tasks' });
+            }
+        });
+        associatedDeals.forEach((d) => {
+            if (d.name.toLowerCase().includes(q)) {
+                results.push({ id: `deal:${d.id}`, kind: 'Deal', title: d.name, date: d.created_at || d.expected_close_date, tab: 'activity' });
+            }
+        });
+        return results.slice(0, 20);
+    }, [commSearchQuery, lead, associatedTasks, associatedDeals]);
 
     const INITIAL_ACTIVITY_LOAD = 7;
 
@@ -199,6 +264,12 @@ const LeadDetailPage = () => {
         );
     }
 
+    const tabCounts: TabCounts = {
+        tasks: associatedTasks.length,
+        documents: lead.documents?.length || 0,
+        products: productCount,
+    };
+
     // Use backend-calculated score stored on the lead
     const score = lead.auto_score ?? 0;
     const breakdown = (lead.score_breakdown ?? []).map(item => ({
@@ -220,79 +291,10 @@ const LeadDetailPage = () => {
 
     const scoreCategory = getScoreCategory();
 
-    const getAggregatedTimeline = (): TimelineEvent[] => {
-        const events: TimelineEvent[] = [];
-
-        // 1. Manual Activities
-        lead.activities.forEach(a => {
-            const isSystem = ['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(a.type);
-            events.push({
-                id: a.id,
-                type: isSystem ? (a.type as any) : 'Activity',
-                subType: isSystem ? undefined : a.type,
-                title: isSystem ? a.type.replace('_', ' ') : `${a.type} Logged`,
-                description: a.notes,
-                date: a.created_at || a.date,
-                author: a.author
-            });
-        });
-
-        // 2. Notes
-        lead.notes.forEach(n => {
-            events.push({
-                id: n.id,
-                type: 'NOTE',
-                title: 'Note Captured',
-                description: n.content,
-                date: n.created_at,
-                author: n.author
-            });
-        });
-
-        // 3. Documents
-        lead.documents?.forEach(d => {
-            events.push({
-                id: d.id,
-                type: 'DOCUMENT',
-                title: 'Document Uploaded',
-                description: `${d.name} (${(d.size / (1024 * 1024)).toFixed(2)} MB)`,
-                date: d.created_at || d.uploaded_at,
-                author: d.uploaded_by
-            });
-        });
-
-        // 4. Tasks
-        associatedTasks.forEach(t => {
-            events.push({
-                id: t.id,
-                type: 'TASK',
-                subType: t.type,
-                title: `Task: ${t.title}`,
-                description: `Status: ${t.status} | Type: ${t.type}`,
-                date: t.created_at || t.due_date,
-                author: t.assigned_to
-            });
-        });
-
-        // 5. Deals
-        associatedDeals.forEach(d => {
-            events.push({
-                id: d.id,
-                type: 'DEAL',
-                title: 'Deal Created',
-                description: `${d.name} | Value: ${formatters.formatCurrency(d.value)} | Stage: ${d.stage}`,
-                date: d.created_at || d.expected_close_date,
-                author: d.owner
-            });
-        });
-
-        return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    };
-
-    const MAX_TIMELINE_PREVIEW = 7;
-    const fullTimeline = getAggregatedTimeline();
-    const timelineTotal = activityTotal + lead.notes.length + (lead.documents?.length || 0) + associatedTasks.length + associatedDeals.length;
-    const timeline = fullTimeline.slice(0, MAX_TIMELINE_PREVIEW);
+    // Task 4 (Customer Timeline): the old client-side getAggregatedTimeline()
+    // (5-source merge, duplicated again in ActivityHistoryDrawer.tsx) has been
+    // replaced by the server-side unified timeline — see useEntityTimeline()
+    // below and the Activity tab render block.
 
     const calculateLegacyRevenue = () => {
         const earned = associatedDeals
@@ -376,13 +378,10 @@ const LeadDetailPage = () => {
                                         const stageId = e.target.value;
                                         const stage = leadStages.find(s => s.id === stageId);
                                         const displayName = stage?.name || stageId;
+                                        // Field-diff history (old/new status, actor, timestamp) is now
+                                        // captured server-side by the leads audit trigger (Task 7) —
+                                        // see the Audit History tab, not a client-side logActivity call.
                                         await crmService.updateLead(lead.id, { status: displayName as any });
-                                        await crmService.logActivity({
-                                            lead_id: lead.id,
-                                            type: 'STATUS_CHANGE',
-                                            notes: `Lead status changed to ${displayName}`,
-                                            date: new Date().toISOString()
-                                        });
                                         fetchLeadData();
                                         setIsChangingStatus(false);
                                     }}
@@ -418,6 +417,13 @@ const LeadDetailPage = () => {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        {canUseNeuraAi && <button
+                            onClick={() => setShowNeuraAiDrawer(true)}
+                            className="bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 hover:text-violet-300 px-4 py-3 rounded-xl font-black transition-all text-xs flex items-center gap-2 uppercase tracking-widest border border-violet-500/20 hover:border-violet-500/40"
+                        >
+                            <Sparkles size={16} />
+                            Neura AI
+                        </button>}
                         <button
                             onClick={() => setShowDeleteConfirm(true)}
                             className="bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-400 px-4 py-3 rounded-xl font-black transition-all text-xs flex items-center gap-2 uppercase tracking-widest border border-slate-700 hover:border-red-500/50"
@@ -443,6 +449,15 @@ const LeadDetailPage = () => {
                 <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
             </div>
             )}
+
+            <QuickActionBar
+                onAddNote={() => setActiveTab('notes')}
+                onSendEmail={() => setActiveTab('emails')}
+                onLogCall={() => { setActiveTab('calls'); setAutoOpenCallForm(true); }}
+                onScheduleMeeting={() => { setActiveTab('meetings'); setAutoOpenMeetingForm(true); }}
+                onCreateTask={() => setIsCreatingTask(true)}
+                onUploadDocument={() => setActiveTab('documents')}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
@@ -474,13 +489,9 @@ const LeadDetailPage = () => {
                                     onClick={async () => {
                                         if (isEditingInfo) {
                                             try {
+                                                // Field-diff history is now captured server-side by the
+                                                // leads audit trigger (Task 7) — see the Audit History tab.
                                                 await crmService.updateLead(lead.id, lead);
-                                                await crmService.logActivity({
-                                                    lead_id: lead.id,
-                                                    type: 'PROFILE_UPDATE',
-                                                    notes: 'Lead profile information updated',
-                                                    date: new Date().toISOString()
-                                                });
                                                 recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${getLeadDisplayName(lead)}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
                                                 fetchLeadData();
                                             } catch (error) {
@@ -714,28 +725,56 @@ const LeadDetailPage = () => {
 
                     {/* Workspace Tabs - Now below Profile Data */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="flex overflow-x-auto scrollbar-hide border-b border-slate-800 bg-slate-900/50">
-                            <button onClick={() => setActiveTab('activity')} className={tabCls('activity')}>
-                                <MessageSquare size={14} /> Activity
+                        <div className="flex items-center overflow-x-auto scrollbar-hide border-b border-slate-800 bg-slate-900/50">
+                            {layoutPrefs.visibleSections.map((section) => {
+                                const tab = TAB_CONFIG[section.key];
+                                if (!tab) return null;
+                                return (
+                                    <button key={section.key} onClick={() => setActiveTab(section.key as TabType)} className={tabCls(section.key as TabType)}>
+                                        {tab.icon} {tab.label(tabCounts)}
+                                    </button>
+                                );
+                            })}
+                            <button
+                                onClick={() => setShowLayoutSettings(true)}
+                                className="ml-auto px-3 text-slate-500 hover:text-slate-200 transition-colors shrink-0"
+                                title="Layout Settings"
+                            >
+                                <Settings size={14} />
                             </button>
-                            <button onClick={() => setActiveTab('notes')} className={tabCls('notes')}>
-                                <FileText size={14} /> Notes
-                            </button>
-                            <button onClick={() => setActiveTab('tasks')} className={tabCls('tasks')}>
-                                <CheckCircle2 size={14} /> Tasks ({associatedTasks.length})
-                            </button>
-                            <button onClick={() => setActiveTab('documents')} className={tabCls('documents')}>
-                                <File size={14} /> Documents ({lead.documents?.length || 0})
-                            </button>
-                            <button onClick={() => setActiveTab('products')} className={tabCls('products')}>
-                                <Package size={14} /> Products {productCount > 0 ? `(${productCount})` : ''}
-                            </button>
-                            <button onClick={() => setActiveTab('feedback')} className={tabCls('feedback')}>
-                                <MessageSquare size={14} /> Feedback
-                            </button>
-                            <button onClick={() => setActiveTab('calls')} className={tabCls('calls')}>
-                                <Phone size={14} /> Calls
-                            </button>
+                        </div>
+
+                        <div className="px-4 pt-3">
+                            <div className="relative">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <input
+                                    value={commSearchQuery}
+                                    onChange={(e) => setCommSearchQuery(e.target.value)}
+                                    placeholder="Search notes, tasks, deals…"
+                                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-slate-300 placeholder-slate-600 outline-none focus:border-blue-500/40"
+                                />
+                            </div>
+                            {commSearchQuery.trim() && (
+                                <div className="mt-2 max-h-64 overflow-y-auto border border-slate-800 rounded-lg divide-y divide-slate-800/70">
+                                    {commSearchResults.length === 0 ? (
+                                        <p className="text-[11px] text-slate-600 italic px-3 py-2">No matches.</p>
+                                    ) : (
+                                        commSearchResults.map((r) => (
+                                            <button
+                                                key={r.id}
+                                                onClick={() => { setActiveTab(r.tab); setCommSearchQuery(''); }}
+                                                className="w-full text-left px-3 py-2 hover:bg-slate-900 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{r.kind}</span>
+                                                    <span className="text-[9px] text-slate-600">{formatters.formatDate(r.date)}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-300 truncate">{r.title}</p>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-6">
@@ -744,134 +783,67 @@ const LeadDetailPage = () => {
                                     {/* Header */}
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Activity Timeline</p>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Customer Timeline</p>
                                             <p className="text-[10px] text-slate-600 mt-0.5">
-                                                Showing latest {timeline.length} · Total: {timelineTotal}
+                                                Showing latest {entityTimeline.events.length}
                                             </p>
                                         </div>
-                                        {timelineTotal > 0 && (
-                                            <button
-                                                onClick={() => setShowActivityDrawer(true)}
-                                                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
-                                            >
-                                                <ExternalLink size={11} />
-                                                View All History
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={() => setShowActivityDrawer(true)}
+                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                                        >
+                                            <ExternalLink size={11} />
+                                            View All History
+                                        </button>
                                     </div>
 
+                                    {/* AI/health summary */}
+                                    {entityTimeline.summary && <TimelineSummaryBanner summary={entityTimeline.summary} />}
+
                                     {/* Timeline */}
-                                    <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-800 ml-1">
-                                        {timeline.length === 0 ? (
+                                    <div className="space-y-3 relative">
+                                        {entityTimeline.loading ? (
+                                            <div className="flex items-center justify-center py-8 text-slate-500">
+                                                <Loader2 size={18} className="animate-spin" />
+                                            </div>
+                                        ) : entityTimeline.events.length === 0 ? (
                                             <div className="text-center py-8 ml-6">
                                                 <p className="text-slate-500 italic text-sm">No activities logged yet.</p>
                                                 <p className="text-slate-600 text-[10px] mt-1">Activities will appear here automatically when users interact with this lead.</p>
                                             </div>
                                         ) : (
-                                            timeline.map((event) => (
-                                                <div key={event.id} className="relative pl-10">
-                                                    <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center z-10 shadow-lg">
-                                                        {event.type === 'Activity' && (
-                                                            <>
-                                                                {event.subType === 'CALL' && <Phone size={14} className="text-blue-400" />}
-                                                                {event.subType === 'MEETING' && <Users size={14} className="text-purple-400" />}
-                                                                {event.subType === 'EMAIL' && <AtSign size={14} className="text-emerald-400" />}
-                                                                {event.subType === 'NOTE' && <FileText size={14} className="text-amber-400" />}
-                                                            </>
-                                                        )}
-                                                        {event.type === 'NOTE' && <FileText size={14} className="text-amber-400" />}
-                                                        {event.type === 'TASK' && <CheckCircle2 size={14} className="text-blue-500" />}
-                                                        {event.type === 'DOCUMENT' && <File size={14} className="text-indigo-400" />}
-                                                        {event.type === 'DEAL' && <Briefcase size={14} className="text-emerald-400" />}
-
-                                                        {event.type === 'STATUS_CHANGE' && <TrendingUp size={14} className="text-blue-400" />}
-                                                        {event.type === 'STAGE_CHANGE' && <BarChart3 size={14} className="text-purple-400" />}
-                                                        {event.type === 'OWNER_CHANGE' && <Users size={14} className="text-pink-400" />}
-                                                        {event.type === 'PROFILE_UPDATE' && <Info size={14} className="text-slate-400" />}
-                                                    </div>
-                                                    <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-slate-700 transition-all">
-                                                        {event.type === 'TASK' ? (
-                                                            <Link to={`/crm/tasks/${event.id}`} className="block group/link">
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-bold text-slate-50 text-xs uppercase tracking-tight group-hover/link:text-blue-400 transition-colors">{event.title}</span>
-                                                                        <span className="text-[8px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{event.type}</span>
-                                                                    </div>
-                                                                    <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                        {formatters.formatDateTime(event.date)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-slate-400 text-sm leading-relaxed">{event.description}</p>
-                                                            </Link>
-                                                        ) : (
-                                                            <>
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-bold text-slate-50 text-xs uppercase tracking-tight">{event.title}</span>
-                                                                        {event.type !== 'Activity' && (
-                                                                            <span className="text-[8px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{event.type}</span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        {event.type === 'Activity' && (
-                                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                                                <button
-                                                                                    onClick={async () => {
-                                                                                        const newNotes = prompt('Edit activity notes:', event.description);
-                                                                                        if (newNotes !== null) {
-                                                                                            await activitiesApi.update(event.id, { notes: newNotes });
-                                                                                            fetchLeadData();
-                                                                                        }
-                                                                                    }}
-                                                                                    className="p-1 text-slate-500 hover:text-blue-400 transition-colors"
-                                                                                    title="Edit activity"
-                                                                                >
-                                                                                    <Edit2 size={12} />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={async () => {
-                                                                                        if (confirm('Delete this activity?')) {
-                                                                                            await activitiesApi.delete(event.id);
-                                                                                            fetchLeadData();
-                                                                                        }
-                                                                                    }}
-                                                                                    className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                                                                                    title="Delete activity"
-                                                                                >
-                                                                                    <Trash2 size={12} />
-                                                                                </button>
-                                                                            </div>
-                                                                        )}
-                                                                        <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                            {formatters.formatDateTime(event.date)}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <p className="text-slate-400 text-sm leading-relaxed">{event.description}</p>
-                                                            </>
-                                                        )}
-                                                        {event.author && (
-                                                            <div className="mt-4 flex items-center gap-2">
-                                                                <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-700">
-                                                                    {event.author.avatar_url ? <img src={event.author.avatar_url} alt={event.author.full_name} /> : event.author.full_name?.charAt(0) || '?'}
-                                                                </div>
-                                                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{event.author.full_name}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                            entityTimeline.events.map((event) => (
+                                                <TimelineEventCard
+                                                    key={event.id}
+                                                    event={event}
+                                                    isPinned={entityTimeline.pinnedIds.has(event.id)}
+                                                    onTogglePin={entityTimeline.togglePin}
+                                                    onEdit={async (e) => {
+                                                        const newNotes = prompt('Edit activity notes:', e.description);
+                                                        if (newNotes !== null && e.related_id) {
+                                                            await activitiesApi.update(e.related_id, { notes: newNotes });
+                                                            entityTimeline.updateEventDescription(e.id, newNotes);
+                                                        }
+                                                    }}
+                                                    onDelete={async (e) => {
+                                                        if (confirm('Delete this activity?') && e.related_id) {
+                                                            await activitiesApi.delete(e.related_id);
+                                                            entityTimeline.removeEvent(e.id);
+                                                        }
+                                                    }}
+                                                />
                                             ))
                                         )}
                                     </div>
 
-                                    {/* View All */}
-                                    {timelineTotal > MAX_TIMELINE_PREVIEW && (
+                                    {entityTimeline.hasMore && (
                                         <div className="flex flex-col items-center gap-3 pt-2">
                                             <button
-                                                onClick={() => setShowActivityDrawer(true)}
-                                                className="text-[10px] text-slate-600 hover:text-blue-400 transition-colors font-bold uppercase tracking-widest"
+                                                onClick={entityTimeline.loadMore}
+                                                disabled={entityTimeline.loadingMore}
+                                                className="text-[10px] text-slate-600 hover:text-blue-400 transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
                                             >
-                                                View All Activity History ({timelineTotal - MAX_TIMELINE_PREVIEW} more) →
+                                                {entityTimeline.loadingMore ? 'Loading…' : 'Load More →'}
                                             </button>
                                         </div>
                                     )}
@@ -952,6 +924,32 @@ const LeadDetailPage = () => {
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
                                                             <span className="text-[10px] text-slate-400 font-bold">{formatters.formatDate(note.created_at)}</span>
+                                                        </div>
+
+                                                        {(note.replies || []).length > 0 && (
+                                                            <div className="mt-3 ml-4 space-y-3 border-l border-slate-800 pl-4">
+                                                                {(note.replies || []).map((reply) => (
+                                                                    <div key={reply.id} className="text-sm">
+                                                                        <NoteContent html={reply.content} />
+                                                                        <div className="flex items-center justify-between mt-1">
+                                                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{reply.author?.full_name}</span>
+                                                                            <span className="text-[9px] text-slate-500 font-bold">{formatters.formatDate(reply.created_at)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-2 ml-4">
+                                                            <NoteReplyComposer
+                                                                people={allUsers}
+                                                                onSubmit={async (content) => {
+                                                                    const freshReply = await crmService.createNote({ lead_id: lead.id, content, parent_note_id: note.id });
+                                                                    setLead({
+                                                                        ...lead,
+                                                                        notes: lead.notes.map((n) => n.id === note.id ? { ...n, replies: [...(n.replies || []), freshReply] } : n),
+                                                                    });
+                                                                }}
+                                                            />
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1246,7 +1244,29 @@ const LeadDetailPage = () => {
                             )}
 
                             {activeTab === 'calls' && lead && (
-                                <CallsTab leadId={lead.id} />
+                                <CallsTab leadId={lead.id} autoOpenForm={autoOpenCallForm} />
+                            )}
+
+                            {activeTab === 'audit' && lead && (
+                                <AuditHistoryTab entityType="lead" entityId={lead.id} />
+                            )}
+
+                            {activeTab === 'stakeholders' && lead && (
+                                <StakeholdersTab
+                                    leadId={lead.id}
+                                    deals={associatedDeals}
+                                    onSwitchToNotes={() => setActiveTab('notes')}
+                                    onSwitchToCalls={() => setActiveTab('calls')}
+                                    onSwitchToMeetings={() => setActiveTab('meetings')}
+                                />
+                            )}
+
+                            {activeTab === 'emails' && lead && (
+                                <EmailsTab leadId={lead.id} />
+                            )}
+
+                            {activeTab === 'meetings' && lead && (
+                                <MeetingsTab leadId={lead.id} autoOpenForm={autoOpenMeetingForm} />
                             )}
 
                         </div>
@@ -1427,13 +1447,10 @@ const LeadDetailPage = () => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 try {
+                                                    // Field-diff history (old/new owner, actor, timestamp)
+                                                    // is now captured server-side by the leads audit
+                                                    // trigger (Task 7) — see the Audit History tab.
                                                     await crmService.updateLead(lead.id, { owner: user });
-                                                    await crmService.logActivity({
-                                                        lead_id: lead.id,
-                                                        type: 'OWNER_CHANGE',
-                                                        notes: `Assigned owner changed to ${user.full_name}`,
-                                                        date: new Date().toISOString()
-                                                    });
                                                     await fetchLeadData();
                                                     setIsChangingOwner(false);
                                                 } catch (error) {
@@ -1526,13 +1543,10 @@ const LeadDetailPage = () => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 try {
+                                                    // Field-diff history (old/new stage, duration in
+                                                    // previous stage, actor, timestamp) is now captured
+                                                    // server-side by the leads audit trigger (Task 7).
                                                     await crmService.updateLead(lead.id, { status: stage.name as any });
-                                                    await crmService.logActivity({
-                                                        lead_id: lead.id,
-                                                        type: 'STAGE_CHANGE',
-                                                        notes: `Lead stage updated to ${stage.name}`,
-                                                        date: new Date().toISOString()
-                                                    });
                                                     await fetchLeadData();
                                                     setIsChangingStage(false);
                                                 } catch (error: any) {
@@ -1772,11 +1786,26 @@ const LeadDetailPage = () => {
             <ActivityHistoryDrawer
                 isOpen={showActivityDrawer}
                 onClose={() => setShowActivityDrawer(false)}
-                leadId={lead.id}
-                lead={lead}
-                associatedTasks={associatedTasks}
-                associatedDeals={associatedDeals}
+                entityType="lead"
+                entityId={lead.id}
             />
+            {showLayoutSettings && (
+                <LeadLayoutSettingsPanel
+                    sections={layoutPrefs.sections}
+                    onToggleVisible={layoutPrefs.toggleVisible}
+                    onMove={layoutPrefs.moveSection}
+                    onReset={layoutPrefs.resetToDefaults}
+                    onClose={() => setShowLayoutSettings(false)}
+                />
+            )}
+            {canUseNeuraAi && (
+                <NeuraAiDrawer
+                    isOpen={showNeuraAiDrawer}
+                    onClose={() => setShowNeuraAiDrawer(false)}
+                    leadId={lead.id}
+                    leadLabel={lead.company_name || getLeadDisplayName(lead)}
+                />
+            )}
         </div >
     );
 };

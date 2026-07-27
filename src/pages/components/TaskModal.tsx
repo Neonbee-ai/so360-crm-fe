@@ -9,11 +9,12 @@ interface TaskModalProps {
     task?: Task | null; // If null, creating new task
     leadId?: string;
     dealId?: string;
+    stakeholderId?: string;
     onClose: () => void;
     onSuccess: (task: Task) => void;
 }
 
-const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, onSuccess }) => {
+const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholderId, onClose, onSuccess }) => {
     const { toasts, showError, dismissToast } = useToast();
     const shell = useShell();
     const { emitNotification } = useNotify();
@@ -135,6 +136,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, onClose, on
 
             if (leadId) data.lead_id = leadId;
             if (dealId) data.deal_id = dealId;
+            if (stakeholderId) data.stakeholder_id = stakeholderId;
             if (showAssociatePicker && associateId) {
                 if (associateType === 'lead') data.lead_id = associateId;
                 if (associateType === 'deal') data.deal_id = associateId;

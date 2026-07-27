@@ -1,4 +1,4 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting } from '../types/crm';
 import { createRequestCache } from './requestCache';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
@@ -59,6 +59,18 @@ const ACCOUNTING_API_ORIGIN = String(
     win.VITE_SO360_ACCOUNTING_API ||
     env.VITE_SO360_ACCOUNTING_API ||
     'http://localhost:3008'
+).replace(/\/$/, '');
+
+const NEURA_API_ORIGIN = String(
+    win.VITE_SO360_NEURA_API ||
+    env.VITE_SO360_NEURA_API ||
+    'http://localhost:3018'
+).replace(/\/$/, '');
+
+const INBOX_API_ORIGIN = String(
+    win.VITE_SO360_INBOX_API ||
+    env.VITE_SO360_INBOX_API ||
+    'http://localhost:3017'
 ).replace(/\/$/, '');
 
 const API_BASE_URL = CRM_API_ORIGIN;
@@ -409,6 +421,36 @@ class ApiClient {
         }
         return res.json();
     }
+
+    // Binary/file downloads (audit-trail export, etc.) — returns the raw Blob
+    // plus the filename from Content-Disposition so callers can trigger a save.
+    async getBlob(endpoint: string, params?: Record<string, any>): Promise<{ blob: Blob; filename: string | null }> {
+        const queryString = params
+            ? '?' + new URLSearchParams(
+                Object.entries(params).reduce((acc, [key, value]) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = String(value);
+                    }
+                    return acc;
+                }, {} as Record<string, string>)
+            ).toString()
+            : '';
+        const headers: HeadersInit = {
+            'X-Tenant-Id': this.tenantId,
+            ...(this.orgId ? { 'X-Org-Id': this.orgId } : {}),
+            ...(this.userId ? { 'X-User-Id': this.userId } : {}),
+            ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
+        };
+        const response = await fetch(`${this.baseURL}${endpoint}${queryString}`, { method: 'GET', headers });
+        if (!response.ok) {
+            let msg = `API Error: ${response.status}`;
+            try { const j = await response.json(); msg = j?.message || j?.error || msg; } catch { /* ignore */ }
+            throw new Error(msg);
+        }
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const match = /filename="?([^"]+)"?/i.exec(disposition);
+        return { blob: await response.blob(), filename: match ? match[1] : null };
+    }
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
@@ -417,6 +459,12 @@ const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
 const inventoryClient = new ApiClient(INVENTORY_API_ORIGIN, TENANT_ID);
 const fulfillmentClient = new ApiClient(`${FULFILLMENT_API_ORIGIN}/v1/fulfillment`, TENANT_ID);
 const accountingClient = new ApiClient(ACCOUNTING_API_ORIGIN, TENANT_ID);
+const inboxClient = new ApiClient(INBOX_API_ORIGIN, TENANT_ID);
+// Neura AI's own public conversations API — called directly (same pattern as
+// coreClient/dailystoreClient/etc. above), not proxied through CRM's backend,
+// so the Neura AI Lead Copilot adds zero new logic to so360-crm-be. Neura BE
+// sets no global route prefix (routes are bare /conversations, /agents, ...).
+const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -834,6 +882,207 @@ export const activitiesApi = {
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/activities/${id}`);
     }
+};
+
+// ============================================================================
+// AUDIT TRAIL API (Task 7)
+// ============================================================================
+export interface AuditTrailEntry {
+    id: string;
+    kind: 'field_change' | 'business_event';
+    field_name: string | null;
+    old_value: string | null;
+    new_value: string | null;
+    description: string | null;
+    changed_by: string | null;
+    changed_by_name: string | null;
+    source: string | null;
+    module: string | null;
+    change_reason: string | null;
+    metadata: Record<string, any>;
+    created_at: string;
+}
+
+export interface AuditTrailFilters {
+    field_name?: string;
+    source?: string;
+    module?: string;
+    user_id?: string;
+    search?: string;
+    start_date?: string;
+    end_date?: string;
+    limit?: number;
+    offset?: number;
+}
+
+export const auditTrailApi = {
+    getAuditTrail: async (
+        entityType: string,
+        entityId: string,
+        filters: AuditTrailFilters = {},
+    ): Promise<{ data: AuditTrailEntry[]; meta: { total: number; limit: number; offset: number } }> => {
+        return apiClient.get(`/audit-trail/${entityType}/${entityId}`, filters);
+    },
+    exportAuditTrail: async (
+        entityType: string,
+        entityId: string,
+        format: 'csv' | 'xlsx' | 'pdf',
+        filters: AuditTrailFilters = {},
+    ): Promise<{ blob: Blob; filename: string | null }> => {
+        return apiClient.getBlob(`/audit-trail/${entityType}/${entityId}/export`, { ...filters, format });
+    },
+};
+
+// ============================================================================
+// TIMELINE API (Task 4 — Customer Timeline)
+// ============================================================================
+export interface EntityTimelineEvent {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+    actor_id: string | null;
+    actor_name: string | null;
+    created_at: string;
+    module: string;
+    related_type: string | null;
+    related_id: string | null;
+    status_badge: string | null;
+    group_key: string;
+}
+
+export interface EntityTimelineSummary {
+    last_interaction_at: string | null;
+    most_active_contact: string | null;
+    counts: Record<string, number>;
+    pending_tasks: number;
+    latest_stage: string | null;
+    idle_days: number | null;
+    health_status: 'very_active' | 'healthy' | 'neutral' | 'at_risk' | 'dormant';
+}
+
+export interface TimelineFilters {
+    module?: string;
+    category?: string;
+    range?: 'today' | 'yesterday' | '7d' | '30d' | 'custom';
+    start?: string;
+    end?: string;
+    search?: string;
+    cursor?: string;
+    limit?: number;
+}
+
+export const timelineApi = {
+    getTimeline: async (
+        entityType: string,
+        entityId: string,
+        filters: TimelineFilters = {},
+    ): Promise<{ data: EntityTimelineEvent[]; nextCursor: string | null; summary: EntityTimelineSummary }> => {
+        return apiClient.get(`/audit-trail/${entityType}/${entityId}/timeline`, filters);
+    },
+};
+
+// ============================================================================
+// INBOX INTEGRATION API (Task 3 — Emails tab reuses Inbox's own conversations,
+// does not build a second compose/reply/forward UI)
+// ============================================================================
+export interface InboxConversationPreview {
+    id: string;
+    entity_id: string;
+    platform: 'whatsapp' | 'instagram' | 'facebook' | 'web_chat' | 'email';
+    customer_name?: string;
+    status: string;
+    handler: string;
+    topic?: string;
+    message_count: number;
+    last_message_at: string;
+}
+
+export const inboxIntegrationApi = {
+    getConversationsForLead: async (leadId: string): Promise<{ data: InboxConversationPreview[]; total: number }> => {
+        return inboxClient.get(`/conversations/by-crm-lead/${leadId}`);
+    },
+    getMessages: async (entityId: string, conversationId: string): Promise<any[]> => {
+        const result = await inboxClient.get<{ data: any[] }>(`/conversations/${entityId}/${conversationId}/messages`);
+        return (result as any).data || result;
+    },
+};
+
+// ============================================================================
+// MEETINGS API (Task 3)
+// ============================================================================
+export const meetingsApi = {
+    getByLead: async (leadId: string): Promise<Meeting[]> => {
+        return apiClient.get(`/meetings/lead/${leadId}`);
+    },
+    getByDeal: async (dealId: string): Promise<Meeting[]> => {
+        return apiClient.get(`/meetings/deal/${dealId}`);
+    },
+    create: async (data: Partial<Meeting>): Promise<Meeting> => {
+        return apiClient.post('/meetings', data);
+    },
+    update: async (id: string, data: Partial<Meeting>): Promise<Meeting> => {
+        return apiClient.patch(`/meetings/${id}`, data);
+    },
+    cancel: async (id: string): Promise<Meeting> => {
+        return apiClient.post(`/meetings/${id}/cancel`, {});
+    },
+    complete: async (id: string, outcome?: string, nextSteps?: string): Promise<Meeting> => {
+        return apiClient.post(`/meetings/${id}/complete`, { outcome, next_steps: nextSteps });
+    },
+    remove: async (id: string): Promise<void> => {
+        await apiClient.delete(`/meetings/${id}`);
+    },
+};
+
+// ============================================================================
+// STAKEHOLDERS API (Task 6)
+// ============================================================================
+export interface StakeholderFilters {
+    role?: string;
+    department?: string;
+    is_active?: boolean;
+    relationship_strength?: string;
+    search?: string;
+}
+
+export const stakeholderApi = {
+    listByLead: async (leadId: string, filters: StakeholderFilters = {}): Promise<Stakeholder[]> => {
+        return apiClient.get(`/leads/${leadId}/stakeholders`, filters as Record<string, any>);
+    },
+    getHierarchy: async (leadId: string): Promise<Stakeholder[]> => {
+        return apiClient.get(`/leads/${leadId}/stakeholders/hierarchy`);
+    },
+    create: async (leadId: string, data: Partial<Stakeholder> & { role_names?: string[] }): Promise<Stakeholder> => {
+        return apiClient.post(`/leads/${leadId}/stakeholders`, data);
+    },
+    getById: async (id: string): Promise<Stakeholder> => {
+        return apiClient.get(`/stakeholders/${id}`);
+    },
+    update: async (id: string, data: Partial<Stakeholder> & { role_names?: string[] }): Promise<Stakeholder> => {
+        return apiClient.patch(`/stakeholders/${id}`, data);
+    },
+    delete: async (id: string): Promise<void> => {
+        await apiClient.delete(`/stakeholders/${id}`);
+    },
+    assignRoles: async (id: string, roleNames: string[]): Promise<void> => {
+        await apiClient.put(`/stakeholders/${id}/roles`, { role_names: roleNames });
+    },
+    setHierarchy: async (id: string, reportsToStakeholderId: string | null): Promise<Stakeholder> => {
+        return apiClient.patch(`/stakeholders/${id}/hierarchy`, { reports_to_stakeholder_id: reportsToStakeholderId });
+    },
+    linkDeal: async (id: string, dealId: string, involvementRole?: string): Promise<void> => {
+        await apiClient.post(`/stakeholders/${id}/deals`, { deal_id: dealId, involvement_role: involvementRole });
+    },
+    unlinkDeal: async (id: string, dealId: string): Promise<void> => {
+        await apiClient.delete(`/stakeholders/${id}/deals/${dealId}`);
+    },
+    getActivitySummary: async (id: string): Promise<StakeholderActivitySummary> => {
+        return apiClient.get(`/stakeholders/${id}/activity-summary`);
+    },
+    search: async (filters: StakeholderFilters = {}): Promise<Stakeholder[]> => {
+        return apiClient.get('/stakeholders/search', filters as Record<string, any>);
+    },
 };
 
 // ============================================================================
@@ -1803,7 +2052,7 @@ export const crmService = {
         const notes = await apiClient.get<any[]>(`/notes/task/${taskId}`);
         return notes.map(mapNoteFromApi);
     },
-    async createNote(data: { content: string; lead_id?: string; deal_id?: string; task_id?: string }): Promise<Note> {
+    async createNote(data: { content: string; lead_id?: string; deal_id?: string; task_id?: string; parent_note_id?: string; stakeholder_id?: string }): Promise<Note> {
         return notesApi.create({
             ...data,
             author_id: USER_ID
@@ -2412,6 +2661,8 @@ export const crmService = {
         inventoryClient.setTenantId(id);
         fulfillmentClient.setTenantId(id);
         accountingClient.setTenantId(id);
+        neuraClient.setTenantId(id);
+        inboxClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         ORG_ID = id;
@@ -2421,6 +2672,8 @@ export const crmService = {
         inventoryClient.setOrgId(id);
         fulfillmentClient.setOrgId(id);
         accountingClient.setOrgId(id);
+        neuraClient.setOrgId(id);
+        inboxClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -2438,5 +2691,45 @@ export const crmService = {
         inventoryClient.setAccessToken(token);
         fulfillmentClient.setAccessToken(token);
         accountingClient.setAccessToken(token);
+        neuraClient.setAccessToken(token);
+        inboxClient.setAccessToken(token);
+    },
+};
+
+export interface NeuraEntityRef {
+    module: string;
+    entity: string;
+    id: string;
+    label?: string;
+}
+
+export interface NeuraAgentBlock {
+    type: 'table' | 'chart' | 'file' | 'entity' | 'kpi';
+    [key: string]: any;
+}
+
+export interface NeuraMessageResponse {
+    userMessage: { id: string; role: string; content: string };
+    assistantMessage: { id: string; role: string; content: string };
+    blocks?: NeuraAgentBlock[];
+    meta?: { tokensUsed: number };
+}
+
+// Thin client for Neura AI's own conversations API — no CRM backend involved.
+// Used by the CRM Lead Detail page's "Neura AI" panel.
+export const neuraAiService = {
+    createConversation: async (title: string): Promise<{ id: string }> => {
+        return neuraClient.post<{ id: string }>('/conversations', { title });
+    },
+    sendMessage: async (
+        conversationId: string,
+        content: string,
+        entityRef?: NeuraEntityRef,
+        mode: 'assist' | 'execute' | 'autonomous' = 'assist',
+    ): Promise<NeuraMessageResponse> => {
+        return neuraClient.post<NeuraMessageResponse>(
+            `/conversations/${conversationId}/messages`,
+            { content, mode, ...(entityRef ? { entityRef } : {}) },
+        );
     },
 };
