@@ -8,6 +8,7 @@ import {
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 
@@ -291,7 +292,17 @@ const PartnerDetailPage = () => {
                         )}
                         <div className="flex flex-wrap items-center gap-4 text-slate-400 text-sm">
                             {partner.email && <span className="flex items-center gap-1.5"><Mail size={14} />{partner.email}</span>}
-                            {partner.phone && <span className="flex items-center gap-1.5"><Phone size={14} />{partner.phone}</span>}
+                            {partner.phone && (
+                                <span className="flex items-center gap-1.5">
+                                    <Phone size={14} />{partner.phone}
+                                    <ClickToCallButton
+                                        number={partner.phone}
+                                        entityType="company"
+                                        entityId={partner.id}
+                                        name={[partner.first_name, partner.last_name].filter(Boolean).join(' ') || partner.contact_name}
+                                    />
+                                </span>
+                            )}
                             {partner.commission_rate > 0 && (
                                 <span className="flex items-center gap-1.5"><Percent size={14} />{partner.commission_rate}% royalty</span>
                             )}

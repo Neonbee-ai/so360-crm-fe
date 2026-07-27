@@ -16,6 +16,7 @@ import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '..
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
@@ -1032,10 +1033,18 @@ const DealDetailPage = () => {
                                         {associatedLead.contact_email}
                                     </a>
                                     {associatedLead.phone && (
-                                        <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Phone size={14} /></div>
-                                            {associatedLead.phone}
-                                        </a>
+                                        <div className="flex items-center gap-2">
+                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
+                                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Phone size={14} /></div>
+                                                {associatedLead.phone}
+                                            </a>
+                                            <ClickToCallButton
+                                                number={associatedLead.phone}
+                                                entityType="deal"
+                                                entityId={deal.id}
+                                                name={associatedLead.contact_name || deal.name}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             </div>

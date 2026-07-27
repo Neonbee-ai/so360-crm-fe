@@ -16,6 +16,7 @@ import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdow
 import { useCRMFormatters } from '../utils/formatters';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
@@ -570,7 +571,15 @@ const LeadDetailPage = () => {
                                                         className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.phone || 'Not provided'}</span>
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold uppercase tracking-tight">{lead.phone || 'Not provided'}</span>
+                                                        <ClickToCallButton
+                                                            number={lead.phone}
+                                                            entityType={isCustomerDetailRoute ? 'contact' : 'lead'}
+                                                            entityId={lead.id}
+                                                            name={getLeadDisplayName(lead)}
+                                                        />
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>

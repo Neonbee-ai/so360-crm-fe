@@ -83,6 +83,7 @@ const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled }),
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true }),
 }));
 
 vi.mock('../config/features', () => ({

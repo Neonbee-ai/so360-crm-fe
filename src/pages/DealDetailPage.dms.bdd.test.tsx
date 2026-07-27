@@ -54,6 +54,7 @@ vi.mock('./components/TaskModal', () => ({ default: () => null }));
 vi.mock('@so360/shell-context', () => ({
     useShell: () => ({ isModuleEnabled: () => false }),
     useActivity: () => ({ recordActivity: async () => {} }),
+    useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true }),
 }));
 
 const mockPublish = vi.fn();
