@@ -110,3 +110,6 @@ export const List = createIcon('List');
 export const ListOrdered = createIcon('ListOrdered');
 export const Code2 = createIcon('Code2');
 export const Play = createIcon('Play');
+export const Sparkles = createIcon('Sparkles');
+export const FileEdit = createIcon('FileEdit');
+export const CalendarPlus = createIcon('CalendarPlus');

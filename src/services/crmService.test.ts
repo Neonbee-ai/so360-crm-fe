@@ -19,6 +19,7 @@ import {
   settingsApi,
   crmService,
   orgStaticCache,
+  neuraAiService,
 } from './crmService';
 
 // Helper to create a successful fetch response
@@ -2024,5 +2025,70 @@ describe('Given customersApi additional', () => {
     mockFetchSuccess({ credit_limit: 10000 });
     const result = await customersApi.updateCreditLimit('When action / Then c1', 10000);
     expect(result.credit_limit).toBe(10000);
+  });
+});
+
+// ============================================================================
+// NEURA AI SERVICE — Lead Copilot (calls Neura AI's own conversations API
+// directly, no so360-crm-be involvement)
+// ============================================================================
+describe('Given neuraAiService', () => {
+  describe('Given createConversation', () => {
+    it('When action / Then POSTs to Neura\'s /conversations with the given title', async () => {
+      mockFetchSuccess({ id: 'conv-123' });
+
+      const result = await neuraAiService.createConversation('Neura AI · Lead Acme Corp');
+
+      expect(result.id).toBe('conv-123');
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toContain('/conversations');
+      expect(url).not.toContain('/deals'); // sanity: hit Neura's origin, not CRM's
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body)).toEqual({ title: 'Neura AI · Lead Acme Corp' });
+    });
+  });
+
+  describe('Given sendMessage', () => {
+    it('When called with an entityRef / Then POSTs content, mode and entityRef to the conversation', async () => {
+      mockFetchSuccess({
+        userMessage: { id: 'um-1', role: 'user', content: 'Summarize this customer' },
+        assistantMessage: { id: 'am-1', role: 'assistant', content: 'Summary…' },
+      });
+
+      const entityRef = { module: 'crm', entity: 'leads', id: 'lead-1', label: 'Acme Corp' };
+      const result = await neuraAiService.sendMessage('conv-123', 'Summarize this customer', entityRef);
+
+      expect(result.assistantMessage.content).toBe('Summary…');
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toContain('/conversations/conv-123/messages');
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body)).toEqual({
+        content: 'Summarize this customer',
+        mode: 'assist',
+        entityRef,
+      });
+    });
+
+    it('When called with no entityRef / Then omits the field entirely rather than sending it undefined', async () => {
+      mockFetchSuccess({
+        userMessage: { id: 'um-2', role: 'user', content: 'How many deals are open?' },
+        assistantMessage: { id: 'am-2', role: 'assistant', content: '3 open deals' },
+      });
+
+      await neuraAiService.sendMessage('conv-123', 'How many deals are open?');
+
+      const [, options] = fetchMock.mock.calls[0];
+      const body = JSON.parse(options.body);
+      expect(body).not.toHaveProperty('entityRef');
+      expect(body.mode).toBe('assist');
+    });
+
+    it('When the backend errors / Then rejects (caller surfaces the failure, not a silent success)', async () => {
+      mockFetchErrorJson(500, { message: 'Internal error' });
+
+      await expect(
+        neuraAiService.sendMessage('conv-123', 'Summarize this customer'),
+      ).rejects.toThrow();
+    });
   });
 });
