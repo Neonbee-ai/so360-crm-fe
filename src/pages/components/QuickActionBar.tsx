@@ -22,7 +22,7 @@ const QuickActionBar: React.FC<Props> = ({ onAddNote, onSendEmail, onLogCall, on
         { label: 'Log Call', icon: <Phone size={13} />, onClick: onLogCall },
         { label: 'Schedule Meeting', icon: <CalendarPlus size={13} />, onClick: onScheduleMeeting },
         { label: 'Create Task', icon: <CheckSquare size={13} />, onClick: onCreateTask },
-        { label: 'Upload Document', icon: <UploadCloud size={13} />, onClick: onUploadDocument },
+        { label: 'Add Document', icon: <UploadCloud size={13} />, onClick: onUploadDocument },
     ];
 
     return (

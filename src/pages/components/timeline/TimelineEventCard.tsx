@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
     Phone, Users, AtSign, FileText, CheckCircle2, File, Briefcase,
-    TrendingUp, Info, Edit2, Trash2, Pin, PinOff,
+    TrendingUp, Info, Edit2, Trash2, Bookmark,
 } from 'lucide-react';
 import { EntityTimelineEvent } from '../../../services/crmService';
 import { useCRMFormatters } from '../../../utils/formatters';
@@ -80,7 +80,7 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
                                 className="p-1 text-slate-500 hover:text-amber-400 transition-colors"
                                 title={isPinned ? 'Unpin' : 'Pin'}
                             >
-                                {isPinned ? <PinOff size={12} /> : <Pin size={12} />}
+                                <Bookmark size={12} fill={isPinned ? 'currentColor' : 'none'} />
                             </button>
                         )}
                         {canManage && onEdit && (

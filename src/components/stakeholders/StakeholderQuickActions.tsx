@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, Mail, CalendarPlus, CheckSquare, FileEdit, UserCog, X } from 'lucide-react';
+import { Phone, Mail, CalendarPlus, CheckSquare, FileEdit, Users, X } from 'lucide-react';
 import { Stakeholder } from '../../types/crm';
 import TaskModal from '../../pages/components/TaskModal';
 
@@ -48,7 +48,7 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
                     <ActionButton icon={<CalendarPlus size={14} />} label="Schedule Meeting" onClick={() => onScheduleMeeting?.(stakeholder)} />
                     <ActionButton icon={<CheckSquare size={14} />} label="Create Task" onClick={() => setShowTaskModal(true)} />
                     <ActionButton icon={<FileEdit size={14} />} label="Add Note" onClick={() => onAddNote?.(stakeholder)} />
-                    <ActionButton icon={<UserCog size={14} />} label="Open Contact Profile" onClick={() => onOpenProfile(stakeholder)} />
+                    <ActionButton icon={<Users size={14} />} label="Open Contact Profile" onClick={() => onOpenProfile(stakeholder)} />
                     {blocked && <p className="text-[9px] text-red-400 px-2 pt-1">This stakeholder is marked Do Not Contact.</p>}
                 </div>
             </div>

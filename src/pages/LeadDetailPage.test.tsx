@@ -28,6 +28,11 @@ vi.mock('../services/crmService', () => ({
     getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivitiesByLeadIdPaginated(...a),
     getNotesByLeadId: (...a: any[]) => mockGetNotesByLeadId(...a),
     getDocumentsByLeadId: (...a: any[]) => mockGetDocumentsByLeadId(...a),
+    gridColumns: {
+        get: () => Promise.resolve(null),
+        save: () => Promise.resolve({}),
+        reset: () => Promise.resolve({}),
+    },
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     createNote: (...a: any[]) => mockCreateNote(...a),
@@ -76,6 +81,13 @@ vi.mock('../components/LeadJourneyStepper', () => ({
   LeadJourneyStepper: () => <div data-testid="stepper" />,
 }));
 
+// Task 4: the inline Activity tab now reads from useEntityTimeline() instead
+// of client-side aggregation.
+const mockUseEntityTimeline = vi.fn();
+vi.mock('./components/timeline/useEntityTimeline', () => ({
+  useEntityTimeline: (...args: any[]) => mockUseEntityTimeline(...args),
+}));
+
 import LeadDetailPage from './LeadDetailPage';
 
 const leadData = {
@@ -122,6 +134,27 @@ beforeEach(() => {
   mockGetDocumentsByLeadId.mockResolvedValue([
     { id: 'doc1', name: 'contract.pdf', url: 'http://cdn/file.pdf', uploaded_at: '2024-01-01', uploaded_by: { id: 'u1', full_name: 'Test' } },
   ]);
+  mockUseEntityTimeline.mockReturnValue({
+    events: [{
+      id: 'call:a1', icon: 'call', title: 'Call logged', description: 'Called',
+      actor_id: null, actor_name: 'Test', created_at: '2024-01-02', module: 'crm',
+      related_type: null, related_id: null, status_badge: null, group_key: 'call',
+    }],
+    summary: null,
+    loading: false,
+    loadingMore: false,
+    error: null,
+    hasMore: false,
+    loadMore: vi.fn(),
+    refetch: vi.fn(),
+    search: '', setSearch: vi.fn(),
+    moduleFilter: '', setModuleFilter: vi.fn(),
+    categoryFilter: '', setCategoryFilter: vi.fn(),
+    range: '', setRange: vi.fn(),
+    pinnedIds: new Set(), togglePin: vi.fn(),
+    removeEvent: vi.fn(),
+    updateEventDescription: vi.fn(),
+  });
 });
 
 describe('Given LeadDetailPage', () => {

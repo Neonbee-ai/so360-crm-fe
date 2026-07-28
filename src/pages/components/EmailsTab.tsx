@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Loader2, ExternalLink, Instagram, Facebook, MessageCircle } from 'lucide-react';
+import { Mail, Loader2, ExternalLink, Smartphone, MessageSquare } from 'lucide-react';
 import { inboxIntegrationApi, InboxConversationPreview } from '../../services/crmService';
 
 interface Props {
@@ -8,10 +8,10 @@ interface Props {
 
 const PLATFORM_ICON: Record<string, React.ReactNode> = {
     email: <Mail size={14} className="text-blue-400" />,
-    whatsapp: <MessageCircle size={14} className="text-emerald-400" />,
-    instagram: <Instagram size={14} className="text-pink-400" />,
-    facebook: <Facebook size={14} className="text-blue-500" />,
-    web_chat: <MessageCircle size={14} className="text-slate-400" />,
+    whatsapp: <MessageSquare size={14} className="text-emerald-400" />,
+    instagram: <Smartphone size={14} className="text-pink-400" />,
+    facebook: <Smartphone size={14} className="text-blue-500" />,
+    web_chat: <MessageSquare size={14} className="text-slate-400" />,
 };
 
 function formatDateTime(iso: string): string {

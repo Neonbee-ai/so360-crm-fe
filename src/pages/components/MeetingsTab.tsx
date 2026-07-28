@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CalendarClock, Plus, Loader2, MapPin, CheckCircle2, XCircle, Clock3 } from 'lucide-react';
+import { Calendar, Plus, Loader2, MapPin, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { meetingsApi } from '../../services/crmService';
 import { Meeting } from '../../types/crm';
 import MeetingModal from './MeetingModal';
@@ -77,7 +77,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId, autoOpenForm }) => {
                 <div className="flex justify-center py-10 text-slate-500"><Loader2 size={20} className="animate-spin" /></div>
             ) : meetings.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-slate-600">
-                    <CalendarClock size={24} className="mb-2" />
+                    <Calendar size={24} className="mb-2" />
                     <p className="text-xs">No meetings scheduled yet.</p>
                 </div>
             ) : (
@@ -91,7 +91,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId, autoOpenForm }) => {
                                         <span className={`text-[9px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${STATUS_STYLE[m.status]}`}>{m.status}</span>
                                     </div>
                                     <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
-                                        <Clock3 size={11} /> {formatDateTime(m.scheduled_at)} · {m.duration_minutes} min
+                                        <Clock size={11} /> {formatDateTime(m.scheduled_at)} · {m.duration_minutes} min
                                     </p>
                                     {m.location && <p className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1"><MapPin size={11} /> {m.location}</p>}
                                     {m.outcome && <p className="text-[10px] text-slate-400 mt-1">Outcome: {m.outcome}</p>}

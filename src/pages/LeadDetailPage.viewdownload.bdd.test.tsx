@@ -24,6 +24,11 @@ vi.mock('../services/crmService', () => ({
         getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivitiesByLeadIdPaginated(...a),
         getPartners: (...a: any[]) => mockGetPartners(...a),
         getDocumentsByLeadId: (...a: any[]) => mockGetDocumentsByLeadId(...a),
+        gridColumns: {
+            get: () => Promise.resolve(null),
+            save: () => Promise.resolve({}),
+            reset: () => Promise.resolve({}),
+        },
         uploadDocument: vi.fn().mockResolvedValue({}),
         deleteDocument: vi.fn().mockResolvedValue(undefined),
         createNote: vi.fn().mockResolvedValue({}),

@@ -9,7 +9,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, Users, FileText,
     DollarSign, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Users2, CalendarClock, Search, Settings
+    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, Settings2
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
@@ -61,9 +61,9 @@ const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: (counts: TabCou
     feedback: { icon: <MessageSquare size={14} />, label: () => 'Feedback' },
     calls: { icon: <Phone size={14} />, label: () => 'Calls' },
     audit: { icon: <ShieldCheck size={14} />, label: () => 'Audit History' },
-    stakeholders: { icon: <Users2 size={14} />, label: () => 'Stakeholders' },
+    stakeholders: { icon: <Users size={14} />, label: () => 'Stakeholders' },
     emails: { icon: <Mail size={14} />, label: () => 'Emails' },
-    meetings: { icon: <CalendarClock size={14} />, label: () => 'Meetings' },
+    meetings: { icon: <Calendar size={14} />, label: () => 'Meetings' },
 };
 
 // Tiptap emits '<p></p>' for an empty editor rather than '', so a plain
@@ -740,7 +740,7 @@ const LeadDetailPage = () => {
                                 className="ml-auto px-3 text-slate-500 hover:text-slate-200 transition-colors shrink-0"
                                 title="Layout Settings"
                             >
-                                <Settings size={14} />
+                                <Settings2 size={14} />
                             </button>
                         </div>
 

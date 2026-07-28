@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Mail, Phone, Linkedin, Ban, ShieldOff, Edit2, Trash2 } from 'lucide-react';
+import { Star, Mail, Phone, Link2, XCircle, MailX, Edit2, Trash2 } from 'lucide-react';
 import { Stakeholder } from '../../types/crm';
 import { ROLE_LABELS } from './StakeholderRolesEditor';
 
@@ -68,12 +68,12 @@ const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpe
                 </span>
                 {stakeholder.do_not_contact && (
                     <span className="text-[9px] px-2 py-0.5 rounded-full border border-red-500/20 bg-red-500/10 text-red-400 font-black uppercase tracking-widest flex items-center gap-1">
-                        <Ban size={9} /> Do Not Contact
+                        <XCircle size={9} /> Do Not Contact
                     </span>
                 )}
                 {stakeholder.marketing_opt_out && (
                     <span className="text-[9px] px-2 py-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-400 font-black uppercase tracking-widest flex items-center gap-1">
-                        <ShieldOff size={9} /> Opted Out
+                        <MailX size={9} /> Opted Out
                     </span>
                 )}
             </div>
@@ -83,7 +83,7 @@ const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpe
                 {stakeholder.phone && <span className="flex items-center gap-1"><Phone size={11} /> {stakeholder.phone}</span>}
                 {stakeholder.linkedin_url && (
                     <a href={stakeholder.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-blue-400">
-                        <Linkedin size={11} /> LinkedIn
+                        <Link2 size={11} /> LinkedIn
                     </a>
                 )}
             </div>

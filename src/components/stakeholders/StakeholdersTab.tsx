@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, GitBranch, List, Loader2, Users } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, List, Loader2, Users } from 'lucide-react';
 import { stakeholderApi } from '../../services/crmService';
 import { Stakeholder, Deal } from '../../types/crm';
 import StakeholderCard from './StakeholderCard';
@@ -75,7 +75,7 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
                 </select>
                 <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg p-1">
                     <button onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}><List size={14} /></button>
-                    <button onClick={() => setView('hierarchy')} className={`p-1.5 rounded ${view === 'hierarchy' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}><GitBranch size={14} /></button>
+                    <button onClick={() => setView('hierarchy')} className={`p-1.5 rounded ${view === 'hierarchy' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}><SlidersHorizontal size={14} /></button>
                 </div>
                 <button
                     onClick={() => setEditingStakeholder(null)}

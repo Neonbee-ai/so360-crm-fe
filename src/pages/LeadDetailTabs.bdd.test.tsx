@@ -27,11 +27,12 @@ const globalCss = readFileSync(
   'utf8',
 );
 
-/** Isolate the activity-section tab-row container (the div that immediately
- *  wraps the six setActiveTab buttons), independent of the higher-up
- *  Lead-Information tab row which is a different group. */
+/** Isolate the activity-section tab-row container (the div that wraps the
+ *  data-driven tab buttons, Task 5's layoutPrefs.visibleSections.map loop),
+ *  independent of the higher-up Lead-Information tab row which is a
+ *  different group. */
 function activityTabRowClassName(): string {
-  const marker = "onClick={() => setActiveTab('activity')}";
+  const marker = 'layoutPrefs.visibleSections.map(';
   const markerIdx = pageSource.indexOf(marker);
   expect(markerIdx).toBeGreaterThan(-1);
   // Walk backwards to the opening <div ...> that contains the activity button.

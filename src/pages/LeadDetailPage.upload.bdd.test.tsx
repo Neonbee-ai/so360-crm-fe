@@ -31,6 +31,11 @@ vi.mock('../services/crmService', () => ({
         updateLead: vi.fn().mockResolvedValue({}),
         deleteLead: vi.fn().mockResolvedValue(undefined),
         getDocumentsByLeadId: (...a: any[]) => mockGetDocumentsByLeadId(...a),
+        gridColumns: {
+            get: () => Promise.resolve(null),
+            save: () => Promise.resolve({}),
+            reset: () => Promise.resolve({}),
+        },
         getLeadScoringResult: vi.fn().mockResolvedValue(null),
     },
     activitiesApi: {

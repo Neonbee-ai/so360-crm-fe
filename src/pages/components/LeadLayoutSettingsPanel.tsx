@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ChevronUp, ChevronDown, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { X, ChevronUp, ChevronDown, Eye, RefreshCw } from 'lucide-react';
 import { LayoutSectionPref } from '../../hooks/useLeadDetailLayoutPreferences';
 
 const SECTION_LABELS: Record<string, string> = {
@@ -46,8 +46,8 @@ const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, o
                             <span className={`flex-1 text-xs ${s.visible ? 'text-slate-200' : 'text-slate-600'}`}>
                                 {SECTION_LABELS[s.key] || s.key}
                             </span>
-                            <button onClick={() => onToggleVisible(s.key)} className="text-slate-500 hover:text-blue-400">
-                                {s.visible ? <Eye size={14} /> : <EyeOff size={14} />}
+                            <button onClick={() => onToggleVisible(s.key)} className={s.visible ? 'text-blue-400' : 'text-slate-600'}>
+                                <Eye size={14} />
                             </button>
                         </div>
                     ))}
@@ -57,7 +57,7 @@ const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, o
                         onClick={onReset}
                         className="w-full flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200 py-2"
                     >
-                        <RotateCcw size={12} /> Reset to Default
+                        <RefreshCw size={12} /> Reset to Default
                     </button>
                 </div>
             </div>
