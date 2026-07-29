@@ -25,6 +25,7 @@ import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import NeuraAiDrawer from './components/NeuraAiDrawer';
+import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab from './components/CallsTab';
 import AuditHistoryTab from './components/AuditHistoryTab';
@@ -112,6 +113,7 @@ const LeadDetailPage = () => {
     const canConvertLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
     const canUseNeuraAi = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
+    const isInboxEnabled = isModuleEnabled('inbox');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const [lead, setLead] = useState<Lead | null>(null);
@@ -1275,6 +1277,14 @@ const LeadDetailPage = () => {
 
                 {/* Sidebar Context */}
                 <div className="space-y-8">
+
+                    {canUseNeuraAi && (
+                        <NeuraAiSummaryCard
+                            leadId={lead.id}
+                            leadLabel={lead.company_name || getLeadDisplayName(lead)}
+                            isInboxEnabled={isInboxEnabled}
+                        />
+                    )}
 
                     {/* Lead / Customer Potential Score Card */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
