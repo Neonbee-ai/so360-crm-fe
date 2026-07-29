@@ -23,6 +23,7 @@ const mockDeleteDocument = vi.fn().mockResolvedValue({});
 const mockDeleteLead = vi.fn().mockResolvedValue({});
 const mockActivitiesUpdate = vi.fn().mockResolvedValue({});
 const mockActivitiesDelete = vi.fn().mockResolvedValue({});
+const mockSetCurrentEntity = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -107,6 +108,7 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
+  useCurrentEntity: () => ({ setCurrentEntity: mockSetCurrentEntity }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
@@ -922,6 +924,27 @@ describe('LeadDetailPage', () => {
       const grid = getDetailGrid(container);
       expect(grid.className).toContain('lg:grid-cols-3');
       expect(grid.children.length).toBe(2);
+    });
+  });
+
+  describe('Given the global Neura AI panel needs to know what is on screen', () => {
+    it('When the lead loads / Then publishes it as the shell currentEntity', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(mockSetCurrentEntity).toHaveBeenCalledWith({
+        module: 'crm',
+        entity: 'leads',
+        id: 'lead-1',
+        label: 'Acme Corp',
+      }));
+    });
+
+    it('When the page unmounts / Then clears the current entity so it never outlives this page', async () => {
+      const { unmount } = render(<LeadDetailPage />);
+      await waitFor(() => expect(mockSetCurrentEntity).toHaveBeenCalledWith(expect.objectContaining({ id: 'lead-1' })));
+
+      unmount();
+
+      expect(mockSetCurrentEntity).toHaveBeenLastCalledWith(null);
     });
   });
 });

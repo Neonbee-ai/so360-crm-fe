@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { eventBus } from '@so360/event-bus';
-import { useShell, useActivity, useShellBridge } from '@so360/shell-context';
+import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     ChevronLeft, Mail, Phone, Building2,
@@ -106,6 +106,7 @@ const LeadDetailPage = () => {
     const { toasts, showSuccess, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { isModuleEnabled } = useShell();
+    const { setCurrentEntity } = useCurrentEntity();
     const shell = useShellBridge();
     const canCreateDeal = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
     const canPromoteLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
@@ -247,6 +248,20 @@ const LeadDetailPage = () => {
     useEffect(() => {
         fetchLeadData();
     }, [fetchLeadData]);
+
+    // Publish the lead on screen to the shell so the global Neura AI panel can
+    // scope its answers to it — cleared on unmount so a stale entity never
+    // outlives this page (e.g. navigating to a non-detail route).
+    useEffect(() => {
+        if (!lead) return;
+        setCurrentEntity({
+            module: 'crm',
+            entity: 'leads',
+            id: lead.id,
+            label: lead.company_name || getLeadDisplayName(lead),
+        });
+        return () => setCurrentEntity(null);
+    }, [lead?.id, lead?.company_name, setCurrentEntity]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (isLoading) {
         return (

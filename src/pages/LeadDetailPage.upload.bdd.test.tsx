@@ -60,6 +60,7 @@ vi.mock('@so360/shell-context', () => ({
         org: { id: 'org-1', name: 'Test Org' },
         isModuleEnabled: () => false,
     }),
+    useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
     useActivity: () => ({ recordActivity: vi.fn() }),
     useShellBridge: vi.fn(() => ({
         effectiveFlagsLoaded: true,
