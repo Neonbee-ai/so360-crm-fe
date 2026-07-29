@@ -30,9 +30,23 @@ const TaskDetailPage = () => {
     const [notes, setNotes] = useState<any[]>([]);
     const [newNote, setNewNote] = useState('');
     const [isAddingNote, setIsAddingNote] = useState(false);
-    const [notesSupported, setNotesSupported] = useState(true);
+    const [notesError, setNotesError] = useState<string | null>(null);
+    const [isRetryingNotes, setIsRetryingNotes] = useState(false);
     const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
     const [editingNote, setEditingNote] = useState<{ id: string; content: string } | null>(null);
+
+    const refreshNotes = async (taskId: string) => {
+        try {
+            const notesData = await crmService.getTaskNotes(taskId);
+            setNotes(notesData || []);
+            setNotesError(null);
+            return true;
+        } catch (error) {
+            console.error('Failed to fetch task notes:', error);
+            setNotesError('Unable to load notes right now. Please try again.');
+            return false;
+        }
+    };
 
     useEffect(() => {
         const fetchTask = async () => {
@@ -46,16 +60,9 @@ const TaskDetailPage = () => {
                 const taskData = await crmService.getTaskById(id);
                 setTask(taskData || null);
 
-                // Fetch notes data (optional - may fail if migration not run)
-                try {
-                    const notesData = await crmService.getTaskNotes(id);
-                    setNotes(notesData || []);
-                    setNotesSupported(true);
-                } catch (notesError) {
-                    console.warn('Failed to fetch task notes (migration may not be run yet):', notesError);
-                    setNotes([]);
-                    setNotesSupported(false);
-                }
+                // Fetch notes data (independent of task load — a notes failure
+                // must never block the task itself from rendering)
+                await refreshNotes(id);
             } catch (error) {
                 console.error('Failed to fetch task', error);
             } finally {
@@ -64,6 +71,13 @@ const TaskDetailPage = () => {
         };
         fetchTask();
     }, [id]);
+
+    const handleRetryNotes = async () => {
+        if (!task) return;
+        setIsRetryingNotes(true);
+        await refreshNotes(task.id);
+        setIsRetryingNotes(false);
+    };
 
     const handleTaskToggle = async () => {
         if (!task) return;
@@ -238,7 +252,7 @@ const TaskDetailPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
                             <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Notes & Comments</h3>
-                            {canCreateTask && notesSupported && (
+                            {canCreateTask && !notesError && (
                                 <button
                                     onClick={() => setIsAddingNote(!isAddingNote)}
                                     className="text-xs text-blue-400 hover:text-blue-300 font-bold"
@@ -248,12 +262,16 @@ const TaskDetailPage = () => {
                             )}
                         </div>
 
-                        {!notesSupported && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
-                                <p className="text-xs text-yellow-400">
-                                    <strong>Notes feature not yet available.</strong> Database migration required.
-                                    Contact your administrator to run: <code className="bg-slate-950 px-1 py-0.5 rounded">migrations/add_task_notes.sql</code>
-                                </p>
+                        {notesError && (
+                            <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
+                                <p className="text-xs text-slate-400">{notesError}</p>
+                                <button
+                                    onClick={handleRetryNotes}
+                                    disabled={isRetryingNotes}
+                                    className="text-xs text-blue-400 hover:text-blue-300 font-bold shrink-0 disabled:opacity-50"
+                                >
+                                    {isRetryingNotes ? 'Retrying…' : 'Retry'}
+                                </button>
                             </div>
                         )}
 
@@ -277,12 +295,13 @@ const TaskDetailPage = () => {
                                             if (!task || !newNote.trim()) return;
                                             try {
                                                 await crmService.createNote({ content: newNote, task_id: task.id });
-                                                const updated = await crmService.getTaskNotes(task.id);
-                                                setNotes(updated);
+                                                await refreshNotes(task.id);
                                                 setNewNote('');
                                                 setIsAddingNote(false);
+                                                recordActivity({ eventType: 'note.added', eventCategory: 'crm', description: `Added a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                             } catch (error) {
                                                 console.error('Failed to create note:', error);
+                                                alert('Failed to add note. Please try again.');
                                             }
                                         }}
                                         className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm"
@@ -295,19 +314,28 @@ const TaskDetailPage = () => {
 
                         <div className="space-y-3">
                             {notes.length === 0 ? (
-                                <p className="text-slate-500 text-sm italic">No notes yet</p>
+                                !notesError && (
+                                    <p className="text-slate-500 text-sm italic">
+                                        No notes added yet. Add the first note to collaborate with your team.
+                                    </p>
+                                )
                             ) : (
                                 notes.map(note => {
                                     const isAuthor = currentUserId && note.author?.id === currentUserId;
+                                    const isEdited = !!note.updated_at && note.updated_at !== note.created_at;
 
                                     return (
                                         <div key={note.id} className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 group">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center">
-                                                        <span className="text-xs font-bold text-blue-400">
-                                                            {note.author?.full_name?.[0] || 'U'}
-                                                        </span>
+                                                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden">
+                                                        {note.author?.avatar_url ? (
+                                                            <img src={note.author.avatar_url} alt={note.author?.full_name || 'User'} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-blue-400">
+                                                                {note.author?.full_name?.[0] || 'U'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <span className="text-sm font-medium text-slate-300">
                                                         {note.author?.full_name || 'Unknown User'}
@@ -316,6 +344,7 @@ const TaskDetailPage = () => {
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-xs text-slate-500">
                                                         {formatters.formatDate(note.created_at)}
+                                                        {isEdited && <span className="italic"> · Edited</span>}
                                                     </span>
                                                     {isAuthor && (
                                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -442,9 +471,9 @@ const TaskDetailPage = () => {
                                     }
                                     try {
                                         await crmService.updateNote(editingNote.id, editingNote.content);
-                                        const updated = await crmService.getTaskNotes(task.id);
-                                        setNotes(updated);
+                                        await refreshNotes(task.id);
                                         setEditingNote(null);
+                                        recordActivity({ eventType: 'note.updated', eventCategory: 'crm', description: `Edited a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to update note:', error);
                                         alert('Failed to update note. Please try again.');
@@ -486,9 +515,9 @@ const TaskDetailPage = () => {
                                 onClick={async () => {
                                     try {
                                         await crmService.deleteNote(deleteNoteId);
-                                        const updated = await crmService.getTaskNotes(task.id);
-                                        setNotes(updated);
+                                        await refreshNotes(task.id);
                                         setDeleteNoteId(null);
+                                        recordActivity({ eventType: 'note.deleted', eventCategory: 'crm', description: `Deleted a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to delete note:', error);
                                         alert('Failed to delete note. Please try again.');

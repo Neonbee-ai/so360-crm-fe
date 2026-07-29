@@ -137,12 +137,13 @@ describe('Given TaskDetailPage', () => {
     });
   });
 
-  it('When action / Then handles notes not supported', async () => {
+  it('When notes fail to load / Then shows an honest retry message, never an internal migration message', async () => {
     mockGetTaskNotes.mockRejectedValue(new Error('Not supported'));
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/notes feature not yet available/i)).toBeInTheDocument();
+      expect(screen.getByText('Unable to load notes right now. Please try again.')).toBeInTheDocument();
     });
+    expect(screen.queryByText(/migration/i)).not.toBeInTheDocument();
   });
 
   it('When action / Then shows Done status styling', async () => {

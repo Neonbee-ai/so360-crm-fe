@@ -123,6 +123,7 @@ export interface Note {
     content: string;
     author: User;
     created_at: string;
+    updated_at?: string;
     parent_note_id?: string | null;
     replies?: Note[];
 }
