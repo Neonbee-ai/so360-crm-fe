@@ -18,9 +18,7 @@ vi.mock('../services/crmService', () => ({
   },
 }));
 
-const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
 vi.mock('@so360/shell-context', () => ({
-  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
 }));
 
@@ -157,17 +155,10 @@ describe('CustomerDetailsPanel', () => {
     });
   });
 
-  describe('Given the Sign module gating', () => {
-    it('When the Sign module is disabled / Then the Request Signature button is hidden', () => {
-      shellCtl.signEnabled = false;
+  describe('Given the Request Signature action was removed from the Lead Detail page', () => {
+    it('When rendered / Then no Request Signature button is present', () => {
       render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
       expect(screen.queryByRole('button', { name: /request signature/i })).not.toBeInTheDocument();
-    });
-
-    it('When the Sign module is enabled / Then the Request Signature button is shown', () => {
-      shellCtl.signEnabled = true;
-      render(<CustomerDetailsPanel lead={baseLead} onUpdate={vi.fn()} showToast={vi.fn()} />);
-      expect(screen.getByRole('button', { name: /request signature/i })).toBeInTheDocument();
     });
   });
 
