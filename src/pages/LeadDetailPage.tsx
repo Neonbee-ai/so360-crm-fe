@@ -17,14 +17,13 @@ import { useCRMFormatters } from '../utils/formatters';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
-import { Trophy, Zap, Info, TrendingUp, RefreshCw, Sparkles } from 'lucide-react';
+import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
-import NeuraAiDrawer from './components/NeuraAiDrawer';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab from './components/CallsTab';
@@ -155,7 +154,6 @@ const LeadDetailPage = () => {
     const [autoOpenMeetingForm, setAutoOpenMeetingForm] = useState(false);
     const [showLayoutSettings, setShowLayoutSettings] = useState(false);
     const layoutPrefs = useLeadDetailLayoutPreferences();
-    const [showNeuraAiDrawer, setShowNeuraAiDrawer] = useState(false);
 
     // Task 4 (Customer Timeline): unified server-side timeline, shared between
     // the inline preview below and ActivityHistoryDrawer.tsx.
@@ -434,13 +432,6 @@ const LeadDetailPage = () => {
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        {canUseNeuraAi && <button
-                            onClick={() => setShowNeuraAiDrawer(true)}
-                            className="bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 hover:text-violet-300 px-4 py-3 rounded-xl font-black transition-all text-xs flex items-center gap-2 uppercase tracking-widest border border-violet-500/20 hover:border-violet-500/40"
-                        >
-                            <Sparkles size={16} />
-                            Neura AI
-                        </button>}
                         <button
                             onClick={() => setShowDeleteConfirm(true)}
                             className="bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-400 px-4 py-3 rounded-xl font-black transition-all text-xs flex items-center gap-2 uppercase tracking-widest border border-slate-700 hover:border-red-500/50"
@@ -1821,14 +1812,6 @@ const LeadDetailPage = () => {
                     onMove={layoutPrefs.moveSection}
                     onReset={layoutPrefs.resetToDefaults}
                     onClose={() => setShowLayoutSettings(false)}
-                />
-            )}
-            {canUseNeuraAi && (
-                <NeuraAiDrawer
-                    isOpen={showNeuraAiDrawer}
-                    onClose={() => setShowNeuraAiDrawer(false)}
-                    leadId={lead.id}
-                    leadLabel={lead.company_name || getLeadDisplayName(lead)}
                 />
             )}
         </div >
