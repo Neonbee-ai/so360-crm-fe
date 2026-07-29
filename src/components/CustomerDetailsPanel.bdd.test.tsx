@@ -42,7 +42,6 @@ const mockPartners = [
 
 beforeEach(() => {
   vi.clearAllMocks();
-  shellCtl.signEnabled = false;
   mockValidateTaxId.mockResolvedValue({ ...baseLead, tax_id: 'TAX123', tax_id_verified: true });
   mockUpdateCreditLimit.mockResolvedValue({ ...baseLead, credit_limit: 5000 });
   mockGetBusinessProfile.mockResolvedValue(null);
