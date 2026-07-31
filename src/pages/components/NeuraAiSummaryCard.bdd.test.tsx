@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import NeuraAiSummaryCard from './NeuraAiSummaryCard';
 import { neuraAiService, inboxIntegrationApi } from '../../services/crmService';
@@ -25,6 +25,7 @@ describe('NeuraAiSummaryCard', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         sessionStorage.clear();
+        localStorage.clear();
         vi.mocked(neuraAiService.createConversation).mockResolvedValue({ id: 'conv-1' });
         vi.mocked(neuraAiService.sendMessage).mockResolvedValue({
             userMessage: { id: 'um-1', role: 'user', content: 'Summarize' },
@@ -48,7 +49,7 @@ describe('NeuraAiSummaryCard', () => {
             await waitFor(() => expect(neuraAiService.createConversation).toHaveBeenCalledWith('Neura AI · Lead Acme Corp'));
             expect(neuraAiService.sendMessage).toHaveBeenCalledWith(
                 'conv-1',
-                expect.stringContaining('Summarize this customer'),
+                expect.stringContaining('Summarize this lead/customer'),
                 { module: 'crm', entity: 'leads', id: 'lead-1', label: 'Acme Corp' },
             );
         });
@@ -122,6 +123,41 @@ describe('NeuraAiSummaryCard', () => {
 
             await waitFor(() => expect(screen.getByText('Updated summary.')).toBeInTheDocument());
             expect(neuraAiService.sendMessage).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    describe('Given the retry-storm guards (issue-audit fixes)', () => {
+        it('When a fresh summary is cached within the TTL / Then a remount reuses it — NO new LLM call', async () => {
+            sessionStorage.setItem(
+                'neura_ai_summary:lead-1',
+                JSON.stringify({ text: 'Cached summary.', at: Date.now() }),
+            );
+            render(<NeuraAiSummaryCard {...defaultProps} />);
+            await waitFor(() => expect(screen.getByText('Cached summary.')).toBeInTheDocument());
+            expect(neuraAiService.sendMessage).not.toHaveBeenCalled();
+        });
+
+        it('When Refresh is clicked / Then the cache is bypassed and a fresh summary is fetched', async () => {
+            sessionStorage.setItem(
+                'neura_ai_summary:lead-1',
+                JSON.stringify({ text: 'Cached summary.', at: Date.now() }),
+            );
+            render(<NeuraAiSummaryCard {...defaultProps} />);
+            await waitFor(() => expect(screen.getByText('Cached summary.')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByTitle('Refresh summary'));
+            await waitFor(() =>
+                expect(screen.getByText('Acme Corp is an active opportunity in Negotiation.')).toBeInTheDocument(),
+            );
+            expect(neuraAiService.sendMessage).toHaveBeenCalledTimes(1);
+        });
+
+        it('When the conversation id exists in localStorage / Then it is reused across sessions (one conversation per lead)', async () => {
+            localStorage.setItem('neura_ai_conversation:lead-1', 'conv-durable');
+            render(<NeuraAiSummaryCard {...defaultProps} />);
+            await waitFor(() => expect(neuraAiService.sendMessage).toHaveBeenCalled());
+            expect(neuraAiService.createConversation).not.toHaveBeenCalled();
+            expect(vi.mocked(neuraAiService.sendMessage).mock.calls[0][0]).toBe('conv-durable');
         });
     });
 
