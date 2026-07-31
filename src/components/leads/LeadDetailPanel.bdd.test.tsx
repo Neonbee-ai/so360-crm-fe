@@ -5,11 +5,13 @@ import type { Lead } from '../../types/crm';
 
 const mockGetDeals = vi.fn();
 const mockGetTasks = vi.fn();
+const mockGetActivities = vi.fn();
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
     getDealsByLeadId: (...a: any[]) => mockGetDeals(...a),
     getTasksByLeadId: (...a: any[]) => mockGetTasks(...a),
+    getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivities(...a),
   },
 }));
 
@@ -36,13 +38,24 @@ const makeLead = (over: Partial<Lead> = {}): Lead =>
     ...(over as object),
   } as Lead);
 
-const render_ = (lead: Lead | null) =>
-  render(<LeadDetailPanel lead={lead} onClose={vi.fn()} onNavigate={vi.fn()} />);
+const render_ = (
+  lead: Lead | null,
+  overrides: { onNavigate?: (lead: Lead) => void; onNavigateDeal?: (deal: any) => void } = {},
+) =>
+  render(
+    <LeadDetailPanel
+      lead={lead}
+      onClose={vi.fn()}
+      onNavigate={overrides.onNavigate ?? vi.fn()}
+      onNavigateDeal={overrides.onNavigateDeal ?? vi.fn()}
+    />,
+  );
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetDeals.mockResolvedValue([]);
   mockGetTasks.mockResolvedValue([]);
+  mockGetActivities.mockResolvedValue({ data: [], total: 0 });
 });
 
 describe('LeadDetailPanel — tabs', () => {
@@ -57,6 +70,40 @@ describe('LeadDetailPanel — tabs', () => {
     render_(makeLead());
     expect(mockGetDeals).not.toHaveBeenCalled();
     expect(mockGetTasks).not.toHaveBeenCalled();
+    expect(mockGetActivities).not.toHaveBeenCalled();
+  });
+});
+
+describe('LeadDetailPanel — Activity (timeline) tab', () => {
+  it('fetches and renders the lead activity timeline', async () => {
+    mockGetActivities.mockResolvedValue({
+      data: [
+        { id: 'a1', type: 'NOTE', notes: 'Called and left voicemail', created_at: '2026-01-02T00:00:00Z', author: { id: 'u1', full_name: 'Alice' } },
+      ],
+      total: 1,
+    });
+    render_(makeLead());
+    fireEvent.click(screen.getByText('Activity'));
+    await waitFor(() => expect(mockGetActivities).toHaveBeenCalledWith('lead-1', 10, 0));
+    expect(await screen.findByText('Called and left voicemail')).toBeInTheDocument();
+  });
+
+  it('shows an empty state only once activities have loaded and there are none', async () => {
+    render_(makeLead());
+    fireEvent.click(screen.getByText('Activity'));
+    expect(await screen.findByText(/no activity recorded yet/i)).toBeInTheDocument();
+  });
+
+  it('fetches activities scoped to the selected lead, not read off the lead object', async () => {
+    // Regression: the lead object itself carries no activities — the panel
+    // must fetch them independently instead of reading a `lead.activities` field.
+    mockGetActivities.mockResolvedValue({
+      data: [{ id: 'a1', type: 'CALL', notes: 'Follow-up call', created_at: '2026-01-02T00:00:00Z' }],
+      total: 1,
+    });
+    render_(makeLead({ activities: undefined } as unknown as Partial<Lead>));
+    fireEvent.click(screen.getByText('Activity'));
+    expect(await screen.findByText('Follow-up call')).toBeInTheDocument();
   });
 });
 
@@ -81,6 +128,21 @@ describe('LeadDetailPanel — Sales tab', () => {
     render_(makeLead());
     fireEvent.click(screen.getByText('Sales'));
     expect(await screen.findByText(/no deals linked/i)).toBeInTheDocument();
+  });
+
+  it('clicking a deal card navigates using the deal, not the lead', async () => {
+    // Regression: previously the click handler called onNavigate(lead), which
+    // always routed back to the Lead Detail page regardless of which deal was clicked.
+    mockGetDeals.mockResolvedValue([
+      { id: 'd1', name: 'Big Deal', value: 5000, stage: 'Qualified', owner: { id: 'u1', full_name: 'Alice' }, notes: [], activities: [], created_at: '2026-01-01T00:00:00Z' },
+    ]);
+    const onNavigate = vi.fn();
+    const onNavigateDeal = vi.fn();
+    render_(makeLead(), { onNavigate, onNavigateDeal });
+    fireEvent.click(screen.getByText('Sales'));
+    fireEvent.click(await screen.findByText('Big Deal'));
+    expect(onNavigateDeal).toHaveBeenCalledWith(expect.objectContaining({ id: 'd1' }));
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 });
 
@@ -138,23 +200,23 @@ describe('LeadDetailPanel — Sales tab (optional fields)', () => {
 });
 
 describe('LeadDetailPanel — Audit tab', () => {
-  it('shows only system/state-change events', () => {
-    render_(
-      makeLead({
-        activities: [
-          { id: 'a1', type: 'STATUS_CHANGE', notes: 'Moved to Qualified', created_at: '2026-01-02T00:00:00Z', author: { id: 'u1', full_name: 'Alice' } },
-          { id: 'a2', type: 'NOTE', notes: 'just a note', created_at: '2026-01-01T00:00:00Z', author: { id: 'u1', full_name: 'Alice' } },
-        ],
-      } as Partial<Lead>),
-    );
+  it('shows only system/state-change events', async () => {
+    mockGetActivities.mockResolvedValue({
+      data: [
+        { id: 'a1', type: 'STATUS_CHANGE', notes: 'Moved to Qualified', created_at: '2026-01-02T00:00:00Z', author: { id: 'u1', full_name: 'Alice' } },
+        { id: 'a2', type: 'NOTE', notes: 'just a note', created_at: '2026-01-01T00:00:00Z', author: { id: 'u1', full_name: 'Alice' } },
+      ],
+      total: 2,
+    });
+    render_(makeLead());
     fireEvent.click(screen.getByText('Audit'));
-    expect(screen.getByText(/status change/i)).toBeInTheDocument();
+    expect(await screen.findByText(/status change/i)).toBeInTheDocument();
     expect(screen.queryByText('just a note')).not.toBeInTheDocument();
   });
 
-  it('shows an empty state when there are no audit events', () => {
+  it('shows an empty state when there are no audit events', async () => {
     render_(makeLead());
     fireEvent.click(screen.getByText('Audit'));
-    expect(screen.getByText(/no audit events/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no audit events/i)).toBeInTheDocument();
   });
 });

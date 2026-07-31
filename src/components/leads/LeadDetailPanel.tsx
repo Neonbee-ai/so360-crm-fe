@@ -44,8 +44,11 @@ interface LeadDetailPanelProps {
   lead: Lead | null;
   onClose: () => void;
   onNavigate: (lead: Lead) => void;
+  onNavigateDeal: (deal: Deal) => void;
   onDelete?: (lead: Lead) => void;
 }
+
+const INITIAL_ACTIVITY_LOAD = 10;
 
 const STATUS_COLORS: Record<string, string> = {
   New: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -103,7 +106,7 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
   );
 }
 
-export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDetailPanelProps) {
+export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onDelete }: LeadDetailPanelProps) {
   const [tab, setTab] = useState<PanelTab>('overview');
   const formatters = useCRMFormatters();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -114,15 +117,18 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
   const [dealsLoading, setDealsLoading] = useState(false);
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [activities, setActivities] = useState<ActivityType[] | null>(null);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   useEffect(() => {
     if (lead) setTab('overview');
     // Reset linked-record caches when the lead changes.
     setDeals(null);
     setTasks(null);
+    setActivities(null);
   }, [lead?.id]);
 
-  // Lazy fetch: load deals/tasks the first time their tab is shown.
+  // Lazy fetch: load deals/tasks/activities the first time their tab is shown.
   useEffect(() => {
     if (!lead) return;
     let cancelled = false;
@@ -141,6 +147,14 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
         .then((t) => { if (!cancelled) setTasks(t ?? []); })
         .catch(() => { if (!cancelled) setTasks([]); })
         .finally(() => { if (!cancelled) setTasksLoading(false); });
+    }
+    if ((tab === 'timeline' || tab === 'audit') && activities === null && !activitiesLoading) {
+      setActivitiesLoading(true);
+      crmService
+        .getActivitiesByLeadIdPaginated(lead.id, INITIAL_ACTIVITY_LOAD, 0)
+        .then((r) => { if (!cancelled) setActivities(r?.data ?? []); })
+        .catch(() => { if (!cancelled) setActivities([]); })
+        .finally(() => { if (!cancelled) setActivitiesLoading(false); });
     }
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,11 +179,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
   const sc = scoreColor(score);
   const statusColor = lead ? (STATUS_COLORS[lead.status] ?? 'bg-slate-500/10 text-slate-400 border-slate-500/20') : '';
 
-  const sortedActivities = lead
-    ? [...(lead.activities ?? [])].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      )
-    : [];
+  const sortedActivities = [...(activities ?? [])].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   // Audit trail = the subset of activities that record a system/state change.
   const auditActivities = sortedActivities.filter((a) => AUDIT_TYPES.has(a.type));
@@ -427,7 +439,11 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
               {/* Timeline */}
               {tab === 'timeline' && (
                 <div className="px-5 py-4">
-                  {sortedActivities.length === 0 ? (
+                  {activitiesLoading || activities === null ? (
+                    <div className="flex items-center justify-center py-10 text-slate-500">
+                      <Loader2 size={20} className="animate-spin" />
+                    </div>
+                  ) : sortedActivities.length === 0 ? (
                     <div className="flex flex-col items-center py-10 text-slate-600">
                       <Activity size={32} className="mb-2 opacity-40" />
                       <p className="text-sm">No activity recorded yet</p>
@@ -488,7 +504,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
                       {deals.map((deal) => (
                         <button
                           key={deal.id}
-                          onClick={() => onNavigate(lead)}
+                          onClick={() => onNavigateDeal(deal)}
                           className="w-full text-left bg-slate-900/60 border border-slate-800 rounded-lg p-3 hover:border-slate-700 transition-colors"
                         >
                           <div className="flex items-center justify-between gap-2">
@@ -595,7 +611,11 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onDelete }: LeadDet
               {/* Audit — system/state-change events */}
               {tab === 'audit' && (
                 <div className="px-5 py-4">
-                  {auditActivities.length === 0 ? (
+                  {activitiesLoading || activities === null ? (
+                    <div className="flex items-center justify-center py-10 text-slate-500">
+                      <Loader2 size={20} className="animate-spin" />
+                    </div>
+                  ) : auditActivities.length === 0 ? (
                     <div className="flex flex-col items-center py-10 text-slate-600">
                       <ShieldCheck size={32} className="mb-2 opacity-40" />
                       <p className="text-sm">No audit events recorded</p>

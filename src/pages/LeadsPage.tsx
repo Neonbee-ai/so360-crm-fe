@@ -1086,6 +1086,7 @@ const LeadsPage = () => {
         lead={detailLead}
         onClose={() => setDetailLead(null)}
         onNavigate={(lead) => navigate(`${lead.id}`)}
+        onNavigateDeal={(deal) => navigate(`../deal/${deal.id}`)}
         onDelete={(lead) => setShowDeleteConfirm(lead.id)}
       />
     </div>
