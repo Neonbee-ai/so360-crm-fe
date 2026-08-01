@@ -322,6 +322,26 @@ describe('LeadsPage', () => {
       expect(screen.getByText('0 Converted')).toBeInTheDocument();
     });
 
+    it('When there are more than 4 lead stages / Then every stage still gets a chip (no truncation)', async () => {
+      mockGetSettings.mockResolvedValueOnce({
+        ...settings,
+        lead_stages: [
+          { id: 'new', name: 'New' },
+          { id: 'contacted', name: 'Contacted' },
+          { id: 'qualified', name: 'Qualified' },
+          { id: 'proposal', name: 'Proposal Sent' },
+          { id: 'negotiation', name: 'Negotiation' },
+          { id: 'converted', name: 'Converted' },
+          { id: 'lost', name: 'Lost' },
+        ],
+      });
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(screen.getByText('0 Negotiation')).toBeInTheDocument();
+      expect(screen.getByText('0 Converted')).toBeInTheDocument();
+      expect(screen.getByText('0 Lost')).toBeInTheDocument();
+    });
+
     it('When a stage chip is clicked / Then it applies the same status filter as the Status select', async () => {
       const user = userEvent.setup();
       render(<LeadsPage />);
@@ -485,6 +505,40 @@ describe('LeadsPage', () => {
       render(<LeadsPage />);
       await user.click(screen.getByText('Views'));
       expect(screen.getByText('Save current view')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given only one filter/views popover may be open at a time', () => {
+    it('When More Filters is open and Views is clicked / Then More Filters closes and only Views stays open', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      await user.click(screen.getByText('More Filters'));
+      expect(screen.getByText('Created By')).toBeInTheDocument();
+      await user.click(screen.getByText('Views'));
+      expect(screen.queryByText('Created By')).not.toBeInTheDocument();
+      expect(screen.getByText('Save current view')).toBeInTheDocument();
+    });
+
+    it('When Views is open and More Filters is clicked / Then Views closes and only More Filters stays open', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      await user.click(screen.getByText('Views'));
+      expect(screen.getByText('Save current view')).toBeInTheDocument();
+      await user.click(screen.getByText('More Filters'));
+      expect(screen.queryByText('Save current view')).not.toBeInTheDocument();
+      expect(screen.getByText('Created By')).toBeInTheDocument();
+    });
+
+    it('When More Filters is open and an outside click occurs / Then it closes', async () => {
+      const user = userEvent.setup();
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      await user.click(screen.getByText('More Filters'));
+      expect(screen.getByText('Created By')).toBeInTheDocument();
+      fireEvent.mouseDown(document.body);
+      await waitFor(() => expect(screen.queryByText('Created By')).not.toBeInTheDocument());
     });
   });
 });

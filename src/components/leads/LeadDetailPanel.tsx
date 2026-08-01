@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
-  ExternalLink,
   Phone,
   Mail,
   Globe,
@@ -221,13 +220,6 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => onNavigate(lead)}
-                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors"
-                    title="Open full page"
-                  >
-                    <ExternalLink size={15} />
-                  </button>
                   <button
                     onClick={onClose}
                     className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"

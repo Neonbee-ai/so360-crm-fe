@@ -655,6 +655,32 @@ describe('LeadDetailPage', () => {
         expect(screen.getByText('Back to Leads')).toBeInTheDocument();
       });
     });
+
+    it('When Back to Leads is clicked / Then it navigates to /crm/leads, not the dashboard', async () => {
+      mockGetLeadById.mockResolvedValue(null);
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Back to Leads')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Back to Leads'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
+    });
+  });
+
+  describe('Given a loaded lead / Then Back navigation resolves to the correct list route', () => {
+    it('When the header Back to Leads is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
+      mockPathname = '/crm/leads/lead-1';
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Back to Leads')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Back to Leads'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
+    });
+
+    it('When the header Back to Customers is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Back to Customers')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Back to Customers'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
+    });
   });
 
   describe('Given lead deletion', () => {

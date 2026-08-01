@@ -103,12 +103,27 @@ describe('TaskDetailPage', () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Task not found.')).toBeInTheDocument());
     });
+
+    it('When Back to Tasks is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
+      mockGetTaskById.mockResolvedValue(null);
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Back to Tasks')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Back to Tasks'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
+    });
   });
 
   describe('Given task is loaded', () => {
     it('When rendered / Then shows task title', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+    });
+
+    it('When the header Back to Tasks is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Back to Tasks'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
 
     it('When rendered / Then shows task description', async () => {

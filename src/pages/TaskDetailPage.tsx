@@ -141,7 +141,7 @@ const TaskDetailPage = () => {
         return (
             <div className="p-8 text-center text-slate-500">
                 <p>Task not found.</p>
-                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">Back to Tasks</Link>
+                <button onClick={() => navigate('/crm/tasks')} className="text-blue-500 hover:underline mt-4 inline-block">Back to Tasks</button>
             </div>
         );
     }
@@ -151,10 +151,10 @@ const TaskDetailPage = () => {
     return (
         <div className="p-8 max-w-4xl mx-auto">
             <header className="mb-8">
-                <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
+                <button onClick={() => navigate('/crm/tasks')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
                     <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     Back to Tasks
-                </Link>
+                </button>
                 <div className="flex justify-between items-start">
                     <div className="flex items-start gap-4">
                         <button className="mt-1 text-slate-500 hover:text-blue-400 transition-colors">

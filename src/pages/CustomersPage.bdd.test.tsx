@@ -124,27 +124,24 @@ describe('CustomersPage', () => {
     it('When the page renders / Then shows total stat', async () => {
       render(<CustomersPage />);
       await waitFor(() => {
-        expect(screen.getByText('3')).toBeInTheDocument();
+        expect(screen.getByTestId('summary-metric-chip-total')).toHaveTextContent('3');
       });
     });
 
-    it('When model split is enabled / Then shows B2B and B2C stat cards', async () => {
+    it('When model split is enabled / Then shows B2B and B2C summary chips', async () => {
       render(<CustomersPage />);
       await waitFor(() => {
-        const b2bTexts = screen.getAllByText('B2B');
-        expect(b2bTexts.length).toBeGreaterThanOrEqual(1);
-        const b2cTexts = screen.getAllByText('B2C');
-        expect(b2cTexts.length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByTestId('summary-metric-chip-b2b')).toBeInTheDocument();
+        expect(screen.getByTestId('summary-metric-chip-b2c')).toBeInTheDocument();
       });
     });
 
-    it('When channel KPIs are enabled / Then shows channel stat labels', async () => {
+    it('When channel KPIs are enabled / Then shows channel summary chips', async () => {
       render(<CustomersPage />);
       await waitFor(() => {
-        const allTexts = document.body.textContent || '';
-        expect(allTexts).toContain('Web');
-        expect(allTexts).toContain('Mobile');
-        expect(allTexts).toContain('POS');
+        expect(screen.getByTestId('summary-metric-chip-web')).toBeInTheDocument();
+        expect(screen.getByTestId('summary-metric-chip-mobile')).toBeInTheDocument();
+        expect(screen.getByTestId('summary-metric-chip-pos')).toBeInTheDocument();
       });
     });
   });
@@ -428,25 +425,22 @@ describe('CustomersPage', () => {
   });
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
-    it('When effectiveFlagsLoaded is false / Then channel KPI cards are absent (no flicker)', async () => {
+    it('When effectiveFlagsLoaded is false / Then channel summary chips are absent (no flicker)', async () => {
       mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, isFeatureEnabled: () => false } as any);
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByText('Customers')).toBeInTheDocument());
-      // 'Web' appears once in the channel filter dropdown option when KPI card is NOT rendered.
-      // When the KPI card IS rendered it would appear twice (dropdown + card heading).
-      expect(screen.queryAllByText('Web').length).toBe(1);
-      expect(screen.queryAllByText('Mobile').length).toBe(1);
+      expect(screen.queryByTestId('summary-metric-chip-web')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('summary-metric-chip-mobile')).not.toBeInTheDocument();
     });
 
-    it('When effectiveFlagsLoaded is true and flags return true / Then channel KPI cards are present', async () => {
+    it('When effectiveFlagsLoaded is true and flags return true / Then channel summary chips are present', async () => {
       mockUseShellBridge.mockReturnValue({
         effectiveFlagsLoaded: true,
         isFeatureEnabled: () => true,
       } as any);
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByText('Customers')).toBeInTheDocument());
-      // Web KPI card now rendered → 'Web' appears twice (dropdown option + card heading)
-      await waitFor(() => expect(screen.queryAllByText('Web').length).toBeGreaterThan(1));
+      await waitFor(() => expect(screen.getByTestId('summary-metric-chip-web')).toBeInTheDocument());
     });
   });
 });

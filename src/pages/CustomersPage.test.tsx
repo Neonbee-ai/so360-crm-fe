@@ -71,7 +71,7 @@ describe('Given CustomersPage', () => {
     mockGetCustomerStats.mockResolvedValue({ total: 42 });
     render(<CustomersPage />);
     await waitFor(() => {
-      expect(screen.getByText('42')).toBeInTheDocument();
+      expect(screen.getByTestId('summary-metric-chip-total')).toHaveTextContent('42');
     });
   });
 });

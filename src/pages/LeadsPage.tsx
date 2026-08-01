@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -28,6 +28,7 @@ import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
 import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
+import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { QuotaGate } from '@so360/design-system';
@@ -171,7 +172,10 @@ const LeadsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  // Only one filter/views popover may be open at a time.
+  const [openDropdown, setOpenDropdown] = useState<'moreFilters' | 'views' | null>(null);
+  const moreFiltersRef = useRef<HTMLDivElement>(null);
+  const viewsDropdownRef = useRef<HTMLDivElement>(null);
   // Advanced (server-side) filter tree. null = feature inactive, the normal
   // fetchInitialData list governs. Non-null triggers a server-side refetch via
   // getLeadsPaged so nested AND/OR filters run against the whole dataset, not
@@ -183,7 +187,6 @@ const LeadsPage = () => {
 
   // Saved views
   const [savedViews, setSavedViews] = useState<SavedFilterView[]>(loadSavedViews);
-  const [showViewsDropdown, setShowViewsDropdown] = useState(false);
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [saveViewName, setSaveViewName] = useState('');
   const [showSaveViewInput, setShowSaveViewInput] = useState(false);
@@ -328,7 +331,7 @@ const LeadsPage = () => {
     return counts;
   }, [leads]);
 
-  const kpiStages = useMemo(() => leadStages.slice(0, 4), [leadStages]);
+  const kpiStages = leadStages;
 
   const toggleStatusChip = useCallback((stageName: string) => {
     setFilter('status', filters.status === stageName ? 'All' : stageName);
@@ -346,6 +349,26 @@ const LeadsPage = () => {
   }, [sandboxLeads, currentPage, pageSize]);
 
   useEffect(() => { setCurrentPage(1); }, [filters]);
+
+  // Close the More Filters / Views popover on outside click or Escape.
+  useEffect(() => {
+    if (!openDropdown) return;
+    const activeRef = openDropdown === 'moreFilters' ? moreFiltersRef : viewsDropdownRef;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (activeRef.current && !activeRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenDropdown(null);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [openDropdown]);
 
   // Handlers
   const handleOwnerChange = useCallback(async (lead: Lead, newOwnerId: string) => {
@@ -480,7 +503,7 @@ const LeadsPage = () => {
   const handleApplyView = useCallback((view: SavedFilterView) => {
     setFilters(view.filters);
     setActiveViewId(view.id);
-    setShowViewsDropdown(false);
+    setOpenDropdown(null);
   }, []);
 
   // Rename — optimistic local update, persisted to the backend (no-op offline).
@@ -658,31 +681,19 @@ const LeadsPage = () => {
       </header>
 
       {/* KPI chips */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-3">
-        <button
-          onClick={() => setFilter('status', 'All')}
-          className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-            filters.status === 'All'
-              ? 'bg-blue-500/10 text-blue-300 border-blue-500/40'
-              : 'bg-slate-900/60 text-slate-400 border-slate-700/50 hover:text-slate-200'
-          }`}
-        >
-          {leads.length} Total
-        </button>
-        {kpiStages.map((stage) => (
-          <button
-            key={stage.id}
-            onClick={() => toggleStatusChip(stage.name)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-              filters.status === stage.name
-                ? 'bg-blue-500/10 text-blue-300 border-blue-500/40'
-                : 'bg-slate-900/60 text-slate-400 border-slate-700/50 hover:text-slate-200'
-            }`}
-          >
-            {statusCounts[stage.name] ?? 0} {stage.name}
-          </button>
-        ))}
-      </div>
+      <SummaryMetricChips
+        className="mb-3"
+        chips={[
+          { key: 'total', label: 'Total', count: leads.length, active: filters.status === 'All', onClick: () => setFilter('status', 'All') },
+          ...kpiStages.map((stage) => ({
+            key: stage.id,
+            label: stage.name,
+            count: statusCounts[stage.name] ?? 0,
+            active: filters.status === stage.name,
+            onClick: () => toggleStatusChip(stage.name),
+          })),
+        ]}
+      />
 
       {/* Sandbox notice */}
       {isSandboxMode && isLimited(filteredLeads.length) && (
@@ -784,9 +795,9 @@ const LeadsPage = () => {
         )}
 
         {/* More filters — Created By */}
-        <div className="relative shrink-0">
+        <div ref={moreFiltersRef} className="relative shrink-0">
           <button
-            onClick={() => setShowMoreFilters((v) => !v)}
+            onClick={() => setOpenDropdown((v) => (v === 'moreFilters' ? null : 'moreFilters'))}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
               filters.creator !== 'All'
                 ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
@@ -801,7 +812,7 @@ const LeadsPage = () => {
             <ChevronDown size={13} />
           </button>
 
-          {showMoreFilters && (
+          {openDropdown === 'moreFilters' && (
             <div className="absolute right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[220px] p-3">
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Created By</label>
               <select
@@ -831,9 +842,9 @@ const LeadsPage = () => {
         <div className="flex-1" />
 
         {/* Saved views */}
-        <div className="relative shrink-0">
+        <div ref={viewsDropdownRef} className="relative shrink-0">
             <button
-              onClick={() => setShowViewsDropdown((v) => !v)}
+              onClick={() => setOpenDropdown((v) => (v === 'views' ? null : 'views'))}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-700/50 transition-colors"
             >
               <Bookmark size={14} />
@@ -841,7 +852,7 @@ const LeadsPage = () => {
               <ChevronDown size={14} />
             </button>
 
-            {showViewsDropdown && (
+            {openDropdown === 'views' && (
               <div className="absolute left-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[300px] py-1.5">
                 {savedViews.length === 0 && (
                   <p className="px-4 py-2 text-xs text-slate-500">No saved views yet</p>

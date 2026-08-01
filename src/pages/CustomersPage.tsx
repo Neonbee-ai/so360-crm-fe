@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
+import { Search, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
+import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 
 type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
 type SortDirection = 'asc' | 'desc' | null;
@@ -324,63 +325,27 @@ const CustomersPage = () => {
                 <p className="text-slate-400 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
             </header>
 
-            {/* Stats Row — cards gated by feature flags */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                        <Users size={14} /> Total
-                    </div>
-                    <div className="text-2xl font-bold text-slate-50">{stats.total || 0}</div>
-                </div>
-                {showModelSplit && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1">
-                            <Building2 size={14} /> B2B
-                        </div>
-                        <div className="text-2xl font-bold text-slate-50">{stats.b2b_count || 0}</div>
-                    </div>
-                )}
-                {showModelSplit && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <Users size={14} /> B2C
-                        </div>
-                        <div className="text-2xl font-bold text-slate-50">{stats.b2c_count || 0}</div>
-                    </div>
-                )}
-                {showWeb && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <Globe size={14} /> Web
-                        </div>
-                        <div className="text-2xl font-bold text-slate-50">{stats.storefront_web || 0}</div>
-                    </div>
-                )}
-                {showMobile && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <Smartphone size={14} /> Mobile
-                        </div>
-                        <div className="text-2xl font-bold text-slate-50">{stats.storefront_mobile || 0}</div>
-                    </div>
-                )}
-                {showOffline && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <ShoppingCart size={14} /> POS
-                        </div>
-                        <div className="text-2xl font-bold text-slate-50">{stats.pos || 0}</div>
-                    </div>
-                )}
-                {showOffline && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <UserPlus size={14} /> Manual
-                        </div>
-                        <div className="text-2xl font-bold text-slate-50">{stats.manual || 0}</div>
-                    </div>
-                )}
-            </div>
+            {/* Summary chips — gated by feature flags; standardized with Leads & Accounts */}
+            <SummaryMetricChips
+                className="mb-6"
+                chips={[
+                    { key: 'total', label: 'Total', count: stats.total || 0, active: channelFilter === 'All' && categoryFilter === 'All', onClick: () => { setChannelFilter('All'); setCategoryFilter('All'); } },
+                    ...(showModelSplit ? [
+                        { key: 'b2b', label: 'B2B', count: stats.b2b_count || 0, active: categoryFilter === 'b2b', onClick: () => setCategoryFilter(categoryFilter === 'b2b' ? 'All' : 'b2b') },
+                        { key: 'b2c', label: 'B2C', count: stats.b2c_count || 0, active: categoryFilter === 'b2c', onClick: () => setCategoryFilter(categoryFilter === 'b2c' ? 'All' : 'b2c') },
+                    ] : []),
+                    ...(showWeb ? [
+                        { key: 'web', label: 'Web', count: stats.storefront_web || 0, active: channelFilter === 'storefront_web', onClick: () => setChannelFilter(channelFilter === 'storefront_web' ? 'All' : 'storefront_web') },
+                    ] : []),
+                    ...(showMobile ? [
+                        { key: 'mobile', label: 'Mobile', count: stats.storefront_mobile || 0, active: channelFilter === 'storefront_mobile', onClick: () => setChannelFilter(channelFilter === 'storefront_mobile' ? 'All' : 'storefront_mobile') },
+                    ] : []),
+                    ...(showOffline ? [
+                        { key: 'pos', label: 'POS', count: stats.pos || 0, active: channelFilter === 'pos', onClick: () => setChannelFilter(channelFilter === 'pos' ? 'All' : 'pos') },
+                        { key: 'manual', label: 'Manual', count: stats.manual || 0, active: channelFilter === 'manual', onClick: () => setChannelFilter(channelFilter === 'manual' ? 'All' : 'manual') },
+                    ] : []),
+                ]}
+            />
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">

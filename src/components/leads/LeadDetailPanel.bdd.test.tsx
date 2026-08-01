@@ -74,6 +74,19 @@ describe('LeadDetailPanel — tabs', () => {
   });
 });
 
+describe('LeadDetailPanel — navigation to full profile', () => {
+  it('exposes exactly one action that navigates to the full lead profile', () => {
+    // Regression: the panel previously had a redundant top-right external-link
+    // icon that navigated to the same route as "View full profile".
+    const onNavigate = vi.fn();
+    render_(makeLead(), { onNavigate });
+    const profileButton = screen.getByText('View full profile');
+    fireEvent.click(profileButton);
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTitle('Open full page')).not.toBeInTheDocument();
+  });
+});
+
 describe('LeadDetailPanel — Activity (timeline) tab', () => {
   it('fetches and renders the lead activity timeline', async () => {
     mockGetActivities.mockResolvedValue({

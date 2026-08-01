@@ -473,7 +473,7 @@ const DealDetailPage = () => {
         return (
             <div className="p-8 text-center text-slate-500">
                 <p>Deal not found.</p>
-                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">Back to Pipeline</Link>
+                <button onClick={() => navigate('/crm/pipeline')} className="text-blue-500 hover:underline mt-4 inline-block">Back to Pipeline</button>
             </div>
         );
     }
@@ -484,10 +484,10 @@ const DealDetailPage = () => {
 
             <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
-                    <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group">
+                    <button onClick={() => navigate('/crm/pipeline')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group">
                         <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                         Back to Pipeline
-                    </Link>
+                    </button>
                     {isRefreshing && (
                         <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
                             <Loader2 size={10} className="animate-spin" /> Syncing...

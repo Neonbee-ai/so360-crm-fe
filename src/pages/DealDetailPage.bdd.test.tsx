@@ -444,6 +444,25 @@ describe('DealDetailPage', () => {
         expect(screen.getByText('Back to Pipeline')).toBeInTheDocument();
       });
     });
+
+    it('When the not-found Back to Pipeline is clicked / Then it navigates to the pipeline list, not the dashboard', async () => {
+      mockGetDealById.mockResolvedValue(null);
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Back to Pipeline')).toBeInTheDocument());
+      await user.click(screen.getByText('Back to Pipeline'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
+    });
+  });
+
+  describe('Given a loaded deal / Then Back to Pipeline navigates to the pipeline list', () => {
+    it('When the header Back to Pipeline is clicked / Then it navigates to /crm/pipeline, not the dashboard', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('Back to Pipeline'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
+    });
   });
 
   describe('Given deal profile editing', () => {

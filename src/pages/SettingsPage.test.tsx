@@ -167,9 +167,10 @@ describe('Given SettingsPage', () => {
   it('When action / Then changes pipeline stage type', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
-    const selects = screen.getAllByDisplayValue('OPEN');
-    fireEvent.change(selects[0], { target: { value: 'LOST' } });
-    expect(screen.getByDisplayValue('LOST')).toBeInTheDocument();
+    const triggers = screen.getAllByTestId('stage-status-trigger');
+    fireEvent.click(triggers[0]);
+    fireEvent.click(screen.getByTestId('stage-status-option-LOST'));
+    expect(screen.getAllByTestId('stage-status-trigger')[0]).toHaveTextContent('LOST');
   });
 
   it('When action / Then switches to lead-stages tab and shows read-only Flow-sourced stages', async () => {

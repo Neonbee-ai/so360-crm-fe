@@ -30,9 +30,10 @@ vi.mock('../services/crmService', () => ({
   },
 }));
 
+const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'partner-1' }),
-  useNavigate: () => vi.fn(),
+  useNavigate: () => mockNavigate,
   useLocation: () => ({ search: '', pathname: '/', state: null }),
   Link: ({ children, to }: any) => <a href={to}>{children}</a>,
   NavLink: ({ children }: any) => children,
@@ -138,6 +139,13 @@ describe('Given PartnerDetailPage — overview tab', () => {
     await waitFor(() => {
       expect(screen.getByText('Back to Partners')).toBeInTheDocument();
     });
+  });
+
+  test('Given partner loaded / When Back to Partners is clicked / Then it navigates to /crm/partners, not the dashboard', async () => {
+    render(<PartnerDetailPage />);
+    await waitFor(() => expect(screen.getByText('Back to Partners')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Back to Partners'));
+    expect(mockNavigate).toHaveBeenCalledWith('/crm/partners');
   });
 
   test('Given partner with royalty rate / When overview rendered / Then shows royalty rate inline chip', async () => {

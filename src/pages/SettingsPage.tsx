@@ -3,6 +3,7 @@ import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 
 type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring';
@@ -457,25 +458,17 @@ const SettingsPage = () => {
                                                 value={stage.name}
                                                 onChange={(e) => updateStageName(idx, e.target.value)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0 placeholder:text-slate-500"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300 placeholder:text-slate-500"
                                             />
                                         </div>
-                                        <select
+                                        <StageStatusSelect
                                             value={stage.type || 'OPEN'}
-                                            onChange={(e) => {
+                                            onChange={(newType) => {
                                                 const newStages = [...settings.deal_stages];
-                                                newStages[idx].type = e.target.value as 'OPEN' | 'WON' | 'LOST';
+                                                newStages[idx].type = newType;
                                                 setSettings({ ...settings, deal_stages: newStages });
                                             }}
-                                            className={`bg-slate-900 border border-slate-700 text-[10px] font-black uppercase rounded-lg px-2 py-1 outline-none ${stage.type === 'WON' ? 'text-emerald-400 border-emerald-500/30' :
-                                                stage.type === 'LOST' ? 'text-rose-400 border-rose-500/30' :
-                                                    'text-slate-300'
-                                                }`}
-                                        >
-                                            <option value="OPEN">OPEN</option>
-                                            <option value="WON">WON</option>
-                                            <option value="LOST">LOST</option>
-                                        </select>
+                                        />
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => removeStage(stage.id)}
@@ -547,7 +540,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, lead_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
                                                     />
                                                 </div>
                                                 <select
@@ -654,7 +647,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, deal_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
                                                     />
                                                 </div>
                                                 <select
@@ -761,7 +754,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, partner_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 focus:ring-0"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
                                                     />
                                                 </div>
                                                 <select

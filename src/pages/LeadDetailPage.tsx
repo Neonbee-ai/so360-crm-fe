@@ -116,6 +116,7 @@ const LeadDetailPage = () => {
     const isInboxEnabled = isModuleEnabled('inbox');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
+    const backRoute = isCustomerDetailRoute ? '/crm/customers' : '/crm/leads';
     const [lead, setLead] = useState<Lead | null>(null);
     const [associatedDeals, setAssociatedDeals] = useState<Deal[]>([]);
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
@@ -274,7 +275,7 @@ const LeadDetailPage = () => {
         return (
             <div className="p-8 text-center text-slate-500">
                 <p>Lead not found.</p>
-                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</Link>
+                <button onClick={() => navigate(backRoute)} className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</button>
             </div>
         );
     }
@@ -379,10 +380,10 @@ const LeadDetailPage = () => {
         <div className="p-8">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8">
-                <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
+                <button onClick={() => navigate(backRoute)} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
                     <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     {backLabel}
-                </Link>
+                </button>
                 <div className="flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-3 mb-2 relative">
