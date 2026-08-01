@@ -57,6 +57,7 @@ export const Trophy = createIcon('Trophy');
 export const ShieldCheck = createIcon('ShieldCheck');
 export const ChevronLeft = createIcon('ChevronLeft');
 export const MessageSquare = createIcon('MessageSquare');
+export const MessageCircle = createIcon('MessageCircle');
 export const AtSign = createIcon('AtSign');
 export const Download = createIcon('Download');
 export const UploadCloud = createIcon('UploadCloud');

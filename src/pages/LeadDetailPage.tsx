@@ -40,6 +40,7 @@ import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
 import NoteEditor from '../components/notes/NoteEditor';
 import NoteContent from '../components/notes/NoteContent';
 import NoteReplyComposer from '../components/notes/NoteReplyComposer';
+import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
@@ -74,6 +75,15 @@ const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'conta
     lead.first_name
         ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
         : (lead.contact_name || '');
+
+const isTaskOverdue = (dueDate: string): boolean => {
+    const due = new Date(dueDate);
+    const today = new Date();
+    // Normalize to start of day for comparison
+    due.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return due < today;
+};
 
 // Notify other MFEs (e.g. the Documents module) that a CRM document changed so
 // they can refresh their linked-document views. Uses the shared event bus with a
@@ -154,6 +164,7 @@ const LeadDetailPage = () => {
     const [autoOpenCallForm, setAutoOpenCallForm] = useState(false);
     const [autoOpenMeetingForm, setAutoOpenMeetingForm] = useState(false);
     const [showLayoutSettings, setShowLayoutSettings] = useState(false);
+    const [expandedStatusDropdown, setExpandedStatusDropdown] = useState<string | null>(null);
     const layoutPrefs = useLeadDetailLayoutPreferences();
 
     // Task 4 (Customer Timeline): unified server-side timeline, shared between
@@ -466,6 +477,13 @@ const LeadDetailPage = () => {
                 onScheduleMeeting={() => { setActiveTab('meetings'); setAutoOpenMeetingForm(true); }}
                 onCreateTask={() => setIsCreatingTask(true)}
                 onUploadDocument={() => setActiveTab('documents')}
+            />
+
+            {/* Executive Summary Dashboard */}
+            <ExecutiveSummaryPanel
+                lead={lead}
+                deals={associatedDeals}
+                tasks={associatedTasks}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1047,8 +1065,10 @@ const LeadDetailPage = () => {
                                         </div>
                                     ) : (
                                         <div className="grid gap-3">
-                                            {associatedTasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                            {associatedTasks.map(task => {
+                                                const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
+                                                return (
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
                                                         className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
@@ -1061,9 +1081,53 @@ const LeadDetailPage = () => {
                                                                 <h4 className={`text-sm font-bold text-slate-50 leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
                                                                     {task.title || 'Untitled Task'}
                                                                 </h4>
-                                                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-                                                                    {task.status}
-                                                                </span>
+                                                                <div className="flex items-center gap-2">
+                                                                    {overdue && (
+                                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-rose-500/10 text-rose-400 border-rose-500/30" data-testid={`overdue-badge-${task.id}`}>
+                                                                            Overdue
+                                                                        </span>
+                                                                    )}
+                                                                    <div className="relative">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
+                                                                            }}
+                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+                                                                            data-testid={`status-button-${task.id}`}
+                                                                        >
+                                                                            {task.status}
+                                                                        </button>
+                                                                        {expandedStatusDropdown === task.id && (
+                                                                            <div className="absolute top-full mt-1 right-0 z-10 bg-slate-900 border border-slate-700 rounded-lg shadow-lg" data-testid={`status-dropdown-${task.id}`}>
+                                                                                {['OPEN', 'IN_PROGRESS', 'DONE'].map((status) => (
+                                                                                    <button
+                                                                                        key={status}
+                                                                                        onClick={(e) => {
+                                                                                            e.preventDefault();
+                                                                                            e.stopPropagation();
+                                                                                            crmService.updateTask(task.id, { status: status as any })
+                                                                                                .then(() => {
+                                                                                                    setAssociatedTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: status as any } : t));
+                                                                                                    setExpandedStatusDropdown(null);
+                                                                                                    showSuccess(`Task status updated to ${status}`);
+                                                                                                })
+                                                                                                .catch(error => {
+                                                                                                    console.error('Failed to update task status:', error);
+                                                                                                    showError('Failed to update task status');
+                                                                                                });
+                                                                                        }}
+                                                                                        className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-blue-500/20 text-blue-400 border-b border-blue-500/20' : 'hover:bg-slate-800 text-slate-300'}`}
+                                                                                        data-testid={`status-option-${task.id}-${status}`}
+                                                                                    >
+                                                                                        {status}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                             {task.description && (
                                                                 <p className="text-xs text-slate-400 mt-1 line-clamp-2">{task.description}</p>
@@ -1071,7 +1135,7 @@ const LeadDetailPage = () => {
                                                         </Link>
 
                                                         <div className="flex items-center gap-4 mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800/50 pt-2">
-                                                            <span className="flex items-center gap-1 text-rose-400/70">
+                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-rose-400' : 'text-rose-400/70'}`}>
                                                                 <Clock size={10} />
                                                                 Due {formatters.formatDate(task.due_date)}
                                                             </span>
@@ -1102,7 +1166,8 @@ const LeadDetailPage = () => {
                                                         </button>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            );
+                                            })}
                                         </div>
                                     )}
                                 </div>
