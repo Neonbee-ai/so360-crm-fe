@@ -1,4 +1,11 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting } from '../types/crm';
+import { createRequestCache } from './requestCache';
+
+// Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
+// requests) and the user list on mount. Both are org-static within a session,
+// so coalesce concurrent reads and serve a short TTL keyed by org. updateSettings
+// invalidates so edits show immediately. Exported so tests can reset it.
+export const orgStaticCache = createRequestCache({ defaultTtlMs: 30_000, maxEntries: 50 });
 
 export interface TimelineEvent {
     id: string;
@@ -46,6 +53,24 @@ const FULFILLMENT_API_ORIGIN = String(
     win.VITE_SO360_FULFILLMENT_API ||
     env.VITE_SO360_FULFILLMENT_API ||
     'http://localhost:3032'
+).replace(/\/$/, '');
+
+const ACCOUNTING_API_ORIGIN = String(
+    win.VITE_SO360_ACCOUNTING_API ||
+    env.VITE_SO360_ACCOUNTING_API ||
+    'http://localhost:3008'
+).replace(/\/$/, '');
+
+const NEURA_API_ORIGIN = String(
+    win.VITE_SO360_NEURA_API ||
+    env.VITE_SO360_NEURA_API ||
+    'http://localhost:3018'
+).replace(/\/$/, '');
+
+const INBOX_API_ORIGIN = String(
+    win.VITE_SO360_INBOX_API ||
+    env.VITE_SO360_INBOX_API ||
+    'http://localhost:3017'
 ).replace(/\/$/, '');
 
 const API_BASE_URL = CRM_API_ORIGIN;
@@ -116,7 +141,7 @@ const mapNoteFromApi = (apiNote: any): Note => ({
 
 const mapTaskFromApi = (apiTask: any): Task => ({
     ...apiTask,
-    status: apiTask.status ? (apiTask.status.charAt(0).toUpperCase() + apiTask.status.slice(1).toLowerCase()) : 'Open',
+    status: apiTask.status ? (apiTask.status.toUpperCase() as Task['status']) : 'OPEN',
     assigned_to: mapUser(apiTask.assigned_to, apiTask.assignee_id),
     deal: apiTask.deal ? { ...apiTask.deal, company_name: apiTask.deal.company || apiTask.deal.company_name } : apiTask.deal
 });
@@ -130,7 +155,13 @@ const mapActivityFromApi = (apiActivity: any): Activity => ({
 const mapDocumentFromApi = (apiDoc: any): Attachment => ({
     ...apiDoc,
     uploaded_by: mapUser(apiDoc.uploaded_by || apiDoc.creator, apiDoc.uploaded_by_id || apiDoc.created_by),
-    uploaded_at: apiDoc.uploaded_at || apiDoc.created_at
+    uploaded_at: apiDoc.uploaded_at || apiDoc.created_at,
+    // DMS-backed rows may omit size/type (DMS uses file_size/mime_type) and may
+    // not carry a direct `url` (downloads are resolved on demand). Tolerate all.
+    size: apiDoc.size ?? apiDoc.file_size ?? 0,
+    type: apiDoc.type ?? apiDoc.mime_type ?? '',
+    url: apiDoc.url ?? '',
+    dmsDocumentId: apiDoc.dms_document_id ?? apiDoc.dmsDocumentId ?? undefined,
 });
 
 const mapDealFromApi = (apiDeal: any): Deal => {
@@ -197,6 +228,10 @@ class ApiClient {
             console.warn(`ApiClient: Org ID "${id}" is not a valid UUID. This may cause backend syntax errors.`);
         }
         this.orgId = id;
+    }
+
+    getOrgId(): string {
+        return this.orgId;
     }
 
     setUserId(id: string) {
@@ -276,6 +311,48 @@ class ApiClient {
         });
     }
 
+    /**
+     * GET that also surfaces the X-Total-Count response header, for server-side
+     * paging. Returns { data, total }; total is null when the header is absent
+     * (e.g. an older backend), so callers can fall back to client-side counting.
+     */
+    async getWithMeta<T>(endpoint: string, params?: Record<string, any>): Promise<{ data: T; total: number | null }> {
+        const queryString = params
+            ? '?' + new URLSearchParams(
+                Object.entries(params).reduce((acc, [key, value]) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = String(value);
+                    }
+                    return acc;
+                }, {} as Record<string, string>)
+            ).toString()
+            : '';
+        const url = `${this.baseURL}${endpoint}${queryString}`;
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+            'X-Tenant-Id': this.tenantId,
+            ...(this.orgId ? { 'X-Org-Id': this.orgId } : {}),
+            ...(this.userId ? { 'X-User-Id': this.userId } : {}),
+            ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
+        };
+        const response = await fetch(url, { method: 'GET', headers });
+        const text = await response.text();
+        if (!response.ok) {
+            let errorMessage = `API Error: ${response.status}`;
+            try {
+                const errorJson = JSON.parse(text);
+                errorMessage = Array.isArray(errorJson.message)
+                    ? errorJson.message.join(', ')
+                    : (errorJson.message || errorJson.error || errorMessage);
+            } catch { errorMessage = text || errorMessage; }
+            throw new Error(errorMessage);
+        }
+        const rawTotal = response.headers.get('X-Total-Count');
+        const parsedTotal = rawTotal != null ? parseInt(rawTotal, 10) : NaN;
+        const data = text ? JSON.parse(text) : ([] as unknown as T);
+        return { data: data as T, total: Number.isNaN(parsedTotal) ? null : parsedTotal };
+    }
+
     async post<T>(endpoint: string, data: any): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
@@ -308,8 +385,24 @@ class ApiClient {
     // sets Content-Type: application/json. fetch() must set the multipart
     // boundary itself, so we send no Content-Type header here.
     async uploadFile(endpoint: string, file: File): Promise<{ url: string; media_id?: string }> {
+        return this.uploadMultipart<{ url: string; media_id?: string }>(endpoint, file);
+    }
+
+    // Generic multipart upload — like uploadFile but allows extra form fields
+    // (e.g. lead_id / deal_id) to be sent alongside the file. Never sets a
+    // Content-Type header so fetch can emit the multipart boundary itself.
+    async uploadMultipart<T = any>(
+        endpoint: string,
+        file: File,
+        fields: Record<string, string | undefined> = {},
+    ): Promise<T> {
         const formData = new FormData();
         formData.append('file', file);
+        for (const [key, value] of Object.entries(fields)) {
+            if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
+        }
         const headers: HeadersInit = {
             'X-Tenant-Id': this.tenantId,
             ...(this.orgId ? { 'X-Org-Id': this.orgId } : {}),
@@ -328,12 +421,50 @@ class ApiClient {
         }
         return res.json();
     }
+
+    // Binary/file downloads (audit-trail export, etc.) — returns the raw Blob
+    // plus the filename from Content-Disposition so callers can trigger a save.
+    async getBlob(endpoint: string, params?: Record<string, any>): Promise<{ blob: Blob; filename: string | null }> {
+        const queryString = params
+            ? '?' + new URLSearchParams(
+                Object.entries(params).reduce((acc, [key, value]) => {
+                    if (value !== undefined && value !== null && value !== '') {
+                        acc[key] = String(value);
+                    }
+                    return acc;
+                }, {} as Record<string, string>)
+            ).toString()
+            : '';
+        const headers: HeadersInit = {
+            'X-Tenant-Id': this.tenantId,
+            ...(this.orgId ? { 'X-Org-Id': this.orgId } : {}),
+            ...(this.userId ? { 'X-User-Id': this.userId } : {}),
+            ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
+        };
+        const response = await fetch(`${this.baseURL}${endpoint}${queryString}`, { method: 'GET', headers });
+        if (!response.ok) {
+            let msg = `API Error: ${response.status}`;
+            try { const j = await response.json(); msg = j?.message || j?.error || msg; } catch { /* ignore */ }
+            throw new Error(msg);
+        }
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const match = /filename="?([^"]+)"?/i.exec(disposition);
+        return { blob: await response.blob(), filename: match ? match[1] : null };
+    }
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
 const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
 const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
+const inventoryClient = new ApiClient(INVENTORY_API_ORIGIN, TENANT_ID);
 const fulfillmentClient = new ApiClient(`${FULFILLMENT_API_ORIGIN}/v1/fulfillment`, TENANT_ID);
+const accountingClient = new ApiClient(ACCOUNTING_API_ORIGIN, TENANT_ID);
+const inboxClient = new ApiClient(INBOX_API_ORIGIN, TENANT_ID);
+// Neura AI's own public conversations API — called directly (same pattern as
+// coreClient/dailystoreClient/etc. above), not proxied through CRM's backend,
+// so the Neura AI Lead Copilot adds zero new logic to so360-crm-be. Neura BE
+// sets no global route prefix (routes are bare /conversations, /agents, ...).
+const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -427,6 +558,90 @@ export const leadsApi = {
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/leads/${id}`);
     },
+
+    /**
+     * GET /leads with server-side paging/sort/filter/projection + total count.
+     * `filter` is a JSON string of the advanced filter tree; `sort` is
+     * "field:dir,field2:dir". Returns { data, total } — total is null on an
+     * older backend so the caller can fall back to client-side counting.
+     */
+    getPaged: async (params: {
+        skip?: number;
+        take?: number;
+        q?: string;
+        status?: string;
+        source?: string;
+        sort?: string;
+        filter?: string;
+        fields?: string;
+    }): Promise<{ data: Lead[]; total: number | null }> => {
+        const apiParams: Record<string, any> = { ...params, meta: 'true' };
+        if (params.status && STATUS_MAP_FE_TO_BE[params.status]) {
+            apiParams.status = STATUS_MAP_FE_TO_BE[params.status];
+        }
+        const res = await apiClient.getWithMeta<any[]>('/leads', apiParams);
+        return { data: (res.data || []).map(mapLeadFromApi), total: res.total };
+    },
+
+    /**
+     * POST /leads/bulk/update — apply a patch (owner/status/source/campaign/
+     * priority) to many leads. Returns { requested, updated, failed }.
+     */
+    bulkUpdate: async (ids: string[], patch: Record<string, any>): Promise<{ requested: number; updated: string[]; failed: Array<{ id: string; error: string }> }> => {
+        let effective = patch;
+        if (patch.status && STATUS_MAP_FE_TO_BE[patch.status]) {
+            effective = { ...patch, status: STATUS_MAP_FE_TO_BE[patch.status] };
+        }
+        return apiClient.post('/leads/bulk/update', { ids, patch: effective });
+    },
+
+    /** POST /leads/bulk/delete — delete many leads. */
+    bulkDelete: async (ids: string[]): Promise<{ requested: number; deleted: string[]; failed: Array<{ id: string; error: string }> }> => {
+        return apiClient.post('/leads/bulk/delete', { ids });
+    },
+
+    /** POST /leads/bulk/tags — add/remove tag pills across many leads. */
+    bulkTags: async (ids: string[], add?: string[], remove?: string[]): Promise<{ requested: number; updated: string[]; failed: Array<{ id: string; error: string }> }> => {
+        return apiClient.post('/leads/bulk/tags', { ids, add, remove });
+    },
+};
+
+// ============================================================================
+// GRID PREFERENCES API (saved views + column layout)
+// ============================================================================
+export interface GridView {
+    id: string;
+    name: string;
+    entity_type: string;
+    config: Record<string, any>;
+    is_shared: boolean;
+    is_default: boolean;
+    user_id: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export const gridPrefsApi = {
+    listViews: (entityType = 'lead'): Promise<GridView[]> =>
+        apiClient.get<GridView[]>('/grid/views', { entity_type: entityType }),
+    createView: (dto: { name: string; entity_type?: string; config?: Record<string, any>; is_shared?: boolean; is_default?: boolean }): Promise<GridView> =>
+        apiClient.post<GridView>('/grid/views', dto),
+    getView: (id: string): Promise<GridView> =>
+        apiClient.get<GridView>(`/grid/views/${id}`),
+    updateView: (id: string, dto: Partial<Pick<GridView, 'name' | 'config' | 'is_shared' | 'is_default'>>): Promise<GridView> =>
+        apiClient.patch<GridView>(`/grid/views/${id}`, dto),
+    duplicateView: (id: string): Promise<GridView> =>
+        apiClient.post<GridView>(`/grid/views/${id}/duplicate`, {}),
+    setDefaultView: (id: string): Promise<GridView> =>
+        apiClient.post<GridView>(`/grid/views/${id}/default`, {}),
+    deleteView: (id: string): Promise<{ deleted: boolean }> =>
+        apiClient.delete<{ deleted: boolean }>(`/grid/views/${id}`),
+    getColumns: (entityType = 'lead'): Promise<{ prefs: Record<string, any> } | null> =>
+        apiClient.get<{ prefs: Record<string, any> } | null>('/grid/columns', { entity_type: entityType }),
+    saveColumns: (prefs: Record<string, any>, entityType = 'lead'): Promise<{ prefs: Record<string, any> }> =>
+        apiClient.put<{ prefs: Record<string, any> }>('/grid/columns', { entity_type: entityType, prefs }),
+    resetColumns: (entityType = 'lead'): Promise<{ reset: boolean }> =>
+        apiClient.delete<{ reset: boolean }>(`/grid/columns?entity_type=${encodeURIComponent(entityType)}`),
 };
 
 // ============================================================================
@@ -477,6 +692,20 @@ export const customersApi = {
      */
     updateCreditLimit: async (customerId: string, creditLimit: number): Promise<any> => {
         return apiClient.patch<any>(`/leads/customers/${customerId}/credit-limit`, { credit_limit: creditLimit });
+    },
+
+    /**
+     * GET /leads/customers/:id/business-profile - Read business profile from canonical Core partners row
+     */
+    getBusinessProfile: async (customerId: string): Promise<any> => {
+        return apiClient.get<any>(`/leads/customers/${customerId}/business-profile`);
+    },
+
+    /**
+     * PATCH /leads/customers/:id/business-profile - Update business profile on Core partners (single source of truth)
+     */
+    updateBusinessProfile: async (customerId: string, profile: Record<string, any>): Promise<any> => {
+        return apiClient.patch<any>(`/leads/customers/${customerId}/business-profile`, profile);
     },
 };
 
@@ -577,6 +806,8 @@ export const tasksApi = {
     getAll: async (params?: {
         status?: string;
         overdue?: boolean;
+        lead_id?: string;
+        deal_id?: string;
     }): Promise<Task[]> => {
         const tasks = await apiClient.get<any[]>('/tasks', params);
         return tasks.map(mapTaskFromApi);
@@ -636,6 +867,10 @@ export const activitiesApi = {
         const activities = await apiClient.get<any[]>(`/activities/lead/${leadId}`);
         return activities.map(mapActivityFromApi);
     },
+    getAllByLeadPaginated: async (leadId: string, limit: number, offset: number): Promise<{ data: Activity[], total: number }> => {
+        const result = await apiClient.get<{ data: any[], total: number }>(`/activities/lead/${leadId}?limit=${limit}&offset=${offset}`);
+        return { data: (result.data || []).map(mapActivityFromApi), total: result.total || 0 };
+    },
     create: async (data: any): Promise<Activity> => {
         const activity = await apiClient.post<any>('/activities', data);
         return mapActivityFromApi(activity);
@@ -647,6 +882,207 @@ export const activitiesApi = {
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/activities/${id}`);
     }
+};
+
+// ============================================================================
+// AUDIT TRAIL API (Task 7)
+// ============================================================================
+export interface AuditTrailEntry {
+    id: string;
+    kind: 'field_change' | 'business_event';
+    field_name: string | null;
+    old_value: string | null;
+    new_value: string | null;
+    description: string | null;
+    changed_by: string | null;
+    changed_by_name: string | null;
+    source: string | null;
+    module: string | null;
+    change_reason: string | null;
+    metadata: Record<string, any>;
+    created_at: string;
+}
+
+export interface AuditTrailFilters {
+    field_name?: string;
+    source?: string;
+    module?: string;
+    user_id?: string;
+    search?: string;
+    start_date?: string;
+    end_date?: string;
+    limit?: number;
+    offset?: number;
+}
+
+export const auditTrailApi = {
+    getAuditTrail: async (
+        entityType: string,
+        entityId: string,
+        filters: AuditTrailFilters = {},
+    ): Promise<{ data: AuditTrailEntry[]; meta: { total: number; limit: number; offset: number } }> => {
+        return apiClient.get(`/audit-trail/${entityType}/${entityId}`, filters);
+    },
+    exportAuditTrail: async (
+        entityType: string,
+        entityId: string,
+        format: 'csv' | 'xlsx' | 'pdf',
+        filters: AuditTrailFilters = {},
+    ): Promise<{ blob: Blob; filename: string | null }> => {
+        return apiClient.getBlob(`/audit-trail/${entityType}/${entityId}/export`, { ...filters, format });
+    },
+};
+
+// ============================================================================
+// TIMELINE API (Task 4 — Customer Timeline)
+// ============================================================================
+export interface EntityTimelineEvent {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+    actor_id: string | null;
+    actor_name: string | null;
+    created_at: string;
+    module: string;
+    related_type: string | null;
+    related_id: string | null;
+    status_badge: string | null;
+    group_key: string;
+}
+
+export interface EntityTimelineSummary {
+    last_interaction_at: string | null;
+    most_active_contact: string | null;
+    counts: Record<string, number>;
+    pending_tasks: number;
+    latest_stage: string | null;
+    idle_days: number | null;
+    health_status: 'very_active' | 'healthy' | 'neutral' | 'at_risk' | 'dormant';
+}
+
+export interface TimelineFilters {
+    module?: string;
+    category?: string;
+    range?: 'today' | 'yesterday' | '7d' | '30d' | 'custom';
+    start?: string;
+    end?: string;
+    search?: string;
+    cursor?: string;
+    limit?: number;
+}
+
+export const timelineApi = {
+    getTimeline: async (
+        entityType: string,
+        entityId: string,
+        filters: TimelineFilters = {},
+    ): Promise<{ data: EntityTimelineEvent[]; nextCursor: string | null; summary: EntityTimelineSummary }> => {
+        return apiClient.get(`/audit-trail/${entityType}/${entityId}/timeline`, filters);
+    },
+};
+
+// ============================================================================
+// INBOX INTEGRATION API (Task 3 — Emails tab reuses Inbox's own conversations,
+// does not build a second compose/reply/forward UI)
+// ============================================================================
+export interface InboxConversationPreview {
+    id: string;
+    entity_id: string;
+    platform: 'whatsapp' | 'instagram' | 'facebook' | 'web_chat' | 'email';
+    customer_name?: string;
+    status: string;
+    handler: string;
+    topic?: string;
+    message_count: number;
+    last_message_at: string;
+}
+
+export const inboxIntegrationApi = {
+    getConversationsForLead: async (leadId: string): Promise<{ data: InboxConversationPreview[]; total: number }> => {
+        return inboxClient.get(`/conversations/by-crm-lead/${leadId}`);
+    },
+    getMessages: async (entityId: string, conversationId: string): Promise<any[]> => {
+        const result = await inboxClient.get<{ data: any[] }>(`/conversations/${entityId}/${conversationId}/messages`);
+        return (result as any).data || result;
+    },
+};
+
+// ============================================================================
+// MEETINGS API (Task 3)
+// ============================================================================
+export const meetingsApi = {
+    getByLead: async (leadId: string): Promise<Meeting[]> => {
+        return apiClient.get(`/meetings/lead/${leadId}`);
+    },
+    getByDeal: async (dealId: string): Promise<Meeting[]> => {
+        return apiClient.get(`/meetings/deal/${dealId}`);
+    },
+    create: async (data: Partial<Meeting>): Promise<Meeting> => {
+        return apiClient.post('/meetings', data);
+    },
+    update: async (id: string, data: Partial<Meeting>): Promise<Meeting> => {
+        return apiClient.patch(`/meetings/${id}`, data);
+    },
+    cancel: async (id: string): Promise<Meeting> => {
+        return apiClient.post(`/meetings/${id}/cancel`, {});
+    },
+    complete: async (id: string, outcome?: string, nextSteps?: string): Promise<Meeting> => {
+        return apiClient.post(`/meetings/${id}/complete`, { outcome, next_steps: nextSteps });
+    },
+    remove: async (id: string): Promise<void> => {
+        await apiClient.delete(`/meetings/${id}`);
+    },
+};
+
+// ============================================================================
+// STAKEHOLDERS API (Task 6)
+// ============================================================================
+export interface StakeholderFilters {
+    role?: string;
+    department?: string;
+    is_active?: boolean;
+    relationship_strength?: string;
+    search?: string;
+}
+
+export const stakeholderApi = {
+    listByLead: async (leadId: string, filters: StakeholderFilters = {}): Promise<Stakeholder[]> => {
+        return apiClient.get(`/leads/${leadId}/stakeholders`, filters as Record<string, any>);
+    },
+    getHierarchy: async (leadId: string): Promise<Stakeholder[]> => {
+        return apiClient.get(`/leads/${leadId}/stakeholders/hierarchy`);
+    },
+    create: async (leadId: string, data: Partial<Stakeholder> & { role_names?: string[] }): Promise<Stakeholder> => {
+        return apiClient.post(`/leads/${leadId}/stakeholders`, data);
+    },
+    getById: async (id: string): Promise<Stakeholder> => {
+        return apiClient.get(`/stakeholders/${id}`);
+    },
+    update: async (id: string, data: Partial<Stakeholder> & { role_names?: string[] }): Promise<Stakeholder> => {
+        return apiClient.patch(`/stakeholders/${id}`, data);
+    },
+    delete: async (id: string): Promise<void> => {
+        await apiClient.delete(`/stakeholders/${id}`);
+    },
+    assignRoles: async (id: string, roleNames: string[]): Promise<void> => {
+        await apiClient.put(`/stakeholders/${id}/roles`, { role_names: roleNames });
+    },
+    setHierarchy: async (id: string, reportsToStakeholderId: string | null): Promise<Stakeholder> => {
+        return apiClient.patch(`/stakeholders/${id}/hierarchy`, { reports_to_stakeholder_id: reportsToStakeholderId });
+    },
+    linkDeal: async (id: string, dealId: string, involvementRole?: string): Promise<void> => {
+        await apiClient.post(`/stakeholders/${id}/deals`, { deal_id: dealId, involvement_role: involvementRole });
+    },
+    unlinkDeal: async (id: string, dealId: string): Promise<void> => {
+        await apiClient.delete(`/stakeholders/${id}/deals/${dealId}`);
+    },
+    getActivitySummary: async (id: string): Promise<StakeholderActivitySummary> => {
+        return apiClient.get(`/stakeholders/${id}/activity-summary`);
+    },
+    search: async (filters: StakeholderFilters = {}): Promise<Stakeholder[]> => {
+        return apiClient.get('/stakeholders/search', filters as Record<string, any>);
+    },
 };
 
 // ============================================================================
@@ -708,7 +1144,7 @@ export const settingsApi = {
          * GET /settings/custom-fields - Get all custom field definitions
          */
         getAll: async (params?: {
-            entity_type?: 'LEAD' | 'DEAL';
+            entity_type?: 'LEAD' | 'DEAL' | 'PARTNER';
         }): Promise<CustomFieldDefinition[]> => {
             return apiClient.get<CustomFieldDefinition[]>(
                 '/settings/custom-fields',
@@ -720,7 +1156,7 @@ export const settingsApi = {
          * POST /settings/custom-fields - Create a new custom field definition
          */
         create: async (data: {
-            entity_type: 'LEAD' | 'DEAL';
+            entity_type: 'LEAD' | 'DEAL' | 'PARTNER';
             label: string;
             field_type: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT';
             options?: string[];
@@ -758,9 +1194,93 @@ export const settingsApi = {
             );
         },
     },
+
+    sourceTypes: {
+        getAll: async () => {
+            return apiClient.get<any[]>('/settings/source-types');
+        },
+        create: async (data: { label: string; value: string; sort_order?: number }) => {
+            return apiClient.post<any>('/settings/source-types', data);
+        },
+        update: async (id: string, data: { label?: string; is_active?: boolean; sort_order?: number }) => {
+            return apiClient.patch<any>(`/settings/source-types/${id}`, data);
+        },
+        delete: async (id: string) => {
+            return apiClient.delete<any>(`/settings/source-types/${id}`);
+        },
+    },
+
+    partnerTypes: {
+        getAll: async () => {
+            return apiClient.get<any[]>('/settings/partner-types');
+        },
+        create: async (data: { label: string; value: string; sort_order?: number }) => {
+            return apiClient.post<any>('/settings/partner-types', data);
+        },
+        update: async (id: string, data: { label?: string; is_active?: boolean; sort_order?: number }) => {
+            return apiClient.patch<any>(`/settings/partner-types/${id}`, data);
+        },
+        delete: async (id: string) => {
+            return apiClient.delete<any>(`/settings/partner-types/${id}`);
+        },
+    },
+
+    scoringRules: {
+        getAll: async (): Promise<LeadScoringRule[]> => {
+            return apiClient.get<LeadScoringRule[]>('/settings/scoring-rules');
+        },
+        create: async (data: Omit<LeadScoringRule, 'id'>): Promise<LeadScoringRule> => {
+            return apiClient.post<LeadScoringRule>('/settings/scoring-rules', data);
+        },
+        update: async (id: string, data: Partial<LeadScoringRule>): Promise<LeadScoringRule> => {
+            return apiClient.patch<LeadScoringRule>(`/settings/scoring-rules/${id}`, data);
+        },
+        delete: async (id: string): Promise<void> => {
+            return apiClient.delete<void>(`/settings/scoring-rules/${id}`);
+        },
+        recalculate: async (): Promise<{ recalculated: number }> => {
+            return apiClient.post<{ recalculated: number }>('/settings/scoring-rules/recalculate', {});
+        },
+    },
+
+    scoreCategories: {
+        getAll: async (): Promise<ScoreCategory[]> => {
+            return apiClient.get<ScoreCategory[]>('/settings/score-categories');
+        },
+        update: async (id: string, data: Partial<ScoreCategory>): Promise<ScoreCategory> => {
+            return apiClient.patch<ScoreCategory>(`/settings/score-categories/${id}`, data);
+        },
+    },
 };
 
 
+
+// ============================================================================
+// PARTNERS API
+// ============================================================================
+export const partnersApi = {
+    getAll: async (params?: { search?: string; partner_type?: string; skip?: number; take?: number }) => {
+        return apiClient.get<any[]>('/partners', params);
+    },
+    create: async (data: any) => {
+        return apiClient.post<any>('/partners', data);
+    },
+    getOne: async (id: string) => {
+        return apiClient.get<any>(`/partners/${id}`);
+    },
+    update: async (id: string, data: any) => {
+        return apiClient.patch<any>(`/partners/${id}`, data);
+    },
+    getDeals: async (id: string) => {
+        return apiClient.get<any>(`/partners/${id}/deals`);
+    },
+    getCommissions: async (id: string) => {
+        return apiClient.get<any>(`/partners/${id}/commissions`);
+    },
+    updateCommission: async (commissionId: string, data: { status: string; payment_ref?: string }) => {
+        return apiClient.patch<any>(`/commissions/${commissionId}`, data);
+    },
+};
 
 // ============================================================================
 // NOTES API
@@ -803,8 +1323,104 @@ export const documentsApi = {
         const doc = await apiClient.post<any>('/documents', data);
         return mapDocumentFromApi(doc);
     },
+    // Single-step DMS upload — pushes the file straight to the CRM BE, which
+    // streams it into the Document Management Service and creates the documents
+    // row (carrying dms_document_id) in one round-trip.
+    upload: async (file: File, entity: { lead_id?: string; deal_id?: string }): Promise<Attachment> => {
+        const doc = await apiClient.uploadMultipart<any>('/documents/upload', file, {
+            lead_id: entity.lead_id,
+            deal_id: entity.deal_id,
+        });
+        return mapDocumentFromApi(doc);
+    },
+    // Resolves a (signed) download URL for a DMS-backed document.
+    getDownloadUrl: async (id: string): Promise<string> => {
+        const res = await apiClient.get<{ url: string; source?: string }>(`/documents/${id}/download-url`);
+        return res.url;
+    },
     delete: async (id: string): Promise<void> => {
         return apiClient.delete<void>(`/documents/${id}`);
+    },
+};
+
+// ============================================================================
+// CALLS API — call recordings, transcripts, emotion/sentiment analysis
+// ============================================================================
+export interface CallRecord {
+    id: string;
+    tenant_id: string;
+    org_id: string;
+    lead_id: string | null;
+    deal_id: string | null;
+    direction: 'inbound' | 'outbound';
+    occurred_at: string;
+    duration_seconds: number | null;
+    phone_number: string | null;
+    owner_person_id: string | null;
+    dms_document_id: string | null;
+    transcript: any;
+    transcript_text: string | null;
+    sentiment: 'positive' | 'neutral' | 'negative' | 'mixed' | null;
+    emotion_scores: Record<string, number> | null;
+    external_call_id: string | null;
+    source: string;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CallUploadFields {
+    lead_id?: string;
+    deal_id?: string;
+    direction?: 'inbound' | 'outbound';
+    occurred_at?: string;
+    duration_seconds?: number;
+    phone_number?: string;
+    owner_person_id?: string;
+    transcript_text?: string;
+    sentiment?: 'positive' | 'neutral' | 'negative' | 'mixed';
+    external_call_id?: string;
+    source?: string;
+}
+
+export const callsApi = {
+    getAllByLead: async (leadId: string): Promise<CallRecord[]> => {
+        return apiClient.get<CallRecord[]>(`/calls/lead/${leadId}`);
+    },
+    getAllByDeal: async (dealId: string): Promise<CallRecord[]> => {
+        return apiClient.get<CallRecord[]>(`/calls/deal/${dealId}`);
+    },
+    getOne: async (id: string): Promise<CallRecord> => {
+        return apiClient.get<CallRecord>(`/calls/${id}`);
+    },
+    // Single-step upload — pushes the audio file straight to the CRM BE, which
+    // streams it into the Document Management Service and creates the
+    // crm_call_records row (carrying dms_document_id) in one round-trip.
+    upload: async (file: File, fields: CallUploadFields): Promise<CallRecord> => {
+        return apiClient.uploadMultipart<CallRecord>('/calls/upload', file, {
+            lead_id: fields.lead_id,
+            deal_id: fields.deal_id,
+            direction: fields.direction,
+            occurred_at: fields.occurred_at,
+            duration_seconds: fields.duration_seconds !== undefined ? String(fields.duration_seconds) : undefined,
+            phone_number: fields.phone_number,
+            owner_person_id: fields.owner_person_id,
+            transcript_text: fields.transcript_text,
+            sentiment: fields.sentiment,
+            external_call_id: fields.external_call_id,
+            source: fields.source,
+        });
+    },
+    // Resolves a signed playback URL for a DMS-backed recording. Resolved on
+    // demand — callers should not fetch until the user clicks play.
+    getPlaybackUrl: async (id: string): Promise<{ url: string; expires_in: number }> => {
+        return apiClient.get<{ url: string; expires_in: number }>(`/calls/${id}/playback-url`);
+    },
+    update: async (id: string, data: Partial<Pick<CallRecord, 'transcript_text' | 'sentiment' | 'emotion_scores' | 'duration_seconds'>>): Promise<CallRecord> => {
+        return apiClient.patch<CallRecord>(`/calls/${id}`, data);
+    },
+    delete: async (id: string): Promise<void> => {
+        return apiClient.delete<void>(`/calls/${id}`);
     },
 };
 
@@ -823,16 +1439,56 @@ export const crmService = {
         return dailystoreClient.get<Array<{ id: string; name: string; store_code?: string; status?: string }>>('/v1/dailystore/stores');
     },
 
+    // Cross-link resolver — batch-resolve mixed entity refs to display labels via the
+    // Core aggregator (which fans out to each owning module's /links/resolve).
+    resolveLinks: async (
+        refs: Array<{ type: string; id: string }>,
+    ): Promise<Array<{ type: string; id: string; label: string; subtitle?: string; status?: string; deep_link?: string }>> => {
+        if (!refs.length) return [];
+        const res = await coreClient.post<{ links?: any[] }>('/v1/links/resolve', { refs });
+        return Array.isArray(res?.links) ? res.links : [];
+    },
+
     // Leads
     getLeads: async (params?: { skip?: number; take?: number; status?: string; q?: string }): Promise<Lead[]> => {
         return leadsApi.getAll(params);
     },
 
+    // Leads — server-side paged/sorted/filtered variant (enterprise grid)
+    getLeadsPaged: async (params: {
+        skip?: number; take?: number; q?: string; status?: string; source?: string;
+        sort?: string; filter?: string; fields?: string;
+    }): Promise<{ data: Lead[]; total: number | null }> => {
+        return leadsApi.getPaged(params);
+    },
+
+    // Bulk lead operations
+    bulkUpdateLeads: (ids: string[], patch: Record<string, any>) => leadsApi.bulkUpdate(ids, patch),
+    bulkDeleteLeads: (ids: string[]) => leadsApi.bulkDelete(ids),
+    bulkTagLeads: (ids: string[], add?: string[], remove?: string[]) => leadsApi.bulkTags(ids, add, remove),
+
+    // Grid preferences (saved views + column layout), delegated to gridPrefsApi
+    gridViews: {
+        list: (entityType = 'lead') => gridPrefsApi.listViews(entityType),
+        create: (dto: { name: string; entity_type?: string; config?: Record<string, any>; is_shared?: boolean; is_default?: boolean }) => gridPrefsApi.createView(dto),
+        get: (id: string) => gridPrefsApi.getView(id),
+        update: (id: string, dto: Partial<Pick<GridView, 'name' | 'config' | 'is_shared' | 'is_default'>>) => gridPrefsApi.updateView(id, dto),
+        duplicate: (id: string) => gridPrefsApi.duplicateView(id),
+        setDefault: (id: string) => gridPrefsApi.setDefaultView(id),
+        remove: (id: string) => gridPrefsApi.deleteView(id),
+    },
+    gridColumns: {
+        get: (entityType = 'lead') => gridPrefsApi.getColumns(entityType),
+        save: (prefs: Record<string, any>, entityType = 'lead') => gridPrefsApi.saveColumns(prefs, entityType),
+        reset: (entityType = 'lead') => gridPrefsApi.resetColumns(entityType),
+    },
+
     getDashboardStats: async (params?: {
-        period?: 'yearly' | 'quarterly' | 'monthly';
+        period?: 'yearly' | 'quarterly' | 'monthly' | 'weekly';
         year?: number;
         quarter?: number;
         month?: number;
+        week?: number;
     }) => {
         try {
             // If period filtering is requested, use the new backend endpoint
@@ -842,6 +1498,7 @@ export const crmService = {
                 if (params.year) queryParams.append('year', params.year.toString());
                 if (params.quarter) queryParams.append('quarter', params.quarter.toString());
                 if (params.month) queryParams.append('month', params.month.toString());
+                if (params.week) queryParams.append('week', params.week.toString());
 
                 const [periodStats, performanceStats, tasks] = await Promise.all([
                     apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`),
@@ -867,7 +1524,7 @@ export const crmService = {
 
                 // Get reminders
                 const reminders = tasks.filter((t: any) =>
-                    t.status === 'Open' && t.type === 'REMINDER'
+                    t.status === 'OPEN' && t.type === 'REMINDER'
                 ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
                 return {
@@ -880,7 +1537,7 @@ export const crmService = {
                     counts: {
                         leads: periodStats.counts.totalLeads,
                         deals: periodStats.counts.totalDeals,
-                        tasks: tasks.filter(t => t.status === 'Open').length,
+                        tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
                         reminders: reminders.length
                     },
                     teamStats,
@@ -964,7 +1621,7 @@ export const crmService = {
 
             // 4. Reminders
             const reminders = tasks.filter(t =>
-                t.status === 'Open' && t.type === 'REMINDER'
+                t.status === 'OPEN' && t.type === 'REMINDER'
             ).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
             return {
@@ -977,7 +1634,7 @@ export const crmService = {
                 counts: {
                     leads: leads.length,
                     deals: deals.length,
-                    tasks: tasks.filter(t => t.status === 'Open').length,
+                    tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
                     reminders: reminders.length
                 },
                 teamStats,
@@ -996,15 +1653,21 @@ export const crmService = {
         }
     },
 
-    createLead: async (lead: Omit<Lead, 'id' | 'created_at' | 'owner'>): Promise<Lead> => {
+    createLead: async (lead: Omit<Lead, 'id' | 'created_at' | 'owner'> & { owner_id?: string }): Promise<Lead> => {
         return leadsApi.create({
             company_name: lead.company_name,
-            contact_name: lead.contact_name,
+            first_name: (lead as any).first_name,
+            last_name: (lead as any).last_name,
             email: lead.contact_email,
             phone: lead.phone,
+            alt_phone: (lead as any).alt_phone,
+            address: (lead as any).address,
+            city: (lead as any).city,
+            pin_code: (lead as any).pin_code,
             status: lead.status || 'New',
             source: lead.source,
-            owner_id: USER_ID,
+            owner_id: lead.owner_id || USER_ID,
+            referred_by: (lead as any).referred_by,
             meta_data: lead.custom_fields,
         });
     },
@@ -1020,6 +1683,8 @@ export const crmService = {
     updateLead: async (id: string, updates: Partial<Lead>): Promise<Lead> => {
         // Whitelist updateable fields to avoid sending relation objects to backend
         const data: any = {};
+        if ((updates as any).first_name !== undefined) data.first_name = (updates as any).first_name;
+        if ((updates as any).last_name !== undefined) data.last_name = (updates as any).last_name;
         if (updates.contact_name !== undefined) data.contact_name = updates.contact_name;
         if (updates.company_name !== undefined) data.company_name = updates.company_name;
         if (updates.contact_email !== undefined) data.email = updates.contact_email;
@@ -1035,12 +1700,18 @@ export const crmService = {
             data.owner_id = (updates as any).owner_id;
         }
         if (updates.custom_fields !== undefined) data.meta_data = updates.custom_fields;
+        if ((updates as any).referred_by !== undefined) data.referred_by = (updates as any).referred_by || null;
+        if (updates.type !== undefined) data.type = updates.type;
 
         return leadsApi.update(id, data);
     },
 
     deleteLead: async (id: string): Promise<void> => {
         return leadsApi.delete(id);
+    },
+
+    getPartners: async (): Promise<Lead[]> => {
+        return partnersApi.getAll({ take: 200 }) as any;
     },
 
     // Deals
@@ -1116,8 +1787,9 @@ export const crmService = {
     },
 
     getDealsByLeadId: async (leadId: string): Promise<Deal[]> => {
-        const allDeals = await dealsApi.getAll();
-        return allDeals.filter((d) => d.lead_id === leadId);
+        // Filter server-side (backend GET /deals honors lead_id) instead of
+        // downloading the whole org dataset and filtering in the browser.
+        return dealsApi.getAll({ lead_id: leadId });
     },
 
     deleteDeal: async (id: string): Promise<void> => {
@@ -1159,13 +1831,15 @@ export const crmService = {
     },
 
     async getTasksByLeadId(leadId: string): Promise<Task[]> {
-        const allTasks = await tasksApi.getAll();
-        return allTasks.filter((t) => t.lead_id === leadId);
+        // Filter server-side (backend GET /tasks honors lead_id) instead of
+        // downloading the whole org dataset and filtering in the browser.
+        return tasksApi.getAll({ lead_id: leadId });
     },
 
     async getTasksByDealId(dealId: string): Promise<Task[]> {
-        const allTasks = await tasksApi.getAll();
-        return allTasks.filter((t) => t.deal_id === dealId);
+        // Filter server-side (backend GET /tasks honors deal_id) instead of
+        // downloading the whole org dataset and filtering in the browser.
+        return tasksApi.getAll({ deal_id: dealId });
     },
 
     async deleteTask(id: string): Promise<void> {
@@ -1174,18 +1848,27 @@ export const crmService = {
 
     // Settings
     getSettings: async (): Promise<CRMSettings> => {
+      return orgStaticCache.run(`settings|${apiClient.getOrgId()}`, async () => {
         try {
-            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult] = await Promise.allSettled([
+            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, partnerFieldsResult, sourceTypesResult, scoringRulesResult, scoreCategoriesResult] = await Promise.allSettled([
                 apiClient.get<any[]>('/settings/pipeline-stages'),
                 apiClient.get<any[]>('/settings/lead-stages'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD'),
-                apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL')
+                apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL'),
+                apiClient.get<any[]>('/settings/custom-fields?entity_type=PARTNER'),
+                apiClient.get<any[]>('/settings/source-types'),
+                apiClient.get<any[]>('/settings/scoring-rules'),
+                apiClient.get<any[]>('/settings/score-categories'),
             ]);
 
             const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
             const leadStages = leadStagesResult.status === 'fulfilled' ? leadStagesResult.value : [];
             const leadFields = leadFieldsResult.status === 'fulfilled' ? leadFieldsResult.value : [];
             const dealFields = dealFieldsResult.status === 'fulfilled' ? dealFieldsResult.value : [];
+            const partnerFields = partnerFieldsResult.status === 'fulfilled' ? partnerFieldsResult.value : [];
+            const sourceTypes = sourceTypesResult.status === 'fulfilled' ? sourceTypesResult.value : [];
+            const scoringRules = scoringRulesResult.status === 'fulfilled' ? scoringRulesResult.value : [];
+            const scoreCategories = scoreCategoriesResult.status === 'fulfilled' ? scoreCategoriesResult.value : [];
 
             if (stagesResult.status === 'rejected') console.error('[CRM] Failed to fetch pipeline stages', stagesResult.reason);
             if (leadStagesResult.status === 'rejected') console.error('[CRM] Failed to fetch lead stages', leadStagesResult.reason);
@@ -1199,9 +1882,12 @@ export const crmService = {
                 lead_stages: leadStages.map(s => ({ id: s.id, name: s.name })),
                 default_owner_id: USER_ID,
                 lead_sources: [],
+                source_type_options: sourceTypes,
                 lead_custom_fields: leadFields,
                 deal_custom_fields: dealFields,
-                lead_scoring: []
+                partner_custom_fields: partnerFields,
+                lead_scoring: scoringRules,
+                score_categories: scoreCategories,
             };
         } catch (error) {
             console.error('Failed to fetch settings', error);
@@ -1210,22 +1896,28 @@ export const crmService = {
                 lead_stages: [],
                 default_owner_id: USER_ID,
                 lead_sources: [],
+                source_type_options: [],
                 lead_custom_fields: [],
                 deal_custom_fields: [],
-                lead_scoring: []
+                partner_custom_fields: [],
+                lead_scoring: [],
+                score_categories: [],
             };
         }
+      });
     },
 
     updateSettings: async (settings: CRMSettings): Promise<CRMSettings> => {
-        console.log('crmService.updateSettings called', settings);
+        // Each settings category is saved independently so a failure in one (e.g. an
+        // API error in Custom Fields) cannot abort the others. Lead stages are NOT
+        // written here — they are owned by the Flow module and surfaced read-only.
+        const failures: string[] = [];
+
+        // 1. Pipeline (Deal) Stages
         try {
-            console.log('Syncing pipeline stages...');
             const currentStages = await apiClient.get<any[]>('/settings/pipeline-stages');
-            console.log('Current stages from server:', currentStages);
             const newStages = settings.deal_stages;
 
-            // Identify changes
             const stagesToCreate = newStages.filter(s => s.id.startsWith('st-'));
             const stagesToUpdate = newStages.filter(s => !s.id.startsWith('st-'));
             const stagesToDelete = currentStages.filter(cs => !newStages.find(ns => ns.id === cs.id));
@@ -1244,23 +1936,13 @@ export const crmService = {
                 })),
                 ...stagesToDelete.map(s => apiClient.delete(`/settings/pipeline-stages/${s.id}`))
             ]);
+        } catch (error) {
+            console.error('[CRM] Failed to save Pipeline Stages', error);
+            failures.push('Pipeline Stages');
+        }
 
-            // 1.b Sync Lead Stages
-            console.log('Syncing lead stages...');
-            const currentLeadStages = await apiClient.get<any[]>('/settings/lead-stages');
-            const newLeadStages = settings.lead_stages;
-
-            const lsToCreate = newLeadStages.filter(s => s.id.startsWith('st-'));
-            const lsToUpdate = newLeadStages.filter(s => !s.id.startsWith('st-'));
-            const lsToDelete = currentLeadStages.filter(cs => !newLeadStages.find(ns => ns.id === cs.id));
-
-            await Promise.all([
-                ...lsToCreate.map(s => apiClient.post('/settings/lead-stages', { name: s.name, order: newLeadStages.indexOf(s) + 1, color: '#3b82f6' })),
-                ...lsToUpdate.map(s => apiClient.patch(`/settings/lead-stages/${s.id}`, { name: s.name, order: newLeadStages.indexOf(s) + 1 })),
-                ...lsToDelete.map(s => apiClient.delete(`/settings/lead-stages/${s.id}`))
-            ]);
-
-            // 2. Sync Custom Fields (Lead)
+        // 2. Custom Fields (Lead)
+        try {
             const currentLeadFields = await apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD');
             const newLeadFields = settings.lead_custom_fields;
 
@@ -1273,17 +1955,24 @@ export const crmService = {
                     entity_type: 'LEAD',
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...lfToUpdate.map(f => apiClient.patch(`/settings/custom-fields/${f.id}`, {
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...lfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
             ]);
+        } catch (error) {
+            console.error('[CRM] Failed to save Lead Fields', error);
+            failures.push('Lead Fields');
+        }
 
-            // 3. Sync Custom Fields (Deal)
+        // 3. Custom Fields (Deal)
+        try {
             const currentDealFields = await apiClient.get<any[]>('/settings/custom-fields?entity_type=DEAL');
             const newDealFields = settings.deal_custom_fields;
 
@@ -1296,21 +1985,60 @@ export const crmService = {
                     entity_type: 'DEAL',
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...dfToUpdate.map(f => apiClient.patch(`/settings/custom-fields/${f.id}`, {
                     label: f.label,
                     field_type: f.type,
+                    options: f.options,
                     is_required: f.required
                 })),
                 ...dfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
             ]);
-
-            return settings;
         } catch (error) {
-            console.error('Failed to update settings', error);
-            throw error;
+            console.error('[CRM] Failed to save Deal Fields', error);
+            failures.push('Deal Fields');
         }
+
+        // 4. Custom Fields (Partner)
+        try {
+            const currentPartnerFields = await apiClient.get<any[]>('/settings/custom-fields?entity_type=PARTNER');
+            const newPartnerFields = settings.partner_custom_fields || [];
+
+            const pfToCreate = newPartnerFields.filter(f => f.id.startsWith('pcf-'));
+            const pfToUpdate = newPartnerFields.filter(f => !f.id.startsWith('pcf-'));
+            const pfToDelete = currentPartnerFields.filter(cf => !newPartnerFields.find(nf => nf.id === cf.id));
+
+            await Promise.all([
+                ...pfToCreate.map(f => apiClient.post('/settings/custom-fields', {
+                    entity_type: 'PARTNER',
+                    label: f.label,
+                    field_type: f.type,
+                    options: f.options,
+                    is_required: f.required
+                })),
+                ...pfToUpdate.map(f => apiClient.patch(`/settings/custom-fields/${f.id}`, {
+                    label: f.label,
+                    field_type: f.type,
+                    options: f.options,
+                    is_required: f.required
+                })),
+                ...pfToDelete.map(f => apiClient.delete(`/settings/custom-fields/${f.id}`))
+            ]);
+        } catch (error) {
+            console.error('[CRM] Failed to save Partner Fields', error);
+            failures.push('Partner Fields');
+        }
+
+        // Settings just changed — drop the cached copy so the next read is fresh.
+        orgStaticCache.invalidate('settings|');
+
+        if (failures.length > 0) {
+            throw new Error(`Failed to save: ${failures.join(', ')}`);
+        }
+
+        return settings;
     },
 
     // Notes
@@ -1324,7 +2052,7 @@ export const crmService = {
         const notes = await apiClient.get<any[]>(`/notes/task/${taskId}`);
         return notes.map(mapNoteFromApi);
     },
-    async createNote(data: { content: string; lead_id?: string; deal_id?: string; task_id?: string }): Promise<Note> {
+    async createNote(data: { content: string; lead_id?: string; deal_id?: string; task_id?: string; parent_note_id?: string; stakeholder_id?: string }): Promise<Note> {
         return notesApi.create({
             ...data,
             author_id: USER_ID
@@ -1341,6 +2069,7 @@ export const crmService = {
 
     // Users
     getUsers: async (): Promise<User[]> => {
+      return orgStaticCache.run(`users|${apiClient.getOrgId()}`, async () => {
         try {
             // Fetch users from CRM backend (works without shell context)
             const users = await apiClient.get<any[]>('/v1/users/profiles');
@@ -1369,6 +2098,7 @@ export const crmService = {
             // Fallback to current user if available
             return CURRENT_USER ? [CURRENT_USER] : [];
         }
+      });
     },
 
     // Documents
@@ -1379,30 +2109,69 @@ export const crmService = {
         return documentsApi.getAllByDeal(dealId);
     },
     uploadDocument: async (entity: string | { leadId?: string, dealId?: string }, file: File): Promise<Attachment> => {
-        // Push the file to Core BE's DigitalOcean Spaces pipe, then store the
-        // returned CDN URL in the documents table. Previously this used
-        // URL.createObjectURL() which creates an in-memory blob URL that
-        // dies on page reload — attachments looked uploaded but vanished.
-        const { url } = await coreClient.uploadFile('/v1/media/upload', file);
+        // Single-step DMS upload: CRM BE accepts the multipart file plus the
+        // lead_id/deal_id, streams it into the Document Management Service, and
+        // creates the documents row (with dms_document_id) atomically. This
+        // replaces the old two-step Core /v1/media/upload + POST /documents flow.
         const entityObj = typeof entity === 'string' ? { leadId: entity } : entity;
-        return documentsApi.create({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            url,
+        return documentsApi.upload(file, {
             lead_id: entityObj.leadId,
             deal_id: entityObj.dealId,
-            uploaded_by_id: USER_ID,
         });
+    },
+
+    // Resolve a (signed) download URL for a DMS-backed document.
+    getDocumentDownloadUrl: async (documentId: string): Promise<string> => {
+        return documentsApi.getDownloadUrl(documentId);
     },
 
     deleteDocument: async (entityId: string, documentId: string): Promise<void> => {
         return documentsApi.delete(documentId);
     },
 
+    // Calls
+    async getCallsByLeadId(leadId: string): Promise<CallRecord[]> {
+        return callsApi.getAllByLead(leadId);
+    },
+    async getCallsByDealId(dealId: string): Promise<CallRecord[]> {
+        return callsApi.getAllByDeal(dealId);
+    },
+    uploadCallRecording: async (file: File, fields: CallUploadFields): Promise<CallRecord> => {
+        return callsApi.upload(file, fields);
+    },
+    getCallPlaybackUrl: async (id: string): Promise<{ url: string; expires_in: number }> => {
+        return callsApi.getPlaybackUrl(id);
+    },
+    updateCallRecord: async (id: string, data: Partial<Pick<CallRecord, 'transcript_text' | 'sentiment' | 'emotion_scores' | 'duration_seconds'>>): Promise<CallRecord> => {
+        return callsApi.update(id, data);
+    },
+    deleteCallRecord: async (id: string): Promise<void> => {
+        return callsApi.delete(id);
+    },
+
+    // Customer Feedback (Forms module integration)
+    async getCustomerFeedback(
+        leadId: string,
+        params: { page?: number; limit?: number } = {},
+    ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+        const qs = new URLSearchParams();
+        if (params.page) qs.set('page', String(params.page));
+        if (params.limit) qs.set('limit', String(params.limit));
+        const suffix = qs.toString() ? `?${qs}` : '';
+        try {
+            return await apiClient.get<any>(`/leads/${leadId}/feedback${suffix}`);
+        } catch {
+            return { data: [], total: 0, page: 1, limit: 20 };
+        }
+    },
+
     // Activities
     async getActivitiesByLeadId(leadId: string): Promise<Activity[]> {
         return activitiesApi.getAllByLead(leadId);
+    },
+
+    async getActivitiesByLeadIdPaginated(leadId: string, limit: number, offset: number): Promise<{ data: Activity[], total: number }> {
+        return activitiesApi.getAllByLeadPaginated(leadId, limit, offset);
     },
 
     async getActivitiesByDealId(dealId: string): Promise<Activity[]> {
@@ -1591,6 +2360,19 @@ export const crmService = {
         }
     },
 
+    // Inventory item search — used by ProductPickerModal
+    async searchInventoryItems(q: string, categoryId?: string): Promise<{ items: InventoryItem[] }> {
+        try {
+            const params: Record<string, string> = { q };
+            if (categoryId) params.category_id = categoryId;
+            const result = await inventoryClient.get<any>('/v1/inventory/integration/search-with-variants', params);
+            const items: InventoryItem[] = Array.isArray(result) ? result : (result?.items || result?.data || []);
+            return { items };
+        } catch {
+            return { items: [] };
+        }
+    },
+
     // Customers
     getCustomers: async (filters?: { channel?: string; category?: string; q?: string; skip?: number; take?: number }): Promise<any[]> => {
         return customersApi.getAll(filters);
@@ -1610,6 +2392,26 @@ export const crmService = {
 
     updateCustomerCreditLimit: async (customerId: string, creditLimit: number): Promise<any> => {
         return customersApi.updateCreditLimit(customerId, creditLimit);
+    },
+
+    getCustomerBusinessProfile: async (customerId: string): Promise<any> => {
+        return customersApi.getBusinessProfile(customerId);
+    },
+
+    // Accounting cross-module: invoices for a customer (read-only, fail-soft).
+    // customerId = Core partner UUID stored on accounting invoices.customer_id.
+    getCustomerInvoices: async (customerId: string): Promise<any[]> => {
+        if (!customerId) return [];
+        try {
+            const result = await accountingClient.get<any>('/billing/invoices', { customer_id: customerId });
+            return Array.isArray(result) ? result : (result?.data || []);
+        } catch {
+            return [];
+        }
+    },
+
+    updateCustomerBusinessProfile: async (customerId: string, profile: Record<string, any>): Promise<any> => {
+        return customersApi.updateBusinessProfile(customerId, profile);
     },
 
     // Customer Segments
@@ -1768,10 +2570,11 @@ export const crmService = {
     },
 
     getCommerceKPIs: async (params?: {
-        period?: 'yearly' | 'quarterly' | 'monthly';
+        period?: 'yearly' | 'quarterly' | 'monthly' | 'weekly';
         year?: number;
         quarter?: number;
         month?: number;
+        week?: number;
     }): Promise<{
         revenue: number;
         orderCount: number;
@@ -1793,18 +2596,84 @@ export const crmService = {
         }
     },
 
+    // ─── Lead Products ────────────────────────────────────────────────────────
+
+    getLeadProducts: async (leadId: string): Promise<LeadProduct[]> => {
+        return apiClient.get<LeadProduct[]>(`/leads/${leadId}/products`);
+    },
+
+    addLeadProduct: async (leadId: string, data: {
+        item_id: string; item_name: string; item_sku?: string; category_name?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string;
+    }): Promise<LeadProduct> => {
+        return apiClient.post<LeadProduct>(`/leads/${leadId}/products`, data);
+    },
+
+    updateLeadProduct: async (leadId: string, productId: string, data: {
+        quantity?: number; unit_price?: number; status?: string; notes?: string;
+    }): Promise<LeadProduct> => {
+        return apiClient.patch<LeadProduct>(`/leads/${leadId}/products/${productId}`, data);
+    },
+
+    removeLeadProduct: async (leadId: string, productId: string): Promise<{ deleted: boolean }> => {
+        return apiClient.delete<{ deleted: boolean }>(`/leads/${leadId}/products/${productId}`);
+    },
+
+    // ─── Deal Products ────────────────────────────────────────────────────────
+
+    getDealProducts: async (dealId: string): Promise<DealProduct[]> => {
+        return apiClient.get<DealProduct[]>(`/deals/${dealId}/products`);
+    },
+
+    addDealProduct: async (dealId: string, data: {
+        item_id: string; item_name: string; item_sku?: string; category_name?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
+    }): Promise<DealProduct> => {
+        return apiClient.post<DealProduct>(`/deals/${dealId}/products`, data);
+    },
+
+    updateDealProduct: async (dealId: string, productId: string, data: {
+        quantity?: number; unit_price?: number; status?: string; notes?: string;
+    }): Promise<DealProduct> => {
+        return apiClient.patch<DealProduct>(`/deals/${dealId}/products/${productId}`, data);
+    },
+
+    removeDealProduct: async (dealId: string, productId: string): Promise<{ deleted: boolean }> => {
+        return apiClient.delete<{ deleted: boolean }>(`/deals/${dealId}/products/${productId}`);
+    },
+
+    // ─── Deals by Project ─────────────────────────────────────────────────────
+
+    getDealsByProjectId: async (projectId: string): Promise<Deal[]> => {
+        try {
+            const result = await apiClient.get<any>(`/deals`, { project_id: projectId });
+            return Array.isArray(result) ? result : (result?.data || []);
+        } catch {
+            return [];
+        }
+    },
+
     // Configuration
     setTenantId: (id: string) => {
         apiClient.setTenantId(id);
+        coreClient.setTenantId(id);
         dailystoreClient.setTenantId(id);
+        inventoryClient.setTenantId(id);
         fulfillmentClient.setTenantId(id);
+        accountingClient.setTenantId(id);
+        neuraClient.setTenantId(id);
+        inboxClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         ORG_ID = id;
         apiClient.setOrgId(id);
         coreClient.setOrgId(id);
         dailystoreClient.setOrgId(id);
+        inventoryClient.setOrgId(id);
         fulfillmentClient.setOrgId(id);
+        accountingClient.setOrgId(id);
+        neuraClient.setOrgId(id);
+        inboxClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -1819,6 +2688,48 @@ export const crmService = {
         apiClient.setAccessToken(token);
         coreClient.setAccessToken(token);
         dailystoreClient.setAccessToken(token);
+        inventoryClient.setAccessToken(token);
         fulfillmentClient.setAccessToken(token);
+        accountingClient.setAccessToken(token);
+        neuraClient.setAccessToken(token);
+        inboxClient.setAccessToken(token);
+    },
+};
+
+export interface NeuraEntityRef {
+    module: string;
+    entity: string;
+    id: string;
+    label?: string;
+}
+
+export interface NeuraAgentBlock {
+    type: 'table' | 'chart' | 'file' | 'entity' | 'kpi';
+    [key: string]: any;
+}
+
+export interface NeuraMessageResponse {
+    userMessage: { id: string; role: string; content: string };
+    assistantMessage: { id: string; role: string; content: string };
+    blocks?: NeuraAgentBlock[];
+    meta?: { tokensUsed: number };
+}
+
+// Thin client for Neura AI's own conversations API — no CRM backend involved.
+// Used by the CRM Lead Detail page's "Neura AI" panel.
+export const neuraAiService = {
+    createConversation: async (title: string): Promise<{ id: string }> => {
+        return neuraClient.post<{ id: string }>('/conversations', { title });
+    },
+    sendMessage: async (
+        conversationId: string,
+        content: string,
+        entityRef?: NeuraEntityRef,
+        mode: 'assist' | 'execute' | 'autonomous' = 'assist',
+    ): Promise<NeuraMessageResponse> => {
+        return neuraClient.post<NeuraMessageResponse>(
+            `/conversations/${conversationId}/messages`,
+            { content, mode, ...(entityRef ? { entityRef } : {}) },
+        );
     },
 };

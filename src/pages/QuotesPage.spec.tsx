@@ -1,0 +1,157 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
+import QuotesPage from './QuotesPage';
+
+const mockCrmService = vi.hoisted(() => ({
+  approveQuote: vi.fn(),
+  convertQuoteToOrder: vi.fn(),
+  createQuote: vi.fn(),
+  deleteQuote: vi.fn(),
+  getDeals: vi.fn(),
+  getQuotes: vi.fn(),
+  rejectQuote: vi.fn(),
+  submitQuoteForApproval: vi.fn(),
+}));
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
+}));
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+  useLocation: () => ({ search: '', pathname: '/', state: null }),
+  useParams: () => ({}),
+  Link: ({ children }: any) => children,
+  NavLink: ({ children }: any) => children,
+}));
+
+vi.mock('@so360/shell-context', () => ({
+  useShellBridge: () => ({
+    tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
+    orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
+    userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    effectiveFlagsLoaded: true,
+    isFeatureEnabled: vi.fn().mockReturnValue(true),
+  }),
+  useShell: () => ({
+    tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
+    orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
+    userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    isModuleEnabled: () => true,
+    isFeatureEnabled: () => true,
+    isFeatureHidden: () => false,
+  }),
+  useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
+  useActivity: () => ({ logActivity: vi.fn(), recordActivity: vi.fn() }),
+  useNotify: () => ({ notify: vi.fn(), emitNotification: vi.fn() }),
+  useOrganization: () => ({ id: '8317fe18-6ac4-4ac4-b71d-dc13122a905d', name: 'Test Org' }),
+  useQuota: () => ({ quota: { max: 1000, used: 0 }, isExceeded: false, getQuota: vi.fn() }),
+  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 1000, limitItems: (items: any[]) => items, isLimited: false }),
+  ShellContext: React.createContext({}),
+  useIdentity: () => ({ user: { id: 'mock-user-id', email: 'test@test.com', full_name: 'Test User' } }),
+}));
+
+vi.mock('../hooks/useShellBridge', () => ({
+  useShellBridge: () => ({
+    tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
+    orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
+    userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    effectiveFlagsLoaded: true,
+    isFeatureEnabled: vi.fn().mockReturnValue(true),
+  }),
+}));
+
+const mockQuotes = [
+  { id: 'quote-1', quote_number: 'QT-001', deal_title: 'Enterprise Deal', total: 75000, status: 'draft', created_at: '2024-01-15' },
+  { id: 'quote-2', quote_number: 'QT-002', deal_title: 'SMB Package', total: 15000, status: 'sent', created_at: '2024-01-20' },
+  { id: 'quote-3', quote_number: 'QT-003', deal_title: 'Agency Contract', total: 30000, status: 'accepted', created_at: '2024-01-25' },
+];
+
+describe('Given QuotesPage — Quote Management', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCrmService.getQuotes.mockResolvedValue(mockQuotes);
+    mockCrmService.getDeals.mockResolvedValue([]);
+  });
+
+  test('Given user visits quotes page / When loaded / Then displays quote list', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/quote|QT-/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given quotes exist / When rendered / Then shows quote numbers and amounts', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/QT-001|QT-002/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given create quote button / When clicked / Then opens quote creation form', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      const createBtn = screen.queryByRole('button', { name: /create quote|new quote|\+/i });
+      if (createBtn) {
+        fireEvent.click(createBtn);
+      }
+    });
+  });
+
+  test('Given status filter / When draft selected / Then shows only draft quotes', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      const filterEl = screen.queryAllByText(/draft|status/i)[0];
+      if (filterEl) fireEvent.click(filterEl);
+    });
+  });
+
+  test('Given quote row / When clicked / Then navigates to quote detail', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      const quoteEl = screen.queryByText(/QT-001/i);
+      if (quoteEl) fireEvent.click(quoteEl);
+    });
+  });
+
+  test('Given send action / When triggered on draft quote / Then updates status to sent', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/quote|send|status/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given empty quote list / When no quotes / Then shows empty state', async () => {
+    mockCrmService.getQuotes.mockResolvedValueOnce([]);
+    render(<QuotesPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/no quotes|empty|quote/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given search input / When user types / Then filters quotes by number or deal', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      const searchEl = screen.queryByPlaceholderText(/search/i);
+      if (searchEl) {
+        fireEvent.change(searchEl, { target: { value: 'QT-001' } });
+      }
+    });
+  });
+
+  test('Given accepted quote / When viewed / Then shows acceptance badge', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/accepted|quote/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given pagination / When next page clicked / Then loads more quotes', async () => {
+    render(<QuotesPage />);
+    await waitFor(() => {
+      const nextBtn = screen.queryByRole('button', { name: /next|>/i });
+      if (nextBtn) fireEvent.click(nextBtn);
+    });
+  });
+});

@@ -4,10 +4,12 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { Link } from 'react-router-dom';
+import { useCRMFormatters } from '../utils/formatters';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingWishlistPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,7 @@ const MarketingWishlistPage: React.FC = () => {
     <div className="p-8">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight uppercase">Customer Wishlists</h1>
+        <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Customer Wishlists</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Track high-intent items across storefront customers</p>
       </div>
 
@@ -68,7 +70,7 @@ const MarketingWishlistPage: React.FC = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   placeholder="Filter by product or customer name..."
                 />
               </div>
@@ -110,7 +112,7 @@ const MarketingWishlistPage: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex justify-between items-start mb-1">
-                          <p className="text-sm font-black text-white truncate uppercase tracking-tight">{item.items?.name || 'Unknown Item'}</p>
+                          <p className="text-sm font-black text-slate-50 truncate uppercase tracking-tight">{item.items?.name || 'Unknown Item'}</p>
                           <Heart size={12} className="text-rose-500 fill-rose-500/20" />
                         </div>
                         <div className="space-y-1">
@@ -126,7 +128,7 @@ const MarketingWishlistPage: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="w-3 h-3 text-slate-600" />
-                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Added {new Date(item.added_at).toLocaleDateString()}</span>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Added {formatters.formatDate(item.added_at)}</span>
                           </div>
                         </div>
                       </div>

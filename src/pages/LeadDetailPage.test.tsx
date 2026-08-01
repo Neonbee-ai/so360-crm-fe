@@ -8,6 +8,7 @@ const mockGetUsers = vi.fn();
 const mockGetDealsByLeadId = vi.fn();
 const mockGetTasksByLeadId = vi.fn();
 const mockGetActivitiesByLeadId = vi.fn();
+const mockGetActivitiesByLeadIdPaginated = vi.fn();
 const mockGetNotesByLeadId = vi.fn();
 const mockGetDocumentsByLeadId = vi.fn();
 const mockUpdateLead = vi.fn();
@@ -24,8 +25,14 @@ vi.mock('../services/crmService', () => ({
     getDealsByLeadId: (...a: any[]) => mockGetDealsByLeadId(...a),
     getTasksByLeadId: (...a: any[]) => mockGetTasksByLeadId(...a),
     getActivitiesByLeadId: (...a: any[]) => mockGetActivitiesByLeadId(...a),
+    getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivitiesByLeadIdPaginated(...a),
     getNotesByLeadId: (...a: any[]) => mockGetNotesByLeadId(...a),
     getDocumentsByLeadId: (...a: any[]) => mockGetDocumentsByLeadId(...a),
+    gridColumns: {
+        get: () => Promise.resolve(null),
+        save: () => Promise.resolve({}),
+        reset: () => Promise.resolve({}),
+    },
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     createNote: (...a: any[]) => mockCreateNote(...a),
@@ -39,8 +46,13 @@ vi.mock('../services/crmService', () => ({
     getStorefrontWishlist: vi.fn().mockResolvedValue([]),
     getStorefrontReviews: vi.fn().mockResolvedValue([]),
     getStorefrontAbandonedCarts: vi.fn().mockResolvedValue([]),
+    getPartners: vi.fn().mockResolvedValue([]),
   },
   activitiesApi: { create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  settingsApi: {
+    sourceTypes: { getAll: vi.fn().mockResolvedValue([]) },
+    partnerTypes: { getAll: vi.fn().mockResolvedValue([]) },
+  },
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -52,8 +64,11 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false, user: { id: 'u1' } }),
+  useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('../components/common/Toast', () => ({
   ToastContainer: () => null,
@@ -65,6 +80,13 @@ vi.mock('./components/TaskModal', () => ({ default: () => null }));
 vi.mock('../components/CustomerDetailsPanel', () => ({ default: () => null }));
 vi.mock('../components/LeadJourneyStepper', () => ({
   LeadJourneyStepper: () => <div data-testid="stepper" />,
+}));
+
+// Task 4: the inline Activity tab now reads from useEntityTimeline() instead
+// of client-side aggregation.
+const mockUseEntityTimeline = vi.fn();
+vi.mock('./components/timeline/useEntityTimeline', () => ({
+  useEntityTimeline: (...args: any[]) => mockUseEntityTimeline(...args),
 }));
 
 import LeadDetailPage from './LeadDetailPage';
@@ -96,17 +118,44 @@ beforeEach(() => {
   mockGetUsers.mockResolvedValue([{ id: 'u1', full_name: 'Test User', email: 't@t.com' }]);
   mockGetDealsByLeadId.mockResolvedValue([]);
   mockGetTasksByLeadId.mockResolvedValue([
-    { id: 't1', title: 'Follow up', status: 'Open', due_date: '2024-06-15', type: 'TODO', assigned_to: { id: 'u1', full_name: 'Test' } },
+    { id: 't1', title: 'Follow up', status: 'OPEN', due_date: '2024-06-15', type: 'TODO', assigned_to: { id: 'u1', full_name: 'Test' } },
   ]);
   mockGetActivitiesByLeadId.mockResolvedValue([
     { id: 'a1', type: 'CALL', notes: 'Called', created_at: '2024-01-02', author: { id: 'u1', full_name: 'Test' } },
   ]);
+  mockGetActivitiesByLeadIdPaginated.mockResolvedValue({
+    data: [
+      { id: 'a1', type: 'CALL', notes: 'Called', created_at: '2024-01-02', author: { id: 'u1', full_name: 'Test' } },
+    ],
+    total: 1,
+  });
   mockGetNotesByLeadId.mockResolvedValue([
     { id: 'n1', content: 'Initial note', created_at: '2024-01-01', author: { id: 'u1', full_name: 'Test' } },
   ]);
   mockGetDocumentsByLeadId.mockResolvedValue([
     { id: 'doc1', name: 'contract.pdf', url: 'http://cdn/file.pdf', uploaded_at: '2024-01-01', uploaded_by: { id: 'u1', full_name: 'Test' } },
   ]);
+  mockUseEntityTimeline.mockReturnValue({
+    events: [{
+      id: 'call:a1', icon: 'call', title: 'Call logged', description: 'Called',
+      actor_id: null, actor_name: 'Test', created_at: '2024-01-02', module: 'crm',
+      related_type: null, related_id: null, status_badge: null, group_key: 'call',
+    }],
+    summary: null,
+    loading: false,
+    loadingMore: false,
+    error: null,
+    hasMore: false,
+    loadMore: vi.fn(),
+    refetch: vi.fn(),
+    search: '', setSearch: vi.fn(),
+    moduleFilter: '', setModuleFilter: vi.fn(),
+    categoryFilter: '', setCategoryFilter: vi.fn(),
+    range: '', setRange: vi.fn(),
+    pinnedIds: new Set(), togglePin: vi.fn(),
+    removeEvent: vi.fn(),
+    updateEventDescription: vi.fn(),
+  });
 });
 
 describe('Given LeadDetailPage', () => {

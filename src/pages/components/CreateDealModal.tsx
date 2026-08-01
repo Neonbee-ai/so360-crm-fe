@@ -1,31 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import { X, Loader2, DollarSign, Briefcase } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
 import { useActivity, usePeople } from '@so360/shell-context';
+import { useCRMCurrencySymbol } from '../../utils/formatters';
 
 interface CreateDealModalProps {
-    leadId: string;
-    leadName: string;
-    companyName: string;
+    leadId?: string;
+    leadName?: string;
+    companyName?: string;
     onClose: () => void;
     onSuccess: (deal: Deal) => void;
 }
 
-const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName, onClose, onSuccess }) => {
+const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold';
+
+const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
     const { toasts, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { people } = usePeople();
-    const [name, setName] = useState(`${companyName} Deal`);
+    const currencySymbol = useCRMCurrencySymbol();
+
+    // Core fields
+    const [name, setName] = useState(companyName ? `${companyName} Deal` : '');
     const [value, setValue] = useState<string>('');
     const [stage, setStage] = useState<DealStage>('Lead');
+    const [startDate, setStartDate] = useState<string>('');
     const [expectedClose, setExpectedClose] = useState<string>('');
     const [ownerId, setOwnerId] = useState<string>('');
     const [ownerPersonId, setOwnerPersonId] = useState<string>('');
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [settings, setSettings] = useState<{ id: string, name: string }[]>([]);
+    const [settings, setSettings] = useState<{ id: string; name: string }[]>([]);
+
+    // Custom fields
+    const [customFieldDefs, setCustomFieldDefs] = useState<any[]>([]);
+    const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+
+    // Customer search (Pipeline mode — no leadId provided)
+    const [customerSearch, setCustomerSearch] = useState('');
+    const [customerResults, setCustomerResults] = useState<any[]>([]);
+    const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+    const [selectedCompanyName, setSelectedCompanyName] = useState(companyName);
+    const [selectedLeadId, setSelectedLeadId] = useState(leadId || '');
+    const [companyError, setCompanyError] = useState('');
+    const searchRef = useRef<HTMLDivElement>(null);
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Close customer dropdown on outside click
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+                setCustomerDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    // Debounced customer search
+    useEffect(() => {
+        if (leadId || customerSearch.length < 1) {
+            setCustomerResults([]);
+            setCustomerDropdownOpen(false);
+            return;
+        }
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(async () => {
+            try {
+                const results = await crmService.getCustomers({ q: customerSearch, take: 8 });
+                setCustomerResults(results);
+                setCustomerDropdownOpen(results.length > 0);
+            } catch {
+                setCustomerResults([]);
+            }
+        }, 300);
+        return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+    }, [customerSearch, leadId]);
 
     useEffect(() => {
         const fetchDependencies = async () => {
@@ -34,32 +86,47 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                 crmService.getSettings()
             ]);
             setUsers(usersData);
-            if (usersData.length > 0) {
-                setOwnerId(usersData[0].id);
-            }
+            if (usersData.length > 0) setOwnerId(usersData[0].id);
             setSettings(settingsData.deal_stages);
             if (settingsData.deal_stages.length > 0) {
                 setStage(settingsData.deal_stages[0].name as DealStage);
             }
+            setCustomFieldDefs(settingsData.deal_custom_fields || []);
         };
         fetchDependencies();
     }, []);
 
+    const effectiveCompany = selectedCompanyName || companyName;
+    const effectiveLeadId = selectedLeadId || leadId;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!effectiveCompany.trim()) {
+            setCompanyError('Please select a customer or enter a company name.');
+            return;
+        }
+        setCompanyError('');
         setIsSubmitting(true);
         try {
             const deal = await dealsApi.create({
                 name,
-                company: companyName,
+                company: effectiveCompany,
                 value: parseFloat(value) || 0,
-                stage_id: settings.find(s => s.name === stage)?.id || stage, // Fallback if stage is generic string
+                stage_id: settings.find(s => s.name === stage)?.id || stage,
                 owner_id: ownerId,
-                owner_person_id: ownerPersonId || undefined, // Include person link if selected
+                owner_person_id: ownerPersonId || undefined,
+                start_date: startDate ? new Date(startDate).toISOString() : undefined,
                 expected_close: expectedClose ? new Date(expectedClose).toISOString() : undefined,
-                lead_id: leadId,
+                lead_id: effectiveLeadId || undefined,
+                custom_fields: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
             });
-            recordActivity({ eventType: 'deal.created', eventCategory: 'crm', description: `Created deal "${name}" for ${companyName}`, resourceType: 'deal', resourceId: deal?.id }).catch(() => {});
+            recordActivity({
+                eventType: 'deal.created',
+                eventCategory: 'crm',
+                description: `Created deal "${name}" for ${effectiveCompany}`,
+                resourceType: 'deal',
+                resourceId: deal?.id,
+            }).catch(() => {});
             onSuccess(deal);
             onClose();
         } catch (error) {
@@ -70,119 +137,263 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
         }
     };
 
-    return (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/20 flex items-center justify-between">
-                    <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                        <Briefcase className="text-blue-500" size={24} />
-                        New Deal
-                    </h2>
-                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Deal Name</label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                required
-                            />
-                        </div>
+    const renderCustomField = (field: any) => {
+        const fieldId = field.id;
+        const val = customFieldValues[fieldId];
+        const type = (field.type || field.field_type || 'text').toLowerCase();
+        const setVal = (v: any) => setCustomFieldValues(prev => ({ ...prev, [fieldId]: v }));
 
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Value</label>
-                                <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                    <input
-                                        type="number"
-                                        value={value}
-                                        onChange={(e) => setValue(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
-                                        required
-                                        min="0"
-                                    />
+        if (type === 'boolean') {
+            return (
+                <label key={fieldId} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={!!val}
+                        onChange={e => setVal(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-bold text-slate-300">{field.label}</span>
+                </label>
+            );
+        }
+
+        if (type === 'select') {
+            const opts: string[] = field.options || [];
+            return (
+                <div key={fieldId} className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</label>
+                    <div className="relative">
+                        <select
+                            value={val || ''}
+                            onChange={e => setVal(e.target.value)}
+                            className={`${FIELD_CLS} appearance-none pr-10`}
+                        >
+                            <option value="">Select…</option>
+                            {opts.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div key={fieldId} className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</label>
+                <input
+                    type={type === 'number' ? 'number' : type === 'date' ? 'date' : 'text'}
+                    value={val || ''}
+                    onChange={e => setVal(e.target.value)}
+                    className={`${FIELD_CLS}${type === 'date' ? ' cursor-pointer [color-scheme:dark]' : ''}`}
+                />
+            </div>
+        );
+    };
+
+    return (
+        <>
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+                    {/* Sticky header */}
+                    <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0 rounded-t-3xl">
+                        <h2 className="text-xl font-black text-slate-50 uppercase tracking-tight flex items-center gap-2">
+                            <Briefcase className="text-blue-500" size={24} />
+                            New Deal
+                        </h2>
+                        <button onClick={onClose} className="text-slate-500 hover:text-slate-50 transition-colors">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    {/* Scrollable form body */}
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                        <div className="flex-1 overflow-y-auto p-8 space-y-5">
+                            {/* Customer / Company (Pipeline mode only) */}
+                            {!leadId && (
+                                <div className="space-y-2" ref={searchRef}>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                        <UserIcon size={11} /> Customer / Company <span className="text-rose-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                        <input
+                                            type="text"
+                                            value={selectedCompanyName || customerSearch}
+                                            onChange={e => {
+                                                setSelectedCompanyName('');
+                                                setSelectedLeadId('');
+                                                setCustomerSearch(e.target.value);
+                                                setCompanyError('');
+                                            }}
+                                            placeholder="Search customer or type company name…"
+                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        />
+                                        {customerDropdownOpen && customerResults.length > 0 && (
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden">
+                                                {customerResults.map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const name = c.company_name || c.contact_name || c.name || '';
+                                                            setSelectedCompanyName(name);
+                                                            setSelectedLeadId(c.id);
+                                                            setCustomerSearch('');
+                                                            setCustomerDropdownOpen(false);
+                                                            setCompanyError('');
+                                                            if (!name) return;
+                                                            setName(prev => prev || `${name} Deal`);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2.5 hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-0"
+                                                    >
+                                                        <div className="text-sm font-bold text-slate-100">{c.company_name || c.contact_name || c.name}</div>
+                                                        {c.contact_email && <div className="text-[11px] text-slate-500">{c.contact_email}</div>}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {companyError && <p className="text-[11px] text-rose-400 font-bold">{companyError}</p>}
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Deal Name */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Close Date</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Deal Name</label>
                                 <input
-                                    type="date"
-                                    value={expectedClose}
-                                    onChange={(e) => setExpectedClose(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                    type="text"
+                                    value={name}
+                                    onChange={e => setName(e.target.value)}
+                                    className={FIELD_CLS}
+                                    required
                                 />
                             </div>
+
+                            {/* Value + Stage */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Value</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold select-none pointer-events-none">{currencySymbol}</span>
+                                        <input
+                                            type="number"
+                                            value={value}
+                                            onChange={e => setValue(e.target.value)}
+                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                            required
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage</label>
+                                    <div className="relative">
+                                        <select
+                                            value={stage}
+                                            onChange={e => setStage(e.target.value as DealStage)}
+                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-10 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                        >
+                                            {settings.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                        </select>
+                                        <ChevronDown size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Dates */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
+                                    <div className="relative">
+                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                        <input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={e => setStartDate(e.target.value)}
+                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Close Date</label>
+                                    <div className="relative">
+                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                        <input
+                                            type="date"
+                                            value={expectedClose}
+                                            onChange={e => setExpectedClose(e.target.value)}
+                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Owner */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Owner (User)</label>
+                                <div className="relative">
+                                    <select
+                                        value={ownerId}
+                                        onChange={e => setOwnerId(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    >
+                                        {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+                                    </select>
+                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+                                </div>
+                            </div>
+
+                            {/* Sales Rep */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    Sales Rep <span className="text-slate-700 normal-case font-bold tracking-normal">(optional)</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={ownerPersonId}
+                                        onChange={e => setOwnerPersonId(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Select sales rep...</option>
+                                        {people?.map((p: any) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                                    </select>
+                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            {/* Custom fields */}
+                            {customFieldDefs.length > 0 && (
+                                <div className="border-t border-slate-800 pt-5 space-y-5">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Additional Information</p>
+                                    {customFieldDefs.map(f => renderCustomField(f))}
+                                </div>
+                            )}
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage</label>
-                            <select
-                                value={stage}
-                                onChange={(e) => setStage(e.target.value as DealStage)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                        {/* Sticky footer */}
+                        <div className="flex justify-end gap-3 border-t border-slate-800 px-8 py-5 flex-shrink-0 rounded-b-3xl">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-colors"
                             >
-                                {settings.map(s => (
-                                    <option key={s.id} value={s.name}>{s.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Owner (User)</label>
-                            <select
-                                value={ownerId}
-                                onChange={(e) => setOwnerId(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
                             >
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.full_name}</option>
-                                ))}
-                            </select>
+                                {isSubmitting && <Loader2 size={12} className="animate-spin" />}
+                                Create Deal
+                            </button>
                         </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep (Person)</label>
-                            <select
-                                value={ownerPersonId}
-                                onChange={(e) => setOwnerPersonId(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                            >
-                                <option value="">-- Select a sales rep (optional) --</option>
-                                {people.map(p => (
-                                    <option key={p.id} value={p.id}>{p.full_name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="pt-4 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
-                        >
-                            {isSubmitting && <Loader2 size={12} className="animate-spin" />}
-                            Create Deal
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

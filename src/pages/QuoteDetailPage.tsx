@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
 import { crmService } from '../services/crmService';
-import { Quote, QuoteLine, QuoteStatus } from '../types/crm';
-import { useBusinessSettings, useActivity } from '@so360/shell-context';
+import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection } from '../types/crm';
+import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
+import { ProductPickerModal } from '../components/ProductPickerModal';
+import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -19,9 +22,14 @@ const QuoteDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
+    const shell = useShellBridge();
+    const canCreateQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
+    const canApproveQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true);
+    const canConvertQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true);
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
+    const { currentOrg } = useOrganization();
     const formatters = useFormatters({
         currency: settings?.base_currency || 'XXX',
         locale: settings?.document_language || 'en-US',
@@ -40,9 +48,14 @@ const QuoteDetailPage = () => {
     const [termsAndConditions, setTermsAndConditions] = useState('');
     const [validUntil, setValidUntil] = useState('');
     const [lines, setLines] = useState<QuoteLine[]>([]);
+    // Tracks raw string values while user is mid-typing in numeric fields (prevents Number() from swallowing "5." or "")
+    const [draftValues, setDraftValues] = useState<Record<string, string>>({});
 
     // Stock availability per item_id (available_quantity)
     const [stockMap, setStockMap] = useState<Map<string, number>>(new Map());
+
+    // Product picker modal — tracks which line is being edited (-1 = closed)
+    const [pickerLineIndex, setPickerLineIndex] = useState<number>(-1);
 
     // Action modals
     const [showRejectModal, setShowRejectModal] = useState(false);
@@ -58,7 +71,11 @@ const QuoteDetailPage = () => {
     // Fetch live stock whenever lines change and any have an item_id
     useEffect(() => {
         const itemIds = lines.map(l => l.item_id).filter(Boolean) as string[];
-        if (itemIds.length === 0) { setStockMap(new Map()); return; }
+        if (itemIds.length === 0) {
+            // Only reset if map isn't already empty — avoids spurious re-renders on every keystroke
+            setStockMap(prev => prev.size === 0 ? prev : new Map());
+            return;
+        }
         crmService.getStockAvailability(itemIds).then(result => {
             const map = new Map<string, number>();
             (result.items || []).forEach(i => map.set(i.item_id, i.available_quantity));
@@ -76,7 +93,13 @@ const QuoteDetailPage = () => {
             setNotes(data.notes || '');
             setTermsAndConditions(data.terms_and_conditions || '');
             setValidUntil(data.valid_until ? data.valid_until.split('T')[0] : '');
-            setLines(data.lines || []);
+            setLines((data.lines || []).map((l: any) => ({
+                ...l,
+                quantity: Number(l.quantity) || 0,
+                unit_price: Number(l.unit_price) || 0,
+                discount_percent: Number(l.discount_percent) || 0,
+                tax_rate: Number(l.tax_rate) || 0,
+            })));
         } catch (err: any) {
             setError(err.message || 'Failed to load quote');
         } finally {
@@ -104,6 +127,7 @@ const QuoteDetailPage = () => {
             });
             setQuote(updatedQuote);
             setIsEditing(false);
+            setDraftValues({});
             recordActivity({ eventType: 'quote.updated', eventCategory: 'crm', description: `Updated quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to save quote');
@@ -164,6 +188,24 @@ const QuoteDetailPage = () => {
         }
     };
 
+    const handleProductSelect = (selection: ProductPickerSelection) => {
+        if (pickerLineIndex < 0) return;
+        const newLines = [...lines];
+        newLines[pickerLineIndex] = {
+            ...newLines[pickerLineIndex],
+            item_id: selection.item_id,
+            variant_id: selection.variant_id,
+            item_name: selection.name,
+            sku: selection.sku,
+            sub_sku: selection.sub_sku,
+            item_image_url: selection.image_url,
+            unit_price: selection.unit_price,
+            description: newLines[pickerLineIndex].description || selection.name,
+        };
+        setLines(newLines);
+        setPickerLineIndex(-1);
+    };
+
     const addLine = () => {
         setLines([
             ...lines,
@@ -178,13 +220,35 @@ const QuoteDetailPage = () => {
     };
 
     const updateLine = (index: number, field: keyof QuoteLine, value: any) => {
-        const newLines = [...lines];
-        newLines[index] = { ...newLines[index], [field]: value };
-        setLines(newLines);
+        // Functional updater ensures we always mutate the latest committed state,
+        // preventing stale-closure bugs when rapid keystrokes interleave with re-renders
+        setLines(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], [field]: value };
+            return next;
+        });
     };
 
     const removeLine = (index: number) => {
-        setLines(lines.filter((_, i) => i !== index));
+        setLines(prev => prev.filter((_, i) => i !== index));
+        // Clean up any draft values for this line
+        setDraftValues(prev => {
+            const next = { ...prev };
+            Object.keys(next).filter(k => k.startsWith(`${index}_`)).forEach(k => delete next[k]);
+            return next;
+        });
+    };
+
+    const handleNumericInput = (index: number, field: keyof QuoteLine, rawValue: string) => {
+        setDraftValues(prev => ({ ...prev, [`${index}_${field as string}`]: rawValue }));
+        const num = parseFloat(rawValue);
+        if (!isNaN(num)) updateLine(index, field, num);
+    };
+
+    const commitNumericInput = (index: number, field: keyof QuoteLine, rawValue: string, fallback: number) => {
+        const num = parseFloat(rawValue);
+        updateLine(index, field, isNaN(num) ? fallback : num);
+        setDraftValues(prev => { const n = { ...prev }; delete n[`${index}_${field as string}`]; return n; });
     };
 
     const calculateLineTotal = (line: QuoteLine) => {
@@ -231,7 +295,7 @@ const QuoteDetailPage = () => {
         return (
             <div className="p-8">
                 <div className="text-center py-16">
-                    <FileText className="w-16 h-16 mx-auto text-slate-600 mb-4" />
+                    <FileText className="w-16 h-16 mx-auto text-slate-400 mb-4" />
                     <h2 className="text-xl font-semibold text-slate-300 mb-2">Quote not found</h2>
                     <button
                         onClick={() => navigate('/crm/quotes')}
@@ -258,7 +322,7 @@ const QuoteDetailPage = () => {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/crm/quotes')}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
@@ -279,10 +343,10 @@ const QuoteDetailPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {canEdit && !isEditing && (
+                    {canCreateQuote && canEdit && !isEditing && (
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
                         >
                             <Edit2 className="w-4 h-4" />
                             Edit
@@ -293,9 +357,10 @@ const QuoteDetailPage = () => {
                             <button
                                 onClick={() => {
                                     setIsEditing(false);
+                                    setDraftValues({});
                                     fetchQuote();
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -318,7 +383,7 @@ const QuoteDetailPage = () => {
                             Submit for Approval
                         </button>
                     )}
-                    {canApprove && (
+                    {canApproveQuote && canApprove && (
                         <>
                             <button
                                 onClick={() => setShowRejectModal(true)}
@@ -336,13 +401,35 @@ const QuoteDetailPage = () => {
                             </button>
                         </>
                     )}
-                    {canConvert && (
+                    {canConvertQuote && canConvert && (
                         <button
                             onClick={() => setShowConvertModal(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                         >
                             <FileText className="w-4 h-4" />
                             Convert to Order
+                        </button>
+                    )}
+                    {!isEditing && (
+                        <button
+                            onClick={() => shell?.printDocument?.('sales_quote', quoteToDocumentData(quote, {
+                                currency: settings?.base_currency || 'XXX',
+                                seller: {
+                                    name: currentOrg?.name || '',
+                                    address: (currentOrg as any)?.billing_address
+                                        ? [
+                                            (currentOrg as any).billing_address.street,
+                                            (currentOrg as any).billing_address.city,
+                                            (currentOrg as any).billing_address.country,
+                                          ].filter(Boolean).join(', ')
+                                        : undefined,
+                                    tax_number: (currentOrg as any)?.tax_id,
+                                },
+                            }))}
+                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
+                        >
+                            <Printer className="w-4 h-4" />
+                            Print Quote
                         </button>
                     )}
                 </div>
@@ -397,7 +484,7 @@ const QuoteDetailPage = () => {
                     <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-semibold text-slate-100">Line Items</h2>
-                            {isEditing && (
+                            {canCreateQuote && isEditing && (
                                 <button
                                     onClick={addLine}
                                     className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-400 hover:text-blue-300 border border-blue-500/50 hover:border-blue-400 rounded-lg transition-colors"
@@ -428,27 +515,61 @@ const QuoteDetailPage = () => {
                                         const isLowStock = stock !== undefined && stock > 0 && stock < line.quantity;
                                         const isOOS = stock !== undefined && stock <= 0;
                                         return (
-                                        <tr key={index} className="border-b border-slate-700/50">
+                                        <tr key={line.id || `new-${index}`} className="border-b border-slate-700/50">
                                             <td className="py-3 px-4">
                                                 {isEditing ? (
-                                                    <div className="space-y-1">
+                                                    <div className="space-y-1.5">
+                                                        {/* Product selector button */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPickerLineIndex(index)}
+                                                            className="w-full flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-700 hover:border-blue-500/50 rounded text-sm transition-colors text-left"
+                                                        >
+                                                            {line.item_image_url ? (
+                                                                <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
+                                                            ) : (
+                                                                <Package className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                                                            )}
+                                                            {line.item_name ? (
+                                                                <span className="flex-1 min-w-0">
+                                                                    <span className="text-slate-200 truncate block">{line.item_name}</span>
+                                                                    <span className="flex items-center gap-1 mt-0.5">
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-slate-400 rounded">{line.sku}</span>
+                                                                        {line.sub_sku && line.sub_sku !== 'NIL' && (
+                                                                            <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded">{line.sub_sku}</span>
+                                                                        )}
+                                                                    </span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-slate-500">Select product...</span>
+                                                            )}
+                                                        </button>
+                                                        {/* Free-text description */}
                                                         <input
                                                             type="text"
                                                             value={line.description}
                                                             onChange={(e) => updateLine(index, 'description', e.target.value)}
                                                             className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                            placeholder="Item description..."
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            value={line.item_id || ''}
-                                                            onChange={(e) => updateLine(index, 'item_id', e.target.value || undefined)}
-                                                            className="w-full px-3 py-1 bg-slate-900 border border-slate-700 rounded text-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                            placeholder="Item ID (optional, for stock check)"
+                                                            placeholder="Description / notes..."
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <span className="text-slate-200">{line.description}</span>
+                                                    <div className="flex items-start gap-2">
+                                                        {line.item_image_url && (
+                                                            <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <span className="text-slate-200 block">{line.description}</span>
+                                                            {line.sku && (
+                                                                <span className="flex items-center gap-1 mt-0.5">
+                                                                    <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-slate-400 rounded">{line.sku}</span>
+                                                                    {line.sub_sku && line.sub_sku !== 'NIL' && (
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-blue-900/40 text-blue-400 rounded">{line.sub_sku}</span>
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4">
@@ -463,17 +584,18 @@ const QuoteDetailPage = () => {
                                                         <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{stock} avail</span>
                                                     )
                                                 ) : (
-                                                    <span className="text-xs text-slate-600">—</span>
+                                                    <span className="text-xs text-slate-400">—</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
-                                                        value={line.quantity}
-                                                        onChange={(e) => updateLine(index, 'quantity', Number(e.target.value))}
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        value={draftValues[`${index}_quantity`] ?? String(line.quantity)}
+                                                        onChange={(e) => handleNumericInput(index, 'quantity', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'quantity', e.target.value, 1)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="1"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{line.quantity}</span>
@@ -482,12 +604,12 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
-                                                        value={line.unit_price}
-                                                        onChange={(e) => updateLine(index, 'unit_price', Number(e.target.value))}
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={draftValues[`${index}_unit_price`] ?? String(line.unit_price)}
+                                                        onChange={(e) => handleNumericInput(index, 'unit_price', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'unit_price', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="0"
-                                                        step="0.01"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{formatCurrency(line.unit_price)}</span>
@@ -496,12 +618,12 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
-                                                        value={line.discount_percent || 0}
-                                                        onChange={(e) => updateLine(index, 'discount_percent', Number(e.target.value))}
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={draftValues[`${index}_discount_percent`] ?? String(line.discount_percent || 0)}
+                                                        onChange={(e) => handleNumericInput(index, 'discount_percent', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'discount_percent', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="0"
-                                                        max="100"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.discount_percent || 0}%</span>
@@ -510,12 +632,12 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4 text-right">
                                                 {isEditing ? (
                                                     <input
-                                                        type="number"
-                                                        value={line.tax_rate || 0}
-                                                        onChange={(e) => updateLine(index, 'tax_rate', Number(e.target.value))}
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={draftValues[`${index}_tax_rate`] ?? String(line.tax_rate || 0)}
+                                                        onChange={(e) => handleNumericInput(index, 'tax_rate', e.target.value)}
+                                                        onBlur={(e) => commitNumericInput(index, 'tax_rate', e.target.value, 0)}
                                                         className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        min="0"
-                                                        max="100"
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.tax_rate || 0}%</span>
@@ -656,9 +778,16 @@ const QuoteDetailPage = () => {
                 </div>
             </div>
 
+            {/* Product Picker Modal */}
+            <ProductPickerModal
+                isOpen={pickerLineIndex >= 0}
+                onClose={() => setPickerLineIndex(-1)}
+                onSelect={handleProductSelect}
+            />
+
             {/* Reject Modal */}
-            {showRejectModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {showRejectModal && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-4">Reject Quote</h2>
                         <div className="mb-4">
@@ -679,7 +808,7 @@ const QuoteDetailPage = () => {
                                     setShowRejectModal(false);
                                     setRejectReason('');
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -692,12 +821,13 @@ const QuoteDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Convert Modal */}
-            {showConvertModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {showConvertModal && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-4">Convert to Sales Order</h2>
                         <p className="text-slate-400 mb-6">
@@ -706,7 +836,7 @@ const QuoteDetailPage = () => {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowConvertModal(false)}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -718,7 +848,8 @@ const QuoteDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

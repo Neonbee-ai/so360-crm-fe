@@ -19,9 +19,13 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: { id: 'u1', full_name: 'Test' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 vi.mock('../components/common/Table', () => ({
   Table: ({ data, isLoading, emptyMessage }: any) => (
@@ -64,7 +68,7 @@ describe('Given TasksPage', () => {
 
   it('When action / Then shows tasks when loaded', async () => {
     mockGetTasks.mockResolvedValue([
-      { id: 't1', title: 'Call John', status: 'Open', due_date: '2024-01-01', type: 'TODO', assigned_to: { id: 'u1', full_name: 'Test' } },
+      { id: 't1', title: 'Call John', status: 'OPEN', due_date: '2024-01-01', type: 'TODO', assigned_to: { id: 'u1', full_name: 'Test' } },
     ]);
     render(<TasksPage />);
     await waitFor(() => {

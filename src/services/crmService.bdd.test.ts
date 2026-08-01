@@ -9,6 +9,7 @@ import {
   tasksApi,
   notesApi,
   crmService,
+  activitiesApi,
 } from './crmService';
 
 function mockSuccess(data: any) {
@@ -126,7 +127,7 @@ describe('crmService — dealsApi', () => {
 describe('crmService — tasksApi', () => {
   describe('Given the backend has tasks', () => {
     it('When getAll is called / Then returns tasks', async () => {
-      mockSuccess([{ id: 't1', title: 'Call client', status: 'Open' }]);
+      mockSuccess([{ id: 't1', title: 'Call client', status: 'OPEN' }]);
       const tasks = await tasksApi.getAll();
       expect(tasks[0].title).toBe('Call client');
     });
@@ -134,8 +135,8 @@ describe('crmService — tasksApi', () => {
 
   describe('Given a task is created', () => {
     it('When create is called / Then returns the new task', async () => {
-      mockSuccess({ id: 't-new', title: 'New task', status: 'Open' });
-      const task = await tasksApi.create({ title: 'New task', status: 'Open' } as any);
+      mockSuccess({ id: 't-new', title: 'New task', status: 'OPEN' });
+      const task = await tasksApi.create({ title: 'New task', status: 'OPEN' } as any);
       expect(task.id).toBe('t-new');
     });
   });
@@ -156,6 +157,77 @@ describe('crmService — dashboard stats', () => {
       mockSuccess([]);               // getTasks
       const result = await crmService.getDashboardStats({ period: 'monthly' });
       expect(result.financials.totalRevenue).toBe(1000);
+    });
+  });
+});
+
+describe('crmService — activitiesApi', () => {
+  describe('Given the getAllByLead endpoint returns activities', () => {
+    it('When getAllByLead is called / Then maps and returns Activity[]', async () => {
+      mockSuccess([
+        { id: 'a1', type: 'CALL', notes: 'Intro call', date: '2025-01-05T10:00:00Z', created_at: '2025-01-05T10:00:00Z', author: null },
+      ]);
+      const result = await activitiesApi.getAllByLead('lead-1');
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('a1');
+    });
+
+    it('When getAllByLead fails / Then throws an error', async () => {
+      mockError(500, { message: 'Server error' });
+      await expect(activitiesApi.getAllByLead('lead-1')).rejects.toThrow();
+    });
+  });
+
+  describe('Given the paginated endpoint returns { data, total }', () => {
+    it('When getAllByLeadPaginated is called / Then requests the correct URL with limit and offset', async () => {
+      mockSuccess({ data: [], total: 0 });
+      await activitiesApi.getAllByLeadPaginated('lead-1', 7, 0);
+      const [url] = fetchMock.mock.calls[0];
+      expect(url).toContain('/activities/lead/lead-1');
+      expect(url).toContain('limit=7');
+      expect(url).toContain('offset=0');
+    });
+
+    it('When getAllByLeadPaginated is called with offset / Then passes offset in the URL', async () => {
+      mockSuccess({ data: [], total: 0 });
+      await activitiesApi.getAllByLeadPaginated('lead-1', 20, 7);
+      const [url] = fetchMock.mock.calls[0];
+      expect(url).toContain('limit=20');
+      expect(url).toContain('offset=7');
+    });
+
+    it('When backend returns activities and total / Then maps data and preserves total', async () => {
+      const raw = [
+        { id: 'a1', type: 'CALL', notes: 'Call note', date: '2025-01-05T10:00:00Z', created_at: '2025-01-05T10:00:00Z', author: null },
+        { id: 'a2', type: 'EMAIL', notes: 'Email note', date: '2025-01-06T10:00:00Z', created_at: '2025-01-06T10:00:00Z', author: null },
+      ];
+      mockSuccess({ data: raw, total: 42 });
+      const result = await activitiesApi.getAllByLeadPaginated('lead-1', 7, 0);
+      expect(result.total).toBe(42);
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].id).toBe('a1');
+      expect(result.data[1].id).toBe('a2');
+    });
+
+    it('When backend returns empty data / Then returns { data: [], total: 0 } gracefully', async () => {
+      mockSuccess({ data: null, total: null });
+      const result = await activitiesApi.getAllByLeadPaginated('lead-1', 7, 0);
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
+    });
+
+    it('When the request fails / Then throws an error', async () => {
+      mockError(403, { message: 'Forbidden' });
+      await expect(activitiesApi.getAllByLeadPaginated('lead-1', 7, 0)).rejects.toThrow();
+    });
+  });
+
+  describe('Given crmService.getActivitiesByLeadIdPaginated delegates correctly', () => {
+    it('When called / Then returns the same result as activitiesApi.getAllByLeadPaginated', async () => {
+      mockSuccess({ data: [{ id: 'a1', type: 'CALL', notes: 'n', date: '2025-01-01T00:00:00Z', created_at: '2025-01-01T00:00:00Z', author: null }], total: 1 });
+      const result = await crmService.getActivitiesByLeadIdPaginated('lead-1', 7, 0);
+      expect(result.total).toBe(1);
+      expect(result.data[0].id).toBe('a1');
     });
   });
 });

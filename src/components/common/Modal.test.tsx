@@ -49,10 +49,10 @@ describe('Given Modal', () => {
 
   it('When action / Then calls onClose when backdrop is clicked', () => {
     const onClose = vi.fn();
-    const { container } = render(<Modal {...defaultProps} onClose={onClose} />);
+    render(<Modal {...defaultProps} onClose={onClose} />);
 
-    // The backdrop is the first child div with the bg-slate-950 class
-    const backdrop = container.querySelector('.bg-slate-950\\/80');
+    // Modal renders via portal into document.body — query there
+    const backdrop = document.body.querySelector('.bg-black\\/60');
     expect(backdrop).toBeTruthy();
     fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalledTimes(1);

@@ -18,6 +18,8 @@ import {
   activitiesApi,
   settingsApi,
   crmService,
+  orgStaticCache,
+  neuraAiService,
 } from './crmService';
 
 // Helper to create a successful fetch response
@@ -55,6 +57,9 @@ function mockFetchNetworkError() {
 
 beforeEach(() => {
   fetchMock.mockReset();
+  // getSettings/getUsers are now coalesced + TTL-cached via a module singleton;
+  // clear it so each test starts from a clean cache miss.
+  orgStaticCache.invalidate();
 });
 
 afterEach(() => {
@@ -291,20 +296,20 @@ describe('Given tasksApi', () => {
 
       const tasks = await tasksApi.getAll();
       expect(tasks).toHaveLength(2);
-      expect(tasks[0].status).toBe('Open');
-      expect(tasks[1].status).toBe('Done');
+      expect(tasks[0].status).toBe('OPEN');
+      expect(tasks[1].status).toBe('DONE');
     });
 
     it('When action / Then defaults status to Open when missing', async () => {
       mockFetchSuccess([{ id: 'task-3', title: 'No status' }]);
       const tasks = await tasksApi.getAll();
-      expect(tasks[0].status).toBe('Open');
+      expect(tasks[0].status).toBe('OPEN');
     });
 
     it('When action / Then handles empty status string', async () => {
       mockFetchSuccess([{ id: 'task-4', title: 'Empty status', status: '' }]);
       const tasks = await tasksApi.getAll();
-      expect(tasks[0].status).toBe('Open');
+      expect(tasks[0].status).toBe('OPEN');
     });
   });
 
@@ -313,7 +318,7 @@ describe('Given tasksApi', () => {
       mockFetchSuccess({ id: 'task-new', title: 'New', status: 'open' });
       const task = await tasksApi.create({ title: 'New' });
       expect(task.id).toBe('task-new');
-      expect(task.status).toBe('Open');
+      expect(task.status).toBe('OPEN');
     });
   });
 
@@ -322,7 +327,7 @@ describe('Given tasksApi', () => {
       mockFetchSuccess({ id: 'task-1', title: 'Updated', status: 'done' });
       const task = await tasksApi.update('task-1', { title: 'Updated' });
       expect(task.title).toBe('Updated');
-      expect(task.status).toBe('Done');
+      expect(task.status).toBe('DONE');
 
       const [, options] = fetchMock.mock.calls[0];
       expect(options.method).toBe('PATCH');
@@ -841,6 +846,35 @@ describe('Given crmService (legacy layer)', () => {
     expect(body.owner_id).toBe('u3');
   });
 
+  it('Given first_name and last_name edits / When updateLead runs / Then both are forwarded in the PATCH body (regression: name edits were silently dropped)', async () => {
+    mockFetchSuccess({ id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
+    await crmService.updateLead('l1', { first_name: 'Jane', last_name: 'Roe' } as any);
+    const [url, opts] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/leads/l1');
+    expect(opts.method).toBe('PATCH');
+    const body = JSON.parse(opts.body);
+    expect(body.first_name).toBe('Jane');
+    expect(body.last_name).toBe('Roe');
+  });
+
+  it('Given a first_name set to empty string / When updateLead runs / Then it is still forwarded (clearing a name persists)', async () => {
+    mockFetchSuccess({ id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
+    await crmService.updateLead('l1', { first_name: '' } as any);
+    const [, opts] = fetchMock.mock.calls[0];
+    const body = JSON.parse(opts.body);
+    expect(body).toHaveProperty('first_name', '');
+  });
+
+  it('Given an update without name fields / When updateLead runs / Then first_name and last_name are omitted from the body', async () => {
+    mockFetchSuccess({ id: 'l1', status: 'NEW', notes: [], documents: [], deals: [], tasks: [], activities: [] });
+    await crmService.updateLead('l1', { phone: '555' } as any);
+    const [, opts] = fetchMock.mock.calls[0];
+    const body = JSON.parse(opts.body);
+    expect(body).not.toHaveProperty('first_name');
+    expect(body).not.toHaveProperty('last_name');
+    expect(body.phone).toBe('555');
+  });
+
   it('When action / Then deleteLead delegates to leadsApi.delete', async () => {
     mockFetchSuccess({});
     await crmService.deleteLead('l1');
@@ -904,7 +938,7 @@ describe('Given crmService (legacy layer)', () => {
   it('When action / Then getPipeline falls back to manual merge when primary fails', async () => {
     // First call: pipeline endpoint fails
     mockFetchSuccess([]);
-    // Fallback: getSettings (4 calls) and getAll for deals
+    // Fallback: getSettings (5 calls) and getAll for deals
     // Settings: pipeline-stages
     mockFetchSuccess([{ id: 's1', name: 'Lead' }]);
     // Settings: lead-stages
@@ -913,18 +947,29 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([]);
     // Settings: custom-fields DEAL
     mockFetchSuccess([]);
+    // Settings: custom-fields PARTNER
+    mockFetchSuccess([]);
+    // Settings: source-types (added in P2)
+    mockFetchSuccess([]);
+    // Settings: scoring-rules
+    mockFetchSuccess([]);
+    // Settings: score-categories
+    mockFetchSuccess([]);
     // getAll deals
     mockFetchSuccess([{ id: 'd1', value: '0', stage: 'Lead', stage_id: 's1', notes: [], documents: [], activities: [] }]);
     const result = await crmService.getPipeline();
     expect(result.stages).toHaveLength(1);
   });
 
-  it('When action / Then getDealsByLeadId filters deals by lead_id', async () => {
+  it('When action / Then getDealsByLeadId requests deals filtered server-side by lead_id', async () => {
+    // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
       { id: 'd1', lead_id: 'l1', value: '0', notes: [], documents: [], activities: [] },
-      { id: 'd2', lead_id: 'l2', value: '0', notes: [], documents: [], activities: [] },
     ]);
     const result = await crmService.getDealsByLeadId('l1');
+    const calledUrl = fetchMock.mock.calls[0][0];
+    expect(String(calledUrl)).toContain('/deals');
+    expect(String(calledUrl)).toContain('lead_id=l1');
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('d1');
   });
@@ -963,21 +1008,27 @@ describe('Given crmService (legacy layer)', () => {
     expect(body.reminder_minutes_before).toBe(15);
   });
 
-  it('When action / Then getTasksByLeadId filters tasks by lead_id', async () => {
+  it('When action / Then getTasksByLeadId requests tasks filtered server-side by lead_id', async () => {
+    // Backend already filters by lead_id, so the FE returns the response verbatim.
     mockFetchSuccess([
       { id: 't1', lead_id: 'l1', title: 'A', status: 'open' },
-      { id: 't2', lead_id: 'l2', title: 'B', status: 'open' },
     ]);
     const result = await crmService.getTasksByLeadId('l1');
+    const calledUrl = fetchMock.mock.calls[0][0];
+    expect(String(calledUrl)).toContain('/tasks');
+    expect(String(calledUrl)).toContain('lead_id=l1');
     expect(result).toHaveLength(1);
   });
 
-  it('When action / Then getTasksByDealId filters tasks by deal_id', async () => {
+  it('When action / Then getTasksByDealId requests tasks filtered server-side by deal_id', async () => {
+    // Backend already filters by deal_id, so the FE returns the response verbatim.
     mockFetchSuccess([
       { id: 't1', deal_id: 'd1', title: 'A', status: 'open' },
-      { id: 't2', deal_id: 'd2', title: 'B', status: 'open' },
     ]);
     const result = await crmService.getTasksByDealId('d1');
+    const calledUrl = fetchMock.mock.calls[0][0];
+    expect(String(calledUrl)).toContain('/tasks');
+    expect(String(calledUrl)).toContain('deal_id=d1');
     expect(result).toHaveLength(1);
   });
 
@@ -996,6 +1047,12 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([{ id: 'cf1', label: 'Industry', type: 'text' }]);
     // custom-fields DEAL
     mockFetchSuccess([{ id: 'cf2', label: 'Budget', type: 'number' }]);
+    // source-types (added in P2)
+    mockFetchSuccess([]);
+    // scoring-rules
+    mockFetchSuccess([]);
+    // score-categories
+    mockFetchSuccess([]);
 
     const result = await crmService.getSettings();
     expect(result.deal_stages).toHaveLength(1);
@@ -1014,6 +1071,12 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
+    // source-types (added in P2)
+    mockFetchSuccess([]);
+    // scoring-rules
+    mockFetchSuccess([]);
+    // score-categories
+    mockFetchSuccess([]);
     const result = await crmService.getSettings();
     expect(result.deal_stages[0].type).toBe('WON');
     expect(result.deal_stages[1].type).toBe('LOST');
@@ -1027,7 +1090,7 @@ describe('Given crmService (legacy layer)', () => {
     expect(result.lead_stages).toEqual([]);
   });
 
-  it('When action / Then updateSettings syncs pipeline stages, lead stages, and custom fields', async () => {
+  it('When action / Then updateSettings syncs pipeline stages and custom fields (lead stages are read-only, not written)', async () => {
     // Current pipeline-stages
     mockFetchSuccess([{ id: 'existing-1', name: 'Old', order: 1 }]);
     // POST new stage (st- prefix)
@@ -1036,10 +1099,7 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess({ id: 'existing-1', name: 'Updated' });
     // DELETE removed stage - none in this test
 
-    // Current lead-stages
-    mockFetchSuccess([{ id: 'ls-old', name: 'OldLS' }]);
-    // No new lead stages, update existing
-    mockFetchSuccess({ id: 'ls-old', name: 'UpdatedLS' });
+    // Lead stages are owned by the Flow module — updateSettings makes NO lead-stage calls
 
     // Current lead custom fields
     mockFetchSuccess([{ id: 'lcf-old', label: 'Old', entity_type: 'LEAD' }]);
@@ -1050,6 +1110,9 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([{ id: 'dcf-old', label: 'Old', entity_type: 'DEAL' }]);
     // No new dcf, update existing
     mockFetchSuccess({ id: 'dcf-old', label: 'Updated' });
+
+    // Current partner custom fields (step 5 GET)
+    mockFetchSuccess([]);
 
     const newSettings = {
       deal_stages: [
@@ -1066,11 +1129,119 @@ describe('Given crmService (legacy layer)', () => {
 
     const result = await crmService.updateSettings(newSettings);
     expect(result).toEqual(newSettings);
+    // Lead stages are owned by the Flow module — save must never call the lead-stages API
+    expect(
+      fetchMock.mock.calls.some(([url]: any[]) => String(url).includes('/settings/lead-stages')),
+    ).toBe(false);
   });
 
   it('When action / Then updateSettings throws on error', async () => {
     mockFetchNetworkError();
     await expect(crmService.updateSettings({ deal_stages: [] } as any)).rejects.toThrow();
+  });
+
+  it('Given the Pipeline Stages API fails / When updateSettings runs / Then the other categories are still attempted and the error names only the failed category', async () => {
+    // Section 1 — Pipeline Stages GET fails (whole section aborts before any write)
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Section 2 — Lead custom fields GET (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 3 — Deal custom fields GET (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 4 — Partner custom fields GET (empty → no writes)
+    mockFetchSuccess([]);
+
+    const settings = {
+      deal_stages: [{ id: 'st-x', name: 'X', type: 'OPEN' }],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      partner_custom_fields: [],
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    await expect(crmService.updateSettings(settings)).rejects.toThrow('Failed to save: Pipeline Stages');
+
+    // Isolation: the remaining categories were still attempted despite the pipeline failure
+    const urls = fetchMock.mock.calls.map(([url]: any[]) => String(url));
+    expect(urls.some(u => u.includes('custom-fields?entity_type=LEAD'))).toBe(true);
+    expect(urls.some(u => u.includes('custom-fields?entity_type=DEAL'))).toBe(true);
+    expect(urls.some(u => u.includes('custom-fields?entity_type=PARTNER'))).toBe(true);
+  });
+
+  it('Given a Custom Fields category fails / When updateSettings runs / Then the error names that category and later categories still run', async () => {
+    // Section 1 — Pipeline Stages GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 2 — Lead custom fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+    // Section 3 — Deal custom fields GET fails
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Section 4 — Partner custom fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+
+    const settings = {
+      deal_stages: [],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      partner_custom_fields: [],
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    await expect(crmService.updateSettings(settings)).rejects.toThrow('Failed to save: Deal Fields');
+
+    // The category after the failing one still ran
+    const urls = fetchMock.mock.calls.map(([url]: any[]) => String(url));
+    expect(urls.some(u => u.includes('custom-fields?entity_type=PARTNER'))).toBe(true);
+  });
+
+  it('Given multiple categories fail / When updateSettings runs / Then the error lists every failed category', async () => {
+    // Pipeline GET fails
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Lead fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+    // Deal fields GET fails
+    mockFetchErrorJson(500, { message: 'boom' });
+    // Partner fields GET succeeds (empty → no writes)
+    mockFetchSuccess([]);
+
+    const settings = {
+      deal_stages: [],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      partner_custom_fields: [],
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    await expect(crmService.updateSettings(settings)).rejects.toThrow('Failed to save: Pipeline Stages, Deal Fields');
+  });
+
+  it('Given partner_custom_fields is undefined / When updateSettings runs / Then it defaults to an empty list without error', async () => {
+    // All four section GETs succeed (empty → no writes)
+    mockFetchSuccess([]); // pipeline
+    mockFetchSuccess([]); // lead fields
+    mockFetchSuccess([]); // deal fields
+    mockFetchSuccess([]); // partner fields
+
+    const settings = {
+      deal_stages: [],
+      lead_stages: [],
+      lead_custom_fields: [],
+      deal_custom_fields: [],
+      // partner_custom_fields intentionally omitted
+      lead_sources: [],
+      lead_scoring: [],
+      default_owner_id: 'u1',
+    } as any;
+
+    const result = await crmService.updateSettings(settings);
+    expect(result).toBe(settings);
   });
 
   it('When action / Then getNotesByLeadId delegates to notesApi.getAllByLead', async () => {
@@ -1693,8 +1864,12 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([
       { id: 't1', status: 'open', type: 'REMINDER', due_date: '2099-01-01' },
     ]);
-    // getSettings (4 calls)
+    // getSettings (8 calls — pipeline-stages, lead-stages, custom-fields LEAD, custom-fields DEAL, custom-fields PARTNER, source-types, scoring-rules, score-categories)
     mockFetchSuccess([{ id: 's1', name: 'Won', type: 'WON' }, { id: 's2', name: 'Lost', type: 'LOST' }]);
+    mockFetchSuccess([]);
+    mockFetchSuccess([]);
+    mockFetchSuccess([]);
+    mockFetchSuccess([]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
     mockFetchSuccess([]);
@@ -1763,7 +1938,7 @@ describe('Given tasksApi additional', () => {
   it('When action / Then getById fetches a single task', async () => {
     mockFetchSuccess({ id: 't1', title: 'Task', status: 'done' });
     const task = await tasksApi.getById('t1');
-    expect(task.status).toBe('Done');
+    expect(task.status).toBe('DONE');
   });
 
   it('When action / Then delete sends DELETE request', async () => {
@@ -1850,5 +2025,70 @@ describe('Given customersApi additional', () => {
     mockFetchSuccess({ credit_limit: 10000 });
     const result = await customersApi.updateCreditLimit('When action / Then c1', 10000);
     expect(result.credit_limit).toBe(10000);
+  });
+});
+
+// ============================================================================
+// NEURA AI SERVICE — Lead Copilot (calls Neura AI's own conversations API
+// directly, no so360-crm-be involvement)
+// ============================================================================
+describe('Given neuraAiService', () => {
+  describe('Given createConversation', () => {
+    it('When action / Then POSTs to Neura\'s /conversations with the given title', async () => {
+      mockFetchSuccess({ id: 'conv-123' });
+
+      const result = await neuraAiService.createConversation('Neura AI · Lead Acme Corp');
+
+      expect(result.id).toBe('conv-123');
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toContain('/conversations');
+      expect(url).not.toContain('/deals'); // sanity: hit Neura's origin, not CRM's
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body)).toEqual({ title: 'Neura AI · Lead Acme Corp' });
+    });
+  });
+
+  describe('Given sendMessage', () => {
+    it('When called with an entityRef / Then POSTs content, mode and entityRef to the conversation', async () => {
+      mockFetchSuccess({
+        userMessage: { id: 'um-1', role: 'user', content: 'Summarize this customer' },
+        assistantMessage: { id: 'am-1', role: 'assistant', content: 'Summary…' },
+      });
+
+      const entityRef = { module: 'crm', entity: 'leads', id: 'lead-1', label: 'Acme Corp' };
+      const result = await neuraAiService.sendMessage('conv-123', 'Summarize this customer', entityRef);
+
+      expect(result.assistantMessage.content).toBe('Summary…');
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toContain('/conversations/conv-123/messages');
+      expect(options.method).toBe('POST');
+      expect(JSON.parse(options.body)).toEqual({
+        content: 'Summarize this customer',
+        mode: 'assist',
+        entityRef,
+      });
+    });
+
+    it('When called with no entityRef / Then omits the field entirely rather than sending it undefined', async () => {
+      mockFetchSuccess({
+        userMessage: { id: 'um-2', role: 'user', content: 'How many deals are open?' },
+        assistantMessage: { id: 'am-2', role: 'assistant', content: '3 open deals' },
+      });
+
+      await neuraAiService.sendMessage('conv-123', 'How many deals are open?');
+
+      const [, options] = fetchMock.mock.calls[0];
+      const body = JSON.parse(options.body);
+      expect(body).not.toHaveProperty('entityRef');
+      expect(body.mode).toBe('assist');
+    });
+
+    it('When the backend errors / Then rejects (caller surfaces the failure, not a silent success)', async () => {
+      mockFetchErrorJson(500, { message: 'Internal error' });
+
+      await expect(
+        neuraAiService.sendMessage('conv-123', 'Summarize this customer'),
+      ).rejects.toThrow();
+    });
   });
 });

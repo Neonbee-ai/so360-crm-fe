@@ -4,10 +4,12 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { Link } from 'react-router-dom';
+import { useCRMFormatters } from '../utils/formatters';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingReviewsPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,7 @@ const MarketingReviewsPage: React.FC = () => {
     <div className="p-8">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight uppercase">Customer Reviews</h1>
+        <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Customer Reviews</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Monitor and moderate storefront product feedback</p>
       </div>
 
@@ -71,12 +73,12 @@ const MarketingReviewsPage: React.FC = () => {
             <div className="md:col-span-5">
               <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Search Feed</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   placeholder="Filter by product, title, or content..."
                 />
               </div>
@@ -106,9 +108,9 @@ const MarketingReviewsPage: React.FC = () => {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
-              <MessageSquare className="mx-auto mb-4 text-slate-700 w-12 h-12 opacity-20" />
+              <MessageSquare className="mx-auto mb-4 text-slate-400 w-12 h-12 opacity-20" />
               <p className="text-sm font-bold uppercase text-slate-500 tracking-widest">No reviews found</p>
-              <p className="text-[10px] text-slate-600 uppercase mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
+              <p className="text-[10px] text-slate-400 uppercase mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -123,10 +125,10 @@ const MarketingReviewsPage: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <div className="flex text-yellow-500">
                           {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-700'} />
+                            <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-400'} />
                           ))}
                         </div>
-                        <h3 className="text-sm font-black text-white uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
+                        <h3 className="text-sm font-black text-slate-50 uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
                       </div>
                       <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded border ${rev.is_approved ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                         {rev.is_approved ? 'Approved' : 'Pending Approval'}
@@ -157,8 +159,8 @@ const MarketingReviewsPage: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 ml-auto">
-                        <Clock className="w-3 h-3 text-slate-600" />
-                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{new Date(rev.created_at).toLocaleDateString()}</span>
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatters.formatDate(rev.created_at)}</span>
                       </div>
                     </div>
 
@@ -166,7 +168,7 @@ const MarketingReviewsPage: React.FC = () => {
                       <a 
                         href="/dailystore/reviews" 
                         target="_blank"
-                        className="bg-slate-800 hover:bg-slate-700 text-white text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-700 flex items-center gap-2"
+                        className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-600/50 flex items-center gap-2 shadow-sm"
                       >
                         <ShieldCheck size={12} /> Moderate in DailyStore
                       </a>

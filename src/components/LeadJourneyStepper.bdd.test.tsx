@@ -64,4 +64,18 @@ describe('LeadJourneyStepper', () => {
       expect(screen.getByText('New')).toBeInTheDocument();
     });
   });
+
+  describe('Given a lead in the Proposal Sent stage (space-separated status from lead.status)', () => {
+    it('When rendered with "Proposal Sent" / Then highlights the Proposal Sent stage', () => {
+      render(<LeadJourneyStepper currentState="Proposal Sent" />);
+      expect(screen.getByText('Proposal Sent')).toBeInTheDocument();
+    });
+
+    it('When rendered with "Proposal Sent" / Then shows earlier stages as completed', () => {
+      render(<LeadJourneyStepper currentState="Proposal Sent" />);
+      expect(screen.getByText('New')).toBeInTheDocument();
+      expect(screen.getByText('Contacted')).toBeInTheDocument();
+      expect(screen.getByText('Qualified')).toBeInTheDocument();
+    });
+  });
 });

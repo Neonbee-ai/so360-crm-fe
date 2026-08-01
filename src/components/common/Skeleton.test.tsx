@@ -8,7 +8,7 @@ describe('Given Skeleton', () => {
     const el = container.firstChild as HTMLElement;
     expect(el.tagName).toBe('DIV');
     expect(el.className).toContain('animate-pulse');
-    expect(el.className).toContain('bg-slate-700/50');
+    expect(el.className).toContain('bg-slate-400/30');
     expect(el.className).toContain('rounded');
   });
 

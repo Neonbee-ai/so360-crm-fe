@@ -27,6 +27,10 @@ vi.mock('../services/crmService', () => ({
   },
 }));
 
+vi.mock('../components/ProductPickerModal', () => ({
+  ProductPickerModal: ({ isOpen }: any) => isOpen ? <div data-testid="product-picker-modal" /> : null,
+}));
+
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ id: 'q-1' }),
   useNavigate: () => mockNavigate,
@@ -35,6 +39,10 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useOrganization: () => ({ currentOrg: { id: 'org-1', name: 'Test Org' } }),
 }));
 
 vi.mock('@so360/formatters', () => ({
@@ -128,9 +136,9 @@ describe('Given QuoteDetailPage — editing workflow', () => {
     render(<QuoteDetailPage />);
     await waitFor(() => screen.getByText('Test Quote'));
     fireEvent.click(screen.getByText('Edit'));
-    const beforeCount = screen.getAllByPlaceholderText('Item description...').length;
+    const beforeCount = screen.getAllByPlaceholderText('Description / notes...').length;
     fireEvent.click(screen.getByText('Add Line'));
-    const afterCount = screen.getAllByPlaceholderText('Item description...').length;
+    const afterCount = screen.getAllByPlaceholderText('Description / notes...').length;
     expect(afterCount).toBe(beforeCount + 1);
   });
 

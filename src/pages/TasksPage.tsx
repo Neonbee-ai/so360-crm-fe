@@ -1,19 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2 } from 'lucide-react';
+import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
-import { useShell } from '@so360/shell-context';
+import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import TaskModal from './components/TaskModal';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
 
 const TasksPage = () => {
     const navigate = useNavigate();
+    const formatters = useCRMFormatters();
     const shell = useShell();
+    const shellBridge = useShellBridge();
+    const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
     const { toasts, showSuccess, showError, dismissToast } = useToast();
@@ -29,6 +36,7 @@ const TasksPage = () => {
     const [sortDirection, setSortDirection] = useState<SortDirection>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -131,7 +139,7 @@ const TasksPage = () => {
     const SortableHeader = ({ label, field }: { label: string, field: SortField }) => (
         <button
             onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
         >
             {label}
             <SortIcon field={field} />
@@ -151,10 +159,13 @@ const TasksPage = () => {
             if (!matchesSearch) return false;
 
             if (filter === 'All') return true;
-            if (filter === 'Open') return task.status === 'Open';
-            if (filter === 'Done') return task.status === 'Done';
+            if (filter === 'Open') return task.status === 'OPEN';
+            if (filter === 'In Progress') return task.status === 'IN_PROGRESS';
+            if (filter === 'Done') return task.status === 'DONE';
+            if (filter === 'On Hold') return task.status === 'ON_HOLD';
+            if (filter === 'Cancelled') return task.status === 'CANCELLED';
             if (filter === 'Overdue') {
-                return task.status === 'Open' && new Date(task.due_date) < new Date();
+                return (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
             }
             return true;
         });
@@ -184,12 +195,17 @@ const TasksPage = () => {
         return result;
     }, [tasks, searchTerm, filter, sortField, sortDirection]);
 
-    // Pagination
-    const totalPages = Math.ceil(sortedAndFilteredTasks.length / pageSize);
+    // Sandbox limit + pagination
+    const sandboxLimitedTasks = useMemo(
+        () => isSandboxMode ? sortedAndFilteredTasks.slice(0, sandboxEntryLimit) : sortedAndFilteredTasks,
+        [sortedAndFilteredTasks, isSandboxMode, sandboxEntryLimit],
+    );
+
+    const totalPages = Math.ceil(sandboxLimitedTasks.length / pageSize);
     const paginatedTasks = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
-        return sortedAndFilteredTasks.slice(start, start + pageSize);
-    }, [sortedAndFilteredTasks, currentPage, pageSize]);
+        return sandboxLimitedTasks.slice(start, start + pageSize);
+    }, [sandboxLimitedTasks, currentPage, pageSize]);
 
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -204,14 +220,14 @@ const TasksPage = () => {
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleStatusChange(task, task.status === 'Done' ? 'Open' : 'Done');
+                            handleStatusChange(task, task.status === 'DONE' ? 'OPEN' : 'DONE');
                         }}
                         className="mt-0.5 text-slate-500 hover:text-blue-400 transition-colors"
                     >
-                        {task.status === 'Done' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
+                        {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
                     </button>
                     <div className="flex flex-col gap-0.5">
-                        <span className={`font-semibold ${task.status === 'Done' ? 'text-slate-500 line-through' : 'text-white'}`}>
+                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
                             {task.title}
                         </span>
                     </div>
@@ -221,11 +237,11 @@ const TasksPage = () => {
         {
             header: <SortableHeader label="Due Date" field="due_date" />,
             accessor: (task: Task) => {
-                const isOverdue = task.status === 'Open' && new Date(task.due_date) < new Date();
+                const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
                 return (
                     <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-400'}`}>
                         {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
-                        {new Date(task.due_date).toLocaleDateString()}
+                        {formatters.formatDate(task.due_date)}
                         {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
                     </div>
                 );
@@ -265,7 +281,7 @@ const TasksPage = () => {
                     <select
                         value={task.assigned_to.id}
                         onChange={(e) => handleAssigneeChange(task, e.target.value)}
-                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-white transition-colors py-1"
+                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1"
                     >
                         {users.map(user => (
                             <option key={user.id} value={user.id} className="bg-slate-900 text-slate-300">
@@ -299,13 +315,22 @@ const TasksPage = () => {
                     <select
                         value={task.status}
                         onChange={(e) => handleStatusChange(task, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 ${task.status === 'Done'
+                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 ${task.status === 'DONE'
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 focus:ring-emerald-500'
+                            : task.status === 'IN_PROGRESS'
+                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 focus:ring-amber-500'
+                            : task.status === 'ON_HOLD'
+                            ? 'bg-orange-500/10 text-orange-400 border-orange-500/20 focus:ring-orange-500'
+                            : task.status === 'CANCELLED'
+                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 focus:ring-rose-500'
                             : 'bg-slate-800 text-slate-400 border-slate-700 focus:ring-slate-500'
                             }`}
                     >
-                        <option value="Open" className="bg-slate-900 text-slate-300">OPEN</option>
-                        <option value="Done" className="bg-slate-900 text-slate-300">DONE</option>
+                        <option value="OPEN" className="bg-slate-900 text-slate-300">OPEN</option>
+                        <option value="IN_PROGRESS" className="bg-slate-900 text-slate-300">IN PROGRESS</option>
+                        <option value="DONE" className="bg-slate-900 text-slate-300">DONE</option>
+                        <option value="ON_HOLD" className="bg-slate-900 text-slate-300">ON HOLD</option>
+                        <option value="CANCELLED" className="bg-slate-900 text-slate-300">CANCELLED</option>
                     </select>
                 </div>
             )
@@ -314,13 +339,13 @@ const TasksPage = () => {
             header: '',
             accessor: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
-                    <button
+                    {canCreateTask && <button
                         onClick={() => setShowDeleteConfirm(task.id)}
                         className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
                         title="Delete task"
                     >
                         <Trash2 size={16} />
-                    </button>
+                    </button>}
                 </div>
             )
         }
@@ -331,24 +356,33 @@ const TasksPage = () => {
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight leading-none">Tasks & Follow-ups</h1>
+                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>
                     <p className="text-slate-400 mt-2">Personal execution discipline and daily tasks</p>
                 </div>
+                {canCreateTask && (
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
+                    >
+                        <Plus size={16} />
+                        Create Task
+                    </button>
+                )}
             </header>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={18} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                     <input
                         type="text"
                         placeholder="Search tasks..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-900/50 border border-slate-800 pl-12 pr-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-slate-200"
+                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-400 text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                     />
                 </div>
-                <div className="flex gap-2">
-                    {['All', 'Open', 'Overdue', 'Done'].map((btn) => (
+                <div className="flex flex-wrap gap-2">
+                    {['All', 'Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map((btn) => (
                         <button
                             key={btn}
                             onClick={() => setFilter(btn)}
@@ -370,6 +404,14 @@ const TasksPage = () => {
                 </div>
             )}
 
+            {/* Sandbox limit notice */}
+            {isSandboxMode && isLimited(sortedAndFilteredTasks.length) && (
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                    <span className="font-semibold">Sandbox mode:</span>
+                    showing {sandboxEntryLimit} of {sortedAndFilteredTasks.length} tasks — full list visible in production.
+                </div>
+            )}
+
             <Table
                 data={paginatedTasks}
                 columns={columns}
@@ -379,7 +421,7 @@ const TasksPage = () => {
             />
 
             {/* Pagination Controls */}
-            {sortedAndFilteredTasks.length > 0 && (
+            {sandboxLimitedTasks.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-slate-400">
                         <span>Show</span>
@@ -392,7 +434,7 @@ const TasksPage = () => {
                                 <option key={size} value={size}>{size}</option>
                             ))}
                         </select>
-                        <span>of {sortedAndFilteredTasks.length} tasks</span>
+                        <span>of {sandboxLimitedTasks.length} tasks</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -430,9 +472,21 @@ const TasksPage = () => {
                 </div>
             )}
 
+            {/* Create Task Modal */}
+            {showCreateModal && (
+                <TaskModal
+                    task={null}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={(newTask) => {
+                        setTasks(prev => [newTask, ...prev]);
+                        setShowCreateModal(false);
+                    }}
+                />
+            )}
+
             {/* Delete Confirmation Dialog */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Task</h2>
                         <p className="text-slate-400 mb-6">
@@ -442,7 +496,7 @@ const TasksPage = () => {
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
@@ -456,7 +510,8 @@ const TasksPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

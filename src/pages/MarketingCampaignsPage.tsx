@@ -5,6 +5,7 @@ import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, mapCampaign } from './marketing/marketingMappers';
 import { Button } from '@so360/design-system';
 import CampaignTemplateEditor from '../components/CampaignTemplateEditor';
+import { useShellBridge } from '@so360/shell-context';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -19,6 +20,8 @@ const initialForm = {
 
 const MarketingCampaignsPage: React.FC = () => {
   const navigate = useNavigate();
+  const shell = useShellBridge();
+  const canCreateMarketing = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,12 +80,12 @@ const MarketingCampaignsPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-4">
           <MarketingStorePicker storeId={storeId} onChange={applyStore} />
-          <Button
+          {canCreateMarketing && <Button
             variant="primary"
             onClick={() => setShowCreate((v) => !v)}
           >
             {showCreate ? 'Close Form' : 'New Campaign'}
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -212,7 +215,7 @@ const MarketingCampaignsPage: React.FC = () => {
                         Pause
                       </Button>
                     )}
-                    <Button
+                    {canCreateMarketing && <Button
                       variant="danger"
                       size="sm"
                       onClick={async () => {
@@ -221,7 +224,7 @@ const MarketingCampaignsPage: React.FC = () => {
                       }}
                     >
                       Delete
-                    </Button>
+                    </Button>}
                   </td>
                 </tr>
               ))}

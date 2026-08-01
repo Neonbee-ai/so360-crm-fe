@@ -8,13 +8,16 @@ export interface User {
     role?: string;
 }
 
-export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean';
+export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean' | 'SELECT';
 
 export interface CustomFieldDefinition {
     id: string;
     label: string;
     type: CustomFieldType;
-    required: boolean;
+    field_type?: string;
+    required?: boolean;
+    is_required?: boolean;
+    options?: string[];
 }
 
 export interface Attachment {
@@ -26,18 +29,25 @@ export interface Attachment {
     uploaded_by: User;
     url: string;
     created_at: string;
+    /** DMS document id when the file is stored via the Document Management Service.
+     *  When present, downloads must be resolved via a signed download-url endpoint
+     *  rather than the (possibly absent) legacy `url`. */
+    dmsDocumentId?: string;
 }
 
 export interface Lead {
     id: string;
     company_name: string;
-    contact_name: string;
+    first_name?: string;
+    last_name?: string;
+    contact_name?: string;
     contact_email: string;
     phone?: string;
     source: string;
     owner: User;
     status: LeadStatus;
-    type?: 'lead' | 'customer';
+    type?: 'lead' | 'customer' | 'partner';
+    referred_by?: string;
     created_at: string;
     updated_at?: string;
     activities: Activity[];
@@ -55,6 +65,8 @@ export interface Lead {
     first_order_id?: string;
     first_order_at?: string;
     channel?: string;
+    auto_score?: number;
+    score_breakdown?: ScoreBreakdownItem[];
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
@@ -83,6 +95,9 @@ export interface Deal {
     activities: Activity[];
     documents?: Attachment[];
     lead_id?: string;
+    partner_id?: string;
+    company?: string;
+    contact_email?: string;
     project_id?: string;
     invoice_id?: string;
     invoice_number?: string;
@@ -108,6 +123,9 @@ export interface Note {
     content: string;
     author: User;
     created_at: string;
+    updated_at?: string;
+    parent_note_id?: string | null;
+    replies?: Note[];
 }
 
 export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
@@ -116,7 +134,8 @@ export interface Task {
     id: string;
     title: string;
     due_date: string;
-    status: 'Open' | 'Done';
+    start_date?: string;
+    status: 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'ON_HOLD' | 'CANCELLED';
     type: TaskType;
     deal_id?: string;
     deal_name?: string;
@@ -131,9 +150,42 @@ export interface Task {
 
 export interface LeadScoringRule {
     id: string;
-    criteria: string;
+    name: string;
+    rule_type: 'source' | 'activity' | 'field';
+    target_field: string;
+    condition: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
+    value?: string;
+    score_points: number;
+    is_active: boolean;
+    priority: number;
+    // Legacy field kept for backwards compat during transition
+    criteria?: string;
+    points?: number;
+    type?: 'source' | 'activity' | 'field';
+}
+
+export interface ScoreCategory {
+    id: string;
+    label: string;
+    min_score: number;
+    max_score: number | null;
+    color: string;
+    sort_order: number;
+}
+
+export interface ScoreBreakdownItem {
+    rule_id: string;
+    rule_name: string;
     points: number;
-    type: 'source' | 'activity' | 'field';
+}
+
+export interface SourceTypeOption {
+    id: string;
+    label: string;
+    value: string;
+    is_system: boolean;
+    is_active: boolean;
+    sort_order: number;
 }
 
 export interface CRMSettings {
@@ -141,9 +193,12 @@ export interface CRMSettings {
     lead_stages: { id: string; name: string }[];
     default_owner_id: string;
     lead_sources: { id: string; name: string; archived: boolean }[];
+    source_type_options: SourceTypeOption[];
     lead_custom_fields: CustomFieldDefinition[];
     deal_custom_fields: CustomFieldDefinition[];
+    partner_custom_fields: CustomFieldDefinition[];
     lead_scoring: LeadScoringRule[];
+    score_categories: ScoreCategory[];
 }
 
 export interface DealFilters {
@@ -161,12 +216,49 @@ export type QuoteStatus = 'draft' | 'pending_approval' | 'approved' | 'rejected'
 export interface QuoteLine {
     id?: string;
     item_id?: string;
+    variant_id?: string;
+    item_name?: string;
+    sku?: string;
+    sub_sku?: string;
+    item_image_url?: string | null;
     description: string;
     quantity: number;
     unit_price: number;
     discount_percent?: number;
     tax_rate?: number;
     line_total?: number;
+}
+
+// Inventory item types — used by ProductPickerModal
+export interface InventoryVariant {
+    id: string;
+    name: string;
+    sku: string;
+    price: number;
+    variant_attributes: Record<string, string>;
+    image_url: string | null;
+}
+
+export interface InventoryItem {
+    id: string;
+    name: string;
+    sku: string;
+    price: number;
+    cost: number;
+    image_url: string | null;
+    metadata: Record<string, any>;
+    has_variants: boolean;
+    variants: InventoryVariant[];
+}
+
+export interface ProductPickerSelection {
+    item_id: string;
+    variant_id: string;
+    name: string;
+    sku: string;
+    sub_sku: string;
+    unit_price: number;
+    image_url: string | null;
 }
 
 export interface Quote {
@@ -216,5 +308,123 @@ export interface QuoteFilters {
     status?: QuoteStatus;
     deal_id?: string;
     customer_id?: string;
+}
+
+// ─── Lead / Deal Products ─────────────────────────────────────────────────────
+
+export type ProductInterestStatus = 'interested' | 'quoted' | 'approved' | 'ordered' | 'cancelled';
+
+export interface LeadProduct {
+    id: string;
+    lead_id: string;
+    item_id: string;
+    item_name: string;
+    item_sku?: string;
+    category_name?: string;
+    quantity: number;
+    unit_price: number;
+    status: ProductInterestStatus;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface DealProduct {
+    id: string;
+    deal_id: string;
+    lead_product_id?: string;
+    item_id: string;
+    item_name: string;
+    item_sku?: string;
+    category_name?: string;
+    quantity: number;
+    unit_price: number;
+    status: ProductInterestStatus;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+// ============================================================================
+// Stakeholder Management (Task 6)
+// ============================================================================
+export type StakeholderRole =
+    | 'decision_maker' | 'economic_buyer' | 'technical_evaluator' | 'end_user'
+    | 'project_sponsor' | 'procurement' | 'finance' | 'legal' | 'influencer'
+    | 'champion' | 'gatekeeper';
+
+export type BuyingCommitteeRole = 'primary_decision_maker' | 'strong_supporter' | 'neutral' | 'opposed' | 'unknown';
+export type RelationshipStrength = 'very_strong' | 'strong' | 'moderate' | 'weak' | 'no_relationship';
+
+export interface Stakeholder {
+    id: string;
+    lead_id: string;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+    job_title?: string;
+    department?: string;
+    company_id?: string;
+    company_name?: string;
+    email?: string;
+    phone?: string;
+    mobile_phone?: string;
+    linkedin_url?: string;
+    preferred_communication_method?: string;
+    time_zone?: string;
+    is_active: boolean;
+    is_primary_contact: boolean;
+    buying_committee_role: BuyingCommitteeRole;
+    relationship_strength: RelationshipStrength;
+    relationship_confidence_score?: number;
+    reports_to_stakeholder_id?: string | null;
+    preferred_language?: string;
+    preferred_contact_time?: string;
+    do_not_contact: boolean;
+    marketing_opt_out: boolean;
+    roles: StakeholderRole[];
+    created_at: string;
+    updated_at: string;
+}
+
+// ============================================================================
+// Meetings (Task 3)
+// ============================================================================
+export type MeetingStatus = 'upcoming' | 'completed' | 'cancelled' | 'missed';
+
+export interface MeetingAttendee {
+    person_id?: string;
+    external_email?: string;
+    name?: string;
+    response?: string;
+}
+
+export interface Meeting {
+    id: string;
+    lead_id?: string | null;
+    deal_id?: string | null;
+    stakeholder_id?: string | null;
+    title: string;
+    scheduled_at: string;
+    duration_minutes: number;
+    location?: string;
+    agenda?: string;
+    attendees: MeetingAttendee[];
+    outcome?: string;
+    next_steps?: string;
+    status: MeetingStatus;
+    owner_person_id?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface StakeholderActivitySummary {
+    last_call: string | null;
+    last_email: string | null;
+    last_meeting: string | null;
+    last_interaction: string | null;
+    open_tasks: number;
+    associated_deals: { deal_id: string; involvement_role: string; deal: { id: string; name: string; company: string; status: string } | null }[];
+    meeting_history: any[];
 }
 

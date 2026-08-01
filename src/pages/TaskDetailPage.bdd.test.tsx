@@ -11,6 +11,7 @@ const mockCreateNote = vi.fn();
 const mockUpdateNote = vi.fn();
 const mockDeleteNote = vi.fn();
 const mockNavigate = vi.fn();
+const mockRecordActivity = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -32,9 +33,12 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
-  ShellContext: { Consumer: ({ children }: any) => children({ user: { id: 'user-1' } }) },
-  useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
+  ShellContext: React.createContext({ user: { id: 'user-1' } }),
+  useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('./components/TaskModal', () => ({
   default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close Edit</button></div>,
@@ -55,7 +59,7 @@ const makeTask = (overrides: any = {}) => ({
   id: 'task-1',
   title: 'Follow up with client',
   description: 'Call them about the proposal',
-  status: 'Open',
+  status: 'OPEN',
   due_date: '2026-06-15',
   deal_id: 'deal-1',
   deal_name: 'Big Deal',
@@ -69,8 +73,10 @@ const makeNotes = () => [
   { id: 'n2', content: 'Second note', created_at: '2026-01-11', author: { id: 'user-2', full_name: 'Other User' } },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetTaskById.mockResolvedValue(makeTask());
   mockGetUsers.mockResolvedValue([]);
   mockGetTaskNotes.mockResolvedValue(makeNotes());
@@ -79,6 +85,7 @@ beforeEach(() => {
   mockCreateNote.mockResolvedValue({});
   mockUpdateNote.mockResolvedValue({});
   mockDeleteNote.mockResolvedValue({});
+  mockRecordActivity.mockResolvedValue(undefined);
 });
 
 describe('TaskDetailPage', () => {
@@ -96,12 +103,27 @@ describe('TaskDetailPage', () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Task not found.')).toBeInTheDocument());
     });
+
+    it('When Back to Tasks is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
+      mockGetTaskById.mockResolvedValue(null);
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Back to Tasks')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Back to Tasks'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
+    });
   });
 
   describe('Given task is loaded', () => {
     it('When rendered / Then shows task title', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+    });
+
+    it('When the header Back to Tasks is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Back to Tasks'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
 
     it('When rendered / Then shows task description', async () => {
@@ -119,7 +141,7 @@ describe('TaskDetailPage', () => {
 
     it('When rendered / Then shows task status badge', async () => {
       render(<TaskDetailPage />);
-      await waitFor(() => expect(screen.getByText('Open')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('OPEN')).toBeInTheDocument());
     });
 
     it('When task has deal / Then shows deal link', async () => {
@@ -140,7 +162,7 @@ describe('TaskDetailPage', () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('View Lead')).toBeInTheDocument());
       const link = screen.getByText('View Lead').closest('a');
-      expect(link?.getAttribute('href')).toBe('/leads/lead-1');
+      expect(link?.getAttribute('href')).toBe('/crm/leads/lead-1');
     });
   });
 
@@ -149,15 +171,15 @@ describe('TaskDetailPage', () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Mark as Complete')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Mark as Complete'));
-      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'Done' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'DONE' }));
     });
 
     it('When task is Done and Mark as Open is clicked / Then reopens task', async () => {
-      mockGetTaskById.mockResolvedValue(makeTask({ status: 'Done' }));
+      mockGetTaskById.mockResolvedValue(makeTask({ status: 'DONE' }));
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Mark as Open')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Mark as Open'));
-      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'Open' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { status: 'OPEN' }));
     });
   });
 
@@ -183,27 +205,155 @@ describe('TaskDetailPage', () => {
       expect(screen.getByText('Second note')).toBeInTheDocument();
     });
 
-    it('When no notes exist / Then shows empty message', async () => {
+    it('When no notes exist / Then shows the honest empty state', async () => {
       mockGetTaskNotes.mockResolvedValue([]);
       render(<TaskDetailPage />);
-      await waitFor(() => expect(screen.getByText('No notes yet')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/No notes added yet\. Add the first note to collaborate with your team\./)).toBeInTheDocument());
     });
 
-    it('When notes are not supported / Then shows migration notice', async () => {
+    it('When fetching notes fails / Then shows an honest retry banner, never an internal migration message', async () => {
       mockGetTaskNotes.mockRejectedValue(new Error('Table not found'));
       render(<TaskDetailPage />);
-      await waitFor(() => expect(screen.getByText(/Notes feature not yet available/)).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Unable to load notes right now. Please try again.')).toBeInTheDocument());
+      expect(screen.queryByText(/migration/i)).not.toBeInTheDocument();
+      expect(screen.getByText('Retry')).toBeInTheDocument();
+      // Add Note affordance must not be offered while notes failed to load
+      expect(screen.queryByText('+ Add Note')).not.toBeInTheDocument();
     });
 
-    it('When Add Note is clicked and note submitted / Then creates note', async () => {
+    it('When Retry is clicked after a failed load / Then notes load successfully and the error clears', async () => {
+      mockGetTaskNotes.mockRejectedValueOnce(new Error('Network error'));
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Retry')).toBeInTheDocument());
+      mockGetTaskNotes.mockResolvedValue(makeNotes());
+      fireEvent.click(screen.getByText('Retry'));
+      await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
+      expect(screen.queryByText('Retry')).not.toBeInTheDocument();
+    });
+
+    it('When Add Note is clicked and note submitted / Then creates the note, refreshes the list, and records task activity', async () => {
       mockGetTaskNotes.mockResolvedValue([]);
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('+ Add Note')).toBeInTheDocument());
       fireEvent.click(screen.getByText('+ Add Note'));
       const textarea = screen.getByPlaceholderText('Add a note or comment...');
       fireEvent.change(textarea, { target: { value: 'New test note' } });
+      mockGetTaskNotes.mockResolvedValue(makeNotes());
       fireEvent.click(screen.getByText('Add Note'));
       await waitFor(() => expect(mockCreateNote).toHaveBeenCalledWith({ content: 'New test note', task_id: 'task-1' }));
+      await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
+      await waitFor(() => expect(mockRecordActivity).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'note.added', resourceId: 'task-1' })));
+    });
+
+    it('Given a note edited after creation / When rendered / Then shows the Edited indicator', async () => {
+      mockGetTaskNotes.mockResolvedValue([
+        { id: 'n1', content: 'Edited note', created_at: '2026-01-10', updated_at: '2026-01-11', author: { id: 'user-1', full_name: 'Test User' } },
+      ]);
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Edited note')).toBeInTheDocument());
+      expect(screen.getByText('· Edited')).toBeInTheDocument();
+    });
+
+    it('Given a note never edited / When rendered / Then does not show the Edited indicator', async () => {
+      mockGetTaskNotes.mockResolvedValue([
+        { id: 'n1', content: 'Fresh note', created_at: '2026-01-10', updated_at: '2026-01-10', author: { id: 'user-1', full_name: 'Test User' } },
+      ]);
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Fresh note')).toBeInTheDocument());
+      expect(screen.queryByText('· Edited')).not.toBeInTheDocument();
+    });
+
+    it('Given a note author with an avatar / When rendered / Then renders the avatar image', async () => {
+      mockGetTaskNotes.mockResolvedValue([
+        { id: 'n1', content: 'Note with avatar', created_at: '2026-01-10', author: { id: 'user-1', full_name: 'Avatar User', avatar_url: 'https://img.test/note-author.jpg' } },
+      ]);
+      render(<TaskDetailPage />);
+      await waitFor(() => {
+        const img = screen.getByAltText('Avatar User');
+        expect(img).toHaveAttribute('src', 'https://img.test/note-author.jpg');
+      });
+    });
+
+    it('When the note author edits their note / Then updates it, refreshes the list, and records task activity', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
+      fireEvent.click(screen.getByTitle('Edit note'));
+      const textarea = screen.getByPlaceholderText('Note content...');
+      fireEvent.change(textarea, { target: { value: 'Updated content' } });
+      fireEvent.click(screen.getByText('Save Changes'));
+      await waitFor(() => expect(mockUpdateNote).toHaveBeenCalledWith('n1', 'Updated content'));
+      await waitFor(() => expect(mockRecordActivity).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'note.updated', resourceId: 'task-1' })));
+    });
+
+    it('When the note author deletes their note after confirming / Then deletes it, refreshes the list, and records task activity', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
+      fireEvent.click(screen.getByTitle('Delete note'));
+      await waitFor(() => expect(screen.getByText('Are you sure you want to delete this note? This action cannot be undone.')).toBeInTheDocument());
+      mockGetTaskNotes.mockResolvedValue([makeNotes()[1]]);
+      const confirmBtn = screen.getAllByText('Delete Note').find(el => el.closest('button'));
+      fireEvent.click(confirmBtn!);
+      await waitFor(() => expect(mockDeleteNote).toHaveBeenCalledWith('n1'));
+      await waitFor(() => expect(mockRecordActivity).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'note.deleted', resourceId: 'task-1' })));
+    });
+
+    it('When creating a note fails / Then shows an error alert and keeps the composer open', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockGetTaskNotes.mockResolvedValue([]);
+      mockCreateNote.mockRejectedValueOnce(new Error('insert failed'));
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('+ Add Note')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('+ Add Note'));
+      fireEvent.change(screen.getByPlaceholderText('Add a note or comment...'), { target: { value: 'Will fail' } });
+      fireEvent.click(screen.getByText('Add Note'));
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to add note. Please try again.'));
+      expect(mockRecordActivity).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('When Save Changes is clicked with blank content / Then shows a validation alert and never calls updateNote', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
+      fireEvent.click(screen.getByTitle('Edit note'));
+      const textarea = screen.getByPlaceholderText('Note content...');
+      fireEvent.change(textarea, { target: { value: '   ' } });
+      fireEvent.click(screen.getByText('Save Changes'));
+      expect(alertSpy).toHaveBeenCalledWith('Note content cannot be empty.');
+      expect(mockUpdateNote).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    });
+
+    it('When updating a note fails / Then shows an error alert', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockUpdateNote.mockRejectedValueOnce(new Error('update failed'));
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
+      fireEvent.click(screen.getByTitle('Edit note'));
+      fireEvent.change(screen.getByPlaceholderText('Note content...'), { target: { value: 'Updated content' } });
+      fireEvent.click(screen.getByText('Save Changes'));
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to update note. Please try again.'));
+      alertSpy.mockRestore();
+    });
+
+    it('When deleting a note fails / Then shows an error alert', async () => {
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockDeleteNote.mockRejectedValueOnce(new Error('delete failed'));
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
+      fireEvent.click(screen.getByTitle('Delete note'));
+      const confirmBtn = screen.getAllByText('Delete Note').find(el => el.closest('button'));
+      fireEvent.click(confirmBtn!);
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to delete note. Please try again.'));
+      alertSpy.mockRestore();
+    });
+
+    it('Given a note authored by someone else / When rendered / Then edit/delete controls are not offered', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Second note')).toBeInTheDocument());
+      const secondNoteCard = screen.getByText('Second note').closest('.group');
+      expect(secondNoteCard?.querySelector('[title="Edit note"]')).toBeNull();
+      expect(secondNoteCard?.querySelector('[title="Delete note"]')).toBeNull();
     });
   });
 
@@ -244,6 +394,34 @@ describe('TaskDetailPage', () => {
         const img = screen.getByAltText('Test User');
         expect(img).toHaveAttribute('src', 'https://img.test/avatar.jpg');
       });
+    });
+  });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Delete button is absent (no flicker)', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      // canCreateTask is false before flags resolve — delete button must not flash
+      const deleteBtn = screen.queryByTitle('Delete');
+      expect(deleteBtn).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Delete button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      // The delete Trash2 icon button is rendered when canCreateTask is true
+      const trashBtn = document.querySelector('[data-testid="icon-Trash2"]')?.closest('button');
+      expect(trashBtn).toBeTruthy();
     });
   });
 });

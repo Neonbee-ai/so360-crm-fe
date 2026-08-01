@@ -3,14 +3,18 @@ import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Pe
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
-import { useBusinessSettings, useActivity } from '@so360/shell-context';
+import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCouponsPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const { settings } = useBusinessSettings();
   const { recordActivity } = useActivity();
+  const shell = useShellBridge();
+  const canCreateMarketing = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const currencyCode = settings?.base_currency || 'INR';
   const locale = settings?.document_language || 'en-IN';
 
@@ -134,15 +138,15 @@ const MarketingCouponsPage: React.FC = () => {
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Discount Coupons</h1>
+          <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Discount Coupons</h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage promotional codes and offers</p>
         </div>
-        <button 
+        {canCreateMarketing && <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
         >
           <Plus size={16} /> Create Coupon
-        </button>
+        </button>}
       </div>
 
       <div className="grid grid-cols-1 gap-8">
@@ -160,7 +164,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     placeholder="Search by coupon code..."
                   />
                 </div>
@@ -173,7 +177,7 @@ const MarketingCouponsPage: React.FC = () => {
           <section className="bg-slate-900 border border-blue-500/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-blue-500/5">
               <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
-              <button onClick={() => setShowForm(false)} className="text-slate-500 hover:text-white transition-colors">
+              <button onClick={() => setShowForm(false)} className="text-slate-500 hover:text-slate-50 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -185,7 +189,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="text" 
                     value={form.code} 
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                     placeholder="WELCOME20" 
                   />
                 </div>
@@ -194,7 +198,7 @@ const MarketingCouponsPage: React.FC = () => {
                   <select 
                     value={form.discount_type} 
                     onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold appearance-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold appearance-none"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed Amount</option>
@@ -210,7 +214,7 @@ const MarketingCouponsPage: React.FC = () => {
                       type="number" 
                       value={form.discount_value} 
                       onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })} 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                     />
                   </div>
                 </div>
@@ -220,7 +224,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="number" 
                     value={form.min_order_amount} 
                     onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                   />
                 </div>
                 <div>
@@ -229,7 +233,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="number" 
                     value={form.usage_limit} 
                     onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                     placeholder="0 = Unlimited"
                   />
                 </div>
@@ -239,7 +243,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="date" 
                     value={form.valid_from} 
                     onChange={(e) => setForm({ ...form, valid_from: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                   />
                 </div>
                 <div>
@@ -248,7 +252,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="date" 
                     value={form.valid_until} 
                     onChange={(e) => setForm({ ...form, valid_until: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
                   />
                 </div>
                 <div className="lg:col-span-4">
@@ -256,7 +260,7 @@ const MarketingCouponsPage: React.FC = () => {
                   <textarea 
                     value={form.description} 
                     onChange={(e) => setForm({ ...form, description: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold h-20 resize-none" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold h-20 resize-none" 
                     placeholder="Describe the offer..."
                   />
                 </div>
@@ -264,7 +268,7 @@ const MarketingCouponsPage: React.FC = () => {
               <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-slate-800">
                 <button 
                   onClick={() => setShowForm(false)} 
-                  className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+                  className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-all"
                 >
                   Cancel
                 </button>
@@ -324,7 +328,7 @@ const MarketingCouponsPage: React.FC = () => {
                             <Tag size={18} />
                           </div>
                           <div>
-                            <p className="text-sm font-black text-white tracking-tight uppercase">{coupon.code}</p>
+                            <p className="text-sm font-black text-slate-50 tracking-tight uppercase">{coupon.code}</p>
                             <p className="text-[10px] text-slate-500 font-bold truncate max-w-xs">{coupon.description || 'No description'}</p>
                           </div>
                         </div>
@@ -352,28 +356,28 @@ const MarketingCouponsPage: React.FC = () => {
                         <div className="flex flex-col items-center gap-1 text-[10px] font-bold">
                           <div className="flex items-center gap-1 text-slate-400">
                             <Calendar size={10} />
-                            {coupon.valid_from ? new Date(coupon.valid_from).toLocaleDateString() : 'Start'}
+                            {coupon.valid_from ? formatters.formatDate(coupon.valid_from) : 'Start'}
                           </div>
                           <div className="flex items-center gap-1 text-slate-500">
                             <Clock size={10} />
-                            {coupon.valid_until ? new Date(coupon.valid_until).toLocaleDateString() : 'Never Expires'}
+                            {coupon.valid_until ? formatters.formatDate(coupon.valid_until) : 'Never Expires'}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
+                          {canCreateMarketing && <button
                             onClick={() => handleEdit(coupon)}
                             className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
                           >
                             <Pencil size={16} />
-                          </button>
-                          <button 
+                          </button>}
+                          {canCreateMarketing && <button
                             onClick={() => handleDelete(coupon)}
                             className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"
                           >
                             <Trash2 size={16} />
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>

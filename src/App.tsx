@@ -1,7 +1,10 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useShellBridge } from '@so360/shell-context';
+import { FeatureRoute } from '@so360/design-system';
+import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
+import { salesTargetService } from './services/salesTargetService';
 
 // Synchronizes Shell Context with CRM Service
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
@@ -30,6 +33,10 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
                 });
             }
 
+            salesTargetService.setTenantId(shell.currentTenant.id);
+            salesTargetService.setOrgId(shell.currentOrg.id);
+            salesTargetService.setAccessToken(shell.accessToken);
+
             setIsSynced(true);
         }
     }, [shell?.currentTenant?.id, shell?.currentOrg?.id, shell?.accessToken, shell?.user]);
@@ -46,16 +53,67 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
 };
 
-// Guards a route behind a feature flag — redirects to dashboard when hidden
+// Mounts the cross-link resolver/navigation once per MFE. Wires the Core aggregator
+// (via crmService), shell module-enablement gating, and SPA navigation (shared shell
+// router) so every CrossLinkChip / RelatedRecordsPanel below uses one cache + fetch path.
+const CrossLinkBridge = ({ children }: { children: React.ReactNode }) => {
+    const navigate = useNavigate();
+    const shell = useShellBridge();
+    return (
+        <CrossLinkProvider
+            resolve={crmService.resolveLinks}
+            navigate={(path) => navigate(path)}
+            isModuleEnabled={(moduleId) => (shell?.isModuleEnabled ? shell.isModuleEnabled(moduleId) : true)}
+        >
+            {children}
+        </CrossLinkProvider>
+    );
+};
+
+// Route-level upgrade prompt shown when a feature is `locked` (a higher plan unlocks it).
+const UpgradeLocked = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center px-6">
+            <div>
+                <h2 className="text-lg font-semibold text-slate-100">This feature is part of a higher plan</h2>
+                <p className="text-sm text-slate-400 mt-1">Upgrade your plan to unlock it.</p>
+            </div>
+            <button
+                type="button"
+                onClick={() => navigate('/org/billing')}
+                className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+            >
+                Upgrade plan
+            </button>
+        </div>
+    );
+};
+
+// Route-level panel shown when a feature is `disabled` (admin turned it off — no upgrade path).
+const FeatureUnavailable = () => (
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-2 text-center px-6">
+        <h2 className="text-lg font-semibold text-slate-100">Feature unavailable</h2>
+        <p className="text-sm text-slate-400">This feature has been turned off for your organization.</p>
+    </div>
+);
+
+// Guards a route on the resolved 5-state model via the shared FeatureRoute:
+// enabled→render · read_only→inert · locked→upgrade prompt · disabled→unavailable · hidden→redirect.
 const FlagGuard = ({ flagKey, children }: { flagKey: string; children: React.ReactNode }) => {
     const shell = useShellBridge();
-    const navigate = useNavigate();
-    const hidden = shell?.isFeatureHidden ? shell.isFeatureHidden(flagKey) : false;
-    useEffect(() => {
-        if (shell && hidden) navigate('/crm/dashboard', { replace: true });
-    }, [hidden, shell, navigate]);
-    if (!shell || hidden) return null;
-    return <>{children}</>;
+    if (!shell) return null;
+    const state = shell.getFeatureState ? shell.getFeatureState(flagKey) : 'enabled';
+    return (
+        <FeatureRoute
+            state={state}
+            hiddenFallback={<Navigate to="/crm/dashboard" replace />}
+            lockedFallback={<UpgradeLocked />}
+            disabledFallback={<FeatureUnavailable />}
+        >
+            {children}
+        </FeatureRoute>
+    );
 };
 
 // Guards a route behind a module enablement check — redirects to dashboard when disabled
@@ -92,10 +150,16 @@ const MarketingNewsletterPage = lazy(() => import('./pages/MarketingNewsletterPa
 const MarketingCouponsPage = lazy(() => import('./pages/MarketingCouponsPage'));
 const MarketingReviewsPage = lazy(() => import('./pages/MarketingReviewsPage'));
 const MarketingWishlistPage = lazy(() => import('./pages/MarketingWishlistPage'));
+const PartnersPage = lazy(() => import('./pages/PartnersPage'));
+const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
+const AdminTaskTypesPage = lazy(() => import('./pages/sales-targets/AdminTaskTypesPage'));
+const AdminTargetsPage = lazy(() => import('./pages/sales-targets/AdminTargetsPage'));
+const MyScorecardPage = lazy(() => import('./pages/sales-targets/MyScorecardPage'));
+const LeaderboardPage = lazy(() => import('./pages/sales-targets/LeaderboardPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100">
+        <div className="min-h-full bg-slate-950 text-slate-100">
             <main className="w-full">
                 <Suspense fallback={<div className="p-8 text-slate-400">Loading module...</div>}>
                     {children}
@@ -109,11 +173,14 @@ const App = () => {
     return (
         <Layout>
             <CrmShellInitializer>
+                <CrossLinkBridge>
                 <Routes>
                     <Route path="/" element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
                     <Route path="leads" element={<FlagGuard flagKey="submodule:crm:leads"><LeadsPage /></FlagGuard>} />
                     <Route path="leads/:id" element={<FlagGuard flagKey="submodule:crm:leads"><LeadDetailPage /></FlagGuard>} />
+                    <Route path="partners" element={<FlagGuard flagKey="submodule:crm:partners"><PartnersPage /></FlagGuard>} />
+                    <Route path="partners/:id" element={<FlagGuard flagKey="submodule:crm:partners"><PartnerDetailPage /></FlagGuard>} />
                     <Route path="customers" element={<CustomersPage />} />
                     <Route path="customers/:id" element={<LeadDetailPage />} />
                     <Route path="pipeline" element={<FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard>} />
@@ -123,6 +190,10 @@ const App = () => {
                     <Route path="quotes" element={<FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard>} />
                     <Route path="quotes/:id" element={<FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard>} />
                     <Route path="settings" element={<SettingsPage />} />
+                    <Route path="sales-targets/task-types" element={<FlagGuard flagKey="submodule:crm:sales_targets"><AdminTaskTypesPage /></FlagGuard>} />
+                    <Route path="sales-targets/targets" element={<FlagGuard flagKey="action:crm:sales_targets:manage"><AdminTargetsPage /></FlagGuard>} />
+                    <Route path="sales-targets/scorecard" element={<FlagGuard flagKey="submodule:crm:sales_targets"><MyScorecardPage /></FlagGuard>} />
+                    <Route path="sales-targets/leaderboard" element={<FlagGuard flagKey="submodule:crm:sales_targets"><LeaderboardPage /></FlagGuard>} />
                     <Route path="marketing/overview" element={<ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard>} />
                     <Route path="marketing/abandoned-carts" element={<ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard>} />
                     <Route path="marketing/abandoned-carts/:cartId" element={<ModuleGuard moduleId="dailystore"><MarketingAbandonedCartDetailPage /></ModuleGuard>} />
@@ -134,6 +205,7 @@ const App = () => {
                     <Route path="marketing/reviews" element={<ModuleGuard moduleId="dailystore"><MarketingReviewsPage /></ModuleGuard>} />
                     <Route path="marketing/wishlist" element={<ModuleGuard moduleId="dailystore"><MarketingWishlistPage /></ModuleGuard>} />
                 </Routes>
+                </CrossLinkBridge>
             </CrmShellInitializer>
         </Layout>
     );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     ChevronLeft, CheckCircle2, Circle, Calendar,
@@ -9,14 +10,18 @@ import { Task } from '../types/crm';
 import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
-import { ShellContext, useActivity } from '@so360/shell-context';
+import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const shell = useContext(ShellContext);
+    const formatters = useCRMFormatters();
+    const shell = useContext(ShellContext) as any;
     const currentUserId = shell?.user?.id;
     const { recordActivity } = useActivity();
+    const shellBridge = useShellBridge();
+    const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
     const [task, setTask] = useState<Task | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingTask, setIsEditingTask] = useState(false);
@@ -25,9 +30,23 @@ const TaskDetailPage = () => {
     const [notes, setNotes] = useState<any[]>([]);
     const [newNote, setNewNote] = useState('');
     const [isAddingNote, setIsAddingNote] = useState(false);
-    const [notesSupported, setNotesSupported] = useState(true);
+    const [notesError, setNotesError] = useState<string | null>(null);
+    const [isRetryingNotes, setIsRetryingNotes] = useState(false);
     const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
     const [editingNote, setEditingNote] = useState<{ id: string; content: string } | null>(null);
+
+    const refreshNotes = async (taskId: string) => {
+        try {
+            const notesData = await crmService.getTaskNotes(taskId);
+            setNotes(notesData || []);
+            setNotesError(null);
+            return true;
+        } catch (error) {
+            console.error('Failed to fetch task notes:', error);
+            setNotesError('Unable to load notes right now. Please try again.');
+            return false;
+        }
+    };
 
     useEffect(() => {
         const fetchTask = async () => {
@@ -41,16 +60,9 @@ const TaskDetailPage = () => {
                 const taskData = await crmService.getTaskById(id);
                 setTask(taskData || null);
 
-                // Fetch notes data (optional - may fail if migration not run)
-                try {
-                    const notesData = await crmService.getTaskNotes(id);
-                    setNotes(notesData || []);
-                    setNotesSupported(true);
-                } catch (notesError) {
-                    console.warn('Failed to fetch task notes (migration may not be run yet):', notesError);
-                    setNotes([]);
-                    setNotesSupported(false);
-                }
+                // Fetch notes data (independent of task load — a notes failure
+                // must never block the task itself from rendering)
+                await refreshNotes(id);
             } catch (error) {
                 console.error('Failed to fetch task', error);
             } finally {
@@ -60,15 +72,22 @@ const TaskDetailPage = () => {
         fetchTask();
     }, [id]);
 
+    const handleRetryNotes = async () => {
+        if (!task) return;
+        setIsRetryingNotes(true);
+        await refreshNotes(task.id);
+        setIsRetryingNotes(false);
+    };
+
     const handleTaskToggle = async () => {
         if (!task) return;
-        const newStatus = task.status === 'Done' ? 'Open' : 'Done';
+        const newStatus = task.status === 'DONE' ? 'OPEN' : 'DONE';
         try {
             // Optimistic update
             setTask({ ...task, status: newStatus });
 
             await crmService.updateTask(task.id, { status: newStatus });
-            if (newStatus === 'Done') {
+            if (newStatus === 'DONE') {
                 recordActivity({ eventType: 'task.completed', eventCategory: 'crm', description: `Completed task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
             } else {
                 recordActivity({ eventType: 'task.updated', eventCategory: 'crm', description: `Reopened task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
@@ -93,7 +112,7 @@ const TaskDetailPage = () => {
             await crmService.updateTask(task.id, { due_date: date });
             setTask({ ...task, due_date: date });
             setIsRescheduling(false);
-            recordActivity({ eventType: 'task.rescheduled', eventCategory: 'crm', description: `Rescheduled task "${task.title}" to ${new Date(date).toLocaleDateString()}`, resourceType: 'task', resourceId: task.id }).catch(() => {});
+            recordActivity({ eventType: 'task.rescheduled', eventCategory: 'crm', description: `Rescheduled task "${task.title}" to ${formatters.formatDate(date)}`, resourceType: 'task', resourceId: task.id }).catch(() => {});
         } catch (error) {
             console.error('Failed to reschedule task:', error);
         }
@@ -122,28 +141,28 @@ const TaskDetailPage = () => {
         return (
             <div className="p-8 text-center text-slate-500">
                 <p>Task not found.</p>
-                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">Back to Tasks</Link>
+                <button onClick={() => navigate('/crm/tasks')} className="text-blue-500 hover:underline mt-4 inline-block">Back to Tasks</button>
             </div>
         );
     }
 
-    const isOverdue = task.status === 'Open' && new Date(task.due_date) < new Date();
+    const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
             <header className="mb-8">
-                <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
+                <button onClick={() => navigate('/crm/tasks')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
                     <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     Back to Tasks
-                </Link>
+                </button>
                 <div className="flex justify-between items-start">
                     <div className="flex items-start gap-4">
                         <button className="mt-1 text-slate-500 hover:text-blue-400 transition-colors">
-                            {task.status === 'Done' ? <CheckCircle2 size={32} className="text-emerald-500" /> : <Circle size={32} />}
+                            {task.status === 'DONE' ? <CheckCircle2 size={32} className="text-emerald-500" /> : <Circle size={32} />}
                         </button>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'Done' ? 'text-slate-500 line-through' : 'text-white'}`}>
+                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
                                     {task.title}
                                 </h1>
                                 <button
@@ -154,7 +173,7 @@ const TaskDetailPage = () => {
                                 </button>
                             </div>
                             <div className="flex items-center gap-3 mt-2">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : task.status === 'IN_PROGRESS' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : task.status === 'ON_HOLD' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : task.status === 'CANCELLED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
                                     }`}>
                                     {task.status}
                                 </span>
@@ -166,12 +185,12 @@ const TaskDetailPage = () => {
                             </div>
                         </div>
                     </div>
-                    <button
+                    {canCreateTask && <button
                         onClick={() => setShowDeleteConfirm(true)}
                         className="text-slate-500 hover:text-rose-400 p-2 transition-colors"
                     >
                         <Trash2 size={20} />
-                    </button>
+                    </button>}
                 </div>
             </header>
 
@@ -187,7 +206,7 @@ const TaskDetailPage = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Associated Deal</span>
-                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-white hover:text-blue-400 transition-colors truncate block">
+                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
                                             {task.deal_name || 'View Deal'}
                                         </Link>
                                     </div>
@@ -201,7 +220,7 @@ const TaskDetailPage = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Related Lead</span>
-                                        <Link to={`/leads/${task.lead_id}`} className="text-lg font-bold text-white hover:text-blue-400 transition-colors truncate block">
+                                        <Link to={`/crm/leads/${task.lead_id}`} className="text-lg font-bold text-slate-50 hover:text-blue-400 transition-colors truncate block">
                                             View Lead
                                         </Link>
                                     </div>
@@ -214,8 +233,8 @@ const TaskDetailPage = () => {
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Due Date</span>
-                                    <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-white'}`}>
-                                        {new Date(task.due_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                    <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-50'}`}>
+                                        {formatters.formatDate(task.due_date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                     </p>
                                 </div>
                             </div>
@@ -233,7 +252,7 @@ const TaskDetailPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
                             <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Notes & Comments</h3>
-                            {notesSupported && (
+                            {canCreateTask && !notesError && (
                                 <button
                                     onClick={() => setIsAddingNote(!isAddingNote)}
                                     className="text-xs text-blue-400 hover:text-blue-300 font-bold"
@@ -243,12 +262,16 @@ const TaskDetailPage = () => {
                             )}
                         </div>
 
-                        {!notesSupported && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
-                                <p className="text-xs text-yellow-400">
-                                    <strong>Notes feature not yet available.</strong> Database migration required.
-                                    Contact your administrator to run: <code className="bg-slate-950 px-1 py-0.5 rounded">migrations/add_task_notes.sql</code>
-                                </p>
+                        {notesError && (
+                            <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
+                                <p className="text-xs text-slate-400">{notesError}</p>
+                                <button
+                                    onClick={handleRetryNotes}
+                                    disabled={isRetryingNotes}
+                                    className="text-xs text-blue-400 hover:text-blue-300 font-bold shrink-0 disabled:opacity-50"
+                                >
+                                    {isRetryingNotes ? 'Retrying…' : 'Retry'}
+                                </button>
                             </div>
                         )}
 
@@ -258,12 +281,12 @@ const TaskDetailPage = () => {
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     placeholder="Add a note or comment..."
-                                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-24"
+                                    className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-24"
                                 />
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button
                                         onClick={() => { setNewNote(''); setIsAddingNote(false); }}
-                                        className="px-4 py-2 text-slate-400 hover:text-white text-sm"
+                                        className="px-4 py-2 text-slate-400 hover:text-slate-50 text-sm"
                                     >
                                         Cancel
                                     </button>
@@ -272,12 +295,13 @@ const TaskDetailPage = () => {
                                             if (!task || !newNote.trim()) return;
                                             try {
                                                 await crmService.createNote({ content: newNote, task_id: task.id });
-                                                const updated = await crmService.getTaskNotes(task.id);
-                                                setNotes(updated);
+                                                await refreshNotes(task.id);
                                                 setNewNote('');
                                                 setIsAddingNote(false);
+                                                recordActivity({ eventType: 'note.added', eventCategory: 'crm', description: `Added a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                             } catch (error) {
                                                 console.error('Failed to create note:', error);
+                                                alert('Failed to add note. Please try again.');
                                             }
                                         }}
                                         className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm"
@@ -290,19 +314,28 @@ const TaskDetailPage = () => {
 
                         <div className="space-y-3">
                             {notes.length === 0 ? (
-                                <p className="text-slate-500 text-sm italic">No notes yet</p>
+                                !notesError && (
+                                    <p className="text-slate-500 text-sm italic">
+                                        No notes added yet. Add the first note to collaborate with your team.
+                                    </p>
+                                )
                             ) : (
                                 notes.map(note => {
                                     const isAuthor = currentUserId && note.author?.id === currentUserId;
+                                    const isEdited = !!note.updated_at && note.updated_at !== note.created_at;
 
                                     return (
                                         <div key={note.id} className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 group">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center">
-                                                        <span className="text-xs font-bold text-blue-400">
-                                                            {note.author?.full_name?.[0] || 'U'}
-                                                        </span>
+                                                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden">
+                                                        {note.author?.avatar_url ? (
+                                                            <img src={note.author.avatar_url} alt={note.author?.full_name || 'User'} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-blue-400">
+                                                                {note.author?.full_name?.[0] || 'U'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <span className="text-sm font-medium text-slate-300">
                                                         {note.author?.full_name || 'Unknown User'}
@@ -310,7 +343,8 @@ const TaskDetailPage = () => {
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-xs text-slate-500">
-                                                        {new Date(note.created_at).toLocaleDateString()}
+                                                        {formatters.formatDate(note.created_at)}
+                                                        {isEdited && <span className="italic"> · Edited</span>}
                                                     </span>
                                                     {isAuthor && (
                                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -349,7 +383,7 @@ const TaskDetailPage = () => {
                                 {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
                             </div>
                             <div>
-                                <p className="font-bold text-white">{task.assigned_to.full_name}</p>
+                                <p className="font-bold text-slate-50">{task.assigned_to.full_name}</p>
                                 <p className="text-xs text-slate-500">Sales Representative</p>
                             </div>
                         </div>
@@ -360,13 +394,13 @@ const TaskDetailPage = () => {
                         <div className="space-y-2">
                             <button
                                 onClick={handleTaskToggle}
-                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'Done' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}
+                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'DONE' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20'}`}
                             >
-                                {task.status === 'Done' ? 'Mark as Open' : 'Mark as Complete'}
+                                {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
                             </button>
                             <button
                                 onClick={() => setIsRescheduling(true)}
-                                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700"
+                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50"
                             >
                                 Reschedule
                             </button>
@@ -402,15 +436,15 @@ const TaskDetailPage = () => {
             )}
 
             {/* Edit Note Modal */}
-            {editingNote && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            {editingNote && createPortal(
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
                                 <Edit2 className="text-blue-400" size={20} />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-white mb-1">Edit Note</h3>
+                                <h3 className="text-lg font-bold text-slate-50 mb-1">Edit Note</h3>
                                 <p className="text-sm text-slate-400">
                                     Update your note content below.
                                 </p>
@@ -419,13 +453,13 @@ const TaskDetailPage = () => {
                         <textarea
                             value={editingNote.content}
                             onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-32 mb-4"
+                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-lg px-4 py-3 outline-none focus:border-blue-500 resize-none h-32 mb-4"
                             placeholder="Note content..."
                         />
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setEditingNote(null)}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-700"
+                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50"
                             >
                                 Cancel
                             </button>
@@ -437,9 +471,9 @@ const TaskDetailPage = () => {
                                     }
                                     try {
                                         await crmService.updateNote(editingNote.id, editingNote.content);
-                                        const updated = await crmService.getTaskNotes(task.id);
-                                        setNotes(updated);
+                                        await refreshNotes(task.id);
                                         setEditingNote(null);
+                                        recordActivity({ eventType: 'note.updated', eventCategory: 'crm', description: `Edited a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to update note:', error);
                                         alert('Failed to update note. Please try again.');
@@ -451,19 +485,20 @@ const TaskDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Note Confirmation Modal */}
-            {deleteNoteId && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            {deleteNoteId && createPortal(
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
                                 <Trash2 className="text-rose-400" size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white mb-1">Delete Note</h3>
+                                <h3 className="text-lg font-bold text-slate-50 mb-1">Delete Note</h3>
                                 <p className="text-sm text-slate-400">
                                     Are you sure you want to delete this note? This action cannot be undone.
                                 </p>
@@ -472,7 +507,7 @@ const TaskDetailPage = () => {
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setDeleteNoteId(null)}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-700"
+                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50"
                             >
                                 Cancel
                             </button>
@@ -480,9 +515,9 @@ const TaskDetailPage = () => {
                                 onClick={async () => {
                                     try {
                                         await crmService.deleteNote(deleteNoteId);
-                                        const updated = await crmService.getTaskNotes(task.id);
-                                        setNotes(updated);
+                                        await refreshNotes(task.id);
                                         setDeleteNoteId(null);
+                                        recordActivity({ eventType: 'note.deleted', eventCategory: 'crm', description: `Deleted a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to delete note:', error);
                                         alert('Failed to delete note. Please try again.');
@@ -494,21 +529,22 @@ const TaskDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Delete Confirmation Dialog */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6">
-                        <h3 className="text-lg font-bold text-white mb-2">Delete Task</h3>
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-50 mb-2">Delete Task</h3>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this task? This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="px-4 py-2 text-slate-400 hover:text-white"
+                                className="px-4 py-2 text-slate-400 hover:text-slate-50"
                             >
                                 Cancel
                             </button>
@@ -520,7 +556,8 @@ const TaskDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

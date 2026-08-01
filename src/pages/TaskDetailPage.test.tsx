@@ -30,9 +30,12 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: React.createContext({ user: { id: 'u1' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('./components/TaskModal', () => ({ default: () => null }));
 vi.mock('./components/RescheduleModal', () => ({
@@ -42,7 +45,7 @@ vi.mock('./components/RescheduleModal', () => ({
 import TaskDetailPage from './TaskDetailPage';
 
 const taskData = {
-  id: 'task-1', title: 'Follow up with client', status: 'Open',
+  id: 'task-1', title: 'Follow up with client', status: 'OPEN',
   due_date: '2099-06-15', type: 'TODO', description: 'Call them tomorrow',
   assigned_to: { id: 'u1', full_name: 'Test User', avatar_url: null },
   created_at: '2024-01-01',
@@ -56,7 +59,7 @@ beforeEach(() => {
   mockGetTaskNotes.mockResolvedValue([
     { id: 'tn1', content: 'Task note', created_at: '2024-01-02', author: { id: 'u1', full_name: 'Test' } },
   ]);
-  mockUpdateTask.mockResolvedValue({ ...taskData, status: 'Done' });
+  mockUpdateTask.mockResolvedValue({ ...taskData, status: 'DONE' });
   mockDeleteTask.mockResolvedValue(undefined);
 });
 
@@ -99,7 +102,7 @@ describe('Given TaskDetailPage', () => {
   it('When action / Then shows task status', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Open')).toBeInTheDocument();
+      expect(screen.getByText('OPEN')).toBeInTheDocument();
     });
   });
 
@@ -134,19 +137,20 @@ describe('Given TaskDetailPage', () => {
     });
   });
 
-  it('When action / Then handles notes not supported', async () => {
+  it('When notes fail to load / Then shows an honest retry message, never an internal migration message', async () => {
     mockGetTaskNotes.mockRejectedValue(new Error('Not supported'));
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText(/notes feature not yet available/i)).toBeInTheDocument();
+      expect(screen.getByText('Unable to load notes right now. Please try again.')).toBeInTheDocument();
     });
+    expect(screen.queryByText(/migration/i)).not.toBeInTheDocument();
   });
 
   it('When action / Then shows Done status styling', async () => {
-    mockGetTaskById.mockResolvedValue({ ...taskData, status: 'Done' });
+    mockGetTaskById.mockResolvedValue({ ...taskData, status: 'DONE' });
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Done')).toBeInTheDocument();
+      expect(screen.getByText('DONE')).toBeInTheDocument();
     });
   });
 

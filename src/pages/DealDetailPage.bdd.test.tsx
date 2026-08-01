@@ -79,12 +79,40 @@ vi.mock('../components/common/Toast', () => ({
 
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
+const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
+vi.mock('@so360/shell-context', () => ({
+  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled }),
+  useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true }),
+}));
+
 vi.mock('../config/features', () => ({
-  FEATURES: { DEAL_INVOICE_REQUEST: true, DEAL_PROJECT_CREATION: true },
+  FEATURES: { DEAL_ESTIMATE_REQUEST: true, DEAL_INVOICE_REQUEST: true, DEAL_PROJECT_CREATION: true },
 }));
 
 vi.mock('../components/DealLifecycleStepper', () => ({
   DealLifecycleStepper: ({ currentState }: any) => <div data-testid="lifecycle-stepper">{currentState}</div>,
+}));
+
+// formatters mock uses real Intl so date assertions like 'Jan 20, 2025' work correctly
+vi.mock('../utils/formatters', () => ({
+  useCRMFormatters: () => ({
+    formatCurrency: (v: number) => `$${v}`,
+    formatDate: (d: string) => {
+      if (!d) return d;
+      try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); }
+      catch { return d; }
+    },
+    formatDateTime: (d: string) => {
+      if (!d) return d;
+      try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); }
+      catch { return d; }
+    },
+    formatPhone: (p: string) => p,
+    formatNumber: (n: number) => String(n),
+    formatPercent: (n: number) => `${n}%`,
+  }),
+  useCRMCurrencySymbol: () => '$',
 }));
 
 import DealDetailPage from './DealDetailPage';
@@ -130,8 +158,8 @@ const associatedLead = {
 };
 
 const tasks = [
-  { id: 't1', title: 'Follow up call', status: 'Open', type: 'CALL', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: owner },
-  { id: 't2', title: 'Send proposal', status: 'Done', type: 'TODO', due_date: '2025-01-15', created_at: '2025-01-10T10:00:00Z', assigned_to: owner },
+  { id: 't1', title: 'Follow up call', status: 'OPEN', type: 'CALL', due_date: '2025-02-01', created_at: '2025-01-20T10:00:00Z', assigned_to: owner },
+  { id: 't2', title: 'Send proposal', status: 'DONE', type: 'TODO', due_date: '2025-01-15', created_at: '2025-01-10T10:00:00Z', assigned_to: owner },
 ];
 
 const activities = [
@@ -154,6 +182,7 @@ const settings = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  shellCtl.signEnabled = false;
   mockGetDealById.mockResolvedValue(makeDeal());
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue([owner, owner2]);
@@ -167,6 +196,22 @@ beforeEach(() => {
 });
 
 describe('DealDetailPage', () => {
+  describe('Given the Sign module gating', () => {
+    it('When the Sign module is disabled / Then the Request Signature button is hidden', async () => {
+      shellCtl.signEnabled = false;
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: /request signature/i })).not.toBeInTheDocument();
+    });
+
+    it('When the Sign module is enabled / Then the Request Signature button is shown', async () => {
+      shellCtl.signEnabled = true;
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByRole('button', { name: /request signature/i })).toBeInTheDocument();
+    });
+  });
+
   describe('Given a deal with timeline data', () => {
     it('When the page loads / Then shows the deal name and stage badge', async () => {
       render(<DealDetailPage />);
@@ -186,7 +231,7 @@ describe('DealDetailPage', () => {
     it('When the page loads / Then shows the deal financial value', async () => {
       render(<DealDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText('50,000')).toBeInTheDocument();
+        expect(screen.getAllByText('$50000').length).toBeGreaterThan(0);
       });
     });
 
@@ -240,11 +285,12 @@ describe('DealDetailPage', () => {
       });
     });
 
-    it('When the page loads / Then shows last activity date', async () => {
+    it('When the page loads / Then shows last activity date formatted in business timezone', async () => {
       render(<DealDetailPage />);
       await waitFor(() => {
-        const dateStr = new Date('2025-01-20T10:00:00Z').toLocaleDateString();
-        expect(screen.getByText(dateStr)).toBeInTheDocument();
+        // formatters.formatDate with UTC timezone and en-US locale renders 'Jan 20, 2025'
+        // getAllByText because activity a2 (2025-01-20) produces the same formatted string
+        expect(screen.getAllByText('Jan 20, 2025').length).toBeGreaterThan(0);
       });
     });
 
@@ -295,7 +341,7 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Follow up call')).toBeInTheDocument());
       const checkboxes = screen.getAllByRole('button').filter(b => b.className.includes('rounded border'));
       fireEvent.click(checkboxes[0]);
-      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'Done' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'DONE' }));
     });
 
     it('When no tasks exist / Then shows zero pending actions', async () => {
@@ -398,6 +444,25 @@ describe('DealDetailPage', () => {
         expect(screen.getByText('Back to Pipeline')).toBeInTheDocument();
       });
     });
+
+    it('When the not-found Back to Pipeline is clicked / Then it navigates to the pipeline list, not the dashboard', async () => {
+      mockGetDealById.mockResolvedValue(null);
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Back to Pipeline')).toBeInTheDocument());
+      await user.click(screen.getByText('Back to Pipeline'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
+    });
+  });
+
+  describe('Given a loaded deal / Then Back to Pipeline navigates to the pipeline list', () => {
+    it('When the header Back to Pipeline is clicked / Then it navigates to /crm/pipeline, not the dashboard', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('Back to Pipeline'));
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
+    });
   });
 
   describe('Given deal profile editing', () => {
@@ -450,6 +515,19 @@ describe('DealDetailPage', () => {
         expect(confirmTexts.length).toBeGreaterThan(1);
       });
     });
+
+    it('When delete confirmation modal opens / Then container has max-h-[90vh]', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      await user.click(screen.getByText('Delete'));
+      await waitFor(() => {
+        const panels = Array.from(document.querySelectorAll('div')).filter(
+          el => el.className.includes('max-h-[90vh]'),
+        );
+        expect(panels.length).toBeGreaterThan(0);
+      });
+    });
   });
 
   describe('Given deal with invoice', () => {
@@ -467,22 +545,179 @@ describe('DealDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
     });
 
-    it('When Request Invoice is clicked / Then calls requestInvoice API', async () => {
+    it('When Create Invoice is clicked / Then soft-navigates to Accounting invoices with deal params', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Request Invoice')).toBeInTheDocument());
-      await user.click(screen.getByText('Request Invoice'));
-      await waitFor(() => expect(mockRequestInvoice).toHaveBeenCalledWith('deal-1'));
+      await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Invoice'));
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
+    });
+  });
+
+  describe('Given Create Invoice navigation from Deal Detail', () => {
+    describe('When the feature flag is enabled', () => {
+      it('Then the Create Invoice button is visible on the page', async () => {
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+      });
+
+      it('When Create Invoice is clicked / Then calls navigate() for soft SPA navigation', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalled();
+      });
+
+      it('When Create Invoice is clicked / Then navigates to /accounting/invoices route', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
+      });
+
+      it('When Create Invoice is clicked / Then includes create=true in URL params', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
+      });
+
+      it('When Create Invoice is clicked / Then includes deal_id from route params in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('deal_id=deal-1'));
+      });
+
+      it('When Create Invoice is clicked / Then includes deal_name from the deal in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).toContain('deal_name=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Big Deal');
+      });
+
+      it('When Create Invoice is clicked / Then includes customer_name from deal company_name in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).toContain('customer_name=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Acme Corp');
+      });
+
+      it('When Create Invoice is clicked / Then includes amount from deal value in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('amount=50000'));
+      });
+
+      it('When Create Invoice is clicked / Then navigate is called exactly once', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const invoiceNavigateCalls = mockNavigate.mock.calls.filter(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/invoices')
+        );
+        expect(invoiceNavigateCalls).toHaveLength(1);
+      });
+
+      it('When Create Invoice is clicked / Then all required params are in the single URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).toContain('create=true');
+        expect(url).toContain('deal_id=deal-1');
+        expect(url).toContain('deal_name=');
+        expect(url).toContain('customer_name=');
+        expect(url).toContain('amount=50000');
+      });
+    });
+
+    describe('When deal has missing optional fields', () => {
+      it('When deal has no company_name / Then customer_name is omitted from URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ company_name: null }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).not.toContain('customer_name');
+      });
+
+      it('When deal value is null / Then amount is omitted from URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ value: null }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).not.toContain('amount');
+      });
+
+      it('When deal value is 0 / Then amount=0 is included in URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ value: 0 }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('amount=0'));
+      });
+
+      it('When deal has empty company_name string / Then customer_name is omitted from URL params', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ company_name: '' }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Invoice'));
+        const url = mockNavigate.mock.calls[0][0] as string;
+        expect(url).not.toContain('customer_name');
+      });
+    });
+
+    describe('When deal data is not yet loaded', () => {
+      it('When deal is null / Then clicking Create Invoice does nothing', async () => {
+        mockGetDealById.mockResolvedValue(null);
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.queryByText('Create Invoice')).not.toBeInTheDocument());
+        expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/accounting/invoices'));
+      });
     });
   });
 
   describe('Given deal project linking', () => {
-    it('When Link Project is clicked / Then opens the project modal', async () => {
+    it('When Create Project is clicked / Then opens the project modal', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Link Project')).toBeInTheDocument());
-      await user.click(screen.getByText('Link Project'));
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
       await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    });
+
+    it('When project modal opens / Then container has max-h-[90vh]', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+      await waitFor(() => {
+        const panels = Array.from(document.querySelectorAll('div')).filter(
+          el => el.className.includes('max-h-[90vh]'),
+        );
+        expect(panels.length).toBeGreaterThan(0);
+      });
     });
 
     it('When deal already has project / Then shows Manage Project button', async () => {
@@ -513,11 +748,87 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given deal with expected close date', () => {
-    it('When deal has expected_close_date / Then shows Closing date', async () => {
+    it('When deal has expected_close_date / Then shows Closing date formatted in business timezone', async () => {
       render(<DealDetailPage />);
       await waitFor(() => {
-        const dateText = new Date('2025-06-30').toLocaleDateString();
-        expect(screen.getByText(new RegExp(`Closing: ${dateText}`))).toBeInTheDocument();
+        // formatters.formatDate with UTC timezone and en-US locale renders 'Jun 30, 2025'
+        expect(screen.getByText(/Closing: Jun 30, 2025/)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Given Create Estimate navigation from Deal Detail', () => {
+    describe('When DEAL_ESTIMATE_REQUEST feature flag is enabled', () => {
+      it('Then Create Estimate button is visible on the page', async () => {
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      });
+
+      it('When Create Estimate is clicked / Then calls navigate()', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        expect(mockNavigate).toHaveBeenCalled();
+      });
+
+      it('When Create Estimate is clicked / Then navigates to /accounting/estimations', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/accounting/estimations'));
+      });
+
+      it('When Create Estimate is clicked / Then includes create=true in URL params', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('create=true'));
+      });
+
+      it('When Create Estimate is clicked / Then includes opportunity_ref from deal name in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        const url = mockNavigate.mock.calls.find(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
+        )?.[0] as string;
+        expect(url).toContain('opportunity_ref=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Big Deal');
+      });
+
+      it('When Create Estimate is clicked / Then includes customer_name from deal company_name in URL', async () => {
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        const url = mockNavigate.mock.calls.find(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
+        )?.[0] as string;
+        expect(url).toContain('customer_name=');
+        expect(decodeURIComponent(url.replace(/\+/g, ' '))).toContain('Acme Corp');
+      });
+
+      it('When deal has no company_name / Then customer_name is omitted from estimate URL', async () => {
+        mockGetDealById.mockResolvedValue(makeDeal({ company_name: null }));
+        const user = userEvent.setup();
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+        await user.click(screen.getByText('Create Estimate'));
+        const url = mockNavigate.mock.calls.find(
+          (call) => typeof call[0] === 'string' && call[0].includes('/accounting/estimations'),
+        )?.[0] as string;
+        expect(url).not.toContain('customer_name');
+      });
+
+      it('When deal is null / Then clicking Create Estimate does nothing', async () => {
+        mockGetDealById.mockResolvedValue(null);
+        render(<DealDetailPage />);
+        await waitFor(() => expect(screen.queryByText('Create Estimate')).not.toBeInTheDocument());
+        expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/accounting/estimations'));
       });
     });
   });

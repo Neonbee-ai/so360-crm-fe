@@ -22,7 +22,8 @@ vi.mock('./marketing/marketingMappers', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('@so360/design-system', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,

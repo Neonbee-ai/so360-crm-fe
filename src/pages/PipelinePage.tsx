@@ -3,19 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { crmService } from '../services/crmService';
 import { Deal, FlowState } from '../types/crm';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import CreateDealModal from '../pages/components/CreateDealModal';
 
 import { DealFilters } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
-import { useNotify, useActivity } from '@so360/shell-context';
+import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 
 const PipelinePage = () => {
     const navigate = useNavigate();
     const { toasts, showError, dismissToast } = useToast();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
+    const shell = useShellBridge();
+    const canCreateDeal = (shell?.effectiveFlagsLoaded ?? false) ? (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true) : true;
+    const [isCreateDealOpen, setIsCreateDealOpen] = useState(false);
     const [deals, setDeals] = useState<Deal[]>([]);
     const [stages, setStages] = useState<FlowState[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -43,9 +47,15 @@ const PipelinePage = () => {
         return () => clearTimeout(timeoutId);
     }, [filters, pollTick]);
 
-    // Auto-refresh pipeline every 60 seconds
+    // Auto-refresh pipeline every 60 seconds, but skip the heavy refetch while
+    // the tab is hidden — the data is re-fetched on the next visible tick.
     useEffect(() => {
-        const pollInterval = setInterval(() => setPollTick(t => t + 1), 60 * 1000);
+        const pollInterval = setInterval(() => {
+            if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+                return;
+            }
+            setPollTick(t => t + 1);
+        }, 60 * 1000);
         return () => clearInterval(pollInterval);
     }, []);
 
@@ -124,15 +134,26 @@ const PipelinePage = () => {
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8 flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Deals Pipeline</h1>
+                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Deals Pipeline</h1>
                     <p className="text-slate-400 mt-1">Visualize deal movement and sales progress</p>
                 </div>
-                {isFiltering && (
-                    <div className="flex items-center gap-2 text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 animate-pulse">
-                        <Loader2 className="animate-spin" size={14} />
-                        <span className="text-xs font-bold uppercase tracking-wider">Refining results...</span>
-                    </div>
-                )}
+                <div className="flex items-center gap-3">
+                    {isFiltering && (
+                        <div className="flex items-center gap-2 text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 animate-pulse">
+                            <Loader2 className="animate-spin" size={14} />
+                            <span className="text-xs font-bold uppercase tracking-wider">Refining results...</span>
+                        </div>
+                    )}
+                    {canCreateDeal && (
+                        <button
+                            onClick={() => setIsCreateDealOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors"
+                        >
+                            <Plus size={16} />
+                            New Deal
+                        </button>
+                    )}
+                </div>
             </header>
 
             <DealFilters filters={filters} onChange={setFilters} />
@@ -153,6 +174,13 @@ const PipelinePage = () => {
                 deal={transitionModal.deal}
                 newStage={transitionModal.newStage}
             />
+
+            {isCreateDealOpen && (
+                <CreateDealModal
+                    onClose={() => setIsCreateDealOpen(false)}
+                    onSuccess={() => { setIsCreateDealOpen(false); fetchData(); }}
+                />
+            )}
         </div>
     );
 };

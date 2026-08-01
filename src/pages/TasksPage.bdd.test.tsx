@@ -23,9 +23,13 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: { id: 'user-1', full_name: 'Test User' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 vi.mock('../components/common/Toast', () => ({
   ToastContainer: () => null,
@@ -38,11 +42,13 @@ vi.mock('../components/common/Table', () => ({
     tableProps = props;
     if (props.isLoading) return <div data-testid="table">Loading...</div>;
     if (props.data.length === 0) return <div data-testid="table">{props.emptyMessage}</div>;
+    const actionCol = props.columns?.[props.columns.length - 1];
     return (
       <div data-testid="table">
         {props.data.map((task: any) => (
           <div key={task.id} data-testid={`task-row-${task.id}`} onClick={() => props.onRowClick(task)}>
             {task.title} - {task.status}
+            {actionCol?.accessor(task)}
           </div>
         ))}
       </div>
@@ -53,9 +59,9 @@ vi.mock('../components/common/Table', () => ({
 import TasksPage from './TasksPage';
 
 const makeTasks = () => [
-  { id: 't1', title: 'Follow up call', description: 'Call client', status: 'Open', due_date: '2026-01-15', deal: { name: 'Big Deal', company_name: 'Big Deal Inc' }, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' } },
-  { id: 't2', title: 'Send proposal', description: 'Draft and send', status: 'Done', due_date: '2026-01-10', deal: null, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
-  { id: 't3', title: 'Review contract', description: null, status: 'Open', due_date: '2024-01-01', deal: { name: 'Old Deal', company_name: 'Old Deal Inc' }, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
+  { id: 't1', title: 'Follow up call', description: 'Call client', status: 'OPEN', due_date: '2026-01-15', deal: { name: 'Big Deal', company_name: 'Big Deal Inc' }, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' } },
+  { id: 't2', title: 'Send proposal', description: 'Draft and send', status: 'DONE', due_date: '2026-01-10', deal: null, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
+  { id: 't3', title: 'Review contract', description: null, status: 'OPEN', due_date: '2024-01-01', deal: { name: 'Old Deal', company_name: 'Old Deal Inc' }, lead: null, assigned_to: { id: 'user-2', full_name: 'Other User' } },
 ];
 
 const makeUsers = () => [
@@ -63,8 +69,10 @@ const makeUsers = () => [
   { id: 'user-2', full_name: 'Other User' },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   tableProps = {};
   mockGetTasks.mockResolvedValue(makeTasks());
   mockGetUsers.mockResolvedValue(makeUsers());
@@ -115,7 +123,7 @@ describe('TasksPage', () => {
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Open'));
       await waitFor(() => {
-        expect(tableProps.data.every((t: any) => t.status === 'Open')).toBe(true);
+        expect(tableProps.data.every((t: any) => t.status === 'OPEN')).toBe(true);
       });
     });
 
@@ -124,7 +132,7 @@ describe('TasksPage', () => {
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Done'));
       await waitFor(() => {
-        expect(tableProps.data.every((t: any) => t.status === 'Done')).toBe(true);
+        expect(tableProps.data.every((t: any) => t.status === 'DONE')).toBe(true);
       });
     });
 
@@ -135,7 +143,7 @@ describe('TasksPage', () => {
       const overdueBtn = filterBtns.find(b => b.textContent === 'Overdue')!;
       fireEvent.click(overdueBtn);
       await waitFor(() => {
-        const openPastDue = tableProps.data.filter((t: any) => t.status === 'Open' && new Date(t.due_date) < new Date());
+        const openPastDue = tableProps.data.filter((t: any) => t.status === 'OPEN' && new Date(t.due_date) < new Date());
         expect(tableProps.data.length).toBe(openPastDue.length);
       });
     });
@@ -152,12 +160,7 @@ describe('TasksPage', () => {
     it('When delete confirmed / Then removes task from list', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const columns = tableProps.columns;
-      const deleteCol = columns[columns.length - 1];
-      const cell = deleteCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      const btn = container.querySelector('button');
-      fireEvent.click(btn!);
+      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('t1'));
@@ -167,12 +170,7 @@ describe('TasksPage', () => {
       mockDeleteTask.mockRejectedValue(new Error('Server error'));
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const columns = tableProps.columns;
-      const deleteCol = columns[columns.length - 1];
-      const cell = deleteCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      const btn = container.querySelector('button');
-      fireEvent.click(btn!);
+      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(screen.getByText('Server error')).toBeInTheDocument());
@@ -181,11 +179,7 @@ describe('TasksPage', () => {
     it('When cancel is clicked / Then dismisses delete dialog', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      const columns = tableProps.columns;
-      const deleteCol = columns[columns.length - 1];
-      const cell = deleteCol.accessor(makeTasks()[0]);
-      const { container } = render(cell);
-      fireEvent.click(container.querySelector('button')!);
+      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Cancel'));
       await waitFor(() => expect(screen.queryByText('Delete Task')).not.toBeInTheDocument());
@@ -223,12 +217,41 @@ describe('TasksPage', () => {
   describe('Given pagination controls', () => {
     it('When page size is changed / Then resets to page 1', async () => {
       const manyTasks = Array.from({ length: 15 }, (_, i) => ({
-        id: `t${i}`, title: `Task ${i}`, description: null, status: 'Open',
+        id: `t${i}`, title: `Task ${i}`, description: null, status: 'OPEN',
         due_date: '2026-01-15', deal: null, lead: null, assigned_to: { id: 'user-1', full_name: 'Test User' },
       }));
       mockGetTasks.mockResolvedValue(manyTasks);
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByText('Page 1 of 2')).toBeInTheDocument());
+    });
+  });
+
+  describe('Given search bar rendering', () => {
+    it('When Tasks page loads / Then search input uses consistent CRM padding and text-sm class', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const input = screen.getByPlaceholderText('Search tasks...');
+      expect(input.className).toContain('pl-10');
+      expect(input.className).toContain('py-2');
+      expect(input.className).toContain('text-sm');
+      expect(input.className).not.toContain('pl-12');
+      expect(input.className).not.toContain('py-2.5');
+    });
+
+    it('When Tasks page loads / Then search input has placeholder-slate-400 matching other CRM modules', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const input = screen.getByPlaceholderText('Search tasks...');
+      expect(input.className).toContain('placeholder-slate-400');
+    });
+
+    it('When Tasks page loads / Then outer search+filter container has md:items-center for proper icon alignment', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const input = screen.getByPlaceholderText('Search tasks...');
+      // input → relative wrapper → outer flex container
+      const outerContainer = input.parentElement?.parentElement;
+      expect(outerContainer?.className).toContain('md:items-center');
     });
   });
 
@@ -249,7 +272,7 @@ describe('TasksPage', () => {
       const cell = statusCol.accessor(makeTasks()[0]);
       const { container } = render(cell);
       const select = container.querySelector('select');
-      expect(select?.value).toBe('Open');
+      expect(select?.value).toBe('OPEN');
     });
 
     it('When status column renders a done task / Then shows Done selected', async () => {
@@ -259,7 +282,7 @@ describe('TasksPage', () => {
       const cell = statusCol.accessor(makeTasks()[1]);
       const { container } = render(cell);
       const select = container.querySelector('select');
-      expect(select?.value).toBe('Done');
+      expect(select?.value).toBe('DONE');
     });
 
     it('When assignee column renders / Then shows user select with current assignee', async () => {
@@ -289,6 +312,37 @@ describe('TasksPage', () => {
       const cell = associatedWithCol.accessor(makeTasks()[0]);
       const { container } = render(cell);
       expect(container.textContent).toContain('Big Deal');
+    });
+  });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then delete button in action column is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      // canCreateTask is false before flags resolve — the delete column renders nothing
+      const actionsCol = tableProps.columns[tableProps.columns.length - 1];
+      const cell = actionsCol.accessor(makeTasks()[0]);
+      const { container } = render(cell);
+      expect(container.querySelector('button')).toBeNull();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then delete button in action column is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const actionsCol = tableProps.columns[tableProps.columns.length - 1];
+      const cell = actionsCol.accessor(makeTasks()[0]);
+      const { container } = render(cell);
+      expect(container.querySelector('button')).not.toBeNull();
     });
   });
 });

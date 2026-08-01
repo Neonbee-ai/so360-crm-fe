@@ -3,10 +3,15 @@ import { Plus, Trash2, MailX, Search, Mail, Loader2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { useShellBridge } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingNewsletterPage: React.FC = () => {
+  const formatters = useCRMFormatters();
+  const shell = useShellBridge();
+  const canCreateMarketing = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:marketing:create') ?? true);
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,7 +82,7 @@ const MarketingNewsletterPage: React.FC = () => {
     <div className="p-8">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-white tracking-tight uppercase">Newsletter Subscribers</h1>
+        <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Newsletter Subscribers</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage storefront newsletter audience</p>
       </div>
 
@@ -99,18 +104,18 @@ const MarketingNewsletterPage: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     placeholder="customer@example.com"
                   />
                 </div>
               </div>
-              <button
+              {canCreateMarketing && <button
                 onClick={handleAdd}
                 disabled={!email || !storeId}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
               >
                 <Plus size={14} /> Add Subscriber
-              </button>
+              </button>}
             </div>
           </section>
         </div>
@@ -125,7 +130,7 @@ const MarketingNewsletterPage: React.FC = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-xs text-white focus:border-blue-500 outline-none transition-all font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-xs text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   placeholder="Search email..."
                 />
               </div>
@@ -158,7 +163,7 @@ const MarketingNewsletterPage: React.FC = () => {
                               {s.unsubscribed_at ? 'Unsubscribed' : 'Active'}
                             </span>
                             <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">• {s.source || 'Manual'}</span>
-                            <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">• Subscribed {new Date(s.subscribed_at).toLocaleDateString()}</span>
+                            <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">• Subscribed {formatters.formatDate(s.subscribed_at)}</span>
                           </div>
                         </div>
                       </div>
@@ -172,13 +177,13 @@ const MarketingNewsletterPage: React.FC = () => {
                             <MailX size={16} />
                           </button>
                         )}
-                        <button
+                        {canCreateMarketing && <button
                           onClick={() => handleDelete(s.id)}
                           className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
-                        </button>
+                        </button>}
                       </div>
                     </div>
                   ))}

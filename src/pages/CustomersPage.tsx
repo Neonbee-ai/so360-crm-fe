@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Users, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag } from 'lucide-react';
-import { useShellBridge } from '@so360/shell-context';
+import { Search, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
+import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
+import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 
 type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
 type SortDirection = 'asc' | 'desc' | null;
@@ -26,15 +28,20 @@ const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }
 const CustomersPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const formatters = useCRMFormatters();
     const shell = useShellBridge();
+    const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
 
     // Feature-flag-driven KPI visibility
-    const showModelSplit = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false;
-    const showWeb        = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_web') : true;
-    const showMobile     = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_mobile') : true;
-    const showOffline    = shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true;
+    // Guard on effectiveFlagsLoaded to prevent "visible then snaps hidden" flicker
+    const flagsReady     = shell?.effectiveFlagsLoaded ?? false;
+    const showModelSplit = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:show_model_split') : false);
+    const showWeb        = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_web') : true);
+    const showMobile     = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_mobile') : true);
+    const showOffline    = flagsReady && (shell?.isFeatureEnabled ? shell.isFeatureEnabled('action:crm:customers:kpi_channel_offline') : true);
     const [customers, setCustomers] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
+    const [partners, setPartners] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +54,9 @@ const CustomersPage = () => {
     const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
     const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
 
+    // Only the customer list depends on the search params. Stats and partners are
+    // org-static, so they are fetched once (see the mount effect below) instead of
+    // re-firing on every filter/search change.
     const fetchData = async () => {
         setIsLoading(true);
         setError(null);
@@ -60,7 +70,6 @@ const CustomersPage = () => {
                 .map((id) => id.trim())
                 .filter(Boolean);
 
-            const statsPromise = crmService.getCustomerStats();
             let customersData: any[] = [];
 
             if (segmentId) {
@@ -81,9 +90,7 @@ const CustomersPage = () => {
                 setActiveSegmentName(null);
             }
 
-            const statsData = await statsPromise;
             setCustomers(customersData || []);
-            setStats(statsData || {});
         } catch (err: any) {
             console.error('Failed to fetch customers', err);
             setError(err.message || 'Failed to load customers');
@@ -98,6 +105,19 @@ const CustomersPage = () => {
         setCategoryFilter(queryParams.get('category') || 'All');
         fetchData();
     }, [location.search]);
+
+    useEffect(() => {
+        let cancelled = false;
+        Promise.all([
+            crmService.getCustomerStats().catch(() => ({})),
+            crmService.getPartners().catch(() => [] as any[]),
+        ]).then(([statsData, partnersData]) => {
+            if (cancelled) return;
+            setStats(statsData || {});
+            setPartners(partnersData || []);
+        });
+        return () => { cancelled = true; };
+    }, []);
 
     const toggleSort = (field: SortField) => {
         if (sortField === field) {
@@ -120,7 +140,7 @@ const CustomersPage = () => {
     const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
         <button
             onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
         >
             {label}
             <SortIcon field={field} />
@@ -160,11 +180,16 @@ const CustomersPage = () => {
         return result;
     }, [customers, searchTerm, channelFilter, categoryFilter, sortField, sortDirection]);
 
-    const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+    const sandboxLimitedCustomers = useMemo(
+        () => isSandboxMode ? filteredCustomers.slice(0, sandboxEntryLimit) : filteredCustomers,
+        [filteredCustomers, isSandboxMode, sandboxEntryLimit],
+    );
+
+    const totalPages = Math.ceil(sandboxLimitedCustomers.length / pageSize);
     const paginatedCustomers = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
-        return filteredCustomers.slice(start, start + pageSize);
-    }, [filteredCustomers, currentPage, pageSize]);
+        return sandboxLimitedCustomers.slice(start, start + pageSize);
+    }, [sandboxLimitedCustomers, currentPage, pageSize]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -212,7 +237,7 @@ const CustomersPage = () => {
                 <div className="flex items-center gap-2">
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white">{c.contact_name}</span>
+                            <span className="font-semibold text-slate-50">{c.contact_name}</span>
                             <CategoryBadge category={c.customer_category || 'b2c'} />
                         </div>
                         {c.company_name && c.company_name !== c.contact_name && (
@@ -270,11 +295,24 @@ const CustomersPage = () => {
             accessor: (c: any) => <AcquisitionBadge source={c.acquisition_source} />,
         },
         {
+            header: 'Referred By',
+            accessor: (c: any) => {
+                if (!c.referred_by) return <span className="text-slate-600 text-sm">—</span>;
+                const partner = partners.find((p: any) => p.id === c.referred_by);
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                        <GitMerge size={11} />
+                        {partner?.company_name || c.referred_by}
+                    </span>
+                );
+            },
+        },
+        {
             header: <SortableHeader label="Joined" field="created_at" />,
             accessor: (c: any) => (
                 <span className="text-slate-400 text-sm flex items-center gap-1.5">
                     <Calendar size={14} />
-                    {new Date(c.created_at).toLocaleDateString()}
+                    {formatters.formatDate(c.created_at)}
                 </span>
             ),
         },
@@ -283,67 +321,31 @@ const CustomersPage = () => {
     return (
         <div className="p-8">
             <header className="mb-8">
-                <h1 className="text-3xl font-bold text-white tracking-tight">Customers</h1>
+                <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Customers</h1>
                 <p className="text-slate-400 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
             </header>
 
-            {/* Stats Row — cards gated by feature flags */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                        <Users size={14} /> Total
-                    </div>
-                    <div className="text-2xl font-bold text-white">{stats.total || 0}</div>
-                </div>
-                {showModelSplit && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-emerald-400 text-xs font-medium mb-1">
-                            <Building2 size={14} /> B2B
-                        </div>
-                        <div className="text-2xl font-bold text-white">{stats.b2b_count || 0}</div>
-                    </div>
-                )}
-                {showModelSplit && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <Users size={14} /> B2C
-                        </div>
-                        <div className="text-2xl font-bold text-white">{stats.b2c_count || 0}</div>
-                    </div>
-                )}
-                {showWeb && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <Globe size={14} /> Web
-                        </div>
-                        <div className="text-2xl font-bold text-white">{stats.storefront_web || 0}</div>
-                    </div>
-                )}
-                {showMobile && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <Smartphone size={14} /> Mobile
-                        </div>
-                        <div className="text-2xl font-bold text-white">{stats.storefront_mobile || 0}</div>
-                    </div>
-                )}
-                {showOffline && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <ShoppingCart size={14} /> POS
-                        </div>
-                        <div className="text-2xl font-bold text-white">{stats.pos || 0}</div>
-                    </div>
-                )}
-                {showOffline && (
-                    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1">
-                            <UserPlus size={14} /> Manual
-                        </div>
-                        <div className="text-2xl font-bold text-white">{stats.manual || 0}</div>
-                    </div>
-                )}
-            </div>
+            {/* Summary chips — gated by feature flags; standardized with Leads & Accounts */}
+            <SummaryMetricChips
+                className="mb-6"
+                chips={[
+                    { key: 'total', label: 'Total', count: stats.total || 0, active: channelFilter === 'All' && categoryFilter === 'All', onClick: () => { setChannelFilter('All'); setCategoryFilter('All'); } },
+                    ...(showModelSplit ? [
+                        { key: 'b2b', label: 'B2B', count: stats.b2b_count || 0, active: categoryFilter === 'b2b', onClick: () => setCategoryFilter(categoryFilter === 'b2b' ? 'All' : 'b2b') },
+                        { key: 'b2c', label: 'B2C', count: stats.b2c_count || 0, active: categoryFilter === 'b2c', onClick: () => setCategoryFilter(categoryFilter === 'b2c' ? 'All' : 'b2c') },
+                    ] : []),
+                    ...(showWeb ? [
+                        { key: 'web', label: 'Web', count: stats.storefront_web || 0, active: channelFilter === 'storefront_web', onClick: () => setChannelFilter(channelFilter === 'storefront_web' ? 'All' : 'storefront_web') },
+                    ] : []),
+                    ...(showMobile ? [
+                        { key: 'mobile', label: 'Mobile', count: stats.storefront_mobile || 0, active: channelFilter === 'storefront_mobile', onClick: () => setChannelFilter(channelFilter === 'storefront_mobile' ? 'All' : 'storefront_mobile') },
+                    ] : []),
+                    ...(showOffline ? [
+                        { key: 'pos', label: 'POS', count: stats.pos || 0, active: channelFilter === 'pos', onClick: () => setChannelFilter(channelFilter === 'pos' ? 'All' : 'pos') },
+                        { key: 'manual', label: 'Manual', count: stats.manual || 0, active: channelFilter === 'manual', onClick: () => setChannelFilter(channelFilter === 'manual' ? 'All' : 'manual') },
+                    ] : []),
+                ]}
+            />
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
@@ -398,6 +400,14 @@ const CustomersPage = () => {
                 )}
             </div>
 
+            {/* Sandbox limit notice */}
+            {isSandboxMode && isLimited(filteredCustomers.length) && (
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                    <span className="font-semibold">Sandbox mode:</span>
+                    showing {sandboxEntryLimit} of {filteredCustomers.length} customers — full list visible in production.
+                </div>
+            )}
+
             {/* Table */}
             <Table
                 data={paginatedCustomers}
@@ -408,7 +418,7 @@ const CustomersPage = () => {
             />
 
             {/* Pagination */}
-            {filteredCustomers.length > 0 && (
+            {sandboxLimitedCustomers.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-slate-400">
                         <span>Show</span>
@@ -421,7 +431,7 @@ const CustomersPage = () => {
                                 <option key={size} value={size}>{size}</option>
                             ))}
                         </select>
-                        <span>of {filteredCustomers.length} customers</span>
+                        <span>of {sandboxLimitedCustomers.length} customers</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">First</button>

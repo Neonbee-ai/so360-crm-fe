@@ -11,6 +11,7 @@ vi.mock('../services/crmService', () => ({
     getCustomers: (...args: any[]) => mockGetCustomers(...args),
     getCustomerStats: (...args: any[]) => mockGetCustomerStats(...args),
     getCustomerSegmentCustomers: (...args: any[]) => mockGetCustomerSegmentCustomers(...args),
+    getPartners: () => Promise.resolve([]),
   },
 }));
 
@@ -20,11 +21,14 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShellBridge: () => ({
     isFeatureEnabled: () => true,
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 vi.mock('../components/common/Table', () => ({
   Table: ({ data, isLoading, emptyMessage }: any) => (
@@ -67,7 +71,7 @@ describe('Given CustomersPage', () => {
     mockGetCustomerStats.mockResolvedValue({ total: 42 });
     render(<CustomersPage />);
     await waitFor(() => {
-      expect(screen.getByText('42')).toBeInTheDocument();
+      expect(screen.getByTestId('summary-metric-chip-total')).toHaveTextContent('42');
     });
   });
 });

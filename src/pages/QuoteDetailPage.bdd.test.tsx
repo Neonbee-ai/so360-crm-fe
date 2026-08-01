@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 
 const mockGetQuoteById = vi.fn();
@@ -32,6 +32,10 @@ vi.mock('@so360/shell-context', () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useOrganization: () => ({ currentOrg: { id: 'org-1', name: 'Test Org' } }),
 }));
 
 vi.mock('@so360/formatters', () => ({
@@ -54,8 +58,10 @@ const quoteData = {
   customer: { id: 'c1', company_name: 'Acme' },
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetQuoteById.mockResolvedValue(quoteData);
   mockGetStockAvailability.mockResolvedValue({ items: [{ item_id: 'i1', available_quantity: 100 }] });
   mockUpdateQuote.mockResolvedValue(quoteData);
@@ -160,6 +166,326 @@ describe('QuoteDetailPage', () => {
       await waitFor(() => {
         expect(screen.getByText(/convert to order/i)).toBeInTheDocument();
       });
+    });
+  });
+
+  // ── Fix: updateLine uses functional updater (prevents stale-closure on rapid typing) ──
+
+  describe('Given a Draft quote is in edit mode', () => {
+    it('When Quantity is changed / Then Save sends the updated quantity', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('2');
+      fireEvent.change(qtyInputs[0], { target: { value: '7' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ quantity: 7 }),
+            ]),
+          }),
+        );
+      });
+    });
+
+    it('When Unit Price is changed / Then Save sends the updated unit price', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInputs = screen.getAllByDisplayValue('2500');
+      fireEvent.change(priceInputs[0], { target: { value: '1000' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ unit_price: 1000 }),
+            ]),
+          }),
+        );
+      });
+    });
+
+    it('When Quantity changes multiple times / Then final value is committed (no stale state)', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('2');
+      fireEvent.change(qtyInputs[0], { target: { value: '5' } });
+      fireEvent.change(qtyInputs[0], { target: { value: '50' } });
+      fireEvent.change(qtyInputs[0], { target: { value: '500' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ quantity: 500 }),
+            ]),
+          }),
+        );
+      });
+    });
+  });
+
+  // ── Fix: stock useEffect bail-out avoids spurious re-renders when map is already empty ──
+
+  describe('Given a Draft quote with lines that have no item_id', () => {
+    it('When loaded / Then getStockAvailability is NOT called for lines without item_id', async () => {
+      const noItemIdQuote = {
+        ...quoteData,
+        lines: [{ id: 'ql2', description: 'Manual Item', quantity: 1, unit_price: 100, line_total: 100, discount_percent: 0, tax_rate: 0 }],
+      };
+      mockGetQuoteById.mockResolvedValue(noItemIdQuote);
+
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      expect(mockGetStockAvailability).not.toHaveBeenCalled();
+    });
+
+    it('When Quantity changes on a line with no item_id / Then getStockAvailability is still not called', async () => {
+      const noItemIdQuote = {
+        ...quoteData,
+        lines: [{ id: 'ql2', description: 'Manual Item', quantity: 1, unit_price: 100, line_total: 100, discount_percent: 0, tax_rate: 0 }],
+      };
+      mockGetQuoteById.mockResolvedValue(noItemIdQuote);
+
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('1');
+      fireEvent.change(qtyInputs[0], { target: { value: '3' } });
+
+      expect(mockGetStockAvailability).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Fix: stable tr keys — existing rows maintain DOM identity after adding a new line ──
+
+  describe('Given a Draft quote in edit mode with multiple line items', () => {
+    it('When a second line is added / Then both line items remain in the table', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.click(screen.getByText(/add line/i));
+
+      const rows = screen.getAllByRole('row');
+      // header row + 2 data rows (original + new)
+      expect(rows.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('When first line Quantity is edited then a new line is added / Then first line value is preserved', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInputs = screen.getAllByDisplayValue('2');
+      fireEvent.change(qtyInputs[0], { target: { value: '9' } });
+
+      fireEvent.click(screen.getByText(/add line/i));
+
+      // After adding a line the first input should still reflect 9
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('9')).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ── Fix: type="text" inputs — raw string preserved for intermediate typing states ──
+
+  describe('Given a Draft quote is in edit mode — numeric input type fix', () => {
+    it('When edit mode is active / Then Quantity input is type="text" (not type="number")', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const qtyInput = screen.getByDisplayValue('2');
+      expect(qtyInput.getAttribute('type')).toBe('text');
+    });
+
+    it('When edit mode is active / Then Quantity input has inputMode="numeric"', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const qtyInput = screen.getByDisplayValue('2');
+      expect(qtyInput.getAttribute('inputmode')).toBe('numeric');
+    });
+
+    it('When edit mode is active / Then Unit Price input is type="text" (not type="number")', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const priceInput = screen.getByDisplayValue('2500');
+      expect(priceInput.getAttribute('type')).toBe('text');
+    });
+
+    it('When edit mode is active / Then Unit Price input has inputMode="decimal"', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      const priceInput = screen.getByDisplayValue('2500');
+      expect(priceInput.getAttribute('inputmode')).toBe('decimal');
+    });
+
+    it('When the user types "05" in Quantity / Then the draftValue "05" is preserved (not cleared)', async () => {
+      // type="number" in Chrome returns e.target.value="" for "05" (leading zero = invalid).
+      // type="text" returns the raw "05" string, preserving the typing state.
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInput = screen.getByDisplayValue('2');
+      fireEvent.change(qtyInput, { target: { value: '05' } });
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('05')).toBeInTheDocument();
+      });
+    });
+
+    it('When the user types "25." in Unit Price / Then the draftValue "25." is preserved (not cleared)', async () => {
+      // type="number" in Chrome returns "" for "25." (incomplete decimal = invalid).
+      // type="text" returns the raw "25." string so the user can continue typing digits.
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInput = screen.getByDisplayValue('2500');
+      fireEvent.change(priceInput, { target: { value: '25.' } });
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('25.')).toBeInTheDocument();
+      });
+    });
+
+    it('When the user types a full decimal "99.99" in Unit Price / Then the value is committed on blur', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInput = screen.getByDisplayValue('2500');
+      fireEvent.change(priceInput, { target: { value: '99.99' } });
+      fireEvent.blur(priceInput, { target: { value: '99.99' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        expect(mockUpdateQuote).toHaveBeenCalledWith(
+          'q-1',
+          expect.objectContaining({
+            lines: expect.arrayContaining([
+              expect.objectContaining({ unit_price: 99.99 }),
+            ]),
+          }),
+        );
+      });
+    });
+
+    it('When the user clears Quantity and blurs / Then it falls back to 1', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInput = screen.getByDisplayValue('2');
+      fireEvent.change(qtyInput, { target: { value: '' } });
+      fireEvent.blur(qtyInput, { target: { value: '' } });
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+      });
+    });
+
+    it('When the user clears Unit Price and blurs / Then it falls back to 0', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const priceInput = screen.getByDisplayValue('2500');
+      fireEvent.change(priceInput, { target: { value: '' } });
+      fireEvent.blur(priceInput, { target: { value: '' } });
+
+      await waitFor(() => {
+        // discount_percent and tax_rate also show "0"; use getAllByDisplayValue
+        const zeroInputs = screen.getAllByDisplayValue('0');
+        expect(zeroInputs.length).toBeGreaterThanOrEqual(1);
+        // the unit_price input (formerly "2500") must now be one of the zeros
+        expect(zeroInputs.some(el => el === priceInput || el.getAttribute('inputmode') === 'decimal')).toBe(true);
+      });
+    });
+
+    it('When the user types non-numeric text in Quantity / Then Save does not update the quantity', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      const qtyInput = screen.getByDisplayValue('2');
+      fireEvent.change(qtyInput, { target: { value: 'abc' } });
+
+      fireEvent.click(screen.getByText(/^save$/i));
+
+      await waitFor(() => {
+        const [, payload] = mockUpdateQuote.mock.calls[0];
+        // parseFloat('abc') === NaN → updateLine not called → quantity stays 2
+        expect(payload.lines[0].quantity).toBe(2);
+      });
+    });
+
+    it('When the Discount % input is in edit mode / Then it is type="text" with inputMode="decimal"', async () => {
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Test Quote'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+
+      // Both discount_percent and tax_rate start at 0 — grab all zero-valued inputs
+      const zeroInputs = screen.getAllByDisplayValue('0');
+      expect(zeroInputs.length).toBeGreaterThanOrEqual(2);
+      zeroInputs.forEach(input => {
+        expect(input.getAttribute('type')).toBe('text');
+        expect(input.getAttribute('inputmode')).toBe('decimal');
+      });
+    });
+  });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Edit button is absent (no flicker)', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
+      render(<QuoteDetailPage />);
+      await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());
+      // canCreateQuote is false before flags resolve — Edit button must not flash
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Edit button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<QuoteDetailPage />);
+      await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());
+      expect(screen.getByText('Edit')).toBeInTheDocument();
     });
   });
 });

@@ -23,10 +23,13 @@ vi.mock('../../components/common/Toast', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: { id: 'u1', full_name: 'Test User' } }),
   useNotify: () => ({ emitNotification: (...a: any[]) => mockEmitNotification(...a) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
-}));
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('../../utils/taskUtils', () => ({
   canCurrentUserBeAssigned: () => true,
@@ -40,8 +43,8 @@ beforeEach(() => {
     { id: 'u1', full_name: 'Test User', email: 't@t.com' },
     { id: 'u2', full_name: 'Other User', email: 'o@o.com' },
   ]);
-  mockCreateTask.mockResolvedValue({ id: 't-new', title: 'New', status: 'Open' });
-  mockUpdateTask.mockResolvedValue({ id: 't1', title: 'Updated', status: 'Open' });
+  mockCreateTask.mockResolvedValue({ id: 't-new', title: 'New', status: 'OPEN' });
+  mockUpdateTask.mockResolvedValue({ id: 't1', title: 'Updated', status: 'OPEN' });
   mockEmitNotification.mockResolvedValue(undefined);
   mockRecordActivity.mockResolvedValue(undefined);
 });
@@ -65,7 +68,7 @@ describe('Given TaskModal', () => {
       <TaskModal
         {...defaultProps}
         task={{
-          id: 't1', title: 'Existing', status: 'Open',
+          id: 't1', title: 'Existing', status: 'OPEN',
           due_date: '2024-06-15', type: 'TODO',
           assigned_to: { id: 'u1', full_name: 'Test', email: '', avatar_url: '' },
         } as any}
@@ -81,7 +84,7 @@ describe('Given TaskModal', () => {
       <TaskModal
         {...defaultProps}
         task={{
-          id: 't1', title: 'Reminder', status: 'Open',
+          id: 't1', title: 'Reminder', status: 'OPEN',
           due_date: '2024-06-15T10:00:00Z', type: 'REMINDER',
           assigned_to: { id: 'u1', full_name: 'Test', email: '', avatar_url: '' },
         } as any}
@@ -119,9 +122,10 @@ describe('Given TaskModal', () => {
     await waitFor(() => screen.getByText('New Task'));
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'My Task' } });
-    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    const dueDateInput = (dateInputs[1] || dateInputs[0]) as HTMLInputElement;
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    if (dateInput) fireEvent.change(dateInput, { target: { value: futureDate } });
+    if (dueDateInput) fireEvent.change(dueDateInput, { target: { value: futureDate } });
     const form = document.querySelector('form');
     if (form) fireEvent.submit(form);
 
@@ -135,7 +139,7 @@ describe('Given TaskModal', () => {
       <TaskModal
         {...defaultProps}
         task={{
-          id: 't1', title: 'Existing', status: 'Open',
+          id: 't1', title: 'Existing', status: 'OPEN',
           due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], type: 'TODO',
           assigned_to: { id: 'u1', full_name: 'Test', email: '', avatar_url: '' },
         } as any}

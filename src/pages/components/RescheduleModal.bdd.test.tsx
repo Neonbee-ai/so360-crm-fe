@@ -45,6 +45,17 @@ describe('RescheduleModal', () => {
     });
   });
 
+  describe('Given modal size constraint', () => {
+    it('When rendered / Then modal panel has max-h-[90vh] and overflow-y-auto', () => {
+      render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={vi.fn()} onConfirm={vi.fn()} />);
+      const panels = Array.from(document.querySelectorAll('div')).filter(
+        el => el.className.includes('max-h-[90vh]'),
+      );
+      expect(panels.length).toBeGreaterThan(0);
+      expect(panels[0].className).toContain('overflow-y-auto');
+    });
+  });
+
   describe('Given the user submits a new date', () => {
     it('When the form is submitted / Then calls onConfirm with the selected date', () => {
       const onConfirm = vi.fn();

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { crmService } from '../services/crmService';
+import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
 import { useActivity } from '@so360/shell-context';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCampaignDetailPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const navigate = useNavigate();
   const { campaignId } = useParams<{ campaignId: string }>();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
@@ -59,13 +61,31 @@ const MarketingCampaignDetailPage: React.FC = () => {
       {campaign && (
         <>
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4">
-            <h1 className="text-2xl font-semibold text-white">{campaign.name}</h1>
+            <h1 className="text-2xl font-semibold text-slate-50">{campaign.name}</h1>
             <p className="text-slate-400 mt-1">{campaign.campaign_type} • {campaign.status}</p>
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
               <p className="text-slate-300"><span className="text-slate-500">Subject:</span> {campaign.subject_template || '-'}</p>
               <p className="text-slate-300"><span className="text-slate-500">Sent At:</span> {formatDateTime(campaign.sent_at)}</p>
               <p className="text-slate-300"><span className="text-slate-500">Recipients:</span> {campaign.total_recipients || 0}</p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            {[
+              { label: 'Open Rate', value: `${Math.round((campaign.open_rate || 0) * 100)}%` },
+              { label: 'Click Rate', value: `${Math.round((campaign.click_rate || 0) * 100)}%` },
+              { label: 'Sent', value: (campaign.sent_count || 0).toLocaleString() },
+              { label: 'Delivered', value: (campaign.delivered || 0).toLocaleString() },
+              { label: 'Revenue', value: formatters.formatCurrency(campaign.revenue_attributed || 0) },
+              { label: 'Unsubscribes', value: String(campaign.unsubscribes || 0) },
+              { label: 'Clicks', value: String(campaign.clicks || 0) },
+              ...(campaign.segment ? [{ label: 'Segment', value: campaign.segment }] : []),
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <p className="text-slate-400 text-xs">{label}</p>
+                <p className="text-slate-100 text-xl font-bold">{value}</p>
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">

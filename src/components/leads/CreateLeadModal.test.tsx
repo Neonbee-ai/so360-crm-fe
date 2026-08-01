@@ -14,13 +14,27 @@ vi.mock('../../services/crmService', () => ({
   crmService: {
     getSettings: (...a: any[]) => mockGetSettings(...a),
     createLead: (...a: any[]) => mockCreateLead(...a),
+    getUsers: () => Promise.resolve([{ id: 'u1', full_name: 'Test User', email: 't@t.com' }]),
+    getPartners: () => Promise.resolve([]),
+  },
+  settingsApi: {
+    sourceTypes: {
+      getAll: () => Promise.resolve([
+        { id: 'st1', label: 'Website', value: 'website', is_active: true },
+        { id: 'st2', label: 'Referral', value: 'referral', is_active: true },
+      ]),
+    },
   },
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
-}));
+  useIdentity: () => ({ user: { id: 'u1', full_name: 'Test User', email: 't@t.com' } }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 import { CreateLeadModal } from './CreateLeadModal';
 
@@ -65,9 +79,10 @@ describe('Given CreateLeadModal', () => {
   it('When action / Then shows all form fields', async () => {
     render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
     await waitFor(() => {
-      expect(screen.getByText(/contact name/i)).toBeInTheDocument();
+      expect(screen.getByText(/first name/i)).toBeInTheDocument();
+      expect(screen.getByText(/last name/i)).toBeInTheDocument();
       expect(screen.getByText(/contact email/i)).toBeInTheDocument();
-      expect(screen.getByText(/phone/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/phone/i).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/lead source/i)).toBeInTheDocument();
       expect(screen.getByText(/lead stage/i)).toBeInTheDocument();
     });
@@ -98,6 +113,7 @@ describe('Given CreateLeadModal', () => {
     await waitFor(() => screen.getByTestId('modal'));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
 
     const form = screen.getByTestId('modal').querySelector('form');
     if (form) {
@@ -116,6 +132,7 @@ describe('Given CreateLeadModal', () => {
     await waitFor(() => screen.getByTestId('modal'));
 
     fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
     const form = screen.getByTestId('modal').querySelector('form');
     if (form) fireEvent.submit(form);
 

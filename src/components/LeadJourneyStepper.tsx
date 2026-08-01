@@ -18,7 +18,7 @@ interface LeadJourneyStepperProps {
 }
 
 export const LeadJourneyStepper: React.FC<LeadJourneyStepperProps> = ({ currentState }) => {
-    const normalized = currentState?.toLowerCase() || 'new';
+    const normalized = currentState?.toLowerCase().replace(/\s+/g, '_') || 'new';
     const isLost = normalized === 'lost';
     const isConverted = normalized === 'converted';
 
@@ -47,19 +47,19 @@ export const LeadJourneyStepper: React.FC<LeadJourneyStepperProps> = ({ currentS
                             <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
                                 isCompleted ? (isTerminalConverted ? 'bg-emerald-500 text-white' : 'bg-teal-500 text-white') :
                                 isCurrent ? (state === 'converted' ? 'bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400' : 'bg-teal-500/20 border-2 border-teal-500 text-teal-400') :
-                                'bg-slate-800 border border-slate-600 text-slate-600'
+                                'bg-slate-500/10 border border-slate-400 text-slate-400'
                             }`}>
                                 {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                             </div>
                             <span className={`text-xs mt-2 text-center w-16 ${
-                                isCompleted || isCurrent ? (state === 'converted' ? 'text-emerald-400' : 'text-teal-400') : 'text-slate-600'
+                                isCompleted || isCurrent ? (state === 'converted' ? 'text-emerald-400' : 'text-teal-400') : 'text-slate-400'
                             }`}>
                                 {STATE_LABELS[state]}
                             </span>
                         </div>
                         {!isLast && (
                             <div className={`flex-1 h-0.5 min-w-4 ${
-                                isCompleted ? 'bg-teal-500' : 'bg-slate-700'
+                                isCompleted ? 'bg-teal-500' : 'bg-slate-400/40'
                             }`} />
                         )}
                     </React.Fragment>

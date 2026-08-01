@@ -27,7 +27,10 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
+  useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
 
 vi.mock('@so360/formatters', () => ({
   useFormatters: () => ({
@@ -191,19 +194,23 @@ describe('Given QuotesPage — search filter', () => {
 });
 
 describe('Given QuotesPage — status filter', () => {
-  it('When action / Then renders status filter dropdown', async () => {
+  it('When action / Then renders status filter button with "All Status" label', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Quotes'));
-    // Find the select for status
-    const selects = screen.getAllByRole('combobox');
-    expect(selects.length).toBeGreaterThan(0);
+    // custom dropdown trigger button (replaces native <select>)
+    expect(screen.getByRole('button', { name: /all status/i })).toBeInTheDocument();
   });
 
   it('When action / Then filtering by draft status shows only draft quotes', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
-    const statusSelect = screen.getAllByRole('combobox')[0];
-    fireEvent.change(statusSelect, { target: { value: 'draft' } });
+    // open custom dropdown and pick the Draft filter option.
+    // The filter option's accessible name is "Draft 1" (label + count); the
+    // QuoteStatusCell badge inside the table also says "Draft" but its click
+    // opens the transition menu, not the filter.
+    fireEvent.click(screen.getByRole('button', { name: /all status/i }));
+    await waitFor(() => screen.getByRole('button', { name: /draft 1/i }));
+    fireEvent.click(screen.getByRole('button', { name: /draft 1/i }));
     await waitFor(() => {
       expect(screen.getAllByTestId('table-row').length).toBe(1);
     });
@@ -230,8 +237,11 @@ describe('Given QuotesPage — create quote modal', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
+    await waitFor(() => screen.getByText('Select a deal...'));
+    fireEvent.click(screen.getByText('Select a deal...'));
     await waitFor(() => {
-      expect(screen.getByText('Acme Deal - Acme Corp')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search deals...')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Acme Deal/i })).toBeInTheDocument();
     });
   });
 
@@ -239,11 +249,10 @@ describe('Given QuotesPage — create quote modal', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
-    await waitFor(() => screen.getByText('Acme Deal - Acme Corp'));
-    // Select a deal from dropdown
-    const dealSelects = screen.getAllByRole('combobox');
-    const dealSelect = dealSelects[dealSelects.length - 1];
-    fireEvent.change(dealSelect, { target: { value: 'd1' } });
+    await waitFor(() => screen.getByText('Select a deal...'));
+    fireEvent.click(screen.getByText('Select a deal...'));
+    await waitFor(() => screen.getByRole('button', { name: /Acme Deal/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByText(/^Create Quote$/));
     await waitFor(() => {
       expect(mockCreateQuote).toHaveBeenCalledWith(expect.objectContaining({ deal_id: 'd1' }));
@@ -254,10 +263,10 @@ describe('Given QuotesPage — create quote modal', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('New Quote'));
     fireEvent.click(screen.getByText('New Quote'));
-    await waitFor(() => screen.getByText('Acme Deal - Acme Corp'));
-    const dealSelects = screen.getAllByRole('combobox');
-    const dealSelect = dealSelects[dealSelects.length - 1];
-    fireEvent.change(dealSelect, { target: { value: 'd1' } });
+    await waitFor(() => screen.getByText('Select a deal...'));
+    fireEvent.click(screen.getByText('Select a deal...'));
+    await waitFor(() => screen.getByRole('button', { name: /Acme Deal/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Acme Deal/i }));
     fireEvent.click(screen.getByText(/^Create Quote$/));
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q-new');

@@ -13,7 +13,7 @@ const makeTask = (assignedToId: string | null): Task =>
     id: 'task-1',
     title: 'Test Task',
     due_date: '2026-01-01',
-    status: 'Open',
+    status: 'OPEN',
     type: 'TODO',
     assigned_to: assignedToId ? makeUser(assignedToId) : undefined,
     created_at: '2026-01-01',

@@ -22,11 +22,11 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-white">Reschedule Task</h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white">
+                    <h3 className="text-lg font-bold text-slate-50">Reschedule Task</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-50">
                         <X size={20} />
                     </button>
                 </div>
@@ -39,7 +39,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                                 type="date"
                                 value={newDate}
                                 onChange={(e) => setNewDate(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500"
+                                className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500"
                                 required
                             />
                         </div>
@@ -48,7 +48,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-slate-400 hover:text-white"
+                            className="px-4 py-2 text-slate-400 hover:text-slate-50"
                         >
                             Cancel
                         </button>

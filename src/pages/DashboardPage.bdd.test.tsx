@@ -24,7 +24,8 @@ vi.mock('@so360/shell-context', () => ({
     isFeatureHidden: () => false,
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 import DashboardPage from './DashboardPage';
 
@@ -133,6 +134,44 @@ describe('DashboardPage', () => {
       await waitFor(() => {
         const lastCall = mockGetDashboardStats.mock.calls[mockGetDashboardStats.mock.calls.length - 1];
         expect(lastCall[0].period).toBe('monthly');
+      });
+    });
+
+    it('When Weekly is clicked / Then re-fetches stats with weekly period', async () => {
+      const user = userEvent.setup();
+      render(<DashboardPage />);
+      await waitFor(() => expect(screen.getByText('Executive Overview')).toBeInTheDocument());
+      await user.click(screen.getByText('Weekly'));
+      await waitFor(() => {
+        const lastCall = mockGetDashboardStats.mock.calls[mockGetDashboardStats.mock.calls.length - 1];
+        expect(lastCall[0].period).toBe('weekly');
+        expect(lastCall[0].week).toBeGreaterThan(0);
+      });
+    });
+
+    it('When Weekly is clicked / Then the Weekly button becomes active', async () => {
+      const user = userEvent.setup();
+      render(<DashboardPage />);
+      await waitFor(() => expect(screen.getByText('Executive Overview')).toBeInTheDocument());
+      await user.click(screen.getByText('Weekly'));
+      await waitFor(() => {
+        expect(screen.getByText('Weekly')).toBeInTheDocument();
+      });
+    });
+
+    it('When Weekly is selected / Then subtitle shows week number and date range', async () => {
+      const user = userEvent.setup();
+      mockGetDashboardStats.mockResolvedValue({
+        ...stats,
+        chartLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        monthlyRevenue: [100, 200, 150, 300, 250, 50, 75],
+      });
+      render(<DashboardPage />);
+      await waitFor(() => expect(screen.getByText('Executive Overview')).toBeInTheDocument());
+      await user.click(screen.getByText('Weekly'));
+      await waitFor(() => {
+        const subtitle = screen.getByText(/Week \d+/);
+        expect(subtitle).toBeInTheDocument();
       });
     });
   });

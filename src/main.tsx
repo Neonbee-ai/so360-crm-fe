@@ -1,3 +1,4 @@
+import './index.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -67,6 +68,8 @@ const MockShellProvider = ({ children }: { children: React.ReactNode }) => {
         },
         businessSettingsLoading: false,
         refreshBusinessSettings: async () => { console.log('Mock refreshBusinessSettings'); },
+        printDocument: async () => { console.log('Mock printDocument'); },
+        getDocumentTemplate: async () => ({ key: '', html: '', css: '' } as any),
     };
 
     return (

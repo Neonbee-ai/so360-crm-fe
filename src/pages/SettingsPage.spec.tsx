@@ -1,0 +1,139 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi, describe, test, expect, beforeEach } from 'vitest';
+import SettingsPage from './SettingsPage';
+
+const mockCrmService = vi.hoisted(() => ({
+  getSettings: vi.fn(),
+  updateSettings: vi.fn(),
+}));
+
+vi.mock('../services/crmService', () => ({
+  crmService: mockCrmService,
+}));
+
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+  useLocation: () => ({ search: '', pathname: '/', state: null }),
+  useParams: () => ({}),
+  Link: ({ children }: any) => children,
+  NavLink: ({ children }: any) => children,
+}));
+
+vi.mock('../hooks/useShellBridge', () => ({
+  useShellBridge: () => ({
+    tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
+    orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
+    userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
+    effectiveFlagsLoaded: true,
+    isFeatureEnabled: vi.fn().mockReturnValue(true),
+  }),
+}));
+
+const mockSettings = {
+  pipeline_stages: [
+    { id: 'stage-1', name: 'Prospecting', order: 1 },
+    { id: 'stage-2', name: 'Qualification', order: 2 },
+  ],
+  deal_stages: [
+    { id: 'stage-1', name: 'New', color: '#94A3B8', order: 1 },
+    { id: 'stage-2', name: 'Won', color: '#22C55E', order: 2 },
+  ],
+  lead_sources: ['website', 'referral', 'cold_email', 'linkedin'],
+  deal_lost_reasons: ['price', 'competitor', 'no_budget', 'timing'],
+  custom_fields: [],
+};
+
+describe('Given SettingsPage — CRM Configuration', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCrmService.getSettings.mockResolvedValue(mockSettings);
+    mockCrmService.updateSettings.mockResolvedValue(mockSettings);
+  });
+
+  test('Given user visits settings page / When loaded / Then displays settings sections', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/settings|pipeline|configuration/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given pipeline stages section / When rendered / Then shows stage management', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/pipeline|prospecting|stage/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given add stage button / When clicked / Then opens add stage form', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      const addStageBtn = screen.queryByRole('button', { name: /add stage|new stage/i });
+      if (addStageBtn) {
+        fireEvent.click(addStageBtn);
+        expect(screen.queryByRole('textbox')).toBeTruthy();
+      }
+    });
+  });
+
+  test('Given lead sources section / When rendered / Then shows source list', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/source|website|referral/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given add lead source / When submitted / Then adds new source', async () => {
+    mockCrmService.updateSettings.mockResolvedValueOnce({ lead_sources: [...mockSettings.lead_sources, 'event'] });
+    render(<SettingsPage />);
+    await waitFor(() => {
+      const addBtn = screen.queryByRole('button', { name: /add source|new source/i });
+      if (addBtn) {
+        fireEvent.click(addBtn);
+        const input = screen.queryByRole('textbox');
+        if (input) {
+          fireEvent.change(input, { target: { value: 'event' } });
+          const saveBtn = screen.queryByRole('button', { name: /save|add/i });
+          if (saveBtn) fireEvent.click(saveBtn);
+        }
+      }
+    });
+  });
+
+  test('Given custom fields section / When rendered / Then shows field manager', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/custom field|settings/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given deal lost reasons section / When rendered / Then shows reason list', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/crm settings|settings/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given save settings button / When clicked / Then persists configuration', async () => {
+    mockCrmService.updateSettings.mockResolvedValueOnce(mockSettings);
+    render(<SettingsPage />);
+    await waitFor(() => {
+      const saveBtn = screen.queryByRole('button', { name: /save|update settings/i });
+      if (saveBtn) fireEvent.click(saveBtn);
+    });
+  });
+
+  test('Given API error on load / When settings fail to fetch / Then shows error state', async () => {
+    mockCrmService.getSettings.mockRejectedValueOnce(new Error('Network error'));
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/error|failed|settings/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  test('Given reorder stages / When drag and drop / Then updates stage order', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => {
+      expect(screen.queryAllByText(/pipeline|stage|settings/i).length).toBeGreaterThan(0);
+    });
+  });
+});

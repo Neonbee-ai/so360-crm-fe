@@ -1,53 +1,141 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useShell, useActivity } from '@so360/shell-context';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { eventBus } from '@so360/event-bus';
+import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     ChevronLeft, Mail, Phone, Building2,
     Calendar, Tag, Clock, Plus,
     LayoutDashboard, Briefcase, CheckCircle2,
-    Loader2, ExternalLink, MessageSquare, AtSign, Users, FileText,
-    DollarSign, BarChart3, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon
+    Loader2, ExternalLink, MessageSquare, Users, FileText,
+    DollarSign, PieChart, Edit2, Trash2, X,
+    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, Settings2
 } from 'lucide-react';
-import { crmService, activitiesApi } from '../services/crmService';
-import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note } from '../types/crm';
+import { crmService, activitiesApi, settingsApi } from '../services/crmService';
+import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
+import { useCRMFormatters } from '../utils/formatters';
+import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
-import { Trophy, Zap, Info, TrendingUp } from 'lucide-react';
+import { ClickToCallButton } from '../components/common/ClickToCallButton';
+import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
+import LeadProductsTab from './components/LeadProductsTab';
+import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
+import CustomerFeedbackTab from './components/CustomerFeedbackTab';
+import CallsTab from './components/CallsTab';
+import AuditHistoryTab from './components/AuditHistoryTab';
+import QuickActionBar from './components/QuickActionBar';
+import LeadLayoutSettingsPanel from './components/LeadLayoutSettingsPanel';
+import { useLeadDetailLayoutPreferences } from '../hooks/useLeadDetailLayoutPreferences';
+import StakeholdersTab from '../components/stakeholders/StakeholdersTab';
+import EmailsTab from './components/EmailsTab';
+import MeetingsTab from './components/MeetingsTab';
+import { useEntityTimeline } from './components/timeline/useEntityTimeline';
+import TimelineEventCard from './components/timeline/TimelineEventCard';
+import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
+import NoteEditor from '../components/notes/NoteEditor';
+import NoteContent from '../components/notes/NoteContent';
+import NoteReplyComposer from '../components/notes/NoteReplyComposer';
+import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
-interface TimelineEvent {
-    id: string;
-    type: 'Activity' | 'NOTE' | 'TASK' | 'DOCUMENT' | 'DEAL' | 'STATUS_CHANGE' | 'STAGE_CHANGE' | 'OWNER_CHANGE' | 'PROFILE_UPDATE';
-    subType?: string;
-    title: string;
-    description: string;
-    date: string;
-    author?: User;
-    data?: any;
+interface TabCounts {
+    tasks: number;
+    documents: number;
+    products: number;
+}
+
+// Task 5 (Customizable Layout): the tab bar is now data-driven off
+// useLeadDetailLayoutPreferences() (order/visibility) instead of a fixed
+// JSX sequence — this config maps each section key to its icon/label.
+const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: (counts: TabCounts) => React.ReactNode }> = {
+    activity: { icon: <MessageSquare size={14} />, label: () => 'Activity' },
+    notes: { icon: <FileText size={14} />, label: () => 'Notes' },
+    tasks: { icon: <CheckCircle2 size={14} />, label: (c) => `Tasks (${c.tasks})` },
+    documents: { icon: <File size={14} />, label: (c) => `Documents (${c.documents})` },
+    products: { icon: <Package size={14} />, label: (c) => `Products ${c.products > 0 ? `(${c.products})` : ''}` },
+    feedback: { icon: <MessageSquare size={14} />, label: () => 'Feedback' },
+    calls: { icon: <Phone size={14} />, label: () => 'Calls' },
+    audit: { icon: <ShieldCheck size={14} />, label: () => 'Audit History' },
+    stakeholders: { icon: <Users size={14} />, label: () => 'Stakeholders' },
+    emails: { icon: <Mail size={14} />, label: () => 'Emails' },
+    meetings: { icon: <Calendar size={14} />, label: () => 'Meetings' },
+};
+
+// Tiptap emits '<p></p>' for an empty editor rather than '', so a plain
+// .trim() check isn't enough — strip tags first to see if there's real content.
+const isNoteContentEmpty = (html: string): boolean => html.replace(/<[^>]*>/g, '').trim().length === 0;
+
+const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'contact_name'>): string =>
+    lead.first_name
+        ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
+        : (lead.contact_name || '');
+
+const isTaskOverdue = (dueDate: string): boolean => {
+    const due = new Date(dueDate);
+    const today = new Date();
+    // Normalize to start of day for comparison
+    due.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    return due < today;
+};
+
+// Notify other MFEs (e.g. the Documents module) that a CRM document changed so
+// they can refresh their linked-document views. Uses the shared event bus with a
+// window CustomEvent fallback for environments where the bus is unavailable.
+export function publishLeadDocumentsChanged(leadId: string) {
+    const payload = { source: 'crm', entity_type: 'crm:lead', entity_id: leadId };
+    try {
+        eventBus.publish('documents:changed', payload);
+    } catch {
+        window.dispatchEvent(new CustomEvent('documents:changed', { detail: payload }));
+    }
+}
+
+// Open a document: DMS-backed docs resolve a (signed) URL on demand; legacy docs
+// fall back to their stored `url`.
+export async function openLeadDocument(doc: Attachment) {
+    let url = doc.url;
+    if (doc.dmsDocumentId) {
+        url = await crmService.getDocumentDownloadUrl(doc.id);
+    }
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 const LeadDetailPage = () => {
+    const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
     const { toasts, showSuccess, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { isModuleEnabled } = useShell();
+    const { setCurrentEntity } = useCurrentEntity();
+    const shell = useShellBridge();
+    const canCreateDeal = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
+    const canPromoteLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
+    const canQualifyLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
+    const canConvertLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
+    const canUseNeuraAi = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
+    const isInboxEnabled = isModuleEnabled('inbox');
     const isCustomerDetailRoute = location.pathname.includes('/customers/');
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
+    const backRoute = isCustomerDetailRoute ? '/crm/customers' : '/crm/leads';
     const [lead, setLead] = useState<Lead | null>(null);
     const [associatedDeals, setAssociatedDeals] = useState<Deal[]>([]);
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
+    const [scoreCategories, setScoreCategories] = useState<import('../types/crm').ScoreCategory[]>([]);
+    const [isRecalculatingScore, setIsRecalculatingScore] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('activity');
-    const [infoTab, setInfoTab] = useState<'profile' | 'additional'>('profile');
+    const [infoTab, setInfoTab] = useState<'profile' | 'additional' | 'business'>('profile');
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingInfo, setIsEditingInfo] = useState(false);
     const [isChangingOwner, setIsChangingOwner] = useState(false);
@@ -60,29 +148,89 @@ const LeadDetailPage = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [leadStages, setLeadStages] = useState<{ id: string, name: string }[]>([]);
     const [newNoteContent, setNewNoteContent] = useState('');
+    // Tiptap only seeds `content` on initial mount — bump this key to force a
+    // fresh editor instance (and thus a visibly cleared editor) after saving.
+    const [noteEditorKey, setNoteEditorKey] = useState(0);
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [editingNoteContent, setEditingNoteContent] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [partners, setPartners] = useState<Lead[]>([]);
+    const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
+    const [productCount, setProductCount] = useState(0);
+    const [productValue, setProductValue] = useState(0);
+    const [activityTotal, setActivityTotal] = useState(0);
+    const [showActivityDrawer, setShowActivityDrawer] = useState(false);
+    const [autoOpenCallForm, setAutoOpenCallForm] = useState(false);
+    const [autoOpenMeetingForm, setAutoOpenMeetingForm] = useState(false);
+    const [showLayoutSettings, setShowLayoutSettings] = useState(false);
+    const [expandedStatusDropdown, setExpandedStatusDropdown] = useState<string | null>(null);
+    const layoutPrefs = useLeadDetailLayoutPreferences();
+
+    // Task 4 (Customer Timeline): unified server-side timeline, shared between
+    // the inline preview below and ActivityHistoryDrawer.tsx.
+    const entityTimeline = useEntityTimeline({ entityType: 'lead', entityId: id, pageSize: 7 });
+
+    // Task 3 — communication-wide search: client-side merge across data
+    // already loaded at page level (notes/tasks/deals). Per-lead volumes are
+    // small, so no dedicated backend endpoint. Emails/meetings/calls are
+    // fetched lazily inside their own tabs (not lifted here), so they are
+    // out of scope for this search — a deliberate, documented scope
+    // reduction rather than a silent gap.
+    const [commSearchQuery, setCommSearchQuery] = useState('');
+    const commSearchResults = useMemo(() => {
+        const q = commSearchQuery.trim().toLowerCase();
+        if (!q || !lead) return [];
+        type Result = { id: string; kind: string; title: string; date: string; tab: TabType };
+        const results: Result[] = [];
+        (lead.notes || []).forEach((n) => {
+            const text = n.content.replace(/<[^>]*>/g, '');
+            if (text.toLowerCase().includes(q)) {
+                results.push({ id: `note:${n.id}`, kind: 'Note', title: text.slice(0, 80), date: n.created_at, tab: 'notes' });
+            }
+        });
+        associatedTasks.forEach((t) => {
+            if (t.title.toLowerCase().includes(q)) {
+                results.push({ id: `task:${t.id}`, kind: 'Task', title: t.title, date: t.due_date || t.created_at, tab: 'tasks' });
+            }
+        });
+        associatedDeals.forEach((d) => {
+            if (d.name.toLowerCase().includes(q)) {
+                results.push({ id: `deal:${d.id}`, kind: 'Deal', title: d.name, date: d.created_at || d.expected_close_date, tab: 'activity' });
+            }
+        });
+        return results.slice(0, 20);
+    }, [commSearchQuery, lead, associatedTasks, associatedDeals]);
+
+    const INITIAL_ACTIVITY_LOAD = 7;
 
     const fetchLeadData = useCallback(async () => {
         try {
-            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesData] = await Promise.all([
+            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData] = await Promise.all([
                 crmService.getLeadById(id),
                 crmService.getDealsByLeadId(id),
                 crmService.getTasksByLeadId(id),
                 crmService.getSettings(),
                 crmService.getUsers(),
-                crmService.getActivitiesByLeadId(id)
+                crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0),
+                crmService.getPartners(),
+                settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
+                crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
             ]);
             setLead(leadData || null);
             if (leadData) {
-                setLead({ ...leadData, activities: activitiesData });
+                setLead({ ...leadData, activities: activitiesResult.data, documents: documentsData });
             }
+            setActivityTotal(activitiesResult.total);
             setAssociatedDeals(dealsData);
             setAssociatedTasks(tasksData);
-            setCustomFieldDefs(settingsData.lead_custom_fields);
+            setCustomFieldDefs(settingsData?.lead_custom_fields || []);
             setScoringRules(settingsData.lead_scoring || []);
+            setScoreCategories(settingsData.score_categories || []);
             setLeadStages(settingsData.lead_stages || []);
             setAllUsers(usersData);
+            setPartners(partnersData);
+            setSourceTypes(fetchedSourceTypes);
         } catch (error) {
             console.error('Failed to fetch lead data', error);
         } finally {
@@ -90,9 +238,40 @@ const LeadDetailPage = () => {
         }
     }, [id]);
 
+    const handleRecalculateScore = useCallback(async () => {
+        if (!lead || isRecalculatingScore) return;
+        setIsRecalculatingScore(true);
+        try {
+            await settingsApi.scoringRules.recalculate();
+        } catch {
+            // recalculate failure is non-critical; still refresh so UI shows latest stored score
+        }
+        try {
+            await fetchLeadData();
+        } catch {
+            // fetchLeadData handles its own display errors
+        } finally {
+            setIsRecalculatingScore(false);
+        }
+    }, [lead, isRecalculatingScore, fetchLeadData]);
+
     useEffect(() => {
         fetchLeadData();
     }, [fetchLeadData]);
+
+    // Publish the lead on screen to the shell so the global Neura AI panel can
+    // scope its answers to it — cleared on unmount so a stale entity never
+    // outlives this page (e.g. navigating to a non-detail route).
+    useEffect(() => {
+        if (!lead) return;
+        setCurrentEntity({
+            module: 'crm',
+            entity: 'leads',
+            id: lead.id,
+            label: lead.company_name || getLeadDisplayName(lead),
+        });
+        return () => setCurrentEntity(null);
+    }, [lead?.id, lead?.company_name, setCurrentEntity]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (isLoading) {
         return (
@@ -107,116 +286,42 @@ const LeadDetailPage = () => {
         return (
             <div className="p-8 text-center text-slate-500">
                 <p>Lead not found.</p>
-                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</Link>
+                <button onClick={() => navigate(backRoute)} className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</button>
             </div>
         );
     }
 
-    const calculateScore = () => {
-        let totalScore = 0;
-        const breakdown: { label: string, points: number }[] = [];
-
-        scoringRules.forEach(rule => {
-            if (rule.type === 'source' && lead.source.toLowerCase().includes(rule.criteria.toLowerCase().split('is ')[1] || '')) {
-                totalScore += rule.points;
-                breakdown.push({ label: rule.criteria, points: rule.points });
-            }
-            if (rule.type === 'activity') {
-                const activityType = rule.criteria.toLowerCase().split('a ')[1] || '';
-                const count = lead.activities.filter(a => a.type.toLowerCase() === activityType).length;
-                if (count > 0) {
-                    const points = rule.points * count;
-                    totalScore += points;
-                    breakdown.push({ label: `${rule.criteria} (${count}x)`, points });
-                }
-            }
-            if (rule.type === 'field') {
-                // Check if any custom field value matches the criteria
-                const isMatch = Object.values(lead.custom_fields || {}).some(val =>
-                    String(val).toLowerCase().includes(rule.criteria.toLowerCase().split('is ')[1] || '')
-                );
-                if (isMatch) {
-                    totalScore += rule.points;
-                    breakdown.push({ label: rule.criteria, points: rule.points });
-                }
-            }
-        });
-
-        return { total: totalScore, breakdown };
+    const tabCounts: TabCounts = {
+        tasks: associatedTasks.length,
+        documents: lead.documents?.length || 0,
+        products: productCount,
     };
 
-    const { total: score, breakdown } = calculateScore();
+    // Use backend-calculated score stored on the lead
+    const score = lead.auto_score ?? 0;
+    const breakdown = (lead.score_breakdown ?? []).map(item => ({
+        label: item.rule_name,
+        points: item.points,
+    }));
 
-    const getAggregatedTimeline = (): TimelineEvent[] => {
-        const events: TimelineEvent[] = [];
-
-        // 1. Manual Activities
-        lead.activities.forEach(a => {
-            const isSystem = ['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(a.type);
-            events.push({
-                id: a.id,
-                type: isSystem ? (a.type as any) : 'Activity',
-                subType: isSystem ? undefined : a.type,
-                title: isSystem ? a.type.replace('_', ' ') : `${a.type} Logged`,
-                description: a.notes,
-                date: a.created_at || a.date,
-                author: a.author
-            });
-        });
-
-        // 2. Notes
-        lead.notes.forEach(n => {
-            events.push({
-                id: n.id,
-                type: 'NOTE',
-                title: 'Note Captured',
-                description: n.content,
-                date: n.created_at,
-                author: n.author
-            });
-        });
-
-        // 3. Documents
-        lead.documents?.forEach(d => {
-            events.push({
-                id: d.id,
-                type: 'DOCUMENT',
-                title: 'Document Uploaded',
-                description: `${d.name} (${(d.size / (1024 * 1024)).toFixed(2)} MB)`,
-                date: d.created_at || d.uploaded_at,
-                author: d.uploaded_by
-            });
-        });
-
-        // 4. Tasks
-        associatedTasks.forEach(t => {
-            events.push({
-                id: t.id,
-                type: 'TASK',
-                subType: t.type,
-                title: `Task: ${t.title}`,
-                description: `Status: ${t.status} | Type: ${t.type}`,
-                date: t.created_at || t.due_date,
-                author: t.assigned_to
-            });
-        });
-
-        // 5. Deals
-        associatedDeals.forEach(d => {
-            events.push({
-                id: d.id,
-                type: 'DEAL',
-                title: 'Deal Created',
-                description: `${d.name} | Value: $${d.value.toLocaleString()} | Stage: ${d.stage}`,
-                date: d.created_at || d.expected_close_date,
-                author: d.owner
-            });
-        });
-
-        return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const getScoreCategory = () => {
+        const defaultCategories = [
+            { label: 'Cold',      min_score: 0,   max_score: 30,  color: '#6b7280' },
+            { label: 'Warm',      min_score: 31,  max_score: 60,  color: '#f59e0b' },
+            { label: 'Hot',       min_score: 61,  max_score: 100, color: '#f97316' },
+            { label: 'Qualified', min_score: 101, max_score: null, color: '#22c55e' },
+        ];
+        const cats = scoreCategories.length > 0 ? scoreCategories : defaultCategories;
+        return cats.find(c => score >= c.min_score && (c.max_score === null || score <= c.max_score))
+            || cats[0];
     };
 
-    const timeline = getAggregatedTimeline();
+    const scoreCategory = getScoreCategory();
+
+    // Task 4 (Customer Timeline): the old client-side getAggregatedTimeline()
+    // (5-source merge, duplicated again in ActivityHistoryDrawer.tsx) has been
+    // replaced by the server-side unified timeline — see useEntityTimeline()
+    // below and the Activity tab render block.
 
     const calculateLegacyRevenue = () => {
         const earned = associatedDeals
@@ -236,7 +341,7 @@ const LeadDetailPage = () => {
     const { earned, pipeline, totalValue, dealCount } = calculateLegacyRevenue();
 
     const handleTaskToggle = async (task: Task) => {
-        const newStatus = task.status === 'Done' ? 'Open' : 'Done';
+        const newStatus = task.status === 'DONE' ? 'OPEN' : 'DONE';
         try {
             // Optimistic update
             const updatedTask = { ...task, status: newStatus };
@@ -262,7 +367,7 @@ const LeadDetailPage = () => {
 
     const handleDeleteLead = async () => {
         setIsDeleting(true);
-        const leadName = lead?.contact_name || id;
+        const leadName = lead ? getLeadDisplayName(lead) : id;
         try {
             await crmService.deleteLead(id);
             showSuccess('Lead deleted successfully');
@@ -275,7 +380,7 @@ const LeadDetailPage = () => {
     };
 
     const tabCls = (tab: TabType) =>
-        `flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+        `flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
             activeTab === tab
                 ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5'
                 : 'text-slate-500 hover:text-slate-300'
@@ -286,10 +391,10 @@ const LeadDetailPage = () => {
         <div className="p-8">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8">
-                <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
+                <button onClick={() => navigate(backRoute)} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
                     <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     {backLabel}
-                </Link>
+                </button>
                 <div className="flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-3 mb-2 relative">
@@ -300,19 +405,16 @@ const LeadDetailPage = () => {
                                         const stageId = e.target.value;
                                         const stage = leadStages.find(s => s.id === stageId);
                                         const displayName = stage?.name || stageId;
+                                        // Field-diff history (old/new status, actor, timestamp) is now
+                                        // captured server-side by the leads audit trigger (Task 7) —
+                                        // see the Audit History tab, not a client-side logActivity call.
                                         await crmService.updateLead(lead.id, { status: displayName as any });
-                                        await crmService.logActivity({
-                                            lead_id: lead.id,
-                                            type: 'STATUS_CHANGE',
-                                            notes: `Lead status changed to ${displayName}`,
-                                            date: new Date().toISOString()
-                                        });
                                         fetchLeadData();
                                         setIsChangingStatus(false);
                                     }}
                                     onBlur={() => setIsChangingStatus(false)}
                                     autoFocus
-                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-white rounded px-2 py-1 outline-none"
+                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-slate-50 rounded px-2 py-1 outline-none"
                                 >
                                     {leadStages.map(stage => (
                                         <option key={stage.id} value={stage.id}>{stage.name}</option>
@@ -320,14 +422,19 @@ const LeadDetailPage = () => {
                                 </select>
                             ) : (
                                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
-                                    <h1 className="text-4xl font-black text-white tracking-tight">{lead.contact_name}</h1>
+                                    <h1 className="text-4xl font-black text-slate-50 tracking-tight">{getLeadDisplayName(lead)}</h1>
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all group-hover:scale-110 ${lead.status === 'Converted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                         lead.status === 'Lost' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
                                             'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                         }`}>
                                         {lead.status}
                                     </span>
-                                    <Edit2 size={12} className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    {lead.type === 'partner' && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-violet-500/10 text-violet-400 border-violet-500/20">
+                                            Partner
+                                        </span>
+                                    )}
+                                    <Edit2 size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             )}
                         </div>
@@ -344,22 +451,40 @@ const LeadDetailPage = () => {
                             <Trash2 size={16} />
                             Delete
                         </button>
-                        <button
+                        {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
                         >
                             <Plus size={16} />
                             Create Deal
-                        </button>
+                        </button>}
                     </div>
                 </div>
             </header>
 
-            {/* Lead Journey Stepper */}
+            {/* Lead Journey Stepper — only for leads, not customers */}
+            {!isCustomerDetailRoute && (
             <div className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl p-6">
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Lead Journey</h3>
                 <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
             </div>
+            )}
+
+            <QuickActionBar
+                onAddNote={() => setActiveTab('notes')}
+                onSendEmail={() => setActiveTab('emails')}
+                onLogCall={() => { setActiveTab('calls'); setAutoOpenCallForm(true); }}
+                onScheduleMeeting={() => { setActiveTab('meetings'); setAutoOpenMeetingForm(true); }}
+                onCreateTask={() => setIsCreatingTask(true)}
+                onUploadDocument={() => setActiveTab('documents')}
+            />
+
+            {/* Executive Summary Dashboard */}
+            <ExecutiveSummaryPanel
+                lead={lead}
+                deals={associatedDeals}
+                tasks={associatedTasks}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
@@ -380,19 +505,21 @@ const LeadDetailPage = () => {
                                     <Info size={14} /> Additional Info
                                 </button>
                             )}
+                            <button
+                                onClick={() => setInfoTab('business')}
+                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'business' ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                                <Building2 size={14} /> Business Profile
+                            </button>
                             <div className="ml-auto flex items-center px-6">
                                 <button
                                     onClick={async () => {
                                         if (isEditingInfo) {
                                             try {
+                                                // Field-diff history is now captured server-side by the
+                                                // leads audit trigger (Task 7) — see the Audit History tab.
                                                 await crmService.updateLead(lead.id, lead);
-                                                await crmService.logActivity({
-                                                    lead_id: lead.id,
-                                                    type: 'PROFILE_UPDATE',
-                                                    notes: 'Lead profile information updated',
-                                                    date: new Date().toISOString()
-                                                });
-                                                recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${lead.contact_name}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
+                                                recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${getLeadDisplayName(lead)}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
                                                 fetchLeadData();
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
@@ -401,7 +528,7 @@ const LeadDetailPage = () => {
                                         }
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
-                                    className={`p-2 rounded-lg transition-all ${isEditingInfo ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                                    className={`p-2 rounded-lg transition-all ${isEditingInfo ? 'bg-blue-600 text-slate-50 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
                                     title={isEditingInfo ? "Save Changes" : "Edit Intelligence"}
                                 >
                                     {isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
@@ -414,6 +541,42 @@ const LeadDetailPage = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
                                     <div className="space-y-8">
                                         <div className="flex items-center gap-4 text-slate-300">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shadow-inner">
+                                                <Users size={18} />
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">First Name</span>
+                                                {isEditingInfo ? (
+                                                    <input
+                                                        type="text"
+                                                        value={lead.first_name || ''}
+                                                        onChange={(e) => setLead({ ...lead, first_name: e.target.value })}
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                    />
+                                                ) : (
+                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.first_name || '—'}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-slate-300">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shadow-inner">
+                                                <Users size={18} />
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Last Name</span>
+                                                {isEditingInfo ? (
+                                                    <input
+                                                        type="text"
+                                                        value={lead.last_name || ''}
+                                                        onChange={(e) => setLead({ ...lead, last_name: e.target.value })}
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                    />
+                                                ) : (
+                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.last_name || '—'}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-slate-300">
                                             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 shadow-inner">
                                                 <Mail size={18} />
                                             </div>
@@ -424,7 +587,7 @@ const LeadDetailPage = () => {
                                                         type="email"
                                                         value={lead.contact_email}
                                                         onChange={(e) => setLead({ ...lead, contact_email: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
                                                     <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.contact_email}</a>
@@ -443,10 +606,18 @@ const LeadDetailPage = () => {
                                                         value={lead.phone || ''}
                                                         onChange={(e) => setLead({ ...lead, phone: e.target.value })}
                                                         placeholder="Add phone..."
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.phone || 'Not provided'}</span>
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold uppercase tracking-tight">{lead.phone || 'Not provided'}</span>
+                                                        <ClickToCallButton
+                                                            number={lead.phone}
+                                                            entityType={isCustomerDetailRoute ? 'contact' : 'lead'}
+                                                            entityId={lead.id}
+                                                            name={getLeadDisplayName(lead)}
+                                                        />
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
@@ -459,24 +630,73 @@ const LeadDetailPage = () => {
                                             <div className="flex flex-col flex-1">
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Source</span>
                                                 {isEditingInfo ? (
-                                                    <input
-                                                        type="text"
+                                                    <select
                                                         value={lead.source}
                                                         onChange={(e) => setLead({ ...lead, source: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
-                                                    />
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                    >
+                                                        <option value="">— Select source —</option>
+                                                        {sourceTypes.map(opt => (
+                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                        ))}
+                                                    </select>
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.source}</span>
+                                                    <span className="text-sm font-bold uppercase tracking-tight">
+                                                        {sourceTypes.find(o => o.value === lead.source)?.label ?? lead.source}
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
+
+                                        <div className="flex items-center gap-4 text-slate-300">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
+                                                <Users size={18} />
+                                            </div>
+                                            <div className="flex flex-col flex-1">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Referred By</span>
+                                                {isEditingInfo ? (
+                                                    <PartnerSearchDropdown
+                                                        partners={partners}
+                                                        value={lead.referred_by || ''}
+                                                        onChange={(id) => setLead({ ...lead, referred_by: id || undefined })}
+                                                        placeholder="Search and select partner..."
+                                                        inputClassName="text-sm font-bold"
+                                                    />
+                                                ) : (
+                                                    <span className="text-sm font-bold uppercase tracking-tight">
+                                                        {partners.find(p => p.id === lead.referred_by)?.company_name || '—'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {isEditingInfo && (
+                                            <div className="flex items-center gap-4 text-slate-300">
+                                                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
+                                                    <Users size={18} />
+                                                </div>
+                                                <div className="flex flex-col flex-1">
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Partner</span>
+                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={lead.type === 'partner'}
+                                                            onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })}
+                                                            className="w-4 h-4 rounded accent-violet-500"
+                                                        />
+                                                        <span className="text-sm font-bold">Mark as Partner</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="flex items-center gap-4 text-slate-300 text-opacity-50">
                                             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-amber-400 shadow-inner opacity-50">
                                                 <Calendar size={18} />
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Created</span>
-                                                <span className="text-sm font-bold uppercase tracking-tight">{new Date(lead.created_at).toLocaleDateString()}</span>
+                                                <span className="text-sm font-bold uppercase tracking-tight">{formatters.formatDate(lead.created_at)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -503,14 +723,14 @@ const LeadDetailPage = () => {
                                                                 [field.id]: e.target.value
                                                             }
                                                         })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-white rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">
                                                         {field.type === 'boolean'
                                                             ? (lead.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                             : field.type === 'date' && lead.custom_fields?.[field.id]
-                                                                ? new Date(lead.custom_fields[field.id]).toLocaleDateString()
+                                                                ? formatters.formatDate(lead.custom_fields[field.id])
                                                                 : lead.custom_fields?.[field.id] || '—'}
                                                     </span>
                                                 )}
@@ -519,132 +739,141 @@ const LeadDetailPage = () => {
                                     ))}
                                 </div>
                             )}
+                            {infoTab === 'business' && (
+                                <CustomerDetailsPanel
+                                    lead={lead}
+                                    onUpdate={(updatedLead) => setLead(updatedLead)}
+                                    showToast={(message, type) => type === 'success' ? showSuccess(message) : showError(message)}
+                                    partners={partners as any}
+                                />
+                            )}
                         </div>
                     </section>
 
                     {/* Workspace Tabs - Now below Profile Data */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="flex border-b border-slate-800 bg-slate-900/50">
-                            <button onClick={() => setActiveTab('activity')} className={tabCls('activity')}>
-                                <MessageSquare size={14} /> Activity
+                        <div className="flex items-center overflow-x-auto scrollbar-hide border-b border-slate-800 bg-slate-900/50">
+                            {layoutPrefs.visibleSections.map((section) => {
+                                const tab = TAB_CONFIG[section.key];
+                                if (!tab) return null;
+                                return (
+                                    <button key={section.key} onClick={() => setActiveTab(section.key as TabType)} className={tabCls(section.key as TabType)}>
+                                        {tab.icon} {tab.label(tabCounts)}
+                                    </button>
+                                );
+                            })}
+                            <button
+                                onClick={() => setShowLayoutSettings(true)}
+                                className="ml-auto px-3 text-slate-500 hover:text-slate-200 transition-colors shrink-0"
+                                title="Layout Settings"
+                            >
+                                <Settings2 size={14} />
                             </button>
-                            <button onClick={() => setActiveTab('notes')} className={tabCls('notes')}>
-                                <FileText size={14} /> Notes
-                            </button>
-                            <button onClick={() => setActiveTab('tasks')} className={tabCls('tasks')}>
-                                <CheckCircle2 size={14} /> Tasks ({associatedTasks.length})
-                            </button>
-                            <button onClick={() => setActiveTab('documents')} className={tabCls('documents')}>
-                                <File size={14} /> Documents ({lead.documents?.length || 0})
-                            </button>
+                        </div>
+
+                        <div className="px-4 pt-3">
+                            <div className="relative">
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <input
+                                    value={commSearchQuery}
+                                    onChange={(e) => setCommSearchQuery(e.target.value)}
+                                    placeholder="Search notes, tasks, deals…"
+                                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-slate-300 placeholder-slate-600 outline-none focus:border-blue-500/40"
+                                />
+                            </div>
+                            {commSearchQuery.trim() && (
+                                <div className="mt-2 max-h-64 overflow-y-auto border border-slate-800 rounded-lg divide-y divide-slate-800/70">
+                                    {commSearchResults.length === 0 ? (
+                                        <p className="text-[11px] text-slate-600 italic px-3 py-2">No matches.</p>
+                                    ) : (
+                                        commSearchResults.map((r) => (
+                                            <button
+                                                key={r.id}
+                                                onClick={() => { setActiveTab(r.tab); setCommSearchQuery(''); }}
+                                                className="w-full text-left px-3 py-2 hover:bg-slate-900 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{r.kind}</span>
+                                                    <span className="text-[9px] text-slate-600">{formatters.formatDate(r.date)}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-300 truncate">{r.title}</p>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-6">
                             {activeTab === 'activity' && (
-                                <div className="space-y-8">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Activity Timeline</p>
+                                <div className="space-y-6">
+                                    {/* Header */}
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Customer Timeline</p>
+                                            <p className="text-[10px] text-slate-600 mt-0.5">
+                                                Showing latest {entityTimeline.events.length}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowActivityDrawer(true)}
+                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                                        >
+                                            <ExternalLink size={11} />
+                                            View All History
+                                        </button>
                                     </div>
 
-                                    <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-800 ml-1">
-                                        {timeline.length === 0 ? (
-                                            <p className="text-center text-slate-500 py-4 ml-6 italic text-sm">No activities logged yet.</p>
-                                        ) : (
-                                            timeline.map((event) => (
-                                                <div key={event.id} className="relative pl-10">
-                                                    <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center z-10 shadow-lg">
-                                                        {event.type === 'Activity' && (
-                                                            <>
-                                                                {event.subType === 'CALL' && <Phone size={14} className="text-blue-400" />}
-                                                                {event.subType === 'MEETING' && <Users size={14} className="text-purple-400" />}
-                                                                {event.subType === 'EMAIL' && <AtSign size={14} className="text-emerald-400" />}
-                                                                {event.subType === 'NOTE' && <FileText size={14} className="text-amber-400" />}
-                                                            </>
-                                                        )}
-                                                        {event.type === 'NOTE' && <FileText size={14} className="text-amber-400" />}
-                                                        {event.type === 'TASK' && <CheckCircle2 size={14} className="text-blue-500" />}
-                                                        {event.type === 'DOCUMENT' && <File size={14} className="text-indigo-400" />}
-                                                        {event.type === 'DEAL' && <Briefcase size={14} className="text-emerald-400" />}
+                                    {/* AI/health summary */}
+                                    {entityTimeline.summary && <TimelineSummaryBanner summary={entityTimeline.summary} />}
 
-                                                        {event.type === 'STATUS_CHANGE' && <TrendingUp size={14} className="text-blue-400" />}
-                                                        {event.type === 'STAGE_CHANGE' && <BarChart3 size={14} className="text-purple-400" />}
-                                                        {event.type === 'OWNER_CHANGE' && <Users size={14} className="text-pink-400" />}
-                                                        {event.type === 'PROFILE_UPDATE' && <Info size={14} className="text-slate-400" />}
-                                                    </div>
-                                                    <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-slate-700 transition-all">
-                                                        {event.type === 'TASK' ? (
-                                                            <Link to={`/tasks/${event.id}`} className="block group/link">
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-bold text-white text-xs uppercase tracking-tight group-hover/link:text-blue-400 transition-colors">{event.title}</span>
-                                                                        <span className="text-[8px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{event.type}</span>
-                                                                    </div>
-                                                                    <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                        {new Date(event.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-slate-400 text-sm leading-relaxed">{event.description}</p>
-                                                            </Link>
-                                                        ) : (
-                                                            <>
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-bold text-white text-xs uppercase tracking-tight">{event.title}</span>
-                                                                        {event.type !== 'Activity' && (
-                                                                            <span className="text-[8px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{event.type}</span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        {event.type === 'Activity' && (
-                                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                                                <button
-                                                                                    onClick={async () => {
-                                                                                        const newNotes = prompt('Edit activity notes:', event.description);
-                                                                                        if (newNotes !== null) {
-                                                                                            await activitiesApi.update(event.id, { notes: newNotes });
-                                                                                            fetchLeadData();
-                                                                                        }
-                                                                                    }}
-                                                                                    className="p-1 text-slate-500 hover:text-blue-400 transition-colors"
-                                                                                    title="Edit activity"
-                                                                                >
-                                                                                    <Edit2 size={12} />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={async () => {
-                                                                                        if (confirm('Delete this activity?')) {
-                                                                                            await activitiesApi.delete(event.id);
-                                                                                            fetchLeadData();
-                                                                                        }
-                                                                                    }}
-                                                                                    className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                                                                                    title="Delete activity"
-                                                                                >
-                                                                                    <Trash2 size={12} />
-                                                                                </button>
-                                                                            </div>
-                                                                        )}
-                                                                        <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                            {new Date(event.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <p className="text-slate-400 text-sm leading-relaxed">{event.description}</p>
-                                                            </>
-                                                        )}
-                                                        {event.author && (
-                                                            <div className="mt-4 flex items-center gap-2">
-                                                                <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-700">
-                                                                    {event.author.avatar_url ? <img src={event.author.avatar_url} alt={event.author.full_name} /> : event.author.full_name?.charAt(0) || '?'}
-                                                                </div>
-                                                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{event.author.full_name}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                    {/* Timeline */}
+                                    <div className="space-y-3 relative">
+                                        {entityTimeline.loading ? (
+                                            <div className="flex items-center justify-center py-8 text-slate-500">
+                                                <Loader2 size={18} className="animate-spin" />
+                                            </div>
+                                        ) : entityTimeline.events.length === 0 ? (
+                                            <div className="text-center py-8 ml-6">
+                                                <p className="text-slate-500 italic text-sm">No activities logged yet.</p>
+                                                <p className="text-slate-600 text-[10px] mt-1">Activities will appear here automatically when users interact with this lead.</p>
+                                            </div>
+                                        ) : (
+                                            entityTimeline.events.map((event) => (
+                                                <TimelineEventCard
+                                                    key={event.id}
+                                                    event={event}
+                                                    isPinned={entityTimeline.pinnedIds.has(event.id)}
+                                                    onTogglePin={entityTimeline.togglePin}
+                                                    onEdit={async (e) => {
+                                                        const newNotes = prompt('Edit activity notes:', e.description);
+                                                        if (newNotes !== null && e.related_id) {
+                                                            await activitiesApi.update(e.related_id, { notes: newNotes });
+                                                            entityTimeline.updateEventDescription(e.id, newNotes);
+                                                        }
+                                                    }}
+                                                    onDelete={async (e) => {
+                                                        if (confirm('Delete this activity?') && e.related_id) {
+                                                            await activitiesApi.delete(e.related_id);
+                                                            entityTimeline.removeEvent(e.id);
+                                                        }
+                                                    }}
+                                                />
                                             ))
                                         )}
                                     </div>
+
+                                    {entityTimeline.hasMore && (
+                                        <div className="flex flex-col items-center gap-3 pt-2">
+                                            <button
+                                                onClick={entityTimeline.loadMore}
+                                                disabled={entityTimeline.loadingMore}
+                                                className="text-[10px] text-slate-600 hover:text-blue-400 transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
+                                            >
+                                                {entityTimeline.loadingMore ? 'Loading…' : 'Load More →'}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {activeTab === 'notes' && (
@@ -655,67 +884,125 @@ const LeadDetailPage = () => {
                                         ) : (
                                             <div className="space-y-4">
                                                 {lead.notes.map(note => (
-                                                    <div className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group/note relative">
-                                                        <div className="absolute right-0 top-0 opacity-0 group-hover/note:opacity-100 transition-opacity flex gap-2">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    const newContent = prompt('Edit note:', note.content);
-                                                                    if (newContent !== null) {
-                                                                        await crmService.updateNote(note.id, newContent);
-                                                                        setLead({
-                                                                            ...lead,
-                                                                            notes: lead.notes.map(n => n.id === note.id ? { ...n, content: newContent } : n)
-                                                                        });
-                                                                    }
-                                                                }}
-                                                                className="text-slate-500 hover:text-blue-400"
-                                                            >
-                                                                <Edit2 size={12} />
-                                                            </button>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    if (confirm('Delete this note?')) {
-                                                                        await crmService.deleteNote(note.id);
-                                                                        setLead({
-                                                                            ...lead,
-                                                                            notes: lead.notes.filter(n => n.id !== note.id)
-                                                                        });
-                                                                    }
-                                                                }}
-                                                                className="text-slate-500 hover:text-rose-400"
-                                                            >
-                                                                <Trash2 size={12} />
-                                                            </button>
-                                                        </div>
-                                                        <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
+                                                    <div key={note.id} className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group/note relative">
+                                                        {editingNoteId === note.id ? (
+                                                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-2">
+                                                                <NoteEditor value={editingNoteContent} onChange={setEditingNoteContent} autoFocus />
+                                                                <div className="flex justify-end gap-2 mt-3">
+                                                                    <button
+                                                                        onClick={() => setEditingNoteId(null)}
+                                                                        className="text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            if (isNoteContentEmpty(editingNoteContent)) return;
+                                                                            await crmService.updateNote(note.id, editingNoteContent);
+                                                                            setLead({
+                                                                                ...lead,
+                                                                                notes: lead.notes.map(n => n.id === note.id ? { ...n, content: editingNoteContent } : n)
+                                                                            });
+                                                                            setEditingNoteId(null);
+                                                                        }}
+                                                                        disabled={isNoteContentEmpty(editingNoteContent)}
+                                                                        className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50"
+                                                                    >
+                                                                        Save
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="absolute right-0 top-0 opacity-0 group-hover/note:opacity-100 transition-opacity flex gap-2">
+                                                                    <button
+                                                                        aria-label="Edit note"
+                                                                        data-testid={`edit-note-${note.id}`}
+                                                                        onClick={() => {
+                                                                            setEditingNoteId(note.id);
+                                                                            setEditingNoteContent(note.content);
+                                                                        }}
+                                                                        className="text-slate-500 hover:text-blue-400"
+                                                                    >
+                                                                        <Edit2 size={12} />
+                                                                    </button>
+                                                                    <button
+                                                                        aria-label="Delete note"
+                                                                        data-testid={`delete-note-${note.id}`}
+                                                                        onClick={async () => {
+                                                                            if (confirm('Delete this note?')) {
+                                                                                await crmService.deleteNote(note.id);
+                                                                                setLead({
+                                                                                    ...lead,
+                                                                                    notes: lead.notes.filter(n => n.id !== note.id)
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="text-slate-500 hover:text-rose-400"
+                                                                    >
+                                                                        <Trash2 size={12} />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="mb-2 pr-12">
+                                                                    <NoteContent html={note.content} />
+                                                                </div>
+                                                            </>
+                                                        )}
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                            <span className="text-[10px] text-slate-600 font-bold">{new Date(note.created_at).toLocaleDateString()}</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold">{formatters.formatDate(note.created_at)}</span>
+                                                        </div>
+
+                                                        {(note.replies || []).length > 0 && (
+                                                            <div className="mt-3 ml-4 space-y-3 border-l border-slate-800 pl-4">
+                                                                {(note.replies || []).map((reply) => (
+                                                                    <div key={reply.id} className="text-sm">
+                                                                        <NoteContent html={reply.content} />
+                                                                        <div className="flex items-center justify-between mt-1">
+                                                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{reply.author?.full_name}</span>
+                                                                            <span className="text-[9px] text-slate-500 font-bold">{formatters.formatDate(reply.created_at)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-2 ml-4">
+                                                            <NoteReplyComposer
+                                                                people={allUsers}
+                                                                onSubmit={async (content) => {
+                                                                    const freshReply = await crmService.createNote({ lead_id: lead.id, content, parent_note_id: note.id });
+                                                                    setLead({
+                                                                        ...lead,
+                                                                        notes: lead.notes.map((n) => n.id === note.id ? { ...n, replies: [...(n.replies || []), freshReply] } : n),
+                                                                    });
+                                                                }}
+                                                            />
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
                                         <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
-                                            <textarea
-                                                placeholder="Add a private note about this lead..."
+                                            <NoteEditor
+                                                key={noteEditorKey}
                                                 value={newNoteContent}
-                                                onChange={(e) => setNewNoteContent(e.target.value)}
-                                                className="w-full bg-transparent border-none p-0 text-sm font-medium text-white focus:ring-0 resize-none h-24 mb-3 placeholder:text-slate-700"
+                                                onChange={setNewNoteContent}
+                                                placeholder="Add a private note about this lead..."
                                             />
-                                            <div className="flex justify-end">
+                                            <div className="flex justify-end mt-3">
                                                 <button
                                                     onClick={async () => {
-                                                        if (!newNoteContent.trim()) return;
+                                                        if (isNoteContentEmpty(newNoteContent)) return;
                                                         const freshNote = await crmService.createNote({ lead_id: lead.id, content: newNoteContent });
                                                         setLead({
                                                             ...lead,
                                                             notes: [...(lead.notes || []), freshNote]
                                                         });
                                                         setNewNoteContent('');
+                                                        setNoteEditorKey((k) => k + 1);
                                                     }}
-                                                    disabled={!newNoteContent.trim()}
-                                                    className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700 disabled:opacity-50"
+                                                    disabled={isNoteContentEmpty(newNoteContent)}
+                                                    className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50 shadow-sm"
                                                 >
                                                     Save Note
                                                 </button>
@@ -730,7 +1017,7 @@ const LeadDetailPage = () => {
                                     <div className="flex justify-between items-center mb-4">
                                         <div className="flex items-center gap-2">
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Tasks</p>
-                                            {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'Open' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
+                                            {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
                                                 <span className="bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
                                                     Due Reminders
                                                 </span>
@@ -745,14 +1032,14 @@ const LeadDetailPage = () => {
                                     </div>
 
                                     {/* Reminders Alert Section */}
-                                    {associatedTasks.filter(t => t.type === 'REMINDER' && t.status === 'Open' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000)).length > 0 && (
+                                    {associatedTasks.filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000)).length > 0 && (
                                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
                                             <h4 className="flex items-center gap-2 text-xs font-black text-amber-500 uppercase tracking-widest mb-3">
                                                 <Clock size={14} /> upcoming & due reminders
                                             </h4>
                                             <div className="space-y-2">
                                                 {associatedTasks
-                                                    .filter(t => t.type === 'REMINDER' && t.status === 'Open' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
+                                                    .filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
                                                     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
                                                     .map(task => (
                                                         <div key={task.id} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-lg border border-amber-500/10">
@@ -760,10 +1047,10 @@ const LeadDetailPage = () => {
                                                                 <div className={`w-2 h-2 rounded-full ${new Date(task.due_date) < new Date() ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
                                                                 <span className="text-sm font-bold text-slate-200">{task.title}</span>
                                                                 <span className="text-xs text-slate-500">
-                                                                    {new Date(task.due_date).toLocaleString()}
+                                                                    {formatters.formatDateTime(task.due_date)}
                                                                 </span>
                                                             </div>
-                                                            <Link to={`/tasks/${task.id}`} className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                                                            <Link to={`/crm/tasks/${task.id}`} className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1">
                                                                 View <ChevronLeft size={10} className="rotate-180" />
                                                             </Link>
                                                         </div>
@@ -778,23 +1065,69 @@ const LeadDetailPage = () => {
                                         </div>
                                     ) : (
                                         <div className="grid gap-3">
-                                            {associatedTasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'Done' ? 'border-emerald-500/20 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                            {associatedTasks.map(task => {
+                                                const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
+                                                return (
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'Done' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
                                                     >
-                                                        <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'Done' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-blue-500'}`} />
+                                                        <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'DONE' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-blue-500'}`} />
                                                     </button>
                                                     <div className="flex-1 min-w-0">
-                                                        <Link to={`/tasks/${task.id}`} className="block group/link">
+                                                        <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h4 className={`text-sm font-bold text-white leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'Done' ? 'line-through text-slate-500' : ''}`}>
+                                                                <h4 className={`text-sm font-bold text-slate-50 leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
                                                                     {task.title || 'Untitled Task'}
                                                                 </h4>
-                                                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${task.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-                                                                    {task.status}
-                                                                </span>
+                                                                <div className="flex items-center gap-2">
+                                                                    {overdue && (
+                                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-rose-500/10 text-rose-400 border-rose-500/30" data-testid={`overdue-badge-${task.id}`}>
+                                                                            Overdue
+                                                                        </span>
+                                                                    )}
+                                                                    <div className="relative">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
+                                                                            }}
+                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+                                                                            data-testid={`status-button-${task.id}`}
+                                                                        >
+                                                                            {task.status}
+                                                                        </button>
+                                                                        {expandedStatusDropdown === task.id && (
+                                                                            <div className="absolute top-full mt-1 right-0 z-10 bg-slate-900 border border-slate-700 rounded-lg shadow-lg" data-testid={`status-dropdown-${task.id}`}>
+                                                                                {['OPEN', 'IN_PROGRESS', 'DONE'].map((status) => (
+                                                                                    <button
+                                                                                        key={status}
+                                                                                        onClick={(e) => {
+                                                                                            e.preventDefault();
+                                                                                            e.stopPropagation();
+                                                                                            crmService.updateTask(task.id, { status: status as any })
+                                                                                                .then(() => {
+                                                                                                    setAssociatedTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: status as any } : t));
+                                                                                                    setExpandedStatusDropdown(null);
+                                                                                                    showSuccess(`Task status updated to ${status}`);
+                                                                                                })
+                                                                                                .catch(error => {
+                                                                                                    console.error('Failed to update task status:', error);
+                                                                                                    showError('Failed to update task status');
+                                                                                                });
+                                                                                        }}
+                                                                                        className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-blue-500/20 text-blue-400 border-b border-blue-500/20' : 'hover:bg-slate-800 text-slate-300'}`}
+                                                                                        data-testid={`status-option-${task.id}-${status}`}
+                                                                                    >
+                                                                                        {status}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                             {task.description && (
                                                                 <p className="text-xs text-slate-400 mt-1 line-clamp-2">{task.description}</p>
@@ -802,9 +1135,9 @@ const LeadDetailPage = () => {
                                                         </Link>
 
                                                         <div className="flex items-center gap-4 mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800/50 pt-2">
-                                                            <span className="flex items-center gap-1 text-rose-400/70">
+                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-rose-400' : 'text-rose-400/70'}`}>
                                                                 <Clock size={10} />
-                                                                Due {new Date(task.due_date).toLocaleDateString()}
+                                                                Due {formatters.formatDate(task.due_date)}
                                                             </span>
 
                                                             {task.assigned_to && (
@@ -818,7 +1151,7 @@ const LeadDetailPage = () => {
 
                                                             {task.deal_name && (
                                                                 <>
-                                                                    <span className="w-1 h-1 bg-slate-700 rounded-full" />
+                                                                    <span className="w-1 h-1 bg-slate-400/50 rounded-full" />
                                                                     <span className="text-blue-500/70 lowercase italic">{task.deal_name}</span>
                                                                 </>
                                                             )}
@@ -833,7 +1166,8 @@ const LeadDetailPage = () => {
                                                         </button>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            );
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -843,13 +1177,14 @@ const LeadDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Digital Assets & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 active:scale-95'}`}>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-slate-50 shadow-lg shadow-blue-500/20 active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload Document'}
                                             <input
                                                 type="file"
                                                 className="hidden"
                                                 disabled={isUploading}
+                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.png,.jpg,.jpeg,.svg,.webp,.gif"
                                                 onChange={async (e) => {
                                                     const file = e.target.files?.[0];
                                                     if (file && lead) {
@@ -860,8 +1195,13 @@ const LeadDetailPage = () => {
                                                                 ...lead,
                                                                 documents: [...(lead.documents || []), newDoc]
                                                             });
+                                                            publishLeadDocumentsChanged(lead.id);
+                                                        } catch (err) {
+                                                            const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
+                                                            showError(msg);
                                                         } finally {
                                                             setIsUploading(false);
+                                                            e.target.value = '';
                                                         }
                                                     }
                                                 }}
@@ -873,7 +1213,7 @@ const LeadDetailPage = () => {
                                         <div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
                                             <FileIcon size={48} className="mx-auto mb-4 opacity-10" />
                                             <p className="text-sm font-bold uppercase tracking-widest mb-1">No documents attached</p>
-                                            <p className="text-xs text-slate-600 lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
+                                            <p className="text-xs text-slate-400 lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
                                         </div>
                                     ) : (
                                         <div className="grid gap-3">
@@ -883,18 +1223,58 @@ const LeadDetailPage = () => {
                                                         <File size={20} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 className="text-sm font-bold text-white truncate group-hover:text-blue-400 transition-colors">{doc.name}</h4>
-                                                        <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
+                                                        <h4 className="text-sm font-bold text-slate-50 truncate group-hover:text-blue-400 transition-colors">{doc.name}</h4>
+                                                        <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                                             <span>{(doc.size / (1024 * 1024)).toFixed(2)} MB</span>
                                                             <span className="w-1 h-1 bg-slate-800 rounded-full" />
-                                                            <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                                                            <span>{formatters.formatDate(doc.uploaded_at)}</span>
                                                             <span className="w-1 h-1 bg-slate-800 rounded-full" />
                                                             <span className="text-slate-500">by {doc.uploaded_by.full_name}</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-2">
+                                                        {doc.dmsDocumentId ? (
+                                                            <button
+                                                                onClick={() => { void openLeadDocument(doc); }}
+                                                                className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                                title="View"
+                                                            >
+                                                                <Eye size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <a
+                                                                href={doc.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                                title="View"
+                                                            >
+                                                                <Eye size={16} />
+                                                            </a>
+                                                        )}
                                                         <button
-                                                            className="p-2 text-slate-500 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                                                            onClick={async () => {
+                                                                try {
+                                                                    const fetchUrl = doc.dmsDocumentId
+                                                                        ? await crmService.getDocumentDownloadUrl(doc.id)
+                                                                        : doc.url;
+                                                                    const res = await fetch(fetchUrl);
+                                                                    const blob = await res.blob();
+                                                                    const blobUrl = URL.createObjectURL(blob);
+                                                                    const a = document.createElement('a');
+                                                                    a.href = blobUrl;
+                                                                    a.download = doc.name;
+                                                                    a.click();
+                                                                    URL.revokeObjectURL(blobUrl);
+                                                                } catch {
+                                                                    if (doc.dmsDocumentId) {
+                                                                        void openLeadDocument(doc);
+                                                                    } else {
+                                                                        window.open(doc.url, '_blank');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="p-2 text-slate-500 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-all"
                                                             title="Download"
                                                         >
                                                             <Download size={16} />
@@ -907,6 +1287,7 @@ const LeadDetailPage = () => {
                                                                         ...lead,
                                                                         documents: lead.documents?.filter(d => d.id !== doc.id)
                                                                     });
+                                                                    publishLeadDocumentsChanged(lead.id);
                                                                 }
                                                             }}
                                                             className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
@@ -922,8 +1303,60 @@ const LeadDetailPage = () => {
                                 </div>
                             )}
 
+                            {activeTab === 'products' && lead && (
+                                <LeadProductsTab
+                                    leadId={lead.id}
+                                    onStatsChange={(count, value) => {
+                                        setProductCount(count);
+                                        setProductValue(value);
+                                    }}
+                                />
+                            )}
+
+                            {activeTab === 'feedback' && lead && (
+                                <CustomerFeedbackTab leadId={lead.id} />
+                            )}
+
+                            {activeTab === 'calls' && lead && (
+                                <CallsTab leadId={lead.id} autoOpenForm={autoOpenCallForm} />
+                            )}
+
+                            {activeTab === 'audit' && lead && (
+                                <AuditHistoryTab entityType="lead" entityId={lead.id} />
+                            )}
+
+                            {activeTab === 'stakeholders' && lead && (
+                                <StakeholdersTab
+                                    leadId={lead.id}
+                                    deals={associatedDeals}
+                                    onSwitchToNotes={() => setActiveTab('notes')}
+                                    onSwitchToCalls={() => setActiveTab('calls')}
+                                    onSwitchToMeetings={() => setActiveTab('meetings')}
+                                />
+                            )}
+
+                            {activeTab === 'emails' && lead && (
+                                <EmailsTab leadId={lead.id} />
+                            )}
+
+                            {activeTab === 'meetings' && lead && (
+                                <MeetingsTab leadId={lead.id} autoOpenForm={autoOpenMeetingForm} />
+                            )}
+
                         </div>
                     </div>
+                </div>
+
+                {/* Sidebar Context */}
+                <div className="space-y-8">
+
+                    {canUseNeuraAi && (
+                        <NeuraAiSummaryCard
+                            leadId={lead.id}
+                            leadLabel={lead.company_name || getLeadDisplayName(lead)}
+                            isInboxEnabled={isInboxEnabled}
+                        />
+                    )}
 
                     {/* Lead / Customer Potential Score Card */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
@@ -934,8 +1367,20 @@ const LeadDetailPage = () => {
                             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                                 {isCustomerDetailRoute ? 'Customer Potential' : 'Lead Potential'}
                             </h3>
-                            <div className="bg-amber-500/10 text-amber-500 p-1.5 rounded-lg">
-                                <Zap size={14} className="fill-amber-500" />
+                            <div className="flex items-center gap-2">
+                                {!isCustomerDetailRoute && (
+                                    <button
+                                        onClick={handleRecalculateScore}
+                                        disabled={isRecalculatingScore}
+                                        title="Recalculate score"
+                                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all disabled:opacity-40"
+                                    >
+                                        <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                    </button>
+                                )}
+                                <div className="bg-amber-500/10 text-amber-500 p-1.5 rounded-lg">
+                                    <Zap size={14} className="fill-amber-500" />
+                                </div>
                             </div>
                         </div>
 
@@ -965,7 +1410,7 @@ const LeadDetailPage = () => {
                             return (
                                 <>
                                     <div className="flex items-end gap-3 mb-6">
-                                        <span className="text-6xl font-black text-white tracking-tighter leading-none">{engagementScore}</span>
+                                        <span className="text-6xl font-black text-slate-50 tracking-tighter leading-none">{engagementScore}</span>
                                         <div className="pb-1">
                                             <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Engagement</span>
                                             <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] uppercase tracking-tighter">
@@ -998,33 +1443,63 @@ const LeadDetailPage = () => {
                             );
                         })() : (
                             <>
-                                <div className="flex items-end gap-3 mb-6">
-                                    <span className="text-6xl font-black text-white tracking-tighter leading-none">{score}</span>
+                                <div className="flex items-end gap-3 mb-3">
+                                    <span className="text-6xl font-black text-slate-50 tracking-tighter leading-none">{score}</span>
                                     <div className="pb-1">
                                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Score</span>
-                                        <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] uppercase tracking-tighter">
-                                            <TrendingUp size={12} />
-                                            <span>Top 10%</span>
+                                        <div
+                                            className="flex items-center gap-1 font-black text-[10px] uppercase tracking-tighter px-2 py-0.5 rounded-md"
+                                            style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
+                                        >
+                                            <span>● {scoreCategory.label}</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="space-y-3 pt-6 border-t border-slate-800/50">
+                                <div className="space-y-2 pt-5 border-t border-slate-800/50">
                                     {breakdown.length === 0 ? (
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No scoring rules applied yet</p>
+                                        <div className="text-center py-3">
+                                            {scoringRules.filter(r => r.is_active).length === 0 ? (
+                                                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">No active scoring rules configured</p>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
+                                                    <button
+                                                        onClick={handleRecalculateScore}
+                                                        disabled={isRecalculatingScore}
+                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-amber-500/70 hover:text-amber-400 transition-colors flex items-center gap-1 mx-auto disabled:opacity-40"
+                                                    >
+                                                        <RefreshCw size={9} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                                        Recalculate
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     ) : (
-                                        breakdown.map((item, idx) => (
-                                            <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                <span className="text-slate-400">{item.label}</span>
-                                                <span className="text-emerald-400">+{item.points}</span>
-                                            </div>
-                                        ))
+                                        <>
+                                            <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] mb-2">Matched Rules</p>
+                                            {breakdown.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="flex items-center gap-1.5 text-slate-400 truncate mr-2">
+                                                        <span className="text-emerald-500 shrink-0">✓</span>
+                                                        <span className="truncate">{item.label}</span>
+                                                    </span>
+                                                    <span className={item.points >= 0 ? 'text-emerald-400 shrink-0' : 'text-rose-400 shrink-0'}>
+                                                        {item.points >= 0 ? '+' : ''}{item.points}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </>
                                     )}
                                 </div>
                                 <div className="mt-6 pt-4">
                                     <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
-                                            style={{ width: `${Math.min(100, (score / 150) * 100)}%` }}
+                                            className="h-full transition-all duration-1000 ease-out"
+                                            style={{
+                                                width: `${Math.min(100, (score / 150) * 100)}%`,
+                                                backgroundColor: scoreCategory.color,
+                                                boxShadow: `0 0 8px ${scoreCategory.color}80`,
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -1054,13 +1529,10 @@ const LeadDetailPage = () => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 try {
+                                                    // Field-diff history (old/new owner, actor, timestamp)
+                                                    // is now captured server-side by the leads audit
+                                                    // trigger (Task 7) — see the Audit History tab.
                                                     await crmService.updateLead(lead.id, { owner: user });
-                                                    await crmService.logActivity({
-                                                        lead_id: lead.id,
-                                                        type: 'OWNER_CHANGE',
-                                                        notes: `Assigned owner changed to ${user.full_name}`,
-                                                        date: new Date().toISOString()
-                                                    });
                                                     await fetchLeadData();
                                                     setIsChangingOwner(false);
                                                 } catch (error) {
@@ -1078,7 +1550,7 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                             <div className="text-left overflow-hidden">
-                                                <p className="text-[10px] font-black text-white uppercase tracking-tight truncate">{user.full_name}</p>
+                                                <p className="text-[10px] font-black text-slate-50 uppercase tracking-tight truncate">{user.full_name}</p>
                                                 <p className="text-[8px] text-slate-500 truncate">{user.email}</p>
                                             </div>
                                         </button>
@@ -1094,7 +1566,7 @@ const LeadDetailPage = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-black text-white text-sm uppercase tracking-tight leading-none mb-1">{lead.owner.full_name}</p>
+                                        <p className="font-black text-slate-50 text-sm uppercase tracking-tight leading-none mb-1">{lead.owner.full_name}</p>
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{lead.owner.email}</p>
                                     </div>
                                 </div>
@@ -1105,7 +1577,7 @@ const LeadDetailPage = () => {
                                     </div>
                                     <div>
                                         <p className="text-xs font-black text-slate-500 uppercase tracking-tight">Unassigned</p>
-                                        <p className="text-[9px] text-slate-600 uppercase tracking-widest">Click CHANGE to assign</p>
+                                        <p className="text-[9px] text-slate-400 uppercase tracking-widest">Click CHANGE to assign</p>
                                     </div>
                                 </div>
                             )}
@@ -1134,14 +1606,14 @@ const LeadDetailPage = () => {
                                             <Users size={16} className="text-emerald-400" />
                                         </div>
                                         <div className="flex-1">
-                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block">Stage</span>
-                                            <p className="font-black text-white text-xs uppercase tracking-tight mt-1">Customer</p>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Stage</span>
+                                            <p className="font-black text-slate-50 text-xs uppercase tracking-tight mt-1">Customer</p>
                                         </div>
                                         <span className="text-[8px] bg-slate-800 text-slate-500 px-2 py-1 rounded font-black uppercase tracking-widest">
                                             Locked
                                         </span>
                                     </div>
-                                    <p className="text-[9px] text-slate-600 mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
+                                    <p className="text-[9px] text-slate-400 mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
                                 </>
                             ) : isChangingStage ? (
                                 <div className="space-y-1">
@@ -1153,13 +1625,10 @@ const LeadDetailPage = () => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 try {
+                                                    // Field-diff history (old/new stage, duration in
+                                                    // previous stage, actor, timestamp) is now captured
+                                                    // server-side by the leads audit trigger (Task 7).
                                                     await crmService.updateLead(lead.id, { status: stage.name as any });
-                                                    await crmService.logActivity({
-                                                        lead_id: lead.id,
-                                                        type: 'STAGE_CHANGE',
-                                                        notes: `Lead stage updated to ${stage.name}`,
-                                                        date: new Date().toISOString()
-                                                    });
                                                     await fetchLeadData();
                                                     setIsChangingStage(false);
                                                 } catch (error: any) {
@@ -1169,7 +1638,7 @@ const LeadDetailPage = () => {
                                             }}
                                             className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
                                                 ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white'
+                                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-50'
                                                 }`}
                                         >
                                             <span>{stage.name}</span>
@@ -1189,8 +1658,8 @@ const LeadDetailPage = () => {
                                         <TrendingUp size={16} />
                                     </div>
                                     <div className="flex-1">
-                                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block leading-none">Status</span>
-                                        <p className="font-black text-white text-xs uppercase tracking-tight mt-1">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Status</span>
+                                        <p className="font-black text-slate-50 text-xs uppercase tracking-tight mt-1">
                                             {lead.status}
                                         </p>
                                     </div>
@@ -1203,7 +1672,7 @@ const LeadDetailPage = () => {
                             <div className="space-y-3">
                                 <button
                                     onClick={() => setIsCreatingTask(true)}
-                                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-700/50"
+                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
                                 >
                                     <Clock size={14} /> Schedule Follow-up
                                 </button>
@@ -1223,7 +1692,7 @@ const LeadDetailPage = () => {
                                             showError(error.message || 'Failed to log email.');
                                         }
                                     }}
-                                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-700/50"
+                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
                                 >
                                     <Mail size={14} /> Send Email
                                 </button> */}
@@ -1244,13 +1713,13 @@ const LeadDetailPage = () => {
                             <div>
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Earned</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-white">${earned.toLocaleString()}</span>
+                                    <span className="text-2xl font-black text-slate-50">{formatters.formatCurrency(earned)}</span>
                                 </div>
                             </div>
                             <div>
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Pipeline</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-slate-400">${pipeline.toLocaleString()}</span>
+                                    <span className="text-2xl font-black text-slate-400">{formatters.formatCurrency(pipeline)}</span>
                                 </div>
                             </div>
                         </div>
@@ -1275,14 +1744,26 @@ const LeadDetailPage = () => {
 
                             <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
                                 <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-slate-600 uppercase mb-1">Active Deals</span>
+                                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Active Deals</span>
                                     <span className="text-sm font-black text-blue-400">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</span>
                                 </div>
                                 <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-slate-600 uppercase mb-1">Total LTV</span>
-                                    <span className="text-sm font-black text-white">${totalValue.toLocaleString()}</span>
+                                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Total LTV</span>
+                                    <span className="text-sm font-black text-slate-50">{formatters.formatCurrency(totalValue)}</span>
                                 </div>
                             </div>
+                            {productCount > 0 && (
+                                <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
+                                    <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Products Interested</span>
+                                        <span className="text-sm font-black text-blue-400">{productCount}</span>
+                                    </div>
+                                    <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Est. Revenue</span>
+                                        <span className="text-sm font-black text-emerald-400">{formatters.formatCurrency(productValue)}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </section>
 
@@ -1305,11 +1786,11 @@ const LeadDetailPage = () => {
                                         className="block p-4 bg-slate-950 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group"
                                     >
                                         <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{deal.name}</h4>
-                                            <ExternalLink size={12} className="text-slate-600 group-hover:text-blue-400 transition-all" />
+                                            <h4 className="text-xs font-bold text-slate-50 group-hover:text-blue-400 transition-colors uppercase tracking-tight">{deal.name}</h4>
+                                            <ExternalLink size={12} className="text-slate-400 group-hover:text-blue-400 transition-all" />
                                         </div>
                                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                                            <span className="text-emerald-400/80">${deal.value.toLocaleString()}</span>
+                                            <span className="text-emerald-400/80">{formatters.formatCurrency(deal.value)}</span>
                                             <span className="text-slate-500">{deal.stage}</span>
                                         </div>
                                     </Link>
@@ -1345,7 +1826,7 @@ const LeadDetailPage = () => {
                 isCreatingDeal && (
                     <CreateDealModal
                         leadId={lead.id}
-                        leadName={lead.contact_name}
+                        leadName={getLeadDisplayName(lead)}
                         companyName={lead.company_name}
                         onClose={() => setIsCreatingDeal(false)}
                         onSuccess={(deal) => {
@@ -1356,9 +1837,9 @@ const LeadDetailPage = () => {
             }
 
             {/* Delete Lead Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
                         <h2 className="text-xl font-bold text-slate-100 mb-2">Delete Lead</h2>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this lead? This will remove all associated deals, notes, activities, tasks, and documents. This action cannot be undone.
@@ -1367,7 +1848,7 @@ const LeadDetailPage = () => {
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
@@ -1381,7 +1862,23 @@ const LeadDetailPage = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
+            )}
+            <ActivityHistoryDrawer
+                isOpen={showActivityDrawer}
+                onClose={() => setShowActivityDrawer(false)}
+                entityType="lead"
+                entityId={lead.id}
+            />
+            {showLayoutSettings && (
+                <LeadLayoutSettingsPanel
+                    sections={layoutPrefs.sections}
+                    onToggleVisible={layoutPrefs.toggleVisible}
+                    onMove={layoutPrefs.moveSection}
+                    onReset={layoutPrefs.resetToDefaults}
+                    onClose={() => setShowLayoutSettings(false)}
+                />
             )}
         </div >
     );

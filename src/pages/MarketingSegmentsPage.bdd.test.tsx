@@ -41,7 +41,9 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
   useShell: () => ({ isModuleEnabled: (m: string) => m === 'dailystore' }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('@so360/design-system', () => ({
   Button: ({ children, onClick, disabled, ...props }: any) => <button onClick={onClick} disabled={disabled} {...props}>{children}</button>,
@@ -89,8 +91,10 @@ const inactiveCustomers = {
   ],
 };
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  const shell = await import('@so360/shell-context');
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   localStorage.setItem('crm_marketing_store_id', 'store-1');
   mockGetCustomerSegments.mockResolvedValue(manualSegments);
   mockGetMarketingSegments.mockResolvedValue(storefrontSegments);
@@ -392,6 +396,30 @@ describe('MarketingSegmentsPage', () => {
     it('When rendered / Then shows the store picker', async () => {
       render(<MarketingSegmentsPage />);
       expect(screen.getByTestId('store-picker')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Create Segment button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
+      render(<MarketingSegmentsPage />);
+      expect(screen.queryByText('Create Segment')).not.toBeInTheDocument();
+      vi.mocked(useShellBridge).mockReturnValue({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false } as any);
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Create Segment button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValueOnce({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<MarketingSegmentsPage />);
+      await waitFor(() => expect(screen.getByText('Customer Segments')).toBeInTheDocument());
+      expect(screen.getByText('Create Segment')).toBeInTheDocument();
     });
   });
 });

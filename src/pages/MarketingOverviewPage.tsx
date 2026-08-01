@@ -3,12 +3,14 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatMoney, MarketingKpiCard } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
+import { useCRMFormatters } from '../utils/formatters';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Heart, Mail, Tag, ChevronRight } from 'lucide-react';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingOverviewPage: React.FC = () => {
+  const formatters = useCRMFormatters();
   const { settings } = useBusinessSettings();
   const currencyCode = settings?.base_currency;
   const locale = settings?.document_language || 'en-US';
@@ -232,7 +234,7 @@ const MarketingOverviewPage: React.FC = () => {
                       <div>
                         <p className="text-slate-200 font-bold text-sm">"{row.search_query}"</p>
                         <p className="text-slate-500 text-[10px] uppercase font-black mt-1">
-                          {name} • {new Date(row.created_at).toLocaleDateString()}
+                          {name} • {formatters.formatDate(row.created_at)}
                         </p>
                       </div>
                       <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20 font-bold">

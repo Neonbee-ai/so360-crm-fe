@@ -44,7 +44,9 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
   useShell: () => ({ isModuleEnabled: () => true }),
   useActivity: () => ({ recordActivity: async () => {} }),
-}));
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+
+  useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
 vi.mock('@so360/design-system', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,

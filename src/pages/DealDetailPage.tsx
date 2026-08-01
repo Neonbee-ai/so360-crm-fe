@@ -1,22 +1,52 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useActivity } from '@so360/shell-context';
+import { eventBus } from '@so360/event-bus';
+import { useActivity, useShell } from '@so360/shell-context';
 import {
     ChevronLeft, Calendar, DollarSign, Clock, MessageSquare,
     AtSign, Phone, FileText, Plus, CheckCircle2, User as UserIcon, Users,
     Tag, Edit2, Trash2, X, Download, UploadCloud, FileIcon, File,
-    ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap
+    ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature
 } from 'lucide-react';
+import SignRequestModal from '../components/sign/SignRequestModal';
+import DealProductsTab from './components/DealProductsTab';
+import CallsTab from './components/CallsTab';
+import { CrossLinkChip } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
+import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
 import { ToastContainer, useToast } from '../components/common/Toast';
+import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls';
+
+// Notify other MFEs (e.g. the Documents module) that a CRM deal document changed
+// so they can refresh linked-document views. Uses the shared event bus with a
+// window CustomEvent fallback for environments where the bus is unavailable.
+export function publishDealDocumentsChanged(dealId: string) {
+    const payload = { source: 'crm', entity_type: 'crm:deal', entity_id: dealId };
+    try {
+        eventBus.publish('documents:changed', payload);
+    } catch {
+        window.dispatchEvent(new CustomEvent('documents:changed', { detail: payload }));
+    }
+}
+
+// Open a deal document: DMS-backed docs resolve a (signed) URL on demand; legacy
+// docs fall back to their stored `url`.
+export async function openDealDocument(doc: Attachment) {
+    let url = doc.url;
+    if (doc.dmsDocumentId) {
+        url = await crmService.getDocumentDownloadUrl(doc.id);
+    }
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
 
 const DealDetailPage = () => {
+    const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { toasts, showSuccess, showError, dismissToast } = useToast();
@@ -55,7 +85,9 @@ const DealDetailPage = () => {
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isRequestingInvoice, setIsRequestingInvoice] = useState(false);
+    const [signOpen, setSignOpen] = useState(false);
+    const { isModuleEnabled } = useShell();
+    const isSignEnabled = isModuleEnabled('sign');
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
         title: string;
@@ -152,8 +184,8 @@ const DealDetailPage = () => {
                 }
             }
 
-            setCustomFieldDefs(settingsData.deal_custom_fields);
-            setDealStages(settingsData.deal_stages);
+            setCustomFieldDefs(settingsData?.deal_custom_fields || []);
+            setDealStages(settingsData?.deal_stages || []);
             setAllUsers(usersData);
         } catch (error) {
             console.error('Failed to fetch deal workspace', error);
@@ -256,10 +288,10 @@ const DealDetailPage = () => {
     };
 
     const handleTaskToggle = async (task: Task) => {
-        const newStatus = task.status === 'Done' ? 'Open' : 'Done';
+        const newStatus = task.status === 'DONE' ? 'OPEN' : 'DONE';
         try {
             await crmService.updateTask(task.id, { status: newStatus });
-            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus } : t));
+            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus as Task['status'] } : t));
 
             await crmService.logActivity({
                 lead_id: deal?.lead_id,
@@ -274,37 +306,22 @@ const DealDetailPage = () => {
         }
     };
 
-    const handleInvoiceRequest = async () => {
-        setIsRequestingInvoice(true);
-        try {
-            await crmService.requestInvoice(id);
-            showSuccess('Invoice created successfully');
-            await crmService.logActivity({
-                lead_id: deal?.lead_id,
-                deal_id: id,
-                type: 'NOTE',
-                notes: 'Requested invoice for deal from accounting',
-                date: new Date().toISOString()
-            });
-            // Refresh deal data to show the newly linked invoice
-            fetchData();
-        } catch (error: any) {
-            const msg: string = error?.message || '';
-            if (msg.toLowerCase().includes('won')) {
-                showError('This deal must be in Won stage before requesting an invoice. Move the deal to Won and try again.');
-            } else if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('does not have')) {
-                showError(`Permission denied: ${msg}`);
-            } else if (msg.toLowerCase().includes('accounting') || msg.toLowerCase().includes('unavailable')) {
-                showError('Accounting service is unavailable. Please ensure the Accounting module is running and try again.');
-            } else if (msg) {
-                showError(msg);
-            } else {
-                showError('Failed to request invoice. Please try again later.');
-            }
-            console.warn('Invoice request failed:', error);
-        } finally {
-            setIsRequestingInvoice(false);
-        }
+    const handleCreateEstimate = () => {
+        if (!deal) return;
+        const params = new URLSearchParams({ create: 'true' });
+        if (deal.name) params.set('opportunity_ref', deal.name);
+        if (deal.company_name) params.set('customer_name', deal.company_name);
+        navigate(`/accounting/estimations?${params.toString()}`);
+    };
+
+    const handleCreateInvoice = () => {
+        if (!deal) return;
+        const params = new URLSearchParams({ create: 'true' });
+        if (id) params.set('deal_id', id);
+        if (deal.name) params.set('deal_name', deal.name);
+        if (deal.company_name) params.set('customer_name', deal.company_name);
+        if (deal.value != null) params.set('amount', String(deal.value));
+        navigate(`/accounting/invoices?${params.toString()}`);
     };
 
     const handleOpenProjectModal = async () => {
@@ -320,23 +337,14 @@ const DealDetailPage = () => {
         }
     };
 
-    const handleCreateProject = async () => {
-        try {
-            const project = await crmService.createProjectFromDeal(id);
-            showSuccess('Project created and linked successfully');
-            await crmService.logActivity({
-                lead_id: deal?.lead_id,
-                deal_id: id,
-                type: 'NOTE',
-                notes: `System: Created new project from this deal (ID: ${project.id})`,
-                date: new Date().toISOString()
-            });
-            setIsProjectModalOpen(false);
-            fetchData();
-        } catch (error: any) {
-            showError('Failed to create project. Please ensure Projects service is reachable.');
-            console.warn('Project creation failed:', error);
-        }
+    const handleCreateProject = () => {
+        if (!deal) return;
+        const params = new URLSearchParams({ create: 'true' });
+        if (id) params.set('deal_id', id);
+        if (deal.name) params.set('deal_name', deal.name);
+        if (deal.value != null) params.set('budget', String(deal.value));
+        if (deal.company_name) params.set('client_name', deal.company_name);
+        window.location.href = `/projects/list?${params.toString()}`;
     };
 
     const handleLinkExistingProject = async () => {
@@ -465,7 +473,7 @@ const DealDetailPage = () => {
         return (
             <div className="p-8 text-center text-slate-500">
                 <p>Deal not found.</p>
-                <Link to=".." className="text-blue-500 hover:underline mt-4 inline-block">Back to Pipeline</Link>
+                <button onClick={() => navigate('/crm/pipeline')} className="text-blue-500 hover:underline mt-4 inline-block">Back to Pipeline</button>
             </div>
         );
     }
@@ -474,12 +482,12 @@ const DealDetailPage = () => {
         <div className="p-8">
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-            <header className="mb-8 overflow-hidden">
+            <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
-                    <Link to=".." className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group">
+                    <button onClick={() => navigate('/crm/pipeline')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group">
                         <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                         Back to Pipeline
-                    </Link>
+                    </button>
                     {isRefreshing && (
                         <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
                             <Loader2 size={10} className="animate-spin" /> Syncing...
@@ -499,7 +507,7 @@ const DealDetailPage = () => {
                                     }}
                                     onBlur={() => setIsChangingStage(false)}
                                     autoFocus
-                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-white rounded px-2 py-1 outline-none"
+                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-slate-50 rounded px-2 py-1 outline-none"
                                 >
                                     {dealStages.map(s => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
@@ -507,7 +515,7 @@ const DealDetailPage = () => {
                                 </select>
                             ) : (
                                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStage(true)}>
-                                    <h1 className="text-4xl font-black text-white tracking-tight leading-tight">{deal.name}</h1>
+                                    <h1 className="text-4xl font-black text-slate-50 tracking-tight leading-tight">{deal.name}</h1>
                                     <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-blue-500/10 text-blue-400 border-blue-500/20 transition-all group-hover:scale-105">
                                         {deal.stage}
                                     </span>
@@ -516,11 +524,11 @@ const DealDetailPage = () => {
                             )}
                         </div>
                         <p className="text-slate-400 flex items-center gap-2 mt-1">
-                            <span className="font-semibold text-white">{deal.company_name}</span>
+                            <span className="font-semibold text-slate-50">{deal.company_name}</span>
                             {deal.expected_close_date && (
                                 <>
                                     <span className="w-1 h-1 bg-slate-700 rounded-full" />
-                                    <span className="text-xs">Closing: {new Date(deal.expected_close_date).toLocaleDateString()}</span>
+                                    <span className="text-xs">Closing: {formatters.formatDate(deal.expected_close_date)}</span>
                                 </>
                             )}
                         </p>
@@ -533,17 +541,29 @@ const DealDetailPage = () => {
                         >
                             <Trash2 size={14} /> Delete
                         </button>
+                        {isSignEnabled && (
+                            <button
+                                type="button"
+                                onClick={() => setSignOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
+                            >
+                                <FileSignature size={14} /> Request Signature
+                            </button>
+                        )}
+                        {FEATURES.DEAL_ESTIMATE_REQUEST && (
+                            <button
+                                onClick={handleCreateEstimate}
+                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
+                            >
+                                <FileText size={14} /> Create Estimate
+                            </button>
+                        )}
                         {FEATURES.DEAL_INVOICE_REQUEST && (
                             <button
-                                onClick={handleInvoiceRequest}
-                                disabled={isRequestingInvoice}
-                                className="bg-slate-800 hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
+                                onClick={handleCreateInvoice}
+                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
                             >
-                                {isRequestingInvoice ? (
-                                    <><Loader2 size={14} className="animate-spin" /> Requesting...</>
-                                ) : (
-                                    <><Receipt size={14} /> Request Invoice</>
-                                )}
+                                <Receipt size={14} /> Create Invoice
                             </button>
                         )}
                         {FEATURES.DEAL_PROJECT_CREATION && (
@@ -551,7 +571,7 @@ const DealDetailPage = () => {
                                 onClick={handleOpenProjectModal}
                                 className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-black text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2 uppercase tracking-widest border border-blue-400/20"
                             >
-                                <Briefcase size={14} /> {deal.project_id ? 'Manage Project' : 'Link Project'}
+                                <Briefcase size={14} /> {deal.project_id ? 'Manage Project' : 'Create Project'}
                             </button>
                         )}
                     </div>
@@ -617,7 +637,7 @@ const DealDetailPage = () => {
                                         />
                                     ) : (
                                         <p className="text-xl font-black text-emerald-400 flex items-center gap-1.5">
-                                            <DollarSign size={18} />{deal.value.toLocaleString()}
+                                            {formatters.formatCurrency(deal.value)}
                                         </p>
                                     )}
                                 </div>
@@ -628,10 +648,10 @@ const DealDetailPage = () => {
                                             type="date"
                                             value={editedCloseDate ?? deal.expected_close_date ?? ''}
                                             onChange={(e) => setEditedCloseDate(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-white font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
+                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
                                         />
                                     ) : (
-                                        <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                                        <p className="text-sm font-bold text-slate-50 flex items-center gap-1.5">
                                             <Calendar size={16} />{deal.expected_close_date || '—'}
                                         </p>
                                     )}
@@ -642,7 +662,7 @@ const DealDetailPage = () => {
                                         <select
                                             value={editedOwnerId ?? deal.owner.id}
                                             onChange={(e) => setEditedOwnerId(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-white font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
+                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
                                         >
                                             {allUsers.map(u => (
                                                 <option key={u.id} value={u.id}>{u.full_name}</option>
@@ -661,7 +681,7 @@ const DealDetailPage = () => {
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Activity</span>
                                     <p className="text-sm font-bold text-slate-300 flex items-center gap-1.5">
                                         <Clock size={16} className="text-slate-500" />
-                                        {deal.last_activity_at ? new Date(deal.last_activity_at).toLocaleDateString() : 'None'}
+                                        {deal.last_activity_at ? formatters.formatDate(deal.last_activity_at) : 'None'}
                                     </p>
                                 </div>
                             </div>
@@ -669,14 +689,16 @@ const DealDetailPage = () => {
                     </section>
 
                     {/* Navigation Tabs */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
                         <div className="flex border-b border-slate-800 bg-slate-900/50">
                             {[
                                 { id: 'activity', name: 'Activity', icon: MessageSquare },
                                 { id: 'notes', name: 'Notes', icon: FileText },
                                 { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
                                 { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
-                                { id: 'custom', name: 'Additional Info', icon: Tag }
+                                { id: 'products', name: 'Products', icon: Briefcase },
+                                { id: 'custom', name: 'Additional Info', icon: Tag },
+                                { id: 'calls', name: 'Calls', icon: Phone }
                             ].map(tab => (
                                 <button
                                     key={tab.id}
@@ -714,7 +736,7 @@ const DealDetailPage = () => {
                                                 </div>
                                                 <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-slate-700 transition-all">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-black text-white text-[10px] uppercase tracking-widest">
+                                                        <span className="font-black text-slate-50 text-[10px] uppercase tracking-widest">
                                                             {ev.title}
                                                         </span>
                                                         <div className="flex items-center gap-2">
@@ -748,7 +770,7 @@ const DealDetailPage = () => {
                                                                 </div>
                                                             )}
                                                             <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
-                                                                {new Date(ev.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                {formatters.formatDateTime(ev.date)}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -798,7 +820,7 @@ const DealDetailPage = () => {
                                                 <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                    <span className="text-[10px] text-slate-600 font-bold">{new Date(note.created_at).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] text-slate-600 font-bold">{formatters.formatDate(note.created_at)}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -808,7 +830,7 @@ const DealDetailPage = () => {
                                             placeholder="Capture commercial context..."
                                             value={newNoteContent}
                                             onChange={(e) => setNewNoteContent(e.target.value)}
-                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-white focus:ring-0 resize-none h-24 mb-3"
+                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-50 focus:ring-0 resize-none h-24 mb-3"
                                         />
                                         <div className="flex justify-end">
                                             <button
@@ -841,22 +863,22 @@ const DealDetailPage = () => {
                                             </div>
                                         ) : (
                                             tasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group relative transition-all ${task.status === 'Done' ? 'border-emerald-500/10 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/10 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'Done' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700'}`}
                                                     >
-                                                        {task.status === 'Done' && <CheckCircle2 size={12} />}
+                                                        {task.status === 'DONE' && <CheckCircle2 size={12} />}
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
-                                                            <h4 className={`text-sm font-bold text-white truncate ${task.status === 'Done' ? 'line-through text-slate-500' : ''}`}>
+                                                            <h4 className={`text-sm font-bold text-slate-50 truncate ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
                                                                 {task.title}
                                                             </h4>
                                                         </div>
                                                         <div className="flex items-center gap-4 mt-3 text-[10px] font-black text-slate-500 uppercase tracking-widest pt-2 border-t border-slate-800/50">
                                                             <span className="flex items-center gap-1 text-rose-400/70">
-                                                                <Clock size={10} /> Due {new Date(task.due_date).toLocaleDateString()}
+                                                                <Clock size={10} /> Due {formatters.formatDate(task.due_date)}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -884,7 +906,7 @@ const DealDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-4">
                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Attachments & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95'}`}>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-slate-50 shadow-lg active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload File'}
                                             <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => {
@@ -893,6 +915,7 @@ const DealDetailPage = () => {
                                                     setIsUploading(true);
                                                     try {
                                                         await crmService.uploadDocument({ dealId: id }, file);
+                                                        publishDealDocumentsChanged(id);
                                                         fetchData();
                                                     } finally { setIsUploading(false); }
                                                 }
@@ -905,16 +928,25 @@ const DealDetailPage = () => {
                                                 <div className="flex items-center gap-3">
                                                     <div className="bg-slate-800 p-2 rounded-lg text-blue-400"><FileIcon size={20} /></div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-white truncate max-w-[150px]">{doc.name}</p>
+                                                        <p className="text-sm font-bold text-slate-50 truncate max-w-[150px]">{doc.name}</p>
                                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{(doc.size / 1024).toFixed(1)} KB</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <a href={doc.url} download className="p-2 text-slate-500 hover:text-white transition-colors"><Download size={16} /></a>
+                                                    {doc.dmsDocumentId ? (
+                                                        <button
+                                                            onClick={() => { void openDealDocument(doc); }}
+                                                            className="p-2 text-slate-500 hover:text-slate-50 transition-colors"
+                                                            title="Download"
+                                                        ><Download size={16} /></button>
+                                                    ) : (
+                                                        <a href={doc.url} download title="Download" className="p-2 text-slate-500 hover:text-slate-50 transition-colors"><Download size={16} /></a>
+                                                    )}
                                                     <button
                                                         onClick={async () => {
                                                             if (confirm('Delete file?')) {
                                                                 await crmService.deleteDocument(id, doc.id);
+                                                                publishDealDocumentsChanged(id);
                                                                 fetchData();
                                                             }
                                                         }}
@@ -936,11 +968,11 @@ const DealDetailPage = () => {
                                         customFieldDefs.map(field => (
                                             <div key={field.id} className="flex flex-col gap-1.5">
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</span>
-                                                <p className="text-sm font-bold text-white border-l-2 border-slate-800 pl-3 py-1">
+                                                <p className="text-sm font-bold text-slate-50 border-l-2 border-slate-800 pl-3 py-1">
                                                     {field.type === 'boolean'
                                                         ? (deal.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                         : field.type === 'date' && deal.custom_fields?.[field.id]
-                                                            ? new Date(deal.custom_fields[field.id]).toLocaleDateString()
+                                                            ? formatters.formatDate(deal.custom_fields[field.id])
                                                             : deal.custom_fields?.[field.id] || '—'}
                                                 </p>
                                             </div>
@@ -948,12 +980,39 @@ const DealDetailPage = () => {
                                     )}
                                 </div>
                             )}
+
+                            {activeTab === 'products' && (
+                                <DealProductsTab
+                                    dealId={deal.id}
+                                    leadId={deal.lead_id}
+                                />
+                            )}
+
+                            {activeTab === 'calls' && (
+                                <CallsTab dealId={deal.id} />
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Sidebar Context */}
                 <div className="space-y-8">
+                    {/* Cross-module linked records */}
+                    {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
+                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <ExternalLink size={14} className="text-blue-400" /> Linked Records
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {deal.invoice_id && (
+                                    <CrossLinkChip type="accounting.invoice" id={deal.invoice_id} label={deal.invoice_number || undefined} />
+                                )}
+                                {deal.project_id && <CrossLinkChip type="projects.project" id={deal.project_id} />}
+                                {fulfillmentOrder?.id && <CrossLinkChip type="fulfillment.order" id={fulfillmentOrder.id} />}
+                            </div>
+                        </section>
+                    )}
+
                     {/* Contact Details Card */}
                     {associatedLead && (
                         <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
@@ -963,21 +1022,29 @@ const DealDetailPage = () => {
                             </h3>
                             <div className="space-y-6">
                                 <Link to={`/crm/leads/${associatedLead.id}`} className="group/link block">
-                                    <h4 className="text-lg font-black text-white group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
+                                    <h4 className="text-lg font-black text-slate-50 group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
                                     <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
                                         <Building2 size={12} /> {associatedLead.company_name}
                                     </p>
                                 </Link>
                                 <div className="space-y-3 pt-4 border-t border-slate-800/50">
-                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-white transition-colors">
+                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
                                         <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Mail size={14} /></div>
                                         {associatedLead.contact_email}
                                     </a>
                                     {associatedLead.phone && (
-                                        <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-white transition-colors">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Phone size={14} /></div>
-                                            {associatedLead.phone}
-                                        </a>
+                                        <div className="flex items-center gap-2">
+                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
+                                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Phone size={14} /></div>
+                                                {associatedLead.phone}
+                                            </a>
+                                            <ClickToCallButton
+                                                number={associatedLead.phone}
+                                                entityType="deal"
+                                                entityId={deal.id}
+                                                name={associatedLead.contact_name || deal.name}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -995,7 +1062,7 @@ const DealDetailPage = () => {
                                 {invoiceStatus.invoice_number && (
                                     <div>
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Invoice Number</span>
-                                        <p className="text-sm font-bold text-white">{invoiceStatus.invoice_number}</p>
+                                        <p className="text-sm font-bold text-slate-50">{invoiceStatus.invoice_number}</p>
                                     </div>
                                 )}
 
@@ -1017,7 +1084,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Total</span>
                                         <span className="text-sm font-bold text-emerald-400">
-                                            {invoiceStatus.currency || '$'}{Number(invoiceStatus.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatters.formatCurrency(Number(invoiceStatus.total))}
                                         </span>
                                     </div>
                                 )}
@@ -1026,7 +1093,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Paid</span>
                                         <span className="text-sm font-bold text-emerald-400">
-                                            {invoiceStatus.currency || '$'}{Number(invoiceStatus.amount_paid).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatters.formatCurrency(Number(invoiceStatus.amount_paid))}
                                         </span>
                                     </div>
                                 )}
@@ -1035,7 +1102,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Balance Due</span>
                                         <span className="text-sm font-bold text-amber-400">
-                                            {invoiceStatus.currency || '$'}{Number(invoiceStatus.balance_due).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            {formatters.formatCurrency(Number(invoiceStatus.balance_due))}
                                         </span>
                                     </div>
                                 )}
@@ -1044,7 +1111,7 @@ const DealDetailPage = () => {
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
                                         <span className="text-[10px] font-black text-slate-500 uppercase">Due Date</span>
                                         <span className="text-[10px] font-bold text-slate-300">
-                                            {new Date(invoiceStatus.due_date).toLocaleDateString()}
+                                            {formatters.formatDate(invoiceStatus.due_date)}
                                         </span>
                                     </div>
                                 )}
@@ -1096,13 +1163,13 @@ const DealDetailPage = () => {
                                             {lastEvent.location && (
                                                 <p className="text-[10px] text-slate-500 mt-0.5">{lastEvent.location}</p>
                                             )}
-                                            <p className="text-[9px] text-slate-600 mt-1">{new Date(lastEvent.occurred_at || lastEvent.created_at).toLocaleString()}</p>
+                                            <p className="text-[9px] text-slate-600 mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
                                         </div>
                                     )}
                                     {fo.estimated_delivery_at && (
                                         <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
                                             <span className="text-[10px] font-black text-slate-500 uppercase">ETA</span>
-                                            <span className="text-[10px] font-bold text-slate-300">{new Date(fo.estimated_delivery_at).toLocaleDateString()}</span>
+                                            <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(fo.estimated_delivery_at)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -1118,7 +1185,7 @@ const DealDetailPage = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
                                 <span className="text-[10px] font-black text-slate-500 uppercase">Created On</span>
-                                <span className="text-[10px] font-bold text-slate-300">{new Date(deal.created_at).toLocaleDateString()}</span>
+                                <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(deal.created_at)}</span>
                             </div>
                             <div className="flex justify-between items-center py-2">
                                 <span className="text-[10px] font-black text-slate-500 uppercase">Last Sync</span>
@@ -1129,16 +1196,27 @@ const DealDetailPage = () => {
                 </div>
             </div>
 
+            {/* Sign Request Modal */}
+            {signOpen && (
+                <SignRequestModal
+                    onClose={() => setSignOpen(false)}
+                    prefillName={associatedLead?.contact_name ?? ''}
+                    prefillEmail={associatedLead?.contact_email ?? deal?.contact_email ?? ''}
+                    sourceModel="crm.deal"
+                    sourceId={deal?.id ?? id ?? ''}
+                />
+            )}
+
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                            <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                            <h3 className="text-slate-50 font-black uppercase tracking-widest text-xs flex items-center gap-2">
                                 <Briefcase size={16} className="text-blue-400" />
                                 Project Management
                             </h3>
-                            <button onClick={() => setIsProjectModalOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                            <button onClick={() => setIsProjectModalOpen(false)} className="text-slate-500 hover:text-slate-50 transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -1150,11 +1228,11 @@ const DealDetailPage = () => {
                                     <div>
                                         <h4 className="text-slate-200 font-bold text-sm mb-1 group-hover:text-blue-400 transition-colors">Create New Project</h4>
                                         <p className="text-slate-500 text-[10px] leading-relaxed max-w-[200px]">
-                                            Spawn a project in the Projects module using this deal's value and client info.
+                                            Open the Projects module with deal info pre-filled to create and configure a new project.
                                         </p>
                                     </div>
-                                    <div className="bg-blue-600 group-hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg">
-                                        Execute
+                                    <div className="bg-blue-600 group-hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-1">
+                                        Open <ExternalLink size={10} />
                                     </div>
                                 </div>
                             </div>
@@ -1218,10 +1296,10 @@ const DealDetailPage = () => {
                                         {projectDetails.status}
                                     </span>
                                 </div>
-                                <h4 className="text-sm font-bold text-white mb-2">{projectDetails.title}</h4>
+                                <h4 className="text-sm font-bold text-slate-50 mb-2">{projectDetails.title}</h4>
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="text-slate-400">
-                                        Budget: ${projectDetails.budget_total?.toLocaleString() || 0}
+                                        Budget: {formatters.formatCurrency(projectDetails.budget_total || 0)}
                                     </span>
                                     {projectDetails.completion_percentage > 0 && (
                                         <span className="text-slate-400">
@@ -1269,8 +1347,8 @@ const DealDetailPage = () => {
 
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <h2 className="text-xl font-bold text-slate-100 mb-2">Delete Deal</h2>
                         <p className="text-slate-400 mb-6">
                             Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.
@@ -1279,7 +1357,7 @@ const DealDetailPage = () => {
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>

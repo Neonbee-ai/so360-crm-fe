@@ -12,11 +12,32 @@ vi.mock('../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     updateSettings: (...a: any[]) => mockUpdateSettings(...a),
   },
+  settingsApi: {
+    sourceTypes: {
+      create: vi.fn().mockResolvedValue({ id: 'st-new', label: 'LinkedIn', value: 'linkedin', is_active: true, is_system: false }),
+      update: vi.fn().mockResolvedValue({ id: 'st1', label: 'Website', value: 'website', is_active: false, is_system: true }),
+      delete: vi.fn().mockResolvedValue({}),
+    },
+    scoringRules: {
+      create: vi.fn().mockResolvedValue({ id: 'rule-new', name: 'Email Rule', rule_type: 'field', target_field: 'email', condition: 'is_not_empty', score_points: 10, is_active: true, priority: 0 }),
+      update: vi.fn().mockResolvedValue({ id: 'ls-rule1', name: 'Email Rule', rule_type: 'field', target_field: 'email', condition: 'is_not_empty', score_points: 10, is_active: false, priority: 0 }),
+      delete: vi.fn().mockResolvedValue({}),
+      recalculate: vi.fn().mockResolvedValue({ recalculated: 0 }),
+    },
+    scoreCategories: {
+      update: vi.fn().mockResolvedValue({}),
+    },
+  },
 }));
 
 vi.mock('../components/common/Toast', () => ({
   ToastContainer: () => null,
   useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
+}));
+
+vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
+  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 }));
 
 import SettingsPage from './SettingsPage';
@@ -33,8 +54,24 @@ const makeSettings = () => ({
   lead_custom_fields: [{ id: 'lcf1', label: 'Industry', type: 'text', required: false }],
   deal_custom_fields: [{ id: 'dcf1', label: 'Budget', type: 'number', required: false }],
   lead_sources: [{ id: 'src1', name: 'Website', archived: false }],
-  lead_scoring: [{ id: 'ls-rule1', criteria: 'Has email', points: 10, type: 'field' }],
+  lead_scoring: [{
+    id: 'ls-rule1',
+    name: 'Email Rule',
+    rule_type: 'field' as const,
+    target_field: 'email',
+    condition: 'is_not_empty' as const,
+    value: '',
+    score_points: 10,
+    is_active: true,
+    priority: 0,
+  }],
+  score_categories: [
+    { id: 'cat-1', label: 'Cold', min_score: 0, max_score: 30, color: '#6b7280', sort_order: 1 },
+  ],
   default_owner_id: 'u1',
+  source_type_options: [
+    { id: 'st1', label: 'Website', value: 'website', is_active: true, is_system: true },
+  ],
 });
 
 beforeEach(() => {
@@ -68,8 +105,18 @@ describe('Given SettingsPage', () => {
     });
   });
 
-  it('When action / Then shows error when save fails', async () => {
-    mockUpdateSettings.mockRejectedValue(new Error('fail'));
+  it('When save fails with an Error / Then the actual error message is surfaced', async () => {
+    mockUpdateSettings.mockRejectedValue(new Error('Failed to save: Deal Fields'));
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByDisplayValue('Lead'));
+    fireEvent.click(screen.getByText(/save configuration/i));
+    await waitFor(() => {
+      expect(mockShowError).toHaveBeenCalledWith('Failed to save: Deal Fields');
+    });
+  });
+
+  it('When save fails with a non-Error rejection / Then the generic message is shown', async () => {
+    mockUpdateSettings.mockRejectedValue('boom');
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/save configuration/i));
@@ -120,58 +167,32 @@ describe('Given SettingsPage', () => {
   it('When action / Then changes pipeline stage type', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
-    const selects = screen.getAllByDisplayValue('OPEN');
-    fireEvent.change(selects[0], { target: { value: 'LOST' } });
-    expect(screen.getByDisplayValue('LOST')).toBeInTheDocument();
+    const triggers = screen.getAllByTestId('stage-status-trigger');
+    fireEvent.click(triggers[0]);
+    fireEvent.click(screen.getByTestId('stage-status-option-LOST'));
+    expect(screen.getAllByTestId('stage-status-trigger')[0]).toHaveTextContent('LOST');
   });
 
-  it('When action / Then switches to lead-stages tab', async () => {
+  it('When action / Then switches to lead-stages tab and shows read-only Flow-sourced stages', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead stages/i));
     await waitFor(() => {
-      expect(screen.getByDisplayValue('New')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Contacted')).toBeInTheDocument();
+      // Stages are rendered as plain text (read-only), not editable inputs
+      expect(screen.getByText('New')).toBeInTheDocument();
+      expect(screen.getByText('Contacted')).toBeInTheDocument();
+      expect(screen.getByText(/managed in the flow module/i)).toBeInTheDocument();
     });
   });
 
-  it('When action / Then adds and removes lead stages', async () => {
+  it('When action / Then lead stages tab exposes no add/remove/edit controls', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead stages/i));
-    await waitFor(() => screen.getByDisplayValue('New'));
-
-    // Add
-    const addButtons = screen.getAllByText(/add stage/i);
-    fireEvent.click(addButtons[addButtons.length - 1]);
-    expect(screen.getByDisplayValue('New Lead Stage')).toBeInTheDocument();
-
-    // Remove one
-    const removeButtons = screen.getAllByTitle('Remove Stage');
-    fireEvent.click(removeButtons[0]);
-  });
-
-  it('When action / Then prevents removing last lead stage', async () => {
-    mockGetSettings.mockResolvedValue({
-      ...makeSettings(),
-      lead_stages: [{ id: 'ls1', name: 'Only' }],
-    });
-    render(<SettingsPage />);
-    await waitFor(() => screen.getByDisplayValue('Lead'));
-    fireEvent.click(screen.getByText(/lead stages/i));
-    await waitFor(() => screen.getByDisplayValue('Only'));
-    const removeButtons = screen.getAllByTitle('Remove Stage');
-    fireEvent.click(removeButtons[0]);
-    expect(mockShowError).toHaveBeenCalledWith('Lead stages must have at least one stage.');
-  });
-
-  it('When action / Then edits lead stage name', async () => {
-    render(<SettingsPage />);
-    await waitFor(() => screen.getByDisplayValue('Lead'));
-    fireEvent.click(screen.getByText(/lead stages/i));
-    await waitFor(() => screen.getByDisplayValue('New'));
-    fireEvent.change(screen.getByDisplayValue('New'), { target: { value: 'Fresh' } });
-    expect(screen.getByDisplayValue('Fresh')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('New'));
+    // No editable inputs and no remove buttons for lead stages
+    expect(screen.queryByDisplayValue('New')).not.toBeInTheDocument();
+    expect(screen.queryAllByTitle('Remove Stage')).toHaveLength(0);
   });
 
   it('When action / Then switches to custom-fields tab and shows lead/deal fields', async () => {
@@ -213,7 +234,8 @@ describe('Given SettingsPage', () => {
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
+      // Sources tab now shows source_type_options as text labels (not inputs)
+      expect(screen.getByText('Website')).toBeInTheDocument();
     });
   });
 
@@ -221,29 +243,32 @@ describe('Given SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
-    await waitFor(() => screen.getByDisplayValue('Website'));
-    fireEvent.click(screen.getByText(/add source/i));
-    expect(screen.getByDisplayValue('New Source')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('Website'));
+    // The new sources tab has a text input + ADD button to create source types via API
+    const addInput = screen.getByPlaceholderText(/new source type label/i);
+    fireEvent.change(addInput, { target: { value: 'LinkedIn' } });
+    expect(addInput).toHaveValue('LinkedIn');
   });
 
   it('When action / Then edits source name', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
-    await waitFor(() => screen.getByDisplayValue('Website'));
-    fireEvent.change(screen.getByDisplayValue('Website'), { target: { value: 'LinkedIn' } });
-    expect(screen.getByDisplayValue('LinkedIn')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('Website'));
+    // Sources are now displayed as text (not editable inputs); verify the source label is visible
+    expect(screen.getByText('Website')).toBeInTheDocument();
   });
 
   it('When action / Then toggles archive on source', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead sources/i));
-    await waitFor(() => screen.getByDisplayValue('Website'));
-    const archiveBtn = screen.getByTitle(/archive/i);
-    fireEvent.click(archiveBtn);
-    // Source should now be archived (class change)
-    expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
+    await waitFor(() => screen.getByText('Website'));
+    // Toggle button now has title 'Deactivate' (for active) or 'Activate' (for inactive)
+    const toggleBtn = screen.getByTitle(/deactivate|activate/i);
+    fireEvent.click(toggleBtn);
+    // Source label remains visible after toggle
+    expect(screen.getByText('Website')).toBeInTheDocument();
   });
 
   it('When action / Then switches to scoring tab and shows rules', async () => {
@@ -251,30 +276,28 @@ describe('Given SettingsPage', () => {
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Has email')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('10')).toBeInTheDocument();
+      expect(screen.getByText('Email Rule')).toBeInTheDocument();
+      expect(screen.getByText('Lead Scoring Rules')).toBeInTheDocument();
     });
   });
 
-  it('When action / Then adds a new scoring rule', async () => {
+  it('When action / Then adds a new scoring rule shows form', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
-    await waitFor(() => screen.getByDisplayValue('Has email'));
+    await waitFor(() => screen.getByText('Email Rule'));
     fireEvent.click(screen.getByText(/add rule/i));
-    expect(screen.getByDisplayValue('New Rule')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/high budget lead/i)).toBeInTheDocument();
+    });
   });
 
-  it('When action / Then edits scoring rule criteria, type, and points', async () => {
+  it('When action / Then score bands section is visible on scoring tab', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
     fireEvent.click(screen.getByText(/lead scoring/i));
-    await waitFor(() => screen.getByDisplayValue('Has email'));
-
-    fireEvent.change(screen.getByDisplayValue('Has email'), { target: { value: 'Has phone' } });
-    expect(screen.getByDisplayValue('Has phone')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '20' } });
-    expect(screen.getByDisplayValue('20')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Score Bands')).toBeInTheDocument();
+    });
   });
 });

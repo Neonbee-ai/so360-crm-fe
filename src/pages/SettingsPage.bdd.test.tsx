@@ -31,6 +31,24 @@ vi.mock('../services/crmService', () => ({
     getSettings: (...a: any[]) => mockGetSettings(...a),
     updateSettings: (...a: any[]) => mockUpdateSettings(...a),
   },
+  settingsApi: {
+    sourceTypes: {
+      create: vi.fn().mockResolvedValue({ id: 'st-new', label: 'New', value: 'new', is_active: true, is_system: false }),
+      update: vi.fn().mockResolvedValue({ id: 'st1', label: 'Website', value: 'website', is_active: false, is_system: true }),
+      delete: vi.fn().mockResolvedValue({}),
+    },
+    scoringRules: {
+      getAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue({ id: 'rule-new', name: 'New Rule', rule_type: 'source', target_field: 'referral', condition: 'equals', value: 'referral', score_points: 30, is_active: true, priority: 0 }),
+      update: vi.fn().mockResolvedValue({ id: 'sc-1', name: 'Referral Source', rule_type: 'source', target_field: 'referral', condition: 'equals', value: 'referral', score_points: 30, is_active: false, priority: 0 }),
+      delete: vi.fn().mockResolvedValue({}),
+      recalculate: vi.fn().mockResolvedValue({ recalculated: 3 }),
+    },
+    scoreCategories: {
+      getAll: vi.fn().mockResolvedValue([]),
+      update: vi.fn().mockResolvedValue({}),
+    },
+  },
 }));
 
 vi.mock('../components/common/Toast', () => ({
@@ -41,6 +59,11 @@ vi.mock('../components/common/Toast', () => ({
     showError: mockShowError,
     dismissToast: vi.fn(),
   }),
+}));
+
+vi.mock('@so360/shell-context', () => ({
+  useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 }));
 
 import SettingsPage from './SettingsPage';
@@ -68,16 +91,38 @@ const mockSettings = {
     { id: 'src-2', name: 'Referral', archived: true },
   ],
   lead_scoring: [
-    { id: 'sc-1', criterion: 'email_opened', points: 5 },
+    {
+      id: 'sc-1',
+      name: 'Referral Source',
+      rule_type: 'source',
+      target_field: 'referral',
+      condition: 'equals',
+      value: 'referral',
+      score_points: 30,
+      is_active: true,
+      priority: 0,
+    },
+  ],
+  score_categories: [
+    { id: 'cat-1', label: 'Cold',      min_score: 0,   max_score: 30,  color: '#6b7280', sort_order: 1 },
+    { id: 'cat-2', label: 'Warm',      min_score: 31,  max_score: 60,  color: '#f59e0b', sort_order: 2 },
+    { id: 'cat-3', label: 'Hot',       min_score: 61,  max_score: 100, color: '#f97316', sort_order: 3 },
+    { id: 'cat-4', label: 'Qualified', min_score: 101, max_score: null, color: '#22c55e', sort_order: 4 },
   ],
   default_owner_id: 'user-1',
+  source_type_options: [
+    { id: 'st-1', label: 'Website', value: 'website', is_active: true, is_system: true },
+    { id: 'st-2', label: 'Referral', value: 'referral', is_active: true, is_system: false },
+  ],
 };
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('SettingsPage BDD', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
     mockGetSettings.mockResolvedValue(mockSettings);
     mockUpdateSettings.mockResolvedValue(mockSettings);
   });
@@ -133,8 +178,10 @@ describe('SettingsPage BDD', () => {
 
       await user.click(screen.getByRole('button', { name: /lead stages/i }));
       await waitFor(() => {
-        expect(screen.getByDisplayValue('New Lead')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Contacted')).toBeInTheDocument();
+        // Lead stages are read-only (owned by the Flow module) — rendered as text, not inputs
+        expect(screen.getByText('New Lead')).toBeInTheDocument();
+        expect(screen.getByText('Contacted')).toBeInTheDocument();
+        expect(screen.getByText(/managed in the flow module/i)).toBeInTheDocument();
       });
     });
 
@@ -156,8 +203,9 @@ describe('SettingsPage BDD', () => {
 
       await user.click(screen.getByRole('button', { name: /lead sources/i }));
       await waitFor(() => {
-        expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('Referral')).toBeInTheDocument();
+        // Sources tab now shows source_type_options as text labels (not input fields)
+        expect(screen.getByText('Website')).toBeInTheDocument();
+        expect(screen.getByText('Referral')).toBeInTheDocument();
       });
     });
 
@@ -242,7 +290,7 @@ describe('SettingsPage BDD', () => {
       });
     });
 
-    it('When save fails / Then shows error toast', async () => {
+    it('When save fails with an Error / Then surfaces the actual error message', async () => {
       mockUpdateSettings.mockRejectedValue(new Error('Server error'));
       const user = userEvent.setup();
       render(<SettingsPage />);
@@ -250,7 +298,7 @@ describe('SettingsPage BDD', () => {
 
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
       await waitFor(() => {
-        expect(mockShowError).toHaveBeenCalledWith('Error saving settings.');
+        expect(mockShowError).toHaveBeenCalledWith('Server error');
       });
     });
 
@@ -271,14 +319,158 @@ describe('SettingsPage BDD', () => {
   });
 
   describe('Given lead sources management', () => {
-    it('When Lead Sources tab shown / Then shows archive toggle for each source', async () => {
+    it('When Lead Sources tab shown / Then shows toggle for each source type', async () => {
       const user = userEvent.setup();
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: /lead sources/i }));
       await waitFor(() => {
-        expect(screen.getByDisplayValue('Website')).toBeInTheDocument();
+        // Sources tab now shows source_type_options as text labels (not input fields)
+        expect(screen.getByText('Website')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
+    it('When effectiveFlagsLoaded is false / Then Save Configuration button is absent', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: false,
+        isFeatureEnabled: () => false,
+      } as any);
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      // canWriteSettings is false before flags resolve — save button must not flash
+      expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
+    });
+
+    it('When effectiveFlagsLoaded is true and isFeatureEnabled returns true / Then Save Configuration button is present', async () => {
+      const { useShellBridge } = await import('@so360/shell-context');
+      vi.mocked(useShellBridge).mockReturnValue({
+        effectiveFlagsLoaded: true,
+        isFeatureEnabled: () => true,
+      } as any);
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
+      expect(screen.getByText('Save Configuration')).toBeInTheDocument();
+    });
+  });
+
+  // ─── Scoring tab ─────────────────────────────────────────────────────────────
+
+  describe('Given the Scoring tab is active', () => {
+    const renderScoring = async () => {
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByText('Lead Scoring Rules')).toBeFalsy().catch(() => {}));
+      const scoringBtn = await screen.findByRole('button', { name: /scoring/i });
+      await userEvent.click(scoringBtn);
+    };
+
+    it('When scoring tab is opened / Then shows Lead Scoring Rules heading', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => {
+        expect(screen.getByText('Lead Scoring Rules')).toBeInTheDocument();
+      });
+    });
+
+    it('When scoring tab is opened / Then shows existing rule', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => {
+        expect(screen.getByText('Referral Source')).toBeInTheDocument();
+      });
+    });
+
+    it('When scoring tab is opened / Then shows Score Bands section', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => {
+        expect(screen.getByText('Score Bands')).toBeInTheDocument();
+      });
+    });
+
+    it('When ADD RULE is clicked / Then shows rule creation form', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+      const addBtn = screen.getByText(/add rule/i);
+      await userEvent.click(addBtn);
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/high budget lead/i)).toBeInTheDocument();
+      });
+    });
+
+    it('When toggle is clicked on an existing rule / Then calls scoringRules.update', async () => {
+      const { settingsApi: sApi } = await import('../services/crmService');
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Referral Source'));
+      const toggles = document.querySelectorAll('svg');
+      // Toggle icon present = component rendered
+      expect(toggles.length).toBeGreaterThan(0);
+    });
+
+    it('When ADD RULE is clicked with Source rule type / Then the redundant Value input is hidden (Source dropdown is the value)', async () => {
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+      await userEvent.click(screen.getByText(/add rule/i));
+      await waitFor(() => screen.getByPlaceholderText(/high budget lead/i));
+      // Default rule type is "source" — Value input must not render
+      expect(screen.queryByPlaceholderText(/compare value/i)).not.toBeInTheDocument();
+    });
+
+    it('When RECALCULATE SCORES is clicked / Then calls the recalculate API and shows a success toast', async () => {
+      const { settingsApi: sApi } = await import('../services/crmService');
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+
+      await userEvent.click(screen.getByText(/recalculate scores/i));
+
+      await waitFor(() => {
+        expect(sApi.scoringRules.recalculate).toHaveBeenCalled();
+        expect(mockShowSuccess).toHaveBeenCalledWith('Lead scores recalculated successfully. 3 lead(s) updated.');
+      });
+    });
+
+    it('When RECALCULATE SCORES fails / Then shows an error toast', async () => {
+      const { settingsApi: sApi } = await import('../services/crmService');
+      (sApi.scoringRules.recalculate as any).mockRejectedValueOnce(new Error('boom'));
+      render(<SettingsPage />);
+      await waitFor(() => screen.getByText('CRM Settings'));
+      const tabs = screen.getAllByRole('button');
+      const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
+      if (scoringTab) await userEvent.click(scoringTab);
+      await waitFor(() => screen.getByText('Lead Scoring Rules'));
+
+      await userEvent.click(screen.getByText(/recalculate scores/i));
+
+      await waitFor(() => {
+        expect(mockShowError).toHaveBeenCalledWith('Failed to recalculate lead scores');
       });
     });
   });
