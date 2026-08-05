@@ -6,12 +6,22 @@ import type { Lead } from '../../types/crm';
 const mockGetDeals = vi.fn();
 const mockGetTasks = vi.fn();
 const mockGetActivities = vi.fn();
+const mockGetUsers = vi.fn();
+const mockGetPartners = vi.fn();
+const mockGetSourceTypes = vi.fn();
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
     getDealsByLeadId: (...a: any[]) => mockGetDeals(...a),
     getTasksByLeadId: (...a: any[]) => mockGetTasks(...a),
     getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivities(...a),
+    getUsers: (...a: any[]) => mockGetUsers(...a),
+    getPartners: (...a: any[]) => mockGetPartners(...a),
+  },
+  settingsApi: {
+    sourceTypes: {
+      getAll: (...a: any[]) => mockGetSourceTypes(...a),
+    },
   },
 }));
 
@@ -56,6 +66,9 @@ beforeEach(() => {
   mockGetDeals.mockResolvedValue([]);
   mockGetTasks.mockResolvedValue([]);
   mockGetActivities.mockResolvedValue({ data: [], total: 0 });
+  mockGetUsers.mockResolvedValue([]);
+  mockGetPartners.mockResolvedValue([]);
+  mockGetSourceTypes.mockResolvedValue([]);
 });
 
 describe('LeadDetailPanel — tabs', () => {
@@ -231,5 +244,75 @@ describe('LeadDetailPanel — Audit tab', () => {
     render_(makeLead());
     fireEvent.click(screen.getByText('Audit'));
     expect(await screen.findByText(/no audit events/i)).toBeInTheDocument();
+  });
+});
+
+describe('LeadDetailPanel — relational field resolution (Overview)', () => {
+  // Regression: Owner/Referred By/Source previously rendered whatever the lead
+  // object carried at fetch time — a stale "Unknown User" placeholder, a raw
+  // referrer UUID, or a raw source code — instead of resolving them the same
+  // way the Lead Detail page does.
+
+  it('overrides a stale "Unknown User" owner placeholder with the resolved name once users load', async () => {
+    mockGetUsers.mockResolvedValue([{ id: 'u1', full_name: 'Alice Johnson', email: 'alice@acme.com' }]);
+    render_(
+      makeLead({ owner: { id: 'u1', full_name: 'Unknown User', email: '' } } as Partial<Lead>),
+    );
+    expect(await screen.findByText('Alice Johnson')).toBeInTheDocument();
+    expect(screen.queryByText('Unknown User')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the lead-carried owner name when the users list has no match', async () => {
+    mockGetUsers.mockResolvedValue([]);
+    render_(makeLead({ owner: { id: 'u1', full_name: 'Alice', email: '' } } as Partial<Lead>));
+    expect(await screen.findByText('Alice')).toBeInTheDocument();
+  });
+
+  it('resolves a referred_by UUID to the referring partner\'s company name, not the raw id', async () => {
+    mockGetPartners.mockResolvedValue([
+      { id: 'p1', company_name: 'Apple Inc' },
+    ]);
+    render_(makeLead({ referred_by: 'p1' } as Partial<Lead>));
+    expect(await screen.findByText('Apple Inc')).toBeInTheDocument();
+    expect(screen.queryByText('p1')).not.toBeInTheDocument();
+  });
+
+  it('shows "—" rather than the raw id when referred_by cannot be resolved to a partner', async () => {
+    mockGetPartners.mockResolvedValue([]);
+    render_(makeLead({ referred_by: 'p1' } as Partial<Lead>));
+    await waitFor(() => expect(mockGetPartners).toHaveBeenCalled());
+    expect(await screen.findByText('Referred By')).toBeInTheDocument();
+    expect(screen.queryByText('p1')).not.toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
+
+  it('shows the configured source label instead of the raw source code', async () => {
+    mockGetSourceTypes.mockResolvedValue([
+      { id: 's1', value: 'web_form', label: 'Website Form', is_system: true, is_active: true, sort_order: 0 },
+    ]);
+    render_(makeLead({ source: 'web_form' } as Partial<Lead>));
+    expect(await screen.findByText('Website Form')).toBeInTheDocument();
+    expect(screen.queryByText('web_form')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the raw source code when no matching source type is configured', async () => {
+    mockGetSourceTypes.mockResolvedValue([]);
+    render_(makeLead({ source: 'web_form' } as Partial<Lead>));
+    expect(await screen.findByText('web_form')).toBeInTheDocument();
+  });
+});
+
+describe('LeadDetailPanel — relational field resolution (Marketing tab)', () => {
+  it('resolves referred_by and source the same way as the Overview tab', async () => {
+    mockGetPartners.mockResolvedValue([{ id: 'p1', company_name: 'Apple Inc' }]);
+    mockGetSourceTypes.mockResolvedValue([
+      { id: 's1', value: 'web_form', label: 'Website Form', is_system: true, is_active: true, sort_order: 0 },
+    ]);
+    render_(makeLead({ source: 'web_form', referred_by: 'p1' } as Partial<Lead>));
+    fireEvent.click(screen.getByText('Marketing'));
+    expect(await screen.findByText('Apple Inc')).toBeInTheDocument();
+    // "Website Form" also appears in the always-visible header status row, so
+    // there are two matches once the Marketing tab's own Source row mounts.
+    expect(screen.getAllByText('Website Form').length).toBeGreaterThan(0);
   });
 });
