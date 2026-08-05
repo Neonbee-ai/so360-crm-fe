@@ -21,8 +21,8 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { Lead, Activity as ActivityType, Deal, Task } from '../../types/crm';
-import { crmService } from '../../services/crmService';
+import { Lead, Activity as ActivityType, Deal, Task, User as CrmUser, SourceTypeOption } from '../../types/crm';
+import { crmService, settingsApi } from '../../services/crmService';
 import { useCRMFormatters } from '../../utils/formatters';
 
 type PanelTab = 'overview' | 'timeline' | 'sales' | 'tasks' | 'marketing' | 'audit';
@@ -119,6 +119,13 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
   const [activities, setActivities] = useState<ActivityType[] | null>(null);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
 
+  // Lookup data used to resolve relational fields (owner, referred_by, source)
+  // to readable names — mirrors LeadDetailPage's resolution so both surfaces
+  // stay consistent instead of showing raw ids/codes.
+  const [users, setUsers] = useState<CrmUser[]>([]);
+  const [partners, setPartners] = useState<Lead[]>([]);
+  const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
+
   useEffect(() => {
     if (lead) setTab('overview');
     // Reset linked-record caches when the lead changes.
@@ -126,6 +133,23 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
     setTasks(null);
     setActivities(null);
   }, [lead?.id]);
+
+  // Fetched once per panel mount (not per lead) — these lookup lists are
+  // shared across all leads, not lead-specific.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      crmService.getUsers(),
+      crmService.getPartners().catch(() => [] as Lead[]),
+      settingsApi.sourceTypes.getAll().catch(() => [] as SourceTypeOption[]),
+    ]).then(([usersData, partnersData, sourceTypesData]) => {
+      if (cancelled) return;
+      setUsers(usersData);
+      setPartners(partnersData);
+      setSourceTypes(sourceTypesData);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   // Lazy fetch: load deals/tasks/activities the first time their tab is shown.
   useEffect(() => {
@@ -177,6 +201,19 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
   const score = lead?.auto_score ?? 0;
   const sc = scoreColor(score);
   const statusColor = lead ? (STATUS_COLORS[lead.status] ?? 'bg-slate-500/10 text-slate-400 border-slate-500/20') : '';
+
+  // Resolve owner via the freshly-fetched users list first — lead.owner may
+  // carry a stale "Unknown User" placeholder if it was mapped before the
+  // shared users cache was warm.
+  const ownerName = lead
+    ? (users.find((u) => u.id === lead.owner?.id)?.full_name ?? lead.owner?.full_name ?? '—')
+    : '—';
+  const referredByName = lead?.referred_by
+    ? (partners.find((p) => p.id === lead.referred_by)?.company_name ?? '—')
+    : undefined;
+  const sourceLabel = lead
+    ? (sourceTypes.find((o) => o.value === lead.source)?.label ?? lead.source)
+    : '';
 
   const sortedActivities = [...(activities ?? [])].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -236,7 +273,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                   {lead.status}
                 </span>
                 {lead.source && (
-                  <span className="text-xs text-slate-500">{lead.source}</span>
+                  <span className="text-xs text-slate-500">{sourceLabel}</span>
                 )}
                 {score > 0 && (
                   <div className="ml-auto flex items-center gap-1.5">
@@ -384,7 +421,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                     <InfoRow
                       icon={<User size={14} />}
                       label="Owner"
-                      value={lead.owner?.full_name ?? '—'}
+                      value={ownerName}
                     />
                     <InfoRow
                       icon={<Calendar size={14} />}
@@ -398,11 +435,11 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                         value={formatters.formatDate(lead.updated_at)}
                       />
                     )}
-                    {lead.referred_by && (
+                    {referredByName && (
                       <InfoRow
                         icon={<User size={14} />}
                         label="Referred By"
-                        value={lead.referred_by}
+                        value={referredByName}
                       />
                     )}
                   </div>
@@ -577,7 +614,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                       Attribution
                     </p>
-                    <InfoRow icon={<Megaphone size={14} />} label="Source" value={lead.source || '—'} />
+                    <InfoRow icon={<Megaphone size={14} />} label="Source" value={sourceLabel || '—'} />
                     {lead.acquisition_source && (
                       <InfoRow icon={<TrendingUp size={14} />} label="Acquisition Source" value={lead.acquisition_source} />
                     )}
@@ -587,8 +624,8 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                     {lead.custom_fields?.campaign && (
                       <InfoRow icon={<Tag size={14} />} label="Campaign" value={String(lead.custom_fields.campaign)} />
                     )}
-                    {lead.referred_by && (
-                      <InfoRow icon={<User size={14} />} label="Referred By" value={lead.referred_by} />
+                    {referredByName && (
+                      <InfoRow icon={<User size={14} />} label="Referred By" value={referredByName} />
                     )}
                     {lead.first_order_at && (
                       <InfoRow icon={<Calendar size={14} />} label="First Order" value={formatters.formatDate(lead.first_order_at)} />
