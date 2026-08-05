@@ -24,6 +24,7 @@ vi.mock('../../components/common/Toast', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
+  useOrganization: () => ({ currentOrg: { id: 'org-1' } }),
   usePeople: () => ({ people: [] }),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));

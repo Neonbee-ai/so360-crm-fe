@@ -145,7 +145,7 @@ describe('CreateDealModal', () => {
       await waitFor(() => {
         expect(screen.getByText('Alan Rep (Growth Manager)')).toBeInTheDocument();
       });
-      const salesRepLabel = screen.getByText('Sales Rep', { exact: false });
+      const salesRepLabel = screen.getByText(/^Sales Rep/);
       const salesRepSelect = salesRepLabel.closest('div')?.querySelector('select') as HTMLSelectElement;
       fireEvent.change(salesRepSelect, { target: { value: 'p1' } });
       fireEvent.submit(document.querySelector('form')!);
