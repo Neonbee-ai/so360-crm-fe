@@ -3,7 +3,7 @@ import { X, Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon 
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
 import { ToastContainer, useToast } from '../../components/common/Toast';
-import { useActivity, usePeople } from '@so360/shell-context';
+import { useActivity, usePeople, useOrganization } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
 
 interface CreateDealModalProps {
@@ -19,7 +19,15 @@ const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rou
 const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
     const { toasts, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
-    const { people } = usePeople();
+    const { currentOrg } = useOrganization();
+    const { people } = usePeople({
+        orgId: currentOrg?.id,
+        filters: { status: 'active' },
+        enabled: !!currentOrg?.id,
+    });
+    const activeSalesReps = [...(people || [])].sort((a: any, b: any) =>
+        (a.full_name || '').localeCompare(b.full_name || '')
+    );
     const currencySymbol = useCRMCurrencySymbol();
 
     // Core fields
@@ -390,7 +398,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         <option value="">Select sales rep...</option>
-                                        {people?.map((p: any) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                                        {activeSalesReps.map((p: any) => <option key={p.id} value={p.id}>{p.full_name}{p.job_title ? ` (${p.job_title})` : ''}</option>)}
                                     </select>
                                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
