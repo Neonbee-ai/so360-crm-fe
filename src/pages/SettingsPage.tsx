@@ -5,8 +5,9 @@ import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, 
 import { ToastContainer, useToast } from '../components/common/Toast';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
+import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
 
-type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring';
+type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming';
 
 // Activity types available for scoring rules
 const SCOREABLE_ACTIVITY_TYPES = [
@@ -427,6 +428,12 @@ const SettingsPage = () => {
                     className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'scoring' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                 >
                     Lead Scoring
+                </button>
+                <button
+                    onClick={() => setActiveTab('deal-naming')}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'deal-naming' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                    Deal Naming
                 </button>
             </div>
 
@@ -1082,6 +1089,15 @@ const SettingsPage = () => {
                             </div>
                         </section>
                     </div>
+                )}
+
+                {activeTab === 'deal-naming' && (
+                    <DealNamingSettingsTab
+                        initialConfig={settings?.deal_naming ?? null}
+                        canWrite={canWriteSettings}
+                        showSuccess={showSuccess}
+                        showError={showError}
+                    />
                 )}
             </div>
         </div>

@@ -188,6 +188,33 @@ export interface SourceTypeOption {
     sort_order: number;
 }
 
+export type DealNamingResetMode = 'none' | 'daily' | 'monthly' | 'yearly' | 'continuous';
+
+export interface DealNamingSequenceConfig {
+    enabled: boolean;
+    reset_mode: DealNamingResetMode;
+    padding: number;
+    start_at: number;
+}
+
+export interface DealNamingConfig {
+    enabled: boolean;
+    template: string;
+    prefix: string;
+    suffix: string;
+    separator: string;
+    sequence: DealNamingSequenceConfig;
+}
+
+export const DEFAULT_DEAL_NAMING_CONFIG: DealNamingConfig = {
+    enabled: true,
+    template: '{lead_name} - {YYYYMMDD}',
+    prefix: '',
+    suffix: '',
+    separator: ' - ',
+    sequence: { enabled: false, reset_mode: 'none', padding: 4, start_at: 1 },
+};
+
 export interface CRMSettings {
     deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST' }[];
     lead_stages: { id: string; name: string }[];
@@ -199,6 +226,7 @@ export interface CRMSettings {
     partner_custom_fields: CustomFieldDefinition[];
     lead_scoring: LeadScoringRule[];
     score_categories: ScoreCategory[];
+    deal_naming: DealNamingConfig;
 }
 
 export interface DealFilters {
