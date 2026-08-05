@@ -98,8 +98,8 @@ describe('crmService org-static cache', () => {
 
       const callsAfterUpdate = fetchMock.mock.calls.length;
       await crmService.getSettings();
-      // The post-update getSettings is a cache miss → another 8-request fan-out.
-      expect(fetchMock.mock.calls.length).toBe(callsAfterUpdate + 8);
+      // The post-update getSettings is a cache miss → another 9-request fan-out.
+      expect(fetchMock.mock.calls.length).toBe(callsAfterUpdate + 9);
     });
   });
 });
