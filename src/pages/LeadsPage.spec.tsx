@@ -74,7 +74,7 @@ describe('Given LeadsPage — Lead Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCrmService.getLeads.mockResolvedValue(mockLeads);
-    mockCrmService.getSettings.mockResolvedValue({});
+    mockCrmService.getSettings.mockResolvedValue({ lead_stages: [], lead_custom_fields: [] });
     mockCrmService.getUsers.mockResolvedValue([]);
     mockCrmService.getPartners.mockResolvedValue([]);
   });
