@@ -6,6 +6,8 @@ import React from 'react';
 const mockGetLeads = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
+const mockGetPartners = vi.fn();
+const mockGetSourceTypes = vi.fn();
 const mockUpdateLead = vi.fn();
 const mockLogActivity = vi.fn();
 const mockDeleteLead = vi.fn();
@@ -26,6 +28,7 @@ vi.mock('../services/crmService', () => ({
     getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
+    getPartners: (...a: any[]) => mockGetPartners(...a),
     getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
@@ -40,6 +43,11 @@ vi.mock('../services/crmService', () => ({
       update: (...a: any[]) => mockViewsUpdate(...a),
       duplicate: (...a: any[]) => mockViewsDuplicate(...a),
       setDefault: (...a: any[]) => mockViewsSetDefault(...a),
+    },
+  },
+  settingsApi: {
+    sourceTypes: {
+      getAll: (...a: any[]) => mockGetSourceTypes(...a),
     },
   },
 }));
@@ -192,6 +200,8 @@ beforeEach(async () => {
   mockGetLeads.mockResolvedValue(leads);
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue(users);
+  mockGetPartners.mockResolvedValue([]);
+  mockGetSourceTypes.mockResolvedValue([]);
   mockUpdateLead.mockResolvedValue({});
   mockLogActivity.mockResolvedValue({});
   mockDeleteLead.mockResolvedValue({});

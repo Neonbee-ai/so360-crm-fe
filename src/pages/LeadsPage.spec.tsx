@@ -9,12 +9,16 @@ const mockCrmService = vi.hoisted(() => ({
   getLeads: vi.fn(),
   getSettings: vi.fn(),
   getUsers: vi.fn(),
+  getPartners: vi.fn(),
   logActivity: vi.fn(),
   updateLead: vi.fn(),
 }));
 
 vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,
+  settingsApi: {
+    sourceTypes: { getAll: vi.fn().mockResolvedValue([]) },
+  },
 }));
 
 vi.mock('@so360/shell-context', () => ({
@@ -72,6 +76,7 @@ describe('Given LeadsPage — Lead Management', () => {
     mockCrmService.getLeads.mockResolvedValue(mockLeads);
     mockCrmService.getSettings.mockResolvedValue({});
     mockCrmService.getUsers.mockResolvedValue([]);
+    mockCrmService.getPartners.mockResolvedValue([]);
   });
 
   test('Given user visits leads page / When loaded / Then displays lead list', async () => {

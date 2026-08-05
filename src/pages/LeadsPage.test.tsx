@@ -5,16 +5,21 @@ import React from 'react';
 const mockGetLeads = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
+const mockGetPartners = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
+    getPartners: (...a: any[]) => mockGetPartners(...a),
     getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: vi.fn(),
     logActivity: vi.fn(),
     deleteLead: vi.fn(),
+  },
+  settingsApi: {
+    sourceTypes: { getAll: vi.fn().mockResolvedValue([]) },
   },
 }));
 
@@ -88,6 +93,7 @@ beforeEach(() => {
   mockGetLeads.mockResolvedValue([]);
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue([{ id: 'u1', full_name: 'Test', email: 't@t.com' }]);
+  mockGetPartners.mockResolvedValue([]);
 });
 
 describe('Given LeadsPage', () => {
