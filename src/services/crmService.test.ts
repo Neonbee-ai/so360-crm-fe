@@ -955,6 +955,8 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([]);
     // Settings: score-categories
     mockFetchSuccess([]);
+    // Settings: deal-naming
+    mockFetchSuccess({ enabled: true, template: '{lead_name} - {YYYYMMDD}', prefix: '', suffix: '', separator: ' - ', sequence: { enabled: false, reset_mode: 'none', padding: 4, start_at: 1 } });
     // getAll deals
     mockFetchSuccess([{ id: 'd1', value: '0', stage: 'Lead', stage_id: 's1', notes: [], documents: [], activities: [] }]);
     const result = await crmService.getPipeline();

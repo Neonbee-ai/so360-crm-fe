@@ -5,7 +5,7 @@ global.fetch = fetchMock;
 
 import { crmService, orgStaticCache } from './crmService';
 
-// getSettings fans out to 8 endpoints; getUsers hits one. Both are wrapped in a
+// getSettings fans out to 9 endpoints; getUsers hits one. Both are wrapped in a
 // shared org-keyed coalescer + TTL cache. These tests assert concurrent reads
 // collapse, repeat reads are served from cache, and mutations invalidate it.
 
@@ -25,7 +25,7 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('crmService org-static cache', () => {
-  describe('Given getSettings fans out to 8 endpoints', () => {
+  describe('Given getSettings fans out to 9 endpoints', () => {
     it('When two callers ask at once / Then only one fan-out (8 requests) is made', async () => {
       fetchMock.mockImplementation(() => ok([]));
 
@@ -34,8 +34,8 @@ describe('crmService org-static cache', () => {
         crmService.getSettings(),
       ]);
 
-      // Coalesced: a single fan-out of 8 requests, not 16.
-      expect(fetchMock).toHaveBeenCalledTimes(8);
+      // Coalesced: a single fan-out of 9 requests, not 18.
+      expect(fetchMock).toHaveBeenCalledTimes(9);
       expect(a).toEqual(b);
     });
 
@@ -43,11 +43,11 @@ describe('crmService org-static cache', () => {
       fetchMock.mockImplementation(() => ok([]));
 
       await crmService.getSettings();
-      expect(fetchMock).toHaveBeenCalledTimes(8);
+      expect(fetchMock).toHaveBeenCalledTimes(9);
 
       await crmService.getSettings();
-      // Second read hits the cache — still 8 total.
-      expect(fetchMock).toHaveBeenCalledTimes(8);
+      // Second read hits the cache — still 9 total.
+      expect(fetchMock).toHaveBeenCalledTimes(9);
     });
   });
 
@@ -80,7 +80,7 @@ describe('crmService org-static cache', () => {
       fetchMock.mockImplementation(() => ok([]));
 
       await crmService.getSettings();
-      expect(fetchMock).toHaveBeenCalledTimes(8);
+      expect(fetchMock).toHaveBeenCalledTimes(9);
 
       // updateSettings issues its own writes then invalidates the settings cache.
       await crmService.updateSettings({
