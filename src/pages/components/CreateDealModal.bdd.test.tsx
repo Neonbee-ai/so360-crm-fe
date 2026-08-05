@@ -245,13 +245,44 @@ describe('CreateDealModal', () => {
   });
 
   describe('Given the API call fails during submit', () => {
-    it('When dealsApi.create rejects / Then showError is called with the failure message', async () => {
-      mockCreateDeal.mockRejectedValueOnce(new Error('Network error'));
+    it('When dealsApi.create rejects with a descriptive error / Then showError surfaces that message', async () => {
+      mockCreateDeal.mockRejectedValueOnce(new Error('Owner is inactive'));
+      render(<CreateDealModal {...defaultProps} />);
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => {
+        expect(mockShowError).toHaveBeenCalledWith('Owner is inactive');
+      });
+    });
+
+    it('When dealsApi.create rejects with a non-Error value / Then showError falls back to a generic message', async () => {
+      mockCreateDeal.mockRejectedValueOnce('boom');
       render(<CreateDealModal {...defaultProps} />);
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         expect(mockShowError).toHaveBeenCalledWith('Failed to create deal');
       });
+    });
+  });
+
+  describe('Given a lead has no company name (nullable DB column)', () => {
+    it('When companyName is null / Then submit does not throw and shows the missing-company error inline', async () => {
+      render(
+        <CreateDealModal
+          leadId="lead-1"
+          leadName="John Doe"
+          companyName={null as any}
+          onClose={vi.fn()}
+          onSuccess={vi.fn()}
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.getByText(/new deal/i)).toBeInTheDocument();
+      });
+      expect(() => fireEvent.submit(document.querySelector('form')!)).not.toThrow();
+      await waitFor(() => {
+        expect(screen.getByText('Please select a customer or enter a company name.')).toBeInTheDocument();
+      });
+      expect(mockCreateDeal).not.toHaveBeenCalled();
     });
   });
 

@@ -108,7 +108,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
         fetchDependencies();
     }, []);
 
-    const effectiveCompany = selectedCompanyName || companyName;
+    const effectiveCompany = selectedCompanyName || companyName || '';
     const effectiveLeadId = selectedLeadId || leadId;
 
     // Auto-generate the Deal Name from the org's naming convention whenever the
@@ -168,7 +168,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
             onClose();
         } catch (error) {
             console.error('Failed to create deal', error);
-            showError('Failed to create deal');
+            showError(error instanceof Error && error.message ? error.message : 'Failed to create deal');
         } finally {
             setIsSubmitting(false);
         }
@@ -246,6 +246,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                     {/* Scrollable form body */}
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
                         <div className="flex-1 overflow-y-auto p-8 space-y-5">
+                            {leadId && companyError && (
+                                <p className="text-[11px] text-rose-400 font-bold">{companyError}</p>
+                            )}
                             {/* Customer / Company (Pipeline mode only) */}
                             {!leadId && (
                                 <div className="space-y-2" ref={searchRef}>
