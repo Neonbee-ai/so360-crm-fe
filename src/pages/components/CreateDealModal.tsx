@@ -110,6 +110,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
     const effectiveCompany = selectedCompanyName || companyName || '';
     const effectiveLeadId = selectedLeadId || leadId;
+    // A deal linked to a Lead doesn't need a company name — leads may
+    // represent individual customers without an organization.
+    const effectiveCompanyForSubmit = effectiveCompany || (effectiveLeadId ? leadName || '' : '');
 
     // Auto-generate the Deal Name from the org's naming convention whenever the
     // lead/company/owner context is available, as long as the org has
@@ -137,7 +140,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!effectiveCompany.trim()) {
+        if (!effectiveLeadId && !effectiveCompany.trim()) {
             setCompanyError('Please select a customer or enter a company name.');
             return;
         }
@@ -146,7 +149,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
         try {
             const deal = await dealsApi.create({
                 name,
-                company: effectiveCompany,
+                company: effectiveCompanyForSubmit,
                 value: parseFloat(value) || 0,
                 stage_id: settings.find(s => s.name === stage)?.id || stage,
                 owner_id: ownerId,
@@ -160,7 +163,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
             recordActivity({
                 eventType: 'deal.created',
                 eventCategory: 'crm',
-                description: `Created deal "${name}" for ${effectiveCompany}`,
+                description: `Created deal "${name}" for ${effectiveCompanyForSubmit}`,
                 resourceType: 'deal',
                 resourceId: deal?.id,
             }).catch(() => {});

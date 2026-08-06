@@ -265,7 +265,7 @@ describe('CreateDealModal', () => {
   });
 
   describe('Given a lead has no company name (nullable DB column)', () => {
-    it('When companyName is null / Then submit does not throw and shows the missing-company error inline', async () => {
+    it('When companyName is null / Then submit succeeds and falls back to the lead name as company', async () => {
       render(
         <CreateDealModal
           leadId="lead-1"
@@ -280,9 +280,11 @@ describe('CreateDealModal', () => {
       });
       expect(() => fireEvent.submit(document.querySelector('form')!)).not.toThrow();
       await waitFor(() => {
-        expect(screen.getByText('Please select a customer or enter a company name.')).toBeInTheDocument();
+        expect(mockCreateDeal).toHaveBeenCalledWith(
+          expect.objectContaining({ company: 'John Doe' }),
+        );
       });
-      expect(mockCreateDeal).not.toHaveBeenCalled();
+      expect(screen.queryByText('Please select a customer or enter a company name.')).not.toBeInTheDocument();
     });
   });
 
