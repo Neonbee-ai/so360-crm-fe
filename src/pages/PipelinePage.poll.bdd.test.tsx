@@ -34,11 +34,6 @@ vi.mock('../components/kanban/StageTransitionModal', () => ({
   StageTransitionModal: () => null,
 }));
 
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showError: vi.fn(), showSuccess: vi.fn(), dismissToast: vi.fn() }),
-}));
-
 vi.mock('./components/DealFilters', () => ({
   DealFilters: () => <div data-testid="deal-filters" />,
 }));

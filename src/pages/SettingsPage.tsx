@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -80,7 +80,6 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
 };
 
 const SettingsPage = () => {
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const shell = useShellBridge();
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const [settings, setSettings] = useState<CRMSettings | null>(null);
@@ -130,9 +129,9 @@ const SettingsPage = () => {
             const created = await settingsApi.sourceTypes.create({ label, value });
             setSourceTypes(prev => [...prev, created]);
             setNewSourceLabel('');
-            showSuccess('Source type added');
+            toast.success('Source type added');
         } catch {
-            showError('Failed to add source type');
+            toast.error('Failed to add source type');
         } finally {
             setIsAddingSource(false);
         }
@@ -143,7 +142,7 @@ const SettingsPage = () => {
             const updated = await settingsApi.sourceTypes.update(option.id, { is_active: !option.is_active });
             setSourceTypes(prev => prev.map(o => o.id === option.id ? updated : o));
         } catch {
-            showError('Failed to update source type');
+            toast.error('Failed to update source type');
         }
     };
 
@@ -151,9 +150,9 @@ const SettingsPage = () => {
         try {
             await settingsApi.sourceTypes.delete(id);
             setSourceTypes(prev => prev.filter(o => o.id !== id));
-            showSuccess('Source type deleted');
+            toast.success('Source type deleted');
         } catch {
-            showError('Cannot delete system source type');
+            toast.error('Cannot delete system source type');
         }
     };
 
@@ -187,7 +186,7 @@ const SettingsPage = () => {
 
     const handleSaveNewRule = async () => {
         if (!draftRule.name?.trim() || !draftRule.target_field) {
-            showError('Rule name and target field are required');
+            toast.error('Rule name and target field are required');
             return;
         }
         setIsSavingRule(true);
@@ -196,9 +195,9 @@ const SettingsPage = () => {
             setScoringRules(prev => [...prev, created]);
             setIsAddingRule(false);
             setDraftRule(BLANK_RULE);
-            showSuccess('Scoring rule created');
+            toast.success('Scoring rule created');
         } catch {
-            showError('Failed to create scoring rule');
+            toast.error('Failed to create scoring rule');
         } finally {
             setIsSavingRule(false);
         }
@@ -206,7 +205,7 @@ const SettingsPage = () => {
 
     const handleSaveRuleEdit = async () => {
         if (!editingRuleId || !draftRule.name?.trim() || !draftRule.target_field) {
-            showError('Rule name and target field are required');
+            toast.error('Rule name and target field are required');
             return;
         }
         setIsSavingRule(true);
@@ -215,9 +214,9 @@ const SettingsPage = () => {
             setScoringRules(prev => prev.map(r => r.id === editingRuleId ? updated : r));
             setEditingRuleId(null);
             setDraftRule(BLANK_RULE);
-            showSuccess('Scoring rule updated');
+            toast.success('Scoring rule updated');
         } catch {
-            showError('Failed to update scoring rule');
+            toast.error('Failed to update scoring rule');
         } finally {
             setIsSavingRule(false);
         }
@@ -228,7 +227,7 @@ const SettingsPage = () => {
             const updated = await settingsApi.scoringRules.update(rule.id, { is_active: !rule.is_active });
             setScoringRules(prev => prev.map(r => r.id === rule.id ? updated : r));
         } catch {
-            showError('Failed to update rule');
+            toast.error('Failed to update rule');
         }
     };
 
@@ -237,9 +236,9 @@ const SettingsPage = () => {
             await settingsApi.scoringRules.delete(id);
             setScoringRules(prev => prev.filter(r => r.id !== id));
             if (editingRuleId === id) handleCancelRuleEdit();
-            showSuccess('Scoring rule deleted');
+            toast.success('Scoring rule deleted');
         } catch {
-            showError('Failed to delete scoring rule');
+            toast.error('Failed to delete scoring rule');
         }
     };
 
@@ -249,12 +248,12 @@ const SettingsPage = () => {
             const result = await settingsApi.scoringRules.recalculate();
             const count = result?.recalculated ?? 0;
             if (count === 0) {
-                showSuccess('Scores recalculated — no active leads found or no active rules.');
+                toast.success('Scores recalculated — no active leads found or no active rules.');
             } else {
-                showSuccess(`Lead scores recalculated successfully. ${count} lead(s) updated.`);
+                toast.success(`Lead scores recalculated successfully. ${count} lead(s) updated.`);
             }
         } catch {
-            showError('Failed to recalculate lead scores');
+            toast.error('Failed to recalculate lead scores');
         } finally {
             setIsRecalculating(false);
         }
@@ -265,7 +264,7 @@ const SettingsPage = () => {
             const updated = await settingsApi.scoreCategories.update(cat.id, data);
             setScoreCategories(prev => prev.map(c => c.id === cat.id ? updated : c));
         } catch {
-            showError('Failed to update score band');
+            toast.error('Failed to update score band');
         }
     };
 
@@ -300,10 +299,10 @@ const SettingsPage = () => {
         setIsSaving(true);
         try {
             await crmService.updateSettings(settings);
-            showSuccess('Configuration saved!');
+            toast.success('Configuration saved!');
         } catch (error) {
             console.error('Failed to save settings', error);
-            showError(error instanceof Error ? error.message : 'Error saving settings.');
+            toast.error(error instanceof Error ? error.message : 'Error saving settings.');
         } finally {
             setIsSaving(false);
         }
@@ -325,7 +324,7 @@ const SettingsPage = () => {
     const removeStage = (id: string) => {
         if (!settings) return;
         if (settings.deal_stages.length <= 1) {
-            showError('Pipeline must have at least one stage.');
+            toast.error('Pipeline must have at least one stage.');
             return;
         }
         setSettings({
@@ -382,7 +381,6 @@ const SettingsPage = () => {
 
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-10 flex justify-between items-center">
                 <div>
                     <h1 className="text-4xl font-black text-slate-50 tracking-tight">CRM Settings</h1>
@@ -1095,15 +1093,14 @@ const SettingsPage = () => {
                     <DealNamingSettingsTab
                         initialConfig={settings?.deal_naming ?? null}
                         canWrite={canWriteSettings}
-                        showSuccess={showSuccess}
-                        showError={showError}
+                        showSuccess={(msg) => toast.success(msg)}
+                        showError={(msg) => toast.error(msg)}
                     />
                 )}
             </div>
         </div>
     );
 };
-
 
 // ─── Scoring Rule Form (inline) ───────────────────────────────────────────────
 

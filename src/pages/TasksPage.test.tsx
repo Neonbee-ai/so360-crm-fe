@@ -33,11 +33,6 @@ vi.mock('../components/common/Table', () => ({
   ),
 }));
 
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
-}));
-
 vi.mock('../utils/taskUtils', () => ({
   canCurrentUserBeAssigned: () => true,
   isTaskAssignedToUser: () => false,

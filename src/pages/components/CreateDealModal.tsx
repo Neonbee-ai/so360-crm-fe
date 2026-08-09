@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User } from '../../types/crm';
-import { ToastContainer, useToast } from '../../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { useActivity, usePeople, useOrganization } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
 
@@ -17,7 +17,6 @@ interface CreateDealModalProps {
 const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold';
 
 const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
-    const { toasts, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { currentOrg } = useOrganization();
     const { people } = usePeople({
@@ -171,7 +170,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
             onClose();
         } catch (error) {
             console.error('Failed to create deal', error);
-            showError(error instanceof Error && error.message ? error.message : 'Failed to create deal');
+            toast.error(error instanceof Error && error.message ? error.message : 'Failed to create deal');
         } finally {
             setIsSubmitting(false);
         }
@@ -232,7 +231,6 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
     return (
         <>
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
                 <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
                     {/* Sticky header */}

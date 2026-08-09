@@ -15,7 +15,7 @@ import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -112,7 +112,6 @@ const LeadDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { isModuleEnabled } = useShell();
     const { setCurrentEntity } = useCurrentEntity();
@@ -359,7 +358,7 @@ const LeadDetailPage = () => {
             fetchLeadData(); // Refresh to ensure consistency
         } catch (error) {
             console.error('Failed to toggle task status:', error);
-            showError('Failed to update task status');
+            toast.error('Failed to update task status');
             // Revert on error
             setAssociatedTasks(prev => prev.map(t => t.id === task.id ? task : t));
         }
@@ -370,11 +369,11 @@ const LeadDetailPage = () => {
         const leadName = lead ? getLeadDisplayName(lead) : id;
         try {
             await crmService.deleteLead(id);
-            showSuccess('Lead deleted successfully');
+            toast.success('Lead deleted successfully');
             recordActivity({ eventType: 'lead.deleted', eventCategory: 'crm', description: `Deleted lead "${leadName}"`, resourceType: 'lead', resourceId: id }).catch(() => {});
             navigate(isCustomerDetailRoute ? '/crm/customers' : '/crm/leads');
         } catch (error: any) {
-            showError(error.message || 'Failed to delete lead');
+            toast.error(error.message || 'Failed to delete lead');
             setIsDeleting(false);
         }
     };
@@ -386,10 +385,8 @@ const LeadDetailPage = () => {
                 : 'text-slate-500 hover:text-slate-300'
         }`;
 
-
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8">
                 <button onClick={() => navigate(backRoute)} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
                     <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -523,7 +520,7 @@ const LeadDetailPage = () => {
                                                 fetchLeadData();
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
-                                                showError('Failed to save changes.');
+                                                toast.error('Failed to save changes.');
                                             }
                                         }
                                         setIsEditingInfo(!isEditingInfo);
@@ -743,7 +740,7 @@ const LeadDetailPage = () => {
                                 <CustomerDetailsPanel
                                     lead={lead}
                                     onUpdate={(updatedLead) => setLead(updatedLead)}
-                                    showToast={(message, type) => type === 'success' ? showSuccess(message) : showError(message)}
+                                    showToast={(message, type) => type === 'success' ? toast.success(message) : toast.error(message)}
                                     partners={partners as any}
                                 />
                             )}
@@ -1111,11 +1108,11 @@ const LeadDetailPage = () => {
                                                                                                 .then(() => {
                                                                                                     setAssociatedTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: status as any } : t));
                                                                                                     setExpandedStatusDropdown(null);
-                                                                                                    showSuccess(`Task status updated to ${status}`);
+                                                                                                    toast.success(`Task status updated to ${status}`);
                                                                                                 })
                                                                                                 .catch(error => {
                                                                                                     console.error('Failed to update task status:', error);
-                                                                                                    showError('Failed to update task status');
+                                                                                                    toast.error('Failed to update task status');
                                                                                                 });
                                                                                         }}
                                                                                         className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-blue-500/20 text-blue-400 border-b border-blue-500/20' : 'hover:bg-slate-800 text-slate-300'}`}
@@ -1198,7 +1195,7 @@ const LeadDetailPage = () => {
                                                             publishLeadDocumentsChanged(lead.id);
                                                         } catch (err) {
                                                             const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
-                                                            showError(msg);
+                                                            toast.error(msg);
                                                         } finally {
                                                             setIsUploading(false);
                                                             e.target.value = '';
@@ -1537,7 +1534,7 @@ const LeadDetailPage = () => {
                                                     setIsChangingOwner(false);
                                                 } catch (error) {
                                                     console.error('Failed to update owner:', error);
-                                                    showError('Failed to update owner.');
+                                                    toast.error('Failed to update owner.');
                                                 }
                                             }}
                                             className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'}`}
@@ -1633,7 +1630,7 @@ const LeadDetailPage = () => {
                                                     setIsChangingStage(false);
                                                 } catch (error: any) {
                                                     console.error('Failed to update stage:', error);
-                                                    showError(error.message || 'Failed to update stage. Please try again.');
+                                                    toast.error(error.message || 'Failed to update stage. Please try again.');
                                                 }
                                             }}
                                             className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
@@ -1689,7 +1686,7 @@ const LeadDetailPage = () => {
                                             setActiveTab('activity');
                                         } catch (error: any) {
                                             console.error('Failed to log email:', error);
-                                            showError(error.message || 'Failed to log email.');
+                                            toast.error(error.message || 'Failed to log email.');
                                         }
                                     }}
                                     className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"

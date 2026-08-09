@@ -44,11 +44,6 @@ vi.mock('react-router-dom', () => ({
     Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('../components/common/Toast', () => ({
-    ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
-}));
-
 vi.mock('./components/TaskModal', () => ({ default: () => null }));
 
 vi.mock('@so360/shell-context', () => ({

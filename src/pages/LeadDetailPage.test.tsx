@@ -70,10 +70,13 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));
 vi.mock('./components/TaskModal', () => ({ default: () => null }));

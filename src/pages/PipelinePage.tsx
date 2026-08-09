@@ -5,7 +5,7 @@ import { crmService } from '../services/crmService';
 import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
 import { DealFilters } from '../pages/components/DealFilters';
@@ -14,7 +14,6 @@ import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 
 const PipelinePage = () => {
     const navigate = useNavigate();
-    const { toasts, showError, dismissToast } = useToast();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
@@ -82,7 +81,7 @@ const PipelinePage = () => {
             setDeals(fetchedStages.flatMap(s => s.deals || []));
         } catch (error: any) {
             console.error('Failed to fetch pipeline data', error);
-            showError(error.message || 'Failed to load pipeline. Please check your connection or Organization settings.');
+            toast.error(error.message || 'Failed to load pipeline. Please check your connection or Organization settings.');
         } finally {
             setIsInitialLoading(false);
             setIsFiltering(false);
@@ -116,7 +115,7 @@ const PipelinePage = () => {
             }
             setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, current_flow_state: newStageId ?? undefined } : d));
         } catch (error) {
-            showError('Failed to update stage');
+            toast.error('Failed to update stage');
         }
     };
 
@@ -131,7 +130,6 @@ const PipelinePage = () => {
 
     return (
         <div className="p-8 h-full flex flex-col">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8 flex justify-between items-start">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Deals Pipeline</h1>

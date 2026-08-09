@@ -8,7 +8,7 @@ import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
@@ -23,7 +23,6 @@ const TasksPage = () => {
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<any[]>([]); // Using any for User to avoid import issues if not exported
     const [isLoading, setIsLoading] = useState(true);
@@ -79,18 +78,18 @@ const TasksPage = () => {
 
     const handleQuickAssignToMe = async (task: Task) => {
         if (!currentUserId) {
-            showError?.('User context not available');
+            toast.error('User context not available');
             return;
         }
 
         if (!canCurrentUserBeAssigned(currentUser, users)) {
-            showError?.("You don't have permission to be assigned tasks");
+            toast.error("You don't have permission to be assigned tasks");
             return;
         }
 
         try {
             await crmService.updateTask(task.id, { assignee_id: currentUserId });
-            showSuccess?.('Task assigned to you');
+            toast.success('Task assigned to you');
 
             // Optimistic update
             const currentUserObj = users.find(u => u.id === currentUserId);
@@ -101,7 +100,7 @@ const TasksPage = () => {
             }
         } catch (error) {
             console.error('Failed to assign task:', error);
-            showError?.('Failed to assign task to yourself');
+            toast.error('Failed to assign task to yourself');
         }
     };
 
@@ -353,7 +352,6 @@ const TasksPage = () => {
 
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>

@@ -91,11 +91,6 @@ vi.mock('../utils/formatters', () => ({
     useCRMCurrencySymbol: () => '$',
 }));
 
-vi.mock('../components/common/Toast', () => ({
-    ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
-}));
-
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));
 vi.mock('./components/TaskModal', () => ({ default: () => null }));
 vi.mock('../components/CustomerDetailsPanel', () => ({ default: () => null }));

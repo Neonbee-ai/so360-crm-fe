@@ -22,10 +22,13 @@ vi.mock('../../services/crmService', () => ({
   },
 }));
 
-vi.mock('../../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showError: (...a: any[]) => mockShowError(...a), dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, error: mockShowError },
+  };
+});
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: (...a: any[]) => mockUseBusinessSettings(...a),

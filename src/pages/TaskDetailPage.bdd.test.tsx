@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
+import { toast } from '@so360/design-system';
 
 const mockGetTaskById = vi.fn();
 const mockGetUsers = vi.fn();
@@ -297,8 +298,8 @@ describe('TaskDetailPage', () => {
       await waitFor(() => expect(mockRecordActivity).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'note.deleted', resourceId: 'task-1' })));
     });
 
-    it('When creating a note fails / Then shows an error alert and keeps the composer open', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When creating a note fails / Then shows an error toast and keeps the composer open', async () => {
+      const toastSpy = vi.spyOn(toast, 'error');
       mockGetTaskNotes.mockResolvedValue([]);
       mockCreateNote.mockRejectedValueOnce(new Error('insert failed'));
       render(<TaskDetailPage />);
@@ -306,46 +307,46 @@ describe('TaskDetailPage', () => {
       fireEvent.click(screen.getByText('+ Add Note'));
       fireEvent.change(screen.getByPlaceholderText('Add a note or comment...'), { target: { value: 'Will fail' } });
       fireEvent.click(screen.getByText('Add Note'));
-      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to add note. Please try again.'));
+      await waitFor(() => expect(toastSpy).toHaveBeenCalledWith('Failed to add note. Please try again.'));
       expect(mockRecordActivity).not.toHaveBeenCalled();
-      alertSpy.mockRestore();
+      toastSpy.mockRestore();
     });
 
-    it('When Save Changes is clicked with blank content / Then shows a validation alert and never calls updateNote', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When Save Changes is clicked with blank content / Then shows a validation warning toast and never calls updateNote', async () => {
+      const toastSpy = vi.spyOn(toast, 'warning');
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
       fireEvent.click(screen.getByTitle('Edit note'));
       const textarea = screen.getByPlaceholderText('Note content...');
       fireEvent.change(textarea, { target: { value: '   ' } });
       fireEvent.click(screen.getByText('Save Changes'));
-      expect(alertSpy).toHaveBeenCalledWith('Note content cannot be empty.');
+      expect(toastSpy).toHaveBeenCalledWith('Note content cannot be empty.');
       expect(mockUpdateNote).not.toHaveBeenCalled();
-      alertSpy.mockRestore();
+      toastSpy.mockRestore();
     });
 
-    it('When updating a note fails / Then shows an error alert', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When updating a note fails / Then shows an error toast', async () => {
+      const toastSpy = vi.spyOn(toast, 'error');
       mockUpdateNote.mockRejectedValueOnce(new Error('update failed'));
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
       fireEvent.click(screen.getByTitle('Edit note'));
       fireEvent.change(screen.getByPlaceholderText('Note content...'), { target: { value: 'Updated content' } });
       fireEvent.click(screen.getByText('Save Changes'));
-      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to update note. Please try again.'));
-      alertSpy.mockRestore();
+      await waitFor(() => expect(toastSpy).toHaveBeenCalledWith('Failed to update note. Please try again.'));
+      toastSpy.mockRestore();
     });
 
-    it('When deleting a note fails / Then shows an error alert', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When deleting a note fails / Then shows an error toast', async () => {
+      const toastSpy = vi.spyOn(toast, 'error');
       mockDeleteNote.mockRejectedValueOnce(new Error('delete failed'));
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
       fireEvent.click(screen.getByTitle('Delete note'));
       const confirmBtn = screen.getAllByText('Delete Note').find(el => el.closest('button'));
       fireEvent.click(confirmBtn!);
-      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to delete note. Please try again.'));
-      alertSpy.mockRestore();
+      await waitFor(() => expect(toastSpy).toHaveBeenCalledWith('Failed to delete note. Please try again.'));
+      toastSpy.mockRestore();
     });
 
     it('Given a note authored by someone else / When rendered / Then edit/delete controls are not offered', async () => {

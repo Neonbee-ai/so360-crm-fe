@@ -16,11 +16,6 @@ vi.mock('../../services/crmService', () => ({
   },
 }));
 
-vi.mock('../../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showError: vi.fn(), dismissToast: vi.fn() }),
-}));
-
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),

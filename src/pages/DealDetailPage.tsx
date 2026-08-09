@@ -11,11 +11,10 @@ import {
 import SignRequestModal from '../components/sign/SignRequestModal';
 import DealProductsTab from './components/DealProductsTab';
 import CallsTab from './components/CallsTab';
-import { CrossLinkChip } from '@so360/design-system';
+import { CrossLinkChip, toast } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
-import { ToastContainer, useToast } from '../components/common/Toast';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
@@ -49,7 +48,6 @@ const DealDetailPage = () => {
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
 
     const [deal, setDeal] = useState<Deal | null>(null);
@@ -189,7 +187,7 @@ const DealDetailPage = () => {
             setAllUsers(usersData);
         } catch (error) {
             console.error('Failed to fetch deal workspace', error);
-            showError('Failed to load deal details');
+            toast.error('Failed to load deal details');
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -270,7 +268,7 @@ const DealDetailPage = () => {
         try {
             await dealsApi.update(deal.id, updates);
             setDeal(prev => prev ? { ...prev, ...updates } : null);
-            showSuccess('Deal updated successfully');
+            toast.success('Deal updated successfully');
 
             // Auto-log activity
             await crmService.logActivity({
@@ -283,7 +281,7 @@ const DealDetailPage = () => {
             recordActivity({ eventType: 'deal.updated', eventCategory: 'crm', description: `Updated deal "${deal.name}"`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
             fetchData();
         } catch (error) {
-            showError('Failed to update deal');
+            toast.error('Failed to update deal');
         }
     };
 
@@ -300,9 +298,9 @@ const DealDetailPage = () => {
                 notes: `Task "${task.title}" marked as ${newStatus}`,
                 date: new Date().toISOString()
             });
-            showSuccess(`Task ${newStatus}`);
+            toast.success(`Task ${newStatus}`);
         } catch (error) {
-            showError('Failed to update task');
+            toast.error('Failed to update task');
         }
     };
 
@@ -331,7 +329,7 @@ const DealDetailPage = () => {
             const projects = await crmService.getProjects();
             setAvailableProjects(projects);
         } catch (error) {
-            showError('Failed to fetch available projects');
+            toast.error('Failed to fetch available projects');
         } finally {
             setIsFetchingProjects(false);
         }
@@ -349,12 +347,12 @@ const DealDetailPage = () => {
 
     const handleLinkExistingProject = async () => {
         if (!selectedProjectId) {
-            showError('Please select a project to link');
+            toast.error('Please select a project to link');
             return;
         }
         try {
             await crmService.linkProject(id, selectedProjectId);
-            showSuccess('Project linked successfully');
+            toast.success('Project linked successfully');
             await crmService.logActivity({
                 lead_id: deal?.lead_id,
                 deal_id: id,
@@ -365,7 +363,7 @@ const DealDetailPage = () => {
             setIsProjectModalOpen(false);
             fetchData();
         } catch (error) {
-            showError('Failed to link project');
+            toast.error('Failed to link project');
         }
     };
 
@@ -374,7 +372,7 @@ const DealDetailPage = () => {
 
         try {
             await crmService.unlinkProject(id);
-            showSuccess('Project unlinked successfully');
+            toast.success('Project unlinked successfully');
 
             // Log activity
             await crmService.logActivity({
@@ -391,7 +389,7 @@ const DealDetailPage = () => {
             fetchData();
         } catch (error) {
             console.error('Failed to unlink project:', error);
-            showError('Failed to unlink project. Please try again.');
+            toast.error('Failed to unlink project. Please try again.');
         }
     };
 
@@ -417,7 +415,7 @@ const DealDetailPage = () => {
             setIsEditingSummary(false);
             resetEditState();
         } catch (error) {
-            showError('Failed to save profile changes');
+            toast.error('Failed to save profile changes');
         } finally {
             setIsSavingProfile(false);
         }
@@ -451,11 +449,11 @@ const DealDetailPage = () => {
         const dealName = deal?.name || id;
         try {
             await crmService.deleteDeal(id);
-            showSuccess('Deal deleted successfully');
+            toast.success('Deal deleted successfully');
             recordActivity({ eventType: 'deal.deleted', eventCategory: 'crm', description: `Deleted deal "${dealName}"`, resourceType: 'deal', resourceId: id }).catch(() => {});
             navigate('/crm/pipeline');
         } catch (error: any) {
-            showError(error.message || 'Failed to delete deal');
+            toast.error(error.message || 'Failed to delete deal');
             setIsDeleting(false);
         }
     };
@@ -480,7 +478,6 @@ const DealDetailPage = () => {
 
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
             <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
@@ -1341,7 +1338,7 @@ const DealDetailPage = () => {
                     task={editingTask}
                     dealId={id}
                     onClose={() => { setIsCreatingTask(false); setEditingTask(null); }}
-                    onSuccess={() => { fetchData(); showSuccess('Timeline updated'); }}
+                    onSuccess={() => { fetchData(); toast.success('Timeline updated'); }}
                 />
             )}
 
@@ -1374,7 +1371,6 @@ const DealDetailPage = () => {
                 </div>
             )}
 
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         </div>
     );
 };

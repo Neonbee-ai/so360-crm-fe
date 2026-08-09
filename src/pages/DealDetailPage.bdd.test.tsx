@@ -72,10 +72,13 @@ vi.mock('react-router-dom', () => ({
 
 const mockShowSuccess = vi.fn();
 const mockShowError = vi.fn();
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 

@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
+import { toast, getErrorMessage } from '@so360/design-system';
 import { useCRMFormatters } from '../utils/formatters';
 
 const TaskDetailPage = () => {
@@ -301,7 +302,7 @@ const TaskDetailPage = () => {
                                                 recordActivity({ eventType: 'note.added', eventCategory: 'crm', description: `Added a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                             } catch (error) {
                                                 console.error('Failed to create note:', error);
-                                                alert('Failed to add note. Please try again.');
+                                                toast.error(getErrorMessage(error, 'Failed to add note. Please try again.'));
                                             }
                                         }}
                                         className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm"
@@ -466,7 +467,7 @@ const TaskDetailPage = () => {
                             <button
                                 onClick={async () => {
                                     if (!editingNote.content.trim()) {
-                                        alert('Note content cannot be empty.');
+                                        toast.warning('Note content cannot be empty.');
                                         return;
                                     }
                                     try {
@@ -476,7 +477,7 @@ const TaskDetailPage = () => {
                                         recordActivity({ eventType: 'note.updated', eventCategory: 'crm', description: `Edited a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to update note:', error);
-                                        alert('Failed to update note. Please try again.');
+                                        toast.error(getErrorMessage(error, 'Failed to update note. Please try again.'));
                                     }
                                 }}
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-500/20 active:scale-95"
@@ -520,7 +521,7 @@ const TaskDetailPage = () => {
                                         recordActivity({ eventType: 'note.deleted', eventCategory: 'crm', description: `Deleted a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to delete note:', error);
-                                        alert('Failed to delete note. Please try again.');
+                                        toast.error(getErrorMessage(error, 'Failed to delete note. Please try again.'));
                                     }
                                 }}
                                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95"

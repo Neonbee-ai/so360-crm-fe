@@ -21,10 +21,13 @@ vi.mock('../components/MarketingStorePicker', () => ({
   ),
 }));
 
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, error: mockShowError },
+  };
+});
 
 vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,

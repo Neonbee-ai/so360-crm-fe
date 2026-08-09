@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
@@ -85,7 +85,6 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
 const PartnerDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
 
     const [partner, setPartner] = useState<any>(null);
     const [partnerTypes, setPartnerTypes] = useState<any[]>([]);
@@ -137,7 +136,7 @@ const PartnerDetailPage = () => {
                 total_purchase_till_date: partnerData.total_purchase_till_date ?? '',
             });
         } catch (err: any) {
-            showError('Failed to load partner');
+            toast.error('Failed to load partner');
         } finally {
             setIsLoading(false);
         }
@@ -199,9 +198,9 @@ const PartnerDetailPage = () => {
             });
             setPartner(updated);
             setIsEditing(false);
-            showSuccess('Partner updated');
+            toast.success('Partner updated');
         } catch (err: any) {
-            showError(err.message || 'Failed to update partner');
+            toast.error(err.message || 'Failed to update partner');
         } finally {
             setSaving(false);
         }
@@ -211,10 +210,10 @@ const PartnerDetailPage = () => {
         setApprovingId(commissionId);
         try {
             await partnersApi.updateCommission(commissionId, { status: 'approved' });
-            showSuccess('Royalty approved');
+            toast.success('Royalty approved');
             fetchCommissions();
         } catch (err: any) {
-            showError(err.message || 'Failed to approve royalty');
+            toast.error(err.message || 'Failed to approve royalty');
         } finally {
             setApprovingId(null);
         }
@@ -264,7 +263,6 @@ const PartnerDetailPage = () => {
 
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
             {/* Header */}
             <header className="mb-8">
@@ -818,7 +816,7 @@ const PartnerDetailPage = () => {
                 <MarkPaidModal
                     commissionId={markPaidId}
                     onClose={() => setMarkPaidId(null)}
-                    onPaid={() => { setMarkPaidId(null); showSuccess('Royalty marked as paid'); fetchCommissions(); }}
+                    onPaid={() => { setMarkPaidId(null); toast.success('Royalty marked as paid'); fetchCommissions(); }}
                 />
             )}
         </div>

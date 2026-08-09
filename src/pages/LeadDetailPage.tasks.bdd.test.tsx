@@ -106,10 +106,13 @@ vi.mock('@so360/shell-context', () => ({
 
 const mockShowSuccess = vi.fn();
 const mockShowError = vi.fn();
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('./components/ActivityHistoryDrawer', () => ({
   default: ({ isOpen, onClose }: any) => isOpen

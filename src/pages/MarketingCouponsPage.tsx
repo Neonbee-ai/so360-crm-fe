@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Percent, Clock } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
@@ -25,7 +25,6 @@ const MarketingCouponsPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const { toasts, showSuccess, showError, dismissToast } = useToast();
 
   const [form, setForm] = useState({
     code: '',
@@ -51,7 +50,7 @@ const MarketingCouponsPage: React.FC = () => {
       const data = await crmService.getCoupons(storeId);
       setCoupons(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      showError(e.message || 'Failed to load coupons');
+      toast.error(e.message || 'Failed to load coupons');
     } finally {
       setLoading(false);
     }
@@ -94,24 +93,24 @@ const MarketingCouponsPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!storeId || !form.code) {
-      showError('Coupon code is required');
+      toast.error('Coupon code is required');
       return;
     }
     try {
       setSaving(true);
       if (editingId) {
         await crmService.updateCoupon(storeId, editingId, form);
-        showSuccess(`Coupon "${form.code}" updated`);
+        toast.success(`Coupon "${form.code}" updated`);
       } else {
         const newCoupon = await crmService.createCoupon(storeId, form);
-        showSuccess(`Coupon "${form.code}" created`);
+        toast.success(`Coupon "${form.code}" created`);
         recordActivity({ eventType: 'coupon.created', eventCategory: 'crm', description: `Created coupon "${form.code}"`, resourceType: 'coupon', resourceId: newCoupon?.id || form.code }).catch(() => {});
       }
       setShowForm(false);
       resetForm();
       load();
     } catch (e: any) {
-      showError(e.message || 'Failed to save coupon');
+      toast.error(e.message || 'Failed to save coupon');
     } finally {
       setSaving(false);
     }
@@ -121,11 +120,11 @@ const MarketingCouponsPage: React.FC = () => {
     if (!confirm(`Delete coupon "${coupon.code}"?`)) return;
     try {
       await crmService.deleteCoupon(storeId, coupon.id);
-      showSuccess(`Coupon "${coupon.code}" deleted`);
+      toast.success(`Coupon "${coupon.code}" deleted`);
       recordActivity({ eventType: 'coupon.deactivated', eventCategory: 'crm', description: `Deleted coupon "${coupon.code}"`, resourceType: 'coupon', resourceId: coupon.id }).catch(() => {});
       load();
     } catch (e: any) {
-      showError(e.message || 'Failed to delete coupon');
+      toast.error(e.message || 'Failed to delete coupon');
     }
   };
 
@@ -135,7 +134,6 @@ const MarketingCouponsPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Discount Coupons</h1>

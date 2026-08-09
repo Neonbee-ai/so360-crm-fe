@@ -18,3 +18,34 @@ export const Dropdown: any = _any;
 export const Pagination: any = _any;
 export const QuotaBar: any = _any;
 export const QuotaGate: any = _any;
+
+// Universal toast surface
+export const toast: {
+    success: (message: string, opts?: any) => string;
+    error: (message: string, opts?: any) => string;
+    warning: (message: string, opts?: any) => string;
+    info: (message: string, opts?: any) => string;
+    promise: <T>(p: Promise<T>, msgs?: any) => Promise<T>;
+    dismiss: (id?: string) => void;
+} = {
+    success: () => 'toast-id',
+    error: () => 'toast-id',
+    warning: () => 'toast-id',
+    info: () => 'toast-id',
+    promise: (p) => p,
+    dismiss: () => {},
+};
+export const useToast: () => typeof toast = () => toast;
+export const getErrorMessage: (e: unknown, fallback?: string) => string = (_e, fallback) => fallback ?? 'error';
+export const attachToastErrorHandler: (instance?: any) => number = () => 0;
+export const toastBus: {
+    show: (...args: any[]) => void;
+    dismiss: (id?: string) => void;
+    subscribe: (fn: any) => () => void;
+    getToasts: () => any[];
+} = {
+    show: () => {},
+    dismiss: () => {},
+    subscribe: () => () => {},
+    getToasts: () => [],
+};

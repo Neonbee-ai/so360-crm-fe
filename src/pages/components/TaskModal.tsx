@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { Task, TaskType, User, Lead, Deal } from '../../types/crm';
-import { ToastContainer, useToast } from '../../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { useShell, useNotify, useActivity } from '@so360/shell-context';
 
 interface TaskModalProps {
@@ -15,7 +15,6 @@ interface TaskModalProps {
 }
 
 const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholderId, onClose, onSuccess }) => {
-    const { toasts, showError, dismissToast } = useToast();
     const shell = useShell();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
@@ -99,13 +98,13 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
         // Date-only strings (YYYY-MM-DD) must be appended with T00:00:00 so they are
         // parsed as local midnight, not UTC midnight, for a correct timezone comparison.
         if (!dueDate) {
-            showError('Please select a due date.');
+            toast.error('Please select a due date.');
             return;
         }
         const selectedDate = new Date(dueDate.includes('T') ? dueDate : dueDate + 'T00:00:00');
         const startOfToday = new Date(todayDate + 'T00:00:00');
         if (selectedDate < startOfToday) {
-            showError('Due Date cannot be in the past. Please select today or a future date.');
+            toast.error('Due Date cannot be in the past. Please select today or a future date.');
             return;
         }
 
@@ -156,7 +155,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             onClose();
         } catch (error) {
             console.error('Failed to save task', error);
-            showError('Failed to save task');
+            toast.error('Failed to save task');
         } finally {
             setIsSubmitting(false);
         }
@@ -164,7 +163,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0">
                     <h2 className="text-xl font-black text-slate-50 uppercase tracking-tight flex items-center gap-2">

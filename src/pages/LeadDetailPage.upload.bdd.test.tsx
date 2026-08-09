@@ -87,10 +87,13 @@ vi.mock('../utils/formatters', () => ({
 }));
 
 const mockShowError = vi.fn();
-vi.mock('../components/common/Toast', () => ({
-    ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@so360/design-system')>();
+    return {
+        ...actual,
+        toast: { ...actual.toast, error: mockShowError },
+    };
+});
 
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));
 vi.mock('./components/TaskModal', () => ({ default: () => null }));

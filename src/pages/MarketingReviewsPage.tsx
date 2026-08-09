@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Star, Package, User, Clock, ShieldCheck, ExternalLink, MessageSquare, Loader2, Filter } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { Link } from 'react-router-dom';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -15,7 +15,6 @@ const MarketingReviewsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved'>('all');
-  const { toasts, showError, dismissToast } = useToast();
 
   const applyStore = (value: string) => {
     setStoreId(value);
@@ -32,7 +31,7 @@ const MarketingReviewsPage: React.FC = () => {
       const data = await crmService.getMarketingReviews(storeId);
       setReviews(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      showError(e.message || 'Failed to load reviews');
+      toast.error(e.message || 'Failed to load reviews');
     } finally {
       setLoading(false);
     }
@@ -57,7 +56,6 @@ const MarketingReviewsPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
         <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Customer Reviews</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Monitor and moderate storefront product feedback</p>

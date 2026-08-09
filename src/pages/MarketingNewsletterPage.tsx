@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, MailX, Search, Mail, Loader2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -17,7 +17,6 @@ const MarketingNewsletterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [search, setSearch] = useState('');
-  const { toasts, showSuccess, showError, dismissToast } = useToast();
 
   const applyStore = (value: string) => {
     setStoreId(value);
@@ -31,7 +30,7 @@ const MarketingNewsletterPage: React.FC = () => {
       const data = await crmService.getNewsletterSubscribers(storeId);
       setSubscribers(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      showError(e.message || 'Failed to load subscribers');
+      toast.error(e.message || 'Failed to load subscribers');
     } finally {
       setLoading(false);
     }
@@ -45,21 +44,21 @@ const MarketingNewsletterPage: React.FC = () => {
     if (!email || !storeId) return;
     try {
       await crmService.addNewsletterSubscriber(storeId, { email });
-      showSuccess('Subscriber added successfully');
+      toast.success('Subscriber added successfully');
       setEmail('');
       load();
     } catch (e: any) {
-      showError(e.message || 'Failed to add subscriber');
+      toast.error(e.message || 'Failed to add subscriber');
     }
   };
 
   const handleUnsubscribe = async (id: string) => {
     try {
       await crmService.unsubscribeNewsletter(storeId, id);
-      showSuccess('Subscriber unsubscribed');
+      toast.success('Subscriber unsubscribed');
       load();
     } catch (e: any) {
-      showError(e.message || 'Failed to unsubscribe');
+      toast.error(e.message || 'Failed to unsubscribe');
     }
   };
 
@@ -67,10 +66,10 @@ const MarketingNewsletterPage: React.FC = () => {
     if (!confirm('Are you sure you want to delete this subscriber?')) return;
     try {
       await crmService.deleteNewsletterSubscriber(storeId, id);
-      showSuccess('Subscriber deleted');
+      toast.success('Subscriber deleted');
       load();
     } catch (e: any) {
-      showError(e.message || 'Failed to delete');
+      toast.error(e.message || 'Failed to delete');
     }
   };
 
@@ -80,7 +79,6 @@ const MarketingNewsletterPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
         <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Newsletter Subscribers</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage storefront newsletter audience</p>
