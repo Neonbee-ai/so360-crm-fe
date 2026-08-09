@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { vi, describe, test, expect, beforeEach } from 'vitest';
 import PartnerDetailPage from './PartnerDetailPage';
+import { toast } from '@so360/design-system';
 
 // ── service mocks ─────────────────────────────────────────────────────────────
 const mockPartnersGetOne = vi.fn();
@@ -211,6 +212,7 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
   });
 
   test('Given pending royalty / When Approve clicked / Then shows "Royalty approved" toast', async () => {
+    vi.spyOn(toast, 'success').mockReturnValue('toast-id');
     render(<PartnerDetailPage />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Royalties' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Royalties' }));
@@ -218,7 +220,7 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
     fireEvent.click(screen.getByText('Approve'));
     await waitFor(() => {
       expect(mockPartnersUpdateCommission).toHaveBeenCalledWith('c1', { status: 'approved' });
-      expect(screen.getByText('Royalty approved')).toBeInTheDocument();
+      expect(toast.success).toHaveBeenCalledWith('Royalty approved');
     });
   });
 
@@ -238,6 +240,7 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
   });
 
   test('Given Mark Royalty modal / When payment ref submitted / Then shows "Royalty marked as paid" toast', async () => {
+    vi.spyOn(toast, 'success').mockReturnValue('toast-id');
     mockPartnersGetCommissions.mockResolvedValue({
       summary: { total_earned: 0, pending: 0, paid: 0 },
       commissions: [{ id: 'c3', deal_id: 'deal-3', deal: { name: 'Deal 3' }, deal_amount: 10000, commission_rate: 10, commission_amount: 1000, status: 'approved', payment_ref: null }],
@@ -254,7 +257,7 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
     });
     await waitFor(() => {
       expect(mockPartnersUpdateCommission).toHaveBeenCalledWith('c3', { status: 'paid', payment_ref: 'NEFT-2026-007' });
-      expect(screen.getByText('Royalty marked as paid')).toBeInTheDocument();
+      expect(toast.success).toHaveBeenCalledWith('Royalty marked as paid');
     });
   });
 });

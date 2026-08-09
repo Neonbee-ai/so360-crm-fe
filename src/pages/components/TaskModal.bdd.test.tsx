@@ -9,7 +9,7 @@ const mockGetUsers = vi.fn();
 const mockCreateTask = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockRecordActivity = vi.fn();
-const mockShowError = vi.fn();
+const mockShowError = vi.hoisted(() => vi.fn());
 const mockEmitNotification = vi.fn();
 const mockGetLeads = vi.fn();
 const mockGetDeals = vi.fn();

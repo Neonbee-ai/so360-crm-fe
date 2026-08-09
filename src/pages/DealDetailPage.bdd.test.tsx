@@ -70,8 +70,8 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 vi.mock('@so360/design-system', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@so360/design-system')>();
   return {

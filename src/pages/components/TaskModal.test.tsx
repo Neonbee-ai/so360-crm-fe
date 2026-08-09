@@ -7,7 +7,7 @@ const mockCreateTask = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockEmitNotification = vi.fn();
 const mockRecordActivity = vi.fn();
-const mockShowError = vi.fn();
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/crmService', () => ({
   crmService: {

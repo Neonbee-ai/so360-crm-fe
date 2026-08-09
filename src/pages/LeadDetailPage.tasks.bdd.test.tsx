@@ -104,8 +104,8 @@ vi.mock('@so360/shell-context', () => ({
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
 }));
 
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 vi.mock('@so360/design-system', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@so360/design-system')>();
   return {

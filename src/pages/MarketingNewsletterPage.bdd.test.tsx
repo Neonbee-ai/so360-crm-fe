@@ -7,8 +7,8 @@ const mockGetSubscribers = vi.fn();
 const mockAddSubscriber = vi.fn();
 const mockUnsubscribe = vi.fn();
 const mockDeleteSubscriber = vi.fn();
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/crmService', () => ({
   crmService: {

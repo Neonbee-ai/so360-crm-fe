@@ -17,8 +17,8 @@ const mockDeleteDeal = vi.fn();
 const mockUpdateDealStage = vi.fn();
 const mockCreateNote = vi.fn();
 const mockDealsApiUpdate = vi.fn();
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/crmService', () => ({
   crmService: {

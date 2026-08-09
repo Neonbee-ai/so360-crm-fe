@@ -8,7 +8,7 @@ const mockCreateDeal = vi.fn();
 const mockGenerateName = vi.fn();
 const mockRecordActivity = vi.fn();
 const mockUseBusinessSettings = vi.fn();
-const mockShowError = vi.fn();
+const mockShowError = vi.hoisted(() => vi.fn());
 const mockUsePeople = vi.fn();
 
 vi.mock('../../services/crmService', () => ({

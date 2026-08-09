@@ -86,7 +86,7 @@ vi.mock('../utils/formatters', () => ({
     useCRMCurrencySymbol: () => '$',
 }));
 
-const mockShowError = vi.fn();
+const mockShowError = vi.hoisted(() => vi.fn());
 vi.mock('@so360/design-system', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@so360/design-system')>();
     return {

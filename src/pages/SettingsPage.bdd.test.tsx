@@ -23,8 +23,8 @@ import React from 'react';
 const mockGetSettings = vi.fn();
 const mockUpdateSettings = vi.fn();
 
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/crmService', () => ({
   crmService: {
