@@ -14,7 +14,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { quoteToDocumentData } from './quoteToDocumentData';
+import {
+  quoteToDocumentData,
+  splitItemSpecs,
+  parseTermsSections,
+  isInterstateSupply,
+} from './quoteToDocumentData';
 import type { Quote } from '../types/crm';
 
 const SELLER = { name: 'Naiz Trading LLC', tax_number: 'TRN-1' };
@@ -348,5 +353,119 @@ describe('Given line items with tax classification and unit of measure', () => {
     );
     expect(doc.line_items[0].hsn_code).toBe('7308');
     expect(doc.line_items[0].unit).toBe('pcs');
+  });
+});
+
+// ── Approved quotation template mapping ──────────────────────────────────────
+describe('Given an item whose description carries specification lines', () => {
+  it('When mapped / Then the first line is the name and the rest become bullets', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({
+        lines: [{
+          description: 'Jerico Queen Bed\nWood - Pre-Seasoned European Ash Wood\nWarranty 3 years',
+          quantity: 1, unit_price: 185900,
+        } as any],
+      }),
+      { currency: 'INR', seller: SELLER },
+    );
+    expect(doc.line_items[0].description).toBe('Jerico Queen Bed');
+    expect(doc.line_items[0].specs).toEqual([
+      'Wood - Pre-Seasoned European Ash Wood',
+      'Warranty 3 years',
+    ]);
+  });
+
+  it('When the user typed their own bullet markers / Then they are not doubled', () => {
+    const { specs } = splitItemSpecs({
+      description: 'Sofa\n- Wood: Ash\n• Warranty 3 years\n* Finish: Matte',
+      quantity: 1, unit_price: 1,
+    } as any);
+    expect(specs).toEqual(['Wood: Ash', 'Warranty 3 years', 'Finish: Matte']);
+  });
+
+  it('When an explicit item_name exists / Then every description line is a spec', () => {
+    const { name, specs } = splitItemSpecs({
+      item_name: 'Halo Coffee Table',
+      description: 'Wood: Ash\nWarranty 3 years',
+      quantity: 1, unit_price: 1,
+    } as any);
+    expect(name).toBe('Halo Coffee Table');
+    expect(specs).toEqual(['Wood: Ash', 'Warranty 3 years']);
+  });
+
+  it('When there are no spec lines / Then specs is omitted rather than an empty list', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({ lines: [{ description: 'Plain item', quantity: 1, unit_price: 10 } as any] }),
+      { currency: 'INR', seller: SELLER },
+    );
+    expect(doc.line_items[0].specs).toBeUndefined();
+  });
+
+  it('When the item has a picture / Then it is passed as the row thumbnail', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({
+        lines: [{ description: 'Bed', quantity: 1, unit_price: 10, item_image_url: 'https://cdn/bed.jpg' } as any],
+      }),
+      { currency: 'INR', seller: SELLER },
+    );
+    expect(doc.line_items[0].image_url).toBe('https://cdn/bed.jpg');
+  });
+});
+
+describe('Given the place of supply', () => {
+  const kerala = { custom_fields: { state: 'Kerala', country: 'India' } } as any;
+
+  it('When buyer and seller are in the same state / Then the supply is intra-state', () => {
+    expect(isInterstateSupply('Kerala', 'Kerala')).toBe(false);
+    expect(isInterstateSupply('kerala', ' KERALA ')).toBe(false);
+  });
+
+  it('When the states differ / Then the supply is inter-state, so IGST applies', () => {
+    expect(isInterstateSupply('Karnataka', 'Kerala')).toBe(true);
+  });
+
+  it('When either state is unknown / Then it defaults to intra-state', () => {
+    expect(isInterstateSupply(undefined, 'Kerala')).toBe(false);
+    expect(isInterstateSupply('Kerala', '')).toBe(false);
+  });
+
+  it('When mapped / Then place and country of supply reach the document', () => {
+    const doc = quoteToDocumentData(baseQuote(), {
+      currency: 'INR', seller: SELLER, customer: kerala, sellerState: 'Karnataka',
+    });
+    expect(doc.place_of_supply).toBe('Kerala');
+    expect(doc.country_of_supply).toBe('India');
+    expect(doc.is_interstate).toBe(true);
+  });
+});
+
+describe('Given standing terms text', () => {
+  it('When it has headings and clauses / Then it becomes headed sections', () => {
+    const sections = parseTermsSections(
+      'Terms and Conditions\n1. Quote valid 15 days.\n2. GST extra.\nWarranty\n1. Three year warranty.',
+    );
+    expect(sections?.map((s) => s.heading)).toEqual(['Terms and Conditions', 'Warranty']);
+    expect(sections?.[0].items).toEqual(['Quote valid 15 days.', 'GST extra.']);
+    expect(sections?.[1].items).toEqual(['Three year warranty.']);
+  });
+
+  it('When there are no headings / Then everything lands under one default section', () => {
+    const sections = parseTermsSections('Prices exclude installation.');
+    expect(sections).toHaveLength(1);
+    expect(sections?.[0].heading).toBe('Terms and Conditions');
+    expect(sections?.[0].items).toEqual(['Prices exclude installation.']);
+  });
+
+  it('When the text is empty / Then no sections are produced', () => {
+    expect(parseTermsSections('')).toBeUndefined();
+    expect(parseTermsSections(null)).toBeUndefined();
+  });
+
+  it('When mapped / Then the quote terms reach the document as sections', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({ terms_and_conditions: 'Warranty\n1. Three year warranty.' }),
+      { currency: 'INR', seller: SELLER },
+    );
+    expect(doc.terms_sections?.[0].heading).toBe('Warranty');
   });
 });

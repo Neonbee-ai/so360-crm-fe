@@ -33,9 +33,87 @@ function lineAmount(line: QuoteLine): number {
     return net + net * (numOr0(line.tax_rate) / 100);
 }
 
+
+/**
+ * Split an item's free-text description into a headline and specification bullets.
+ *
+ * The approved quotation layout shows the item name on its own line with the
+ * material/finish/dimension/warranty details bulleted beneath it. Our schema keeps
+ * all of that in one `description` field, so the first line becomes the headline
+ * and each subsequent line becomes a bullet. Leading list markers the user typed
+ * ("-", "*", "•") are stripped so they aren't doubled by the rendered bullet.
+ */
+export function splitItemSpecs(line: QuoteLine): { name: string; specs: string[] } {
+    const raw = (line.description || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const stripMarker = (l: string) => l.replace(/^[-*\u2022]\s*/, '').trim();
+
+    // An explicit item name always wins; every description line is then a spec.
+    if (line.item_name && line.item_name.trim()) {
+        return { name: line.item_name.trim(), specs: raw.map(stripMarker).filter(Boolean) };
+    }
+    if (raw.length === 0) return { name: '\u2014', specs: [] };
+    return { name: stripMarker(raw[0]), specs: raw.slice(1).map(stripMarker).filter(Boolean) };
+}
+
+/**
+ * Parse the standing terms blob into the headed, numbered sections the approved
+ * layout renders.
+ *
+ * A line that carries no sentence punctuation and is followed by list content is
+ * treated as a heading ("Warranty", "Production & Delivery Timeline"); everything
+ * else becomes a numbered clause. Text with no discernible headings degrades to a
+ * single "Terms and Conditions" section, so nothing is ever dropped.
+ */
+export function parseTermsSections(
+    text: string | null | undefined,
+    defaultHeading = 'Terms and Conditions',
+): Array<{ heading: string; items: string[] }> | undefined {
+    const lines = (text || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) return undefined;
+
+    const isHeading = (l: string) =>
+        l.length <= 60 && !/[.:;]$/.test(l) && !/^\s*(\d+[.)]|[-*\u2022])/.test(l);
+
+    const sections: Array<{ heading: string; items: string[] }> = [];
+    let current = { heading: defaultHeading, items: [] as string[] };
+
+    for (const line of lines) {
+        const next = lines[lines.indexOf(line) + 1];
+        if (isHeading(line) && next !== undefined) {
+            if (current.items.length) sections.push(current);
+            current = { heading: line, items: [] };
+        } else {
+            current.items.push(line.replace(/^\s*(\d+[.)]|[-*\u2022])\s*/, ''));
+        }
+    }
+    if (current.items.length) sections.push(current);
+    return sections.length ? sections : undefined;
+}
+
+/** Read a state name from whichever field the record happens to carry it in. */
+function stateOf(party: Partial<Lead> | null | undefined): string {
+    if (!party) return '';
+    const cf = (party.custom_fields ?? {}) as Record<string, unknown>;
+    const v = (party as Record<string, unknown>)['state'] ?? cf['state'];
+    return typeof v === 'string' ? v.trim() : '';
+}
+
+function countryOf(party: Partial<Lead> | null | undefined): string {
+    if (!party) return '';
+    const cf = (party.custom_fields ?? {}) as Record<string, unknown>;
+    const v = (party as Record<string, unknown>)['country'] ?? cf['country'];
+    return typeof v === 'string' ? v.trim() : '';
+}
+
 function lineToDocumentItem(line: QuoteLine): DocumentLineItem {
+    const { name, specs } = splitItemSpecs(line);
+    const sku = line.sku
+        ? `${line.sku}${line.sub_sku && line.sub_sku !== 'NIL' ? ` / ${line.sub_sku}` : ''}`
+        : '';
     return {
-        description: lineLabel(line),
+        description: sku ? `${name} (${sku})` : name,
+        specs: specs.length ? specs : undefined,
+        image_url: line.item_image_url || undefined,
         hsn_code: line.hsn_code,
         qty: num(line.quantity) ?? 0,
         unit: line.unit,
@@ -147,7 +225,14 @@ export function buildBuyerParty(
  */
 export function quoteToDocumentData(
     quote: Quote,
-    opts: { currency: string; seller: DocumentParty; customer?: Partial<Lead> | null },
+    opts: {
+        currency: string;
+        seller: DocumentParty;
+        customer?: Partial<Lead> | null;
+        /** Seller's state, compared with the place of supply for the GST split. */
+        sellerState?: string;
+        sellerCountry?: string;
+    },
 ): DocumentData {
     const lines = quote.lines || [];
     const totals = resolveTotals(quote, lines);
@@ -169,9 +254,28 @@ export function quoteToDocumentData(
         payment_terms: quote.payment_terms,
         delivery_terms: quote.delivery_terms,
         incoterm: quote.incoterm,
+        // Place of supply decides the CGST/SGST vs IGST split on an Indian
+        // document, so it is derived from the two parties' states rather than
+        // assumed.
+        country_of_supply: countryOf(opts.customer) || opts.sellerCountry || undefined,
+        place_of_supply: stateOf(opts.customer) || undefined,
+        is_interstate: isInterstateSupply(opts.sellerState, stateOf(opts.customer)),
+        terms_sections: parseTermsSections(quote.terms_and_conditions),
         notes: [quote.terms_and_conditions, quote.notes]
             .map((t) => (typeof t === 'string' ? t.trim() : ''))
             .filter(Boolean)
             .join('\n\n') || undefined,
     };
+}
+
+/**
+ * True when the supply crosses a state border, which replaces CGST+SGST with a
+ * single IGST charge. Unknown states are treated as intra-state, matching the
+ * conservative default used elsewhere in the platform.
+ */
+export function isInterstateSupply(sellerState?: string, buyerState?: string): boolean {
+    const a = (sellerState || '').trim().toLowerCase();
+    const b = (buyerState || '').trim().toLowerCase();
+    if (!a || !b) return false;
+    return a !== b;
 }

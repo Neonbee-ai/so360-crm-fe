@@ -451,8 +451,13 @@ const QuoteDetailPage = () => {
                                           ].filter(Boolean).join(', ')
                                         : undefined,
                                     tax_number: (currentOrg as any)?.tax_id,
+                                    pan: (currentOrg as any)?.pan,
                                 },
                                 customer,
+                                // Compared against the buyer's state to decide
+                                // whether the supply is intra- or inter-state.
+                                sellerState: (currentOrg as any)?.billing_address?.state,
+                                sellerCountry: (currentOrg as any)?.billing_address?.country,
                             }))}
                             className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
                         >
