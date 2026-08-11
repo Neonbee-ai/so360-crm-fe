@@ -12,6 +12,7 @@ export const DEAL_NAME_TOKENS: DealNameToken[] = [
   { token: '{company_name}', label: 'Company Name', sample: 'Acme Corporation' },
   { token: '{customer_name}', label: 'Customer Name', sample: 'Acme Corporation' },
   { token: '{contact_name}', label: 'Contact Name', sample: 'John Doe' },
+  { token: '{city}', label: 'Lead City', sample: 'Bangalore' },
   { token: '{owner_name}', label: 'Sales Owner', sample: 'Jane Smith' },
   { token: '{org_name}', label: 'Organization Name', sample: 'Naiz Trading LLC' },
   { token: '{YYYY}', label: 'Current Year', sample: '2026' },

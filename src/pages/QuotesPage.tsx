@@ -8,7 +8,7 @@ import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaBar, QuotaGate, CrossLinkChip } from '@so360/design-system';
+import { QuotaBar, QuotaGate, CrossLinkChip, toast } from '@so360/design-system';
 
 const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -132,6 +132,7 @@ const QuotesPage = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedDealId, setSelectedDealId] = useState<string>('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [rejectTarget, setRejectTarget] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
@@ -237,12 +238,19 @@ const QuotesPage = () => {
     };
 
     const handleDeleteQuote = async (quoteId: string) => {
+        if (isDeleting) return;
+        setIsDeleting(true);
         try {
             await crmService.deleteQuote(quoteId);
             setQuotes(quotes.filter(q => q.id !== quoteId));
             setShowDeleteConfirm(null);
+            toast.success('Quote deleted successfully.');
         } catch (err: any) {
-            setError(err.message || 'Failed to delete quote');
+            const message = err.message || 'Failed to delete quote';
+            setError(message);
+            toast.error(message);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -344,7 +352,7 @@ const QuotesPage = () => {
             accessor: (quote: Quote) => (
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => navigate(`/crm/quotes/${quote.id}`)}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/crm/quotes/${quote.id}`); }}
                         className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded"
                         title="View"
                     >
@@ -352,7 +360,7 @@ const QuotesPage = () => {
                     </button>
                     {canCreateQuote && quote.status === 'draft' && (
                         <button
-                            onClick={() => setShowDeleteConfirm(quote.id)}
+                            onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(quote.id); }}
                             className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded"
                             title="Delete"
                         >
@@ -687,22 +695,31 @@ const QuotesPage = () => {
             {showDeleteConfirm && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Quote</h2>
+                        <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Quote?</h2>
                         <p className="text-slate-400 mb-6">
-                            Are you sure you want to delete this quote? This action cannot be undone.
+                            Are you sure you want to delete{' '}
+                            <span className="text-slate-200 font-medium">
+                                {(() => {
+                                    const target = quotes.find(q => q.id === showDeleteConfirm);
+                                    return target ? `${target.quote_number}${target.title ? ` – ${target.title}` : ''}` : 'this quote';
+                                })()}
+                            </span>
+                            ? This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
+                                disabled={isDeleting}
+                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => handleDeleteQuote(showDeleteConfirm)}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                disabled={isDeleting}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-60"
                             >
-                                Delete
+                                {isDeleting ? 'Deleting…' : 'Delete Quote'}
                             </button>
                         </div>
                     </div>
