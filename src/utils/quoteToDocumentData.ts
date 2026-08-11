@@ -9,25 +9,77 @@ function lineLabel(line: QuoteLine): string {
     return sku ? `${base} (${sku})` : base;
 }
 
+/**
+ * Coerce a loosely-typed API value to a finite number. Postgres DECIMAL columns
+ * come back as strings through some paths, and optional columns come back
+ * `null`/absent — both must never reach the print layer as `undefined`.
+ */
+function num(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === '') return undefined;
+    const n = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(n) ? n : undefined;
+}
+
+function numOr0(value: unknown): number {
+    return num(value) ?? 0;
+}
+
 function lineAmount(line: QuoteLine): number {
-    if (typeof line.line_total === 'number') return line.line_total;
-    const sub = line.quantity * line.unit_price;
-    const disc = sub * ((line.discount_percent || 0) / 100);
+    const persisted = num(line.line_total);
+    if (persisted !== undefined) return persisted;
+    const sub = numOr0(line.quantity) * numOr0(line.unit_price);
+    const disc = sub * (numOr0(line.discount_percent) / 100);
     const net = sub - disc;
-    return net + net * ((line.tax_rate || 0) / 100);
+    return net + net * (numOr0(line.tax_rate) / 100);
 }
 
 function lineToDocumentItem(line: QuoteLine): DocumentLineItem {
     return {
         description: lineLabel(line),
         hsn_code: line.hsn_code,
-        qty: line.quantity,
+        qty: num(line.quantity) ?? 0,
         unit: line.unit,
-        unit_price: line.unit_price,
-        discount_pct: line.discount_percent,
-        tax_rate: line.tax_rate,
+        unit_price: num(line.unit_price) ?? 0,
+        discount_pct: num(line.discount_percent),
+        tax_rate: num(line.tax_rate),
         amount: lineAmount(line),
     };
+}
+
+/**
+ * Resolve the document totals.
+ *
+ * The totals are derived from the quote's own lines using the same arithmetic
+ * the Quote detail page renders, so the printed document and the on-screen
+ * quote can never disagree. The persisted columns are only used when the quote
+ * carries no lines to derive from — and both the real column names
+ * (`total_amount`, `total_tax`, `total_discount`) and the older `*_total`
+ * aliases are read, since reading only the aliases is what left `total`
+ * `undefined` and broke printing.
+ *
+ * No commercial calculation changes here: this mirrors the existing per-line
+ * formula exactly, it only guarantees a finite number reaches the renderer.
+ */
+function resolveTotals(quote: Quote, lines: QuoteLine[]) {
+    if (lines.length > 0) {
+        let subtotal = 0;
+        let discount = 0;
+        let tax = 0;
+        for (const line of lines) {
+            const lineSubtotal = numOr0(line.quantity) * numOr0(line.unit_price);
+            const lineDiscount = lineSubtotal * (numOr0(line.discount_percent) / 100);
+            subtotal += lineSubtotal;
+            discount += lineDiscount;
+            tax += (lineSubtotal - lineDiscount) * (numOr0(line.tax_rate) / 100);
+        }
+        return { subtotal, discount, tax, total: subtotal - discount + tax };
+    }
+
+    const subtotal = numOr0(quote.subtotal);
+    const discount = numOr0(quote.total_discount ?? quote.discount_total);
+    const tax = numOr0(quote.total_tax ?? quote.tax_total);
+    const total = num(quote.total_amount ?? quote.grand_total);
+    return { subtotal, discount, tax, total: total ?? subtotal - discount + tax };
 }
 
 /**
@@ -98,6 +150,7 @@ export function quoteToDocumentData(
     opts: { currency: string; seller: DocumentParty; customer?: Partial<Lead> | null },
 ): DocumentData {
     const lines = quote.lines || [];
+    const totals = resolveTotals(quote, lines);
     return {
         document_number: quote.quote_number || `Quote #${quote.id.slice(0, 8)}`,
         date: quote.created_at,
@@ -109,10 +162,10 @@ export function quoteToDocumentData(
         seller: opts.seller,
         buyer: buildBuyerParty(quote, opts.customer),
         line_items: lines.map(lineToDocumentItem),
-        subtotal: quote.subtotal,
-        discount_amount: quote.discount_total,
-        tax_amount: quote.tax_total,
-        total: quote.grand_total,
+        subtotal: totals.subtotal,
+        discount_amount: totals.discount,
+        tax_amount: totals.tax,
+        total: totals.total,
         payment_terms: quote.payment_terms,
         delivery_terms: quote.delivery_terms,
         incoterm: quote.incoterm,

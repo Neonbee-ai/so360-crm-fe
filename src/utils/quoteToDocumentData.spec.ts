@@ -3,7 +3,10 @@
  *
  * Maps a CRM Quote into the shared DocumentData contract for printing through
  * the org's Core template. Invariants:
- *   - Totals come straight from the Quote (subtotal/discount/tax/grand_total)
+ *   - Totals are derived from the lines (matching the Quote detail page), and
+ *     fall back to the persisted columns when the quote carries no lines
+ *   - Totals are always finite numbers — never undefined, which used to crash
+ *     the print renderer on `.toFixed()`
  *   - Per-line amount prefers line_total, else is computed (qty·price − disc + tax)
  *   - SKU is folded into the line description when present (NIL sub_sku dropped)
  *   - Buyer falls back customer_name → deal.company_name → deal.name → ''
@@ -52,6 +55,85 @@ describe('quoteToDocumentData > header & totals', () => {
     it('Given no quote_number, Then it falls back to a short id label', () => {
         const d = quoteToDocumentData(baseQuote({ quote_number: '' }), { currency: 'AED', seller: SELLER });
         expect(d.document_number).toBe('Quote #abcdef12');
+    });
+
+    it('Given the API returns the real column names, Then totals still resolve', () => {
+        // The `quotes` table stores total_amount/total_tax/total_discount. Reading
+        // only the grand_total/*_total aliases left `total` undefined and the
+        // print renderer crashed on `.toFixed()`.
+        const d = quoteToDocumentData(
+            baseQuote({
+                grand_total: undefined,
+                tax_total: undefined,
+                discount_total: undefined,
+                total_amount: 95,
+                total_tax: 5,
+                total_discount: 10,
+            }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.total).toBe(95);
+        expect(d.tax_amount).toBe(5);
+        expect(d.discount_amount).toBe(10);
+    });
+
+    it('Given no persisted totals at all, Then every total is 0 rather than undefined', () => {
+        const d = quoteToDocumentData(
+            baseQuote({ subtotal: undefined, grand_total: undefined, tax_total: undefined, discount_total: undefined }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.subtotal).toBe(0);
+        expect(d.discount_amount).toBe(0);
+        expect(d.tax_amount).toBe(0);
+        expect(d.total).toBe(0);
+        expect(typeof d.total).toBe('number');
+    });
+
+    it('Given lines, Then totals are derived from them so print matches the detail page', () => {
+        const d = quoteToDocumentData(
+            baseQuote({
+                lines: [
+                    { description: 'A', quantity: 2, unit_price: 100, discount_percent: 10, tax_rate: 5 },
+                    { description: 'B', quantity: 1, unit_price: 50 },
+                ] as any,
+                // Stale persisted values must not win over the lines on screen.
+                subtotal: 999, total_amount: 999, total_tax: 999, total_discount: 999,
+            }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.subtotal).toBe(250);      // 200 + 50
+        expect(d.discount_amount).toBe(20); // 10% of 200
+        expect(d.tax_amount).toBe(9);       // 5% of 180
+        expect(d.total).toBe(239);          // 250 − 20 + 9
+    });
+
+    it('Given a single line with no discount and no tax, Then the total is qty × price', () => {
+        const d = quoteToDocumentData(
+            baseQuote({ lines: [{ description: 'A', quantity: 3, unit_price: 25 }] as any }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.subtotal).toBe(75);
+        expect(d.discount_amount).toBe(0);
+        expect(d.tax_amount).toBe(0);
+        expect(d.total).toBe(75);
+    });
+
+    it('Given a zero-value discount, Then it contributes nothing and does not break totals', () => {
+        const d = quoteToDocumentData(
+            baseQuote({ lines: [{ description: 'A', quantity: 1, unit_price: 100, discount_percent: 0, tax_rate: 0 }] as any }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.discount_amount).toBe(0);
+        expect(d.total).toBe(100);
+    });
+
+    it('Given DECIMAL columns returned as strings, Then they are coerced to numbers', () => {
+        const d = quoteToDocumentData(
+            baseQuote({ subtotal: '100' as any, total_amount: '95' as any, total_tax: '5' as any, total_discount: '10' as any, grand_total: undefined, tax_total: undefined, discount_total: undefined }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.total).toBe(95);
+        expect(d.subtotal).toBe(100);
     });
 
     it('Then document_title is left unset so the template label wins', () => {
@@ -112,6 +194,40 @@ describe('quoteToDocumentData > line items', () => {
             { currency: 'AED', seller: SELLER },
         );
         expect(d.line_items[0].description).toBe('Widget (SKU1)');
+    });
+
+    it('Given a line missing quantity and unit_price, Then qty/price/amount are 0, not undefined', () => {
+        const d = quoteToDocumentData(
+            baseQuote({ lines: [{ description: 'Widget' } as any] }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.line_items[0].qty).toBe(0);
+        expect(d.line_items[0].unit_price).toBe(0);
+        expect(d.line_items[0].amount).toBe(0);
+    });
+
+    it('Given numeric line values returned as strings, Then they are coerced', () => {
+        const d = quoteToDocumentData(
+            baseQuote({ lines: [{ description: 'Widget', quantity: '2', unit_price: '50' } as any] }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.line_items[0].qty).toBe(2);
+        expect(d.line_items[0].amount).toBe(100);
+    });
+
+    it('Given multiple lines, Then each carries its own finite amount', () => {
+        const d = quoteToDocumentData(
+            baseQuote({
+                lines: [
+                    { description: 'A', quantity: 2, unit_price: 50 },
+                    { description: 'B', quantity: 1, unit_price: 30, tax_rate: 10 },
+                    { description: 'C' },
+                ] as any,
+            }),
+            { currency: 'AED', seller: SELLER },
+        );
+        expect(d.line_items.map(l => l.amount)).toEqual([100, 33, 0]);
+        expect(d.line_items.every(l => Number.isFinite(l.amount))).toBe(true);
     });
 });
 

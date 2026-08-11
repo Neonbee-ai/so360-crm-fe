@@ -303,10 +303,20 @@ export interface Quote {
     title?: string;
     status: QuoteStatus;
     lines: QuoteLine[];
-    subtotal: number;
-    tax_total: number;
-    discount_total: number;
-    grand_total: number;
+    // The API returns the raw `quotes` columns (`subtotal`, `total_tax`,
+    // `total_discount`, `total_amount`). The `*_total` / `grand_total` aliases
+    // below are the shapes older FE code reads; both are optional because
+    // neither set is guaranteed to be present on a given response.
+    subtotal?: number;
+    tax_total?: number;
+    discount_total?: number;
+    grand_total?: number;
+    /** Persisted tax total — actual `quotes` column name. */
+    total_tax?: number;
+    /** Persisted discount total — actual `quotes` column name. */
+    total_discount?: number;
+    /** Persisted grand total — actual `quotes` column name. */
+    total_amount?: number;
     notes?: string;
     /** Standing legal terms text. */
     terms_and_conditions?: string;
