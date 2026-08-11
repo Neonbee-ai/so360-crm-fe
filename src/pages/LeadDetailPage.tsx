@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { eventBus } from '@so360/event-bus';
 import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
@@ -179,6 +179,21 @@ const LeadDetailPage = () => {
         }, 2500);
     }, []);
     const layoutPrefs = useLeadDetailLayoutPreferences();
+
+    // Quick actions live at the top of the page; the workspace they drive sits
+    // well below the fold. Switching the tab alone therefore looked like the
+    // button did nothing — every quick action now scrolls the workspace into
+    // view and, where a composer exists, opens/focuses it.
+    const workspaceRef = useRef<HTMLDivElement>(null);
+    const noteComposerRef = useRef<HTMLDivElement>(null);
+    const documentInputRef = useRef<HTMLInputElement>(null);
+
+    const openWorkspaceTab = useCallback((tab: TabType) => {
+        setActiveTab(tab);
+        window.requestAnimationFrame(() => {
+            workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }, []);
 
     // Task 4 (Customer Timeline): unified server-side timeline, shared between
     // the inline preview below and ActivityHistoryDrawer.tsx.
@@ -393,16 +408,16 @@ const LeadDetailPage = () => {
     };
 
     const tabCls = (tab: TabType) =>
-        `flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+        `flex shrink-0 items-center gap-2 px-4 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
             activeTab === tab
                 ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5'
-                : 'text-slate-500 hover:text-slate-300'
+                : 'text-slate-300 hover:text-slate-50'
         }`;
 
     return (
         <div className="p-8">
             <header className="mb-8">
-                <DetailBackLink fallbackTo={backRoute} label={backLabel} className="mb-4" />
+                <DetailBackLink fallbackTo={backRoute} className="mb-4" />
                 <div className="flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-3 mb-2 relative">
@@ -452,12 +467,17 @@ const LeadDetailPage = () => {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        {/* Icon-only: the trash glyph is unambiguous, and dropping the
+                            word keeps the destructive secondary action from competing
+                            with the primary CTA beside it. Name is carried by
+                            aria-label + title so it stays announced and hoverable. */}
                         <button
                             onClick={() => setShowDeleteConfirm(true)}
-                            className="bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-400 px-4 py-3 rounded-xl font-black transition-all text-xs flex items-center gap-2 uppercase tracking-widest border border-slate-700 hover:border-red-500/50"
+                            aria-label="Delete"
+                            title="Delete"
+                            className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-3 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
                             <Trash2 size={16} />
-                            Delete
                         </button>
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
@@ -479,12 +499,23 @@ const LeadDetailPage = () => {
             )}
 
             <QuickActionBar
-                onAddNote={() => setActiveTab('notes')}
-                onSendEmail={() => setActiveTab('emails')}
-                onLogCall={() => { setActiveTab('calls'); setAutoOpenCallForm(true); }}
-                onScheduleMeeting={() => { setActiveTab('meetings'); setAutoOpenMeetingForm(true); }}
+                onAddNote={() => {
+                    openWorkspaceTab('notes');
+                    // The composer is the point of "Add Note" — put the caret in it.
+                    window.setTimeout(() => {
+                        noteComposerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
+                    }, 350);
+                }}
+                onSendEmail={() => openWorkspaceTab('emails')}
+                onLogCall={() => { openWorkspaceTab('calls'); setAutoOpenCallForm(true); }}
+                onScheduleMeeting={() => { openWorkspaceTab('meetings'); setAutoOpenMeetingForm(true); }}
                 onCreateTask={() => setIsCreatingTask(true)}
-                onUploadDocument={() => setActiveTab('documents')}
+                onUploadDocument={() => {
+                    openWorkspaceTab('documents');
+                    // Open the OS file dialog directly rather than only revealing
+                    // the tab that contains the (hidden) file input.
+                    window.setTimeout(() => documentInputRef.current?.click(), 350);
+                }}
             />
 
             {/* Executive Summary Dashboard */}
@@ -759,21 +790,35 @@ const LeadDetailPage = () => {
                     </section>
 
                     {/* Workspace Tabs - Now below Profile Data */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="flex items-center overflow-x-auto scrollbar-hide border-b border-slate-800 bg-slate-900/50">
-                            {layoutPrefs.visibleSections.map((section) => {
-                                const tab = TAB_CONFIG[section.key];
-                                if (!tab) return null;
-                                return (
-                                    <button key={section.key} onClick={() => setActiveTab(section.key as TabType)} className={tabCls(section.key as TabType)}>
-                                        {tab.icon} {tab.label(tabCounts)}
-                                    </button>
-                                );
-                            })}
+                    <div ref={workspaceRef} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit scroll-mt-6">
+                        {/* The settings cog sits outside the scrolling strip: inside it, it
+                            consumed the width the last tab needed and clipped its label
+                            (the "Feedbac…" report). The strip scrolls on its own, with a
+                            fade on the right edge so it reads as scrollable rather than cut
+                            off — every label stays whole at any width or zoom level. */}
+                        <div className="flex items-stretch border-b border-slate-800 bg-slate-900/50">
+                            <div className="relative flex-1 min-w-0">
+                                <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="detail-tab-strip">
+                                    {layoutPrefs.visibleSections.map((section) => {
+                                        const tab = TAB_CONFIG[section.key];
+                                        if (!tab) return null;
+                                        return (
+                                            <button key={section.key} onClick={() => setActiveTab(section.key as TabType)} className={tabCls(section.key as TabType)}>
+                                                {tab.icon} {tab.label(tabCounts)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 to-transparent"
+                                />
+                            </div>
                             <button
                                 onClick={() => setShowLayoutSettings(true)}
-                                className="ml-auto px-3 text-slate-500 hover:text-slate-200 transition-colors shrink-0"
+                                className="px-3 text-slate-300 hover:text-slate-50 transition-colors shrink-0 border-l border-slate-800"
                                 title="Layout Settings"
+                                aria-label="Layout Settings"
                             >
                                 <Settings2 size={14} />
                             </button>
@@ -990,7 +1035,7 @@ const LeadDetailPage = () => {
                                                 ))}
                                             </div>
                                         )}
-                                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
+                                        <div ref={noteComposerRef} className="bg-slate-950 border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
                                             <NoteEditor
                                                 key={noteEditorKey}
                                                 value={newNoteContent}
@@ -1049,7 +1094,7 @@ const LeadDetailPage = () => {
                                                 <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
                                                     Upcoming &amp; Due Reminders
                                                 </h4>
-                                                <span className="text-[10px] text-slate-500 normal-case tracking-normal">
+                                                <span className="text-[10px] text-slate-300 normal-case tracking-normal">
                                                     · alerts for tasks already listed below
                                                 </span>
                                             </div>
@@ -1069,7 +1114,7 @@ const LeadDetailPage = () => {
                                                             >
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
                                                                 <span className="text-xs font-semibold text-slate-300 truncate">{task.title}</span>
-                                                                <span className={`text-[11px] shrink-0 ${reminderOverdue ? 'text-rose-400 font-bold' : 'text-slate-500'}`}>
+                                                                <span className={`text-[11px] shrink-0 ${reminderOverdue ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
                                                                     {reminderOverdue ? 'Overdue · ' : ''}{formatters.formatDateTime(task.due_date)}
                                                                 </span>
                                                                 <span className="ml-auto text-[10px] font-black text-amber-500 uppercase tracking-widest shrink-0">
@@ -1117,7 +1162,7 @@ const LeadDetailPage = () => {
                                                                                 e.stopPropagation();
                                                                                 setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
                                                                             }}
-                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'}`}
                                                                             data-testid={`status-button-${task.id}`}
                                                                         >
                                                                             {task.status}
@@ -1153,18 +1198,21 @@ const LeadDetailPage = () => {
                                                                 </div>
                                                             </div>
                                                             {task.description && (
-                                                                <p className="text-xs text-slate-400 mt-1 line-clamp-2">{task.description}</p>
+                                                                <p className="text-xs text-slate-300 mt-1 line-clamp-2">{task.description}</p>
                                                             )}
                                                         </Link>
 
-                                                        <div className="flex items-center gap-4 mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800/50 pt-2">
-                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-rose-400' : 'text-rose-400/70'}`}>
-                                                                <Clock size={10} />
+                                                        {/* Metadata row: readable in its own right, one weight below the
+                                                            title. The previous slate-500 / rose-400/70 pairing sat under
+                                                            3:1 on the light theme's white card. */}
+                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-t border-slate-800/50 pt-2">
+                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                                                                <Clock size={11} />
                                                                 Due {formatters.formatDate(task.due_date)}
                                                             </span>
 
                                                             {task.assigned_to && (
-                                                                <span className="flex items-center gap-1 text-slate-400">
+                                                                <span className="flex items-center gap-1 text-slate-300">
                                                                     <div className="w-4 h-4 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
                                                                         {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} className="w-full h-full object-cover" /> : task.assigned_to.full_name?.charAt(0)}
                                                                     </div>
@@ -1174,8 +1222,8 @@ const LeadDetailPage = () => {
 
                                                             {task.deal_name && (
                                                                 <>
-                                                                    <span className="w-1 h-1 bg-slate-400/50 rounded-full" />
-                                                                    <span className="text-blue-500/70 lowercase italic">{task.deal_name}</span>
+                                                                    <span className="w-1 h-1 bg-slate-400 rounded-full" />
+                                                                    <span className="text-blue-400 lowercase italic">{task.deal_name}</span>
                                                                 </>
                                                             )}
                                                         </div>
@@ -1207,6 +1255,7 @@ const LeadDetailPage = () => {
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload Document'}
                                             <input
+                                                ref={documentInputRef}
                                                 type="file"
                                                 className="hidden"
                                                 disabled={isUploading}
@@ -1317,7 +1366,8 @@ const LeadDetailPage = () => {
                                                                 }
                                                             }}
                                                             className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
-                                                            title="Delete"
+                                                            title="Delete document"
+                                                            aria-label="Delete document"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>

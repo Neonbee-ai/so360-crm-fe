@@ -27,19 +27,29 @@ const globalCss = readFileSync(
   'utf8',
 );
 
-/** Isolate the activity-section tab-row container (the div that wraps the
- *  data-driven tab buttons, Task 5's layoutPrefs.visibleSections.map loop),
- *  independent of the higher-up Lead-Information tab row which is a
- *  different group. */
+/** Isolate the scrolling strip that holds the activity-section tabs (Task 5's
+ *  layoutPrefs.visibleSections.map loop), independent of the higher-up
+ *  Lead-Information tab row which is a different group. */
 function activityTabRowClassName(): string {
-  const marker = 'layoutPrefs.visibleSections.map(';
+  const marker = 'data-testid="detail-tab-strip"';
   const markerIdx = pageSource.indexOf(marker);
   expect(markerIdx).toBeGreaterThan(-1);
-  // Walk backwards to the opening <div ...> that contains the activity button.
   const before = pageSource.slice(0, markerIdx);
-  const divIdx = before.lastIndexOf('<div className="');
-  expect(divIdx).toBeGreaterThan(-1);
-  const open = pageSource.indexOf('"', divIdx + '<div className='.length);
+  const open = before.lastIndexOf('className="');
+  expect(open).toBeGreaterThan(-1);
+  const close = pageSource.indexOf('"', open + 'className="'.length);
+  return pageSource.slice(open + 'className="'.length, close);
+}
+
+/** The bordered shell around the strip. The settings cog lives here rather than
+ *  inside the strip: inside, it ate the width the last tab needed and clipped
+ *  its label. */
+function tabBarShellClassName(): string {
+  const markerIdx = pageSource.indexOf('data-testid="detail-tab-strip"');
+  const before = pageSource.slice(0, markerIdx);
+  const shellIdx = before.lastIndexOf('<div className="flex items-stretch');
+  expect(shellIdx).toBeGreaterThan(-1);
+  const open = pageSource.indexOf('"', shellIdx + '<div className='.length);
   const close = pageSource.indexOf('"', open + 1);
   return pageSource.slice(open + 1, close);
 }
@@ -69,10 +79,20 @@ describe('Lead Detail activity tab navigation — overflow contract', () => {
       expect(cls).not.toContain('overflow-hidden');
     });
 
-    it('Then the existing bottom-border styling is preserved', () => {
-      expect(cls).toContain('border-b');
-      expect(cls).toContain('border-slate-800');
-      expect(cls).toContain('bg-slate-900/50');
+    it('Then the existing bottom-border styling is preserved on the tab bar', () => {
+      const shell = tabBarShellClassName();
+      expect(shell).toContain('border-b');
+      expect(shell).toContain('border-slate-800');
+      expect(shell).toContain('bg-slate-900/50');
+    });
+
+    it('Then the layout-settings control sits outside the strip so it cannot squeeze the last tab', () => {
+      const stripIdx = pageSource.indexOf('data-testid="detail-tab-strip"');
+      const settingsIdx = pageSource.indexOf('title="Layout Settings"');
+      expect(settingsIdx).toBeGreaterThan(stripIdx);
+      // …and after the strip's own closing div, i.e. a sibling, not a child.
+      const stripClose = pageSource.indexOf('</div>', pageSource.indexOf('</button>', stripIdx));
+      expect(settingsIdx).toBeGreaterThan(stripClose);
     });
   });
 
@@ -87,8 +107,10 @@ describe('Lead Detail activity tab navigation — overflow contract', () => {
       expect(base).toContain('whitespace-nowrap');
     });
 
-    it('Then the original spacing/padding is preserved', () => {
-      expect(base).toContain('px-6');
+    it('Then the tab keeps comfortable, consistent spacing', () => {
+      // Tightened from px-6 so more labels fit before the strip needs scrolling;
+      // vertical rhythm and icon/label gap are unchanged.
+      expect(base).toContain('px-4');
       expect(base).toContain('py-4');
       expect(base).toContain('gap-2');
     });

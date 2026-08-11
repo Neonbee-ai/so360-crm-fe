@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Plus, FileText, Search, Filter, CheckCircle, XCircle, Clock, Send, Trash2, ChevronDown } from 'lucide-react';
 import { crmService } from '../services/crmService';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
@@ -122,8 +123,12 @@ const QuotesPage = () => {
     const [deals, setDeals] = useState<Deal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('All');
+    // View state survives a trip to a quote's detail page and back.
+    const [searchTerm, setSearchTerm] = usePersistedState('quotes.search', '');
+    const [statusFilter, setStatusFilter] = usePersistedState<string>('quotes.status', 'All');
+
+    const listAnchorRef = useRef<HTMLDivElement>(null);
+    useListScrollRestore('quotes', listAnchorRef, !isLoading);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedDealId, setSelectedDealId] = useState<string>('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -371,7 +376,7 @@ const QuotesPage = () => {
     }
 
     return (
-        <div className="p-8">
+        <div className="p-8" ref={listAnchorRef}>
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>

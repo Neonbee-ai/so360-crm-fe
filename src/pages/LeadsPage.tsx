@@ -31,6 +31,7 @@ import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { QuotaGate } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
@@ -182,8 +183,9 @@ const LeadsPage = () => {
   // just the currently-loaded page.
   const [advancedFilter, setAdvancedFilter] = useState<FilterGroup | null>(null);
 
-  // Filters
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  // Filters — persisted so opening a lead and coming back keeps the list the
+  // user built rather than resetting to every-lead, page 1.
+  const [filters, setFilters] = usePersistedState<FilterState>('leads.filters', DEFAULT_FILTERS);
 
   // Saved views
   const [savedViews, setSavedViews] = useState<SavedFilterView[]>(loadSavedViews);
@@ -194,8 +196,11 @@ const LeadsPage = () => {
   const [renameValue, setRenameValue] = useState('');
 
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = usePersistedState('leads.page', 1);
+  const [pageSize, setPageSize] = usePersistedState('leads.pageSize', 50);
+
+  const listAnchorRef = useRef<HTMLDivElement>(null);
+  useListScrollRestore('leads', listAnchorRef, !isLoading);
 
   const setFilter = useCallback(<K extends keyof FilterState>(key: K, val: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: val }));
@@ -651,7 +656,7 @@ const LeadsPage = () => {
   [users, leadStages, leadSources, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
   return (
-    <div className="px-4 pt-3 pb-6 md:px-6">
+    <div className="px-4 pt-3 pb-6 md:px-6" ref={listAnchorRef}>
       {/* Compact header */}
       <header className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-baseline gap-2.5 min-w-0">
@@ -1098,6 +1103,7 @@ const LeadsPage = () => {
         onClose={() => setDetailLead(null)}
         onNavigate={(lead) => navigate(`${lead.id}`)}
         onNavigateDeal={(deal) => navigate(`../deal/${deal.id}`)}
+        onNavigateTask={(task) => navigate(`../tasks/${task.id}`)}
         onDelete={(lead) => setShowDeleteConfirm(lead.id)}
       />
     </div>

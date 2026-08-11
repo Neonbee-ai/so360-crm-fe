@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import DetailBackLink, { hasInAppHistory, FLOATING_REVEAL_PX } from './DetailBackLink';
+import DetailBackLink, { hasInAppHistory, FLOATING_REVEAL_PX, BACK_LABEL } from './DetailBackLink';
 
 /**
  * Regression cover for "Back navigation is inaccessible after scrolling through
@@ -28,7 +28,7 @@ function renderAt(initialEntries: string[], initialIndex?: number) {
           element={
             <>
               <Probe name="lead-detail" />
-              <DetailBackLink fallbackTo="/crm/leads" label="Back to Leads" />
+              <DetailBackLink fallbackTo="/crm/leads" />
             </>
           }
         />
@@ -68,7 +68,7 @@ describe('Given hasInAppHistory', () => {
 describe('Given a lead detail page opened directly (deep link, no in-app history)', () => {
   it('When the inline back control is used / Then it falls back to the module list', () => {
     renderAt(['/crm/leads/abc']);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Back to Leads' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: BACK_LABEL })[0]);
     expect(screen.getByTestId('page')).toHaveTextContent('leads-list');
   });
 });
@@ -85,7 +85,7 @@ describe('Given the user navigated in from another page', () => {
 
     // Router history records an earlier in-app entry.
     window.history.replaceState({ idx: 1 }, '');
-    fireEvent.click(screen.getAllByRole('button', { name: 'Back to Leads' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: BACK_LABEL })[0]);
     expect(screen.getByTestId('page')).toHaveTextContent('tasks-list');
   });
 });
@@ -124,5 +124,23 @@ describe('Given a long detail page', () => {
     renderAt(['/crm/leads/abc']);
     fireEvent.click(screen.getByTestId('detail-back-floating'));
     expect(screen.getByTestId('page')).toHaveTextContent('leads-list');
+  });
+});
+
+describe('Given the control is used across modules', () => {
+  it('When no label is supplied / Then every detail page shows the same neutral "Back"', () => {
+    renderAt(['/crm/leads/abc']);
+    // Both the inline and the floating control, so the wording never differs
+    // between the two affordances on the same page.
+    const controls = screen.getAllByRole('button', { name: BACK_LABEL });
+    expect(controls).toHaveLength(2);
+    expect(BACK_LABEL).toBe('Back');
+  });
+
+  it('When the module list name is used as a label / Then it is only the fallback destination, not the wording', () => {
+    // Guards the regression this replaced: "Back to Leads" promised the leads
+    // list even when the user had arrived from Tasks.
+    renderAt(['/crm/leads/abc']);
+    expect(screen.queryByText('Back to Leads')).toBeNull();
   });
 });

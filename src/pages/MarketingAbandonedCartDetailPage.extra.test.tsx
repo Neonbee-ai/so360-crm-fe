@@ -80,14 +80,14 @@ describe('MarketingAbandonedCartDetailPage — with store selected', () => {
 
   it('shows back navigation button', async () => {
     render(<MarketingAbandonedCartDetailPage />);
-    await waitFor(() => screen.getByText(/back to abandoned carts/i));
-    expect(screen.getByText(/back to abandoned carts/i)).toBeInTheDocument();
+    await waitFor(() => screen.getAllByText('Back')[0]);
+    expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
   });
 
   it('back button navigates to abandoned carts page', async () => {
     render(<MarketingAbandonedCartDetailPage />);
-    await waitFor(() => screen.getByText(/back to abandoned carts/i));
-    fireEvent.click(screen.getByText(/back to abandoned carts/i));
+    await waitFor(() => screen.getAllByText('Back')[0]);
+    fireEvent.click(screen.getAllByText('Back')[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/crm/marketing/abandoned-carts');
   });
 

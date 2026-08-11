@@ -458,12 +458,12 @@ describe('DealDetailPage', () => {
     });
   });
 
-  describe('Given a loaded deal / Then Back to Pipeline navigates to the pipeline list', () => {
-    it('When the header Back to Pipeline is clicked / Then it navigates to /crm/pipeline, not the dashboard', async () => {
+  describe('Given a loaded deal / Then the universal Back control navigates to the pipeline list', () => {
+    it('When the header Back is clicked / Then it navigates to /crm/pipeline, not the dashboard', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Back to Pipeline')[0]);
+      await user.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });
@@ -512,7 +512,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByText('Delete'));
+      await user.click(screen.getByLabelText('Delete'));
       await waitFor(() => {
         const confirmTexts = screen.getAllByText(/Delete/);
         expect(confirmTexts.length).toBeGreaterThan(1);
@@ -523,7 +523,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByText('Delete'));
+      await user.click(screen.getByLabelText('Delete'));
       await waitFor(() => {
         const panels = Array.from(document.querySelectorAll('div')).filter(
           el => el.className.includes('max-h-[90vh]'),

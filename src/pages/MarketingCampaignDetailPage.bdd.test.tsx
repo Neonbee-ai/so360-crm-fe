@@ -220,8 +220,8 @@ describe('MarketingCampaignDetailPage BDD', () => {
   describe('Given back navigation', () => {
     it('When back button clicked / Then navigates to campaigns page', async () => {
       renderPage();
-      await waitFor(() => expect(screen.getByText(/back to campaigns/i)).toBeInTheDocument());
-      fireEvent.click(screen.getByText(/back to campaigns/i));
+      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/marketing/campaigns');
     });
   });

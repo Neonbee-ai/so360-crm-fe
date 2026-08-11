@@ -153,10 +153,12 @@ describe('Given MarketingCampaignDetailPage — Campaign Analytics Detail', () =
     });
   });
 
-  test('Given engagement breakdown / When rendered / Then shows click heatmap or link list', async () => {
+  test('Given engagement breakdown / When rendered / Then shows the open and click engagement tiles', async () => {
     render(<MarketingCampaignDetailPage />);
     await waitFor(() => {
-      expect(screen.queryAllByText(/campaign/i).length).toBeGreaterThan(0);
+      expect(screen.getByText('Open Rate')).toBeInTheDocument();
     });
+    expect(screen.getByText('Click Rate')).toBeInTheDocument();
+    expect(screen.getByText('Clicks')).toBeInTheDocument();
   });
 });

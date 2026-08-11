@@ -20,11 +20,20 @@ import { useNavigate } from 'react-router-dom';
 /** Scroll distance, in px, past which the floating control appears. */
 export const FLOATING_REVEAL_PX = 280;
 
+/**
+ * The one label every detail page shows. Module-specific wording ("Back to
+ * Leads") described the *fallback* destination, not where the click actually
+ * goes — misleading the moment the record was opened from Tasks, a search
+ * result or a dashboard card. A single neutral control tells the truth in
+ * every case.
+ */
+export const BACK_LABEL = 'Back';
+
 export interface DetailBackLinkProps {
     /** Route to use when there is no in-app history entry to return to. */
     fallbackTo: string;
-    /** e.g. "Back to Leads". Also used as the floating control's accessible name. */
-    label: string;
+    /** Overrides the visible/accessible name. Defaults to "Back" — leave unset. */
+    label?: string;
     className?: string;
 }
 
@@ -42,7 +51,7 @@ export function hasInAppHistory(historyState: unknown): boolean {
     return typeof idx === 'number' && idx > 0;
 }
 
-export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, label, className = '' }) => {
+export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, label = BACK_LABEL, className = '' }) => {
     const navigate = useNavigate();
     const [showFloating, setShowFloating] = useState(false);
 
@@ -76,7 +85,8 @@ export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, labe
             <button
                 type="button"
                 onClick={goBack}
-                className={`flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group ${className}`}
+                aria-label={label}
+                className={`flex items-center gap-1 text-slate-300 hover:text-slate-100 transition-colors group ${className}`}
             >
                 <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 {label}

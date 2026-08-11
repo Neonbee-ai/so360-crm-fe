@@ -242,7 +242,7 @@ describe('Given LeadDetailPage', () => {
   it('When action / Then displays back to leads link', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument();
+      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
     });
   });
 });

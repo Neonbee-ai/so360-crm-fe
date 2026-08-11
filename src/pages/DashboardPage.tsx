@@ -452,27 +452,27 @@ const DashboardPage = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                     <div className={`w-2 h-2 rounded-full ${reminderState(task.due_date).dot} animate-pulse`} />
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{reminderState(task.due_date).label}</span>
+                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{reminderState(task.due_date).label}</span>
                                 </div>
                             </div>
                             <h4 className="text-sm font-bold text-slate-50 group-hover:text-blue-400 transition-colors truncate mb-1">{task.title}</h4>
                             {/* Date AND time, in the org's configured timezone. Passing only
                                 hour/minute replaced the default option set entirely, so the
                                 card showed a bare clock reading with no day attached. */}
-                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 mb-2">
-                                <Calendar size={11} className="text-slate-500" />
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 mb-2">
+                                <Calendar size={11} className="text-slate-300" />
                                 <span>{formatters.formatDate(task.due_date, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                                 <span className="text-slate-600">·</span>
                                 <span className="text-slate-300">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
                             </div>
-                            <p className="text-[11px] text-slate-500 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
+                            <p className="text-[11px] text-slate-300 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
                             <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-400/15">
                                 <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black border border-slate-400/30">
                                     {task.assigned_to?.avatar_url ? (
                                         <img src={task.assigned_to.avatar_url} className="w-full h-full rounded-full" />
                                     ) : task.assigned_to?.full_name?.charAt(0)}
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 truncate">{task.assigned_to?.full_name}</span>
+                                <span className="text-[10px] font-bold text-slate-300 truncate">{task.assigned_to?.full_name}</span>
                             </div>
                         </Link>
                         {task.deal_id && (

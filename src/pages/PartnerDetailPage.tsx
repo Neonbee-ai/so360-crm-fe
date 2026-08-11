@@ -267,7 +267,7 @@ const PartnerDetailPage = () => {
 
             {/* Header */}
             <header className="mb-8">
-                <DetailBackLink fallbackTo="/crm/partners" label="Back to Partners" className="mb-4" />
+                <DetailBackLink fallbackTo="/crm/partners" className="mb-4" />
                 <div className="flex items-start justify-between">
                     <div>
                         <div className="flex items-center gap-3 mb-1">

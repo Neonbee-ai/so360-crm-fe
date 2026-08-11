@@ -669,19 +669,19 @@ describe('LeadDetailPage', () => {
   });
 
   describe('Given a loaded lead / Then Back navigation resolves to the correct list route', () => {
-    it('When the header Back to Leads is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
+    it('When the header Back is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockPathname = '/crm/leads/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back to Leads')[0]);
+      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
 
-    it('When the header Back to Customers is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
+    it('When the header Back is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
       mockPathname = '/crm/customers/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back to Customers')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back to Customers')[0]);
+      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
     });
   });
@@ -691,10 +691,10 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      await user.click(screen.getByText('Delete'));
+      await user.click(screen.getByLabelText('Delete'));
       await waitFor(() => {
         const deleteTexts = screen.getAllByText(/Delete/);
-        expect(deleteTexts.length).toBeGreaterThan(1);
+        expect(deleteTexts.length).toBeGreaterThan(0);
       });
     });
   });

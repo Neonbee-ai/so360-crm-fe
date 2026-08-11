@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
+import DetailBackLink from '../components/common/DetailBackLink';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingAbandonedCartDetailPage: React.FC = () => {
-  const navigate = useNavigate();
   const { settings } = useBusinessSettings();
   const currencyCode = settings?.base_currency;
   const locale = settings?.document_language || 'en-US';
@@ -43,12 +43,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      <button
-        onClick={() => navigate('/crm/marketing/abandoned-carts')}
-        className="text-slate-400 hover:text-slate-100 mb-4 text-sm"
-      >
-        ← Back to Abandoned Carts
-      </button>
+      <DetailBackLink fallbackTo="/crm/marketing/abandoned-carts" className="mb-4 text-sm" />
 
       {loading && <p className="text-slate-400">Loading...</p>}
       {error && <p className="text-rose-400">{error}</p>}

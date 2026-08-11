@@ -482,7 +482,7 @@ const DealDetailPage = () => {
 
             <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
-                    <DetailBackLink fallbackTo="/crm/pipeline" label="Back to Pipeline" />
+                    <DetailBackLink fallbackTo="/crm/pipeline" />
                     {isRefreshing && (
                         <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
                             <Loader2 size={10} className="animate-spin" /> Syncing...
@@ -530,11 +530,14 @@ const DealDetailPage = () => {
                     </div>
 
                     <div className="flex gap-3">
+                        {/* Icon-only — see LeadDetailPage for the rationale. */}
                         <button
                             onClick={() => setShowDeleteConfirm(true)}
-                            className="bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-400 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700 hover:border-red-500/50"
+                            aria-label="Delete"
+                            title="Delete"
+                            className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-2.5 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
-                            <Trash2 size={14} /> Delete
+                            <Trash2 size={14} />
                         </button>
                         {isSignEnabled && (
                             <button
@@ -871,9 +874,9 @@ const DealDetailPage = () => {
                                                                 {task.title}
                                                             </h4>
                                                         </div>
-                                                        <div className="flex items-center gap-4 mt-3 text-[10px] font-black text-slate-500 uppercase tracking-widest pt-2 border-t border-slate-800/50">
-                                                            <span className="flex items-center gap-1 text-rose-400/70">
-                                                                <Clock size={10} /> Due {formatters.formatDate(task.due_date)}
+                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-slate-300 uppercase tracking-wider pt-2 border-t border-slate-800/50">
+                                                            <span className="flex items-center gap-1 text-slate-300">
+                                                                <Clock size={11} /> Due {formatters.formatDate(task.due_date)}
                                                             </span>
                                                         </div>
                                                     </div>

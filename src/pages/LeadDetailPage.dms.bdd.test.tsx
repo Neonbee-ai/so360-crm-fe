@@ -255,7 +255,7 @@ describe('LeadDetailPage — DMS-backed documents', () => {
 
         it('When the Delete button is confirmed / Then documents:changed is published for the lead', async () => {
             await renderAndOpenDocumentsTab();
-            await act(async () => { fireEvent.click(screen.getByTitle('Delete')); });
+            await act(async () => { fireEvent.click(screen.getByTitle('Delete document')); });
             await waitFor(() => expect(mockDeleteDocument).toHaveBeenCalledWith('lead-test-id', 'doc-dms-1'));
             expect(mockPublish).toHaveBeenCalledWith('documents:changed', {
                 source: 'crm', entity_type: 'crm:lead', entity_id: 'lead-test-id',

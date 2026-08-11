@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
+import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
+import DetailBackLink from '../components/common/DetailBackLink';
 import { crmService } from '../services/crmService';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
@@ -345,14 +346,9 @@ const QuoteDetailPage = () => {
     return (
         <div className="p-8">
             {/* Header */}
+            <DetailBackLink fallbackTo="/crm/quotes" className="mb-4" />
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/crm/quotes')}
-                        className="p-2 text-slate-400 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
                     <div>
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-100">

@@ -713,3 +713,120 @@ describe('Lead Detail Tasks Tab — Reminders & Completed-Task Rules', () => {
     });
   });
 });
+
+/**
+ * Cover for the three header/card presentation fixes reported against
+ * /crm/leads/:id and /crm/customers/:id:
+ *  - secondary task text was too light to read on the light theme's white card
+ *  - the Delete button's text label competed with the primary CTA
+ *  - the last workspace tab ("Feedback") was clipped by the settings cog
+ *
+ * The assertions are on the classes that carry the fix, because that is where
+ * the regression would reappear — jsdom computes no colour of its own.
+ */
+describe('Lead Detail — readability and header layout', () => {
+  const openTasks = async () => {
+    render(<LeadDetailPage />);
+    await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
+    const tab = Array.from(screen.getAllByRole('button')).find(b => b.textContent?.includes('Tasks'));
+    fireEvent.click(tab!);
+    await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+  };
+
+  /** Lowest slate step still legible on the light theme's white card. */
+  const READABLE = /text-slate-(50|100|200|300)\b/;
+
+  describe('Given a task card with description, due date and assignee', () => {
+    it('When the description renders / Then it uses a readable secondary tone, not the old slate-400', async () => {
+      await openTasks();
+      const description = screen.getByText('Call them about the proposal');
+      expect(description.className).toMatch(READABLE);
+      expect(description.className).not.toMatch(/text-slate-[456]00\b/);
+    });
+
+    it('When the due date renders on a task that is not overdue / Then it is legible rather than a faded rose tint', async () => {
+      await openTasks();
+      const due = screen.getByText(/^Due /).closest('span')!;
+      expect(due.className).not.toMatch(/rose-400\/70/);
+      expect(due.className).toMatch(READABLE);
+    });
+
+    it('When the assignee renders / Then their name carries the same readable tone as the rest of the metadata', async () => {
+      await openTasks();
+      const assignee = screen.getByText('Test User').closest('span')!;
+      expect(assignee.className).toMatch(READABLE);
+    });
+
+    it('When the metadata row renders / Then the whole row shares one readable tone', async () => {
+      await openTasks();
+      const row = screen.getByText(/^Due /).closest('div')!;
+      expect(row.className).toMatch(READABLE);
+    });
+
+    it('When the card renders / Then the title still outweighs the metadata', async () => {
+      await openTasks();
+      const title = screen.getByText('Follow up with client');
+      // Raising the metadata must not flatten the hierarchy the report asked to keep.
+      expect(title.className).toMatch(/font-bold/);
+      expect(title.className).toMatch(/text-slate-50\b/);
+    });
+  });
+
+  describe('Given the record header', () => {
+    it('When the Delete action renders / Then it is icon-only but still named for assistive tech and hover', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+
+      const del = screen.getByLabelText('Delete');
+      expect(del).toHaveAttribute('title', 'Delete');
+      expect(del.textContent).toBe('');
+    });
+
+    it('When the Delete action is used / Then the confirmation step is still required', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+
+      await user.click(screen.getByLabelText('Delete'));
+      await waitFor(() =>
+        expect(screen.getByText(/Are you sure you want to delete this lead/i)).toBeInTheDocument(),
+      );
+      expect(mockDeleteLead).not.toHaveBeenCalled();
+    });
+
+    it('When the primary CTA sits beside it / Then only the CTA carries a text label', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Deal')).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: /^Delete$/ })?.textContent).toBe('');
+    });
+  });
+
+  describe('Given the workspace tab bar', () => {
+    it('When the tabs render / Then the strip scrolls on its own so no label is clipped', async () => {
+      render(<LeadDetailPage />);
+      const strip = await screen.findByTestId('detail-tab-strip');
+      expect(strip.className).toMatch(/overflow-x-auto/);
+      // Each tab refuses to shrink or wrap, so labels stay whole.
+      const tabs = Array.from(strip.querySelectorAll('button'));
+      expect(tabs.length).toBeGreaterThan(0);
+      tabs.forEach(tab => {
+        expect(tab.className).toMatch(/shrink-0/);
+        expect(tab.className).toMatch(/whitespace-nowrap/);
+      });
+    });
+
+    it('When the layout settings control renders / Then it sits outside the scrolling strip so it cannot squeeze the last tab', async () => {
+      render(<LeadDetailPage />);
+      const strip = await screen.findByTestId('detail-tab-strip');
+      const settings = screen.getByLabelText('Layout Settings');
+      expect(strip.contains(settings)).toBe(false);
+    });
+
+    it('When every section is visible / Then the last tab is still rendered in full', async () => {
+      render(<LeadDetailPage />);
+      const strip = await screen.findByTestId('detail-tab-strip');
+      const labels = Array.from(strip.querySelectorAll('button')).map(b => b.textContent?.trim());
+      expect(labels.some(l => l === 'Feedback')).toBe(true);
+    });
+  });
+});

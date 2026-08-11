@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { Search, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDown, ChevronsUpDown, Mail, Phone, Calendar, Store, Building2, CreditCard, Shield, CheckCircle2, Tag, GitMerge } from 'lucide-react';
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
@@ -44,14 +45,22 @@ const CustomersPage = () => {
     const [partners, setPartners] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
+
+    // Search / channel / category already round-trip through the URL (see the
+    // location.search effect below), so history restores them on its own —
+    // persisting them here would fight that. Sort and paging have no URL
+    // representation, so they are the ones that need remembering.
     const [searchTerm, setSearchTerm] = useState('');
     const [channelFilter, setChannelFilter] = useState('All');
     const [categoryFilter, setCategoryFilter] = useState('All');
-    const [sortField, setSortField] = useState<SortField | null>('created_at');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-    const [activeSegmentName, setActiveSegmentName] = useState<string | null>(null);
+    const [sortField, setSortField] = usePersistedState<SortField | null>('customers.sortField', 'created_at');
+    const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('customers.sortDirection', 'desc');
+    const [currentPage, setCurrentPage] = usePersistedState('customers.page', 1);
+    const [pageSize, setPageSize] = usePersistedState('customers.pageSize', 10);
+
+    const listAnchorRef = useRef<HTMLDivElement>(null);
+    useListScrollRestore('customers', listAnchorRef, !isLoading);
     const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
 
     // Only the customer list depends on the search params. Stats and partners are
@@ -319,10 +328,10 @@ const CustomersPage = () => {
     ];
 
     return (
-        <div className="p-8">
+        <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8">
                 <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Customers</h1>
-                <p className="text-slate-400 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
+                <p className="text-slate-300 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
             </header>
 
             {/* Summary chips — gated by feature flags; standardized with Leads & Accounts */}

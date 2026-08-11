@@ -1,4 +1,13 @@
 import '@testing-library/jest-dom/vitest';
+import { beforeEach } from 'vitest';
+
+// List pages persist their filters / sort / paging in sessionStorage so a trip
+// to a detail page and back keeps the view (see useListViewState). Tests in a
+// file share one jsdom, so without this every spec would inherit whatever the
+// previous one filtered by.
+beforeEach(() => {
+  sessionStorage.clear();
+});
 
 // jsdom's Range implementation is incomplete (no getBoundingClientRect /
 // getClientRects), which ProseMirror (used by the Tiptap note editor)

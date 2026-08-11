@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, UserCheck, Plus, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, BarChart2, X } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
@@ -379,12 +380,16 @@ const PartnersPage = () => {
     const [partnerTypes, setPartnerTypes] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('All');
-    const [sortField, setSortField] = useState<SortField | null>('contact_name');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-    const [currentPage, setCurrentPage] = useState(1);
+    // View state survives a trip to a partner's detail page and back.
+    const [searchTerm, setSearchTerm] = usePersistedState('partners.search', '');
+    const [typeFilter, setTypeFilter] = usePersistedState('partners.type', 'All');
+    const [sortField, setSortField] = usePersistedState<SortField | null>('partners.sortField', 'contact_name');
+    const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('partners.sortDirection', 'asc');
+    const [currentPage, setCurrentPage] = usePersistedState('partners.page', 1);
     const [pageSize] = useState(20);
+
+    const listAnchorRef = useRef<HTMLDivElement>(null);
+    useListScrollRestore('partners', listAnchorRef, !isLoading);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const { settings } = useBusinessSettings();
     const formatters = useFormatters({
@@ -545,11 +550,11 @@ const PartnersPage = () => {
     ];
 
     return (
-        <div className="p-8">
+        <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8 flex items-start justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Partners</h1>
-                    <p className="text-slate-400 mt-1">Referral agents, resellers, and dealers who bring in deals</p>
+                    <p className="text-slate-300 mt-1">Referral agents, resellers, and dealers who bring in deals</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}

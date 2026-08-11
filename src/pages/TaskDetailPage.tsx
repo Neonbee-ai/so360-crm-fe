@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-    ChevronLeft, CheckCircle2, Circle, Calendar,
+    CheckCircle2, Circle, Calendar,
     User as UserIcon, Briefcase, Clock, AlertCircle, Trash2, Edit2
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
@@ -12,6 +12,7 @@ import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
 import { toast, getErrorMessage } from '@so360/design-system';
+import DetailBackLink from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, TASK_LOCKED_HINT } from '../utils/taskUtils';
 
@@ -167,10 +168,7 @@ const TaskDetailPage = () => {
     return (
         <div className="p-8 max-w-4xl mx-auto">
             <header className="mb-8">
-                <button onClick={() => navigate('/crm/tasks')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    Back to Tasks
-                </button>
+                <DetailBackLink fallbackTo="/crm/tasks" className="mb-4" />
                 <div className="flex justify-between items-start">
                     <div className="flex items-start gap-4">
                         <button className="mt-1 text-slate-500 hover:text-blue-400 transition-colors">

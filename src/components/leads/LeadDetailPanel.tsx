@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Lead, Activity as ActivityType, Deal, Task, User as CrmUser, SourceTypeOption } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
+import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
 import { useCRMFormatters } from '../../utils/formatters';
 import { formatFieldValue, visibleMetaEntries, EMPTY_VALUE } from '../../utils/fieldPresentation';
 
@@ -45,10 +46,44 @@ interface LeadDetailPanelProps {
   onClose: () => void;
   onNavigate: (lead: Lead) => void;
   onNavigateDeal: (deal: Deal) => void;
+  onNavigateTask?: (task: Task) => void;
   onDelete?: (lead: Lead) => void;
 }
 
 const INITIAL_ACTIVITY_LOAD = 10;
+
+/** Statuses offered by the Quick View inline selector. Values match the
+ *  backend enum on `tasks.status`; labels are the CRM-facing wording. */
+const TASK_STATUS_OPTIONS: Array<{ value: Task['status']; label: string }> = [
+  { value: 'OPEN', label: 'To Do' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'DONE', label: 'Completed' },
+  { value: 'ON_HOLD', label: 'On Hold' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+];
+
+const TASK_STATUS_STYLES: Record<string, string> = {
+  OPEN: 'bg-slate-700/40 text-slate-300',
+  IN_PROGRESS: 'bg-blue-500/15 text-blue-400',
+  DONE: 'bg-emerald-500/15 text-emerald-400',
+  ON_HOLD: 'bg-orange-500/15 text-orange-400',
+  CANCELLED: 'bg-slate-800 text-slate-500',
+};
+
+/** A task counts as overdue when its due date has passed and it is neither
+ *  completed nor cancelled. Compared date-only so a task due today is not
+ *  flagged part-way through the day. */
+function overdueDays(task: Task): number | null {
+  if (!task.due_date) return null;
+  if (task.status === 'DONE' || task.status === 'CANCELLED') return null;
+  const due = new Date(task.due_date);
+  if (Number.isNaN(due.getTime())) return null;
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((today.getTime() - dueDay.getTime()) / 86_400_000);
+  return diff > 0 ? diff : null;
+}
 
 const STATUS_COLORS: Record<string, string> = {
   New: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -106,7 +141,7 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
   );
 }
 
-export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onDelete }: LeadDetailPanelProps) {
+export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onNavigateTask, onDelete }: LeadDetailPanelProps) {
   const [tab, setTab] = useState<PanelTab>('overview');
   const formatters = useCRMFormatters();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -119,6 +154,20 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
   const [tasksLoading, setTasksLoading] = useState(false);
   const [activities, setActivities] = useState<ActivityType[] | null>(null);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [taskUpdatingId, setTaskUpdatingId] = useState<string | null>(null);
+  const [taskError, setTaskError] = useState<string | null>(null);
+
+  // Activity tab reads the SAME server-side unified timeline the full Lead
+  // Detail page renders (`useEntityTimeline`). The panel previously called the
+  // narrower /activities endpoint, which returns only hand-logged CRM
+  // activities — so notes, deals, documents and system events recorded
+  // elsewhere never appeared and the panel claimed "No activity recorded yet"
+  // while the full profile showed a populated timeline.
+  const timeline = useEntityTimeline({
+    entityType: 'lead',
+    entityId: lead?.id ?? '',
+    pageSize: INITIAL_ACTIVITY_LOAD,
+  });
 
   // Lookup data used to resolve relational fields (owner, referred_by, source)
   // to readable names — mirrors LeadDetailPage's resolution so both surfaces
@@ -208,7 +257,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
         .catch(() => { if (!cancelled) setTasks([]); })
         .finally(() => { if (!cancelled) setTasksLoading(false); });
     }
-    if ((tab === 'timeline' || tab === 'audit') && activities === null && !activitiesLoading) {
+    // Only the Audit tab still needs the raw /activities feed; the Activity
+    // tab is served by useEntityTimeline above.
+    if (tab === 'audit' && activities === null && !activitiesLoading) {
       setActivitiesLoading(true);
       crmService
         .getActivitiesByLeadIdPaginated(lead.id, INITIAL_ACTIVITY_LOAD, 0)
@@ -528,50 +579,77 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
               {/* Timeline */}
               {tab === 'timeline' && (
                 <div className="px-5 py-4">
-                  {activitiesLoading || activities === null ? (
+                  {timeline.loading ? (
                     <div className="flex items-center justify-center py-10 text-slate-500">
                       <Loader2 size={20} className="animate-spin" />
                     </div>
-                  ) : sortedActivities.length === 0 ? (
+                  ) : timeline.error ? (
+                    /* A failed load must never masquerade as "no activity". */
+                    <div className="flex flex-col items-center py-10 text-slate-500">
+                      <Activity size={28} className="mb-2 opacity-40" />
+                      <p className="text-sm text-center">Couldn't load activity.</p>
+                      <button
+                        onClick={() => timeline.refetch()}
+                        className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : timeline.events.length === 0 ? (
                     <div className="flex flex-col items-center py-10 text-slate-600">
                       <Activity size={32} className="mb-2 opacity-40" />
                       <p className="text-sm">No activity recorded yet</p>
                     </div>
                   ) : (
-                    <div className="relative">
-                      <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-800" />
-                      <div className="space-y-4 pl-10">
-                        {sortedActivities.map((activity: ActivityType) => (
-                          <div key={activity.id} className="relative">
-                            <div className="absolute -left-6 w-5 h-5 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center">
-                              {ACTIVITY_ICONS[activity.type] ?? (
+                    <>
+                      <div className="relative">
+                        <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-800" />
+                        <div className="space-y-4 pl-10">
+                          {timeline.events.map((event) => (
+                            <div key={event.id} className="relative">
+                              <div className="absolute -left-6 w-5 h-5 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center">
                                 <Activity size={10} className="text-slate-400" />
-                              )}
-                            </div>
-                            <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-semibold text-slate-300 capitalize">
-                                  {activity.type.replace(/_/g, ' ').toLowerCase()}
-                                </span>
-                                <span className="text-[10px] text-slate-500">
-                                  {formatters.formatDate(activity.created_at)}
-                                </span>
                               </div>
-                              {activity.notes && (
-                                <p className="text-xs text-slate-400 leading-relaxed">
-                                  {activity.notes}
-                                </p>
-                              )}
-                              {activity.author && (
-                                <p className="text-[10px] text-slate-600 mt-1">
-                                  by {activity.author.full_name}
-                                </p>
-                              )}
+                              <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="text-xs font-semibold text-slate-300">
+                                    {event.title}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 shrink-0">
+                                    {formatters.formatDate(event.created_at)}
+                                  </span>
+                                </div>
+                                {event.description && (
+                                  <p className="text-xs text-slate-400 leading-relaxed">
+                                    {event.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-2 mt-1">
+                                  {event.module && (
+                                    <span className="text-[10px] uppercase tracking-wider text-slate-500 bg-slate-800 rounded px-1.5 py-0.5">
+                                      {event.module}
+                                    </span>
+                                  )}
+                                  {event.actor_name && (
+                                    <span className="text-[10px] text-slate-600">by {event.actor_name}</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                      {/* Quick View shows a page of the newest events; the full
+                          history lives on the lead's own page. */}
+                      {timeline.hasMore && (
+                        <button
+                          onClick={() => onNavigate(lead)}
+                          className="w-full mt-4 py-2 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
+                        >
+                          View full history
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -636,32 +714,103 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {tasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className="flex items-start gap-2.5 bg-slate-900/60 border border-slate-800 rounded-lg p-3"
-                        >
-                          <CheckSquare
-                            size={14}
-                            className={`mt-0.5 shrink-0 ${task.status === 'DONE' ? 'text-emerald-400' : 'text-slate-500'}`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className={`text-sm truncate ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
-                              {task.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                                {task.status.replace(/_/g, ' ').toLowerCase()}
-                              </span>
-                              {task.due_date && (
-                                <span className="text-[10px] text-slate-500">
-                                  Due {formatters.formatDate(task.due_date)}
-                                </span>
-                              )}
+                      {taskError && (
+                        <p className="text-[11px] text-rose-400 mb-1">{taskError}</p>
+                      )}
+                      {tasks.map((task) => {
+                        const overdue = overdueDays(task);
+                        return (
+                          <div
+                            key={task.id}
+                            role={onNavigateTask ? 'button' : undefined}
+                            tabIndex={onNavigateTask ? 0 : undefined}
+                            onClick={() => onNavigateTask?.(task)}
+                            onKeyDown={(e) => {
+                              if (onNavigateTask && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault();
+                                onNavigateTask(task);
+                              }
+                            }}
+                            className={`flex items-start gap-2.5 bg-slate-900/60 border rounded-lg p-3 transition-colors ${
+                              overdue ? 'border-rose-500/40' : 'border-slate-800'
+                            } ${onNavigateTask ? 'cursor-pointer hover:border-slate-600' : ''}`}
+                          >
+                            <CheckSquare
+                              size={14}
+                              className={`mt-0.5 shrink-0 ${task.status === 'DONE' ? 'text-emerald-400' : 'text-slate-500'}`}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className={`text-sm truncate ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+                                  {task.title}
+                                </p>
+                                {overdue !== null && (
+                                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded px-1.5 py-0.5">
+                                    Overdue {overdue}d
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                {task.due_date && (
+                                  <span className={`text-[11px] ${overdue !== null ? 'text-rose-400' : 'text-slate-300'}`}>
+                                    Due {formatters.formatDate(task.due_date)}
+                                  </span>
+                                )}
+                                {task.type && (
+                                  <span className="text-[10px] uppercase tracking-wider text-slate-500 bg-slate-800 rounded px-1.5 py-0.5">
+                                    {String(task.type).replace(/_/g, ' ').toLowerCase()}
+                                  </span>
+                                )}
+                                {task.assigned_to?.full_name && (
+                                  <span className="text-[10px] text-slate-500">{task.assigned_to.full_name}</span>
+                                )}
+                              </div>
+
+                              {/* Inline status change — saves immediately, no
+                                  navigation. The click is stopped here so
+                                  using the selector doesn't also open the task. */}
+                              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                                <select
+                                  value={task.status}
+                                  disabled={taskUpdatingId === task.id}
+                                  aria-label={`Status for ${task.title}`}
+                                  onChange={async (e) => {
+                                    const next = e.target.value as Task['status'];
+                                    const previous = task.status;
+                                    setTaskError(null);
+                                    setTaskUpdatingId(task.id);
+                                    // Optimistic: the selector should feel instant.
+                                    setTasks((prev) =>
+                                      (prev ?? []).map((t) => (t.id === task.id ? { ...t, status: next } : t)),
+                                    );
+                                    try {
+                                      await crmService.updateTask(task.id, { status: next });
+                                      // Status changes are timeline events — keep
+                                      // the Activity tab in step without a reload.
+                                      timeline.refetch();
+                                    } catch (err: any) {
+                                      setTasks((prev) =>
+                                        (prev ?? []).map((t) => (t.id === task.id ? { ...t, status: previous } : t)),
+                                      );
+                                      setTaskError(err?.message || 'Could not update task status.');
+                                    } finally {
+                                      setTaskUpdatingId(null);
+                                    }
+                                  }}
+                                  className={`appearance-none text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border-0 cursor-pointer focus:outline-none disabled:opacity-50 ${
+                                    TASK_STATUS_STYLES[task.status] ?? 'bg-slate-800 text-slate-400'
+                                  }`}
+                                >
+                                  {TASK_STATUS_OPTIONS.map((s) => (
+                                    <option key={s.value} value={s.value}>{s.label}</option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

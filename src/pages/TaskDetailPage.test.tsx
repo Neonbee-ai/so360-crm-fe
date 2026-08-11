@@ -154,10 +154,10 @@ describe('Given TaskDetailPage', () => {
     });
   });
 
-  it('When action / Then shows back to tasks link', async () => {
+  it('When action / Then shows the universal Back link', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Back to Tasks')).toBeInTheDocument();
+      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
     });
   });
 });

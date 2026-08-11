@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
@@ -26,16 +27,22 @@ const TasksPage = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<any[]>([]); // Using any for User to avoid import issues if not exported
     const [isLoading, setIsLoading] = useState(true);
-    const [filter, setFilter] = useState('All');
-    const [searchTerm, setSearchTerm] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [sortField, setSortField] = useState<SortField | null>(null);
-    const [sortDirection, setSortDirection] = useState<SortDirection>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
     const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // View state survives a trip to a task's detail page and back — see
+    // usePersistedState. Everything else above is transient by design.
+    const [filter, setFilter] = usePersistedState('tasks.filter', 'All');
+    const [searchTerm, setSearchTerm] = usePersistedState('tasks.search', '');
+    const [sortField, setSortField] = usePersistedState<SortField | null>('tasks.sortField', null);
+    const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('tasks.sortDirection', null);
+    const [currentPage, setCurrentPage] = usePersistedState('tasks.page', 1);
+    const [pageSize, setPageSize] = usePersistedState('tasks.pageSize', 10);
+
+    const listAnchorRef = useRef<HTMLDivElement>(null);
+    useListScrollRestore('tasks', listAnchorRef, !isLoading);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -247,7 +254,7 @@ const TasksPage = () => {
             accessor: (task: Task) => {
                 const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
                 return (
-                    <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-400'}`}>
+                    <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
                         {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
                         {formatters.formatDate(task.due_date)}
                         {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
@@ -273,7 +280,7 @@ const TasksPage = () => {
                         <Building2 size={13} className={entity.type === 'deal' ? 'text-violet-400 shrink-0' : 'text-blue-400 shrink-0'} />
                         <div className="flex flex-col gap-0.5 min-w-0">
                             <span className="text-sm text-slate-200 truncate">{entity.label}</span>
-                            {entity.sub && <span className="text-[11px] text-slate-500 truncate">{entity.sub}</span>}
+                            {entity.sub && <span className="text-[11px] text-slate-400 truncate">{entity.sub}</span>}
                             <span className={`text-[9px] font-black uppercase tracking-widest ${entity.type === 'deal' ? 'text-violet-500' : 'text-blue-500'}`}>
                                 {entity.type}
                             </span>
@@ -364,11 +371,11 @@ const TasksPage = () => {
     ];
 
     return (
-        <div className="p-8">
+        <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>
-                    <p className="text-slate-400 mt-2">Personal execution discipline and daily tasks</p>
+                    <p className="text-slate-300 mt-2">Personal execution discipline and daily tasks</p>
                 </div>
                 {canCreateTask && (
                     <button

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { crmService } from '../services/crmService';
+import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
@@ -23,7 +24,8 @@ const PipelinePage = () => {
     const [stages, setStages] = useState<FlowState[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isFiltering, setIsFiltering] = useState(false);
-    const [filters, setFilters] = useState<Filters>({});
+    // Filters survive a trip to a deal's detail page and back.
+    const [filters, setFilters] = usePersistedState<Filters>('pipeline.filters', {});
     const [pollTick, setPollTick] = useState(0);
 
     const [transitionModal, setTransitionModal] = useState<{
