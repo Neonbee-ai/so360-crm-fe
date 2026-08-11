@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { toDatetimeLocalInputValue, toDateInputValue, inputValueToIso } from '../../utils/datetime';
-import { Task, TaskType, User, Lead, Deal } from '../../types/crm';
+import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
 import { toast } from '@so360/design-system';
 import { useShell, useNotify, useActivity } from '@so360/shell-context';
 
@@ -62,6 +62,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     });
     const [status, setStatus] = useState<Task['status']>(task?.status || 'OPEN');
     const [type, setType] = useState<TaskType>(task?.type || 'TODO');
+    const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
     const [assignedToId, setAssignedToId] = useState(task?.assigned_to?.id || '');
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
@@ -141,6 +142,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                 description,
                 status: status.toUpperCase(),
                 type: type.toUpperCase(),
+                priority,
                 assignee_id: assignedToId
             };
 
@@ -219,6 +221,21 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold resize-none h-20"
                                 placeholder="Add details..."
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Priority</label>
+                            <div className="relative">
+                                <select
+                                    value={priority}
+                                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                                    className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    {TASK_PRIORITY_OPTIONS.map(o => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         <div className="space-y-2">

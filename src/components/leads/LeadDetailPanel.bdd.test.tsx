@@ -241,6 +241,27 @@ describe('LeadDetailPanel — Tasks tab', () => {
     expect(onNavigateTask).not.toHaveBeenCalled();
   });
 
+  it('renders the task priority persisted by the backend', async () => {
+    // Regression: tasks had no priority column, so every read faked 'medium'
+    // and the Quick View could not show a real one (crm-be migration 048).
+    mockGetTasks.mockResolvedValue([
+      { id: 't1', title: 'Call back', due_date: '2099-02-01T00:00:00Z', status: 'OPEN', priority: 'urgent', type: 'CALL', assigned_to: { id: 'u1', full_name: 'Alice' }, created_at: '2026-01-01T00:00:00Z' },
+    ]);
+    render_(makeLead());
+    fireEvent.click(screen.getByText('Tasks'));
+    expect(await screen.findByText('urgent')).toBeInTheDocument();
+  });
+
+  it('omits the priority chip entirely for a task that carries none', async () => {
+    mockGetTasks.mockResolvedValue([
+      { id: 't1', title: 'Call back', due_date: '2099-02-01T00:00:00Z', status: 'OPEN', type: 'CALL', assigned_to: { id: 'u1', full_name: 'Alice' }, created_at: '2026-01-01T00:00:00Z' },
+    ]);
+    render_(makeLead());
+    fireEvent.click(screen.getByText('Tasks'));
+    expect(await screen.findByText('Call back')).toBeInTheDocument();
+    expect(screen.queryByText(/^(low|medium|high|urgent)$/)).not.toBeInTheDocument();
+  });
+
   it('flags a past-due, unfinished task as overdue', async () => {
     mockGetTasks.mockResolvedValue([
       { id: 't1', title: 'Overdue thing', due_date: '2020-01-01T00:00:00Z', status: 'OPEN', type: 'CALL', assigned_to: { id: 'u1', full_name: 'Alice' }, created_at: '2019-01-01T00:00:00Z' },

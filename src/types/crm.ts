@@ -130,12 +130,34 @@ export interface Note {
 
 export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
 
+/**
+ * Task priority. Persisted on tasks.priority since crm-be migration 048 —
+ * before that every read path faked a hardcoded 'medium', so anything written
+ * by a caller was silently discarded.
+ */
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export const TASK_PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+    { value: 'urgent', label: 'Urgent' },
+];
+
+export const TASK_PRIORITY_STYLES: Record<TaskPriority, string> = {
+    low: 'bg-slate-700/40 text-slate-300',
+    medium: 'bg-sky-500/15 text-sky-400',
+    high: 'bg-amber-500/15 text-amber-400',
+    urgent: 'bg-rose-500/15 text-rose-400',
+};
+
 export interface Task {
     id: string;
     title: string;
     due_date: string;
     start_date?: string;
     status: 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'ON_HOLD' | 'CANCELLED';
+    priority?: TaskPriority;
     type: TaskType;
     deal_id?: string;
     deal_name?: string;

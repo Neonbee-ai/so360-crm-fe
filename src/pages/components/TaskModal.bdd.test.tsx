@@ -77,7 +77,16 @@ const dateInputs    = () => document.querySelectorAll('input[type="date"]');
 const startInput    = () => dateInputs()[0] as HTMLInputElement;
 const dueInput      = () => (dateInputs()[1] ?? dateInputs()[0]) as HTMLInputElement;
 const datetimeInput = () => document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
-const selects       = () => document.querySelectorAll('select');
+// The Priority select is filtered out so the positional index map below stays
+// stable as fields are added around it — see prioritySelect() for that field.
+const selects       = () =>
+  Array.from(document.querySelectorAll('select')).filter(
+    (el) => !Array.from(el.options).some((o) => o.value === 'urgent'),
+  );
+const prioritySelect = () =>
+  Array.from(document.querySelectorAll('select')).find((el) =>
+    Array.from(el.options).some((o) => o.value === 'urgent'),
+  ) as HTMLSelectElement;
 // select indices in create/TODO mode: [0]=type, [1]=assignee
 // select indices in REMINDER mode:    [0]=type, [1]=reminderMinutes, [2]=assignee
 // select indices in edit/TODO mode:   [0]=type, [1]=assignee, [2]=status
@@ -310,6 +319,37 @@ describe('TaskModal', () => {
       await waitFor(() =>
         expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ lead_id: 'lead-123' }))
       );
+    });
+
+    it('When no priority is chosen / Then the payload defaults to medium', async () => {
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'medium' }))
+      );
+    });
+
+    it('When a priority is chosen / Then it reaches the create payload', async () => {
+      // Regression: tasks had no priority column, so a chosen priority was
+      // silently discarded and every task read back as 'medium'.
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.change(prioritySelect(), { target: { value: 'urgent' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'urgent' }))
+      );
+    });
+
+    it('When editing a task / Then its stored priority preloads into the selector', async () => {
+      render(<TaskModal task={{ ...BASE_TASK, priority: 'high' } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      expect(prioritySelect().value).toBe('high');
     });
 
     it('When dealId provided / Then payload includes deal_id', async () => {

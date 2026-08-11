@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { Lead, Activity as ActivityType, Deal, Task, User as CrmUser, SourceTypeOption } from '../../types/crm';
+import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
 import { useCRMFormatters } from '../../utils/formatters';
@@ -755,6 +755,13 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                 {task.due_date && (
                                   <span className={`text-[11px] ${overdue !== null ? 'text-rose-400' : 'text-slate-300'}`}>
                                     Due {formatters.formatDate(task.due_date)}
+                                  </span>
+                                )}
+                                {task.priority && (
+                                  <span className={`text-[10px] font-semibold uppercase tracking-wider rounded px-1.5 py-0.5 ${
+                                    TASK_PRIORITY_STYLES[task.priority] ?? 'bg-slate-800 text-slate-400'
+                                  }`}>
+                                    {task.priority}
                                   </span>
                                 )}
                                 {task.type && (
