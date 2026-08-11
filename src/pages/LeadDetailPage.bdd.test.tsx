@@ -94,7 +94,20 @@ vi.mock('./components/AuditHistoryTab', () => ({ default: () => <div data-testid
 vi.mock('../components/stakeholders/StakeholdersTab', () => ({ default: () => <div data-testid="stakeholders-tab" /> }));
 vi.mock('./components/EmailsTab', () => ({ default: () => <div data-testid="emails-tab" /> }));
 vi.mock('./components/MeetingsTab', () => ({ default: () => <div data-testid="meetings-tab" /> }));
-vi.mock('./components/QuickActionBar', () => ({ default: () => <div data-testid="quick-action-bar" /> }));
+// Kept as a thin stand-in, but it must still surface the real handlers: the
+// value under test is what LeadDetailPage does when a quick action fires.
+vi.mock('./components/QuickActionBar', () => ({
+  default: (props: any) => (
+    <div data-testid="quick-action-bar">
+      <button onClick={props.onAddNote}>Add Note</button>
+      <button onClick={props.onSendEmail}>Send Email</button>
+      <button onClick={props.onLogCall}>Log Call</button>
+      <button onClick={props.onScheduleMeeting}>Schedule Meeting</button>
+      <button onClick={props.onCreateTask}>Create Task</button>
+      <button onClick={props.onUploadDocument}>Add Document</button>
+    </div>
+  ),
+}));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
 
 const mockNavigate = vi.fn();
@@ -974,6 +987,53 @@ describe('LeadDetailPage', () => {
       unmount();
 
       expect(mockSetCurrentEntity).toHaveBeenLastCalledWith(null);
+    });
+  });
+
+  describe('Given the Communication Quick Action bar', () => {
+    // Regression: every quick action only called setActiveTab. The workspace it
+    // switches sits far below the fold, so clicking produced no visible
+    // response — the buttons looked interactive but appeared to do nothing.
+    it('When Add Note is clicked / Then the notes workspace opens and is scrolled into view', async () => {
+      const scrollIntoView = vi.fn();
+      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Add Note/i }));
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+      expect(await screen.findByText(/Save Note/i)).toBeInTheDocument();
+    });
+
+    it('When Add Document is clicked / Then the documents workspace opens and the file picker is triggered', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      window.HTMLElement.prototype.scrollIntoView = vi.fn();
+      const clickSpy = vi.spyOn(window.HTMLInputElement.prototype, 'click');
+      try {
+        render(<LeadDetailPage />);
+        await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: /Add Document/i }));
+        await vi.advanceTimersByTimeAsync(500);
+
+        expect(await screen.findByText(/Upload Document/i)).toBeInTheDocument();
+        expect(clickSpy).toHaveBeenCalled();
+      } finally {
+        clickSpy.mockRestore();
+        vi.useRealTimers();
+      }
+    });
+
+    it('When Log Call is clicked / Then the calls workspace opens and is scrolled into view', async () => {
+      const scrollIntoView = vi.fn();
+      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Log Call/i }));
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
     });
   });
 });

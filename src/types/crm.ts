@@ -269,6 +269,8 @@ export interface InventoryVariant {
     price: number;
     variant_attributes: Record<string, string>;
     image_url: string | null;
+    /** On-hand minus reserved, summed across warehouses. */
+    available_stock?: number;
 }
 
 export interface InventoryItem {
@@ -280,7 +282,26 @@ export interface InventoryItem {
     image_url: string | null;
     metadata: Record<string, any>;
     has_variants: boolean;
+    /** On-hand minus reserved, summed across warehouses (and variants). */
+    available_stock?: number;
     variants: InventoryVariant[];
+}
+
+/**
+ * A person from People Connect's People Registry, as served to CRM ownership
+ * pickers. People Connect stays the source of truth — CRM stores only the
+ * person id on the record and re-resolves display data from here.
+ */
+export interface SalesRep {
+    id: string;
+    full_name: string;
+    email: string | null;
+    avatar_url: string | null;
+    job_title: string | null;
+    employee_id: string | null;
+    department_id: string | null;
+    department_name: string | null;
+    status: string;
 }
 
 export interface ProductPickerSelection {

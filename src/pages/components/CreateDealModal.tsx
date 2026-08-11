@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
-import { Deal, DealStage, User } from '../../types/crm';
+import { Deal, DealStage, User, SalesRep } from '../../types/crm';
 import { toast } from '@so360/design-system';
-import { useActivity, usePeople, useOrganization } from '@so360/shell-context';
+import { useActivity } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
 
 interface CreateDealModalProps {
@@ -18,16 +18,40 @@ const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rou
 
 const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
     const { recordActivity } = useActivity();
-    const { currentOrg } = useOrganization();
-    const { people } = usePeople({
-        orgId: currentOrg?.id,
-        filters: { status: 'active' },
-        enabled: !!currentOrg?.id,
-    });
-    const activeSalesReps = [...(people || [])].sort((a: any, b: any) =>
-        (a.full_name || '').localeCompare(b.full_name || '')
-    );
     const currencySymbol = useCRMCurrencySymbol();
+
+    // Sales Rep options come from People Connect's People Registry via crm-be
+    // (see crmService.getSalesReps). Calling People Connect straight from the
+    // browser required people-module permissions a CRM user does not hold, so
+    // the dropdown always resolved to an empty list.
+    const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+    const [salesRepsError, setSalesRepsError] = useState(false);
+    const [salesRepSearch, setSalesRepSearch] = useState('');
+
+    const loadSalesReps = useCallback(async () => {
+        setSalesRepsError(false);
+        try {
+            const reps = await crmService.getSalesReps();
+            setSalesReps(
+                [...reps].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '')),
+            );
+        } catch {
+            setSalesReps([]);
+            setSalesRepsError(true);
+        }
+    }, []);
+
+    useEffect(() => { loadSalesReps(); }, [loadSalesReps]);
+
+    // Filtered client-side across every displayed attribute, so searching by
+    // designation or department works even though the registry API only
+    // indexes name/email/employee id.
+    const visibleSalesReps = salesReps.filter((p) => {
+        const q = salesRepSearch.trim().toLowerCase();
+        if (!q) return true;
+        return [p.full_name, p.email, p.employee_id, p.job_title, p.department_name]
+            .some((v) => (v || '').toLowerCase().includes(q));
+    });
 
     // Core fields
     const [name, setName] = useState('');
@@ -395,6 +419,18 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                     Sales Rep <span className="text-slate-700 normal-case font-bold tracking-normal">(optional)</span>
                                 </label>
+                                {salesReps.length > 8 && (
+                                    <div className="relative">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            value={salesRepSearch}
+                                            onChange={e => setSalesRepSearch(e.target.value)}
+                                            placeholder="Search by name, email, designation or department…"
+                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-2 outline-none focus:border-blue-500 transition-all text-xs"
+                                        />
+                                    </div>
+                                )}
                                 <div className="relative">
                                     <select
                                         value={ownerPersonId}
@@ -402,10 +438,30 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         <option value="">Select sales rep...</option>
-                                        {activeSalesReps.map((p: any) => <option key={p.id} value={p.id}>{p.full_name}{p.job_title ? ` (${p.job_title})` : ''}</option>)}
+                                        {visibleSalesReps.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.full_name}
+                                                {p.job_title ? ` — ${p.job_title}` : ''}
+                                                {p.department_name ? ` · ${p.department_name}` : ''}
+                                            </option>
+                                        ))}
                                     </select>
                                     <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
+                                {/* Never fail silently: an empty registry and a failed
+                                    fetch look identical in a bare <select>. */}
+                                {salesRepsError ? (
+                                    <p className="text-[10px] font-bold text-rose-400">
+                                        Could not load employees from People Connect.{' '}
+                                        <button type="button" onClick={loadSalesReps} className="underline hover:text-rose-300">
+                                            Retry
+                                        </button>
+                                    </p>
+                                ) : salesReps.length === 0 ? (
+                                    <p className="text-[10px] font-bold text-slate-500">
+                                        No active employees found in People Connect → People Registry.
+                                    </p>
+                                ) : null}
                             </div>
 
                             {/* Custom fields */}

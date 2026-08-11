@@ -23,6 +23,8 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
         try {
             const result = await crmService.searchInventoryItems(q);
             setItems(result.items);
+        } catch {
+            setItems([]);
         } finally {
             setIsLoading(false);
         }

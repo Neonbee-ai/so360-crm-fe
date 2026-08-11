@@ -1,4 +1,4 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
 import { createRequestCache } from './requestCache';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
@@ -2099,6 +2099,22 @@ export const crmService = {
     },
 
     // Users
+    /**
+     * Active employees from People Connect's People Registry — the option set
+     * for every CRM ownership field (Sales Rep, Lead/Deal Owner, Account
+     * Manager, Task Assignee).
+     *
+     * Routed through crm-be rather than calling People Connect from the
+     * browser: its public `/people` endpoint requires People Connect
+     * permissions a CRM user does not hold, which is why this dropdown used to
+     * render empty. crm-be brokers the call and scopes it to the caller's org.
+     */
+    getSalesReps: async (search?: string): Promise<SalesRep[]> => {
+        const params = search?.trim() ? { search: search.trim() } : undefined;
+        const rows = await apiClient.get<any[]>('/v1/users/sales-reps', params);
+        return Array.isArray(rows) ? rows : [];
+    },
+
     getUsers: async (): Promise<User[]> => {
       return orgStaticCache.run(`users|${apiClient.getOrgId()}`, async () => {
         try {
@@ -2402,16 +2418,33 @@ export const crmService = {
     },
 
     // Inventory item search — used by ProductPickerModal
-    async searchInventoryItems(q: string, categoryId?: string): Promise<{ items: InventoryItem[] }> {
-        try {
-            const params: Record<string, string> = { q };
-            if (categoryId) params.category_id = categoryId;
-            const result = await inventoryClient.get<any>('/v1/inventory/integration/search-with-variants', params);
-            const items: InventoryItem[] = Array.isArray(result) ? result : (result?.items || result?.data || []);
-            return { items };
-        } catch {
-            return { items: [] };
-        }
+    /**
+     * Browse/search sellable inventory.
+     *
+     * `q` is optional: called with no term (the default when a product picker
+     * opens) the backend returns the most recent active items, so users can
+     * browse without knowing a name or SKU. `offset` drives lazy-loading.
+     *
+     * Errors are NOT swallowed — pickers surface them with a retry action
+     * rather than rendering a misleading "no products found" empty state.
+     */
+    async searchInventoryItems(
+        q: string,
+        categoryId?: string,
+        opts: { limit?: number; offset?: number } = {},
+    ): Promise<{ items: InventoryItem[]; total: number; has_more: boolean }> {
+        const params: Record<string, string> = {};
+        if (q && q.trim()) params.q = q.trim();
+        if (categoryId) params.category_id = categoryId;
+        if (opts.limit != null) params.limit = String(opts.limit);
+        if (opts.offset != null) params.offset = String(opts.offset);
+        const result = await inventoryClient.get<any>('/v1/inventory/integration/search-with-variants', params);
+        const items: InventoryItem[] = Array.isArray(result) ? result : (result?.items || result?.data || []);
+        return {
+            items,
+            total: result?.total ?? items.length,
+            has_more: Boolean(result?.has_more),
+        };
     },
 
     // Customers
