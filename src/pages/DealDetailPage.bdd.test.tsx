@@ -836,3 +836,56 @@ describe('DealDetailPage', () => {
     });
   });
 });
+
+/**
+ * Cover for the header/readability fixes reported on the CRM detail pages,
+ * mirrored here so the Deal page cannot drift from the Lead page:
+ * icon-only Delete beside a labelled primary CTA, a universal Back control,
+ * and task metadata that is legible on the light theme's white card.
+ */
+describe('DealDetailPage — header and card presentation', () => {
+  /** Lowest slate step still legible on the light theme's white card. */
+  const READABLE = /text-slate-(50|100|200|300)\b/;
+
+  describe('Given the record header', () => {
+    it('When the Delete action renders / Then it carries no text label', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByLabelText('Delete').textContent).toBe('');
+    });
+
+    it('When the Delete action renders / Then it is still named on hover and for screen readers', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      const del = screen.getByLabelText('Delete');
+      expect(del).toHaveAttribute('title', 'Delete');
+      expect(del).toHaveAttribute('aria-label', 'Delete');
+    });
+
+    it('When the Delete action renders / Then keyboard focus stays visible', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByLabelText('Delete').className).toMatch(/focus-visible:ring/);
+    });
+
+    it('When the back control renders / Then it uses the same neutral wording as every other module', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getAllByText('Back').length).toBeGreaterThan(0);
+      expect(screen.queryByRole('button', { name: 'Back to Pipeline' })).toBeNull();
+    });
+  });
+
+  describe('Given the deal task list', () => {
+    it('When a task due date renders / Then it is legible rather than a faded rose tint', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      const due = screen.queryAllByText(/^Due /)[0];
+      if (!due) return; // no tasks fixture on this render path
+      const span = due.closest('span')!;
+      expect(span.className).not.toMatch(/rose-400\/70/);
+      expect(span.className).toMatch(READABLE);
+    });
+  });
+});

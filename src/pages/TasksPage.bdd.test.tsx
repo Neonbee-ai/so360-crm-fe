@@ -387,3 +387,89 @@ describe('TasksPage — Completed tasks are read-only', () => {
     });
   });
 });
+
+/**
+ * Cover for "opening a task and coming back drops the filter and the page you
+ * were on". The list now persists its view state per active organisation
+ * (see useListViewState), so a round trip through a detail page returns the
+ * user to the list they built rather than to an unfiltered page 1.
+ */
+describe('TasksPage — the view survives a trip to a task and back', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.setItem('active_org', JSON.stringify({ id: 'org-1' }));
+  });
+
+  const remount = async () => {
+    const view = render(<TasksPage />);
+    await waitFor(() => expect(tableProps.data).toBeDefined());
+    return view;
+  };
+
+  describe('Given the user filtered the list before opening a record', () => {
+    it('When they return / Then the same filter is still applied', async () => {
+      const first = await remount();
+      fireEvent.click(screen.getByText('Done'));
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+      first.unmount();
+
+      await remount();
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+    });
+
+    it('When they return / Then the active filter chip is still highlighted', async () => {
+      const first = await remount();
+      fireEvent.click(screen.getByText('Overdue'));
+      first.unmount();
+
+      await remount();
+      const chip = screen.getByText('Overdue');
+      expect(chip.className).toMatch(/bg-blue-600/);
+    });
+  });
+
+  describe('Given the user searched before opening a record', () => {
+    it('When they return / Then the search box still holds their query', async () => {
+      const first = await remount();
+      fireEvent.change(screen.getByPlaceholderText('Search tasks...'), { target: { value: 'proposal' } });
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+      first.unmount();
+
+      await remount();
+      expect(screen.getByPlaceholderText('Search tasks...')).toHaveValue('proposal');
+    });
+  });
+
+  describe('Given the user changed the page size', () => {
+    it('When they return / Then the page size is remembered', async () => {
+      const first = await remount();
+      const sizeSelect = await screen.findByDisplayValue('10');
+      fireEvent.change(sizeSelect, { target: { value: '25' } });
+      first.unmount();
+
+      await remount();
+      expect(await screen.findByDisplayValue('25')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a different organisation is active', () => {
+    it('When the list loads / Then the previous org\'s filter is not carried over', async () => {
+      const first = await remount();
+      fireEvent.click(screen.getByText('Done'));
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+      first.unmount();
+
+      localStorage.setItem('active_org', JSON.stringify({ id: 'org-2' }));
+      await remount();
+      await waitFor(() => expect(tableProps.data).toHaveLength(3));
+    });
+  });
+
+  describe('Given a fresh browser tab', () => {
+    it('When nothing was stored / Then the list opens unfiltered on page 1', async () => {
+      await remount();
+      await waitFor(() => expect(tableProps.data).toHaveLength(3));
+      expect(screen.getByText(/Page 1 of/)).toBeInTheDocument();
+    });
+  });
+});
