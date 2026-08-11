@@ -76,8 +76,12 @@ describe('QuotesPage — delete action (real Table)', () => {
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
       await user.click(screen.getByTitle('Delete'));
       await waitFor(() => {
-        expect(screen.getByText(/QT-2026-00022/)).toBeInTheDocument();
-        expect(screen.getByText(/New Quote/)).toBeInTheDocument();
+        // The number now appears twice — in the table row it was clicked from,
+        // and again in the dialog identifying what is about to be deleted. That
+        // second occurrence IS the behaviour under test, so assert on the count
+        // rather than asking for a single match.
+        expect(screen.getAllByText(/QT-2026-00022/).length).toBeGreaterThan(1);
+        expect(screen.getAllByText(/New Quote/).length).toBeGreaterThan(0);
       });
     });
 
