@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canCurrentUserBeAssigned, isTaskAssignedToUser, getCurrentUserFromList } from './taskUtils';
+import { canCurrentUserBeAssigned, isTaskAssignedToUser, getCurrentUserFromList, isTaskLocked, canRescheduleTask, canEditTask, canAddTaskNote } from './taskUtils';
 import type { User, Task } from '../types/crm';
 
 const makeUser = (id: string, name = 'Test User'): User => ({
@@ -119,6 +119,42 @@ describe('getCurrentUserFromList', () => {
   describe('Given the members list is empty', () => {
     it('When looked up in an empty list / Then returns undefined', () => {
       expect(getCurrentUserFromList('u-1', [])).toBeUndefined();
+    });
+  });
+});
+
+describe('Task status-based action rules', () => {
+  describe('Given a task that is still open', () => {
+    it.each(['OPEN', 'TODO', 'IN_PROGRESS', 'ON_HOLD'])('When status is %s / Then the task is not locked', (status) => {
+      expect(isTaskLocked(status)).toBe(false);
+      expect(canRescheduleTask(status)).toBe(true);
+      expect(canEditTask(status)).toBe(true);
+    });
+  });
+
+  describe('Given a task that has closed its lifecycle', () => {
+    it.each(['DONE', 'CANCELLED'])('When status is %s / Then the task is locked for edits', (status) => {
+      expect(isTaskLocked(status)).toBe(true);
+      expect(canRescheduleTask(status)).toBe(false);
+      expect(canEditTask(status)).toBe(false);
+    });
+
+    it('When status casing or whitespace varies / Then the rule still applies', () => {
+      expect(isTaskLocked(' done ')).toBe(true);
+      expect(isTaskLocked('Done')).toBe(true);
+    });
+
+    it('When adding a note / Then it stays permitted so audit history can grow', () => {
+      expect(canAddTaskNote('DONE')).toBe(true);
+      expect(canAddTaskNote('CANCELLED')).toBe(true);
+    });
+  });
+
+  describe('Given a missing status', () => {
+    it('When status is null or undefined / Then the task is treated as editable', () => {
+      expect(isTaskLocked(null)).toBe(false);
+      expect(isTaskLocked(undefined)).toBe(false);
+      expect(isTaskLocked('')).toBe(false);
     });
   });
 });

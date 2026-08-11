@@ -425,4 +425,126 @@ describe('TaskDetailPage', () => {
       expect(trashBtn).toBeTruthy();
     });
   });
+
+  describe('Given a completed task (status DONE)', () => {
+    beforeEach(() => {
+      mockGetTaskById.mockResolvedValue(makeTask({ status: 'DONE' }));
+    });
+
+    it('When the detail page renders / Then Reschedule is disabled', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
+      expect(screen.getByText('Reschedule').closest('button')).toBeDisabled();
+    });
+
+    it('When the detail page renders / Then a hint explains why actions are unavailable', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('task-locked-hint')).toBeInTheDocument());
+      expect(screen.getByText('Reschedule').closest('button')?.getAttribute('title'))
+        .toMatch(/Mark as Open/i);
+    });
+
+    it('When Reschedule is clicked / Then the reschedule modal does not open', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Reschedule'));
+      expect(screen.queryByTestId('reschedule-modal')).not.toBeInTheDocument();
+      expect(mockUpdateTask).not.toHaveBeenCalled();
+    });
+
+    it('When the detail page renders / Then the Edit action is disabled', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.getByLabelText('Edit Task')).toBeDisabled();
+    });
+
+    it('When the detail page renders / Then adding a note is still permitted for audit history', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('+ Add Note')).toBeInTheDocument());
+      expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given an open task', () => {
+    it('When the detail page renders / Then Reschedule and Edit are enabled', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
+      expect(screen.getByText('Reschedule').closest('button')).not.toBeDisabled();
+      expect(screen.getByLabelText('Edit Task')).not.toBeDisabled();
+      expect(screen.queryByTestId('task-locked-hint')).not.toBeInTheDocument();
+    });
+
+    it('When the task is marked complete / Then Reschedule becomes disabled immediately', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Mark as Complete')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Mark as Complete'));
+      await waitFor(() =>
+        expect(screen.getByText('Reschedule').closest('button')).toBeDisabled(),
+      );
+    });
+  });
+
+  describe('Given task-level actions on the detail header', () => {
+    it('When the page renders / Then Edit and Delete are grouped in one action area', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      const group = screen.getByTestId('task-actions');
+      expect(group.querySelector('[aria-label="Edit Task"]')).toBeTruthy();
+      expect(group.querySelector('[aria-label="Delete Task"]')).toBeTruthy();
+    });
+
+    it('When the page renders / Then both actions expose descriptive tooltips', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.getByLabelText('Edit Task').getAttribute('title')).toBe('Edit Task');
+      expect(screen.getByLabelText('Delete Task').getAttribute('title')).toBe('Delete Task');
+    });
+  });
+
+  describe('Given the Notes & Comments composer', () => {
+    it('When idle / Then only a compact input is shown and no Cancel exists', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      expect(screen.getByTestId('note-composer-trigger')).toHaveTextContent('Add a note or comment...');
+      expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+    });
+
+    it('When the compact input is clicked / Then the editor expands with exactly one Cancel', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('note-composer-trigger'));
+      expect(screen.getByPlaceholderText('Add a note or comment...')).toBeInTheDocument();
+      expect(screen.getAllByText('Cancel')).toHaveLength(1);
+      // header affordance collapses away while editing — no duplicate control
+      expect(screen.queryByText('+ Add Note')).not.toBeInTheDocument();
+    });
+
+    it('When Cancel is clicked / Then the editor collapses and unsaved input is discarded', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('note-composer-trigger'));
+      fireEvent.change(screen.getByPlaceholderText('Add a note or comment...'), { target: { value: 'draft' } });
+      fireEvent.click(screen.getByText('Cancel'));
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      expect(mockCreateNote).not.toHaveBeenCalled();
+    });
+
+    it('When a note is submitted / Then the editor collapses back to the compact input', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('note-composer-trigger'));
+      fireEvent.change(screen.getByPlaceholderText('Add a note or comment...'), { target: { value: 'a note' } });
+      fireEvent.click(screen.getByText('Add Note'));
+      await waitFor(() => expect(mockCreateNote).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+    });
+
+    it('When notes failed to load / Then the compact composer is not offered', async () => {
+      mockGetTaskNotes.mockRejectedValue(new Error('boom'));
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.queryByTestId('note-composer-trigger')).not.toBeInTheDocument();
+    });
+  });
 });

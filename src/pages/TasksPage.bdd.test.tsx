@@ -341,3 +341,49 @@ describe('TasksPage', () => {
     });
   });
 });
+
+describe('TasksPage — Completed tasks are read-only', () => {
+  const assigneeCell = (task: any) => {
+    const col = tableProps.columns.find((c: any) => {
+      const header = c.header;
+      const label = header?.props?.label ?? header;
+      return label === 'Assigned To';
+    });
+    return render(col.accessor(task)).container;
+  };
+
+  describe('Given a task with status DONE', () => {
+    it('When the assignee cell renders / Then the assignee select is disabled', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const doneTask = makeTasks()[1];
+      const container = assigneeCell(doneTask);
+      expect(container.querySelector('select')).toBeDisabled();
+    });
+
+    it('When the assignee cell renders / Then the disabled select explains why', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const container = assigneeCell(makeTasks()[1]);
+      expect(container.querySelector('select')?.getAttribute('title')).toMatch(/Mark as Open/i);
+    });
+
+    it('When the assignee select is changed anyway / Then no update request is sent', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const container = assigneeCell(makeTasks()[1]);
+      const select = container.querySelector('select') as HTMLSelectElement;
+      fireEvent.change(select, { target: { value: 'user-1' } });
+      expect(mockUpdateTask).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given a task that is still OPEN', () => {
+    it('When the assignee cell renders / Then the assignee select stays enabled', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const container = assigneeCell(makeTasks()[0]);
+      expect(container.querySelector('select')).not.toBeDisabled();
+    });
+  });
+});

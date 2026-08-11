@@ -14,6 +14,7 @@ import {
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
+import { isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
@@ -165,6 +166,18 @@ const LeadDetailPage = () => {
     const [autoOpenMeetingForm, setAutoOpenMeetingForm] = useState(false);
     const [showLayoutSettings, setShowLayoutSettings] = useState(false);
     const [expandedStatusDropdown, setExpandedStatusDropdown] = useState<string | null>(null);
+    const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
+
+    // A reminder is a pointer to a task that already exists in the list below —
+    // clicking it focuses that task instead of opening a separate record.
+    const focusTaskInList = useCallback((taskId: string) => {
+        setHighlightedTaskId(taskId);
+        const el = document.getElementById(`task-card-${taskId}`);
+        el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => {
+            setHighlightedTaskId(current => (current === taskId ? null : current));
+        }, 2500);
+    }, []);
     const layoutPrefs = useLeadDetailLayoutPreferences();
 
     // Task 4 (Customer Timeline): unified server-side timeline, shared between
@@ -1028,28 +1041,43 @@ const LeadDetailPage = () => {
 
                                     {/* Reminders Alert Section */}
                                     {associatedTasks.filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000)).length > 0 && (
-                                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
-                                            <h4 className="flex items-center gap-2 text-xs font-black text-amber-500 uppercase tracking-widest mb-3">
-                                                <Clock size={14} /> upcoming & due reminders
-                                            </h4>
-                                            <div className="space-y-2">
+                                        /* Notification strip — deliberately NOT card-shaped, so it
+                                           never reads as a second copy of the task below. */
+                                        <div className="mb-6" data-testid="task-reminders-panel">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Clock size={12} className="text-amber-500" />
+                                                <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                                                    Upcoming &amp; Due Reminders
+                                                </h4>
+                                                <span className="text-[10px] text-slate-500 normal-case tracking-normal">
+                                                    · alerts for tasks already listed below
+                                                </span>
+                                            </div>
+                                            <div className="divide-y divide-amber-500/10 border-l-2 border-amber-500 bg-amber-500/[0.06] rounded-r">
                                                 {associatedTasks
                                                     .filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
                                                     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-                                                    .map(task => (
-                                                        <div key={task.id} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-lg border border-amber-500/10">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={`w-2 h-2 rounded-full ${new Date(task.due_date) < new Date() ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
-                                                                <span className="text-sm font-bold text-slate-200">{task.title}</span>
-                                                                <span className="text-xs text-slate-500">
-                                                                    {formatters.formatDateTime(task.due_date)}
+                                                    .map(task => {
+                                                        const reminderOverdue = new Date(task.due_date) < new Date();
+                                                        return (
+                                                            <button
+                                                                key={task.id}
+                                                                type="button"
+                                                                onClick={() => focusTaskInList(task.id)}
+                                                                data-testid={`task-reminder-${task.id}`}
+                                                                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
+                                                            >
+                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
+                                                                <span className="text-xs font-semibold text-slate-300 truncate">{task.title}</span>
+                                                                <span className={`text-[11px] shrink-0 ${reminderOverdue ? 'text-rose-400 font-bold' : 'text-slate-500'}`}>
+                                                                    {reminderOverdue ? 'Overdue · ' : ''}{formatters.formatDateTime(task.due_date)}
                                                                 </span>
-                                                            </div>
-                                                            <Link to={`/crm/tasks/${task.id}`} className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1">
-                                                                View <ChevronLeft size={10} className="rotate-180" />
-                                                            </Link>
-                                                        </div>
-                                                    ))}
+                                                                <span className="ml-auto text-[10px] font-black text-amber-500 uppercase tracking-widest shrink-0">
+                                                                    View Task
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
                                             </div>
                                         </div>
                                     )}
@@ -1063,7 +1091,7 @@ const LeadDetailPage = () => {
                                             {associatedTasks.map(task => {
                                                 const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
                                                 return (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-amber-500/70' : ''} ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
                                                         className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
@@ -1154,8 +1182,11 @@ const LeadDetailPage = () => {
                                                     </div>
                                                     <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                                                         <button
-                                                            onClick={() => setEditingTask(task)}
-                                                            className="p-1.5 bg-slate-800 rounded hover:text-blue-400 hover:bg-slate-700 transition-colors"
+                                                            onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
+                                                            disabled={isTaskLocked(task.status)}
+                                                            title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit Task'}
+                                                            aria-label="Edit Task"
+                                                            className="p-1.5 bg-slate-800 rounded hover:text-blue-400 hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-800 disabled:hover:text-current"
                                                         >
                                                             <Edit2 size={12} />
                                                         </button>

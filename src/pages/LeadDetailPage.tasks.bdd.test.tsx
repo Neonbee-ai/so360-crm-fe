@@ -623,3 +623,93 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
     });
   });
 });
+
+describe('Lead Detail Tasks Tab — Reminders & Completed-Task Rules', () => {
+  const openTasksTab = async () => {
+    render(<LeadDetailPage />);
+    await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
+    const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+    fireEvent.click(tasksTab!);
+  };
+
+  const soonReminder = (overrides: any = {}) => makeTask({
+    id: 'rem-1',
+    title: 'Call the client back',
+    type: 'REMINDER',
+    status: 'OPEN',
+    due_date: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    ...overrides,
+  });
+
+  describe('Given a reminder due within the next 24 hours', () => {
+    it('When the Tasks tab is opened / Then the reminders panel renders as a notification strip', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([soonReminder()]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByTestId('task-reminders-panel')).toBeInTheDocument());
+      expect(screen.getByTestId('task-reminders-panel')).toHaveTextContent(/alerts for tasks already listed below/i);
+    });
+
+    it('When the reminder renders / Then it is an action, not a duplicate task card link', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([soonReminder()]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByTestId('task-reminder-rem-1')).toBeInTheDocument());
+      const reminder = screen.getByTestId('task-reminder-rem-1');
+      expect(reminder.tagName).toBe('BUTTON');
+      expect(reminder.querySelector('a')).toBeNull();
+      expect(reminder).toHaveTextContent(/View Task/i);
+    });
+
+    it('When the reminder is clicked / Then the matching task card in the list below is highlighted', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([soonReminder()]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByTestId('task-reminder-rem-1')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('task-reminder-rem-1'));
+      await waitFor(() => {
+        const card = document.getElementById('task-card-rem-1');
+        expect(card?.className).toContain('ring-amber-500/70');
+      });
+    });
+
+    it('When the reminder is overdue / Then it is labelled Overdue in the strip', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([
+        soonReminder({ due_date: new Date(Date.now() - 60 * 60 * 1000).toISOString() }),
+      ]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByTestId('task-reminder-rem-1')).toHaveTextContent(/Overdue/i));
+    });
+  });
+
+  describe('Given no reminder is due', () => {
+    it('When the Tasks tab is opened / Then no reminders panel is rendered', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([makeTask()]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.queryByTestId('task-reminders-panel')).not.toBeInTheDocument();
+    });
+
+    it('When a reminder is already DONE / Then it is not surfaced as an alert', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([soonReminder({ status: 'DONE' })]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByText('Call the client back')).toBeInTheDocument());
+      expect(screen.queryByTestId('task-reminders-panel')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given a completed task in the lead task list', () => {
+    it('When the card renders / Then its Edit action is disabled with an explanatory tooltip', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([makeTask({ status: 'DONE' })]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      const editBtn = screen.getByLabelText('Edit Task');
+      expect(editBtn).toBeDisabled();
+      expect(editBtn.getAttribute('title')).toMatch(/Mark as Open/i);
+    });
+
+    it('When the task is still OPEN / Then its Edit action stays enabled', async () => {
+      mockGetTasksByLeadId.mockResolvedValue([makeTask({ status: 'OPEN' })]);
+      await openTasksTab();
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.getByLabelText('Edit Task')).not.toBeDisabled();
+    });
+  });
+});

@@ -13,6 +13,7 @@ import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
 import { toast, getErrorMessage } from '@so360/design-system';
 import { useCRMFormatters } from '../utils/formatters';
+import { isTaskLocked, canRescheduleTask, canEditTask, TASK_LOCKED_HINT } from '../utils/taskUtils';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
@@ -86,6 +87,12 @@ const TaskDetailPage = () => {
         try {
             // Optimistic update
             setTask({ ...task, status: newStatus });
+            // Action availability must update immediately: close any editing
+            // surface that is no longer valid for a completed task.
+            if (isTaskLocked(newStatus)) {
+                setIsRescheduling(false);
+                setIsEditingTask(false);
+            }
 
             await crmService.updateTask(task.id, { status: newStatus });
             if (newStatus === 'DONE') {
@@ -109,6 +116,11 @@ const TaskDetailPage = () => {
 
     const handleReschedule = async (date: string) => {
         if (!task) return;
+        if (!canRescheduleTask(task.status)) {
+            toast.warning(TASK_LOCKED_HINT);
+            setIsRescheduling(false);
+            return;
+        }
         try {
             await crmService.updateTask(task.id, { due_date: date });
             setTask({ ...task, due_date: date });
@@ -148,6 +160,9 @@ const TaskDetailPage = () => {
     }
 
     const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
+    const isLocked = isTaskLocked(task.status);
+    const canEdit = canEditTask(task.status);
+    const canReschedule = canRescheduleTask(task.status);
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
@@ -166,12 +181,29 @@ const TaskDetailPage = () => {
                                 <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
                                     {task.title}
                                 </h1>
-                                <button
-                                    onClick={() => setIsEditingTask(true)}
-                                    className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
-                                >
-                                    <Edit2 size={16} />
-                                </button>
+                                {/* Task-level actions are grouped together so users find
+                                    them in a single place instead of scanning the page. */}
+                                <div className="flex items-center gap-1" data-testid="task-actions">
+                                    <button
+                                        onClick={() => canEdit && setIsEditingTask(true)}
+                                        disabled={!canEdit}
+                                        aria-label="Edit Task"
+                                        title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
+                                        className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-500 disabled:hover:bg-transparent"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    {canCreateTask && (
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            aria-label="Delete Task"
+                                            title="Delete Task"
+                                            className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-3 mt-2">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : task.status === 'IN_PROGRESS' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : task.status === 'ON_HOLD' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : task.status === 'CANCELLED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -186,12 +218,6 @@ const TaskDetailPage = () => {
                             </div>
                         </div>
                     </div>
-                    {canCreateTask && <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="text-slate-500 hover:text-rose-400 p-2 transition-colors"
-                    >
-                        <Trash2 size={20} />
-                    </button>}
                 </div>
             </header>
 
@@ -253,12 +279,14 @@ const TaskDetailPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
                             <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Notes & Comments</h3>
-                            {canCreateTask && !notesError && (
+                            {/* Only one Cancel exists in this section — inside the editor.
+                                The header keeps a single "open editor" affordance. */}
+                            {canCreateTask && !notesError && !isAddingNote && (
                                 <button
-                                    onClick={() => setIsAddingNote(!isAddingNote)}
+                                    onClick={() => setIsAddingNote(true)}
                                     className="text-xs text-blue-400 hover:text-blue-300 font-bold"
                                 >
-                                    {isAddingNote ? 'Cancel' : '+ Add Note'}
+                                    + Add Note
                                 </button>
                             )}
                         </div>
@@ -276,9 +304,23 @@ const TaskDetailPage = () => {
                             </div>
                         )}
 
+                        {/* Collapsed state: a compact input that expands into the full
+                            editor on click, so the section stays quiet when idle. */}
+                        {canCreateTask && !notesError && !isAddingNote && (
+                            <button
+                                type="button"
+                                onClick={() => setIsAddingNote(true)}
+                                data-testid="note-composer-trigger"
+                                className="w-full text-left bg-slate-950 border border-slate-800 hover:border-blue-500/50 text-slate-500 rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
+                            >
+                                Add a note or comment...
+                            </button>
+                        )}
+
                         {isAddingNote && (
                             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 mb-4">
                                 <textarea
+                                    autoFocus
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     placeholder="Add a note or comment..."
@@ -400,11 +442,18 @@ const TaskDetailPage = () => {
                                 {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
                             </button>
                             <button
-                                onClick={() => setIsRescheduling(true)}
-                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50"
+                                onClick={() => canReschedule && setIsRescheduling(true)}
+                                disabled={!canReschedule}
+                                title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
+                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-700/60"
                             >
                                 Reschedule
                             </button>
+                            {isLocked && (
+                                <p className="text-[10px] text-slate-500 leading-snug pt-1" data-testid="task-locked-hint">
+                                    {TASK_LOCKED_HINT}
+                                </p>
+                            )}
                         </div>
                     </section>
                 </div>

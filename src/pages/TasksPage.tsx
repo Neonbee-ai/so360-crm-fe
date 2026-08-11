@@ -7,7 +7,7 @@ import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
+import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
 
@@ -67,6 +67,10 @@ const TasksPage = () => {
     const handleAssigneeChange = async (task: Task, newAssigneeId: string) => {
         const newAssignee = users.find(u => u.id === newAssigneeId);
         if (!newAssignee) return;
+        if (isTaskLocked(task.status)) {
+            toast.warning(TASK_LOCKED_HINT);
+            return;
+        }
 
         try {
             await crmService.updateTask(task.id, { assignee_id: newAssigneeId });
@@ -84,6 +88,11 @@ const TasksPage = () => {
 
         if (!canCurrentUserBeAssigned(currentUser, users)) {
             toast.error("You don't have permission to be assigned tasks");
+            return;
+        }
+
+        if (isTaskLocked(task.status)) {
+            toast.warning(TASK_LOCKED_HINT);
             return;
         }
 
@@ -280,7 +289,9 @@ const TasksPage = () => {
                     <select
                         value={task.assigned_to.id}
                         onChange={(e) => handleAssigneeChange(task, e.target.value)}
-                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1"
+                        disabled={isTaskLocked(task.status)}
+                        title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : undefined}
+                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {users.map(user => (
                             <option key={user.id} value={user.id} className="bg-slate-900 text-slate-300">
@@ -293,12 +304,14 @@ const TasksPage = () => {
                     {!isTaskAssignedToUser(task, currentUserId) && (
                         <button
                             onClick={() => handleQuickAssignToMe(task)}
-                            disabled={!canCurrentUserBeAssigned(currentUser, users)}
+                            disabled={!canCurrentUserBeAssigned(currentUser, users) || isTaskLocked(task.status)}
                             className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-600/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title={
-                                canCurrentUserBeAssigned(currentUser, users)
-                                    ? "Assign to me"
-                                    : "You don't have permission to be assigned tasks"
+                                isTaskLocked(task.status)
+                                    ? TASK_LOCKED_HINT
+                                    : canCurrentUserBeAssigned(currentUser, users)
+                                        ? "Assign to me"
+                                        : "You don't have permission to be assigned tasks"
                             }
                         >
                             <UserPlus className="w-4 h-4" />
