@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
 import { crmService } from '../services/crmService';
-import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection } from '../types/crm';
+import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
+import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
@@ -37,6 +38,10 @@ const QuoteDetailPage = () => {
     });
 
     const [quote, setQuote] = useState<Quote | null>(null);
+    // The linked customer record, resolved so the printed quotation can carry a
+    // complete "Quotation To" block (address, tax registration, contact) rather
+    // than the customer's name alone.
+    const [customer, setCustomer] = useState<Lead | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -46,6 +51,10 @@ const QuoteDetailPage = () => {
     const [title, setTitle] = useState('');
     const [notes, setNotes] = useState('');
     const [termsAndConditions, setTermsAndConditions] = useState('');
+    const [paymentTerms, setPaymentTerms] = useState('');
+    const [deliveryTerms, setDeliveryTerms] = useState('');
+    const [incoterm, setIncoterm] = useState('');
+    const [customerReference, setCustomerReference] = useState('');
     const [validUntil, setValidUntil] = useState('');
     const [lines, setLines] = useState<QuoteLine[]>([]);
     // Tracks raw string values while user is mid-typing in numeric fields (prevents Number() from swallowing "5." or "")
@@ -89,9 +98,23 @@ const QuoteDetailPage = () => {
         try {
             const data = await crmService.getQuoteById(id!);
             setQuote(data);
+            setCustomer(null);
+            if (data.customer_id) {
+                crmService
+                    .getLeadById(data.customer_id)
+                    .then((c) => setCustomer(c ?? null))
+                    .catch(() => {
+                        // Customer deleted or not visible — the quote still prints,
+                        // just without the expanded party block.
+                    });
+            }
             setTitle(data.title || '');
             setNotes(data.notes || '');
             setTermsAndConditions(data.terms_and_conditions || '');
+            setPaymentTerms(data.payment_terms || '');
+            setDeliveryTerms(data.delivery_terms || '');
+            setIncoterm(data.incoterm || '');
+            setCustomerReference(data.customer_reference || '');
             setValidUntil(data.valid_until ? data.valid_until.split('T')[0] : '');
             setLines((data.lines || []).map((l: any) => ({
                 ...l,
@@ -115,6 +138,10 @@ const QuoteDetailPage = () => {
                 title,
                 notes,
                 terms_and_conditions: termsAndConditions,
+                payment_terms: paymentTerms || undefined,
+                delivery_terms: deliveryTerms || undefined,
+                incoterm: incoterm || undefined,
+                customer_reference: customerReference || undefined,
                 valid_until: validUntil || undefined,
                 lines: lines.map(l => ({
                     item_id: l.item_id,
@@ -425,6 +452,7 @@ const QuoteDetailPage = () => {
                                         : undefined,
                                     tax_number: (currentOrg as any)?.tax_id,
                                 },
+                                customer,
                             }))}
                             className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
                         >
@@ -713,6 +741,73 @@ const QuoteDetailPage = () => {
                                 ) : (
                                     <p className="text-slate-300">{quote.notes || 'No notes'}</p>
                                 )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Payment Terms</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={paymentTerms}
+                                            onChange={(e) => setPaymentTerms(e.target.value)}
+                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="e.g. Net 30"
+                                        />
+                                    ) : (
+                                        <p className="text-slate-300">{quote.payment_terms || '—'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Customer Reference</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={customerReference}
+                                            onChange={(e) => setCustomerReference(e.target.value)}
+                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Buyer's RFQ / PO number"
+                                        />
+                                    ) : (
+                                        <p className="text-slate-300">{quote.customer_reference || '—'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Delivery Terms</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={deliveryTerms}
+                                            onChange={(e) => setDeliveryTerms(e.target.value)}
+                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="e.g. Ex-stock, 2-3 weeks from PO"
+                                        />
+                                    ) : (
+                                        <p className="text-slate-300">{quote.delivery_terms || '—'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">
+                                        Incoterm <span className="text-slate-500 font-normal">(Incoterms&reg; 2020)</span>
+                                    </label>
+                                    {isEditing ? (
+                                        <select
+                                            value={incoterm}
+                                            onChange={(e) => setIncoterm(e.target.value)}
+                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">Not specified</option>
+                                            {INCOTERMS_2020.map((t) => (
+                                                <option key={t.code} value={t.code}>{t.code} — {t.label}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <p className="text-slate-300">
+                                            {quote.incoterm
+                                                ? `${quote.incoterm} — ${INCOTERM_LABELS[quote.incoterm] ?? ''}`.trim()
+                                                : '—'}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-400 mb-1">Terms & Conditions</label>

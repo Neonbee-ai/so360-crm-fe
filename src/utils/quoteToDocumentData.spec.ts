@@ -114,3 +114,123 @@ describe('quoteToDocumentData > line items', () => {
         expect(d.line_items[0].description).toBe('Widget (SKU1)');
     });
 });
+
+// ── International ERP quotation standard ─────────────────────────────────────
+// A quotation must carry the buyer's identity and the commercial terms being
+// offered. Previously the buyer was a bare name and the standing T&C text was
+// passed as `payment_terms`, so a delivery or warranty clause printed to the
+// customer under a "Payment Terms" heading.
+describe('Given a quote with a resolved customer record', () => {
+  const customer = {
+    id: 'cust-1',
+    company_name: 'Acme Industries FZE',
+    contact_email: 'procurement@acme.example',
+    phone: '+971 4 555 0100',
+    tax_id: 'TRN-100200300',
+    custom_fields: { city: 'Dubai', country: 'United Arab Emirates', postal_code: '00000' },
+  } as any;
+
+  it('When mapped / Then the buyer block carries the customer tax registration', () => {
+    const doc = quoteToDocumentData(baseQuote(), { currency: 'AED', seller: SELLER, customer });
+    expect(doc.buyer.tax_number).toBe('TRN-100200300');
+  });
+
+  it('When mapped / Then the buyer block carries contact details, not just a name', () => {
+    const doc = quoteToDocumentData(baseQuote(), { currency: 'AED', seller: SELLER, customer });
+    expect(doc.buyer.email).toBe('procurement@acme.example');
+    expect(doc.buyer.phone).toBe('+971 4 555 0100');
+  });
+
+  it('When the address lives in custom_fields / Then it is composed into one line', () => {
+    const doc = quoteToDocumentData(baseQuote(), { currency: 'AED', seller: SELLER, customer });
+    expect(doc.buyer.address).toBe('Dubai, United Arab Emirates 00000');
+  });
+
+  it('When the customer record supplies a company name / Then it wins over the denormalized copy', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({ customer_name: 'Stale Name Ltd' }),
+      { currency: 'AED', seller: SELLER, customer },
+    );
+    expect(doc.buyer.name).toBe('Acme Industries FZE');
+  });
+});
+
+describe('Given no customer record could be resolved', () => {
+  it('When mapped / Then it still prints, falling back to the name on the quote', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({ customer_name: 'Fallback Ltd' }),
+      { currency: 'AED', seller: SELLER, customer: null },
+    );
+    expect(doc.buyer.name).toBe('Fallback Ltd');
+    expect(doc.buyer.address).toBeUndefined();
+    expect(doc.buyer.tax_number).toBeUndefined();
+  });
+});
+
+describe('Given a quote carrying commercial terms', () => {
+  const quote = baseQuote({
+    payment_terms: 'Net 30',
+    delivery_terms: 'Ex-stock, 2-3 weeks from PO',
+    incoterm: 'CIF',
+    customer_reference: 'RFQ-2026-0042',
+    terms_and_conditions: 'Prices exclude installation.',
+    notes: 'Volume pricing available above 500 units.',
+  });
+
+  it('When mapped / Then payment terms carry the payment obligation alone', () => {
+    const doc = quoteToDocumentData(quote, { currency: 'AED', seller: SELLER });
+    expect(doc.payment_terms).toBe('Net 30');
+  });
+
+  it('When mapped / Then delivery terms are their own field, not folded into payment terms', () => {
+    const doc = quoteToDocumentData(quote, { currency: 'AED', seller: SELLER });
+    expect(doc.delivery_terms).toBe('Ex-stock, 2-3 weeks from PO');
+    expect(doc.payment_terms).not.toContain('Ex-stock');
+  });
+
+  it('When mapped / Then the Incoterm is passed through for explicit display', () => {
+    const doc = quoteToDocumentData(quote, { currency: 'AED', seller: SELLER });
+    expect(doc.incoterm).toBe('CIF');
+  });
+
+  it("When mapped / Then the buyer's own reference prints as the PO reference", () => {
+    const doc = quoteToDocumentData(quote, { currency: 'AED', seller: SELLER });
+    expect(doc.po_reference).toBe('RFQ-2026-0042');
+  });
+
+  it('When mapped / Then T&C and notes both survive into the notes block', () => {
+    const doc = quoteToDocumentData(quote, { currency: 'AED', seller: SELLER });
+    expect(doc.notes).toContain('Prices exclude installation.');
+    expect(doc.notes).toContain('Volume pricing available above 500 units.');
+  });
+
+  it('When no terms are set at all / Then notes is undefined rather than an empty block', () => {
+    const doc = quoteToDocumentData(baseQuote(), { currency: 'AED', seller: SELLER });
+    expect(doc.notes).toBeUndefined();
+  });
+
+  it('When the T&C text used to be sent as payment_terms / Then that regression cannot recur', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({ terms_and_conditions: 'Governing law: DIFC.' }),
+      { currency: 'AED', seller: SELLER },
+    );
+    expect(doc.payment_terms).toBeUndefined();
+    expect(doc.notes).toContain('Governing law: DIFC.');
+  });
+});
+
+describe('Given line items with tax classification and unit of measure', () => {
+  it('When mapped / Then HSN/SAC and unit reach the renderer for per-line verification', () => {
+    const doc = quoteToDocumentData(
+      baseQuote({
+        lines: [{
+          description: 'Steel bracket', quantity: 10, unit_price: 25,
+          unit: 'pcs', hsn_code: '7308', tax_rate: 5,
+        } as any],
+      }),
+      { currency: 'AED', seller: SELLER },
+    );
+    expect(doc.line_items[0].hsn_code).toBe('7308');
+    expect(doc.line_items[0].unit).toBe('pcs');
+  });
+});

@@ -251,6 +251,10 @@ export interface QuoteLine {
     item_image_url?: string | null;
     description: string;
     quantity: number;
+    /** Unit of measure, e.g. "pcs", "kg", "hrs". */
+    unit?: string;
+    /** HSN/SAC tax classification code. */
+    hsn_code?: string;
     unit_price: number;
     discount_percent?: number;
     tax_rate?: number;
@@ -304,7 +308,16 @@ export interface Quote {
     discount_total: number;
     grand_total: number;
     notes?: string;
+    /** Standing legal terms text. */
     terms_and_conditions?: string;
+    /** When payment falls due, e.g. "Net 30". */
+    payment_terms?: string;
+    /** Delivery commitment in prose. */
+    delivery_terms?: string;
+    /** Incoterms 2020 rule governing cost/risk transfer. */
+    incoterm?: string;
+    /** Buyer's own RFQ/PO number. */
+    customer_reference?: string;
     valid_until?: string;
     created_by: User;
     approved_by?: User;

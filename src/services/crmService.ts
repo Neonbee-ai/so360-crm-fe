@@ -2331,6 +2331,11 @@ export const crmService = {
         title?: string;
         notes?: string;
         terms_and_conditions?: string;
+        /** Commercial terms, each a distinct obligation (see crm-be migration 047). */
+        payment_terms?: string;
+        delivery_terms?: string;
+        incoterm?: string;
+        customer_reference?: string;
         valid_until?: string;
         lines: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
     }): Promise<any> {
@@ -2341,6 +2346,11 @@ export const crmService = {
         title?: string;
         notes?: string;
         terms_and_conditions?: string;
+        /** Commercial terms, each a distinct obligation (see crm-be migration 047). */
+        payment_terms?: string;
+        delivery_terms?: string;
+        incoterm?: string;
+        customer_reference?: string;
         valid_until?: string;
         lines?: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
     }): Promise<any> {
