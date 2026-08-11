@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventBus } from '@so360/event-bus';
 import { useActivity, useShell } from '@so360/shell-context';
 import {
-    ChevronLeft, Calendar, DollarSign, Clock, MessageSquare,
+    Calendar, DollarSign, Clock, MessageSquare,
     AtSign, Phone, FileText, Plus, CheckCircle2, User as UserIcon, Users,
     Tag, Edit2, Trash2, X, Download, UploadCloud, FileIcon, File,
     ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature
@@ -19,6 +19,7 @@ import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
+import DetailBackLink from '../components/common/DetailBackLink';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls';
 
@@ -481,10 +482,7 @@ const DealDetailPage = () => {
 
             <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
-                    <button onClick={() => navigate('/crm/pipeline')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group">
-                        <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                        Back to Pipeline
-                    </button>
+                    <DetailBackLink fallbackTo="/crm/pipeline" label="Back to Pipeline" />
                     {isRefreshing && (
                         <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
                             <Loader2 size={10} className="animate-spin" /> Syncing...

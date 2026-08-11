@@ -473,3 +473,99 @@ describe('SettingsPage BDD', () => {
     });
   });
 });
+
+// ── Inline stage rename: keyboard contract ───────────────────────────────────
+// Regression cover for "Inline stage name edit does not save when pressing Enter":
+// the input had onChange only — no key handling at all — so Enter appeared dead
+// and the rename survived only if the user happened to hit the Save button.
+describe('Given a pipeline stage is being renamed inline', () => {
+  const stageInput = (name: string) =>
+    Array.from(document.querySelectorAll('input[placeholder="Stage Name"]')).find(
+      (el) => (el as HTMLInputElement).value === name,
+    ) as HTMLInputElement;
+
+  beforeEach(() => {
+    mockGetSettings.mockReset();
+    mockUpdateSettings.mockReset();
+    mockGetSettings.mockResolvedValue(structuredClone(mockSettings));
+    mockUpdateSettings.mockResolvedValue({});
+  });
+
+  it('When Enter is pressed / Then the rename is saved immediately', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'Stage 6' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalled());
+    const saved = mockUpdateSettings.mock.calls[0][0];
+    expect(saved.deal_stages.map((s: any) => s.name)).toContain('Stage 6');
+  });
+
+  it('When Enter is pressed / Then edit mode is left (the field loses focus)', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    input.focus();
+    fireEvent.change(input, { target: { value: 'Stage 6' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(document.activeElement).not.toBe(input));
+  });
+
+  it('When Enter is pressed / Then exactly one save is issued, not one per handler', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'Stage 6' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalledTimes(1));
+  });
+
+  it('When Escape is pressed / Then the edit is reverted and nothing is saved', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'Scrapped name' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+    expect(mockUpdateSettings).not.toHaveBeenCalled();
+  });
+
+  it('When the field is blurred after a change / Then click-outside still saves, as before', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'Stage 6' } });
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalledTimes(1));
+  });
+
+  it('When the field is blurred without any edit / Then no needless save is issued', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mockUpdateSettings).not.toHaveBeenCalled();
+  });
+});

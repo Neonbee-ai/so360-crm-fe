@@ -24,6 +24,7 @@ import {
 import { Lead, Activity as ActivityType, Deal, Task, User as CrmUser, SourceTypeOption } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { useCRMFormatters } from '../../utils/formatters';
+import { formatFieldValue, visibleMetaEntries, EMPTY_VALUE } from '../../utils/fieldPresentation';
 
 type PanelTab = 'overview' | 'timeline' | 'sales' | 'tasks' | 'marketing' | 'audit';
 
@@ -125,6 +126,42 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
   const [users, setUsers] = useState<CrmUser[]>([]);
   const [partners, setPartners] = useState<Lead[]>([]);
   const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
+  // The lead this record was merged into, resolved so the drawer can show a name
+  // and a working link rather than the bare UUID stored in meta_data.
+  const [mergedIntoLead, setMergedIntoLead] = useState<Lead | null>(null);
+
+  const meta = (lead?.custom_fields ?? {}) as Record<string, unknown>;
+  const mergedInto = typeof meta.merged_into === 'string' ? meta.merged_into : '';
+
+  useEffect(() => {
+    setMergedIntoLead(null);
+    if (!mergedInto) return;
+    let cancelled = false;
+    crmService
+      .getLeadById(mergedInto)
+      .then((target) => {
+        if (!cancelled && target) setMergedIntoLead(target);
+      })
+      .catch(() => {
+        // Target deleted or not visible to this user — fall back to plain text.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mergedInto]);
+
+  const mergedIntoName =
+    mergedIntoLead?.company_name ||
+    mergedIntoLead?.contact_name ||
+    (mergedIntoLead ? 'Merged record' : 'Merged record (no longer available)');
+
+  const mergedAtDisplay = formatFieldValue(meta.merged_at, {
+    formatDate: formatters.formatDate,
+  });
+
+  const additionalFields = visibleMetaEntries(meta, {
+    formatDate: formatters.formatDate,
+  });
 
   useEffect(() => {
     if (lead) setTab('overview');
@@ -444,22 +481,45 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onD
                     )}
                   </div>
 
+                  {/* Merge provenance — resolved to a name and linked, never the
+                      raw UUID/ISO pair that used to fall out of the generic dump. */}
+                  {mergedInto && (
+                    <div className="mb-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        Merge History
+                      </p>
+                      <div className="flex items-start gap-2 py-1.5">
+                        <span className="text-slate-500 mt-0.5"><ShieldCheck size={14} /></span>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-slate-500">Merged Into</p>
+                          {mergedIntoLead ? (
+                            <button
+                              type="button"
+                              onClick={() => onNavigate(mergedIntoLead)}
+                              className="text-sm font-semibold text-blue-400 hover:text-blue-300 hover:underline text-left transition-colors"
+                            >
+                              {mergedIntoName}
+                            </button>
+                          ) : (
+                            <p className="text-sm font-semibold text-slate-200">{mergedIntoName}</p>
+                          )}
+                        </div>
+                      </div>
+                      {mergedAtDisplay !== EMPTY_VALUE && (
+                        <InfoRow icon={<Clock size={14} />} label="Merged At" value={mergedAtDisplay} />
+                      )}
+                    </div>
+                  )}
+
                   {/* Custom fields */}
-                  {lead.custom_fields && Object.keys(lead.custom_fields).length > 0 && (
+                  {additionalFields.length > 0 && (
                     <div className="mb-4">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                         Additional Fields
                       </p>
-                      {Object.entries(lead.custom_fields)
-                        .filter(([key]) => !['city', 'state', 'country', 'industry', 'website', 'tags', 'priority', 'deal_value'].includes(key))
-                        .map(([key, val]) => (
-                          <InfoRow
-                            key={key}
-                            icon={<Star size={14} />}
-                            label={key.replace(/_/g, ' ')}
-                            value={String(val)}
-                          />
-                        ))}
+                      {additionalFields.map(({ key, label, value }) => (
+                        <InfoRow key={key} icon={<Star size={14} />} label={label} value={value} />
+                      ))}
                     </div>
                   )}
                 </div>

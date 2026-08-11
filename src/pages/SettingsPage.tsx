@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
@@ -86,6 +86,8 @@ const SettingsPage = () => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    // Value each stage-name field held when it gained focus, so Escape can revert it.
+    const stageNameOnFocus = useRef<Record<number, string>>({});
 
     const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
     const [newSourceLabel, setNewSourceLabel] = useState('');
@@ -335,9 +337,47 @@ const SettingsPage = () => {
 
     const updateStageName = (idx: number, name: string) => {
         if (!settings) return;
-        const newStages = [...settings.deal_stages];
-        newStages[idx].name = name;
+        // `deal_stages[idx]` was mutated in place, so the pre-edit value was gone
+        // by the time Escape could restore it. Replace the object instead.
+        const newStages = settings.deal_stages.map((s, i) => (i === idx ? { ...s, name } : s));
         setSettings({ ...settings, deal_stages: newStages });
+    };
+
+    /**
+     * Inline-edit keyboard contract for a pipeline stage name:
+     *   Enter  → commit (persist) and leave edit mode
+     *   Escape → revert to the value the field held on focus, and leave edit mode
+     * Blur still commits, so the previous click-outside behaviour is preserved
+     * rather than replaced.
+     */
+    const handleStageNameKeyDown = (
+        e: React.KeyboardEvent<HTMLInputElement>,
+        idx: number,
+    ) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // Drop the focus snapshot first so the blur handler below treats this
+            // as already-committed and doesn't fire a second save.
+            delete stageNameOnFocus.current[idx];
+            e.currentTarget.blur();
+            handleSave();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            const original = stageNameOnFocus.current[idx];
+            if (original !== undefined) updateStageName(idx, original);
+            // Drop the snapshot so the blur that follows doesn't save the revert.
+            delete stageNameOnFocus.current[idx];
+            e.currentTarget.blur();
+        }
+    };
+
+    /** Commit on click-outside, but only when the name actually changed. */
+    const handleStageNameBlur = (idx: number) => {
+        const original = stageNameOnFocus.current[idx];
+        const current = settings?.deal_stages[idx]?.name;
+        delete stageNameOnFocus.current[idx];
+        if (original === undefined || original === current) return;
+        handleSave();
     };
 
     const addSource = () => {
@@ -462,6 +502,9 @@ const SettingsPage = () => {
                                                 type="text"
                                                 value={stage.name}
                                                 onChange={(e) => updateStageName(idx, e.target.value)}
+                                                onFocus={() => { stageNameOnFocus.current[idx] = stage.name; }}
+                                                onKeyDown={(e) => handleStageNameKeyDown(e, idx)}
+                                                onBlur={() => handleStageNameBlur(idx)}
                                                 placeholder="Stage Name"
                                                 className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300 placeholder:text-slate-500"
                                             />

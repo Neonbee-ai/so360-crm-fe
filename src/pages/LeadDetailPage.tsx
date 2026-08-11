@@ -20,6 +20,7 @@ import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
+import DetailBackLink from '../components/common/DetailBackLink';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
@@ -388,10 +389,7 @@ const LeadDetailPage = () => {
     return (
         <div className="p-8">
             <header className="mb-8">
-                <button onClick={() => navigate(backRoute)} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    {backLabel}
-                </button>
+                <DetailBackLink fallbackTo={backRoute} label={backLabel} className="mb-4" />
                 <div className="flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-3 mb-2 relative">

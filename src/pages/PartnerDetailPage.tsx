@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-    ChevronLeft, Mail, Phone, Edit2, Loader2, Check, X,
+    Mail, Phone, Edit2, Loader2, Check, X,
     BarChart2, DollarSign, Trophy, MapPin, Percent, Users, User,
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
@@ -11,6 +11,7 @@ import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
+import DetailBackLink from '../components/common/DetailBackLink';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -266,10 +267,7 @@ const PartnerDetailPage = () => {
 
             {/* Header */}
             <header className="mb-8">
-                <button onClick={() => navigate('/crm/partners')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    Back to Partners
-                </button>
+                <DetailBackLink fallbackTo="/crm/partners" label="Back to Partners" className="mb-4" />
                 <div className="flex items-start justify-between">
                     <div>
                         <div className="flex items-center gap-3 mb-1">

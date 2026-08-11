@@ -9,6 +9,7 @@ const mockGetActivities = vi.fn();
 const mockGetUsers = vi.fn();
 const mockGetPartners = vi.fn();
 const mockGetSourceTypes = vi.fn();
+const mockGetLeadById = vi.fn();
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
@@ -17,6 +18,7 @@ vi.mock('../../services/crmService', () => ({
     getActivitiesByLeadIdPaginated: (...a: any[]) => mockGetActivities(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     getPartners: (...a: any[]) => mockGetPartners(...a),
+    getLeadById: (...a: any[]) => mockGetLeadById(...a),
   },
   settingsApi: {
     sourceTypes: {
@@ -27,7 +29,10 @@ vi.mock('../../services/crmService', () => ({
 
 vi.mock('../../utils/formatters', () => ({
   useCRMFormatters: () => ({
-    formatDate: (d: string) => new Date(d).toISOString().slice(0, 10),
+    formatDate: (d: string, options: any = {}) =>
+      options.hour
+        ? `${new Date(d).toISOString().slice(0, 10)} ${new Date(d).toISOString().slice(11, 16)}`
+        : new Date(d).toISOString().slice(0, 10),
     formatCurrency: (v: number) => `$${v}`,
   }),
 }));
@@ -69,6 +74,7 @@ beforeEach(() => {
   mockGetUsers.mockResolvedValue([]);
   mockGetPartners.mockResolvedValue([]);
   mockGetSourceTypes.mockResolvedValue([]);
+  mockGetLeadById.mockResolvedValue(undefined);
 });
 
 describe('LeadDetailPanel — tabs', () => {
@@ -314,5 +320,78 @@ describe('LeadDetailPanel — relational field resolution (Marketing tab)', () =
     // "Website Form" also appears in the always-visible header status row, so
     // there are two matches once the Marketing tab's own Source row mounts.
     expect(screen.getAllByText('Website Form').length).toBeGreaterThan(0);
+  });
+});
+
+// ── Quick Overview data quality ──────────────────────────────────────────────
+// Regression cover for "Lead Quick Overview shows UUIDs, ISO timestamps and raw
+// database values". The drawer dumped every key of the raw meta_data bucket
+// through String(val), so the merge flow's internal bookkeeping leaked to users.
+describe('Given a lead that was merged into another record', () => {
+  const MERGED_ID = 'c4deff86-ba44-43b0-9013-4d7965298514';
+  const mergedLead = makeLead({
+    id: 'lead-merged',
+    custom_fields: {
+      merged_into: MERGED_ID,
+      merged_at: '2026-07-31T14:05:12.625Z',
+      merged_by: 'a1b2c3d4-0000-4000-8000-000000000000',
+      preferred_contact_method: 'Email',
+    },
+  } as any);
+
+  it('When the panel renders / Then no UUID is visible anywhere', async () => {
+    mockGetLeadById.mockResolvedValue(makeLead({ id: MERGED_ID, company_name: 'Apple Inc' }));
+    render_(mergedLead);
+    await waitFor(() => expect(screen.getByText('Merged Into')).toBeInTheDocument());
+    expect(document.body.textContent).not.toContain(MERGED_ID);
+    expect(document.body.textContent).not.toContain('a1b2c3d4-0000-4000-8000-000000000000');
+  });
+
+  it('When the merge target resolves / Then its business name is shown instead of the id', async () => {
+    mockGetLeadById.mockResolvedValue(makeLead({ id: MERGED_ID, company_name: 'Apple Inc' }));
+    render_(mergedLead);
+    await waitFor(() => expect(screen.getByText('Apple Inc')).toBeInTheDocument());
+  });
+
+  it('When the merge target is clicked / Then it navigates to that record', async () => {
+    const onNavigate = vi.fn();
+    mockGetLeadById.mockResolvedValue(makeLead({ id: MERGED_ID, company_name: 'Apple Inc' }));
+    render_(mergedLead, { onNavigate });
+    await waitFor(() => expect(screen.getByText('Apple Inc')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Apple Inc'));
+    expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ id: MERGED_ID }));
+  });
+
+  it('When the merge target no longer exists / Then it degrades to readable text, never the id', async () => {
+    mockGetLeadById.mockResolvedValue(undefined);
+    render_(mergedLead);
+    await waitFor(() => expect(screen.getByText('Merged Into')).toBeInTheDocument());
+    expect(screen.getByText(/no longer available/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain(MERGED_ID);
+  });
+
+  it('When the merge timestamp is shown / Then it is formatted, not a raw ISO string', async () => {
+    mockGetLeadById.mockResolvedValue(makeLead({ id: MERGED_ID, company_name: 'Apple Inc' }));
+    render_(mergedLead);
+    await waitFor(() => expect(screen.getByText('Merged At')).toBeInTheDocument());
+    expect(document.body.textContent).not.toContain('2026-07-31T14:05:12.625Z');
+    expect(screen.getByText('2026-07-31 14:05')).toBeInTheDocument();
+  });
+
+  it('When the Additional Fields list renders / Then system merge keys are excluded but user fields survive', async () => {
+    mockGetLeadById.mockResolvedValue(makeLead({ id: MERGED_ID, company_name: 'Apple Inc' }));
+    render_(mergedLead);
+    await waitFor(() => expect(screen.getByText('Additional Fields')).toBeInTheDocument());
+    expect(screen.getByText('Preferred Contact Method')).toBeInTheDocument();
+    expect(screen.queryByText('Merged By')).not.toBeInTheDocument();
+  });
+});
+
+describe('Given a lead whose meta_data holds only system keys', () => {
+  it('When the panel renders / Then the Additional Fields block is omitted entirely', async () => {
+    mockGetLeadById.mockResolvedValue(undefined);
+    render_(makeLead({ custom_fields: { merged_at: '2026-07-31T14:05:12.625Z' } } as any));
+    await waitFor(() => expect(screen.getAllByText('Acme Corp').length).toBeGreaterThan(0));
+    expect(screen.queryByText('Additional Fields')).not.toBeInTheDocument();
   });
 });

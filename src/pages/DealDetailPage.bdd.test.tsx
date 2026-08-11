@@ -444,7 +444,7 @@ describe('DealDetailPage', () => {
       mockGetDealById.mockResolvedValue(null);
       render(<DealDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText('Back to Pipeline')).toBeInTheDocument();
+        expect(screen.getAllByText('Back to Pipeline')[0]).toBeInTheDocument();
       });
     });
 
@@ -452,8 +452,8 @@ describe('DealDetailPage', () => {
       mockGetDealById.mockResolvedValue(null);
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Back to Pipeline')).toBeInTheDocument());
-      await user.click(screen.getByText('Back to Pipeline'));
+      await waitFor(() => expect(screen.getAllByText('Back to Pipeline')[0]).toBeInTheDocument());
+      await user.click(screen.getAllByText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });
@@ -463,7 +463,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByText('Back to Pipeline'));
+      await user.click(screen.getAllByText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });

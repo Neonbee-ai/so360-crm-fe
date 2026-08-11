@@ -748,3 +748,96 @@ describe('TaskModal', () => {
     });
   });
 });
+
+// ── Reminder time preservation ────────────────────────────────────────────────
+// Regression cover for "every reminder card shows 12:00 AM".
+describe('Given a reminder is being scheduled', () => {
+  it('When a date is picked as a To Do and the Type is then switched to Reminder / Then the value gains a time instead of submitting as midnight', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    // Pick the date first, while the Type is still the default To Do.
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    // Now switch to Reminder — this used to leave a bare YYYY-MM-DD in state.
+    fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
+
+    await waitFor(() => expect(datetimeInput()).toBeTruthy());
+    expect(datetimeInput().value).toBe(`${futureDate}T09:00`);
+  });
+
+  it('When the Type is switched back from Reminder to To Do / Then the time is dropped so the date input can display it', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
+    await waitFor(() => expect(datetimeInput()).toBeTruthy());
+    fireEvent.change(datetimeInput(), { target: { value: futureDatetime } });
+
+    fireEvent.change(selects()[0], { target: { value: 'TODO' } });
+    await waitFor(() => expect(datetimeInput()).toBeFalsy());
+    expect(dueInput().value).toBe(futureDate);
+  });
+
+  it('When a reminder is saved at 10:00 / Then the persisted instant carries that wall clock, not midnight', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up email/i), { target: { value: 'Call back' } });
+    fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
+    await waitFor(() => expect(datetimeInput()).toBeTruthy());
+    fireEvent.change(datetimeInput(), { target: { value: futureDatetime } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockCreateTask).toHaveBeenCalled());
+    const payload = mockCreateTask.mock.calls[0][0];
+    const saved = new Date(payload.due_date);
+    expect(saved.toISOString()).toBe(new Date(`${futureDate}T10:00:00`).toISOString());
+    expect(saved.getHours()).toBe(10);
+    expect(saved.getMinutes()).toBe(0);
+  });
+
+  it('When an existing reminder is reopened for edit / Then the editor shows the local wall clock it was saved with', async () => {
+    const savedInstant = new Date(`${futureDate}T10:00:00`).toISOString();
+    render(
+      <TaskModal
+        task={{ ...BASE_TASK, type: 'REMINDER', due_date: savedInstant } as any}
+        onClose={() => {}}
+        onSuccess={() => {}}
+      />,
+    );
+    await waitFor(() => expect(datetimeInput()).toBeTruthy());
+    expect(datetimeInput().value).toBe(futureDatetime);
+  });
+
+  it('When an existing reminder is saved again without touching the time / Then the instant does not drift', async () => {
+    const savedInstant = new Date(`${futureDate}T10:00:00`).toISOString();
+    render(
+      <TaskModal
+        task={{ ...BASE_TASK, type: 'REMINDER', due_date: savedInstant } as any}
+        onClose={() => {}}
+        onSuccess={() => {}}
+      />,
+    );
+    await waitFor(() => expect(datetimeInput()).toBeTruthy());
+
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1].due_date).toBe(savedInstant);
+  });
+
+  it('When a REMINDER somehow reaches submit with no time / Then it is rejected rather than stored at midnight', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    // Switch to REMINDER and strip the time back off, simulating stale state.
+    fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
+    await waitFor(() => expect(datetimeInput()).toBeTruthy());
+    fireEvent.change(datetimeInput(), { target: { value: futureDate } });
+
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockShowError).toHaveBeenCalled());
+    expect(mockCreateTask).not.toHaveBeenCalled();
+  });
+});

@@ -1,9 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
+import { toDatetimeLocalInputValue, toDateInputValue, inputValueToIso } from '../../utils/datetime';
 import { Task, TaskType, User, Lead, Deal } from '../../types/crm';
 import { toast } from '@so360/design-system';
 import { useShell, useNotify, useActivity } from '@so360/shell-context';
+
+/**
+ * Reshape the due-date value when the task Type flips between a date-only kind
+ * (To Do / Call / Email / Meeting) and Reminder, which needs a time.
+ *
+ * Without this the raw state leaked across the switch: picking a date as "To Do"
+ * and then choosing "Reminder" left a bare `YYYY-MM-DD` in state, which the
+ * `datetime-local` input cannot display and which submitted as midnight.
+ */
+export function reshapeDueDateForType(value: string, nextType: TaskType, defaultTime = '09:00'): string {
+    if (!value) return value;
+    const needsTime = nextType === 'REMINDER';
+    const hasTime = value.includes('T');
+    if (needsTime && !hasTime) return `${value}T${defaultTime}`;
+    if (!needsTime && hasTime) return value.split('T')[0];
+    return value;
+}
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -30,16 +48,17 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const [description, setDescription] = useState(task?.description || '');
     const [startDate, setStartDate] = useState(() => {
         if (!task?.start_date) return '';
-        return new Date(task.start_date).toISOString().split('T')[0];
+        return toDateInputValue(task.start_date);
     });
     const [dueDate, setDueDate] = useState(() => {
         if (!task?.due_date) return '';
-        // If it's a reminder, keep the time. task.due_date is ISO string.
-        // For input type="datetime-local", format is YYYY-MM-DDTHH:MM
-        if (task.type === 'REMINDER') {
-            return new Date(task.due_date).toISOString().slice(0, 16);
-        }
-        return new Date(task.due_date).toISOString().split('T')[0];
+        // A reminder is an instant, so the editor must show it in the viewer's
+        // own wall clock. `toISOString()` yields UTC, and feeding UTC into a
+        // `datetime-local` input (which is unconditionally local) displayed the
+        // wrong time and re-shifted it by the UTC offset on every save.
+        return task.type === 'REMINDER'
+            ? toDatetimeLocalInputValue(task.due_date)
+            : toDateInputValue(task.due_date);
     });
     const [status, setStatus] = useState<Task['status']>(task?.status || 'OPEN');
     const [type, setType] = useState<TaskType>(task?.type || 'TODO');
@@ -101,6 +120,13 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             toast.error('Please select a due date.');
             return;
         }
+        // A reminder without a time would be persisted at midnight and then read
+        // back as "12:00 AM" on every surface. Refuse it rather than store an
+        // instant the user never chose.
+        if (type === 'REMINDER' && !dueDate.includes('T')) {
+            toast.error('Please pick a date AND time for the reminder.');
+            return;
+        }
         const selectedDate = new Date(dueDate.includes('T') ? dueDate : dueDate + 'T00:00:00');
         const startOfToday = new Date(todayDate + 'T00:00:00');
         if (selectedDate < startOfToday) {
@@ -122,15 +148,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                 data.start_date = new Date(startDate + 'T00:00:00').toISOString();
             }
 
-            // Handle date formatting based on type
-            if (type === 'REMINDER') {
-                data.due_date = new Date(dueDate).toISOString();
-                if (reminderMinutes) {
-                    data.reminder_minutes_before = parseInt(reminderMinutes);
-                }
-            } else {
-                // For regular tasks, just the date part matters usually, but we store as ISO
-                data.due_date = new Date(dueDate).toISOString();
+            // A reminder carries the local wall clock the user picked; a plain task
+            // carries local midnight of the day they picked. Both are persisted as
+            // the corresponding UTC instant.
+            data.due_date = inputValueToIso(dueDate);
+            if (type === 'REMINDER' && reminderMinutes) {
+                data.reminder_minutes_before = parseInt(reminderMinutes);
             }
 
             if (leadId) data.lead_id = leadId;
@@ -203,7 +226,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                             <div className="relative">
                                 <select
                                     value={type}
-                                    onChange={(e) => setType(e.target.value as TaskType)}
+                                    onChange={(e) => {
+                                        const nextType = e.target.value as TaskType;
+                                        setType(nextType);
+                                        setDueDate(prev => reshapeDueDateForType(prev, nextType));
+                                    }}
                                     className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="TODO">To Do</option>
