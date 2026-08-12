@@ -29,6 +29,15 @@ const mockCrmService = vi.hoisted(() => ({
   getSettings: vi.fn(),
   getTasksByLeadId: vi.fn(),
   getUsers: vi.fn(),
+  // useLeadDetailLayoutPreferences persists column layout on an 800ms timer and
+  // chains .catch() on the result, so these must exist and return promises —
+  // otherwise the timer fires after the test ends and throws an uncaught
+  // "Cannot read properties of undefined" that fails the whole file.
+  gridColumns: {
+    get: vi.fn().mockResolvedValue(null),
+    save: vi.fn().mockResolvedValue(undefined),
+    reset: vi.fn().mockResolvedValue(undefined),
+  },
   logActivity: vi.fn(),
   updateLead: vi.fn(),
   updateNote: vi.fn(),
@@ -97,11 +106,13 @@ vi.mock('../hooks/useShellBridge', () => ({
   }),
 }));
 
+// Field names matter: the page renders first_name / company_name, not `name`.
 const mockLead = {
   id: 'lead-1',
-  name: 'Alice Kumar',
+  first_name: 'Alice',
+  last_name: 'Kumar',
+  company_name: 'Acme Corp',
   email: 'alice@acme.com',
-  company: 'Acme Corp',
   status: 'qualified',
   notes: [],
   documents: [],
@@ -182,7 +193,7 @@ describe('Given LeadDetailPage where only a SUPPORTING call is denied', () => {
     render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.queryAllByText(/alice kumar/i).length).toBeGreaterThan(0);
+      expect(screen.queryAllByText(/acme corp/i).length).toBeGreaterThan(0);
     });
     expect(screen.queryByText(/lead not found/i)).toBeNull();
     expect(screen.queryByText(/permission to view this lead/i)).toBeNull();
@@ -194,7 +205,7 @@ describe('Given LeadDetailPage where only a SUPPORTING call is denied', () => {
     render(<LeadDetailPage />);
 
     await waitFor(() => {
-      expect(screen.queryAllByText(/alice kumar/i).length).toBeGreaterThan(0);
+      expect(screen.queryAllByText(/acme corp/i).length).toBeGreaterThan(0);
     });
     expect(screen.queryByText(/lead not found/i)).toBeNull();
   });
