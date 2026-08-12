@@ -63,7 +63,7 @@ const DealDetailPage = () => {
     const activeDealTabRef = useRef<HTMLButtonElement | null>(null);
 
     useEffect(() => {
-        activeDealTabRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        activeDealTabRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     }, [activeTab]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
