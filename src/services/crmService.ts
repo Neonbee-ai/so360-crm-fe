@@ -1691,6 +1691,12 @@ export const crmService = {
         try {
             return await leadsApi.getById(id);
         } catch (error) {
+            // A permission denial is not "no such lead". Collapsing both into
+            // `undefined` is what made Lead Detail tell users a lead did not exist
+            // when they simply were not allowed to see it. Callers that only care
+            // about presence still get undefined for every other failure; the two
+            // chained callers (LeadDetailPanel, QuoteDetailPage) already catch.
+            if ((error as { status?: number })?.status === 403) throw error;
             return undefined;
         }
     },
