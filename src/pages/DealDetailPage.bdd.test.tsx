@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -421,8 +421,10 @@ describe('DealDetailPage', () => {
       expect(strip.parentElement?.className).not.toContain('overflow-hidden');
 
       // Every tab must still be reachable inside the scroll strip, not hidden.
+      const tabButtons = within(strip).getAllByRole('button');
+      const tabLabels = tabButtons.map((btn) => btn.textContent);
       ['Activity', 'Notes', 'Products', 'Additional Info', 'Calls'].forEach((label) => {
-        expect(screen.getByText(new RegExp(label))).toBeInTheDocument();
+        expect(tabLabels.some((text) => text?.includes(label))).toBe(true);
       });
     });
 
