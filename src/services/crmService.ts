@@ -280,7 +280,13 @@ class ApiClient {
                 } catch (e) {
                     errorMessage = text || errorMessage;
                 }
-                throw new Error(errorMessage);
+                // Carry the status on the Error. Without it every failure looked
+                // identical to callers, so a 403 was indistinguishable from a
+                // missing record — which is how an access denial ended up being
+                // rendered as "Lead not found."
+                const apiError = new Error(errorMessage) as Error & { status?: number };
+                apiError.status = response.status;
+                throw apiError;
             }
 
             try {

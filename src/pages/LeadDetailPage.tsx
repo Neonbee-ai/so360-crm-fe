@@ -138,6 +138,8 @@ const LeadDetailPage = () => {
     const [activeTab, setActiveTab] = useState<TabType>('activity');
     const [infoTab, setInfoTab] = useState<'profile' | 'additional' | 'business'>('profile');
     const [isLoading, setIsLoading] = useState(true);
+    /** True when the lead fetch returned 403 — distinct from the lead not existing. */
+    const [accessDenied, setAccessDenied] = useState(false);
     const [isEditingInfo, setIsEditingInfo] = useState(false);
     const [isChangingOwner, setIsChangingOwner] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
@@ -234,17 +236,32 @@ const LeadDetailPage = () => {
 
     const fetchLeadData = useCallback(async () => {
         try {
-            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData] = await Promise.all([
+            // Only the lead itself is critical. Everything else is supporting
+            // detail and degrades to an empty value.
+            //
+            // These nine calls used to share one Promise.all with no per-call
+            // catch, so a single 403 on any ONE of them — permitted or not —
+            // rejected the whole batch, left `lead` null, and rendered
+            // "Lead not found." A user who could read the lead perfectly well was
+            // told it did not exist because, say, they lacked partner access.
+            const [leadData, [dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData]] = await Promise.all([
+                // Critical: a failure here is the page's failure.
                 crmService.getLeadById(id),
-                crmService.getDealsByLeadId(id),
-                crmService.getTasksByLeadId(id),
-                crmService.getSettings(),
-                crmService.getUsers(),
-                crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0),
-                crmService.getPartners(),
-                settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
-                crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
+                // Supporting detail: each degrades independently.
+                Promise.all([
+                    crmService.getDealsByLeadId(id).catch(() => [] as any[]),
+                    crmService.getTasksByLeadId(id).catch(() => [] as any[]),
+                    crmService.getSettings().catch(() => ({} as any)),
+                    crmService.getUsers().catch(() => [] as any[]),
+                    crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0)
+                        .catch(() => ({ data: [] as any[], total: 0 })),
+                    crmService.getPartners().catch(() => [] as any[]),
+                    settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
+                    crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
+                ]),
             ]);
+
+            setAccessDenied(false);
             setLead(leadData || null);
             if (leadData) {
                 setLead({ ...leadData, activities: activitiesResult.data, documents: documentsData });
@@ -261,6 +278,10 @@ const LeadDetailPage = () => {
             setSourceTypes(fetchedSourceTypes);
         } catch (error) {
             console.error('Failed to fetch lead data', error);
+            // Report a permission failure as a permission failure. Reusing the
+            // "not found" state for this sent users hunting for a deleted record
+            // instead of asking an administrator for access.
+            setAccessDenied((error as { status?: number })?.status === 403);
         } finally {
             setIsLoading(false);
         }
@@ -306,6 +327,16 @@ const LeadDetailPage = () => {
             <div className="h-full flex items-center justify-center text-slate-500 gap-3">
                 <Loader2 className="animate-spin" />
                 <span>Loading lead workspace...</span>
+            </div>
+        );
+    }
+
+    if (accessDenied) {
+        return (
+            <div className="p-8 text-center text-slate-500">
+                <p className="text-slate-700 dark:text-slate-200 font-medium">You don't have permission to view this lead.</p>
+                <p className="mt-1 text-sm">Ask an administrator to grant your role access to CRM leads.</p>
+                <button onClick={() => navigate(backRoute)} className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</button>
             </div>
         );
     }
