@@ -9,6 +9,8 @@ const mockApproveQuote = vi.fn();
 const mockRejectQuote = vi.fn();
 const mockConvertQuoteToOrder = vi.fn();
 const mockGetStockAvailability = vi.fn();
+const mockSendQuote = vi.fn();
+const mockGetLeadById = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -19,6 +21,8 @@ vi.mock('../services/crmService', () => ({
     rejectQuote: (...a: any[]) => mockRejectQuote(...a),
     convertQuoteToOrder: (...a: any[]) => mockConvertQuoteToOrder(...a),
     getStockAvailability: (...a: any[]) => mockGetStockAvailability(...a),
+    sendQuote: (...a: any[]) => mockSendQuote(...a),
+    getLeadById: (...a: any[]) => mockGetLeadById(...a),
   },
 }));
 
@@ -487,5 +491,84 @@ describe('QuoteDetailPage', () => {
       await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());
       expect(screen.getByText('Edit')).toBeInTheDocument();
     });
+  });
+});
+
+// ── Emailing the quotation ───────────────────────────────────────────────────
+// The PDF is generated server-side, so this is a real file attachment — the
+// Print button only opens a print dialog and cannot produce one.
+describe('Given a saved quote', () => {
+  beforeEach(() => {
+    // customer_id is what triggers resolving the customer record — the nested
+    // `customer` object alone is not enough.
+    mockGetQuoteById.mockResolvedValue({ ...quoteData, customer_id: 'c1' });
+    mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme', contact_email: 'buyer@acme.example' });
+    mockSendQuote.mockReset();
+  });
+
+  const openDialog = async () => {
+    render(<QuoteDetailPage />);
+    await waitFor(() => expect(screen.getByText('Email to Customer')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Email to Customer'));
+    await waitFor(() => expect(screen.getByText('Email quotation to customer')).toBeInTheDocument());
+  };
+
+  it('When the page loads / Then an Email to Customer action is offered', async () => {
+    render(<QuoteDetailPage />);
+    await waitFor(() => expect(screen.getByText('Email to Customer')).toBeInTheDocument());
+  });
+
+  it('When the dialog opens / Then the recipient is prefilled from the linked customer', async () => {
+    await openDialog();
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe('buyer@acme.example'));
+  });
+
+  it('When sent / Then it calls the API with the recipient and the covering message', async () => {
+    mockSendQuote.mockResolvedValue({ sent: true, to: 'buyer@acme.example' });
+    await openDialog();
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'As discussed.' } });
+    fireEvent.click(screen.getByText('Send quotation'));
+
+    await waitFor(() => expect(mockSendQuote).toHaveBeenCalled());
+    expect(mockSendQuote.mock.calls[0][0]).toBe('q-1');
+    expect(mockSendQuote.mock.calls[0][1]).toEqual({
+      to: 'buyer@acme.example',
+      message: 'As discussed.',
+    });
+  });
+
+  it('When the recipient is overridden / Then that address is used instead', async () => {
+    mockSendQuote.mockResolvedValue({ sent: true, to: 'procurement@acme.example' });
+    await openDialog();
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'procurement@acme.example' } });
+    fireEvent.click(screen.getByText('Send quotation'));
+    await waitFor(() => expect(mockSendQuote.mock.calls[0][1].to).toBe('procurement@acme.example'));
+  });
+
+  it('When the recipient is blank / Then sending is disabled rather than failing server-side', async () => {
+    mockGetLeadById.mockResolvedValue({ id: 'c1', company_name: 'Acme' });
+    await openDialog();
+    const button = screen.getByText('Send quotation').closest('button')!;
+    expect(button).toBeDisabled();
+    expect(screen.getByText(/no linked customer email/i)).toBeInTheDocument();
+  });
+
+  it('When the backend refuses / Then its reason is shown rather than a generic failure', async () => {
+    mockSendQuote.mockResolvedValue({ sent: false, reason: 'No recipient: the quote has no linked customer email.' });
+    await openDialog();
+    fireEvent.click(screen.getByText('Send quotation'));
+    await waitFor(() => expect(mockSendQuote).toHaveBeenCalled());
+    // The dialog stays open so the user can correct the address.
+    expect(screen.getByText('Email quotation to customer')).toBeInTheDocument();
+  });
+
+  it('When the send succeeds / Then the dialog closes', async () => {
+    mockSendQuote.mockResolvedValue({ sent: true, to: 'buyer@acme.example' });
+    await openDialog();
+    fireEvent.click(screen.getByText('Send quotation'));
+    await waitFor(() => expect(screen.queryByText('Email quotation to customer')).not.toBeInTheDocument());
   });
 });

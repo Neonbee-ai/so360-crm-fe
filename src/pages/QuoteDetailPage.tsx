@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
 import DetailBackLink from '../components/common/DetailBackLink';
+import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
+import { toast, getErrorMessage } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -43,6 +45,12 @@ const QuoteDetailPage = () => {
     // complete "Quotation To" block (address, tax registration, contact) rather
     // than the customer's name alone.
     const [customer, setCustomer] = useState<Lead | null>(null);
+    // Emailing the quotation: the PDF is built server-side, so this is a real
+    // attachment rather than the print dialog the Print button opens.
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [sendTo, setSendTo] = useState('');
+    const [sendMessage, setSendMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -92,6 +100,37 @@ const QuoteDetailPage = () => {
             setStockMap(map);
         }).catch(() => {});
     }, [lines]);
+
+    const openSendModal = () => {
+        // Prefill with the address on file; the user can redirect it to a
+        // procurement mailbox, which is common for B2B quotes.
+        setSendTo(customer?.contact_email || '');
+        setSendMessage('');
+        setShowSendModal(true);
+    };
+
+    const handleSendQuote = async () => {
+        if (!id) return;
+        setIsSending(true);
+        try {
+            const result = await crmService.sendQuote(id, {
+                to: sendTo.trim() || undefined,
+                message: sendMessage.trim() || undefined,
+            });
+            if (result.sent) {
+                toast.success(`Quotation emailed to ${result.to}`);
+                setShowSendModal(false);
+            } else {
+                // The backend refuses rather than sending to nobody — surface its
+                // reason instead of a generic failure.
+                toast.error(result.reason || 'Could not send the quotation.');
+            }
+        } catch (err) {
+            toast.error(getErrorMessage(err, 'Could not send the quotation.'));
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     const fetchQuote = async () => {
         setIsLoading(true);
@@ -459,6 +498,15 @@ const QuoteDetailPage = () => {
                         >
                             <Printer className="w-4 h-4" />
                             Print Quote
+                        </button>
+                    )}
+                    {!isEditing && (
+                        <button
+                            onClick={openSendModal}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                            <Send className="w-4 h-4" />
+                            Email to Customer
                         </button>
                     )}
                 </div>
@@ -947,6 +995,65 @@ const QuoteDetailPage = () => {
                 </div>,
                 document.body
             )}
+
+            <Modal
+                isOpen={showSendModal}
+                onClose={() => !isSending && setShowSendModal(false)}
+                title="Email quotation to customer"
+                size="lg"
+            >
+                <div className="px-6 py-5 space-y-4">
+                    <p className="text-sm text-slate-400">
+                        The quotation PDF is generated and attached automatically.
+                    </p>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">Send to</label>
+                        <input
+                            type="email"
+                            value={sendTo}
+                            onChange={(e) => setSendTo(e.target.value)}
+                            placeholder="customer@example.com"
+                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {!customer?.contact_email && (
+                            <p className="mt-1 text-xs text-amber-400">
+                                This quote has no linked customer email — enter an address to send it.
+                            </p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">
+                            Message <span className="text-slate-500 font-normal">(optional)</span>
+                        </label>
+                        <textarea
+                            value={sendMessage}
+                            onChange={(e) => setSendMessage(e.target.value)}
+                            rows={3}
+                            placeholder="As discussed, please find our quotation attached."
+                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-700/50">
+                    <button
+                        type="button"
+                        onClick={() => setShowSendModal(false)}
+                        disabled={isSending}
+                        className="px-4 py-2 text-slate-400 hover:text-slate-50 transition-colors disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSendQuote}
+                        disabled={isSending || !sendTo.trim()}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Send className="w-4 h-4" />
+                        {isSending ? 'Sending…' : 'Send quotation'}
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 };

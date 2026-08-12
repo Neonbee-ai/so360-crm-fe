@@ -2373,6 +2373,23 @@ export const crmService = {
         return apiClient.patch<any>(`/quotes/${quoteId}`, data);
     },
 
+    /**
+     * Email the quotation to the customer with the PDF attached.
+     *
+     * The PDF is generated server-side — the browser print path cannot produce a
+     * file to attach, only a print dialog. Returns { sent, to } or, when there is
+     * no address to send to, { sent: false, reason }.
+     */
+    async sendQuote(
+        quoteId: string,
+        payload: { to?: string; message?: string } = {},
+    ): Promise<{ sent: boolean; to?: string; reason?: string }> {
+        return apiClient.post<{ sent: boolean; to?: string; reason?: string }>(
+            `/quotes/${quoteId}/send`,
+            payload,
+        );
+    },
+
     async deleteQuote(quoteId: string): Promise<void> {
         return apiClient.delete(`/quotes/${quoteId}`);
     },
