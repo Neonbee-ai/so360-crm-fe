@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventBus } from '@so360/event-bus';
 import { useActivity, useShell } from '@so360/shell-context';
@@ -60,6 +60,11 @@ const DealDetailPage = () => {
     const [dealStages, setDealStages] = useState<{ id: string, name: string }[]>([]);
 
     const [activeTab, setActiveTab] = useState<TabType>('activity');
+    const activeDealTabRef = useRef<HTMLButtonElement | null>(null);
+
+    useEffect(() => {
+        activeDealTabRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }, [activeTab]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -688,24 +693,31 @@ const DealDetailPage = () => {
 
                     {/* Navigation Tabs */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="flex border-b border-slate-800 bg-slate-900/50">
-                            {[
-                                { id: 'activity', name: 'Activity', icon: MessageSquare },
-                                { id: 'notes', name: 'Notes', icon: FileText },
-                                { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
-                                { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
-                                { id: 'products', name: 'Products', icon: Briefcase },
-                                { id: 'custom', name: 'Additional Info', icon: Tag },
-                                { id: 'calls', name: 'Calls', icon: Phone }
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as TabType)}
-                                    className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
-                                >
-                                    <tab.icon size={14} /> {tab.name}
-                                </button>
-                            ))}
+                        <div className="relative flex border-b border-slate-800 bg-slate-900/50 min-w-0">
+                            <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="deal-detail-tab-strip">
+                                {[
+                                    { id: 'activity', name: 'Activity', icon: MessageSquare },
+                                    { id: 'notes', name: 'Notes', icon: FileText },
+                                    { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
+                                    { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
+                                    { id: 'products', name: 'Products', icon: Briefcase },
+                                    { id: 'custom', name: 'Additional Info', icon: Tag },
+                                    { id: 'calls', name: 'Calls', icon: Phone }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        ref={activeTab === tab.id ? activeDealTabRef : undefined}
+                                        onClick={() => setActiveTab(tab.id as TabType)}
+                                        className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        <tab.icon size={14} /> {tab.name}
+                                    </button>
+                                ))}
+                            </div>
+                            <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 to-transparent"
+                            />
                         </div>
 
                         <div className="p-8">
