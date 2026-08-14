@@ -310,10 +310,17 @@ const DealDetailPage = () => {
         }
     };
 
+    // Both document flows hand Accounting the SAME deal context — the deal id
+    // (so the existing estimate/invoice form can load this deal's associated
+    // products as line items) plus the deal's customer. Nothing is duplicated
+    // here: the products are read from CRM by the form itself, so what the user
+    // sees is always the deal's current product list.
     const handleCreateEstimate = () => {
         if (!deal) return;
         const params = new URLSearchParams({ create: 'true' });
+        if (id) params.set('deal_id', id);
         if (deal.name) params.set('opportunity_ref', deal.name);
+        if (deal.partner_id) params.set('customer_id', deal.partner_id);
         if (deal.company_name) params.set('customer_name', deal.company_name);
         navigate(`/accounting/estimations?${params.toString()}`);
     };
@@ -323,6 +330,7 @@ const DealDetailPage = () => {
         const params = new URLSearchParams({ create: 'true' });
         if (id) params.set('deal_id', id);
         if (deal.name) params.set('deal_name', deal.name);
+        if (deal.partner_id) params.set('customer_id', deal.partner_id);
         if (deal.company_name) params.set('customer_name', deal.company_name);
         if (deal.value != null) params.set('amount', String(deal.value));
         navigate(`/accounting/invoices?${params.toString()}`);

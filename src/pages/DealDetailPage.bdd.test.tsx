@@ -869,6 +869,67 @@ describe('DealDetailPage', () => {
 });
 
 /**
+ * Deal context handed to Accounting.
+ *
+ * Both document flows must carry the SAME two things so the existing estimate /
+ * invoice form can pre-populate itself: the deal id (Accounting reads that
+ * deal's associated products as line items) and the deal's customer. Without
+ * the deal id on the estimate link, Create Estimate opens an empty form even
+ * though the deal already has products — the bug this covers.
+ */
+describe('DealDetailPage — deal context passed to Accounting document flows', () => {
+  const urlFor = (fragment: string) =>
+    mockNavigate.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes(fragment),
+    )?.[0] as string;
+
+  describe('Given a deal with a linked customer', () => {
+    beforeEach(() => {
+      mockGetDealById.mockResolvedValue(makeDeal({ partner_id: 'partner-99' }));
+    });
+
+    it('When Create Estimate is clicked / Then the deal id is passed so its products can be loaded', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Estimate'));
+      expect(urlFor('/accounting/estimations')).toContain('deal_id=deal-1');
+    });
+
+    it('When Create Estimate is clicked / Then the deal customer is passed by id, not just by name', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Estimate'));
+      expect(urlFor('/accounting/estimations')).toContain('customer_id=partner-99');
+    });
+
+    it('When Create Invoice is clicked / Then the deal customer is passed by id', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Invoice'));
+      const url = urlFor('/accounting/invoices');
+      expect(url).toContain('customer_id=partner-99');
+      expect(url).toContain('deal_id=deal-1');
+    });
+  });
+
+  describe('Given a deal with no linked customer record', () => {
+    it('Then customer_id is omitted and the existing name-only behaviour is kept', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ partner_id: null }));
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Estimate'));
+      const url = urlFor('/accounting/estimations');
+      expect(url).not.toContain('customer_id');
+      expect(url).toContain('customer_name=');
+    });
+  });
+});
+
+/**
  * Cover for the header/readability fixes reported on the CRM detail pages,
  * mirrored here so the Deal page cannot drift from the Lead page:
  * icon-only Delete beside a labelled primary CTA, a universal Back control,
