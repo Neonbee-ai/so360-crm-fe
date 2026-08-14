@@ -423,7 +423,93 @@ describe('CreateLeadModal', () => {
       const pin = screen.getByPlaceholderText('560001');
       fireEvent.change(pin, { target: { value: '5600' } });
       fireEvent.blur(pin);
-      await waitFor(() => expect(screen.getByText('Please enter a valid 6-digit PIN code.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Please enter a valid 6-digit PIN Code.')).toBeInTheDocument());
+    });
+  });
+
+  // ─── Country drives the postal-code rule ────────────────────────────────
+  //
+  // The first cut hard-coded India's 6-digit PIN, which would have rejected
+  // every US, UK or Gulf lead. The rule now follows the record's own country.
+  describe('Given the Country selector', () => {
+    const countrySelect = () => document.getElementById('lead-country') as HTMLSelectElement;
+
+    it('When the form opens / Then it defaults to India, as the forms always assumed', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      expect(countrySelect().value).toBe('IN');
+      expect(screen.getByText('PIN Code')).toBeInTheDocument();
+    });
+
+    it('When the country switches to the US / Then the field relabels to ZIP Code with its own example', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(countrySelect(), { target: { value: 'US' } });
+      await waitFor(() => expect(screen.getByText('ZIP Code')).toBeInTheDocument());
+      expect(screen.getByPlaceholderText('94105')).toBeInTheDocument();
+    });
+
+    it('When the country has no postal system / Then the field says so and accepts anything', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(countrySelect(), { target: { value: 'AE' } });
+      await waitFor(() =>
+        expect(screen.getByText('not used in United Arab Emirates')).toBeInTheDocument(),
+      );
+      const pin = screen.getByPlaceholderText('Not used');
+      fireEvent.change(pin, { target: { value: 'PO Box 1234' } });
+      fireEvent.blur(pin);
+      await waitFor(() => expect(screen.queryByText(/valid/i)).not.toBeInTheDocument());
+    });
+
+    it('When an alphanumeric country is chosen / Then letters are no longer stripped', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(countrySelect(), { target: { value: 'GB' } });
+      await waitFor(() => expect(screen.getByPlaceholderText('SW1A 1AA')).toBeInTheDocument());
+      const pin = screen.getByPlaceholderText('SW1A 1AA') as HTMLInputElement;
+      fireEvent.change(pin, { target: { value: 'SW1A 1AA' } });
+      expect(pin.value).toBe('SW1A 1AA');
+      fireEvent.blur(pin);
+      await waitFor(() =>
+        expect(screen.queryByText('Please enter a valid Postcode.')).not.toBeInTheDocument(),
+      );
+    });
+
+    it('When the country changes under a standing error / Then the error is re-judged, not left stale', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      const pin = screen.getByPlaceholderText('560001');
+      fireEvent.change(pin, { target: { value: '94105' } });
+      fireEvent.blur(pin);
+      await waitFor(() =>
+        expect(screen.getByText('Please enter a valid 6-digit PIN Code.')).toBeInTheDocument(),
+      );
+      fireEvent.change(countrySelect(), { target: { value: 'US' } });
+      await waitFor(() =>
+        expect(screen.queryByText('Please enter a valid 6-digit PIN Code.')).not.toBeInTheDocument(),
+      );
+    });
+
+    it('When a valid US lead is submitted / Then the country travels with the payload', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await fillValidForm();
+      fireEvent.change(countrySelect(), { target: { value: 'US' } });
+      fireEvent.change(screen.getByPlaceholderText('94105'), { target: { value: '94105' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(mockCreateLead).toHaveBeenCalled());
+      const payload = mockCreateLead.mock.calls[0][0];
+      expect(payload.country).toBe('US');
+      expect(payload.pin_code).toBe('94105');
+    });
+
+    it('When an Indian PIN is left on a US lead / Then Create Lead is blocked', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await fillValidForm();
+      fireEvent.change(screen.getByPlaceholderText('560001'), { target: { value: '560001' } });
+      await waitFor(() => expect(createButton()).toBeEnabled());
+      fireEvent.change(countrySelect(), { target: { value: 'US' } });
+      await waitFor(() => expect(createButton()).toBeDisabled());
     });
   });
 

@@ -611,9 +611,30 @@ describe('PartnersPage', () => {
             fireEvent.change(pin, { target: { value: '5600' } });
             fireEvent.blur(pin);
             await waitFor(() =>
-                expect(screen.getByText('Please enter a valid 6-digit PIN code.')).toBeInTheDocument(),
+                expect(screen.getByText('Please enter a valid 6-digit PIN Code.')).toBeInTheDocument(),
             );
             expect(screen.getByText('4/6 digits')).toBeInTheDocument();
+        });
+
+        it('When the country switches / Then the postal field follows that country s rule', async () => {
+            // Partners share the leads table and the same country-aware rule,
+            // so a US partner must not be held to India's 6-digit PIN.
+            const user = userEvent.setup();
+            await openModal(user);
+            const countrySelect = screen.getByDisplayValue('India') as HTMLSelectElement;
+            fireEvent.change(countrySelect, { target: { value: 'US' } });
+            await waitFor(() => expect(screen.getByPlaceholderText('94105')).toBeInTheDocument());
+            const zip = screen.getByPlaceholderText('94105');
+            fireEvent.change(zip, { target: { value: '560001' } });
+            fireEvent.blur(zip);
+            await waitFor(() =>
+                expect(screen.getByText('Please enter a valid ZIP Code.')).toBeInTheDocument(),
+            );
+            fireEvent.change(zip, { target: { value: '94105' } });
+            fireEvent.blur(zip);
+            await waitFor(() =>
+                expect(screen.queryByText('Please enter a valid ZIP Code.')).not.toBeInTheDocument(),
+            );
         });
 
         it('When an invalid city is submitted / Then the create API is never called', async () => {

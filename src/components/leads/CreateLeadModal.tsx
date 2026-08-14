@@ -20,8 +20,13 @@ import {
     validateFirstNameRequired,
     validateLastName,
     validatePinCode,
-    PIN_CODE_LENGTH,
 } from '../../utils/leadFieldValidation';
+import {
+    getPostalCodeRule,
+    countryOptions,
+    validatePostalCode,
+    DEFAULT_COUNTRY,
+} from '../../utils/postalCodeRules';
 import { describeApiError } from '../../utils/apiErrorMessage';
 import { RequiredMark } from '../common/RequiredMark';
 
@@ -30,8 +35,13 @@ import { RequiredMark } from '../common/RequiredMark';
  * enable/disable state on Create Lead all read from the same place. Before
  * this, only phone and email were checked and everything else — company,
  * names, address, city, PIN — reached the database unexamined.
+ *
+ * Built per country because the postal-code rule is the one field whose
+ * definition of "valid" depends on another answer on the form.
  */
-const FIELD_VALIDATORS: Record<string, (value: string) => string | null> = {
+const buildFieldValidators = (
+    country: string,
+): Record<string, (value: string) => string | null> => ({
     company_name: validateCompanyName,
     first_name: validateFirstNameRequired,
     last_name: validateLastName,
@@ -40,8 +50,8 @@ const FIELD_VALIDATORS: Record<string, (value: string) => string | null> = {
     alt_phone: validatePhone,
     address: validateAddress,
     city: validateCity,
-    pin_code: validatePinCode,
-};
+    pin_code: (v) => validatePostalCode(v, country),
+});
 
 type FieldErrors = Partial<Record<string, string | null>>;
 
@@ -83,6 +93,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         address: '',
         city: '',
         pin_code: '',
+        // Postal-code rules differ by country, so the record carries its own
+        // rather than inheriting a platform-wide assumption. `leads.country`
+        // already existed as a column; nothing was writing to it.
+        country: DEFAULT_COUNTRY,
         source: '',
         status: 'New' as any,
         owner_id: '',
@@ -135,9 +149,15 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const phoneError = errors.phone || null;
     const emailError = errors.contact_email || null;
 
+    const postalRule = getPostalCodeRule(formData.country);
+    const fieldValidators = React.useMemo(
+        () => buildFieldValidators(formData.country),
+        [formData.country],
+    );
+
     /** Re-run a field's rule and store the result. */
     const validateField = (name: string, value: string) => {
-        const message = FIELD_VALIDATORS[name]?.(value) ?? null;
+        const message = fieldValidators[name]?.(value) ?? null;
         setErrors(prev => ({ ...prev, [name]: message }));
         return message;
     };
@@ -148,7 +168,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
      */
     const handleChange = (name: string, value: string) => {
         setFormData(prev => ({ ...prev, [name]: value }));
-        setErrors(prev => (prev[name] ? { ...prev, [name]: FIELD_VALIDATORS[name]?.(value) ?? null } : prev));
+        setErrors(prev => (prev[name] ? { ...prev, [name]: fieldValidators[name]?.(value) ?? null } : prev));
     };
 
     const missingRequiredCustomField = customFieldDefs.some(
@@ -161,8 +181,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
      * itself tells the user whether the form is ready.
      */
     const isFormValid =
-        Object.keys(FIELD_VALIDATORS).every(
-            name => !FIELD_VALIDATORS[name]((formData as any)[name] || ''),
+        Object.keys(fieldValidators).every(
+            name => !fieldValidators[name]((formData as any)[name] || ''),
         ) && !missingRequiredCustomField;
 
     const isDuplicate = existingLeads.some(
@@ -178,12 +198,12 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         // Every field is re-run so the user sees the full set of corrections at
         // once, and focus lands on the first one that needs attention.
         const nextErrors: FieldErrors = {};
-        for (const name of Object.keys(FIELD_VALIDATORS)) {
-            nextErrors[name] = FIELD_VALIDATORS[name]((formData as any)[name] || '');
+        for (const name of Object.keys(fieldValidators)) {
+            nextErrors[name] = fieldValidators[name]((formData as any)[name] || '');
         }
         setErrors(nextErrors);
 
-        const firstInvalid = Object.keys(FIELD_VALIDATORS).find(name => nextErrors[name]);
+        const firstInvalid = Object.keys(fieldValidators).find(name => nextErrors[name]);
         if (firstInvalid) {
             fieldRefs.current[firstInvalid]?.focus();
             return;
@@ -397,6 +417,27 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     )}
                 </div>
 
+                <div className="space-y-1.5">
+                    <label htmlFor="lead-country" className="text-sm font-medium text-slate-400">Country</label>
+                    <select
+                        id="lead-country"
+                        value={formData.country}
+                        // Changing country changes what a valid postal code is,
+                        // so a standing error has to be re-judged against the
+                        // new rule rather than left over from the old one.
+                        onChange={(e) => {
+                            const country = e.target.value;
+                            setFormData(prev => ({ ...prev, country }));
+                            setErrors(prev => ({ ...prev, pin_code: validatePostalCode(formData.pin_code, country) }));
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
+                    >
+                        {countryOptions().map(c => (
+                            <option key={c.code} value={c.code}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label htmlFor="lead-city" className="text-sm font-medium text-slate-400">City</label>
@@ -418,24 +459,36 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </div>
                     <div className="space-y-1.5">
                         <label htmlFor="lead-pin-code" className="text-sm font-medium text-slate-400">
-                            Pin Code
-                            <span className="ml-2 text-xs font-normal text-slate-500">
-                                {formData.pin_code.replace(/\D/g, '').length}/{PIN_CODE_LENGTH} digits
-                            </span>
+                            {postalRule.label}
+                            {postalRule.digits && (
+                                <span className="ml-2 text-xs font-normal text-slate-500">
+                                    {formData.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
+                                </span>
+                            )}
+                            {!postalRule.pattern && (
+                                <span className="ml-2 text-xs font-normal text-slate-500">not used in {postalRule.name}</span>
+                            )}
                         </label>
                         <input
                             id="lead-pin-code"
                             ref={(el) => { fieldRefs.current.pin_code = el; }}
                             type="text"
-                            inputMode="numeric"
-                            maxLength={PIN_CODE_LENGTH}
+                            inputMode={postalRule.numericOnly ? 'numeric' : 'text'}
+                            maxLength={postalRule.maxLength}
                             value={formData.pin_code}
-                            // Typing a letter into a PIN field is never intended, so
-                            // drop it at the keystroke rather than reporting it back.
-                            onChange={(e) => handleChange('pin_code', e.target.value.replace(/\D/g, '').slice(0, PIN_CODE_LENGTH))}
+                            // Where the country's format is digits-only, a letter is
+                            // never intended — drop it at the keystroke rather than
+                            // reporting it back. Alphanumeric formats (UK, Canada)
+                            // must be left alone.
+                            onChange={(e) => handleChange(
+                                'pin_code',
+                                postalRule.numericOnly
+                                    ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength)
+                                    : e.target.value,
+                            )}
                             onBlur={(e) => validateField('pin_code', e.target.value)}
                             className={inputCls(!!errors.pin_code)}
-                            placeholder="560001"
+                            placeholder={postalRule.example}
                             aria-invalid={!!errors.pin_code}
                             aria-describedby={errors.pin_code ? 'lead-pin-code-error' : undefined}
                         />

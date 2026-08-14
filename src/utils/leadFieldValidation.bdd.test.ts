@@ -12,7 +12,6 @@ import {
     INVALID_COMPANY_MESSAGE,
     INVALID_ADDRESS_MESSAGE,
     INVALID_CITY_MESSAGE,
-    INVALID_PIN_CODE_MESSAGE,
 } from './leadFieldValidation';
 
 // ─── Company name ─────────────────────────────────────────────────────────
@@ -201,42 +200,61 @@ describe('validateCity', () => {
     });
 });
 
-// ─── PIN code ─────────────────────────────────────────────────────────────
+// ─── Postal code (country-aware) ──────────────────────────────────────────
+//
+// `validatePinCode` now delegates to the country table in postalCodeRules.ts;
+// these cover the delegation itself. The per-country formats are exercised in
+// postalCodeRules.bdd.test.ts.
 describe('validatePinCode', () => {
-    it('Given a 6-digit PIN / When validated / Then it is accepted', () => {
-        expect(validatePinCode('560001')).toBeNull();
-    });
+    const IN_MESSAGE = 'Please enter a valid 6-digit PIN Code.';
 
-    describe('Given the value QA filed', () => {
-        it('When the value is 98789kgjftd?^&( / Then it is rejected', () => {
-            expect(validatePinCode('98789kgjftd?^&(')).toBe(INVALID_PIN_CODE_MESSAGE);
-        });
-    });
-
-    describe('Given the wrong number of digits', () => {
-        it('When the PIN has 5 digits / Then it is rejected', () => {
-            expect(validatePinCode('56000')).toBe(INVALID_PIN_CODE_MESSAGE);
+    describe('Given an Indian lead', () => {
+        it('When the PIN is 6 digits / Then it is accepted', () => {
+            expect(validatePinCode('560001', 'IN')).toBeNull();
         });
 
-        it('When the PIN has 7 digits / Then it is rejected', () => {
-            expect(validatePinCode('5600011')).toBe(INVALID_PIN_CODE_MESSAGE);
+        it('When the value is the one QA filed / Then it is rejected', () => {
+            expect(validatePinCode('98789kgjftd?^&(', 'IN')).toBe(IN_MESSAGE);
         });
-    });
 
-    describe('Given non-numeric characters', () => {
-        it.each(['56000A', '560-01', '56 001'])(
+        it.each(['56000', '5600011', '56000A', '560-01', '56 001'])(
             'When the value is "%s" / Then it is rejected',
             (value) => {
-                expect(validatePinCode(value)).toBe(INVALID_PIN_CODE_MESSAGE);
+                expect(validatePinCode(value, 'IN')).toBe(IN_MESSAGE);
             },
         );
+
+        it('When a valid PIN is padded with spaces / Then it is accepted', () => {
+            expect(validatePinCode('  560001  ', 'IN')).toBeNull();
+        });
     });
 
-    it('Given a blank value / When validated / Then it is accepted (PIN is optional)', () => {
-        expect(validatePinCode('')).toBeNull();
+    describe('Given a lead in another country', () => {
+        it('When a US lead carries a 5-digit ZIP / Then it is accepted', () => {
+            expect(validatePinCode('94105', 'US')).toBeNull();
+        });
+
+        it('When a US lead carries an Indian 6-digit PIN / Then it is rejected', () => {
+            expect(validatePinCode('560001', 'US')).toBe('Please enter a valid ZIP Code.');
+        });
+
+        it('When a UK lead carries an alphanumeric postcode / Then it is accepted', () => {
+            expect(validatePinCode('SW1A 1AA', 'GB')).toBeNull();
+        });
     });
 
-    it('Given a padded valid PIN / When validated / Then surrounding spaces are ignored', () => {
-        expect(validatePinCode('  560001  ')).toBeNull();
+    describe('Given no country is known', () => {
+        it('When the value is blank / Then it is accepted (postal code is optional)', () => {
+            expect(validatePinCode('')).toBeNull();
+        });
+
+        it('When the value is a plausible code / Then the permissive fallback accepts it', () => {
+            expect(validatePinCode('560001')).toBeNull();
+            expect(validatePinCode('SW1A 1AA')).toBeNull();
+        });
+
+        it('When the value is the garbage QA filed / Then it is still rejected', () => {
+            expect(validatePinCode('98789kgjftd?^&(')).toBe('Please enter a valid Postal Code.');
+        });
     });
 });

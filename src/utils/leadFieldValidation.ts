@@ -15,6 +15,8 @@
  * direct API call cannot store what the form refuses.
  */
 
+import { validatePostalCode } from './postalCodeRules';
+
 export const NAME_MIN = 2;
 export const NAME_MAX = 60;
 export const COMPANY_MIN = 2;
@@ -23,7 +25,6 @@ export const ADDRESS_MIN = 5;
 export const ADDRESS_MAX = 200;
 export const CITY_MIN = 2;
 export const CITY_MAX = 80;
-export const PIN_CODE_LENGTH = 6;
 
 /**
  * Personal names: letters plus the joiners real names use. No digits.
@@ -47,7 +48,6 @@ export const INVALID_LAST_NAME_MESSAGE = 'Please enter a valid last name.';
 export const INVALID_COMPANY_MESSAGE = 'Please enter a valid company name.';
 export const INVALID_ADDRESS_MESSAGE = 'Please enter a valid address.';
 export const INVALID_CITY_MESSAGE = 'Please enter a valid city.';
-export const INVALID_PIN_CODE_MESSAGE = `Please enter a valid ${PIN_CODE_LENGTH}-digit PIN code.`;
 
 function check(
     value: string,
@@ -97,11 +97,11 @@ export function validateCity(value: string): string | null {
     return check(value, CITY_ALLOWED, CITY_MIN, CITY_MAX, INVALID_CITY_MESSAGE);
 }
 
-/** Digits only, exactly six — the Indian PIN format the forms are built around. */
-export function validatePinCode(value: string): string | null {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    return new RegExp(`^\\d{${PIN_CODE_LENGTH}}$`).test(trimmed)
-        ? null
-        : INVALID_PIN_CODE_MESSAGE;
+/**
+ * Postal code, judged against the record's own country rather than a fixed
+ * 6-digit Indian PIN. See `postalCodeRules.ts` for the table and the fallback
+ * applied when the country is unknown.
+ */
+export function validatePinCode(value: string, country?: string | null): string | null {
+    return validatePostalCode(value, country);
 }

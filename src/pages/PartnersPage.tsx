@@ -12,9 +12,13 @@ import {
     validateCompanyName,
     validateAddress,
     validateCity,
-    validatePinCode,
-    PIN_CODE_LENGTH,
 } from '../utils/leadFieldValidation';
+import {
+    getPostalCodeRule,
+    countryOptions,
+    validatePostalCode,
+    DEFAULT_COUNTRY,
+} from '../utils/postalCodeRules';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
@@ -47,6 +51,9 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         address: '',
         city: '',
         pin_code: '',
+        // Postal-code rules are country-specific; partners share the leads
+        // table, so this lands on the same `country` column.
+        country: DEFAULT_COUNTRY,
         partner_type: '',
         grading: '',
         area_served: [] as string[],
@@ -69,6 +76,8 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
     // fed the same downstream search, invoices and mail merges, so they get the
     // same rules rather than a second, looser standard.
     const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
+    const postalRule = getPostalCodeRule(form.country);
 
     useEffect(() => {
         Promise.all([
@@ -96,7 +105,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
             company_name: validateCompanyName(form.company_name),
             address: validateAddress(form.address),
             city: validateCity(form.city),
-            pin_code: validatePinCode(form.pin_code),
+            pin_code: validatePostalCode(form.pin_code, form.country),
         };
         setFieldErrors(nextFieldErrors);
         if (pErr || apErr || Object.values(nextFieldErrors).some(Boolean)) return;
@@ -113,6 +122,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 address: form.address || undefined,
                 city: form.city || undefined,
                 pin_code: form.pin_code || undefined,
+                country: form.country || undefined,
                 partner_type: form.partner_type,
                 grading: form.grading || undefined,
                 area_served: form.area_served.length ? form.area_served : undefined,
@@ -287,6 +297,18 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             {fieldErrors.address && <p className="text-rose-400 text-xs mt-1">{fieldErrors.address}</p>}
                         </div>
 
+                        {/* Country */}
+                        <div>
+                            <label className={labelCls}>Country</label>
+                            <select value={form.country}
+                                onChange={e => { const country = e.target.value; setForm(f => ({ ...f, country })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(form.pin_code, country) })); }}
+                                className={inputCls}>
+                                {countryOptions().map(c => (
+                                    <option key={c.code} value={c.code}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         {/* City + Pin Code */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
@@ -300,16 +322,21 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             </div>
                             <div>
                                 <label className={labelCls}>
-                                    Pin Code
-                                    <span className="ml-2 text-xs font-normal text-slate-500 normal-case">
-                                        {form.pin_code.replace(/\D/g, '').length}/{PIN_CODE_LENGTH} digits
-                                    </span>
+                                    {postalRule.label}
+                                    {postalRule.digits && (
+                                        <span className="ml-2 text-xs font-normal text-slate-500 normal-case">
+                                            {form.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
+                                        </span>
+                                    )}
+                                    {!postalRule.pattern && (
+                                        <span className="ml-2 text-xs font-normal text-slate-500 normal-case">not used in {postalRule.name}</span>
+                                    )}
                                 </label>
-                                <input type="text" inputMode="numeric" maxLength={PIN_CODE_LENGTH} value={form.pin_code}
-                                    onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, PIN_CODE_LENGTH); setForm(f => ({ ...f, pin_code: v })); setFieldErrors(p => ({ ...p, pin_code: validatePinCode(v) })); }}
-                                    onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePinCode(e.target.value) }))}
+                                <input type="text" inputMode={postalRule.numericOnly ? 'numeric' : 'text'} maxLength={postalRule.maxLength} value={form.pin_code}
+                                    onChange={e => { const v = postalRule.numericOnly ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength) : e.target.value; setForm(f => ({ ...f, pin_code: v })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(v, form.country) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(e.target.value, form.country) }))}
                                     aria-invalid={!!fieldErrors.pin_code}
-                                    className={inputCls} placeholder="560001" />
+                                    className={inputCls} placeholder={postalRule.example} />
                                 {fieldErrors.pin_code && <p className="text-rose-400 text-xs mt-1">{fieldErrors.pin_code}</p>}
                             </div>
                         </div>

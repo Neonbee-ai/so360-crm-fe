@@ -1679,6 +1679,8 @@ export const crmService = {
             address: (lead as any).address,
             city: (lead as any).city,
             pin_code: (lead as any).pin_code,
+            // Carries the postal-code rule the record was validated against.
+            country: (lead as any).country,
             status: lead.status || 'New',
             source: lead.source,
             owner_id: lead.owner_id || USER_ID,
