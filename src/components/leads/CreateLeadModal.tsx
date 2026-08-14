@@ -7,7 +7,42 @@ import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
 import { validatePhone, validatePhoneRequired } from '../../utils/phoneValidation';
 import { validateEmail, validateEmailRequired } from '../../utils/emailValidation';
+import {
+    validateAddress,
+    validateCity,
+    validateCompanyName,
+    validateFirstNameRequired,
+    validateLastName,
+    validatePinCode,
+    PIN_CODE_LENGTH,
+} from '../../utils/leadFieldValidation';
+import { describeApiError } from '../../utils/apiErrorMessage';
 import { RequiredMark } from '../common/RequiredMark';
+
+/**
+ * One rule per field, so the blur handler, the submit guard and the
+ * enable/disable state on Create Lead all read from the same place. Before
+ * this, only phone and email were checked and everything else — company,
+ * names, address, city, PIN — reached the database unexamined.
+ */
+const FIELD_VALIDATORS: Record<string, (value: string) => string | null> = {
+    company_name: validateCompanyName,
+    first_name: validateFirstNameRequired,
+    last_name: validateLastName,
+    contact_email: (v) => validateEmailRequired(v),
+    phone: (v) => validatePhoneRequired(v),
+    alt_phone: validatePhone,
+    address: validateAddress,
+    city: validateCity,
+    pin_code: validatePinCode,
+};
+
+type FieldErrors = Partial<Record<string, string | null>>;
+
+const INPUT_BASE =
+    'w-full bg-slate-950 border px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-slate-50 placeholder:text-slate-500';
+const inputCls = (hasError: boolean) =>
+    `${INPUT_BASE} ${hasError ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`;
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -68,18 +103,49 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             }
         };
         if (isOpen) {
-            setPhoneError(null);
-            setEmailError(null);
+            setErrors({});
+            setError(null);
             fetchSettings();
         }
     }, [isOpen]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [phoneError, setPhoneError] = useState<string | null>(null);
-    const [emailError, setEmailError] = useState<string | null>(null);
-    const phoneInputRef = useRef<HTMLInputElement>(null);
-    const emailInputRef = useRef<HTMLInputElement>(null);
+    const [errors, setErrors] = useState<FieldErrors>({});
+    const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+
+    const phoneError = errors.phone || null;
+    const emailError = errors.contact_email || null;
+
+    /** Re-run a field's rule and store the result. */
+    const validateField = (name: string, value: string) => {
+        const message = FIELD_VALIDATORS[name]?.(value) ?? null;
+        setErrors(prev => ({ ...prev, [name]: message }));
+        return message;
+    };
+
+    /**
+     * Typing should clear a standing error the moment the value becomes valid,
+     * but must not start nagging a field the user has not finished yet.
+     */
+    const handleChange = (name: string, value: string) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setErrors(prev => (prev[name] ? { ...prev, [name]: FIELD_VALIDATORS[name]?.(value) ?? null } : prev));
+    };
+
+    const missingRequiredCustomField = customFieldDefs.some(
+        f => f.required && !String(formData.custom_fields[f.id] ?? '').trim(),
+    );
+
+    /**
+     * Create Lead stays disabled until every mandatory field holds a valid
+     * value and no optional field is currently invalid — so the button state
+     * itself tells the user whether the form is ready.
+     */
+    const isFormValid =
+        Object.keys(FIELD_VALIDATORS).every(
+            name => !FIELD_VALIDATORS[name]((formData as any)[name] || ''),
+        ) && !missingRequiredCustomField;
 
     const isDuplicate = existingLeads.some(
         name => name && (name as string).toLowerCase() === (formData.company_name || '').toLowerCase() && (formData.company_name || '').length > 0
@@ -91,17 +157,17 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
         // Format errors are caught here too, not only on blur: a value pasted
         // and submitted without ever leaving the field must still be checked.
-        const emailValidErr = validateEmailRequired(formData.contact_email);
-        if (emailValidErr) {
-            setEmailError(emailValidErr);
-            emailInputRef.current?.focus();
-            return;
+        // Every field is re-run so the user sees the full set of corrections at
+        // once, and focus lands on the first one that needs attention.
+        const nextErrors: FieldErrors = {};
+        for (const name of Object.keys(FIELD_VALIDATORS)) {
+            nextErrors[name] = FIELD_VALIDATORS[name]((formData as any)[name] || '');
         }
+        setErrors(nextErrors);
 
-        const phoneValidErr = validatePhoneRequired(formData.phone);
-        if (phoneValidErr) {
-            setPhoneError(phoneValidErr);
-            phoneInputRef.current?.focus();
+        const firstInvalid = Object.keys(FIELD_VALIDATORS).find(name => nextErrors[name]);
+        if (firstInvalid) {
+            fieldRefs.current[firstInvalid]?.focus();
             return;
         }
 
@@ -121,7 +187,17 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             onSuccess();
             onClose();
         } catch (err) {
-            setError('Failed to create lead. Please try again.');
+            // A rejection the backend explains (a 4xx: validation, duplicate,
+            // quota, permission) carries a message worth showing verbatim.
+            // Flattening every one of those into "Failed to create lead" was
+            // exactly what left users with nothing to act on. Genuine
+            // server-side faults keep a generic, honest message.
+            setError(
+                describeApiError(
+                    err,
+                    "We couldn't create the lead due to a server error. Please try again.",
+                ),
+            );
         } finally {
             setIsSubmitting(false);
         }
@@ -145,14 +221,22 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 )}
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-400">Company Name</label>
+                    <label htmlFor="lead-company-name" className="text-sm font-medium text-slate-400">Company Name</label>
                     <input
+                        id="lead-company-name"
+                        ref={(el) => { fieldRefs.current.company_name = el; }}
                         type="text"
                         value={formData.company_name}
-                        onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                        onChange={(e) => handleChange('company_name', e.target.value)}
+                        onBlur={(e) => validateField('company_name', e.target.value)}
+                        className={inputCls(!!errors.company_name)}
                         placeholder="e.g. Acme Corp"
+                        aria-invalid={!!errors.company_name}
+                        aria-describedby={errors.company_name ? 'lead-company-name-error' : undefined}
                     />
+                    {errors.company_name && (
+                        <p id="lead-company-name-error" className="text-xs text-red-400 mt-1">{errors.company_name}</p>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -160,24 +244,38 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <label htmlFor="lead-first-name" className="text-sm font-medium text-slate-400">First Name <RequiredMark /></label>
                         <input
                             id="lead-first-name"
-                            required
-                            minLength={2}
+                            ref={(el) => { fieldRefs.current.first_name = el; }}
                             type="text"
                             value={formData.first_name}
-                            onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            onChange={(e) => handleChange('first_name', e.target.value)}
+                            onBlur={(e) => validateField('first_name', e.target.value)}
+                            className={inputCls(!!errors.first_name)}
                             placeholder="e.g. John"
+                            aria-required="true"
+                            aria-invalid={!!errors.first_name}
+                            aria-describedby={errors.first_name ? 'lead-first-name-error' : undefined}
                         />
+                        {errors.first_name && (
+                            <p id="lead-first-name-error" className="text-xs text-red-400 mt-1">{errors.first_name}</p>
+                        )}
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Last Name</label>
+                        <label htmlFor="lead-last-name" className="text-sm font-medium text-slate-400">Last Name</label>
                         <input
+                            id="lead-last-name"
+                            ref={(el) => { fieldRefs.current.last_name = el; }}
                             type="text"
                             value={formData.last_name}
-                            onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            onChange={(e) => handleChange('last_name', e.target.value)}
+                            onBlur={(e) => validateField('last_name', e.target.value)}
+                            className={inputCls(!!errors.last_name)}
                             placeholder="e.g. Doe"
+                            aria-invalid={!!errors.last_name}
+                            aria-describedby={errors.last_name ? 'lead-last-name-error' : undefined}
                         />
+                        {errors.last_name && (
+                            <p id="lead-last-name-error" className="text-xs text-red-400 mt-1">{errors.last_name}</p>
+                        )}
                     </div>
                 </div>
 
@@ -186,8 +284,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <label htmlFor="lead-contact-email" className="text-sm font-medium text-slate-400">Contact Email <RequiredMark /></label>
                         <input
                             id="lead-contact-email"
-                            ref={emailInputRef}
-                            required
+                            ref={(el) => { fieldRefs.current.contact_email = el; }}
                             /* `type="text"` deliberately: the browser's own popup
                                ("Please enter a part following '@'") pre-empted the
                                inline message and looked nothing like the rest of
@@ -196,15 +293,12 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             inputMode="email"
                             autoComplete="email"
                             value={formData.contact_email}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setFormData({ ...formData, contact_email: val });
-                                // Clear a standing error as soon as the value becomes
-                                // valid; don't nag mid-typing before it ever was.
-                                if (emailError) setEmailError(validateEmail(val));
-                            }}
-                            onBlur={(e) => setEmailError(validateEmail(e.target.value))}
-                            className={`w-full bg-slate-950 border ${emailError ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'} px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-slate-50 placeholder:text-slate-500`}
+                            onChange={(e) => handleChange('contact_email', e.target.value)}
+                            // Blur is the point the value is "finished", so an
+                            // empty optional-looking field is reported as a format
+                            // problem only once it holds something.
+                            onBlur={(e) => setErrors(prev => ({ ...prev, contact_email: validateEmail(e.target.value) }))}
+                            className={inputCls(!!emailError)}
                             placeholder="name@company.com"
                             aria-required="true"
                             aria-invalid={!!emailError}
@@ -218,69 +312,112 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <label htmlFor="lead-phone" className="text-sm font-medium text-slate-400">Phone <RequiredMark /></label>
                         <input
                             id="lead-phone"
-                            ref={phoneInputRef}
+                            ref={(el) => { fieldRefs.current.phone = el; }}
                             type="tel"
                             value={formData.phone}
                             onChange={(e) => {
                                 const val = e.target.value;
-                                setFormData({ ...formData, phone: val });
-                                setPhoneError(val.trim() ? validatePhone(val) : null);
+                                setFormData(prev => ({ ...prev, phone: val }));
+                                setErrors(prev => ({ ...prev, phone: val.trim() ? validatePhone(val) : null }));
                             }}
-                            className={`w-full bg-slate-950 border ${phoneError ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'} px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-slate-50 placeholder:text-slate-500`}
+                            onBlur={(e) => validateField('phone', e.target.value)}
+                            className={inputCls(!!phoneError)}
                             placeholder="+91 98765 43210"
                             aria-required="true"
                             aria-invalid={!!phoneError}
+                            aria-describedby={phoneError ? 'lead-phone-error' : undefined}
                         />
                         {phoneError && (
-                            <p className="text-xs text-red-400 mt-1">{phoneError}</p>
+                            <p id="lead-phone-error" className="text-xs text-red-400 mt-1">{phoneError}</p>
                         )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Alt. Phone</label>
+                        <label htmlFor="lead-alt-phone" className="text-sm font-medium text-slate-400">Alt. Phone</label>
                         <input
+                            id="lead-alt-phone"
+                            ref={(el) => { fieldRefs.current.alt_phone = el; }}
                             type="tel"
                             value={formData.alt_phone}
-                            onChange={(e) => setFormData({ ...formData, alt_phone: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            onChange={(e) => handleChange('alt_phone', e.target.value)}
+                            onBlur={(e) => validateField('alt_phone', e.target.value)}
+                            className={inputCls(!!errors.alt_phone)}
                             placeholder="+91 98765 43211"
+                            aria-invalid={!!errors.alt_phone}
+                            aria-describedby={errors.alt_phone ? 'lead-alt-phone-error' : undefined}
                         />
+                        {errors.alt_phone && (
+                            <p id="lead-alt-phone-error" className="text-xs text-red-400 mt-1">{errors.alt_phone}</p>
+                        )}
                     </div>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-400">Address</label>
+                    <label htmlFor="lead-address" className="text-sm font-medium text-slate-400">Address</label>
                     <input
+                        id="lead-address"
+                        ref={(el) => { fieldRefs.current.address = el; }}
                         type="text"
                         value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                        onChange={(e) => handleChange('address', e.target.value)}
+                        onBlur={(e) => validateField('address', e.target.value)}
+                        className={inputCls(!!errors.address)}
                         placeholder="Street / area"
+                        aria-invalid={!!errors.address}
+                        aria-describedby={errors.address ? 'lead-address-error' : undefined}
                     />
+                    {errors.address && (
+                        <p id="lead-address-error" className="text-xs text-red-400 mt-1">{errors.address}</p>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">City</label>
+                        <label htmlFor="lead-city" className="text-sm font-medium text-slate-400">City</label>
                         <input
+                            id="lead-city"
+                            ref={(el) => { fieldRefs.current.city = el; }}
                             type="text"
                             value={formData.city}
-                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            onChange={(e) => handleChange('city', e.target.value)}
+                            onBlur={(e) => validateField('city', e.target.value)}
+                            className={inputCls(!!errors.city)}
                             placeholder="Bangalore"
+                            aria-invalid={!!errors.city}
+                            aria-describedby={errors.city ? 'lead-city-error' : undefined}
                         />
+                        {errors.city && (
+                            <p id="lead-city-error" className="text-xs text-red-400 mt-1">{errors.city}</p>
+                        )}
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Pin Code</label>
+                        <label htmlFor="lead-pin-code" className="text-sm font-medium text-slate-400">
+                            Pin Code
+                            <span className="ml-2 text-xs font-normal text-slate-500">
+                                {formData.pin_code.replace(/\D/g, '').length}/{PIN_CODE_LENGTH} digits
+                            </span>
+                        </label>
                         <input
+                            id="lead-pin-code"
+                            ref={(el) => { fieldRefs.current.pin_code = el; }}
                             type="text"
+                            inputMode="numeric"
+                            maxLength={PIN_CODE_LENGTH}
                             value={formData.pin_code}
-                            onChange={(e) => setFormData({ ...formData, pin_code: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            // Typing a letter into a PIN field is never intended, so
+                            // drop it at the keystroke rather than reporting it back.
+                            onChange={(e) => handleChange('pin_code', e.target.value.replace(/\D/g, '').slice(0, PIN_CODE_LENGTH))}
+                            onBlur={(e) => validateField('pin_code', e.target.value)}
+                            className={inputCls(!!errors.pin_code)}
                             placeholder="560001"
+                            aria-invalid={!!errors.pin_code}
+                            aria-describedby={errors.pin_code ? 'lead-pin-code-error' : undefined}
                         />
+                        {errors.pin_code && (
+                            <p id="lead-pin-code-error" className="text-xs text-red-400 mt-1">{errors.pin_code}</p>
+                        )}
                     </div>
                 </div>
 
@@ -401,8 +538,13 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </button>
                     <button
                         type="submit"
-                        disabled={isSubmitting}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                        // Disabled — not hidden — until the form is complete and
+                        // valid: the button stays visible so users can see the
+                        // action exists, and Cancel is always reachable.
+                        disabled={isSubmitting || !isFormValid}
+                        aria-disabled={isSubmitting || !isFormValid}
+                        title={!isFormValid ? 'Complete all required fields with valid values to create the lead' : undefined}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
                     >
                         {isSubmitting ? 'Creating...' : 'Create Lead'}
                     </button>

@@ -15,6 +15,10 @@ import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { validateEmailRequired } from '../utils/emailValidation';
+import { validatePhone } from '../utils/phoneValidation';
+import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
+import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
@@ -142,6 +146,9 @@ const LeadDetailPage = () => {
     /** True when the lead fetch returned 403 — distinct from the lead not existing. */
     const [accessDenied, setAccessDenied] = useState(false);
     const [isEditingInfo, setIsEditingInfo] = useState(false);
+    // Editing a lead ran the same fields through no validation at all, so a
+    // name or phone rejected by Create Lead could still be saved from here.
+    const [editErrors, setEditErrors] = useState<Record<string, string | null>>({});
     const [isChangingOwner, setIsChangingOwner] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
@@ -441,7 +448,9 @@ const LeadDetailPage = () => {
             recordActivity({ eventType: 'lead.deleted', eventCategory: 'crm', description: `Deleted lead "${leadName}"`, resourceType: 'lead', resourceId: id }).catch(() => {});
             navigate(isCustomerDetailRoute ? '/crm/customers' : '/crm/leads');
         } catch (error: any) {
-            toast.error(error.message || 'Failed to delete lead');
+            // Never the raw router text ("Cannot DELETE /leads/<id>") — that is
+            // exactly what users were shown when this route did not exist.
+            toast.error(describeApiError(error, 'We couldn’t delete this lead. Please try again.'));
             setIsDeleting(false);
         }
     };
@@ -593,6 +602,20 @@ const LeadDetailPage = () => {
                                 <button
                                     onClick={async () => {
                                         if (isEditingInfo) {
+                                            const nextErrors = {
+                                                first_name: validateFirstNameRequired(lead.first_name || ''),
+                                                last_name: validateLastName(lead.last_name || ''),
+                                                contact_email: validateEmailRequired(lead.contact_email || '', 'Email'),
+                                                phone: validatePhone(lead.phone || ''),
+                                            };
+                                            if (Object.values(nextErrors).some(Boolean)) {
+                                                // Stay in edit mode with the entered values intact so the
+                                                // user can correct in place rather than retype.
+                                                setEditErrors(nextErrors);
+                                                toast.error('Please correct the highlighted fields.');
+                                                return;
+                                            }
+                                            setEditErrors({});
                                             try {
                                                 // Field-diff history is now captured server-side by the
                                                 // leads audit trigger (Task 7) — see the Audit History tab.
@@ -601,7 +624,14 @@ const LeadDetailPage = () => {
                                                 fetchLeadData();
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
-                                                toast.error('Failed to save changes.');
+                                                const status = (error as { status?: number })?.status;
+                                                const message = (error as Error)?.message;
+                                                toast.error(
+                                                    status && status >= 400 && status < 500 && message
+                                                        ? message
+                                                        : 'Failed to save changes.',
+                                                );
+                                                return;
                                             }
                                         }
                                         setIsEditingInfo(!isEditingInfo);
@@ -628,11 +658,18 @@ const LeadDetailPage = () => {
                                                     <input
                                                         type="text"
                                                         value={lead.first_name || ''}
-                                                        onChange={(e) => setLead({ ...lead, first_name: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, first_name: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, first_name: validateFirstNameRequired(e.target.value) }));
+                                                        }}
+                                                        aria-invalid={!!editErrors.first_name}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.first_name || '—'}</span>
+                                                )}
+                                                {isEditingInfo && editErrors.first_name && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.first_name}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -646,11 +683,18 @@ const LeadDetailPage = () => {
                                                     <input
                                                         type="text"
                                                         value={lead.last_name || ''}
-                                                        onChange={(e) => setLead({ ...lead, last_name: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, last_name: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, last_name: validateLastName(e.target.value) }));
+                                                        }}
+                                                        aria-invalid={!!editErrors.last_name}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.last_name || '—'}</span>
+                                                )}
+                                                {isEditingInfo && editErrors.last_name && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.last_name}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -662,13 +706,23 @@ const LeadDetailPage = () => {
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Email</span>
                                                 {isEditingInfo ? (
                                                     <input
-                                                        type="email"
+                                                        /* `text`, not `email`: the browser's native popup
+                                                           pre-empted the inline message here too. */
+                                                        type="text"
+                                                        inputMode="email"
                                                         value={lead.contact_email}
-                                                        onChange={(e) => setLead({ ...lead, contact_email: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, contact_email: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, contact_email: validateEmailRequired(e.target.value, 'Email') }));
+                                                        }}
+                                                        aria-invalid={!!editErrors.contact_email}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.contact_email}</a>
+                                                )}
+                                                {isEditingInfo && editErrors.contact_email && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.contact_email}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -682,9 +736,13 @@ const LeadDetailPage = () => {
                                                     <input
                                                         type="text"
                                                         value={lead.phone || ''}
-                                                        onChange={(e) => setLead({ ...lead, phone: e.target.value })}
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, phone: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, phone: validatePhone(e.target.value) }));
+                                                        }}
                                                         placeholder="Add phone..."
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        aria-invalid={!!editErrors.phone}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <span className="flex items-center gap-2">
@@ -696,6 +754,9 @@ const LeadDetailPage = () => {
                                                             name={getLeadDisplayName(lead)}
                                                         />
                                                     </span>
+                                                )}
+                                                {isEditingInfo && editErrors.phone && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.phone}</p>
                                                 )}
                                             </div>
                                         </div>

@@ -31,6 +31,7 @@ import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
+import { describeApiError } from '../utils/apiErrorMessage';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { QuotaGate } from '@so360/design-system';
 
@@ -412,7 +413,7 @@ const LeadsPage = () => {
       setShowDeleteConfirm(null);
       setDetailLead((prev) => (prev?.id === leadId ? null : prev));
     } catch (err: any) {
-      setError(err.message ?? 'Failed to delete lead');
+      setError(describeApiError(err, 'We couldn’t delete this lead. Please try again.'));
     } finally {
       setIsDeleting(false);
     }
