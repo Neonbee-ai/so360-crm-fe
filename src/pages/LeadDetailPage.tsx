@@ -28,7 +28,7 @@ import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
-import CallsTab from './components/CallsTab';
+import CallsTab, { LogCallModal } from './components/CallsTab';
 import AuditHistoryTab from './components/AuditHistoryTab';
 import QuickActionBar from './components/QuickActionBar';
 import LeadLayoutSettingsPanel from './components/LeadLayoutSettingsPanel';
@@ -36,6 +36,7 @@ import { useLeadDetailLayoutPreferences } from '../hooks/useLeadDetailLayoutPref
 import StakeholdersTab from '../components/stakeholders/StakeholdersTab';
 import EmailsTab from './components/EmailsTab';
 import MeetingsTab from './components/MeetingsTab';
+import MeetingModal from './components/MeetingModal';
 import { useEntityTimeline } from './components/timeline/useEntityTimeline';
 import TimelineEventCard from './components/timeline/TimelineEventCard';
 import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
@@ -164,8 +165,15 @@ const LeadDetailPage = () => {
     const [productValue, setProductValue] = useState(0);
     const [activityTotal, setActivityTotal] = useState(0);
     const [showActivityDrawer, setShowActivityDrawer] = useState(false);
-    const [autoOpenCallForm, setAutoOpenCallForm] = useState(false);
-    const [autoOpenMeetingForm, setAutoOpenMeetingForm] = useState(false);
+    // Quick actions open their own surface in place. They used to switch the
+    // workspace tab and scroll to a form inside it, which read as a page jump
+    // and — because the "open the form" flag was already true — did nothing at
+    // all on the second click.
+    const [isSchedulingMeeting, setIsSchedulingMeeting] = useState(false);
+    const [isLoggingCall, setIsLoggingCall] = useState(false);
+    // Bumped after a quick action saves, so the matching tab reloads when next shown.
+    const [callsRefreshKey, setCallsRefreshKey] = useState(0);
+    const [meetingsRefreshKey, setMeetingsRefreshKey] = useState(0);
     const [showLayoutSettings, setShowLayoutSettings] = useState(false);
     const [expandedStatusDropdown, setExpandedStatusDropdown] = useState<string | null>(null);
     const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
@@ -538,8 +546,8 @@ const LeadDetailPage = () => {
                     }, 350);
                 }}
                 onSendEmail={() => openWorkspaceTab('emails')}
-                onLogCall={() => { openWorkspaceTab('calls'); setAutoOpenCallForm(true); }}
-                onScheduleMeeting={() => { openWorkspaceTab('meetings'); setAutoOpenMeetingForm(true); }}
+                onLogCall={() => setIsLoggingCall(true)}
+                onScheduleMeeting={() => setIsSchedulingMeeting(true)}
                 onCreateTask={() => setIsCreatingTask(true)}
                 onUploadDocument={() => {
                     openWorkspaceTab('documents');
@@ -1425,7 +1433,7 @@ const LeadDetailPage = () => {
                             )}
 
                             {activeTab === 'calls' && lead && (
-                                <CallsTab leadId={lead.id} autoOpenForm={autoOpenCallForm} />
+                                <CallsTab key={callsRefreshKey} leadId={lead.id} />
                             )}
 
                             {activeTab === 'audit' && lead && (
@@ -1447,7 +1455,7 @@ const LeadDetailPage = () => {
                             )}
 
                             {activeTab === 'meetings' && lead && (
-                                <MeetingsTab leadId={lead.id} autoOpenForm={autoOpenMeetingForm} />
+                                <MeetingsTab key={meetingsRefreshKey} leadId={lead.id} />
                             )}
 
                         </div>
@@ -1927,6 +1935,25 @@ const LeadDetailPage = () => {
                     />
                 )
             }
+
+            {/* Schedule Meeting — page level, so the action never depends on
+                which tab happens to be open. */}
+            {isSchedulingMeeting && (
+                <MeetingModal
+                    leadId={lead.id}
+                    onClose={() => setIsSchedulingMeeting(false)}
+                    onSuccess={() => setMeetingsRefreshKey(k => k + 1)}
+                />
+            )}
+
+            {/* Log Call — same rule as Schedule Meeting. */}
+            {isLoggingCall && (
+                <LogCallModal
+                    leadId={lead.id}
+                    onClose={() => setIsLoggingCall(false)}
+                    onSuccess={() => setCallsRefreshKey(k => k + 1)}
+                />
+            )}
 
             {/* Create Deal Modal */}
             {

@@ -4,6 +4,11 @@ import {
     toDatetimeLocalInputValue,
     toDateInputValue,
     inputValueToIso,
+    inputValueToApiValue,
+    localOffsetSuffix,
+    dueDateCalendarDay,
+    splitStoredDueDate,
+    composeDueDate,
     hasTimeComponent,
 } from './datetime';
 
@@ -100,5 +105,87 @@ describe('Given hasTimeComponent', () => {
     it('When the value is missing / Then it reports false instead of throwing', () => {
         expect(hasTimeComponent(null)).toBe(false);
         expect(hasTimeComponent(undefined)).toBe(false);
+    });
+});
+
+/**
+ * Root-cause cover for "Due date cannot be in the past" on a date the user
+ * picked as today.
+ *
+ * `new Date('2026-08-13T00:00:00').toISOString()` is `2026-08-12T18:30:00.000Z`
+ * east of Greenwich — the calendar day silently rolls back, and the server then
+ * reads the wrong day off the value. Nothing sent to the API may lose the day
+ * the user actually saw.
+ */
+describe('Given a picked date is prepared for the API', () => {
+    it('Given a date with no time / Then it travels as a bare calendar date, with no instant to misread', () => {
+        expect(inputValueToApiValue('2026-08-13')).toBe('2026-08-13');
+    });
+
+    it('Given a date with a time / Then the wall clock survives and the value states its zone', () => {
+        const sent = inputValueToApiValue('2026-08-13T14:30');
+        expect(sent.startsWith('2026-08-13T14:30:00')).toBe(true);
+        expect(sent).toMatch(/[+-]\d{2}:\d{2}$/);
+        // Same instant as the local wall clock the user chose.
+        expect(new Date(sent).getTime()).toBe(new Date('2026-08-13T14:30:00').getTime());
+    });
+
+    it('Given the old helper / Then it still normalises to UTC — which is exactly what lost the day', () => {
+        // Kept as the contrast the fix exists to avoid.
+        expect(inputValueToIso('2026-08-13')).toBe(new Date('2026-08-13T00:00:00').toISOString());
+    });
+
+    it('Given an empty value / Then nothing is fabricated', () => {
+        expect(inputValueToApiValue('')).toBe('');
+        expect(composeDueDate('', '09:00')).toBe('');
+    });
+});
+
+describe('Given localOffsetSuffix', () => {
+    it('When called / Then it reports the browser offset in ±HH:MM form', () => {
+        expect(localOffsetSuffix()).toMatch(/^[+-]\d{2}:\d{2}$/);
+    });
+
+    it('Given a zone 330 minutes east of UTC / Then it reads +05:30', () => {
+        const ist = { getTimezoneOffset: () => -330 } as Date;
+        expect(localOffsetSuffix(ist)).toBe('+05:30');
+    });
+
+    it('Given a zone 480 minutes west of UTC / Then it reads -08:00', () => {
+        const pacific = { getTimezoneOffset: () => 480 } as Date;
+        expect(localOffsetSuffix(pacific)).toBe('-08:00');
+    });
+});
+
+describe('Given a stored due date is read back', () => {
+    it('Given a date-only task (UTC midnight) / Then its day is read in UTC, so it cannot slip backwards', () => {
+        // Rendered in a negative-offset zone this instant is the previous
+        // evening; the calendar day the user picked is the UTC one.
+        expect(dueDateCalendarDay('2026-08-13T00:00:00.000Z')).toBe('2026-08-13');
+    });
+
+    it('Given a date-only task / Then it splits into a date with no time', () => {
+        expect(splitStoredDueDate('2026-08-13T00:00:00.000Z')).toEqual({ date: '2026-08-13', time: '' });
+    });
+
+    it('Given a timed task / Then it splits into the local date and wall clock it was saved with', () => {
+        const saved = new Date('2026-08-13T14:30:00').toISOString();
+        expect(splitStoredDueDate(saved)).toEqual({ date: '2026-08-13', time: '14:30' });
+    });
+
+    it('Given nothing stored / Then both halves come back empty', () => {
+        expect(splitStoredDueDate(null)).toEqual({ date: '', time: '' });
+        expect(splitStoredDueDate(undefined)).toEqual({ date: '', time: '' });
+    });
+
+    it('Given a split value / When recomposed / Then it round-trips to the same instant', () => {
+        const saved = new Date('2026-08-13T14:30:00').toISOString();
+        const { date, time } = splitStoredDueDate(saved);
+        expect(new Date(composeDueDate(date, time)).toISOString()).toBe(saved);
+    });
+
+    it('Given a date-only value / When recomposed / Then it stays date-only', () => {
+        const { date, time } = splitStoredDueDate('2026-08-13T00:00:00.000Z');
+        expect(composeDueDate(date, time)).toBe('2026-08-13');
     });
 });

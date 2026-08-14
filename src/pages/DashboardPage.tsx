@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { CrossLinkChip } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import { parseStoredTimestamp } from '../utils/datetime';
+import { parseStoredTimestamp, dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 
 /**
  * Derive a reminder's schedule state from its due instant.
@@ -21,7 +21,13 @@ export function reminderState(dueDate: string | null | undefined, now: Date = ne
     if (!dueDate) return { label: 'No date', dot: 'bg-slate-500' };
     const due = parseStoredTimestamp(dueDate);
     if (isNaN(due.getTime())) return { label: 'No date', dot: 'bg-slate-500' };
-    const diffMs = due.getTime() - now.getTime();
+    // A task due "20 Aug" with no time is not overdue at one minute past
+    // midnight — it has the whole day. Only a task with a chosen time expires
+    // at that moment.
+    const deadline = hasTimeComponent(dueDate)
+        ? due
+        : new Date(`${dueDateCalendarDay(dueDate)}T23:59:59`);
+    const diffMs = deadline.getTime() - now.getTime();
     if (diffMs < 0) return { label: 'Overdue', dot: 'bg-rose-500' };
     if (diffMs <= 60 * 60 * 1000) return { label: 'Due soon', dot: 'bg-orange-400' };
     return { label: 'Upcoming', dot: 'bg-amber-400' };
@@ -456,14 +462,19 @@ const DashboardPage = () => {
                                 </div>
                             </div>
                             <h4 className="text-sm font-bold text-slate-50 group-hover:text-blue-400 transition-colors truncate mb-1">{task.title}</h4>
-                            {/* Date AND time, in the org's configured timezone. Passing only
-                                hour/minute replaced the default option set entirely, so the
-                                card showed a bare clock reading with no day attached. */}
+                            {/* Date, and the time ONLY when the user actually chose one.
+                                Rendering the clock unconditionally turned every date-only
+                                task into a reminder for "5:30 AM" — the org-timezone
+                                reading of the UTC midnight such a task is stored at. */}
                             <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 mb-2">
                                 <Calendar size={11} className="text-slate-300" />
-                                <span>{formatters.formatDate(task.due_date, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                                <span className="text-slate-600">·</span>
-                                <span className="text-slate-300">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                                <span>{formatters.formatDate(dueDateCalendarDay(task.due_date), { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                {hasTimeComponent(task.due_date) && (
+                                    <>
+                                        <span className="text-slate-600">·</span>
+                                        <span className="text-slate-300">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                                    </>
+                                )}
                             </div>
                             <p className="text-[11px] text-slate-300 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
                             <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-400/15">

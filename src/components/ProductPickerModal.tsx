@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronRight, ChevronDown, Package } from 'lucide-react';
 import { Modal } from './common/Modal';
 import { Skeleton } from './common/Skeleton';
+import { EDITABLE_FIELD_CLASS } from './common/fieldStyles';
 import { crmService } from '../services/crmService';
 import { InventoryItem, InventoryVariant, ProductPickerSelection } from '../types/crm';
 
@@ -15,31 +16,54 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
     const [query, setQuery] = useState('');
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    /** False until a fetch has completed, so "nothing found" can never precede "nothing asked". */
+    const [hasResolved, setHasResolved] = useState(false);
+    const [error, setError] = useState(false);
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const requestSeq = useRef(0);
 
     const search = useCallback(async (q: string) => {
+        const seq = ++requestSeq.current;
         setIsLoading(true);
+        setError(false);
         try {
-            const result = await crmService.searchInventoryItems(q);
+            const result = await crmService.searchInventoryItems(q, undefined, { limit: 50 });
+            // A slower earlier keystroke must not overwrite a newer result.
+            if (seq !== requestSeq.current) return;
             setItems(result.items);
         } catch {
+            if (seq !== requestSeq.current) return;
             setItems([]);
+            setError(true);
         } finally {
-            setIsLoading(false);
+            if (seq === requestSeq.current) {
+                setIsLoading(false);
+                setHasResolved(true);
+            }
         }
     }, []);
 
     useEffect(() => {
         if (!isOpen) return;
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        if (!query.trim()) { setItems([]); setIsLoading(false); return; }
+        // The catalogue loads the moment the dialog opens. Requiring a search
+        // term first left users staring at an empty panel and concluding the
+        // Inventory had no products at all.
+        if (!query.trim()) { search(''); return; }
         debounceRef.current = setTimeout(() => search(query), 300);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [query, isOpen, search]);
 
     useEffect(() => {
-        if (!isOpen) { setQuery(''); setItems([]); setExpandedIds(new Set()); }
+        if (!isOpen) {
+            setQuery('');
+            setItems([]);
+            setExpandedIds(new Set());
+            setHasResolved(false);
+            setError(false);
+            setIsLoading(false);
+        }
     }, [isOpen]);
 
     const toggleExpand = (id: string) => {
@@ -88,7 +112,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         placeholder="Search by product name or SKU..."
-                        className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className={`${EDITABLE_FIELD_CLASS} pl-9 text-sm`}
                     />
                 </div>
 
@@ -102,17 +126,26 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                         </div>
                     )}
 
-                    {!isLoading && !query.trim() && (
+                    {!isLoading && error && (
                         <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-                            <Search className="w-10 h-10 mb-3 opacity-40" />
-                            <p className="text-sm">Search for products by name or SKU</p>
+                            <Package className="w-10 h-10 mb-3 opacity-40" />
+                            <p className="text-sm">Couldn't load products.</p>
+                            <button
+                                onClick={() => search(query)}
+                                className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
+                            >
+                                Retry
+                            </button>
                         </div>
                     )}
 
-                    {!isLoading && query.trim() && items.length === 0 && (
+                    {/* Only a *completed* search with nothing in it is "no products". */}
+                    {!isLoading && !error && hasResolved && items.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-16 text-slate-500">
                             <Package className="w-10 h-10 mb-3 opacity-40" />
-                            <p className="text-sm">No products found for "{query}"</p>
+                            <p className="text-sm">
+                                {query.trim() ? `No products found for "${query}"` : 'No products in Inventory yet'}
+                            </p>
                         </div>
                     )}
 

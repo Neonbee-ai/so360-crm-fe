@@ -7,7 +7,6 @@ import MeetingModal from './MeetingModal';
 interface Props {
     leadId?: string;
     dealId?: string;
-    autoOpenForm?: boolean;
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -23,10 +22,10 @@ function formatDateTime(iso: string): string {
     });
 }
 
-const MeetingsTab: React.FC<Props> = ({ leadId, dealId, autoOpenForm }) => {
+const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(Boolean(autoOpenForm));
+    const [showModal, setShowModal] = useState(false);
     const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
     const [completingId, setCompletingId] = useState<string | null>(null);
 
@@ -41,7 +40,6 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId, autoOpenForm }) => {
     }, [leadId, dealId]);
 
     useEffect(() => { load(); }, [load]);
-    useEffect(() => { if (autoOpenForm) setShowModal(true); }, [autoOpenForm]);
 
     const handleCancel = async (meeting: Meeting) => {
         if (!confirm(`Cancel "${meeting.title}"?`)) return;

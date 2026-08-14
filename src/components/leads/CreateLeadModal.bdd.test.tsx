@@ -163,7 +163,9 @@ describe('CreateLeadModal', () => {
       render(<CreateLeadModal isOpen={true} onClose={onClose} onSuccess={onSuccess} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
       fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
-      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         expect(mockCreateLead).toHaveBeenCalled();
@@ -178,7 +180,9 @@ describe('CreateLeadModal', () => {
       fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
       fireEvent.change(screen.getByPlaceholderText('e.g. John'), { target: { value: 'Alice' } });
       fireEvent.change(screen.getByPlaceholderText('e.g. Doe'), { target: { value: 'Smith' } });
-      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         const payload = mockCreateLead.mock.calls[0][0];
@@ -191,6 +195,7 @@ describe('CreateLeadModal', () => {
     it('When submitted with valid phone / Then phone is trimmed before saving', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
       fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '  +91 9876543210  ' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
@@ -204,7 +209,9 @@ describe('CreateLeadModal', () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
       fireEvent.change(screen.getByPlaceholderText('e.g. Acme Corp'), { target: { value: 'NewCo' } });
-      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
         expect(screen.getByText(/failed to create lead/i)).toBeInTheDocument();
@@ -216,12 +223,13 @@ describe('CreateLeadModal', () => {
     it('When phone label is rendered / Then shows required asterisk (*)', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
-      expect(screen.getByText('*')).toBeInTheDocument();
+      expect(screen.getAllByText('*').length).toBeGreaterThan(0);
     });
 
     it('When form is submitted with empty phone / Then shows required error and does not call createLead', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
       fireEvent.submit(document.querySelector('form')!);
       expect(screen.getByText('Primary Mobile Number is required.')).toBeInTheDocument();
       expect(mockCreateLead).not.toHaveBeenCalled();
@@ -230,6 +238,7 @@ describe('CreateLeadModal', () => {
     it('When form is submitted with whitespace-only phone / Then shows required error', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
       fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '   ' } });
       fireEvent.submit(document.querySelector('form')!);
       expect(screen.getByText('Primary Mobile Number is required.')).toBeInTheDocument();
@@ -264,15 +273,18 @@ describe('CreateLeadModal', () => {
     it('When a valid phone is entered / Then no format error is shown', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
       fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
-      expect(screen.queryByText(/required/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Primary Mobile Number is required/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/7.*20 digits/i)).not.toBeInTheDocument();
     });
 
     it('When alt phone is not filled / Then form can still submit with only primary phone', async () => {
       render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
       await waitFor(() => screen.getByTestId('modal'));
-      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+      fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => expect(mockCreateLead).toHaveBeenCalled());
       const payload = mockCreateLead.mock.calls[0][0];

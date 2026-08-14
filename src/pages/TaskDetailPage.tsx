@@ -14,7 +14,8 @@ import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context'
 import { toast, getErrorMessage } from '@so360/design-system';
 import DetailBackLink from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
-import { isTaskLocked, canRescheduleTask, canEditTask, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
@@ -160,7 +161,7 @@ const TaskDetailPage = () => {
         );
     }
 
-    const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
+    const isOverdue = isTaskOverdue(task);
     const isLocked = isTaskLocked(task.status);
     const canEdit = canEditTask(task.status);
     const canReschedule = canRescheduleTask(task.status);
@@ -259,7 +260,11 @@ const TaskDetailPage = () => {
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Due Date</span>
                                     <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-50'}`}>
-                                        {formatters.formatDate(task.due_date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        {formatters.formatDate(dueDateCalendarDay(task.due_date), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        {/* The time appears only when the user chose one. */}
+                                        {hasTimeComponent(task.due_date) && (
+                                            <span className="ml-2 text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                                        )}
                                     </p>
                                 </div>
                             </div>

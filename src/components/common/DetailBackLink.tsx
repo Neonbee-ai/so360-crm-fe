@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -51,12 +51,39 @@ export function hasInAppHistory(historyState: unknown): boolean {
     return typeof idx === 'number' && idx > 0;
 }
 
+/**
+ * The location a record was opened from, when the opener recorded one.
+ *
+ * `navigate(-1)` alone is only as good as the history stack, and a detail page
+ * that itself links onward (a quote to its deal) can leave that stack somewhere
+ * the reader never expected — so a quote opened from the Quotes list could land
+ * back on Deal Details. An explicit `state.from`, stamped by whoever opened the
+ * record, is unambiguous: it is the exact URL — filters, page and all — the
+ * reader was looking at.
+ */
+export function backTargetFromState(locationState: unknown): string | null {
+    const from = (locationState as { from?: unknown } | null)?.from;
+    return typeof from === 'string' && from.startsWith('/') ? from : null;
+}
+
 export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, label = BACK_LABEL, className = '' }) => {
     const navigate = useNavigate();
     const [showFloating, setShowFloating] = useState(false);
+    // A second click while the first navigation is still settling would pop two
+    // history entries and overshoot the page the reader came from.
+    const navigating = useRef(false);
 
     const goBack = () => {
-        if (typeof window !== 'undefined' && hasInAppHistory(window.history.state)) navigate(-1);
+        if (navigating.current) return;
+        navigating.current = true;
+        // Released on the next tick; by then this component has been unmounted
+        // by a successful navigation, so only a no-op click re-enables itself.
+        window.setTimeout(() => { navigating.current = false; }, 0);
+
+        const explicit =
+            typeof window !== 'undefined' ? backTargetFromState(window.history.state?.usr) : null;
+        if (explicit) navigate(explicit);
+        else if (typeof window !== 'undefined' && hasInAppHistory(window.history.state)) navigate(-1);
         else navigate(fallbackTo);
     };
 

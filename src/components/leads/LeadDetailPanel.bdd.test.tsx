@@ -12,6 +12,9 @@ const mockGetSourceTypes = vi.fn();
 const mockGetLeadById = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockUseEntityTimeline = vi.fn();
+// Custom-field values are stored keyed by definition id; the definitions are
+// what let the panel show the configured label instead of that UUID.
+const mockGetSettings = vi.fn();
 
 vi.mock('../../pages/components/timeline/useEntityTimeline', () => ({
   useEntityTimeline: (...a: any[]) => mockUseEntityTimeline(...a),
@@ -26,6 +29,7 @@ vi.mock('../../services/crmService', () => ({
     getPartners: (...a: any[]) => mockGetPartners(...a),
     getLeadById: (...a: any[]) => mockGetLeadById(...a),
     updateTask: (...a: any[]) => mockUpdateTask(...a),
+    getSettings: (...a: any[]) => mockGetSettings(...a),
   },
   settingsApi: {
     sourceTypes: {
@@ -85,6 +89,7 @@ beforeEach(() => {
   mockGetActivities.mockResolvedValue({ data: [], total: 0 });
   mockGetUsers.mockResolvedValue([]);
   mockGetPartners.mockResolvedValue([]);
+  mockGetSettings.mockResolvedValue({ lead_custom_fields: [] });
   mockGetSourceTypes.mockResolvedValue([]);
   mockUpdateTask.mockResolvedValue({});
   mockUseEntityTimeline.mockReturnValue({

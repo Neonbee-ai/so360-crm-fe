@@ -6,6 +6,8 @@ import { AlertCircle } from 'lucide-react';
 import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types/crm';
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
 import { validatePhone, validatePhoneRequired } from '../../utils/phoneValidation';
+import { validateEmail, validateEmailRequired } from '../../utils/emailValidation';
+import { RequiredMark } from '../common/RequiredMark';
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -67,6 +69,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         };
         if (isOpen) {
             setPhoneError(null);
+            setEmailError(null);
             fetchSettings();
         }
     }, [isOpen]);
@@ -74,7 +77,9 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [phoneError, setPhoneError] = useState<string | null>(null);
+    const [emailError, setEmailError] = useState<string | null>(null);
     const phoneInputRef = useRef<HTMLInputElement>(null);
+    const emailInputRef = useRef<HTMLInputElement>(null);
 
     const isDuplicate = existingLeads.some(
         name => name && (name as string).toLowerCase() === (formData.company_name || '').toLowerCase() && (formData.company_name || '').length > 0
@@ -83,6 +88,15 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        // Format errors are caught here too, not only on blur: a value pasted
+        // and submitted without ever leaving the field must still be checked.
+        const emailValidErr = validateEmailRequired(formData.contact_email);
+        if (emailValidErr) {
+            setEmailError(emailValidErr);
+            emailInputRef.current?.focus();
+            return;
+        }
 
         const phoneValidErr = validatePhoneRequired(formData.phone);
         if (phoneValidErr) {
@@ -143,8 +157,9 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">First Name *</label>
+                        <label htmlFor="lead-first-name" className="text-sm font-medium text-slate-400">First Name <RequiredMark /></label>
                         <input
+                            id="lead-first-name"
                             required
                             minLength={2}
                             type="text"
@@ -168,18 +183,41 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Contact Email *</label>
+                        <label htmlFor="lead-contact-email" className="text-sm font-medium text-slate-400">Contact Email <RequiredMark /></label>
                         <input
+                            id="lead-contact-email"
+                            ref={emailInputRef}
                             required
-                            type="email"
+                            /* `type="text"` deliberately: the browser's own popup
+                               ("Please enter a part following '@'") pre-empted the
+                               inline message and looked nothing like the rest of
+                               the form. Validation is the app's job here. */
+                            type="text"
+                            inputMode="email"
+                            autoComplete="email"
                             value={formData.contact_email}
-                            onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setFormData({ ...formData, contact_email: val });
+                                // Clear a standing error as soon as the value becomes
+                                // valid; don't nag mid-typing before it ever was.
+                                if (emailError) setEmailError(validateEmail(val));
+                            }}
+                            onBlur={(e) => setEmailError(validateEmail(e.target.value))}
+                            className={`w-full bg-slate-950 border ${emailError ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'} px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-slate-50 placeholder:text-slate-500`}
+                            placeholder="name@company.com"
+                            aria-required="true"
+                            aria-invalid={!!emailError}
+                            aria-describedby={emailError ? 'lead-contact-email-error' : undefined}
                         />
+                        {emailError && (
+                            <p id="lead-contact-email-error" className="text-xs text-red-400 mt-1">{emailError}</p>
+                        )}
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Phone <span className="text-red-400">*</span></label>
+                        <label htmlFor="lead-phone" className="text-sm font-medium text-slate-400">Phone <RequiredMark /></label>
                         <input
+                            id="lead-phone"
                             ref={phoneInputRef}
                             type="tel"
                             value={formData.phone}
@@ -307,7 +345,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <div className="grid grid-cols-2 gap-4">
                             {customFieldDefs.map(field => (
                                 <div key={field.id} className="space-y-1.5">
-                                    <label className="text-sm font-medium text-slate-400">{field.label} {field.required ? '*' : ''}</label>
+                                    <label className="text-sm font-medium text-slate-400">{field.label} {field.required && <RequiredMark />}</label>
                                     {field.type === 'boolean' ? (
                                         <div className="flex items-center h-10">
                                             <input

@@ -8,7 +8,6 @@ import { crmService } from '../../services/crmService';
 interface Props {
     leadId?: string;
     dealId?: string;
-    autoOpenForm?: boolean;
 }
 
 interface CallRecord {
@@ -71,7 +70,7 @@ interface UploadFormProps {
     onUpload: (file: File, fields: CallUploadFields) => Promise<void>;
 }
 
-function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
+export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
     const [file, setFile] = useState<File | null>(null);
     const [direction, setDirection] = useState<'inbound' | 'outbound'>('outbound');
     const [occurredAt, setOccurredAt] = useState(() => toDatetimeLocal(new Date()));
@@ -227,10 +226,38 @@ function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
     );
 }
 
-export default function CallsTab({ leadId, dealId, autoOpenForm }: Props) {
+/**
+ * "Log Call" as a quick action, without sending the reader anywhere.
+ *
+ * The upload form used to be reachable only by switching the workspace to the
+ * Calls tab and scrolling to it — which read as a page jump, and silently did
+ * nothing on the second click because the tab was already open. Rendered as an
+ * overlay it opens the same way every time, from anywhere on the page.
+ */
+export function LogCallModal({ leadId, dealId, onClose, onSuccess }: {
+    leadId?: string;
+    dealId?: string;
+    onClose: () => void;
+    onSuccess?: () => void;
+}) {
+    const handleUpload = async (file: File, fields: CallUploadFields) => {
+        await crmService.uploadCallRecording(file, { ...fields, lead_id: leadId, deal_id: dealId });
+        onSuccess?.();
+        onClose();
+    };
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+            <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <UploadCallForm onClose={onClose} onUpload={handleUpload} />
+            </div>
+        </div>
+    );
+}
+
+export default function CallsTab({ leadId, dealId }: Props) {
     const [calls, setCalls] = useState<CallRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [showUploadForm, setShowUploadForm] = useState(Boolean(autoOpenForm));
+    const [showUploadForm, setShowUploadForm] = useState(false);
     const [selected, setSelected] = useState<CallRecord | null>(null);
     const [playbackUrls, setPlaybackUrls] = useState<Record<string, string>>({});
     const [playbackLoadingId, setPlaybackLoadingId] = useState<string | null>(null);
@@ -254,9 +281,6 @@ export default function CallsTab({ leadId, dealId, autoOpenForm }: Props) {
         load().finally(() => setIsLoading(false));
     }, [load]);
 
-    useEffect(() => {
-        if (autoOpenForm) setShowUploadForm(true);
-    }, [autoOpenForm]);
 
     const handleUpload = async (file: File, fields: CallUploadFields) => {
         const created = await crmService.uploadCallRecording(file, {

@@ -1,27 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
+import { X, Loader2, Calendar, Clock, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
-import { toDatetimeLocalInputValue, toDateInputValue, inputValueToIso } from '../../utils/datetime';
+import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
 import { toast } from '@so360/design-system';
 import { useShell, useNotify, useActivity } from '@so360/shell-context';
-
-/**
- * Reshape the due-date value when the task Type flips between a date-only kind
- * (To Do / Call / Email / Meeting) and Reminder, which needs a time.
- *
- * Without this the raw state leaked across the switch: picking a date as "To Do"
- * and then choosing "Reminder" left a bare `YYYY-MM-DD` in state, which the
- * `datetime-local` input cannot display and which submitted as midnight.
- */
-export function reshapeDueDateForType(value: string, nextType: TaskType, defaultTime = '09:00'): string {
-    if (!value) return value;
-    const needsTime = nextType === 'REMINDER';
-    const hasTime = value.includes('T');
-    if (needsTime && !hasTime) return `${value}T${defaultTime}`;
-    if (!needsTime && hasTime) return value.split('T')[0];
-    return value;
-}
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -48,18 +31,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const [description, setDescription] = useState(task?.description || '');
     const [startDate, setStartDate] = useState(() => {
         if (!task?.start_date) return '';
-        return toDateInputValue(task.start_date);
+        return dueDateCalendarDay(task.start_date);
     });
-    const [dueDate, setDueDate] = useState(() => {
-        if (!task?.due_date) return '';
-        // A reminder is an instant, so the editor must show it in the viewer's
-        // own wall clock. `toISOString()` yields UTC, and feeding UTC into a
-        // `datetime-local` input (which is unconditionally local) displayed the
-        // wrong time and re-shifted it by the UTC offset on every save.
-        return task.type === 'REMINDER'
-            ? toDatetimeLocalInputValue(task.due_date)
-            : toDateInputValue(task.due_date);
-    });
+    const [dueDate, setDueDate] = useState(() => splitStoredDueDate(task?.due_date).date);
+    const [dueTime, setDueTime] = useState(() => splitStoredDueDate(task?.due_date).time);
     const [status, setStatus] = useState<Task['status']>(task?.status || 'OPEN');
     const [type, setType] = useState<TaskType>(task?.type || 'TODO');
     const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
@@ -114,24 +89,25 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Reject past dates regardless of browser min-attribute enforcement
-        // Date-only strings (YYYY-MM-DD) must be appended with T00:00:00 so they are
-        // parsed as local midnight, not UTC midnight, for a correct timezone comparison.
         if (!dueDate) {
             toast.error('Please select a due date.');
             return;
         }
-        // A reminder without a time would be persisted at midnight and then read
-        // back as "12:00 AM" on every surface. Refuse it rather than store an
-        // instant the user never chose.
-        if (type === 'REMINDER' && !dueDate.includes('T')) {
+        // A reminder is an alarm — it is meaningless without the moment to ring.
+        // Every other kind may stay date-only.
+        if (type === 'REMINDER' && !dueTime) {
             toast.error('Please pick a date AND time for the reminder.');
             return;
         }
-        const selectedDate = new Date(dueDate.includes('T') ? dueDate : dueDate + 'T00:00:00');
-        const startOfToday = new Date(todayDate + 'T00:00:00');
-        if (selectedDate < startOfToday) {
+        // Compare calendar days as strings: both sides are the user's own local
+        // date, so no instant — and no timezone shift — enters the comparison.
+        if (dueDate < todayDate) {
             toast.error('Due Date cannot be in the past. Please select today or a future date.');
+            return;
+        }
+        // A time already gone by today is past too, now that tasks carry one.
+        if (dueTime && dueDate === todayDate && `${dueDate}T${dueTime}` < todayDatetime) {
+            toast.error('Due time cannot be in the past. Please pick a later time.');
             return;
         }
 
@@ -147,13 +123,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             };
 
             if (startDate) {
-                data.start_date = new Date(startDate + 'T00:00:00').toISOString();
+                // Send the calendar day itself. Anchoring it to local midnight and
+                // normalising to UTC rolled it back a day east of Greenwich.
+                data.start_date = inputValueToApiValue(startDate);
             }
 
-            // A reminder carries the local wall clock the user picked; a plain task
-            // carries local midnight of the day they picked. Both are persisted as
-            // the corresponding UTC instant.
-            data.due_date = inputValueToIso(dueDate);
+            data.due_date = composeDueDate(dueDate, dueTime);
             if (type === 'REMINDER' && reminderMinutes) {
                 data.reminder_minutes_before = parseInt(reminderMinutes);
             }
@@ -246,7 +221,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     onChange={(e) => {
                                         const nextType = e.target.value as TaskType;
                                         setType(nextType);
-                                        setDueDate(prev => reshapeDueDateForType(prev, nextType));
+                                        // A reminder must ring at a moment; offer a
+                                        // sensible one rather than an empty field.
+                                        if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
                                     }}
                                     className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
@@ -273,20 +250,52 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                    {type === 'REMINDER' ? 'Date & Time' : 'Due Date'}
+                                <label htmlFor="task-due-date" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    Due Date
                                 </label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                                     <input
-                                        type={type === 'REMINDER' ? "datetime-local" : "date"}
+                                        id="task-due-date"
+                                        type="date"
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
-                                        min={type === 'REMINDER' ? todayDatetime : todayDate}
+                                        min={todayDate}
                                         className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                         required
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Due time is optional for every kind except Reminder, which
+                            is an alarm. Left blank the task stays a plain calendar
+                            date — no invented 9am, no invented midnight. */}
+                        <div className="space-y-2">
+                            <label htmlFor="task-due-time" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                Due Time {type === 'REMINDER' ? <span className="text-red-500">*</span> : <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span>}
+                            </label>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                                    <input
+                                        id="task-due-time"
+                                        type="time"
+                                        value={dueTime}
+                                        onChange={(e) => setDueTime(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        required={type === 'REMINDER'}
+                                    />
+                                </div>
+                                {dueTime && type !== 'REMINDER' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setDueTime('')}
+                                        className="px-3 py-3 rounded-xl border border-slate-700/50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-colors"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                             </div>
                         </div>
 

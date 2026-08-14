@@ -15,6 +15,9 @@ vi.mock('../services/crmService', () => ({
 
 vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
+  // The list stamps its own URL onto each quote it opens, so Quote Detail's
+  // Back control can return here instead of guessing from history.
+  useLocation: () => ({ pathname: '/crm/quotes', search: '', hash: '', state: null, key: 'test' }),
 }));
 
 vi.mock('@so360/shell-context', () => ({

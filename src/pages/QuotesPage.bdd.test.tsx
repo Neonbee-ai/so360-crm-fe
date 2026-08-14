@@ -21,6 +21,9 @@ vi.mock('../services/crmService', () => ({
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  // The list stamps its own URL onto each quote it opens, so Quote Detail's
+  // Back control can return here instead of guessing from history.
+  useLocation: () => ({ pathname: '/crm/quotes', search: '', hash: '', state: null, key: 'test' }),
 }));
 
 vi.mock('@so360/shell-context', () => ({
@@ -125,7 +128,9 @@ describe('QuotesPage', () => {
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByTestId('quote-row-q1')).toBeInTheDocument());
       await user.click(screen.getByTestId('quote-row-q1'));
-      expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1');
+      // The list records where the reader came from, so Quote Detail's Back
+      // control returns here rather than falling through to the linked deal.
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1', { state: { from: '/crm/quotes' } });
     });
 
     it('When clicking New Quote / Then shows the create quote modal with deal selector', async () => {

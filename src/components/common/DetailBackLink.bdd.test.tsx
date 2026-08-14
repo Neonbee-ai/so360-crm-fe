@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import DetailBackLink, { hasInAppHistory, FLOATING_REVEAL_PX, BACK_LABEL } from './DetailBackLink';
+import DetailBackLink, { hasInAppHistory, backTargetFromState, FLOATING_REVEAL_PX, BACK_LABEL } from './DetailBackLink';
 
 /**
  * Regression cover for "Back navigation is inaccessible after scrolling through
@@ -142,5 +142,108 @@ describe('Given the control is used across modules', () => {
     // list even when the user had arrived from Tasks.
     renderAt(['/crm/leads/abc']);
     expect(screen.queryByText('Back to Leads')).toBeNull();
+  });
+});
+
+/**
+ * Regression cover for "Back from a Quote opened from the Quotes list lands on
+ * Deal Details". Raw history is only as good as what is on the stack; the page
+ * that opened the record knows exactly where the reader was, and says so.
+ */
+describe('Given backTargetFromState', () => {
+  it('When the opener recorded a route / Then that route is the destination', () => {
+    expect(backTargetFromState({ from: '/crm/quotes?status=sent&page=2' }))
+      .toBe('/crm/quotes?status=sent&page=2');
+  });
+
+  it('When nothing was recorded / Then there is no explicit destination', () => {
+    expect(backTargetFromState(null)).toBeNull();
+    expect(backTargetFromState(undefined)).toBeNull();
+    expect(backTargetFromState({})).toBeNull();
+  });
+
+  it('When the recorded value is not an in-app path / Then it is refused', () => {
+    // Guards against an off-site redirect being smuggled in through router state.
+    expect(backTargetFromState({ from: 'https://example.com' })).toBeNull();
+    expect(backTargetFromState({ from: 'crm/quotes' })).toBeNull();
+    expect(backTargetFromState({ from: 42 })).toBeNull();
+  });
+});
+
+describe('Given a record was opened with its origin recorded', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '');
+  });
+
+  it('When Back is used / Then the reader returns to that exact URL, not wherever history happens to point', () => {
+    const Probe: React.FC<{ name: string }> = ({ name }) => <div data-testid="page">{name}</div>;
+
+    // React Router stores a navigation's `state` under `history.state.usr`.
+    // Stamped here directly because the scenario under test is precisely "the
+    // history stack would take you somewhere else" — the previous entry is the
+    // deal, and the recorded origin must win over it.
+    window.history.replaceState({ idx: 2, usr: { from: '/crm/quotes?status=sent' } }, '');
+
+    render(
+      <MemoryRouter initialEntries={['/crm/quotes?status=sent', '/crm/deal/d1', '/crm/quotes/q1']} initialIndex={2}>
+        <Routes>
+          <Route path="/crm/deal/:id" element={<Probe name="deal-detail" />} />
+          <Route path="/crm/quotes" element={<Probe name="quotes-list" />} />
+          <Route
+            path="/crm/quotes/:id"
+            element={
+              <>
+                <Probe name="quote-detail" />
+                <DetailBackLink fallbackTo="/crm/leads" />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('page')).toHaveTextContent('quote-detail');
+    fireEvent.click(screen.getAllByRole('button', { name: BACK_LABEL })[0]);
+    // The immediately preceding entry is the deal, so plain history would land
+    // there — the recorded origin is what makes this correct.
+    expect(screen.getByTestId('page')).toHaveTextContent('quotes-list');
+  });
+
+  it('When Back is double-clicked / Then it does not overshoot past the page it came from', () => {
+    const Probe: React.FC<{ name: string }> = ({ name }) => <div data-testid="page">{name}</div>;
+    const QuotesListWithLink: React.FC = () => {
+      const navigate = useNavigate();
+      return (
+        <>
+          <div data-testid="page">quotes-list</div>
+          <button onClick={() => navigate('/crm/quotes/q1')}>open quote</button>
+        </>
+      );
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/crm/deal/d1', '/crm/quotes']} initialIndex={1}>
+        <Routes>
+          <Route path="/crm/deal/:id" element={<Probe name="deal-detail" />} />
+          <Route path="/crm/quotes" element={<QuotesListWithLink />} />
+          <Route
+            path="/crm/quotes/:id"
+            element={
+              <>
+                <Probe name="quote-detail" />
+                <DetailBackLink fallbackTo="/crm/quotes" />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByText('open quote'));
+    const back = screen.getAllByRole('button', { name: BACK_LABEL })[0];
+    fireEvent.click(back);
+    fireEvent.click(back);
+
+    expect(screen.getByTestId('page')).toHaveTextContent('quotes-list');
   });
 });

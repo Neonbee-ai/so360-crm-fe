@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption } from '../../types/crm';
+import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
 import { useCRMFormatters } from '../../utils/formatters';
@@ -175,6 +175,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
   const [users, setUsers] = useState<CrmUser[]>([]);
   const [partners, setPartners] = useState<Lead[]>([]);
   const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
+  // Custom-field values are stored keyed by definition id, so the definitions
+  // are what turns a stored UUID key back into the label the admin configured.
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
   // The lead this record was merged into, resolved so the drawer can show a name
   // and a working link rather than the bare UUID stored in meta_data.
   const [mergedIntoLead, setMergedIntoLead] = useState<Lead | null>(null);
@@ -210,6 +213,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
 
   const additionalFields = visibleMetaEntries(meta, {
     formatDate: formatters.formatDate,
+    customFieldDefs,
   });
 
   useEffect(() => {
@@ -228,11 +232,13 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
       crmService.getUsers(),
       crmService.getPartners().catch(() => [] as Lead[]),
       settingsApi.sourceTypes.getAll().catch(() => [] as SourceTypeOption[]),
-    ]).then(([usersData, partnersData, sourceTypesData]) => {
+      crmService.getSettings().catch(() => null),
+    ]).then(([usersData, partnersData, sourceTypesData, settings]) => {
       if (cancelled) return;
       setUsers(usersData);
       setPartners(partnersData);
       setSourceTypes(sourceTypesData);
+      setCustomFieldDefs(settings?.lead_custom_fields ?? []);
     });
     return () => { cancelled = true; };
   }, []);

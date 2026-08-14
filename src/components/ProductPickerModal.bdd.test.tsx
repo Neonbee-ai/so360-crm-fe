@@ -74,10 +74,35 @@ describe('Given ProductPickerModal', () => {
     });
   });
 
-  describe('Given empty query / When modal opens / Then no search is triggered', () => {
-    test('Given no query text / When mounted / Then searchInventoryItems not called', () => {
+  describe('Given the dialog opens / When no query has been typed / Then the catalogue loads anyway', () => {
+    test('Given a freshly opened dialog / When mounted / Then products are fetched with no search term', async () => {
+      mockCrmService.searchInventoryItems.mockResolvedValue({ items: [ITEM_NO_VARIANTS] });
       render(<ProductPickerModal {...defaultProps} />);
-      expect(mockCrmService.searchInventoryItems).not.toHaveBeenCalled();
+      await act(async () => { await vi.runAllTimersAsync(); });
+      // Requiring a search term first left the panel blank, and users read that
+      // as "Inventory has no products".
+      expect(mockCrmService.searchInventoryItems).toHaveBeenCalledWith('', undefined, { limit: 50 });
+      expect(screen.getByText('Widget Pro')).toBeInTheDocument();
+    });
+
+    test('Given the fetch has not resolved / When rendered / Then "No products found" is NOT shown', async () => {
+      let release: (v: any) => void = () => {};
+      mockCrmService.searchInventoryItems.mockReturnValue(new Promise((res) => { release = res; }));
+      render(<ProductPickerModal {...defaultProps} />);
+      expect(screen.queryByText(/no products found/i)).toBeNull();
+      expect(screen.queryByText(/no products in inventory/i)).toBeNull();
+      await act(async () => { release({ items: [] }); await vi.runAllTimersAsync(); });
+      // Only once the request has completed does the empty state appear.
+      expect(screen.getByText(/no products in inventory/i)).toBeInTheDocument();
+    });
+
+    test('Given the fetch fails / When rendered / Then an error with Retry is shown, not an empty catalogue', async () => {
+      mockCrmService.searchInventoryItems.mockRejectedValue(new Error('boom'));
+      render(<ProductPickerModal {...defaultProps} />);
+      await act(async () => { await vi.runAllTimersAsync(); });
+      expect(screen.getByText(/couldn't load products/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+      expect(screen.queryByText(/no products found/i)).toBeNull();
     });
   });
 
@@ -86,7 +111,7 @@ describe('Given ProductPickerModal', () => {
       render(<ProductPickerModal {...defaultProps} />);
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'widget' } });
       await act(async () => { vi.advanceTimersByTime(300); });
-      expect(mockCrmService.searchInventoryItems).toHaveBeenCalledWith('widget');
+      expect(mockCrmService.searchInventoryItems).toHaveBeenCalledWith('widget', undefined, { limit: 50 });
     });
 
     test('Given rapid typing / When debounced / Then service called only once after pause', async () => {
@@ -96,8 +121,10 @@ describe('Given ProductPickerModal', () => {
       fireEvent.change(input, { target: { value: 'wi' } });
       fireEvent.change(input, { target: { value: 'widget' } });
       await act(async () => { vi.advanceTimersByTime(300); });
-      expect(mockCrmService.searchInventoryItems).toHaveBeenCalledTimes(1);
-      expect(mockCrmService.searchInventoryItems).toHaveBeenCalledWith('widget');
+      // One call for the initial catalogue load, one for the settled query —
+      // the intermediate keystrokes are debounced away.
+      expect(mockCrmService.searchInventoryItems).toHaveBeenCalledTimes(2);
+      expect(mockCrmService.searchInventoryItems).toHaveBeenCalledWith('widget', undefined, { limit: 50 });
     });
   });
 

@@ -65,3 +65,75 @@ export function hasTimeComponent(value: string | Date | null | undefined): boole
   if (isNaN(d.getTime())) return false;
   return d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0;
 }
+
+/** `+05:30` / `-08:00` / `+00:00` — the browser's current offset from UTC. */
+export function localOffsetSuffix(date: Date = new Date()): string {
+  // getTimezoneOffset() counts minutes *behind* UTC, so the sign is inverted.
+  const total = -date.getTimezoneOffset();
+  const sign = total < 0 ? '-' : '+';
+  const abs = Math.abs(total);
+  return `${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`;
+}
+
+/**
+ * Serialise a date/datetime input value for the API **without losing the
+ * calendar date the user picked**.
+ *
+ * `new Date('2026-08-13T00:00:00').toISOString()` yields `2026-08-12T18:30:00Z`
+ * in IST — the wall-clock date silently rolls back a day, and the server's
+ * "is this in the past?" check then rejects a task the user scheduled for today.
+ *
+ *   date only  → `2026-08-13`                  (a calendar date, no instant at all)
+ *   with time  → `2026-08-13T14:30:00+05:30`   (an instant that still states its zone)
+ *
+ * Both forms let the server recover the user's calendar date exactly, which is
+ * what the past-date rule is actually about.
+ */
+export function inputValueToApiValue(value: string): string {
+  if (!value) return value;
+  if (!value.includes('T')) return value;
+  const withSeconds = value.length === 16 ? `${value}:00` : value;
+  return `${withSeconds}${localOffsetSuffix(new Date(withSeconds))}`;
+}
+
+/**
+ * Split a stored due-date into the two controls a task form shows.
+ *
+ * Every task kind now carries an optional time, not just Reminder — a follow-up
+ * call due "20 Aug" told nobody whether to ring at 9am or 6pm. A task saved
+ * without a time stays at UTC midnight, which is how every surface knows the
+ * user never picked one and must not invent one.
+ */
+export function splitStoredDueDate(value: string | null | undefined): { date: string; time: string } {
+  if (!value) return { date: '', time: '' };
+  if (!hasTimeComponent(value)) return { date: dueDateCalendarDay(value), time: '' };
+  const d = parseUtcDate(value);
+  return {
+    date: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
+  };
+}
+
+/**
+ * Assemble what the API is sent for a due date: a bare calendar date when no
+ * time was chosen, a zone-stamped instant when one was.
+ */
+export function composeDueDate(date: string, time: string): string {
+  if (!date) return '';
+  return inputValueToApiValue(time ? `${date}T${time}` : date);
+}
+
+/**
+ * The calendar date a stored due-date represents, as `YYYY-MM-DD`.
+ *
+ * Date-only tasks are persisted at UTC midnight, so their day must be read in
+ * UTC — rendering that instant in a negative-offset zone would show the previous
+ * day. Timed values are a real instant and are read in the viewer's own zone.
+ */
+export function dueDateCalendarDay(value: string | Date): string {
+  const d = parseUtcDate(value);
+  if (isNaN(d.getTime())) return '';
+  return hasTimeComponent(d)
+    ? `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+    : `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+}

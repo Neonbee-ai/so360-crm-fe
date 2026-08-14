@@ -135,6 +135,45 @@ export function formatFieldValue(
     return str;
 }
 
+/** Shown when a custom field's definition has been deleted or is not loaded yet. */
+export const UNNAMED_CUSTOM_FIELD = 'Unnamed Custom Field';
+
+/** The subset of a CustomFieldDefinition needed to name a stored value. */
+export interface CustomFieldLabelSource {
+    id: string;
+    label?: string | null;
+    name?: string | null;
+}
+
+export interface VisibleMetaEntriesOptions extends FormatFieldValueOptions {
+    /**
+     * Admin-configured custom field definitions. Values are stored under the
+     * definition's **id**, so without these the panel has nothing to show but the
+     * raw UUID.
+     */
+    customFieldDefs?: CustomFieldLabelSource[];
+}
+
+/**
+ * The display name for a `meta_data` key.
+ *
+ * Custom-field values are keyed by definition id, so `humanizeFieldLabel` turned
+ * `0a0aeff5-5ad0-431b-8eb8-5717e5117826` into the "label"
+ * "0A0AEFF5 5AD0 431B 8EB8 5717E5117826" — a database identifier presented to
+ * the user as if it were a business field name. An id resolves through the
+ * definitions; only ordinary keys are humanized.
+ */
+export function resolveMetaLabel(
+    key: string,
+    customFieldDefs: CustomFieldLabelSource[] = [],
+): string {
+    const def = customFieldDefs.find((d) => d.id === key);
+    if (def) return (def.label || def.name || '').trim() || UNNAMED_CUSTOM_FIELD;
+    // Never let an identifier reach the UI, even with no definition to match.
+    if (isUuid(key)) return UNNAMED_CUSTOM_FIELD;
+    return humanizeFieldLabel(key);
+}
+
 /**
  * The `meta_data` entries safe to show in a generic "Additional Fields" list:
  * system bookkeeping and already-promoted keys removed, and anything whose value
@@ -142,15 +181,16 @@ export function formatFieldValue(
  */
 export function visibleMetaEntries(
     metaData: Record<string, unknown> | null | undefined,
-    options: FormatFieldValueOptions = {},
+    options: VisibleMetaEntriesOptions = {},
 ): Array<{ key: string; label: string; value: string }> {
     if (!metaData) return [];
+    const { customFieldDefs = [], ...formatOptions } = options;
     return Object.entries(metaData)
         .filter(([key]) => !SYSTEM_META_KEYS.has(key) && !PROMOTED_META_KEYS.has(key))
         .map(([key, raw]) => ({
             key,
-            label: humanizeFieldLabel(key),
-            value: formatFieldValue(raw, options),
+            label: resolveMetaLabel(key, customFieldDefs),
+            value: formatFieldValue(raw, formatOptions),
         }))
         .filter((entry) => entry.value !== EMPTY_VALUE);
 }

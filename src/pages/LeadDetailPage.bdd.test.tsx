@@ -1025,7 +1025,7 @@ describe('LeadDetailPage', () => {
       }
     });
 
-    it('When Log Call is clicked / Then the calls workspace opens and is scrolled into view', async () => {
+    it('When Log Call is clicked / Then the log-call surface opens in place, without moving the page', async () => {
       const scrollIntoView = vi.fn();
       window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
       render(<LeadDetailPage />);
@@ -1033,7 +1033,58 @@ describe('LeadDetailPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /Log Call/i }));
 
-      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+      expect(await screen.findByText(/upload call recording/i)).toBeInTheDocument();
+      // The quick action no longer switches tabs and scrolls there — that read
+      // as an unexplained page jump.
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('When Create Task is clicked from a customer record / Then the form opens in place, with no navigation', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      const scrollIntoView = vi.fn();
+      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+      mockNavigate.mockClear();
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+
+      // The creation surface itself, on this page — not a route change, not a
+      // tab switch, and not a jump down the page.
+      expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      mockPathname = '/crm/leads/lead-1';
+    });
+
+    it('When Create Task is clicked twice in a row / Then the form opens again the second time', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+      expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('task-modal').querySelector('button')!);
+      await waitFor(() => expect(screen.queryByTestId('task-modal')).toBeNull());
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+      expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
+    });
+
+    it('When Schedule Meeting is clicked twice / Then the meeting form opens both times', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
+      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
+
+      // Close, then ask again. The old flag-based wiring was already `true`,
+      // so the second click silently did nothing at all.
+      fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+      await waitFor(() => expect(screen.queryByText(/schedule meeting/i, { selector: 'p' })).toBeNull());
+
+      fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
+      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
     });
   });
 });

@@ -5,6 +5,8 @@ import {
     humanizeFieldLabel,
     formatFieldValue,
     visibleMetaEntries,
+    resolveMetaLabel,
+    UNNAMED_CUSTOM_FIELD,
     SYSTEM_META_KEYS,
 } from './fieldPresentation';
 
@@ -134,5 +136,75 @@ describe('Given visibleMetaEntries', () => {
     it('Given the system key registry / Then the merge pair is covered', () => {
         expect(SYSTEM_META_KEYS.has('merged_into')).toBe(true);
         expect(SYSTEM_META_KEYS.has('merged_at')).toBe(true);
+    });
+});
+
+/**
+ * The reported defect: the Lead quick-view listed an Additional Field labelled
+ * "0A0AEFF5 5AD0 431B 8EB8 5717E5117826". Custom-field values are stored keyed
+ * by the *definition id*, so humanizing the key turned a database identifier
+ * into what looked like a business field name.
+ */
+describe('Given custom field values are listed under Additional Fields', () => {
+    const DEF_ID = '0a0aeff5-5ad0-431b-8eb8-5717e5117826';
+    const OTHER_ID = 'b1111111-2222-3333-4444-555555555555';
+
+    it('Given a definition for the key / When listed / Then the configured label is shown', () => {
+        const entries = visibleMetaEntries(
+            { [DEF_ID]: 'Faiz' },
+            { customFieldDefs: [{ id: DEF_ID, label: 'Reference Person' }] },
+        );
+        expect(entries).toEqual([{ key: DEF_ID, label: 'Reference Person', value: 'Faiz' }]);
+    });
+
+    it('Given a definition that names the field via `name` / When listed / Then that is used', () => {
+        const entries = visibleMetaEntries(
+            { [DEF_ID]: 'Faiz' },
+            { customFieldDefs: [{ id: DEF_ID, name: 'Reference Person' }] },
+        );
+        expect(entries[0].label).toBe('Reference Person');
+    });
+
+    it('Given no definition for a UUID key / When listed / Then a readable fallback is shown, never the id', () => {
+        const entries = visibleMetaEntries({ [OTHER_ID]: 'Faiz' }, { customFieldDefs: [] });
+        expect(entries[0].label).toBe(UNNAMED_CUSTOM_FIELD);
+        expect(entries[0].label).not.toContain('0A0AEFF5');
+        expect(entries[0].label).not.toMatch(/[0-9a-f]{8}/i);
+    });
+
+    it('Given a definition with a blank label / When listed / Then the fallback is used rather than an empty name', () => {
+        const entries = visibleMetaEntries(
+            { [DEF_ID]: 'Faiz' },
+            { customFieldDefs: [{ id: DEF_ID, label: '   ' }] },
+        );
+        expect(entries[0].label).toBe(UNNAMED_CUSTOM_FIELD);
+    });
+
+    it('Given an ordinary named key / When listed / Then it is humanized as before', () => {
+        const entries = visibleMetaEntries({ reference_person: 'Faiz' }, { customFieldDefs: [] });
+        expect(entries[0].label).toBe('Reference Person');
+    });
+
+    it('Given definitions are not loaded yet / When listed / Then no identifier leaks in the meantime', () => {
+        const entries = visibleMetaEntries({ [DEF_ID]: 'Faiz' });
+        expect(entries[0].label).toBe(UNNAMED_CUSTOM_FIELD);
+    });
+
+    it('Given the value / When listed / Then it is untouched by the label fix', () => {
+        const entries = visibleMetaEntries(
+            { [DEF_ID]: 'Faiz' },
+            { customFieldDefs: [{ id: DEF_ID, label: 'Reference Person' }] },
+        );
+        expect(entries[0].value).toBe('Faiz');
+    });
+});
+
+describe('Given resolveMetaLabel', () => {
+    it('Given a plain key / When resolved / Then it is title-cased', () => {
+        expect(resolveMetaLabel('preferred_contact_time')).toBe('Preferred Contact Time');
+    });
+
+    it('Given a UUID key with no definitions / When resolved / Then the fallback is returned', () => {
+        expect(resolveMetaLabel('0a0aeff5-5ad0-431b-8eb8-5717e5117826')).toBe(UNNAMED_CUSTOM_FIELD);
     });
 });

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
 import DetailBackLink from '../components/common/DetailBackLink';
+import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
 import { toast, getErrorMessage } from '@so360/design-system';
@@ -532,7 +533,7 @@ const QuoteDetailPage = () => {
                                         type="text"
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Enter quote title..."
                                     />
                                 ) : (
@@ -546,7 +547,7 @@ const QuoteDetailPage = () => {
                                         type="date"
                                         value={validUntil}
                                         onChange={(e) => setValidUntil(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                     />
                                 ) : (
                                     <p className="text-slate-200">
@@ -626,7 +627,7 @@ const QuoteDetailPage = () => {
                                                             type="text"
                                                             value={line.description}
                                                             onChange={(e) => updateLine(index, 'description', e.target.value)}
-                                                            className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            className={EDITABLE_FIELD_SM_CLASS}
                                                             placeholder="Description / notes..."
                                                         />
                                                     </div>
@@ -672,7 +673,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_quantity`] ?? String(line.quantity)}
                                                         onChange={(e) => handleNumericInput(index, 'quantity', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'quantity', e.target.value, 1)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{line.quantity}</span>
@@ -686,7 +687,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_unit_price`] ?? String(line.unit_price)}
                                                         onChange={(e) => handleNumericInput(index, 'unit_price', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'unit_price', e.target.value, 0)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{formatCurrency(line.unit_price)}</span>
@@ -700,7 +701,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_discount_percent`] ?? String(line.discount_percent || 0)}
                                                         onChange={(e) => handleNumericInput(index, 'discount_percent', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'discount_percent', e.target.value, 0)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.discount_percent || 0}%</span>
@@ -714,7 +715,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_tax_rate`] ?? String(line.tax_rate || 0)}
                                                         onChange={(e) => handleNumericInput(index, 'tax_rate', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'tax_rate', e.target.value, 0)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.tax_rate || 0}%</span>
@@ -784,7 +785,7 @@ const QuoteDetailPage = () => {
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         rows={3}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Add any notes..."
                                     />
                                 ) : (
@@ -799,7 +800,7 @@ const QuoteDetailPage = () => {
                                             type="text"
                                             value={paymentTerms}
                                             onChange={(e) => setPaymentTerms(e.target.value)}
-                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={EDITABLE_FIELD_CLASS}
                                             placeholder="e.g. Net 30"
                                         />
                                     ) : (
@@ -813,7 +814,7 @@ const QuoteDetailPage = () => {
                                             type="text"
                                             value={customerReference}
                                             onChange={(e) => setCustomerReference(e.target.value)}
-                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={EDITABLE_FIELD_CLASS}
                                             placeholder="Buyer's RFQ / PO number"
                                         />
                                     ) : (
@@ -827,7 +828,7 @@ const QuoteDetailPage = () => {
                                             type="text"
                                             value={deliveryTerms}
                                             onChange={(e) => setDeliveryTerms(e.target.value)}
-                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={EDITABLE_FIELD_CLASS}
                                             placeholder="e.g. Ex-stock, 2-3 weeks from PO"
                                         />
                                     ) : (
@@ -842,7 +843,7 @@ const QuoteDetailPage = () => {
                                         <select
                                             value={incoterm}
                                             onChange={(e) => setIncoterm(e.target.value)}
-                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={EDITABLE_FIELD_CLASS}
                                         >
                                             <option value="">Not specified</option>
                                             {INCOTERMS_2020.map((t) => (
@@ -865,7 +866,7 @@ const QuoteDetailPage = () => {
                                         value={termsAndConditions}
                                         onChange={(e) => setTermsAndConditions(e.target.value)}
                                         rows={4}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Add terms and conditions..."
                                     />
                                 ) : (
@@ -942,7 +943,7 @@ const QuoteDetailPage = () => {
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 rows={4}
-                                className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className={EDITABLE_FIELD_CLASS}
                                 placeholder="Please provide a reason..."
                             />
                         </div>
@@ -1013,7 +1014,7 @@ const QuoteDetailPage = () => {
                             value={sendTo}
                             onChange={(e) => setSendTo(e.target.value)}
                             placeholder="customer@example.com"
-                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={EDITABLE_FIELD_CLASS}
                         />
                         {!customer?.contact_email && (
                             <p className="mt-1 text-xs text-amber-400">
@@ -1030,7 +1031,7 @@ const QuoteDetailPage = () => {
                             onChange={(e) => setSendMessage(e.target.value)}
                             rows={3}
                             placeholder="As discussed, please find our quotation attached."
-                            className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={EDITABLE_FIELD_CLASS}
                         />
                     </div>
                 </div>

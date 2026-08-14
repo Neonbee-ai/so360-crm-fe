@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, FileText, Search, Filter, CheckCircle, XCircle, Clock, Send, Trash2, ChevronDown } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
@@ -103,6 +103,17 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
 
 const QuotesPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    /**
+     * Open a quote, recording where the reader came from.
+     *
+     * Quote Detail's Back control reads this back. Without it the control fell
+     * through to raw history, and a quote that links onward to its deal could
+     * send the reader to Deal Details instead of the list they started on.
+     * The search string travels too, so filters and paging survive the return.
+     */
+    const openQuote = (quoteId: string) =>
+        navigate(`/crm/quotes/${quoteId}`, { state: { from: `${location.pathname}${location.search}` } });
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
     const canCreateQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
@@ -264,7 +275,7 @@ const QuotesPage = () => {
             header: 'Quote #',
             accessor: (quote: Quote) => (
                 <button
-                    onClick={() => navigate(`/crm/quotes/${quote.id}`)}
+                    onClick={() => openQuote(quote.id)}
                     className="text-blue-400 hover:text-blue-300 font-medium"
                 >
                     {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
@@ -352,7 +363,7 @@ const QuotesPage = () => {
             accessor: (quote: Quote) => (
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/crm/quotes/${quote.id}`); }}
+                        onClick={(e) => { e.stopPropagation(); openQuote(quote.id); }}
                         className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded"
                         title="View"
                     >
@@ -551,7 +562,7 @@ const QuotesPage = () => {
                 <Table
                     data={isSandboxMode ? filteredQuotes.slice(0, sandboxEntryLimit) : filteredQuotes}
                     columns={columns}
-                    onRowClick={(quote) => navigate(`/crm/quotes/${quote.id}`)}
+                    onRowClick={(quote) => openQuote(quote.id)}
                 />
             )}
 

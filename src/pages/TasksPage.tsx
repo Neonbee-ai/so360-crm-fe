@@ -7,7 +7,8 @@ import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 import { toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
@@ -179,9 +180,7 @@ const TasksPage = () => {
             if (filter === 'Done') return task.status === 'DONE';
             if (filter === 'On Hold') return task.status === 'ON_HOLD';
             if (filter === 'Cancelled') return task.status === 'CANCELLED';
-            if (filter === 'Overdue') {
-                return (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
-            }
+            if (filter === 'Overdue') return isTaskOverdue(task);
             return true;
         });
 
@@ -252,11 +251,15 @@ const TasksPage = () => {
         {
             header: <SortableHeader label="Due Date" field="due_date" />,
             accessor: (task: Task) => {
-                const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
+                const isOverdue = isTaskOverdue(task);
                 return (
                     <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
                         {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
-                        {formatters.formatDate(task.due_date)}
+                        {formatters.formatDate(dueDateCalendarDay(task.due_date))}
+                        {/* Only a task the user gave a time to shows one. */}
+                        {hasTimeComponent(task.due_date) && (
+                            <span className="text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                        )}
                         {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
                     </div>
                 );

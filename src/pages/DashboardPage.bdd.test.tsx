@@ -270,6 +270,26 @@ describe('Given reminders with distinct scheduled times', () => {
     await waitFor(() => expect(screen.getByText('Reminder 0')).toBeInTheDocument());
     expect(screen.getByText(byText('10:30 AM'))).toBeInTheDocument();
   });
+
+  // The other half of the same complaint: cards showing "5:30 AM" for tasks the
+  // user never gave a time to. That reading is the org timezone applied to the
+  // UTC midnight such a task is stored at — a time nobody chose.
+  it('When a task carries no time of day / Then the card shows only its date, inventing no clock reading', async () => {
+    mockGetDashboardStats.mockResolvedValue(remindersAt('2026-08-07T00:00:00Z'));
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByText('Reminder 0')).toBeInTheDocument());
+    expect(screen.getByText(byText('Aug 7, 2026'))).toBeInTheDocument();
+    expect(screen.queryByText(byText('5:30 AM'))).not.toBeInTheDocument();
+    expect(screen.queryByText(byText('12:00 AM'))).not.toBeInTheDocument();
+  });
+
+  it('When a task DOES carry a time / Then both its date and that time are shown', async () => {
+    mockGetDashboardStats.mockResolvedValue(remindersAt('2026-08-07T14:30:00Z'));
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByText('Reminder 0')).toBeInTheDocument());
+    expect(screen.getByText(byText('Aug 7, 2026'))).toBeInTheDocument();
+    expect(screen.getByText(byText('2:30 PM'))).toBeInTheDocument();
+  });
 });
 
 describe('Given a reminder that is already past due', () => {
@@ -302,6 +322,15 @@ describe('Given reminderState', () => {
   it('When there is no due date / Then it degrades instead of throwing', () => {
     expect(reminderState(null, now).label).toBe('No date');
     expect(reminderState('not-a-date', now).label).toBe('No date');
+  });
+
+  // A date-only task has the whole day; it is not late at 00:01.
+  it('When a date-only task is due today / Then it is not yet Overdue', () => {
+    expect(reminderState('2026-08-07T00:00:00Z', now).label).not.toBe('Overdue');
+  });
+
+  it('When a date-only task was due yesterday / Then it is Overdue', () => {
+    expect(reminderState('2026-08-06T00:00:00Z', now).label).toBe('Overdue');
   });
 });
 

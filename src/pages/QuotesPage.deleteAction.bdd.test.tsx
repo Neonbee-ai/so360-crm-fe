@@ -24,6 +24,9 @@ vi.mock('../services/crmService', () => ({
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  // The list stamps its own URL onto each quote it opens, so Quote Detail's
+  // Back control can return here instead of guessing from history.
+  useLocation: () => ({ pathname: '/crm/quotes', search: '', hash: '', state: null, key: 'test' }),
 }));
 
 vi.mock('@so360/shell-context', () => ({
@@ -162,7 +165,9 @@ describe('QuotesPage — delete action (real Table)', () => {
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
       const viewButtons = screen.getAllByTitle('View');
       await user.click(viewButtons[0]);
-      expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1');
+      // The list records where the reader came from, so Quote Detail's Back
+      // control returns here rather than falling through to the linked deal.
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1', { state: { from: '/crm/quotes' } });
       expect(screen.queryByText('Delete Quote?')).not.toBeInTheDocument();
     });
   });
@@ -173,7 +178,9 @@ describe('QuotesPage — delete action (real Table)', () => {
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
       await user.click(screen.getByText('QT-2026-00022'));
-      expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1');
+      // The list records where the reader came from, so Quote Detail's Back
+      // control returns here rather than falling through to the linked deal.
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1', { state: { from: '/crm/quotes' } });
     });
   });
 });
