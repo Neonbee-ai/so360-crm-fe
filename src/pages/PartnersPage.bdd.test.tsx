@@ -554,4 +554,95 @@ describe('PartnersPage', () => {
             });
         });
     });
+    // ── Field-format rules shared with the lead forms ──────────────────────────
+    //
+    // Partners carry the same name / company / address / city / PIN fields as
+    // leads and feed the same search, invoicing and mail-merge paths, so the
+    // values QA filed against Create Lead must be refused here too rather than
+    // leaving a second, looser standard in the CRM.
+    describe('Given the Add Partner form uses the shared field rules', () => {
+        const openModal = async (user: ReturnType<typeof userEvent.setup>) => {
+            render(<PartnersPage />);
+            await user.click(screen.getByRole('button', { name: /add partner/i }));
+        };
+
+        it.each([
+            ['Dhanooj', '%^&)_5454hiugi', 'Please enter a valid first name.'],
+            ['B S', '49878)&)*_knhj', 'Please enter a valid last name.'],
+            ['Moonhive Pvt Ltd', '8798798798798&^%$$*jyfutd', 'Please enter a valid company name.'],
+            ['Street / area', '(^()_)+', 'Please enter a valid address.'],
+            ['Bangalore', '&)&)_*', 'Please enter a valid city.'],
+        ])('When "%s" receives %s / Then "%s" is shown inline', async (placeholder, value, message) => {
+            const user = userEvent.setup();
+            await openModal(user);
+            const field = screen.getByPlaceholderText(placeholder as string);
+            fireEvent.change(field, { target: { value } });
+            fireEvent.blur(field);
+            await waitFor(() => expect(screen.getByText(message as string)).toBeInTheDocument());
+        });
+
+        it.each(['AT&T', 'ABC Pvt. Ltd.', '7-Eleven'])(
+            'When the company name is the legitimate "%s" / Then no error is raised',
+            async (company) => {
+                const user = userEvent.setup();
+                await openModal(user);
+                const field = screen.getByPlaceholderText('Moonhive Pvt Ltd');
+                fireEvent.change(field, { target: { value: company } });
+                fireEvent.blur(field);
+                await waitFor(() =>
+                    expect(screen.queryByText('Please enter a valid company name.')).not.toBeInTheDocument(),
+                );
+            },
+        );
+
+        it('When letters are typed into Pin Code / Then they never reach the field', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            const pin = screen.getByPlaceholderText('560001') as HTMLInputElement;
+            fireEvent.change(pin, { target: { value: '98789kgjftd?^&(' } });
+            expect(pin.value).toBe('98789');
+        });
+
+        it('When the PIN is short / Then the six-digit message appears and the count is shown', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            expect(screen.getByText('0/6 digits')).toBeInTheDocument();
+            const pin = screen.getByPlaceholderText('560001');
+            fireEvent.change(pin, { target: { value: '5600' } });
+            fireEvent.blur(pin);
+            await waitFor(() =>
+                expect(screen.getByText('Please enter a valid 6-digit PIN code.')).toBeInTheDocument(),
+            );
+            expect(screen.getByText('4/6 digits')).toBeInTheDocument();
+        });
+
+        it('When an invalid city is submitted / Then the create API is never called', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Test');
+            await user.type(screen.getByPlaceholderText('B S'), 'Partner');
+            await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
+            await user.selectOptions(screen.getByDisplayValue('Select type...'), 'referral');
+            fireEvent.change(screen.getByPlaceholderText('Bangalore'), { target: { value: '&)&)_*' } });
+
+            const form = document.querySelector('form#create-partner-form')!;
+            await act(async () => { fireEvent.submit(form); });
+
+            await waitFor(() => expect(screen.getByText('Please enter a valid city.')).toBeInTheDocument());
+            expect(mockPartnersCreate).not.toHaveBeenCalled();
+        });
+
+        it('When an invalid value is corrected / Then the message clears', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            const city = screen.getByPlaceholderText('Bangalore');
+            fireEvent.change(city, { target: { value: '&)&)_*' } });
+            fireEvent.blur(city);
+            await waitFor(() => expect(screen.getByText('Please enter a valid city.')).toBeInTheDocument());
+            fireEvent.change(city, { target: { value: 'Bangalore' } });
+            await waitFor(() =>
+                expect(screen.queryByText('Please enter a valid city.')).not.toBeInTheDocument(),
+            );
+        });
+    });
 });

@@ -505,4 +505,37 @@ describe('CreateLeadModal', () => {
       expect(screen.getByPlaceholderText('name@company.com')).toHaveValue('alice@acme.com');
     });
   });
+  describe('Given the phone digit counters', () => {
+    it('When the fields are empty / Then both show the allowed range', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      expect(screen.getAllByText('0/7–15 digits')).toHaveLength(2);
+    });
+
+    it('When digits are typed / Then the count tracks them and ignores separators', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '(555) 123-4567' } });
+      await waitFor(() => expect(screen.getByText('10/7–15 digits')).toBeInTheDocument());
+    });
+
+    it('When +91 is declared / Then the counter pins to the 12 digits that code requires', async () => {
+      // Showing "7–15" here would be misleading: +91 allows exactly 10
+      // subscriber digits, so 12 in total.
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 98765' } });
+      await waitFor(() => expect(screen.getByText('7/12 digits')).toBeInTheDocument());
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43210'), { target: { value: '+91 9876543210' } });
+      await waitFor(() => expect(screen.getByText('12/12 digits')).toBeInTheDocument());
+    });
+
+    it('When the alt phone is filled / Then it carries its own independent count', async () => {
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      fireEvent.change(screen.getByPlaceholderText('+91 98765 43211'), { target: { value: '9876543210' } });
+      await waitFor(() => expect(screen.getByText('10/7–15 digits')).toBeInTheDocument());
+      expect(screen.getByText('0/7–15 digits')).toBeInTheDocument();
+    });
+  });
 });

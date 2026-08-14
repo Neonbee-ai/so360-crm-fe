@@ -6,6 +6,15 @@ import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
+import {
+    validateFirstNameRequired,
+    validateLastName,
+    validateCompanyName,
+    validateAddress,
+    validateCity,
+    validatePinCode,
+    PIN_CODE_LENGTH,
+} from '../utils/leadFieldValidation';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
@@ -56,6 +65,10 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
     const [error, setError] = useState<string | null>(null);
     const [phoneError, setPhoneError] = useState<string | null>(null);
     const [altPhoneError, setAltPhoneError] = useState<string | null>(null);
+    // Partners carry the same name/company/address/city/PIN fields as leads and
+    // fed the same downstream search, invoices and mail merges, so they get the
+    // same rules rather than a second, looser standard.
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
 
     useEffect(() => {
         Promise.all([
@@ -77,7 +90,16 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         const apErr = validatePhone(form.alt_phone);
         setPhoneError(pErr);
         setAltPhoneError(apErr);
-        if (pErr || apErr) return;
+        const nextFieldErrors = {
+            first_name: validateFirstNameRequired(form.first_name),
+            last_name: validateLastName(form.last_name),
+            company_name: validateCompanyName(form.company_name),
+            address: validateAddress(form.address),
+            city: validateCity(form.city),
+            pin_code: validatePinCode(form.pin_code),
+        };
+        setFieldErrors(nextFieldErrors);
+        if (pErr || apErr || Object.values(nextFieldErrors).some(Boolean)) return;
         setSaving(true);
         setError(null);
         try {
@@ -136,14 +158,20 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             <div>
                                 <label className={labelCls}>First Name *</label>
                                 <input type="text" required value={form.first_name}
-                                    onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                                    onChange={e => { setForm(f => ({ ...f, first_name: e.target.value })); setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) }))}
+                                    aria-invalid={!!fieldErrors.first_name}
                                     className={inputCls} placeholder="Dhanooj" />
+                                {fieldErrors.first_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.first_name}</p>}
                             </div>
                             <div>
                                 <label className={labelCls}>Last Name *</label>
                                 <input type="text" required value={form.last_name}
-                                    onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                                    onChange={e => { setForm(f => ({ ...f, last_name: e.target.value })); setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) }))}
+                                    aria-invalid={!!fieldErrors.last_name}
                                     className={inputCls} placeholder="B S" />
+                                {fieldErrors.last_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.last_name}</p>}
                             </div>
                         </div>
 
@@ -151,8 +179,11 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         <div>
                             <label className={labelCls}>Company Name</label>
                             <input type="text" value={form.company_name}
-                                onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))}
+                                onChange={e => { setForm(f => ({ ...f, company_name: e.target.value })); setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) }))}
+                                aria-invalid={!!fieldErrors.company_name}
                                 className={inputCls} placeholder="Moonhive Pvt Ltd" />
+                            {fieldErrors.company_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.company_name}</p>}
                         </div>
 
                         {/* Partner Type */}
@@ -249,8 +280,11 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         <div>
                             <label className={labelCls}>Address</label>
                             <input type="text" value={form.address}
-                                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                                onChange={e => { setForm(f => ({ ...f, address: e.target.value })); setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) }))}
+                                aria-invalid={!!fieldErrors.address}
                                 className={inputCls} placeholder="Street / area" />
+                            {fieldErrors.address && <p className="text-rose-400 text-xs mt-1">{fieldErrors.address}</p>}
                         </div>
 
                         {/* City + Pin Code */}
@@ -258,14 +292,25 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             <div>
                                 <label className={labelCls}>City</label>
                                 <input type="text" value={form.city}
-                                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                                    onChange={e => { setForm(f => ({ ...f, city: e.target.value })); setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) }))}
+                                    aria-invalid={!!fieldErrors.city}
                                     className={inputCls} placeholder="Bangalore" />
+                                {fieldErrors.city && <p className="text-rose-400 text-xs mt-1">{fieldErrors.city}</p>}
                             </div>
                             <div>
-                                <label className={labelCls}>Pin Code</label>
-                                <input type="text" value={form.pin_code}
-                                    onChange={e => setForm(f => ({ ...f, pin_code: e.target.value }))}
+                                <label className={labelCls}>
+                                    Pin Code
+                                    <span className="ml-2 text-xs font-normal text-slate-500 normal-case">
+                                        {form.pin_code.replace(/\D/g, '').length}/{PIN_CODE_LENGTH} digits
+                                    </span>
+                                </label>
+                                <input type="text" inputMode="numeric" maxLength={PIN_CODE_LENGTH} value={form.pin_code}
+                                    onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, PIN_CODE_LENGTH); setForm(f => ({ ...f, pin_code: v })); setFieldErrors(p => ({ ...p, pin_code: validatePinCode(v) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePinCode(e.target.value) }))}
+                                    aria-invalid={!!fieldErrors.pin_code}
                                     className={inputCls} placeholder="560001" />
+                                {fieldErrors.pin_code && <p className="text-rose-400 text-xs mt-1">{fieldErrors.pin_code}</p>}
                             </div>
                         </div>
 

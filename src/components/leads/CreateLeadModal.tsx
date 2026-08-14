@@ -5,7 +5,13 @@ import { crmService, settingsApi } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
 import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types/crm';
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
-import { validatePhone, validatePhoneRequired } from '../../utils/phoneValidation';
+import {
+    validatePhone,
+    validatePhoneRequired,
+    phoneDigitCount,
+    MIN_PHONE_DIGITS,
+    MAX_PHONE_DIGITS,
+} from '../../utils/phoneValidation';
 import { validateEmail, validateEmailRequired } from '../../utils/emailValidation';
 import {
     validateAddress,
@@ -38,6 +44,18 @@ const FIELD_VALIDATORS: Record<string, (value: string) => string | null> = {
 };
 
 type FieldErrors = Partial<Record<string, string | null>>;
+
+/**
+ * Digits typed against the allowed range, so the limit is visible before the
+ * user hits it rather than only as an error afterwards. Declaring +91 pins the
+ * expectation to a single number, since that path allows exactly 10 subscriber
+ * digits — showing "7–15" there would be misleading.
+ */
+const phoneCountLabel = (value: string): string => {
+    const typed = phoneDigitCount(value);
+    if (value.trim().startsWith('+91')) return `${typed}/12 digits`;
+    return `${typed}/${MIN_PHONE_DIGITS}–${MAX_PHONE_DIGITS} digits`;
+};
 
 const INPUT_BASE =
     'w-full bg-slate-950 border px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-slate-50 placeholder:text-slate-500';
@@ -309,7 +327,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         )}
                     </div>
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-phone" className="text-sm font-medium text-slate-400">Phone <RequiredMark /></label>
+                        <label htmlFor="lead-phone" className="text-sm font-medium text-slate-400">
+                            Phone <RequiredMark />
+                            <span className="ml-2 text-xs font-normal text-slate-500">{phoneCountLabel(formData.phone)}</span>
+                        </label>
                         <input
                             id="lead-phone"
                             ref={(el) => { fieldRefs.current.phone = el; }}
@@ -335,7 +356,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-alt-phone" className="text-sm font-medium text-slate-400">Alt. Phone</label>
+                        <label htmlFor="lead-alt-phone" className="text-sm font-medium text-slate-400">
+                            Alt. Phone
+                            <span className="ml-2 text-xs font-normal text-slate-500">{phoneCountLabel(formData.alt_phone)}</span>
+                        </label>
                         <input
                             id="lead-alt-phone"
                             ref={(el) => { fieldRefs.current.alt_phone = el; }}
