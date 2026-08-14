@@ -26,10 +26,15 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     // the dropdown always resolved to an empty list.
     const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
     const [salesRepsError, setSalesRepsError] = useState(false);
+    // Distinct from "empty": before the first response lands there is nothing
+    // to report yet, and claiming the registry is empty at that point is the
+    // exact false alarm this field was reported for.
+    const [salesRepsLoading, setSalesRepsLoading] = useState(true);
     const [salesRepSearch, setSalesRepSearch] = useState('');
 
     const loadSalesReps = useCallback(async () => {
         setSalesRepsError(false);
+        setSalesRepsLoading(true);
         try {
             const reps = await crmService.getSalesReps();
             setSalesReps(
@@ -38,6 +43,8 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
         } catch {
             setSalesReps([]);
             setSalesRepsError(true);
+        } finally {
+            setSalesRepsLoading(false);
         }
     }, []);
 
@@ -468,7 +475,12 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 </div>
                                 {/* Never fail silently: an empty registry and a failed
                                     fetch look identical in a bare <select>. */}
-                                {salesRepsError ? (
+                                {salesRepsLoading ? (
+                                    <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5">
+                                        <Loader2 size={10} className="animate-spin" />
+                                        Loading employees...
+                                    </p>
+                                ) : salesRepsError ? (
                                     <p className="text-[10px] font-bold text-rose-400">
                                         Could not load employees from People Connect.{' '}
                                         <button type="button" onClick={loadSalesReps} className="underline hover:text-rose-300">

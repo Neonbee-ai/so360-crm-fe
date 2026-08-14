@@ -142,6 +142,55 @@ describe('CreateDealModal', () => {
       expect(screen.queryByText('Alan Rep — Growth Manager')).not.toBeInTheDocument();
     });
 
+    it('While the registry lookup is still in flight / Then it says loading rather than claiming there are no employees', async () => {
+      let release: (v: any) => void = () => {};
+      mockGetSalesReps.mockReturnValue(new Promise(res => { release = res; }));
+
+      render(<CreateDealModal {...defaultProps} />);
+
+      expect(await screen.findByText('Loading employees...')).toBeInTheDocument();
+      // The false alarm this whole field was reported for: an in-flight fetch
+      // must never read as an empty People Registry.
+      expect(screen.queryByText(/No active employees found/)).not.toBeInTheDocument();
+
+      release([{ id: 'p1', full_name: 'Alan Rep', job_title: 'Growth Manager', department_name: null, status: 'active' }]);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading employees...')).not.toBeInTheDocument();
+      });
+      expect(screen.getByText('Alan Rep — Growth Manager')).toBeInTheDocument();
+    });
+
+    it('When the lookup resolves empty / Then loading gives way to the genuine empty-registry message', async () => {
+      mockGetSalesReps.mockResolvedValue([]);
+
+      render(<CreateDealModal {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/No active employees found in People Connect/)).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Loading employees...')).not.toBeInTheDocument();
+    });
+
+    it('When Retry is pressed after a failure / Then it reloads and recovers to the populated list', async () => {
+      mockGetSalesReps.mockRejectedValueOnce(new Error('boom'));
+
+      render(<CreateDealModal {...defaultProps} />);
+
+      const retry = await screen.findByRole('button', { name: 'Retry' });
+      mockGetSalesReps.mockResolvedValue([
+        { id: 'p1', full_name: 'Alan Rep', job_title: 'Growth Manager', department_name: null, status: 'active' },
+      ]);
+      fireEvent.click(retry);
+
+      await waitFor(() => {
+        expect(screen.getByText('Alan Rep — Growth Manager')).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/Could not load employees/)).not.toBeInTheDocument();
+      // A recovered fetch must not leave the error state stuck on screen.
+      expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+    });
+
     it('When the registry lookup fails / Then an error with a Retry action is shown rather than an empty list', async () => {
       mockGetSalesReps.mockRejectedValue(new Error('boom'));
       render(<CreateDealModal {...defaultProps} />);
