@@ -64,6 +64,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     const [expectedClose, setExpectedClose] = useState<string>('');
     const [ownerId, setOwnerId] = useState<string>('');
     const [ownerPersonId, setOwnerPersonId] = useState<string>('');
+    const hasUserPickedSalesRep = useRef(false);
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [settings, setSettings] = useState<{ id: string; name: string }[]>([]);
@@ -133,6 +134,23 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
     const effectiveCompany = selectedCompanyName || companyName || '';
     const effectiveLeadId = selectedLeadId || leadId;
+
+    // Lead → Deal carries the lead's Sales Rep forward, but only while that
+    // person is still an active People Registry employee — an inactive rep must
+    // not be silently re-assigned onto a brand new deal. The user can always
+    // override, and their choice is never overwritten by this prefill.
+    useEffect(() => {
+        if (!effectiveLeadId || !salesReps.length || hasUserPickedSalesRep.current) return;
+        let cancelled = false;
+        crmService.getLeadById(effectiveLeadId).then(lead => {
+            const leadPersonId = (lead as any)?.owner_person_id;
+            if (cancelled || !leadPersonId || hasUserPickedSalesRep.current) return;
+            if (salesReps.some(p => p.id === leadPersonId)) setOwnerPersonId(leadPersonId);
+        }).catch(() => {
+            // Prefill is a convenience — never blocks deal creation.
+        });
+        return () => { cancelled = true; };
+    }, [effectiveLeadId, salesReps]);
     // A deal linked to a Lead doesn't need a company name — leads may
     // represent individual customers without an organization.
     const effectiveCompanyForSubmit = effectiveCompany || (effectiveLeadId ? leadName || '' : '');
@@ -434,7 +452,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 <div className="relative">
                                     <select
                                         value={ownerPersonId}
-                                        onChange={e => setOwnerPersonId(e.target.value)}
+                                        onChange={e => { hasUserPickedSalesRep.current = true; setOwnerPersonId(e.target.value); }}
                                         className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         <option value="">Select sales rep...</option>

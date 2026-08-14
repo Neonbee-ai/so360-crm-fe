@@ -980,4 +980,59 @@ describe('DealDetailPage — header and card presentation', () => {
       expect(span.className).toMatch(READABLE);
     });
   });
+  describe('Given a Deal carries a Sales Rep from the People Registry', () => {
+    it('When the rep is active / Then their name and department are shown on the Deal profile', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({
+        owner_person_id: 'p1',
+        owner_person: {
+          id: 'p1', full_name: 'Aswin Shaji', email: 'aswin@x.com', avatar_url: null,
+          job_title: 'Developer', employee_id: null, department_id: 'd1',
+          department_name: 'Engineering A', status: 'active',
+        },
+      }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Sales Rep')).toBeInTheDocument());
+      expect(screen.getByText('Aswin Shaji')).toBeInTheDocument();
+      expect(screen.getByText('Engineering A', { exact: false })).toBeInTheDocument();
+      expect(screen.queryByText('Inactive')).not.toBeInTheDocument();
+    });
+
+    it('When the rep has since left / Then the assignment is retained and badged Inactive', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({
+        owner_person_id: 'p9',
+        owner_person: {
+          id: 'p9', full_name: 'Departed Rep', email: null, avatar_url: null,
+          job_title: 'Sales', employee_id: null, department_id: null,
+          department_name: null, status: 'terminated',
+        },
+      }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Departed Rep')).toBeInTheDocument());
+      expect(screen.getByText('Inactive')).toBeInTheDocument();
+    });
+
+    it('When People Connect could not resolve the rep / Then the link is reported rather than silently blank', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ owner_person_id: 'p-gone', owner_person: null }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Sales Rep')).toBeInTheDocument());
+      expect(
+        screen.getByText('Sales rep unavailable from People Connect'),
+      ).toBeInTheDocument();
+    });
+
+    it('When the deal has no Sales Rep / Then no Sales Rep row is rendered at all', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ owner_person_id: null }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.queryByText('Sales Rep')).not.toBeInTheDocument();
+    });
+  });
 });

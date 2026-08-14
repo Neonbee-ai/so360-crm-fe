@@ -688,6 +688,40 @@ const DealDetailPage = () => {
                                         </div>
                                     )}
                                 </div>
+                                {/* Sales Rep — resolved from People Connect's People
+                                    Registry. An assignment survives the person going
+                                    inactive: the name stays and is badged, never
+                                    silently dropped. */}
+                                {deal.owner_person_id && (
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep</span>
+                                        {deal.owner_person ? (
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold overflow-hidden border border-slate-700">
+                                                    {deal.owner_person.avatar_url
+                                                        ? <img src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
+                                                        : (deal.owner_person.full_name || '?').charAt(0)}
+                                                </div>
+                                                <span className="text-sm font-bold text-slate-200">{deal.owner_person.full_name}</span>
+                                                {deal.owner_person.job_title && (
+                                                    <span className="text-xs font-bold text-slate-500">{deal.owner_person.job_title}</span>
+                                                )}
+                                                {deal.owner_person.department_name && (
+                                                    <span className="text-xs font-bold text-slate-500">· {deal.owner_person.department_name}</span>
+                                                )}
+                                                {deal.owner_person.status !== 'active' && (
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/40 rounded px-1.5 py-0.5">
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm font-bold text-slate-500">
+                                                Sales rep unavailable from People Connect
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Activity</span>
                                     <p className="text-sm font-bold text-slate-300 flex items-center gap-1.5">

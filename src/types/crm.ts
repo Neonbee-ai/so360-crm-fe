@@ -90,6 +90,11 @@ export interface Deal {
     current_flow_state?: string;
     owner: User;
     owner_id?: string;  // Used for updating owner
+    // Sales Rep — a People Connect person, not a CRM user. The deal stores only
+    // the id; `owner_person` is resolved by crm-be from the People Registry and
+    // is null when that person can no longer be resolved.
+    owner_person_id?: string | null;
+    owner_person?: SalesRep | null;
     last_activity_at?: string;
     notes: Note[];
     activities: Activity[];
