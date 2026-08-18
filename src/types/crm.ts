@@ -136,24 +136,25 @@ export interface Note {
 export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
 
 /**
- * Task priority. Persisted on tasks.priority since crm-be migration 048 —
- * before that every read path faked a hardcoded 'medium', so anything written
- * by a caller was silently discarded.
+ * Task priority. `tasks` is shared with the Projects module, which owns the
+ * column and its CHECK — projects-be migration 002 pinned the uppercase
+ * vocabulary LOW | MEDIUM | HIGH | CRITICAL. CRM must speak that set; a
+ * lowercase value violates tasks_priority_check and 500s the insert.
  */
-export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export const TASK_PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' },
+    { value: 'LOW', label: 'Low' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HIGH', label: 'High' },
+    { value: 'CRITICAL', label: 'Critical' },
 ];
 
 export const TASK_PRIORITY_STYLES: Record<TaskPriority, string> = {
-    low: 'bg-slate-700/40 text-slate-300',
-    medium: 'bg-sky-500/15 text-sky-400',
-    high: 'bg-amber-500/15 text-amber-400',
-    urgent: 'bg-rose-500/15 text-rose-400',
+    LOW: 'bg-slate-700/40 text-slate-300',
+    MEDIUM: 'bg-sky-500/15 text-sky-400',
+    HIGH: 'bg-amber-500/15 text-amber-400',
+    CRITICAL: 'bg-rose-500/15 text-rose-400',
 };
 
 export interface Task {

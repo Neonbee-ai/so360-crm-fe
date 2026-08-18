@@ -37,7 +37,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const [dueTime, setDueTime] = useState(() => splitStoredDueDate(task?.due_date).time);
     const [status, setStatus] = useState<Task['status']>(task?.status || 'OPEN');
     const [type, setType] = useState<TaskType>(task?.type || 'TODO');
-    const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
+    const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'MEDIUM');
     const [assignedToId, setAssignedToId] = useState(task?.assigned_to?.id || '');
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
@@ -155,7 +155,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             onClose();
         } catch (error) {
             console.error('Failed to save task', error);
-            toast.error('Failed to save task');
+            // ApiClient already unwraps the API body (class-validator returns an
+            // array of messages, joined). Discarding it turned every rejection —
+            // including precise field validation — into a bare "Failed to save
+            // task", which is what made the priority mismatch so hard to trace.
+            const status = (error as { status?: number })?.status;
+            const detail = (error as Error)?.message;
+            const isActionable = !!detail && status !== undefined && status < 500;
+            toast.error(isActionable ? detail : 'Failed to save task. Please try again.');
         } finally {
             setIsSubmitting(false);
         }

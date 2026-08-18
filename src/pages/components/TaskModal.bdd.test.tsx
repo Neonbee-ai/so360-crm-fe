@@ -79,13 +79,17 @@ const dueInput      = () => (dateInputs()[1] ?? dateInputs()[0]) as HTMLInputEle
 const timeInput     = () => document.querySelector('input[type="time"]') as HTMLInputElement;
 // The Priority select is filtered out so the positional index map below stays
 // stable as fields are added around it — see prioritySelect() for that field.
+// 'CRITICAL' is the top of the shared tasks_priority_check vocabulary and
+// appears in no other select, so it identifies the Priority field positionally.
+const isPrioritySelect = (el: HTMLSelectElement) =>
+  Array.from(el.options).some((o) => o.value === 'CRITICAL');
 const selects       = () =>
   Array.from(document.querySelectorAll('select')).filter(
-    (el) => !Array.from(el.options).some((o) => o.value === 'urgent'),
+    (el) => !isPrioritySelect(el),
   );
 const prioritySelect = () =>
-  Array.from(document.querySelectorAll('select')).find((el) =>
-    Array.from(el.options).some((o) => o.value === 'urgent'),
+  Array.from(document.querySelectorAll('select')).find(
+    isPrioritySelect,
   ) as HTMLSelectElement;
 // select indices in create/TODO mode: [0]=type, [1]=assignee
 // select indices in REMINDER mode:    [0]=type, [1]=reminderMinutes, [2]=assignee
@@ -329,35 +333,52 @@ describe('TaskModal', () => {
       );
     });
 
-    it('When no priority is chosen / Then the payload defaults to medium', async () => {
+    it('When no priority is chosen / Then the payload defaults to MEDIUM', async () => {
       render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
       fireEvent.change(dueInput(), { target: { value: futureDate } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() =>
-        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'medium' }))
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'MEDIUM' }))
       );
     });
 
     it('When a priority is chosen / Then it reaches the create payload', async () => {
-      // Regression: tasks had no priority column, so a chosen priority was
-      // silently discarded and every task read back as 'medium'.
+      // Regression: `tasks` is shared with Projects, which pinned the uppercase
+      // vocabulary in tasks_priority_check. CRM used to submit lowercase, which
+      // passed both the form and the DTO and then 500'd on the insert.
       render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
       fireEvent.change(dueInput(), { target: { value: futureDate } });
-      fireEvent.change(prioritySelect(), { target: { value: 'urgent' } });
+      fireEvent.change(prioritySelect(), { target: { value: 'CRITICAL' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() =>
-        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'urgent' }))
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'CRITICAL' }))
       );
     });
 
     it('When editing a task / Then its stored priority preloads into the selector', async () => {
-      render(<TaskModal task={{ ...BASE_TASK, priority: 'high' } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+      render(<TaskModal task={{ ...BASE_TASK, priority: 'HIGH' } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
-      expect(prioritySelect().value).toBe('high');
+      expect(prioritySelect().value).toBe('HIGH');
+    });
+
+    it('When the priority selector is rendered / Then every option value matches the DB CHECK vocabulary', async () => {
+      // Guards the exact mismatch that caused the 500: a UI option whose value
+      // is not one of LOW | MEDIUM | HIGH | CRITICAL cannot be persisted.
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      const values = Array.from(prioritySelect().options).map((o) => o.value);
+      expect(values).toEqual(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+    });
+
+    it('When the priority selector is rendered / Then it still reads Low/Medium/High/Critical to the user', async () => {
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      const labels = Array.from(prioritySelect().options).map((o) => o.textContent);
+      expect(labels).toEqual(['Low', 'Medium', 'High', 'Critical']);
     });
 
     it('When dealId provided / Then payload includes deal_id', async () => {
@@ -482,6 +503,34 @@ describe('TaskModal', () => {
       });
     });
 
+    it('When the API rejects with a 4xx / Then the API message is surfaced instead of the generic fallback', async () => {
+      // A bare "Failed to save task" is what hid the tasks_priority_check
+      // mismatch; actionable validation detail must reach the user.
+      const apiError = Object.assign(new Error('priority must be one of the following values: LOW, MEDIUM, HIGH, CRITICAL'), { status: 400 });
+      mockCreateTask.mockRejectedValue(apiError);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockShowError).toHaveBeenCalledWith('priority must be one of the following values: LOW, MEDIUM, HIGH, CRITICAL')
+      );
+    });
+
+    it('When the API rejects with a 5xx / Then the raw server message is not shown to the user', async () => {
+      const apiError = Object.assign(new Error('new row for relation "tasks" violates check constraint "tasks_priority_check"'), { status: 500 });
+      mockCreateTask.mockRejectedValue(apiError);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockShowError).toHaveBeenCalledWith('Failed to save task. Please try again.')
+      );
+    });
+
     it('When API throws / Then shows error toast and does not call onSuccess', async () => {
       mockCreateTask.mockRejectedValue(new Error('Network error'));
       const onSuccess = vi.fn();
@@ -490,7 +539,7 @@ describe('TaskModal', () => {
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
       fireEvent.change(dueInput(), { target: { value: futureDate } });
       fireEvent.submit(document.querySelector('form')!);
-      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task'));
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task. Please try again.'));
       expect(onSuccess).not.toHaveBeenCalled();
     });
   });
@@ -536,7 +585,7 @@ describe('TaskModal', () => {
       render(<TaskModal task={BASE_TASK as any} onClose={vi.fn()} onSuccess={onSuccess} />);
       await waitFor(() => screen.getByDisplayValue('Follow up call'));
       fireEvent.submit(document.querySelector('form')!);
-      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task'));
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task. Please try again.'));
       expect(onSuccess).not.toHaveBeenCalled();
     });
   });

@@ -247,14 +247,14 @@ describe('LeadDetailPanel — Tasks tab', () => {
   });
 
   it('renders the task priority persisted by the backend', async () => {
-    // Regression: tasks had no priority column, so every read faked 'medium'
-    // and the Quick View could not show a real one (crm-be migration 048).
+    // Regression: the Quick View shows the value exactly as stored, and the
+    // shared tasks_priority_check vocabulary is uppercase (owned by Projects).
     mockGetTasks.mockResolvedValue([
-      { id: 't1', title: 'Call back', due_date: '2099-02-01T00:00:00Z', status: 'OPEN', priority: 'urgent', type: 'CALL', assigned_to: { id: 'u1', full_name: 'Alice' }, created_at: '2026-01-01T00:00:00Z' },
+      { id: 't1', title: 'Call back', due_date: '2099-02-01T00:00:00Z', status: 'OPEN', priority: 'CRITICAL', type: 'CALL', assigned_to: { id: 'u1', full_name: 'Alice' }, created_at: '2026-01-01T00:00:00Z' },
     ]);
     render_(makeLead());
     fireEvent.click(screen.getByText('Tasks'));
-    expect(await screen.findByText('urgent')).toBeInTheDocument();
+    expect(await screen.findByText('CRITICAL')).toBeInTheDocument();
   });
 
   it('omits the priority chip entirely for a task that carries none', async () => {
@@ -264,7 +264,7 @@ describe('LeadDetailPanel — Tasks tab', () => {
     render_(makeLead());
     fireEvent.click(screen.getByText('Tasks'));
     expect(await screen.findByText('Call back')).toBeInTheDocument();
-    expect(screen.queryByText(/^(low|medium|high|urgent)$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^(LOW|MEDIUM|HIGH|CRITICAL)$/)).not.toBeInTheDocument();
   });
 
   it('flags a past-due, unfinished task as overdue', async () => {
