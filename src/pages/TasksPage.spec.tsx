@@ -30,14 +30,14 @@ vi.mock('@so360/shell-context', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
   useShell: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     isModuleEnabled: () => true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
@@ -56,7 +56,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
 }));
 
@@ -131,14 +131,14 @@ describe('Given TasksPage — CRM Task Management', () => {
     vi.doMock('@so360/shell-context', () => ({
       useShellBridge: () => ({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: vi.fn().mockReturnValue(false),
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(false),
       }),
       useShell: () => ({
         tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
         orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
         userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
         isModuleEnabled: () => true,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
         isFeatureHidden: () => false,
       }),
       useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),

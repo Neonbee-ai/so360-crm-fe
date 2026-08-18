@@ -18,7 +18,7 @@ const PipelinePage = () => {
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
-    const canCreateDeal = (shell?.effectiveFlagsLoaded ?? false) ? (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true) : true;
+    const canCreateDeal = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('deals.create') ?? false) && ((shell?.effectiveFlagsLoaded ?? false) ? (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true) : true);
     const [isCreateDealOpen, setIsCreateDealOpen] = useState(false);
     const [deals, setDeals] = useState<Deal[]>([]);
     const [stages, setStages] = useState<FlowState[]>([]);

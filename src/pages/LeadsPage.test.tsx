@@ -34,7 +34,7 @@ vi.mock('@so360/shell-context', () => ({
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
   useShellBridge: () => ({
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
     currentOrg: { id: 'org-1' },
   }),

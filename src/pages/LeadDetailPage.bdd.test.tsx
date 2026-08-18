@@ -123,7 +123,7 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useCurrentEntity: () => ({ setCurrentEntity: mockSetCurrentEntity }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -299,7 +299,7 @@ beforeEach(async () => {
   // Re-apply the default useShellBridge implementation so tests that call mockReturnValue don't bleed through
   const shell = await import('@so360/shell-context');
   mockUseShellBridge = vi.mocked(shell.useShellBridge);
-  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockPathname = '/crm/leads/lead-1';
   mockGetLeadById.mockResolvedValue(makeLead());
   mockGetDealsByLeadId.mockResolvedValue(associatedDeals);
@@ -827,7 +827,7 @@ describe('LeadDetailPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is explicitly false / Then Create Deal button is absent', async () => {
-      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, isFeatureEnabled: () => true } as any);
+      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true } as any);
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       expect(screen.queryByText('Create Deal')).not.toBeInTheDocument();

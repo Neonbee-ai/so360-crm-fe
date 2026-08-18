@@ -151,8 +151,8 @@ const LeadsPage = () => {
   const { emitNotification } = useNotify();
   const { recordActivity } = useActivity();
   const shell = useShellBridge();
-  const canCreateLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
-  const canUpdateLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
+  const canCreateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
+  const canUpdateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
   const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
   const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
   const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });

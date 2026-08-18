@@ -99,7 +99,7 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useCurrentEntity: () => ({ setCurrentEntity: mockSetCurrentEntity }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
 }));

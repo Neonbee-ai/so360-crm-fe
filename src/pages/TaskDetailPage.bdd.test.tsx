@@ -37,7 +37,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: React.createContext({ user: { id: 'user-1' } }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -77,7 +77,7 @@ const makeNotes = () => [
 beforeEach(async () => {
   vi.clearAllMocks();
   const shell = await import('@so360/shell-context');
-  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetTaskById.mockResolvedValue(makeTask());
   mockGetUsers.mockResolvedValue([]);
   mockGetTaskNotes.mockResolvedValue(makeNotes());
@@ -403,7 +403,7 @@ describe('TaskDetailPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: false,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
@@ -416,7 +416,7 @@ describe('TaskDetailPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
       } as any);
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());

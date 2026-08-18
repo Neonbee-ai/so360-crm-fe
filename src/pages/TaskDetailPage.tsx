@@ -25,7 +25,7 @@ const TaskDetailPage = () => {
     const currentUserId = shell?.user?.id;
     const { recordActivity } = useActivity();
     const shellBridge = useShellBridge();
-    const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    const canCreateTask = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('activities.create') ?? false) && (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
     const [task, setTask] = useState<Task | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingTask, setIsEditingTask] = useState(false);

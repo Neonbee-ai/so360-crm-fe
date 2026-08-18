@@ -50,12 +50,12 @@ import PipelinePage from './PipelinePage';
 
 const ENABLED_SHELL = {
   effectiveFlagsLoaded: true,
-  isFeatureEnabled: (flag: string) => flag === 'action:crm:deals:create',
+  permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: (flag: string) => flag === 'action:crm:deals:create',
 };
 
 const DISABLED_SHELL = {
   effectiveFlagsLoaded: true,
-  isFeatureEnabled: () => false,
+  permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
 };
 
 beforeEach(() => {
@@ -114,7 +114,7 @@ describe('Given PipelinePage', () => {
   });
 
   it('When flags not loaded yet / Then New Deal button is visible (default allow)', async () => {
-    mockShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, isFeatureEnabled: () => false });
+    mockShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false });
     render(<PipelinePage />);
     await waitFor(() => screen.getByTestId('kanban'));
     expect(screen.getByRole('button', { name: /new deal/i })).toBeInTheDocument();

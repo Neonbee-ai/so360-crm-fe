@@ -29,7 +29,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
@@ -70,7 +70,7 @@ const deals = [
 beforeEach(async () => {
   vi.clearAllMocks();
   const shell = await import('@so360/shell-context');
-  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetQuotes.mockResolvedValue(quotes);
   mockGetDeals.mockResolvedValue(deals);
   mockCreateQuote.mockResolvedValue({ id: 'q-new' });
@@ -623,7 +623,7 @@ describe('QuoteStatusCell', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: false,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
       render(<QuotesPage />);
       expect(screen.queryByText('New Quote')).not.toBeInTheDocument();
@@ -633,7 +633,7 @@ describe('QuoteStatusCell', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
         currentOrg: { id: 'org-1' },
       } as any);
       render(<QuotesPage />);

@@ -84,9 +84,9 @@ vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div d
 
 const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
 vi.mock('@so360/shell-context', () => ({
-  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled }),
+  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true }),
 }));
 
 vi.mock('../config/features', () => ({

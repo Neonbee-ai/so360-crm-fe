@@ -64,7 +64,7 @@ vi.mock('@so360/shell-context', () => ({
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
   useShellBridge: vi.fn(() => ({
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
     currentOrg: { id: 'org-1' },
   })),
@@ -184,7 +184,7 @@ beforeEach(async () => {
   const shell = await import('@so360/shell-context');
   vi.mocked(shell.useShellBridge).mockImplementation(() => ({
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
     currentOrg: { id: 'org-1' },
   }));
@@ -490,7 +490,7 @@ describe('LeadsPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: false,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
       render(<LeadsPage />);
       expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
@@ -500,7 +500,7 @@ describe('LeadsPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
         currentOrg: { id: 'org-1' },
       } as any);
       render(<LeadsPage />);
@@ -797,5 +797,51 @@ describe('LeadsPage — saved views (backend)', () => {
         expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Corp'),
       );
     });
+  });
+});
+
+// ── Role-permission gating (RBAC action-level) ─────────────────────────────
+// The New Lead action was gated only on a plan feature flag with a fail-open
+// default, so any member of an entitled org saw it regardless of role. It now
+// also requires the leads.create permission, fail-closed — matching the backend,
+// which already enforces @Permissions(leads.create).
+describe('LeadsPage — New Lead permission gating', () => {
+  const setShell = async (overrides: Record<string, unknown>) => {
+    const { useShellBridge } = await import('@so360/shell-context');
+    vi.mocked(useShellBridge).mockReturnValue({
+      effectiveFlagsLoaded: true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+      currentOrg: { id: 'org-1' },
+      ...overrides,
+    } as any);
+  };
+
+  it('Given the user lacks leads.create / When loaded / Then New Lead is hidden', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c !== 'leads.create' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
+  });
+
+  it('Given the user holds leads.create / When loaded / Then New Lead is shown', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c === 'leads.create' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.getByText('New Lead')).toBeInTheDocument();
+  });
+
+  it('Given an owner/admin wildcard / When loaded / Then New Lead is shown', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.getByText('New Lead')).toBeInTheDocument();
+  });
+
+  it('Given entitlements have not resolved / When loaded / Then New Lead fails closed (hidden)', async () => {
+    await setShell({ permissionsLoaded: false, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
   });
 });

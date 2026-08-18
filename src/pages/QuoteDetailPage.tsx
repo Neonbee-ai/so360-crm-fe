@@ -28,9 +28,9 @@ const QuoteDetailPage = () => {
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
-    const canCreateQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
-    const canApproveQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true);
-    const canConvertQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true);
+    const canCreateQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
+    const canApproveQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.approve') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true);
+    const canConvertQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true);
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();

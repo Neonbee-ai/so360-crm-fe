@@ -90,7 +90,9 @@ const DealDetailPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [signOpen, setSignOpen] = useState(false);
-    const { isModuleEnabled } = useShell();
+    const { isModuleEnabled, hasPermission, permissionsLoaded } = useShell();
+    // Destructive action — gate on deals.delete, fail closed. Backend already enforces it.
+    const canDeleteDeal = permissionsLoaded === true && (hasPermission?.('deals.delete') ?? false);
     const isSignEnabled = isModuleEnabled('sign');
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
@@ -544,14 +546,14 @@ const DealDetailPage = () => {
 
                     <div className="flex gap-3">
                         {/* Icon-only — see LeadDetailPage for the rationale. */}
-                        <button
+                        {canDeleteDeal && <button
                             onClick={() => setShowDeleteConfirm(true)}
                             aria-label="Delete"
                             title="Delete"
                             className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-2.5 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
                             <Trash2 size={14} />
-                        </button>
+                        </button>}
                         {isSignEnabled && (
                             <button
                                 type="button"

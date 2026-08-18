@@ -36,7 +36,7 @@ vi.mock('@so360/shell-context', () => ({
     settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' },
   }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useOrganization: () => ({ currentOrg: { id: 'org-1', name: 'Test Org' } }),
@@ -65,7 +65,7 @@ const quoteData = {
 beforeEach(async () => {
   vi.clearAllMocks();
   const shell = await import('@so360/shell-context');
-  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetQuoteById.mockResolvedValue(quoteData);
   mockGetStockAvailability.mockResolvedValue({ items: [{ item_id: 'i1', available_quantity: 100 }] });
   mockUpdateQuote.mockResolvedValue(quoteData);
@@ -473,7 +473,7 @@ describe('QuoteDetailPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: false,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
       render(<QuoteDetailPage />);
       await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());
@@ -485,7 +485,7 @@ describe('QuoteDetailPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
       } as any);
       render(<QuoteDetailPage />);
       await waitFor(() => expect(screen.getByText(/Test Quote/)).toBeInTheDocument());

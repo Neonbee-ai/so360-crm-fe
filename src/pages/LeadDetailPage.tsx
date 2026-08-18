@@ -123,10 +123,13 @@ const LeadDetailPage = () => {
     const { isModuleEnabled } = useShell();
     const { setCurrentEntity } = useCurrentEntity();
     const shell = useShellBridge();
-    const canCreateDeal = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
-    const canPromoteLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
-    const canQualifyLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
-    const canConvertLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
+    const canCreateDeal = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('deals.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
+    const canPromoteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
+    const canQualifyLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
+    const canConvertLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
+    // Destructive action — gate on the delete permission, fail closed. The backend
+    // already enforces leads.delete; this stops offering a control the user can't use.
+    const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
     const canUseNeuraAi = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isInboxEnabled = isModuleEnabled('inbox');
@@ -519,14 +522,14 @@ const LeadDetailPage = () => {
                             word keeps the destructive secondary action from competing
                             with the primary CTA beside it. Name is carried by
                             aria-label + title so it stays announced and hoverable. */}
-                        <button
+                        {canDeleteLead && <button
                             onClick={() => setShowDeleteConfirm(true)}
                             aria-label="Delete"
                             title="Delete"
                             className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-3 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
                             <Trash2 size={16} />
-                        </button>
+                        </button>}
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"

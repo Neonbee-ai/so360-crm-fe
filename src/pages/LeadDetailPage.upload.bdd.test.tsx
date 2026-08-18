@@ -64,7 +64,7 @@ vi.mock('@so360/shell-context', () => ({
     useActivity: () => ({ recordActivity: vi.fn() }),
     useShellBridge: vi.fn(() => ({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
         isFeatureHidden: () => false,
     })),
     useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),

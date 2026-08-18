@@ -21,7 +21,7 @@ const TasksPage = () => {
     const formatters = useCRMFormatters();
     const shell = useShell();
     const shellBridge = useShellBridge();
-    const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    const canCreateTask = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('activities.create') ?? false) && (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
