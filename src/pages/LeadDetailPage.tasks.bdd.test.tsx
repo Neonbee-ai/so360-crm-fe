@@ -435,8 +435,16 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
     });
 
     it('When task due_date is today / Then does not show Overdue badge', async () => {
+      // Build the date from LOCAL parts, not toISOString(): the component compares
+      // due dates in local time, so east of UTC the UTC date is still yesterday
+      // between local midnight and the offset — which fed this spec a past due
+      // date and made it fail for those few hours every day.
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      const todayStr = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, '0'),
+        String(today.getDate()).padStart(2, '0'),
+      ].join('-');
       const todayTask = makeTask({ due_date: todayStr });
 
       mockGetTasksByLeadId.mockResolvedValueOnce([todayTask]);
