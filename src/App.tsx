@@ -116,6 +116,33 @@ const FlagGuard = ({ flagKey, children }: { flagKey: string; children: React.Rea
     );
 };
 
+// Guards a route on the signed-in user's ROLE PERMISSIONS — the page-level
+// counterpart to FlagGuard. A plan flag answers "is this feature in the plan";
+// this answers "may this user open it". Both must pass, so the two compose
+// rather than replace one another.
+//
+// Fail-closed: while entitlements resolve (or with no bridge at all) the page is
+// withheld rather than flashed. Denial renders an explanatory notice instead of
+// a blank screen so "not allowed" is distinguishable from "broken". Codes are
+// wildcard-aware via the shell bridge, matching the backend resolver exactly.
+const PermissionGuard = ({ permission, children }: { permission: string | string[]; children: React.ReactNode }) => {
+    const shell = useShellBridge();
+    if (!shell || !shell.permissionsLoaded) return null;
+    const codes = Array.isArray(permission) ? permission : [permission];
+    const allowed = shell.hasAnyPermission
+        ? shell.hasAnyPermission(...codes)
+        : codes.some((c: string) => shell.hasPermission?.(c) ?? false);
+    if (allowed) return <>{children}</>;
+    return (
+        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">You don&apos;t have access to this page</h2>
+            <p className="mt-2 max-w-md text-sm text-slate-600 dark:text-slate-400">
+                Your role doesn&apos;t include permission for this page. Ask an administrator if you need it.
+            </p>
+        </div>
+    );
+};
+
 // Guards a route behind a module enablement check — redirects to dashboard when disabled
 const ModuleGuard = ({ moduleId, children }: { moduleId: string; children: React.ReactNode }) => {
     const shell = useShellBridge();
@@ -177,33 +204,33 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="leads" element={<FlagGuard flagKey="submodule:crm:leads"><LeadsPage /></FlagGuard>} />
-                    <Route path="leads/:id" element={<FlagGuard flagKey="submodule:crm:leads"><LeadDetailPage /></FlagGuard>} />
-                    <Route path="partners" element={<FlagGuard flagKey="submodule:crm:partners"><PartnersPage /></FlagGuard>} />
-                    <Route path="partners/:id" element={<FlagGuard flagKey="submodule:crm:partners"><PartnerDetailPage /></FlagGuard>} />
-                    <Route path="customers" element={<CustomersPage />} />
-                    <Route path="customers/:id" element={<LeadDetailPage />} />
-                    <Route path="pipeline" element={<FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard>} />
-                    <Route path="deal/:id" element={<FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard>} />
-                    <Route path="tasks" element={<FlagGuard flagKey="submodule:crm:tasks"><TasksPage /></FlagGuard>} />
-                    <Route path="tasks/:id" element={<FlagGuard flagKey="submodule:crm:tasks"><TaskDetailPage /></FlagGuard>} />
-                    <Route path="quotes" element={<FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard>} />
-                    <Route path="quotes/:id" element={<FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard>} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="sales-targets/task-types" element={<FlagGuard flagKey="submodule:crm:sales_targets"><AdminTaskTypesPage /></FlagGuard>} />
-                    <Route path="sales-targets/targets" element={<FlagGuard flagKey="action:crm:sales_targets:manage"><AdminTargetsPage /></FlagGuard>} />
-                    <Route path="sales-targets/scorecard" element={<FlagGuard flagKey="submodule:crm:sales_targets"><MyScorecardPage /></FlagGuard>} />
-                    <Route path="sales-targets/leaderboard" element={<FlagGuard flagKey="submodule:crm:sales_targets"><LeaderboardPage /></FlagGuard>} />
-                    <Route path="marketing/overview" element={<ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard>} />
-                    <Route path="marketing/abandoned-carts" element={<ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard>} />
-                    <Route path="marketing/abandoned-carts/:cartId" element={<ModuleGuard moduleId="dailystore"><MarketingAbandonedCartDetailPage /></ModuleGuard>} />
-                    <Route path="marketing/campaigns" element={<ModuleGuard moduleId="dailystore"><MarketingCampaignsPage /></ModuleGuard>} />
-                    <Route path="marketing/campaigns/:campaignId" element={<ModuleGuard moduleId="dailystore"><MarketingCampaignDetailPage /></ModuleGuard>} />
-                    <Route path="marketing/segments" element={<ModuleGuard moduleId="dailystore"><MarketingSegmentsPage /></ModuleGuard>} />
-                    <Route path="marketing/newsletter" element={<ModuleGuard moduleId="dailystore"><MarketingNewsletterPage /></ModuleGuard>} />
-                    <Route path="marketing/coupons" element={<ModuleGuard moduleId="dailystore"><MarketingCouponsPage /></ModuleGuard>} />
-                    <Route path="marketing/reviews" element={<ModuleGuard moduleId="dailystore"><MarketingReviewsPage /></ModuleGuard>} />
-                    <Route path="marketing/wishlist" element={<ModuleGuard moduleId="dailystore"><MarketingWishlistPage /></ModuleGuard>} />
+                    <Route path="leads" element={<PermissionGuard permission='leads.read'><FlagGuard flagKey="submodule:crm:leads"><LeadsPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="leads/:id" element={<PermissionGuard permission='leads.read'><FlagGuard flagKey="submodule:crm:leads"><LeadDetailPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="partners" element={<PermissionGuard permission={['companies.read', 'partners.manage']}><FlagGuard flagKey="submodule:crm:partners"><PartnersPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="partners/:id" element={<PermissionGuard permission={['companies.read', 'partners.manage']}><FlagGuard flagKey="submodule:crm:partners"><PartnerDetailPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="customers" element={<PermissionGuard permission={['companies.read', 'contacts.read']}><CustomersPage /></PermissionGuard>} />
+                    <Route path="customers/:id" element={<PermissionGuard permission={['companies.read', 'contacts.read']}><LeadDetailPage /></PermissionGuard>} />
+                    <Route path="pipeline" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><PipelinePage /></FlagGuard></PermissionGuard>} />
+                    <Route path="deal/:id" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:pipeline"><DealDetailPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="tasks" element={<PermissionGuard permission='crm_tasks.read'><FlagGuard flagKey="submodule:crm:tasks"><TasksPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="tasks/:id" element={<PermissionGuard permission='crm_tasks.read'><FlagGuard flagKey="submodule:crm:tasks"><TaskDetailPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="quotes" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="quotes/:id" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="settings" element={<PermissionGuard permission='crm_settings.read'><SettingsPage /></PermissionGuard>} />
+                    <Route path="sales-targets/task-types" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><AdminTaskTypesPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="sales-targets/targets" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="action:crm:sales_targets:manage"><AdminTargetsPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="sales-targets/scorecard" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><MyScorecardPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="sales-targets/leaderboard" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><LeaderboardPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="marketing/overview" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/abandoned-carts" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/abandoned-carts/:cartId" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartDetailPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/campaigns" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCampaignsPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/campaigns/:campaignId" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCampaignDetailPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/segments" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingSegmentsPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/newsletter" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingNewsletterPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/coupons" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingCouponsPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/reviews" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingReviewsPage /></ModuleGuard></PermissionGuard>} />
+                    <Route path="marketing/wishlist" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingWishlistPage /></ModuleGuard></PermissionGuard>} />
                 </Routes>
                 </CrossLinkBridge>
             </CrmShellInitializer>
