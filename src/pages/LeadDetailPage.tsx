@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { eventBus } from '@so360/event-bus';
+import { publishLeadsChanged } from '../utils/leadEvents';
 import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -447,7 +448,24 @@ const LeadDetailPage = () => {
         const leadName = lead ? getLeadDisplayName(lead) : id;
         try {
             await crmService.deleteLead(id);
-            toast.success('Lead deleted successfully');
+            // Server-confirmed: every lead-derived count re-reads from here.
+            publishLeadsChanged('deleted', [id]);
+            // The delete is a soft delete, so "Undo" is a real restore rather
+            // than a re-create — the lead comes back with its history intact.
+            toast.success('Lead deleted', {
+                duration: 8000,
+                action: {
+                    label: 'Undo',
+                    onClick: () => {
+                        crmService.restoreLead(id)
+                            .then(() => {
+                                publishLeadsChanged('restored', [id]);
+                                toast.success('Lead restored');
+                            })
+                            .catch((e: any) => toast.error(describeApiError(e, 'We couldn’t restore this lead.')));
+                    },
+                },
+            });
             recordActivity({ eventType: 'lead.deleted', eventCategory: 'crm', description: `Deleted lead "${leadName}"`, resourceType: 'lead', resourceId: id }).catch(() => {});
             navigate(isCustomerDetailRoute ? '/crm/customers' : '/crm/leads');
         } catch (error: any) {

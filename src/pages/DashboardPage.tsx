@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { CrossLinkChip } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
+import { onLeadsChanged } from '../utils/leadEvents';
 import { parseStoredTimestamp, dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 
 /**
@@ -65,26 +66,33 @@ const DashboardPage = () => {
     } | null>(null);
     const [isCommerceLoading, setIsCommerceLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            setIsLoading(true);
-            try {
-                const data = await crmService.getDashboardStats({
-                    period,
-                    year,
-                    quarter: period === 'quarterly' ? quarter : undefined,
-                    month: period === 'monthly' ? month : undefined,
-                    week: period === 'weekly' ? week : undefined,
-                });
-                setStats(data);
-            } catch (error) {
-                console.error('Failed to fetch dashboard stats', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchStats();
+    const fetchStats = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setIsLoading(true);
+        try {
+            const data = await crmService.getDashboardStats({
+                period,
+                year,
+                quarter: period === 'quarterly' ? quarter : undefined,
+                month: period === 'monthly' ? month : undefined,
+                week: period === 'weekly' ? week : undefined,
+            });
+            setStats(data);
+        } catch (error) {
+            console.error('Failed to fetch dashboard stats', error);
+        } finally {
+            if (!opts?.silent) setIsLoading(false);
+        }
     }, [period, year, quarter, month, week]);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+
+    // Deleting or restoring a lead changes counts, pipeline/stage totals and
+    // conversion metrics. The backend already excludes soft-deleted leads from
+    // every query — this re-read is what makes the dashboard show it without a
+    // manual refresh. Silent: the numbers update in place, no loading flash.
+    useEffect(() => onLeadsChanged(() => { void fetchStats({ silent: true }); }), [fetchStats]);
 
     useEffect(() => {
         if (!isDailyStoreEnabled) return;

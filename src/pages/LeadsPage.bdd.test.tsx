@@ -577,14 +577,48 @@ describe('LeadsPage — bulk actions', () => {
     expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { owner_id: 'u1' });
   });
 
-  it('When the bulk delete endpoint fails / Then rows are still optimistically removed', async () => {
+  // A row that leaves the grid without leaving the database is the whole bug:
+  // it looks deleted while still driving every count, dashboard and report.
+  // Only server-confirmed ids may disappear.
+  it('When the bulk delete endpoint fails / Then the row stays in the grid', async () => {
     mockBulkDeleteLeads.mockRejectedValueOnce(new Error('offline'));
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
 
     await act(async () => { getBulkAction('Delete').onClick(['l1']); });
 
+    expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
+  });
+
+  it('When the server confirms no deletions / Then no row is removed', async () => {
+    // An empty `deleted` array means nothing was deleted — it must never be
+    // read as "assume they all were".
+    mockBulkDeleteLeads.mockResolvedValueOnce({
+      requested: 1,
+      deleted: [],
+      failed: [{ id: 'l1', error: 'Lead l1 not found' }],
+    });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1']); });
+
+    expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
+  });
+
+  it('When only some ids are confirmed / Then only those rows leave the grid', async () => {
+    mockBulkDeleteLeads.mockResolvedValueOnce({
+      requested: 2,
+      deleted: ['l1'],
+      failed: [{ id: 'l2', error: 'Lead l2 has DailyStore orders' }],
+    });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1', 'l2']); });
+
     await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
+    expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
   });
 });
 

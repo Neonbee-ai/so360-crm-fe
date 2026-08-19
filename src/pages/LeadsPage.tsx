@@ -32,8 +32,9 @@ import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
+import { publishLeadsChanged } from '../utils/leadEvents';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate } from '@so360/design-system';
+import { QuotaGate, toast } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
@@ -412,6 +413,25 @@ const LeadsPage = () => {
       setLeads((prev) => prev.filter((l) => l.id !== leadId));
       setShowDeleteConfirm(null);
       setDetailLead((prev) => (prev?.id === leadId ? null : prev));
+      // Tell every other lead-derived surface (dashboard KPIs, pipeline
+      // widgets) to re-read, so the counts drop without a manual refresh.
+      publishLeadsChanged('deleted', [leadId]);
+      // Soft delete means Undo is a genuine restore, history and all.
+      toast.success('Lead deleted', {
+        duration: 8000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            crmService.restoreLead(leadId)
+              .then((restored) => {
+                setLeads((prev) => (prev.some((l) => l.id === leadId) ? prev : [restored, ...prev]));
+                publishLeadsChanged('restored', [leadId]);
+                toast.success('Lead restored');
+              })
+              .catch((e: any) => toast.error(describeApiError(e, 'We couldn’t restore this lead.')));
+          },
+        },
+      });
     } catch (err: any) {
       setError(describeApiError(err, 'We couldn’t delete this lead. Please try again.'));
     } finally {
@@ -420,14 +440,30 @@ const LeadsPage = () => {
   }, []);
 
   const handleBulkDelete = useCallback(async (ids: string[]) => {
-    // Single bulk request (server processes per-id and reports partial success)
-    // instead of N client round-trips. Only remove the rows the server confirms.
+    // Single bulk request (server processes per-id and reports partial success).
+    //
+    // ONLY the ids the server confirms leave the grid. Removing a row the
+    // server refused is what made a lead look deleted while it kept feeding
+    // every dashboard, count and report — the row was gone from the screen and
+    // nowhere else. An empty `deleted` array now means "nothing was deleted",
+    // not "assume they all were", and a hard failure removes nothing at all.
     try {
       const res = await crmService.bulkDeleteLeads(ids);
-      const removed = res?.deleted?.length ? res.deleted : ids;
-      setLeads((prev) => prev.filter((l) => !removed.includes(l.id)));
-    } catch {
-      setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
+      const removed = Array.isArray(res?.deleted) ? res.deleted : [];
+      if (removed.length) {
+        setLeads((prev) => prev.filter((l) => !removed.includes(l.id)));
+        publishLeadsChanged('deleted', removed);
+      }
+      const failed = res?.failed || [];
+      if (failed.length) {
+        setError(
+          failed.length === ids.length
+            ? `We couldn’t delete ${failed.length === 1 ? 'this lead' : 'these leads'}: ${failed[0].error}`
+            : `Deleted ${removed.length} of ${ids.length}. ${failed.length} could not be deleted: ${failed[0].error}`,
+        );
+      }
+    } catch (err: any) {
+      setError(describeApiError(err, 'We couldn’t delete the selected leads. Please try again.'));
     }
   }, []);
 

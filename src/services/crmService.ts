@@ -559,10 +559,34 @@ export const leadsApi = {
     },
 
     /**
-     * DELETE /leads/:id - Delete a lead
+     * DELETE /leads/:id — soft-delete a lead.
+     *
+     * The backend stamps `deleted_at`, which drops the lead out of every
+     * active-lead query (lists, counts, dashboard metrics, pipeline stages,
+     * analytics, search). Reversible via restore().
      */
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/leads/${id}`);
+    },
+
+    /** POST /leads/:id/restore — bring a soft-deleted lead back. */
+    restore: async (id: string): Promise<Lead> => {
+        const lead = await apiClient.post<any>(`/leads/${id}/restore`, {});
+        return mapLeadFromApi(lead);
+    },
+
+    /** POST /leads/bulk/restore — restore many soft-deleted leads. */
+    bulkRestore: async (ids: string[]): Promise<{ requested: number; restored: string[]; failed: Array<{ id: string; error: string }> }> => {
+        return apiClient.post('/leads/bulk/restore', { ids });
+    },
+
+    /**
+     * GET /leads?only_deleted=true — the recycle bin. Same filter/sort/paging
+     * pipeline as the active list, so the two views can never disagree.
+     */
+    getDeleted: async (params: { skip?: number; take?: number; q?: string; type?: string } = {}): Promise<Lead[]> => {
+        const rows = await apiClient.get<any[]>('/leads', { ...params, only_deleted: 'true' });
+        return (rows || []).map(mapLeadFromApi);
     },
 
     /**
@@ -1480,6 +1504,7 @@ export const crmService = {
     // Bulk lead operations
     bulkUpdateLeads: (ids: string[], patch: Record<string, any>) => leadsApi.bulkUpdate(ids, patch),
     bulkDeleteLeads: (ids: string[]) => leadsApi.bulkDelete(ids),
+    bulkRestoreLeads: (ids: string[]) => leadsApi.bulkRestore(ids),
     bulkTagLeads: (ids: string[], add?: string[], remove?: string[]) => leadsApi.bulkTags(ids, add, remove),
 
     // Grid preferences (saved views + column layout), delegated to gridPrefsApi
@@ -1731,6 +1756,14 @@ export const crmService = {
 
     deleteLead: async (id: string): Promise<void> => {
         return leadsApi.delete(id);
+    },
+
+    restoreLead: async (id: string): Promise<Lead> => {
+        return leadsApi.restore(id);
+    },
+
+    getDeletedLeads: async (params?: { skip?: number; take?: number; q?: string; type?: string }): Promise<Lead[]> => {
+        return leadsApi.getDeleted(params);
     },
 
     getPartners: async (): Promise<Lead[]> => {
