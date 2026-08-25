@@ -183,6 +183,12 @@ const AdminTaskTypesPage = lazy(() => import('./pages/sales-targets/AdminTaskTyp
 const AdminTargetsPage = lazy(() => import('./pages/sales-targets/AdminTargetsPage'));
 const MyScorecardPage = lazy(() => import('./pages/sales-targets/MyScorecardPage'));
 const LeaderboardPage = lazy(() => import('./pages/sales-targets/LeaderboardPage'));
+const TargetsOverviewPage = lazy(() => import('./pages/targets/TargetsOverviewPage'));
+const MyTargetsPage = lazy(() => import('./pages/targets/MyTargetsPage'));
+const TeamTargetsPage = lazy(() => import('./pages/targets/TeamTargetsPage'));
+const TargetPlansPage = lazy(() => import('./pages/targets/TargetPlansPage'));
+const PerformanceHistoryPage = lazy(() => import('./pages/targets/PerformanceHistoryPage'));
+const TouchpointChannelsPage = lazy(() => import('./pages/targets/TouchpointChannelsPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -221,6 +227,12 @@ const App = () => {
                     <Route path="sales-targets/targets" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="action:crm:sales_targets:manage"><AdminTargetsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="sales-targets/scorecard" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><MyScorecardPage /></FlagGuard></PermissionGuard>} />
                     <Route path="sales-targets/leaderboard" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><LeaderboardPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="targets" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:targets_performance"><TargetsOverviewPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="targets/mine" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:targets_performance"><MyTargetsPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="targets/team" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="submodule:crm:targets_performance"><TeamTargetsPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="targets/plans" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="action:crm:targets:manage"><TargetPlansPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="targets/history" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:targets_performance"><PerformanceHistoryPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="targets/channels" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="action:crm:targets:configure_metrics"><TouchpointChannelsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="marketing/overview" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingOverviewPage /></ModuleGuard></PermissionGuard>} />
                     <Route path="marketing/abandoned-carts" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartsPage /></ModuleGuard></PermissionGuard>} />
                     <Route path="marketing/abandoned-carts/:cartId" element={<PermissionGuard permission='marketing.read'><ModuleGuard moduleId="dailystore"><MarketingAbandonedCartDetailPage /></ModuleGuard></PermissionGuard>} />
