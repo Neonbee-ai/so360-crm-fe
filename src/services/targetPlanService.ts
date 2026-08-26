@@ -235,4 +235,116 @@ export const targetPlanService = {
       '/settings/touchpoint-channels/import-from-lead-sources',
       { method: 'POST' },
     ),
+
+  // ─── Measurement (P2) ───────────────────────────────────────────────────
+
+  myMeasurement: () =>
+    targetPlanService.fetch<any>('/target-plans/me/measurement'),
+
+  measurementFor: (personId: string) =>
+    targetPlanService.fetch<any>(`/target-plans/measurement/${personId}`),
+
+  listLossReasons: () =>
+    targetPlanService.fetch<any[]>('/target-plans/settings/loss-reasons'),
+
+  createLossReason: (body: any) =>
+    targetPlanService.fetch<any>('/target-plans/settings/loss-reasons', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  updateLossReason: (id: string, body: any) =>
+    targetPlanService.fetch<any>(`/target-plans/settings/loss-reasons/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
+  logManualTouchpoint: (body: {
+    channel: string;
+    client_partner_id?: string;
+    client_lead_id?: string;
+    occurred_at?: string;
+  }) =>
+    targetPlanService.fetch<any>('/touchpoints/manual', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  touchpointQuarantine: () =>
+    targetPlanService.fetch<any[]>('/touchpoints/quarantine'),
+
+  replayQuarantine: () =>
+    targetPlanService.fetch<any>('/touchpoints/quarantine/replay', {
+      method: 'POST',
+    }),
+
+  // ─── Goal linkage (P3) ──────────────────────────────────────────────────
+
+  linkedGoal: (planId: string) =>
+    targetPlanService.fetch<any>(`/target-plans/${planId}/goal`),
+
+  syncGoal: (planId: string) =>
+    targetPlanService.fetch<any>(`/target-plans/${planId}/goal/sync`, {
+      method: 'POST',
+    }),
+
+  goalSyncFailures: () =>
+    targetPlanService.fetch<any[]>('/target-plans/goal-sync/failures'),
+
+  // ─── Management layer (P4) ──────────────────────────────────────────────
+
+  listTemplates: () =>
+    targetPlanService.fetch<any[]>('/target-management/templates'),
+
+  createTemplate: (body: any) =>
+    targetPlanService.fetch<any>('/target-management/templates', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  assignTemplate: (id: string, body: any) =>
+    targetPlanService.fetch<any>(`/target-management/templates/${id}/assign`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  listReviews: (params?: { person_id?: string; status?: string }) => {
+    const qs = new URLSearchParams(
+      Object.entries(params ?? {}).filter(([, v]) => v) as any,
+    ).toString();
+    return targetPlanService.fetch<any[]>(
+      `/target-management/reviews${qs ? `?${qs}` : ''}`,
+    );
+  },
+
+  createReview: (body: any) =>
+    targetPlanService.fetch<any>('/target-management/reviews', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  updateReview: (id: string, body: any) =>
+    targetPlanService.fetch<any>(`/target-management/reviews/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
+  finalizeReview: (id: string) =>
+    targetPlanService.fetch<any>(`/target-management/reviews/${id}/finalize`, {
+      method: 'POST',
+    }),
+
+  listIncentiveRules: () =>
+    targetPlanService.fetch<any[]>('/target-management/incentive-rules'),
+
+  createIncentiveRule: (body: any) =>
+    targetPlanService.fetch<any>('/target-management/incentive-rules', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  calculateIncentives: (personId: string, start: string, end: string) =>
+    targetPlanService.fetch<any>(
+      `/target-management/incentives/${personId}?period_start=${start}&period_end=${end}`,
+    ),
 };
