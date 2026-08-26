@@ -179,7 +179,8 @@ export default function MeasurementPage() {
                   >
                     <span className="text-slate-300">{r.label}</span>
                     <span className="text-slate-400">
-                      {r.count} · {formatValue(r.value, 'currency', currency)}
+                      {r.count} ·{' '}
+                      {formatValue(r.lost_value, 'currency', currency)}
                     </span>
                   </div>
                 ))}
