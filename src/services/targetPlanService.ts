@@ -6,13 +6,29 @@
  * for targets that have no plan attached.
  */
 
-const env = (import.meta as any)?.env || {};
 const win = typeof window !== 'undefined' ? (window as any) : {};
 
+/**
+ * CRM API origin.
+ *
+ * Read as the LITERAL `import.meta.env.VITE_SO360_CRM_API`. Vite substitutes
+ * these at build time by matching that exact expression — pulling the value
+ * out of a captured `env` object is not substituted, so the built bundle sees
+ * `undefined` and silently falls through.
+ *
+ * There is deliberately NO cross-module fallback here. The previous chain ended
+ * in `VITE_API_BASE_URL`, which resolves to the CORE origin: when the CRM value
+ * went missing, every request in this file was sent to Core, which answered
+ * `Cannot GET /v1/target-plans/...` because it has no such routes. A CRM client
+ * must never quietly address a different service. Falling back to localhost
+ * fails loudly instead, which is the correct behaviour for a misconfiguration.
+ *
+ * `window.VITE_SO360_CRM_API` still wins when present — the shell injects it so
+ * a deployed MFE can be repointed without a rebuild.
+ */
 const CRM_API_ORIGIN = String(
   win.VITE_SO360_CRM_API ||
-    env.VITE_SO360_CRM_API ||
-    env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_SO360_CRM_API ||
     'http://localhost:3003',
 ).replace(/\/$/, '');
 
