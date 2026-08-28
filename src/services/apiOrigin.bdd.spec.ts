@@ -87,18 +87,26 @@ describe('Given the env type declarations', () => {
 // The two above pin the individual files. These pin the PATTERN, so the next
 // service added to this app cannot reintroduce the defect.
 
+// Comments are stripped before matching. These guards search for the very
+// pattern they exist to forbid, so the prose explaining it would otherwise
+// report every file that documents the trap as an offender.
+const stripComments = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
 const sourceFiles = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
   .filter((p) => /\.tsx?$/.test(p) && !/\.(spec|test)\.tsx?$/.test(p))
   .map((p) => join(srcDir, p));
 
+const codeOf = (f: string) => stripComments(readFileSync(f, 'utf8'));
+
 describe('Given every source file in the app', () => {
   it('When it reads build-time env / Then it never optional-chains import.meta', () => {
-    // `(import.meta as any)?.env` compiles to `import.meta?.env`, which Vite's
-    // textual substitution does not match. The capture is then `{}` and every
-    // origin silently degrades to its localhost fallback in the built bundle —
+    // The forbidden form compiles to `import.meta?.env`, which Vite's textual
+    // substitution does not match. The capture is then empty and every origin
+    // silently degrades to its localhost fallback in the built bundle —
     // invisible in dev, in unit tests, and in code review.
     const offenders = sourceFiles.filter((f) =>
-      /import\.meta(\s+as\s+any)?\s*\)?\s*\?\./.test(readFileSync(f, 'utf8')),
+      /import\.meta(\s+as\s+any)?\s*\)?\s*\?\./.test(codeOf(f)),
     );
     expect(offenders).toEqual([]);
   });
@@ -109,9 +117,7 @@ describe('Given the module API origins this app resolves at build time', () => {
     ...new Set(
       sourceFiles.flatMap((f) =>
         [
-          ...readFileSync(f, 'utf8').matchAll(
-            /import\.meta\.env\.(VITE_SO360_[A-Z_]+_API)/g,
-          ),
+          ...codeOf(f).matchAll(/import\.meta\.env\.(VITE_SO360_[A-Z_]+_API)/g),
         ].map((m) => m[1]),
       ),
     ),
@@ -122,11 +128,21 @@ describe('Given the module API origins this app resolves at build time', () => {
     expect(usedKeys.filter((k) => !dts.includes(k))).toEqual([]);
   });
 
-  it('When a key is read / Then production supplies a value for it', () => {
-    // A key with no value in .env.production builds cleanly and ships localhost.
-    // That is exactly how six CRM origins reached production pointing at the
-    // developer's own machine.
-    const envProd = read('../../.env.production');
-    expect(usedKeys.filter((k) => !new RegExp(`^${k}=\\S`, 'm').test(envProd))).toEqual([]);
-  });
+  // The pre-push gate rsyncs only tracked source, so dotfiles are absent there.
+  // Skipping beats asserting on a file that cannot exist: this still runs in CI
+  // and locally, where .env.production is checked out.
+  const envProdPath = join(pkgRoot, '.env.production');
+
+  it.skipIf(!existsSync(envProdPath))(
+    'When a key is read / Then production supplies a value for it',
+    () => {
+      // A key with no value in .env.production builds cleanly and ships
+      // localhost. That is exactly how six CRM origins reached production
+      // pointing at the developer's own machine.
+      const envProd = readFileSync(envProdPath, 'utf8');
+      expect(
+        usedKeys.filter((k) => !new RegExp(`^${k}=\\S`, 'm').test(envProd)),
+      ).toEqual([]);
+    },
+  );
 });
