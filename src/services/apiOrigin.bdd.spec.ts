@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -18,7 +19,11 @@ import { fileURLToPath } from 'node:url';
  * looked like a missing backend route rather than a misdirected client.
  */
 
-const SERVICES = ['targetPlanService.ts', 'salesTargetService.ts'];
+const SERVICES = [
+  'targetPlanService.ts',
+  'salesTargetService.ts',
+  'crmService.ts',
+];
 
 // `import.meta.url` rather than __dirname: these specs run as ESM under jsdom,
 // where __dirname does not exist.
@@ -57,5 +62,56 @@ describe('Given the env type declarations', () => {
   it('When a service reads the literal / Then the key is declared, so tsc does not reject it', () => {
     const dts = read('../vite-env.d.ts');
     expect(dts).toContain('VITE_SO360_CRM_API');
+  });
+});
+
+// ─── Repo-wide guards ──────────────────────────────────────────────────────
+//
+// The two above pin the individual files. These pin the PATTERN, so the next
+// service added to this app cannot reintroduce the defect.
+
+const srcDir = fileURLToPath(new URL('..', import.meta.url));
+
+const sourceFiles = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
+  .filter((p) => /\.tsx?$/.test(p) && !/\.(spec|test)\.tsx?$/.test(p))
+  .map((p) => join(srcDir, p));
+
+describe('Given every source file in the app', () => {
+  it('When it reads build-time env / Then it never optional-chains import.meta', () => {
+    // `(import.meta as any)?.env` compiles to `import.meta?.env`, which Vite's
+    // textual substitution does not match. The capture is then `{}` and every
+    // origin silently degrades to its localhost fallback in the built bundle —
+    // invisible in dev, in unit tests, and in code review.
+    const offenders = sourceFiles.filter((f) =>
+      /import\.meta(\s+as\s+any)?\s*\)?\s*\?\./.test(readFileSync(f, 'utf8')),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('Given the module API origins this app resolves at build time', () => {
+  const usedKeys = [
+    ...new Set(
+      sourceFiles.flatMap((f) =>
+        [
+          ...readFileSync(f, 'utf8').matchAll(
+            /import\.meta\.env\.(VITE_SO360_[A-Z_]+_API)/g,
+          ),
+        ].map((m) => m[1]),
+      ),
+    ),
+  ].sort();
+
+  it('When a key is read / Then it is declared in vite-env.d.ts', () => {
+    const dts = read('../vite-env.d.ts');
+    expect(usedKeys.filter((k) => !dts.includes(k))).toEqual([]);
+  });
+
+  it('When a key is read / Then production supplies a value for it', () => {
+    // A key with no value in .env.production builds cleanly and ships localhost.
+    // That is exactly how six CRM origins reached production pointing at the
+    // developer's own machine.
+    const envProd = read('../../.env.production');
+    expect(usedKeys.filter((k) => !new RegExp(`^${k}=\\S`, 'm').test(envProd))).toEqual([]);
   });
 });

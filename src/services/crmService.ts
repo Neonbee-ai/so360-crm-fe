@@ -21,55 +21,65 @@ export interface TimelineEvent {
 // API Configuration
 // In `npm run preview` (static), Vite proxy is not available (or unreliable across MFEs),
 // so default to absolute backend origins. Allow overrides via `window.*` or `import.meta.env`.
-const env = (import.meta as any)?.env || {};
+//
+// Each origin MUST read the LITERAL `import.meta.env.VITE_SO360_X`. Vite performs a
+// textual substitution on exactly that expression at build time. This file previously
+// captured `const env = (import.meta as any)?.env || {}` — the optional chaining makes
+// the source read `import.meta?.env`, which never matches, so `env` was `{}` in every
+// production build and ALL EIGHT origins silently became localhost. It went unnoticed
+// because the shell injects `window.VITE_SO360_CRM_API` and `_CORE_API` at runtime,
+// rescuing those two; the other six pointed at the user's own machine in production.
+//
+// The `VITE_API_BASE_URL` fallback that used to sit under CRM and CORE is gone: it is
+// set nowhere in this repo, and it resolves to the Core origin, so a missing CRM value
+// would have addressed the wrong service rather than failing. Localhost fails loudly.
 const win = typeof window !== 'undefined' ? (window as any) : {};
 
 const CRM_API_ORIGIN = String(
     win.VITE_SO360_CRM_API ||
-    env.VITE_SO360_CRM_API ||
-    env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_SO360_CRM_API ||
     'http://localhost:3003'
 ).replace(/\/$/, '');
 
 const CORE_API_ORIGIN = String(
     win.VITE_SO360_CORE_API ||
-    env.VITE_SO360_CORE_API ||
-    env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_SO360_CORE_API ||
     'http://localhost:3000'
 ).replace(/\/$/, '');
+
 const DAILYSTORE_API_ORIGIN = String(
     win.VITE_SO360_DAILYSTORE_API ||
-    env.VITE_SO360_DAILYSTORE_API ||
+    import.meta.env.VITE_SO360_DAILYSTORE_API ||
     'http://localhost:3016'
 ).replace(/\/$/, '');
 
 const INVENTORY_API_ORIGIN = String(
     win.VITE_SO360_INVENTORY_API ||
-    env.VITE_SO360_INVENTORY_API ||
+    import.meta.env.VITE_SO360_INVENTORY_API ||
     'http://localhost:3006'
 ).replace(/\/$/, '');
 
 const FULFILLMENT_API_ORIGIN = String(
     win.VITE_SO360_FULFILLMENT_API ||
-    env.VITE_SO360_FULFILLMENT_API ||
+    import.meta.env.VITE_SO360_FULFILLMENT_API ||
     'http://localhost:3032'
 ).replace(/\/$/, '');
 
 const ACCOUNTING_API_ORIGIN = String(
     win.VITE_SO360_ACCOUNTING_API ||
-    env.VITE_SO360_ACCOUNTING_API ||
+    import.meta.env.VITE_SO360_ACCOUNTING_API ||
     'http://localhost:3008'
 ).replace(/\/$/, '');
 
 const NEURA_API_ORIGIN = String(
     win.VITE_SO360_NEURA_API ||
-    env.VITE_SO360_NEURA_API ||
+    import.meta.env.VITE_SO360_NEURA_API ||
     'http://localhost:3018'
 ).replace(/\/$/, '');
 
 const INBOX_API_ORIGIN = String(
     win.VITE_SO360_INBOX_API ||
-    env.VITE_SO360_INBOX_API ||
+    import.meta.env.VITE_SO360_INBOX_API ||
     'http://localhost:3017'
 ).replace(/\/$/, '');
 
