@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 
 /**
  * Guards the CRM API base-URL resolution in the service clients.
@@ -25,10 +24,28 @@ const SERVICES = [
   'crmService.ts',
 ];
 
-// `import.meta.url` rather than __dirname: these specs run as ESM under jsdom,
-// where __dirname does not exist.
+// Paths are resolved from the package root, found by walking up from cwd.
+//
+// Not `import.meta.url`: these specs run under jsdom, where `import.meta.url`
+// is not guaranteed to carry the `file:` scheme, and `fileURLToPath` then
+// throws during collection. Not `__dirname` either — this is ESM.
+const pkgRoot = (() => {
+  let dir = process.cwd();
+  for (;;) {
+    if (existsSync(join(dir, 'src', 'services', 'crmService.ts'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) {
+      throw new Error(`crm-fe package root not found above ${process.cwd()}`);
+    }
+    dir = parent;
+  }
+})();
+
+const srcDir = join(pkgRoot, 'src');
+const servicesDir = join(srcDir, 'services');
+
 const read = (relative: string) =>
-  readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
+  readFileSync(resolve(servicesDir, relative), 'utf8');
 
 describe.each(SERVICES)('Given %s', (file) => {
   it('When the CRM origin is resolved / Then it reads the LITERAL import.meta.env expression', () => {
@@ -69,8 +86,6 @@ describe('Given the env type declarations', () => {
 //
 // The two above pin the individual files. These pin the PATTERN, so the next
 // service added to this app cannot reintroduce the defect.
-
-const srcDir = fileURLToPath(new URL('..', import.meta.url));
 
 const sourceFiles = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
   .filter((p) => /\.tsx?$/.test(p) && !/\.(spec|test)\.tsx?$/.test(p))
