@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import { Panel } from './targetUi';
+import { planPeriods } from './planShape';
 
 /**
  * Edits an existing plan.
@@ -111,7 +112,9 @@ export default function EditPlanPanel({
     }
   };
 
-  const periods: any[] = plan?.periods ?? [];
+  // Flattened from lines[].periods — the endpoint returns no top-level
+  // `plan.periods`, so reading that rendered an empty section with no error.
+  const periods = planPeriods(plan);
 
   return (
     <Panel
@@ -200,7 +203,8 @@ export default function EditPlanPanel({
               <div className="space-y-2">
                 {periods.map((pr) => (
                   <div key={pr.id} className="flex items-center gap-2">
-                    <span className="w-48 shrink-0 text-xs text-slate-400">
+                    <span className="w-64 shrink-0 text-xs text-slate-400">
+                      <span className="text-slate-300">{pr.lineLabel}</span>{' '}
                       {pr.period_start} → {pr.period_end}
                     </span>
                     <input

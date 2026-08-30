@@ -6,6 +6,7 @@ import {
   summariseAllocation,
   type AllocationRow,
 } from './allocation';
+import { findLine, lineLabel, lineUnit } from './planShape';
 
 /**
  * Splits a team plan across its members.
@@ -51,7 +52,8 @@ export default function AllocateTeamPlanPanel({
   }, [planId]);
 
   const lines: any[] = plan?.lines ?? [];
-  const line = lines.find((l) => l.task_type_id === taskTypeId);
+  // The metric lives on a nested `task_type` relation, not on the line.
+  const line = findLine(plan, taskTypeId);
   const summary = summariseAllocation(Number(line?.value ?? 0), rows);
 
   const submit = async () => {
@@ -119,7 +121,7 @@ export default function AllocateTeamPlanPanel({
               >
                 {lines.map((l) => (
                   <option key={l.task_type_id} value={l.task_type_id}>
-                    {l.metric_name ?? l.task_type_id}
+                    {lineLabel(l)}
                   </option>
                 ))}
               </select>
@@ -127,18 +129,18 @@ export default function AllocateTeamPlanPanel({
             <div className="text-xs text-slate-400">
               Team target{' '}
               <span className="text-slate-200">
-                {formatValue(summary.teamTarget, line?.unit, currency)}
+                {formatValue(summary.teamTarget, line && lineUnit(line), currency)}
               </span>
               {' · '}allocated{' '}
               <span className="text-slate-200">
-                {formatValue(summary.allocated, line?.unit, currency)}
+                {formatValue(summary.allocated, line && lineUnit(line), currency)}
               </span>
               {' · '}
               <span className={summary.over ? 'text-amber-300' : 'text-slate-200'}>
                 {summary.over ? 'over by ' : 'remaining '}
                 {formatValue(
                   Math.abs(summary.remaining),
-                  line?.unit,
+                  line && lineUnit(line),
                   currency,
                 )}
               </span>
