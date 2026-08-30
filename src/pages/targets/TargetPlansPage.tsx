@@ -3,6 +3,7 @@ import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
 import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
+import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
 
@@ -33,6 +34,7 @@ export default function TargetPlansPage() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [allocating, setAllocating] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [ownerType, setOwnerType] = useState<'rep' | 'team' | 'org'>('rep');
@@ -137,7 +139,10 @@ export default function TargetPlansPage() {
       await targetPlanService.createPlan({
         name,
         owner_type: ownerType,
-        owner_id: ownerId || undefined,
+        // Only an individual plan carries a person. Sending a stale owner_id
+        // after switching the type to team or org would attach the whole
+        // team's plan to one person.
+        owner_id: ownerType === 'rep' ? ownerId || undefined : undefined,
         role: role || undefined,
         period,
         start_date: startDate,
@@ -205,6 +210,15 @@ export default function TargetPlansPage() {
         </Panel>
       )}
 
+      {allocating && (
+        <AllocateTeamPlanPanel
+          planId={allocating}
+          currency={currency}
+          onClose={() => setAllocating(null)}
+          onAllocated={load}
+        />
+      )}
+
       {showForm && (
         <Panel title="New target plan">
           <div className="space-y-4">
@@ -228,9 +242,24 @@ export default function TargetPlansPage() {
                   <option value="org">Organisation</option>
                 </select>
               </Field>
-              <Field label="Owner" grow>
-                <PersonPicker value={ownerId} onChange={setOwnerId} />
-              </Field>
+              {/* Only an individual plan has a person owner. A team plan is
+                  owned by the team and then allocated to its members from the
+                  plans list, which is what creates each person's own plan; an
+                  org plan has no owner at all. Showing a person picker for
+                  those two invited a meaningless selection. */}
+              {ownerType === 'rep' ? (
+                <Field label="Owner" grow>
+                  <PersonPicker value={ownerId} onChange={setOwnerId} />
+                </Field>
+              ) : (
+                <Field label="Owner" grow>
+                  <div className="px-2 py-1.5 text-sm text-slate-400">
+                    {ownerType === 'team'
+                      ? 'The team as a whole. Allocate it to people after saving.'
+                      : 'The whole organisation.'}
+                  </div>
+                </Field>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-4">
@@ -424,7 +453,8 @@ export default function TargetPlansPage() {
                   <th className="py-2 pr-4 font-medium">Owner</th>
                   <th className="py-2 pr-4 font-medium">Period</th>
                   <th className="py-2 pr-4 font-medium">Window</th>
-                  <th className="py-2 font-medium">Status</th>
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 font-medium" />
                 </tr>
               </thead>
               <tbody>
@@ -444,7 +474,17 @@ export default function TargetPlansPage() {
                     <td className="py-2 pr-4 text-slate-400">
                       {p.start_date} → {p.end_date}
                     </td>
-                    <td className="py-2 text-slate-300">{p.status}</td>
+                    <td className="py-2 pr-4 text-slate-300">{p.status}</td>
+                    <td className="py-2 text-right">
+                      {p.owner_type === 'team' && (
+                        <button
+                          className="text-xs text-slate-400 hover:text-slate-200"
+                          onClick={() => setAllocating(p.id)}
+                        >
+                          Allocate
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
