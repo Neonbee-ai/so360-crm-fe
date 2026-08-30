@@ -18,7 +18,9 @@ const CRM_API_ORIGIN = String(
     'http://localhost:3003'
 ).replace(/\/$/, '');
 
-const BASE = `${CRM_API_ORIGIN}/v1/sales-targets`;
+// No `/v1`: crm-be sets no global prefix and nginx adds none, so the routes
+// live at `/sales-targets/...` on the root. See targetPlanService for detail.
+const BASE = `${CRM_API_ORIGIN}/sales-targets`;
 
 let _tenantId = '';
 let _orgId = '';

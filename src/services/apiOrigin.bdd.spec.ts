@@ -73,6 +73,19 @@ describe.each(SERVICES)('Given %s', (file) => {
   it('When the origin is used / Then a trailing slash cannot produce a double slash', () => {
     expect(read(`./${file}`)).toContain("replace(/\\/$/, '')");
   });
+
+  it('When a request path is built / Then it carries no /v1 segment', () => {
+    // so360-crm-be calls no setGlobalPrefix, and the nginx rule for this origin
+    // is `rewrite ^/crm/(.*) /$1` — neither adds a version segment. A `/v1` in
+    // the base URL therefore 404s EVERY route in the file. That is precisely
+    // what shipped: the origin was right, the path was not, and checking the
+    // origin alone made the bundle look fixed.
+    const body = read(`./${file}`).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    // Only the CRM base line: `/v1` on the Core/Inventory clients in
+    // crmService is correct, because those services DO set a global prefix.
+    const base = body.match(/const (?:BASE|API_BASE_URL)\s*=\s*(.+);/)?.[1] ?? '';
+    expect(base).not.toMatch(/\/v1\b/);
+  });
 });
 
 describe('Given the env type declarations', () => {

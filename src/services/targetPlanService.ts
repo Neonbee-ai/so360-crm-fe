@@ -32,7 +32,13 @@ const CRM_API_ORIGIN = String(
     'http://localhost:3003',
 ).replace(/\/$/, '');
 
-const BASE = `${CRM_API_ORIGIN}/v1`;
+/**
+ * No `/v1` segment. so360-crm-be calls no `setGlobalPrefix`, so its routes are
+ * `/target-plans/...` at the root, and nginx rewrites `^/crm/(.*)` to `/$1`
+ * without adding one either (neonbee-devops/nginx/ha-api.neonbee.app.conf).
+ * A `/v1` here produced a 404 on every request in this file.
+ */
+const BASE = CRM_API_ORIGIN;
 
 let _tenantId = '';
 let _orgId = '';
