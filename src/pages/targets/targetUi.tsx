@@ -428,3 +428,48 @@ export function PersonPicker({
     </div>
   );
 }
+
+// ─── Review periods ────────────────────────────────────────────────────────
+
+/**
+ * Turns a month or quarter into the exact period bounds a review needs.
+ *
+ * Reviews are opened by choosing a month or a quarter, never by typing two
+ * dates: a hand-typed range silently produces a review covering a period no
+ * plan matches, and the pre-filled numbers then look wrong for reasons nobody
+ * can see.
+ *
+ * All arithmetic is UTC. Building these with local-time `new Date(y, m, d)`
+ * shifts the boundary by a day for anyone west of UTC, which would quietly
+ * move a deal between two adjacent review periods.
+ */
+export function reviewPeriodBounds(
+  periodType: 'monthly' | 'quarterly',
+  anchor: string,
+): { period_start: string; period_end: string } | null {
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+  if (periodType === 'monthly') {
+    const m = /^(\d{4})-(\d{2})$/.exec(anchor);
+    if (!m) return null;
+    const year = Number(m[1]);
+    const month = Number(m[2]);
+    if (month < 1 || month > 12) return null;
+    return {
+      period_start: iso(new Date(Date.UTC(year, month - 1, 1))),
+      // Day 0 of the NEXT month is the last day of this one, which avoids a
+      // leap-year table.
+      period_end: iso(new Date(Date.UTC(year, month, 0))),
+    };
+  }
+
+  const q = /^(\d{4})-Q([1-4])$/.exec(anchor);
+  if (!q) return null;
+  const year = Number(q[1]);
+  const quarter = Number(q[2]);
+  const startMonth = (quarter - 1) * 3;
+  return {
+    period_start: iso(new Date(Date.UTC(year, startMonth, 1))),
+    period_end: iso(new Date(Date.UTC(year, startMonth + 3, 0))),
+  };
+}

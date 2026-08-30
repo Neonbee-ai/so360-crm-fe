@@ -32,6 +32,7 @@ export default function TargetPlansPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [ownerType, setOwnerType] = useState<'rep' | 'team' | 'org'>('rep');
@@ -81,6 +82,32 @@ export default function TargetPlansPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /**
+   * Copies the industry metric/channel/loss-reason pack into this org.
+   *
+   * Until this has run the org has no metrics, so a plan cannot be built and
+   * every screen is empty for a reason nothing on the page explains. It is
+   * idempotent — existing metrics are matched by name and skipped — so the
+   * button is safe to press twice.
+   */
+  const provision = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await targetPlanService.provisionPacks(
+        (shell as any)?.industryKey || undefined,
+      );
+      setNotice(
+        `Added ${res.metrics_added} metrics, ${res.channels_added} channels and ${res.loss_reasons_added} loss reasons for ${res.industry_key}.`,
+      );
+      load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const addLine = () => {
     setLines((l) => [
@@ -156,6 +183,27 @@ export default function TargetPlansPage() {
       </div>
 
       {error && <div className="text-sm text-rose-300">{error}</div>}
+      {notice && <div className="text-sm text-emerald-300">{notice}</div>}
+
+      {!loading && !taskTypes.length && (
+        <Panel title="Set up your metrics first">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm text-slate-400">
+              This organisation has no metrics yet, so a plan cannot be built
+              and every Targets screen will be empty. Load the starter set for
+              your industry — metrics, touchpoint channels and loss reasons.
+              Nothing existing is overwritten.
+            </div>
+            <button
+              className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+              onClick={provision}
+              disabled={saving}
+            >
+              Load starter metrics
+            </button>
+          </div>
+        </Panel>
+      )}
 
       {showForm && (
         <Panel title="New target plan">

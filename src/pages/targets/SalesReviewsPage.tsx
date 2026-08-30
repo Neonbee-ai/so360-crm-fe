@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel, PersonName, formatPct, formatValue } from './targetUi';
+import {
+  EmptyState,
+  Panel,
+  PersonName,
+  PersonPicker,
+  formatPct,
+  formatValue,
+  reviewPeriodBounds,
+} from './targetUi';
 
 /**
  * Monthly and quarterly sales reviews.
@@ -22,6 +30,17 @@ export default function SalesReviewsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // New-review form. The period is chosen as a month or a quarter rather than
+  // as two free dates — see reviewPeriodBounds.
+  const [newPersonId, setNewPersonId] = useState('');
+  const [newPeriodType, setNewPeriodType] = useState<'monthly' | 'quarterly'>(
+    'monthly',
+  );
+  const [newAnchor, setNewAnchor] = useState(() => {
+    const now = new Date();
+    return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  });
 
   const currency = (shell as any)?.businessSettings?.currency ?? undefined;
 
@@ -46,6 +65,31 @@ export default function SalesReviewsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const bounds = reviewPeriodBounds(newPeriodType, newAnchor);
+
+  const startReview = async () => {
+    if (!newPersonId || !bounds) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await targetPlanService.createReview({
+        person_id: newPersonId,
+        period_type: newPeriodType,
+        ...bounds,
+      });
+      setNotice(
+        "Review opened, pre-filled with the period's numbers. Nothing is sent to People Connect until you finalize.",
+      );
+      setNewPersonId('');
+      setActive(created);
+      load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const finalize = async (id: string) => {
     setBusy(true);
@@ -103,6 +147,84 @@ export default function SalesReviewsPage() {
 
       {error && <div className="text-sm text-rose-300">{error}</div>}
       {notice && <div className="text-sm text-emerald-300">{notice}</div>}
+
+      <Panel title="Start a review">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-64">
+            <label className="block text-[11px] text-slate-400 mb-1">
+              Person
+            </label>
+            <PersonPicker value={newPersonId} onChange={setNewPersonId} />
+          </div>
+          <div>
+            <label className="block text-[11px] text-slate-400 mb-1">
+              Period
+            </label>
+            <select
+              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+              value={newPeriodType}
+              aria-label="Period type"
+              onChange={(e) => {
+                const next = e.target.value as 'monthly' | 'quarterly';
+                setNewPeriodType(next);
+                const now = new Date();
+                setNewAnchor(
+                  next === 'monthly'
+                    ? `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
+                    : `${now.getUTCFullYear()}-Q${Math.floor(now.getUTCMonth() / 3) + 1}`,
+                );
+              }}
+            >
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] text-slate-400 mb-1">
+              {newPeriodType === 'monthly' ? 'Month' : 'Quarter'}
+            </label>
+            {newPeriodType === 'monthly' ? (
+              <input
+                type="month"
+                aria-label="Month"
+                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                value={newAnchor}
+                onChange={(e) => setNewAnchor(e.target.value)}
+              />
+            ) : (
+              <select
+                aria-label="Quarter"
+                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                value={newAnchor}
+                onChange={(e) => setNewAnchor(e.target.value)}
+              >
+                {(() => {
+                  const y = new Date().getUTCFullYear();
+                  return [y, y - 1].flatMap((year) =>
+                    [1, 2, 3, 4].map((q) => (
+                      <option key={`${year}-Q${q}`} value={`${year}-Q${q}`}>
+                        {year} Q{q}
+                      </option>
+                    )),
+                  );
+                })()}
+              </select>
+            )}
+          </div>
+          <button
+            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            onClick={startReview}
+            disabled={busy || !newPersonId || !bounds}
+          >
+            Open review
+          </button>
+          {bounds && (
+            <span className="text-xs text-slate-500">
+              {bounds.period_start} → {bounds.period_end}
+            </span>
+          )}
+        </div>
+      </Panel>
 
       {!reviews.length ? (
         <EmptyState message="No reviews yet. A review is created for a person and period, pre-filled with that period's numbers." />
