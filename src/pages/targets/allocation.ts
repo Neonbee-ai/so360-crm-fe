@@ -38,7 +38,9 @@ export function summariseAllocation(
   // Rounded to two places: floating-point addition of currency-like values
   // otherwise reports a remainder of 1e-13 and the panel claims the team is
   // short by an invisible amount.
-  const round = (n: number) => Math.round(n * 100) / 100;
+  // `|| 0` collapses -0 to 0. Rounding a tiny negative remainder yields -0,
+  // which fails an equality check against 0 and would render as "-0".
+  const round = (n: number) => Math.round(n * 100) / 100 || 0;
 
   return {
     allocated: round(allocated),

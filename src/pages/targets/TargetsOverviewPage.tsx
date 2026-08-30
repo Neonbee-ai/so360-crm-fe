@@ -30,7 +30,10 @@ export default function TargetsOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const currency = (shell as any)?.businessSettings?.currency ?? undefined;
+  // `base_currency` is the field Core actually returns on business_settings.
+  // Reading `currency` yielded undefined, so every money figure on these
+  // screens formatted as USD regardless of the org's configured currency.
+  const currency = (shell as any)?.businessSettings?.base_currency ?? undefined;
 
   useEffect(() => {
     if (shell?.currentTenant?.id) {

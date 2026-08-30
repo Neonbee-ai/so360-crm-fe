@@ -26,7 +26,10 @@ export default function TeamTargetsPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<any | null>(null);
 
-  const currency = (shell as any)?.businessSettings?.currency ?? undefined;
+  // `base_currency` is the field Core actually returns on business_settings.
+  // Reading `currency` yielded undefined, so every money figure on these
+  // screens formatted as USD regardless of the org's configured currency.
+  const currency = (shell as any)?.businessSettings?.base_currency ?? undefined;
 
   useEffect(() => {
     if (shell?.currentTenant?.id) {
