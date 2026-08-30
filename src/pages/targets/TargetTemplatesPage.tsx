@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
-import { EmptyState, Panel } from './targetUi';
+import { EmptyState, Panel, PersonPicker } from './targetUi';
 
 /**
  * Reusable target templates.
@@ -171,16 +171,11 @@ export default function TargetTemplatesPage() {
           }
         >
           <div className="flex flex-wrap items-end gap-3">
-            <div>
+            <div className="min-w-64">
               <label className="block text-[11px] text-slate-400 mb-1">
-                Person id
+                Person
               </label>
-              <input
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                value={ownerId}
-                onChange={(e) => setOwnerId(e.target.value)}
-                placeholder="person uuid"
-              />
+              <PersonPicker value={ownerId} onChange={setOwnerId} />
             </div>
             <div>
               <label className="block text-[11px] text-slate-400 mb-1">

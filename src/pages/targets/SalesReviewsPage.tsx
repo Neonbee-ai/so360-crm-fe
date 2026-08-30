@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel, formatPct, formatValue } from './targetUi';
+import { EmptyState, Panel, PersonName, formatPct, formatValue } from './targetUi';
 
 /**
  * Monthly and quarterly sales reviews.
@@ -132,7 +132,7 @@ export default function SalesReviewsPage() {
                     </td>
                     <td className="py-2 pr-4 text-slate-400">{r.period_type}</td>
                     <td className="py-2 pr-4 text-slate-400">
-                      {String(r.person_id).slice(0, 8)}
+                      <PersonName id={r.person_id} />
                     </td>
                     <td className="py-2 pr-4 text-slate-300">
                       {formatPct(r.results?.headline?.attainment)}

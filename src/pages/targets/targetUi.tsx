@@ -206,3 +206,225 @@ export function EmptyState({ message }: { message: string }) {
     </div>
   );
 }
+
+// ─── People ────────────────────────────────────────────────────────────────
+//
+// Every person field on these screens stores a People Connect person id, and
+// People Connect stays the source of truth for display data. The directory is
+// fetched through crm-be's broker route rather than People Connect's public
+// `/people`, which needs permissions a CRM user does not hold.
+
+export interface DirectoryPerson {
+  id: string;
+  full_name: string;
+  email?: string | null;
+  employee_id?: string | null;
+  job_title?: string | null;
+  department_name?: string | null;
+}
+
+// Module-level so the directory is fetched once per page load no matter how
+// many pickers and name labels mount. The promise itself is cached, so
+// concurrent mounts share a single in-flight request instead of racing.
+let directoryPromise: Promise<DirectoryPerson[]> | null = null;
+
+export function __resetPeopleDirectoryForTests() {
+  directoryPromise = null;
+}
+
+export function usePeopleDirectory() {
+  const [people, setPeople] = React.useState<DirectoryPerson[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [failed, setFailed] = React.useState(false);
+
+  React.useEffect(() => {
+    let alive = true;
+    if (!directoryPromise) {
+      directoryPromise = import('../../services/crmService')
+        .then((m) => m.crmService.getSalesReps())
+        .then((rows) =>
+          [...(rows ?? [])].sort((a, b) =>
+            (a.full_name || '').localeCompare(b.full_name || ''),
+          ),
+        )
+        .catch((e) => {
+          // Do not cache a rejection: a transient failure would otherwise
+          // leave every picker on the page permanently empty.
+          directoryPromise = null;
+          throw e;
+        });
+    }
+    directoryPromise
+      .then((rows) => {
+        if (!alive) return;
+        setPeople(rows);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setFailed(true);
+        setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const byId = React.useMemo(() => {
+    const m = new Map<string, DirectoryPerson>();
+    for (const p of people) m.set(p.id, p);
+    return m;
+  }, [people]);
+
+  return { people, byId, loading, failed };
+}
+
+/**
+ * Renders a person id as their name.
+ *
+ * Falls back to a shortened id rather than blank: an unresolvable person
+ * (left the org, directory call failed) must still be distinguishable from
+ * the next row, otherwise a table of eight-character blanks looks like a
+ * rendering bug.
+ */
+export function PersonName({ id }: { id?: string | null }) {
+  const { byId, loading } = usePeopleDirectory();
+  if (!id) return <span className="text-slate-500">—</span>;
+  const person = byId.get(id);
+  if (person) return <span>{person.full_name}</span>;
+  return (
+    <span className="text-slate-400" title={id}>
+      {loading ? '…' : String(id).slice(0, 8)}
+    </span>
+  );
+}
+
+/**
+ * Search-suggest picker over the People Connect directory.
+ *
+ * Filtering is client-side across every displayed attribute, matching the
+ * behaviour of the deal owner picker: the registry API only indexes name,
+ * email and employee id, so searching by job title or department would
+ * otherwise silently return nothing.
+ */
+export function PersonPicker({
+  value,
+  onChange,
+  placeholder = 'Search people…',
+  allowClear = true,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  placeholder?: string;
+  allowClear?: boolean;
+}) {
+  const { people, byId, loading, failed } = usePeopleDirectory();
+  const [query, setQuery] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const boxRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, []);
+
+  const selected = value ? byId.get(value) : undefined;
+
+  const matches = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const rows = q
+      ? people.filter((p) =>
+          [p.full_name, p.email, p.employee_id, p.job_title, p.department_name]
+            .some((v) => (v || '').toLowerCase().includes(q)),
+        )
+      : people;
+    return rows.slice(0, 50);
+  }, [people, query]);
+
+  if (value && selected && !open) {
+    return (
+      <div className="flex items-center gap-2" ref={boxRef}>
+        <button
+          type="button"
+          onClick={() => {
+            setQuery('');
+            setOpen(true);
+          }}
+          className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 text-left"
+        >
+          {selected.full_name}
+          {selected.job_title ? (
+            <span className="text-slate-400"> · {selected.job_title}</span>
+          ) : null}
+        </button>
+        {allowClear ? (
+          <button
+            type="button"
+            aria-label="Clear selection"
+            onClick={() => {
+              onChange('');
+              setQuery('');
+            }}
+            className="text-xs text-slate-400 hover:text-slate-200"
+          >
+            clear
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative" ref={boxRef}>
+      <input
+        className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+        value={query}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        placeholder={
+          failed ? 'People directory unavailable' : loading ? 'Loading people…' : placeholder
+        }
+        role="combobox"
+        aria-expanded={open}
+        aria-label="Person"
+      />
+      {open && !loading && !failed ? (
+        <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-slate-700 bg-slate-900 py-1 text-sm shadow-lg">
+          {matches.length === 0 ? (
+            <li className="px-2 py-1.5 text-slate-500">No matching people</li>
+          ) : (
+            matches.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  className="block w-full px-2 py-1.5 text-left text-slate-100 hover:bg-slate-800"
+                  onClick={() => {
+                    onChange(p.id);
+                    setQuery('');
+                    setOpen(false);
+                  }}
+                >
+                  {p.full_name}
+                  {p.job_title || p.department_name ? (
+                    <span className="text-slate-400">
+                      {' · '}
+                      {[p.job_title, p.department_name].filter(Boolean).join(' · ')}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+    </div>
+  );
+}

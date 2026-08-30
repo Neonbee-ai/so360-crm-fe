@@ -4,6 +4,7 @@ import { targetPlanService } from '../../services/targetPlanService';
 import {
   EmptyState,
   Panel,
+  PersonName,
   ProgressBar,
   StatusChip,
   formatPct,
@@ -142,7 +143,9 @@ export default function TeamTargetsPage() {
                   className="border-b border-slate-800/60 hover:bg-slate-800/40 cursor-pointer"
                   onClick={() => openDetail(r.person_id)}
                 >
-                  <td className="py-2 pr-4 text-slate-200">{r.person_id}</td>
+                  <td className="py-2 pr-4 text-slate-200">
+                    <PersonName id={r.person_id} />
+                  </td>
                   <td className="py-2 pr-4 text-slate-400">
                     {r.metric_name ?? '—'}
                   </td>

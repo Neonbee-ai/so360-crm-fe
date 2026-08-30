@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel, formatValue } from './targetUi';
+import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
 
 /**
  * Incentive and commission review.
@@ -89,16 +89,11 @@ export default function CompensationPage() {
 
       <Panel title="Calculate">
         <div className="flex flex-wrap items-end gap-3">
-          <div>
+          <div className="min-w-64">
             <label className="block text-[11px] text-slate-400 mb-1">
-              Person id
+              Person
             </label>
-            <input
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-              value={personId}
-              onChange={(e) => setPersonId(e.target.value)}
-              placeholder="person uuid"
-            />
+            <PersonPicker value={personId} onChange={setPersonId} />
           </div>
           <div>
             <label className="block text-[11px] text-slate-400 mb-1">From</label>
@@ -202,11 +197,13 @@ export default function CompensationPage() {
                         `${(r.bands ?? []).length} band${(r.bands ?? []).length === 1 ? '' : 's'}`}
                     </td>
                     <td className="py-2 text-slate-400 text-xs">
-                      {r.applies_to_person_id
-                        ? 'one person'
-                        : r.applies_to_role
-                          ? r.applies_to_role
-                          : 'all'}
+                      {r.applies_to_person_id ? (
+                        <PersonName id={r.applies_to_person_id} />
+                      ) : r.applies_to_role ? (
+                        r.applies_to_role
+                      ) : (
+                        'all'
+                      )}
                     </td>
                   </tr>
                 ))}

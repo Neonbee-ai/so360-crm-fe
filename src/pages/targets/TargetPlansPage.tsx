@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
-import { EmptyState, Panel, formatValue } from './targetUi';
+import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
 
@@ -180,13 +180,8 @@ export default function TargetPlansPage() {
                   <option value="org">Organisation</option>
                 </select>
               </Field>
-              <Field label="Owner (person id)">
-                <input
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                  value={ownerId}
-                  onChange={(e) => setOwnerId(e.target.value)}
-                  placeholder="person uuid"
-                />
+              <Field label="Owner" grow>
+                <PersonPicker value={ownerId} onChange={setOwnerId} />
               </Field>
             </div>
 
@@ -390,7 +385,12 @@ export default function TargetPlansPage() {
                     <td className="py-2 pr-4 text-slate-200">{p.name}</td>
                     <td className="py-2 pr-4 text-slate-400">
                       {p.owner_type}
-                      {p.owner_id ? ` · ${String(p.owner_id).slice(0, 8)}` : ''}
+                      {p.owner_id ? (
+                        <>
+                          {' · '}
+                          <PersonName id={p.owner_id} />
+                        </>
+                      ) : null}
                     </td>
                     <td className="py-2 pr-4 text-slate-400">{p.period}</td>
                     <td className="py-2 pr-4 text-slate-400">
