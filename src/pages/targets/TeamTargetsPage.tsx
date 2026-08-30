@@ -9,6 +9,8 @@ import {
   StatusChip,
   formatPct,
   formatValue,
+  PeriodPicker,
+  AsOfBanner,
 } from './targetUi';
 
 /**
@@ -25,6 +27,7 @@ export default function TeamTargetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<any | null>(null);
+  const [asOf, setAsOf] = useState('');
 
   // `base_currency` is the field Core actually returns on business_settings.
   // Reading `currency` yielded undefined, so every money figure on these
@@ -43,7 +46,10 @@ export default function TeamTargetsPage() {
     setLoading(true);
     setError(null);
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      // The plan list is filtered by the SAME date the scorecard is read
+      // for, or a past period would list today's active plans beside that
+      // period's numbers.
+      const today = asOf || new Date().toISOString().slice(0, 10);
       const plans = await targetPlanService.listPlans({
         status: 'active',
         active_on: today,
@@ -60,7 +66,10 @@ export default function TeamTargetsPage() {
         setTotals(null);
         return;
       }
-      const res = await targetPlanService.teamScorecard(personIds);
+      const res = await targetPlanService.teamScorecard(
+        personIds,
+        asOf || undefined,
+      );
       setRows(res.rows ?? []);
       setTotals(res.totals ?? null);
     } catch (e: any) {
@@ -68,7 +77,7 @@ export default function TeamTargetsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [asOf]);
 
   useEffect(() => {
     load();
@@ -78,21 +87,47 @@ export default function TeamTargetsPage() {
     setSelected(personId);
     setDetail(null);
     try {
-      setDetail(await targetPlanService.overviewFor(personId));
+      setDetail(
+        await targetPlanService.overviewFor(personId, asOf || undefined),
+      );
     } catch (e: any) {
       setError(e.message);
     }
   };
 
+  // Rendered by EVERY branch, including the loading and empty states. If the
+  // picker vanished when a period came back empty, the user would be stuck on
+  // that period with no way to choose another.
+  const header = (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-lg font-semibold text-slate-100">Team Targets</h1>
+        <PeriodPicker value={asOf} onChange={setAsOf} />
+      </div>
+      <AsOfBanner asOf={asOf} />
+    </div>
+  );
+
   if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading team…</div>;
+    return (
+      <div className="p-6 space-y-4">
+        {header}
+        <div className="text-sm text-slate-400">Loading team…</div>
+      </div>
+    );
   }
   if (error) {
-    return <div className="p-6 text-sm text-rose-300">{error}</div>;
+    return (
+      <div className="p-6 space-y-4">
+        {header}
+        <div className="text-sm text-rose-300">{error}</div>
+      </div>
+    );
   }
   if (!rows.length) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-4">
+        {header}
         <EmptyState message="No active individual target plans in this period." />
       </div>
     );
@@ -101,7 +136,7 @@ export default function TeamTargetsPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100">Team Targets</h1>
+        {header}
         {totals && (
           <div className="mt-2 max-w-md">
             <div className="flex items-baseline justify-between text-xs text-slate-400">

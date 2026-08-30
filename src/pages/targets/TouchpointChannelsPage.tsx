@@ -62,19 +62,44 @@ export default function TouchpointChannelsPage() {
 
   const addChannel = async () => {
     if (!label.trim() || !value.trim()) return;
+    const key = value.trim().toLowerCase().replace(/\s+/g, '_');
+
+    // `crm_touchpoint_channels` has UNIQUE (org_id, value), and provisioning
+    // seeds a set of system channels — so the most likely reason an add fails
+    // is that the key already exists, possibly on a channel that is currently
+    // INACTIVE and therefore invisible in the default list. A raw Postgres
+    // duplicate-key message tells the user none of that.
+    const clash = channels.find(
+      (c: any) => String(c.value).toLowerCase() === key,
+    );
+    if (clash) {
+      setError(
+        clash.is_active === false
+          ? `A channel with the key "${key}" already exists but is inactive — show inactive channels and reactivate it instead.`
+          : `A channel with the key "${key}" already exists (${clash.label}). Pick a different key.`,
+      );
+      return;
+    }
+
     setBusy(true);
     setError(null);
     try {
       await targetPlanService.createChannel({
         label: label.trim(),
-        value: value.trim().toLowerCase().replace(/\s+/g, '_'),
+        value: key,
         actuals_source: actualsSource,
       });
       setLabel('');
       setValue('');
+      setNotice(`Added ${label.trim()}.`);
       load();
     } catch (e: any) {
-      setError(e.message);
+      const raw = String(e?.message ?? '');
+      setError(
+        /duplicate key|already exists|unique/i.test(raw)
+          ? `A channel with the key "${key}" already exists in this organisation. Pick a different key.`
+          : raw || 'Could not add the channel.',
+      );
     } finally {
       setBusy(false);
     }

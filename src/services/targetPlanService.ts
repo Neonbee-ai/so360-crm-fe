@@ -193,10 +193,17 @@ export const targetPlanService = {
 
   // ─── Visibility ─────────────────────────────────────────────────────────
 
-  myOverview: () => targetPlanService.fetch<Overview>('/target-plans/me/overview'),
+  // `as_of` (YYYY-MM-DD) reads the period containing that date instead of
+  // today. Omitted entirely when absent so the backend keeps its own default.
+  myOverview: (asOf?: string) =>
+    targetPlanService.fetch<Overview>(
+      `/target-plans/me/overview${asOf ? `?as_of=${asOf}` : ''}`,
+    ),
 
-  overviewFor: (personId: string) =>
-    targetPlanService.fetch<Overview>(`/target-plans/overview/${personId}`),
+  overviewFor: (personId: string, asOf?: string) =>
+    targetPlanService.fetch<Overview>(
+      `/target-plans/overview/${personId}${asOf ? `?as_of=${asOf}` : ''}`,
+    ),
 
   myHistory: (limit = 12) =>
     targetPlanService.fetch<any>(`/target-plans/me/history?limit=${limit}`),
@@ -206,9 +213,11 @@ export const targetPlanService = {
       `/target-plans/history/${personId}?limit=${limit}`,
     ),
 
-  teamScorecard: (personIds: string[]) =>
+  teamScorecard: (personIds: string[], asOf?: string) =>
     targetPlanService.fetch<any>(
-      `/target-plans/team/scorecard?person_ids=${personIds.join(',')}`,
+      `/target-plans/team/scorecard?person_ids=${personIds.join(',')}${
+        asOf ? `&as_of=${asOf}` : ''
+      }`,
     ),
 
   // ─── Settings ───────────────────────────────────────────────────────────
@@ -260,11 +269,15 @@ export const targetPlanService = {
 
   // ─── Measurement (P2) ───────────────────────────────────────────────────
 
-  myMeasurement: () =>
-    targetPlanService.fetch<any>('/target-plans/me/measurement'),
+  myMeasurement: (asOf?: string) =>
+    targetPlanService.fetch<any>(
+      `/target-plans/me/measurement${asOf ? `?as_of=${asOf}` : ''}`,
+    ),
 
-  measurementFor: (personId: string) =>
-    targetPlanService.fetch<any>(`/target-plans/measurement/${personId}`),
+  measurementFor: (personId: string, asOf?: string) =>
+    targetPlanService.fetch<any>(
+      `/target-plans/measurement/${personId}${asOf ? `?as_of=${asOf}` : ''}`,
+    ),
 
   listLossReasons: () =>
     targetPlanService.fetch<any[]>('/target-plans/settings/loss-reasons'),

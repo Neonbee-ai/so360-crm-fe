@@ -473,3 +473,63 @@ export function reviewPeriodBounds(
     period_end: iso(new Date(Date.UTC(year, startMonth + 3, 0))),
   };
 }
+
+// ─── Period selection ──────────────────────────────────────────────────────
+
+/**
+ * Chooses which period a screen reads.
+ *
+ * These screens were hardwired to today, so a past month could not be looked
+ * at even though every number for it was already stored. An empty value means
+ * "today" and sends no `as_of` at all, leaving the default to the backend
+ * rather than pinning it to the browser's clock — a browser in a different
+ * timezone would otherwise ask for the wrong day.
+ */
+export function PeriodPicker({
+  value,
+  onChange,
+  label = 'As of',
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  label?: string;
+}) {
+  return (
+    <div className="flex items-end gap-2">
+      <div>
+        <label className="block text-[11px] text-slate-400 mb-1">{label}</label>
+        <input
+          type="date"
+          aria-label={label}
+          className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+      {value ? (
+        <button
+          className="pb-1.5 text-xs text-slate-400 hover:text-slate-200"
+          onClick={() => onChange('')}
+        >
+          today
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Marks a view as historical.
+ *
+ * Without it a past period is indistinguishable from the current one at a
+ * glance, and a manager can easily read last quarter's shortfall as this
+ * quarter's.
+ */
+export function AsOfBanner({ asOf }: { asOf: string }) {
+  if (!asOf) return null;
+  return (
+    <div className="rounded border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-xs text-amber-300">
+      Showing the period containing {asOf}, not today.
+    </div>
+  );
+}

@@ -4,6 +4,7 @@ import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
 import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
+import EditPlanPanel from './EditPlanPanel';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
 
@@ -35,6 +36,7 @@ export default function TargetPlansPage() {
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [allocating, setAllocating] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [ownerType, setOwnerType] = useState<'rep' | 'team' | 'org'>('rep');
@@ -211,6 +213,14 @@ export default function TargetPlansPage() {
             </button>
           </div>
         </Panel>
+      )}
+
+      {editing && (
+        <EditPlanPanel
+          planId={editing}
+          onClose={() => setEditing(null)}
+          onSaved={load}
+        />
       )}
 
       {allocating && (
@@ -479,14 +489,22 @@ export default function TargetPlansPage() {
                     </td>
                     <td className="py-2 pr-4 text-slate-300">{p.status}</td>
                     <td className="py-2 text-right">
-                      {p.owner_type === 'team' && (
+                      <div className="flex justify-end gap-3">
                         <button
                           className="text-xs text-slate-400 hover:text-slate-200"
-                          onClick={() => setAllocating(p.id)}
+                          onClick={() => setEditing(p.id)}
                         >
-                          Allocate
+                          Edit
                         </button>
-                      )}
+                        {p.owner_type === 'team' && (
+                          <button
+                            className="text-xs text-slate-400 hover:text-slate-200"
+                            onClick={() => setAllocating(p.id)}
+                          >
+                            Allocate
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

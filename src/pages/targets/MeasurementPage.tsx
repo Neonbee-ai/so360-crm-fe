@@ -1,7 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel, formatPct, formatValue } from './targetUi';
+import {
+  AsOfBanner,
+  EmptyState,
+  Panel,
+  PeriodPicker,
+  formatPct,
+  formatValue,
+} from './targetUi';
 
 /**
  * Pipeline health, deal mix, sales cycle and win/loss.
@@ -21,6 +28,7 @@ export default function MeasurementPage() {
   // Reading `currency` yielded undefined, so every money figure on these
   // screens formatted as USD regardless of the org's configured currency.
   const currency = (shell as any)?.businessSettings?.base_currency ?? undefined;
+  const [asOf, setAsOf] = useState('');
 
   useEffect(() => {
     if (shell?.currentTenant?.id) {
@@ -34,25 +42,49 @@ export default function MeasurementPage() {
     setLoading(true);
     setError(null);
     targetPlanService
-      .myMeasurement()
+      .myMeasurement(asOf || undefined)
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [asOf]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Rendered by EVERY branch, including the loading and empty states. If the
+  // picker vanished when a period came back empty, the user would be stuck on
+  // that period with no way to choose another.
+  const header = (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-lg font-semibold text-slate-100">Measurement</h1>
+        <PeriodPicker value={asOf} onChange={setAsOf} />
+      </div>
+      <AsOfBanner asOf={asOf} />
+    </div>
+  );
+
   if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading…</div>;
+    return (
+      <div className="p-6 space-y-4">
+        {header}
+        <div className="text-sm text-slate-400">Loading…</div>
+      </div>
+    );
   }
   if (error) {
-    return <div className="p-6 text-sm text-rose-300">{error}</div>;
+    return (
+      <div className="p-6 space-y-4">
+        {header}
+        <div className="text-sm text-rose-300">{error}</div>
+      </div>
+    );
   }
   if (!data) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-4">
+        {header}
         <EmptyState message="No measurement data for this period." />
       </div>
     );
@@ -65,7 +97,7 @@ export default function MeasurementPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100">Measurement</h1>
+        {header}
         <div className="mt-1 text-xs text-slate-400">
           {data.period_start} → {data.period_end}
         </div>

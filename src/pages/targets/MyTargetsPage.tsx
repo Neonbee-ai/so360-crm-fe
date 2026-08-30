@@ -12,6 +12,8 @@ import {
   StatusChip,
   formatPct,
   formatValue,
+  PeriodPicker,
+  AsOfBanner,
 } from './targetUi';
 
 /**
@@ -32,6 +34,7 @@ export default function MyTargetsPage() {
   // Reading `currency` yielded undefined, so every money figure on these
   // screens formatted as USD regardless of the org's configured currency.
   const currency = (shell as any)?.businessSettings?.base_currency ?? undefined;
+  const [asOf, setAsOf] = useState('');
 
   useEffect(() => {
     if (shell?.currentTenant?.id) {
@@ -45,11 +48,11 @@ export default function MyTargetsPage() {
     setLoading(true);
     setError(null);
     targetPlanService
-      .myOverview()
+      .myOverview(asOf || undefined)
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [asOf]);
 
   useEffect(() => {
     load();
@@ -66,15 +69,39 @@ export default function MyTargetsPage() {
     }));
   }, [data]);
 
+  // Rendered by EVERY branch, including the loading and empty states. If the
+  // picker vanished when a period came back empty, the user would be stuck on
+  // that period with no way to choose another.
+  const header = (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-lg font-semibold text-slate-100">My Targets</h1>
+        <PeriodPicker value={asOf} onChange={setAsOf} />
+      </div>
+      <AsOfBanner asOf={asOf} />
+    </div>
+  );
+
   if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading targets…</div>;
+    return (
+      <div className="p-6 space-y-4">
+        {header}
+        <div className="text-sm text-slate-400">Loading targets…</div>
+      </div>
+    );
   }
   if (error) {
-    return <div className="p-6 text-sm text-rose-300">{error}</div>;
+    return (
+      <div className="p-6 space-y-4">
+        {header}
+        <div className="text-sm text-rose-300">{error}</div>
+      </div>
+    );
   }
   if (!grouped.length) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-4">
+        {header}
         <EmptyState message="No targets assigned for this period." />
       </div>
     );
@@ -86,7 +113,7 @@ export default function MyTargetsPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100">My Targets</h1>
+        {header}
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
           <span>{plan?.name}</span>
           {anyMetric && (
