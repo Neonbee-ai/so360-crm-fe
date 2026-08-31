@@ -118,3 +118,34 @@ describe.each(PERIOD_PAGES)('Given %s', (file) => {
     }
   });
 });
+
+// ─── Review sync recovery ──────────────────────────────────────────────────
+
+describe('Given a finalized review that never reached People Connect', () => {
+  it('When the retry is invoked / Then it posts to the deployed retry route', async () => {
+    // Finalizing is one-way. Without a reachable retry, a failed push leaves
+    // the review permanently unusable as appraisal evidence — and the page
+    // already told users to "retry from the sync action" before one existed.
+    const { targetPlanService } = await import('../../services/targetPlanService');
+    await targetPlanService.retryReviewSync();
+
+    expect(calledPath()).toContain('/target-management/reviews/retry-sync');
+    expect(fetchMock.mock.calls[0][1].method).toBe('POST');
+  });
+
+  it('When the retry route is built / Then it carries no /v1 segment', async () => {
+    // crm-be sets no global prefix; a /v1 here 404s exactly as the People
+    // Connect push did.
+    const { targetPlanService } = await import('../../services/targetPlanService');
+    await targetPlanService.retryReviewSync();
+    expect(calledPath()).not.toContain('/v1/');
+  });
+});
+
+describe('Given the reviews page', () => {
+  it('When a finalized review is unsynced / Then a retry control is offered', () => {
+    const src = stripComments(read('SalesReviewsPage.tsx'));
+    expect(src).toContain('retryReviewSync');
+    expect(src).toMatch(/status === 'finalized' && !r\.pc_synced_at/);
+  });
+});

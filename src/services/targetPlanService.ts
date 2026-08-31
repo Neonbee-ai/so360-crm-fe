@@ -364,6 +364,15 @@ export const targetPlanService = {
       body: JSON.stringify(body),
     }),
 
+  // Re-pushes every review that finalized but never reached People Connect.
+  // Finalizing is one-way, so a failed push would otherwise leave the review
+  // permanently unusable as appraisal evidence with no way to recover it.
+  retryReviewSync: () =>
+    targetPlanService.fetch<{ retried: number; ok: number; failed: number }>(
+      '/target-management/reviews/retry-sync',
+      { method: 'POST' },
+    ),
+
   finalizeReview: (id: string) =>
     targetPlanService.fetch<any>(`/target-management/reviews/${id}/finalize`, {
       method: 'POST',

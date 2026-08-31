@@ -94,6 +94,24 @@ export default function SalesReviewsPage() {
     }
   };
 
+  const retrySync = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await targetPlanService.retryReviewSync();
+      setNotice(
+        res.retried === 0
+          ? 'Nothing pending — every finalized review has reached People Connect.'
+          : `Retried ${res.retried}: ${res.ok} succeeded, ${res.failed} still failing.`,
+      );
+      load();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const finalize = async (id: string) => {
     setBusy(true);
     setError(null);
@@ -228,6 +246,24 @@ export default function SalesReviewsPage() {
           )}
         </div>
       </Panel>
+
+      {reviews.some(
+        (r) => r.status === 'finalized' && !r.pc_synced_at,
+      ) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+          <span className="text-xs text-amber-300">
+            Some finalized reviews have not reached People Connect, so they are
+            not yet usable as appraisal evidence.
+          </span>
+          <button
+            className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            onClick={retrySync}
+            disabled={busy}
+          >
+            Retry push
+          </button>
+        </div>
+      )}
 
       {!reviews.length ? (
         <EmptyState message="No reviews yet. A review is created for a person and period, pre-filled with that period's numbers." />
