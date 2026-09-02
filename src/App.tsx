@@ -227,6 +227,12 @@ const App = () => {
                     <Route path="quotes/:id" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="settings" element={<PermissionGuard permission='crm_settings.read'><SettingsPage /></PermissionGuard>} />
                     <Route path="sales-targets/task-types" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><AdminTaskTypesPage /></FlagGuard></PermissionGuard>} />
+                    {/* Retired pages. This router has no catch-all, so a stale
+                        bookmark would render a blank pane rather than 404 —
+                        send each to the screen that replaced it instead. */}
+                    <Route path="sales-targets/targets" element={<Navigate to="/crm/targets/plans" replace />} />
+                    <Route path="sales-targets/scorecard" element={<Navigate to="/crm/targets/mine" replace />} />
+                    <Route path="sales-targets/leaderboard" element={<Navigate to="/crm/targets" replace />} />
                     <Route path="targets" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:targets_performance"><TargetsOverviewPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/mine" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:targets_performance"><MyTargetsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/team" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="submodule:crm:targets_performance"><TeamTargetsPage /></FlagGuard></PermissionGuard>} />

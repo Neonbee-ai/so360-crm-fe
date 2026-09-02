@@ -37,19 +37,40 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
 const app = () => stripComments(readFileSync(join(pkgRoot, 'src', 'App.tsx'), 'utf8'));
 
 const RETIRED = [
-  { route: 'sales-targets/targets', page: 'AdminTargetsPage', supersededBy: 'targets/plans' },
-  { route: 'sales-targets/scorecard', page: 'MyScorecardPage', supersededBy: 'targets/mine' },
-  { route: 'sales-targets/leaderboard', page: 'LeaderboardPage', supersededBy: null },
+  { route: 'sales-targets/targets', page: 'AdminTargetsPage', redirectsTo: '/crm/targets/plans', supersededBy: 'targets/plans' },
+  { route: 'sales-targets/scorecard', page: 'MyScorecardPage', redirectsTo: '/crm/targets/mine', supersededBy: 'targets/mine' },
+  // No direct replacement — the leaderboard read an activity log with no rows.
+  // Sent to the section overview rather than nowhere.
+  { route: 'sales-targets/leaderboard', page: 'LeaderboardPage', redirectsTo: '/crm/targets', supersededBy: null },
 ];
 
 describe('Given the superseded Sales Target Engine pages', () => {
-  it.each(RETIRED)('When the router is read / Then $route is no longer registered', ({ route }) => {
-    expect(app()).not.toContain(`path="${route}"`);
-  });
-
   it.each(RETIRED)('When the router is read / Then $page is no longer imported', ({ page }) => {
     // A lazy import left behind still pulls the chunk into the build graph.
     expect(app()).not.toContain(page);
+  });
+
+  it.each(RETIRED)(
+    'When a stale bookmark hits $route / Then it lands on $redirectsTo, not a blank pane',
+    ({ route, redirectsTo }) => {
+      // This router registers no `path="*"`, so an unmatched path renders
+      // NOTHING — no 404, just an empty content area. Deleting a route without
+      // a redirect converts an old link into a silent dead end.
+      const src = app();
+      const routeLine = src
+        .split('\n')
+        .find((l) => l.includes(`path="${route}"`));
+      expect(routeLine, `no route registered for ${route}`).toBeDefined();
+      expect(routeLine).toContain('Navigate');
+      expect(routeLine).toContain(`to="${redirectsTo}"`);
+      expect(routeLine).toContain('replace');
+    },
+  );
+
+  it('When the router is read / Then it still has no catch-all, which is why the redirects matter', () => {
+    // If a `path="*"` is ever added, these redirects become a nicety rather
+    // than a necessity — and whoever adds it should see this note.
+    expect(app()).not.toContain('path="*"');
   });
 
   it.each(RETIRED.filter((r) => r.supersededBy))(
