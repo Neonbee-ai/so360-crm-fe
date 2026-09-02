@@ -209,11 +209,11 @@ const QuotesPage = () => {
     const handleCreateQuote = async () => {
         if (!selectedDealId) return;
         try {
-            const newQuote = await crmService.createQuote({
-                deal_id: selectedDealId,
-                title: 'New Quote',
-                lines: []
-            });
+            // Only the deal is sent. Title, customer and line items are derived by
+            // crm-be from the deal and its products — a hard-coded 'New Quote' with
+            // an empty `lines` array suppressed that derivation and forced the
+            // seller to retype data the CRM already holds.
+            const newQuote = await crmService.createQuote({ deal_id: selectedDealId });
             recordActivity({ eventType: 'quote.created', eventCategory: 'crm', description: `Created quote for deal`, resourceType: 'quote', resourceId: newQuote.id }).catch(() => {});
             navigate(`/crm/quotes/${newQuote.id}`);
         } catch (err: any) {

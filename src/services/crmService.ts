@@ -2410,7 +2410,11 @@ export const crmService = {
         incoterm?: string;
         customer_reference?: string;
         valid_until?: string;
-        lines: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
+        /**
+         * Omit to have crm-be seed the quote from the deal's own products. Passing
+         * an array — even an empty one — is taken as the caller's own line set.
+         */
+        lines?: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
     }): Promise<any> {
         return apiClient.post<any>('/quotes', data);
     },

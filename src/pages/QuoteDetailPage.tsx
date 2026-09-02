@@ -901,6 +901,47 @@ const QuoteDetailPage = () => {
                         </div>
                     </div>
 
+                    {/* The customer the quote is raised for — resolved from the deal
+                        when the quote was created. Read-only here: the record lives
+                        in Customers, and a quote must reference it rather than keep
+                        its own divergent copy. */}
+                    {customer && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
+                            <h2 className="text-lg font-semibold text-slate-100 mb-4">Customer</h2>
+                            <button
+                                onClick={() => navigate(`/crm/customers/${customer.id}`)}
+                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors"
+                            >
+                                <p className="font-medium text-slate-200">
+                                    {customer.company_name || customer.contact_name || '—'}
+                                </p>
+                                {customer.company_name && customer.contact_name && (
+                                    <p className="text-sm text-slate-400">{customer.contact_name}</p>
+                                )}
+                            </button>
+                            <div className="mt-4 space-y-2 text-sm">
+                                {customer.contact_email && (
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-400">Email</span>
+                                        <span className="text-slate-300 truncate">{customer.contact_email}</span>
+                                    </div>
+                                )}
+                                {customer.phone && (
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-400">Phone</span>
+                                        <span className="text-slate-300">{customer.phone}</span>
+                                    </div>
+                                )}
+                                {customer.tax_id && (
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-400">Tax ID</span>
+                                        <span className="text-slate-300 truncate">{customer.tax_id}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {quote.deal && (
                         <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
                             <h2 className="text-lg font-semibold text-slate-100 mb-4">Related Deal</h2>
