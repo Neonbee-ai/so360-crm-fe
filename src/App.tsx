@@ -179,10 +179,9 @@ const MarketingReviewsPage = lazy(() => import('./pages/MarketingReviewsPage'));
 const MarketingWishlistPage = lazy(() => import('./pages/MarketingWishlistPage'));
 const PartnersPage = lazy(() => import('./pages/PartnersPage'));
 const PartnerDetailPage = lazy(() => import('./pages/PartnerDetailPage'));
+// Kept from the original Sales Target Engine: this is the only UI that can
+// create or edit the activity types Target Plans and Target Templates read.
 const AdminTaskTypesPage = lazy(() => import('./pages/sales-targets/AdminTaskTypesPage'));
-const AdminTargetsPage = lazy(() => import('./pages/sales-targets/AdminTargetsPage'));
-const MyScorecardPage = lazy(() => import('./pages/sales-targets/MyScorecardPage'));
-const LeaderboardPage = lazy(() => import('./pages/sales-targets/LeaderboardPage'));
 const TargetsOverviewPage = lazy(() => import('./pages/targets/TargetsOverviewPage'));
 const MyTargetsPage = lazy(() => import('./pages/targets/MyTargetsPage'));
 const TeamTargetsPage = lazy(() => import('./pages/targets/TeamTargetsPage'));
@@ -228,9 +227,6 @@ const App = () => {
                     <Route path="quotes/:id" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="settings" element={<PermissionGuard permission='crm_settings.read'><SettingsPage /></PermissionGuard>} />
                     <Route path="sales-targets/task-types" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><AdminTaskTypesPage /></FlagGuard></PermissionGuard>} />
-                    <Route path="sales-targets/targets" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="action:crm:sales_targets:manage"><AdminTargetsPage /></FlagGuard></PermissionGuard>} />
-                    <Route path="sales-targets/scorecard" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><MyScorecardPage /></FlagGuard></PermissionGuard>} />
-                    <Route path="sales-targets/leaderboard" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><LeaderboardPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:targets_performance"><TargetsOverviewPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/mine" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:targets_performance"><MyTargetsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="targets/team" element={<PermissionGuard permission='sales_targets.manage'><FlagGuard flagKey="submodule:crm:targets_performance"><TeamTargetsPage /></FlagGuard></PermissionGuard>} />
