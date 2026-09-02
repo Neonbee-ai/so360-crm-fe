@@ -1,3 +1,5 @@
+import { notifyQuotaExceeded } from './quotaExceeded';
+
 /**
  * Targets & Performance API client.
  *
@@ -139,6 +141,7 @@ export const targetPlanService = {
       ...init,
       headers: { ...this.headers(), ...(init.headers ?? {}) },
     });
+    await notifyQuotaExceeded(res);
     if (!res.ok) {
       const err = await res
         .json()

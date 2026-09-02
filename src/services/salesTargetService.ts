@@ -1,3 +1,5 @@
+import { notifyQuotaExceeded } from './quotaExceeded';
+
 const win = typeof window !== 'undefined' ? (window as any) : {};
 
 /**
@@ -42,6 +44,7 @@ export const salesTargetService = {
 
   async fetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(`${BASE}${path}`, { ...init, headers: { ...this.headers(), ...(init.headers ?? {}) } });
+    await notifyQuotaExceeded(res);
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: res.statusText }));
       throw new Error(err?.message ?? res.statusText);

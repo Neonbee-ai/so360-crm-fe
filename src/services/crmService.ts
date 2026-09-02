@@ -1,5 +1,6 @@
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
 import { createRequestCache } from './requestCache';
+import { notifyQuotaExceeded } from './quotaExceeded';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -271,6 +272,7 @@ class ApiClient {
                 ...options,
                 headers,
             });
+            await notifyQuotaExceeded(response);
 
             const text = await response.text();
 
@@ -352,6 +354,7 @@ class ApiClient {
             ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
         };
         const response = await fetch(url, { method: 'GET', headers });
+        await notifyQuotaExceeded(response);
         const text = await response.text();
         if (!response.ok) {
             let errorMessage = `API Error: ${response.status}`;
@@ -430,6 +433,7 @@ class ApiClient {
             headers,
             body: formData,
         });
+        await notifyQuotaExceeded(res);
         if (!res.ok) {
             let msg = `Upload failed: ${res.status}`;
             try { const j = await res.json(); if (j?.message) msg = Array.isArray(j.message) ? j.message.join(', ') : j.message; } catch { /* ignore */ }
@@ -458,6 +462,7 @@ class ApiClient {
             ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
         };
         const response = await fetch(`${this.baseURL}${endpoint}${queryString}`, { method: 'GET', headers });
+        await notifyQuotaExceeded(response);
         if (!response.ok) {
             let msg = `API Error: ${response.status}`;
             try { const j = await response.json(); msg = j?.message || j?.error || msg; } catch { /* ignore */ }
@@ -2488,6 +2493,7 @@ export const crmService = {
                 `${INVENTORY_API_ORIGIN}/v1/inventory/integration/stock-availability?item_ids=${encodeURIComponent(idsParam)}`,
                 { headers },
             );
+            await notifyQuotaExceeded(res);
             if (!res.ok) return { items: [] };
             return res.json();
         } catch {

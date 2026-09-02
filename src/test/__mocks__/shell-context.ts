@@ -27,3 +27,8 @@ export const useQuota = () => ({
 });
 
 export const useOrganization = () => ({ currentOrg: { id: 'org-1', name: 'Test Org' } });
+export const QUOTA_EXCEEDED_EVENT = '__so360_quota_exceeded';
+export const buildQuotaExceededDetail = (error: any): unknown => {
+  const data = error?.response?.data ?? {};
+  return data?.resolution ?? data;
+};
