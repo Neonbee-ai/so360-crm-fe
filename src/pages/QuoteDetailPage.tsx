@@ -615,15 +615,6 @@ const QuoteDetailPage = () => {
                                 </div>
                             </div>
                         </div>
-                        {canWithdraw && (
-                            <button
-                                onClick={() => setShowWithdrawModal(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:text-amber-100 border border-amber-500/40 hover:bg-amber-500/20 rounded-lg transition-colors"
-                            >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                Withdraw Request
-                            </button>
-                        )}
                     </div>
                     <p className="text-sm text-amber-200/90 leading-relaxed">
                         This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.

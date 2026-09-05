@@ -441,7 +441,7 @@ describe('CRM Quote Approval Workflow BDD Specifications', () => {
         expect(screen.getByText('All Quotes')).toBeInTheDocument();
         expect(screen.getByText('Approvals')).toBeInTheDocument();
         // Pending count badge = 1
-        expect(screen.getByText('1')).toBeInTheDocument();
+        expect(screen.getByTestId('approvals-pending-badge')).toHaveTextContent('1');
       });
 
       // Switch to Approvals tab

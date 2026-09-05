@@ -208,8 +208,9 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemove(approver.user_id)}
+                      aria-label={`Remove ${approver.full_name}`}
                       className="hover:text-red-300 hover:bg-amber-500/30 rounded-full p-0.5 transition-colors"
-                      title="Remove"
+                      title={`Remove ${approver.full_name}`}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -253,14 +254,13 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                       <button
                         key={cand.user_id}
                         type="button"
-                        disabled={Boolean(isSelf)}
                         onClick={() => {
                           handleSelect(cand);
-                          setDropdownOpen(false);
+                          if (!isSelf) setDropdownOpen(false);
                         }}
                         className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors ${
                           isSelf
-                            ? 'opacity-40 cursor-not-allowed bg-slate-900/50'
+                            ? 'opacity-60 bg-slate-900/50 cursor-pointer'
                             : 'hover:bg-slate-800/80 cursor-pointer'
                         }`}
                       >
