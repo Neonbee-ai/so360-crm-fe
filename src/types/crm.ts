@@ -378,6 +378,30 @@ export interface Quote {
     /** Buyer's own RFQ/PO number. */
     customer_reference?: string;
     valid_until?: string;
+    submitted_by?: string;
+    current_approval_request_id?: string | null;
+    current_approval_request?: {
+        id: string;
+        quote_id: string;
+        requested_by: string;
+        requested_at: string;
+        status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+        decision_at?: string | null;
+        total_amount_snapshot?: number | null;
+        notes?: string | null;
+        approvers: {
+            id?: string;
+            request_id: string;
+            quote_id: string;
+            approver_user_id: string;
+            approver_person_id?: string | null;
+            approver_name?: string | null;
+            approver_email?: string | null;
+            status: 'pending' | 'approved' | 'rejected';
+            decision_at?: string | null;
+            notes?: string | null;
+        }[];
+    } | null;
     created_by: User;
     approved_by?: User;
     approved_at?: string;

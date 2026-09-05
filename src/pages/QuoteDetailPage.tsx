@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
+import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
 import DetailBackLink from '../components/common/DetailBackLink';
 import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
 import { Modal } from '../components/common/Modal';
@@ -13,6 +13,8 @@ import { useBusinessSettings, useActivity, useShellBridge, useOrganization } fro
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
+import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
+import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -80,6 +82,11 @@ const QuoteDetailPage = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     const [showConvertModal, setShowConvertModal] = useState(false);
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [approvalHistory, setApprovalHistory] = useState<ApprovalRequestRecord[]>([]);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [withdrawReason, setWithdrawReason] = useState('');
+    const [isWithdrawing, setIsWithdrawing] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -133,6 +140,15 @@ const QuoteDetailPage = () => {
         }
     };
 
+    const fetchApprovalHistory = async (quoteId: string) => {
+        try {
+            const data = await crmService.getQuoteApprovalHistory(quoteId);
+            setApprovalHistory(data || []);
+        } catch {
+            // Ignore error if approval history endpoint fails
+        }
+    };
+
     const fetchQuote = async () => {
         setIsLoading(true);
         setError(null);
@@ -140,6 +156,7 @@ const QuoteDetailPage = () => {
             const data = await crmService.getQuoteById(id!);
             setQuote(data);
             setCustomer(null);
+            fetchApprovalHistory(id!);
             if (data.customer_id) {
                 crmService
                     .getLeadById(data.customer_id)
@@ -196,6 +213,7 @@ const QuoteDetailPage = () => {
             setQuote(updatedQuote);
             setIsEditing(false);
             setDraftValues({});
+            fetchApprovalHistory(quote.id);
             recordActivity({ eventType: 'quote.updated', eventCategory: 'crm', description: `Updated quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to save quote');
@@ -204,7 +222,7 @@ const QuoteDetailPage = () => {
         }
     };
 
-    const handleSubmitForApproval = async () => {
+    const handleOpenApprovalModal = () => {
         if (!quote) return;
         // Warn if any line exceeds available stock
         const oosLines = lines.filter(l => l.item_id && stockMap.has(l.item_id) && (stockMap.get(l.item_id) ?? 0) < l.quantity);
@@ -212,12 +230,41 @@ const QuoteDetailPage = () => {
             const names = oosLines.map(l => l.description || l.item_id).join(', ');
             if (!window.confirm(`Warning: ${oosLines.length} line item(s) may have insufficient stock (${names}). Submit anyway?`)) return;
         }
+        setShowApprovalModal(true);
+    };
+
+    const handleSubmitForApproval = async (approverUserIds: string[], notes?: string) => {
+        if (!quote) return;
         try {
-            const updated = await crmService.submitQuoteForApproval(quote.id);
+            const updated = await crmService.submitQuoteForApproval(quote.id, {
+                approver_user_ids: approverUserIds,
+                notes,
+            });
             setQuote(updated);
+            fetchApprovalHistory(quote.id);
+            toast.success('Quote submitted for approval');
             recordActivity({ eventType: 'quote.sent', eventCategory: 'crm', description: `Submitted quote "${quote.quote_number || quote.id}" for approval`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
-            setError(err.message || 'Failed to submit quote');
+            toast.error(getErrorMessage(err, 'Failed to submit quote for approval'));
+            throw err;
+        }
+    };
+
+    const handleWithdraw = async () => {
+        if (!quote) return;
+        setIsWithdrawing(true);
+        try {
+            const updated = await crmService.withdrawQuoteApproval(quote.id, withdrawReason.trim() || undefined);
+            setQuote(updated);
+            setShowWithdrawModal(false);
+            setWithdrawReason('');
+            fetchApprovalHistory(quote.id);
+            toast.success('Approval request withdrawn');
+            recordActivity({ eventType: 'quote.updated', eventCategory: 'crm', description: `Withdrew approval request for quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
+        } catch (err: any) {
+            toast.error(getErrorMessage(err, 'Failed to withdraw approval request'));
+        } finally {
+            setIsWithdrawing(false);
         }
     };
 
@@ -226,22 +273,29 @@ const QuoteDetailPage = () => {
         try {
             const updated = await crmService.approveQuote(quote.id);
             setQuote(updated);
+            fetchApprovalHistory(quote.id);
+            toast.success('Quote approved');
             recordActivity({ eventType: 'quote.accepted', eventCategory: 'crm', description: `Approved quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
-            setError(err.message || 'Failed to approve quote');
+            toast.error(getErrorMessage(err, 'Failed to approve quote'));
         }
     };
 
     const handleReject = async () => {
-        if (!quote || !rejectReason) return;
+        if (!quote || !rejectReason.trim()) {
+            toast.error('Please provide a reason for rejection');
+            return;
+        }
         try {
-            const updated = await crmService.rejectQuote(quote.id, rejectReason);
+            const updated = await crmService.rejectQuote(quote.id, rejectReason.trim());
             setQuote(updated);
             setShowRejectModal(false);
             setRejectReason('');
+            fetchApprovalHistory(quote.id);
+            toast.success('Quote rejected');
             recordActivity({ eventType: 'quote.rejected', eventCategory: 'crm', description: `Rejected quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
-            setError(err.message || 'Failed to reject quote');
+            toast.error(getErrorMessage(err, 'Failed to reject quote'));
         }
     };
 
@@ -378,9 +432,25 @@ const QuoteDetailPage = () => {
 
     const status = statusConfig[quote.status];
     const totals = calculateTotals();
-    const canEdit = quote.status === 'draft';
-    const canSubmit = quote.status === 'draft' && lines.length > 0;
-    const canApprove = quote.status === 'pending_approval';
+
+    const currentUserId = shell?.user?.id;
+    const currentApprovalRequest = quote.current_approval_request;
+    const hasApproversList = Boolean(currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0);
+    const isAuthorizedApprover = hasApproversList
+        ? Boolean(currentApprovalRequest?.approvers?.some((a: any) => a.approver_user_id === currentUserId && a.status === 'pending'))
+        : true;
+    const canApprove = quote.status === 'pending_approval' && canApproveQuote && isAuthorizedApprover;
+    const isSubmitter = Boolean(
+        currentUserId && (
+            quote.submitted_by === currentUserId ||
+            (quote.created_by as any)?.id === currentUserId ||
+            (quote as any).created_by === currentUserId ||
+            currentApprovalRequest?.requested_by === currentUserId
+        )
+    );
+    const canWithdraw = quote.status === 'pending_approval' && isSubmitter;
+    const canEdit = (quote.status === 'draft' || quote.status === 'rejected');
+    const canSubmit = (quote.status === 'draft' || quote.status === 'rejected') && lines.length > 0;
     const canConvert = quote.status === 'approved';
 
     return (
@@ -439,11 +509,20 @@ const QuoteDetailPage = () => {
                     )}
                     {canSubmit && !isEditing && (
                         <button
-                            onClick={handleSubmitForApproval}
+                            onClick={handleOpenApprovalModal}
                             className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
                         >
                             <Send className="w-4 h-4" />
                             Submit for Approval
+                        </button>
+                    )}
+                    {canWithdraw && !isEditing && (
+                        <button
+                            onClick={() => setShowWithdrawModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 text-amber-300 hover:text-amber-100 border border-amber-500/40 hover:bg-amber-500/20 rounded-lg transition-colors"
+                        >
+                            <RotateCcw className="w-4 h-4" />
+                            Withdraw Request
                         </button>
                     )}
                     {canApproveQuote && canApprove && (
@@ -516,6 +595,69 @@ const QuoteDetailPage = () => {
             {error && (
                 <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
                     {error}
+                </div>
+            )}
+
+            {/* Approval in Progress Banner */}
+            {quote.status === 'pending_approval' && (
+                <div className="mb-6 p-5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 space-y-3">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <Clock className="w-5 h-5 text-amber-400" />
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-amber-100 text-base">
+                                        Approval in Progress
+                                    </span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold border border-amber-400/30">
+                                        Locked
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {canWithdraw && (
+                            <button
+                                onClick={() => setShowWithdrawModal(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:text-amber-100 border border-amber-500/40 hover:bg-amber-500/20 rounded-lg transition-colors"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Withdraw Request
+                            </button>
+                        )}
+                    </div>
+                    <p className="text-sm text-amber-200/90 leading-relaxed">
+                        This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.
+                        {isSubmitter && !isAuthorizedApprover && (
+                            <span className="block mt-1 text-xs text-amber-300 font-medium">
+                                You submitted this quote. Self-approval is disabled, so you cannot approve or reject your own request.
+                            </span>
+                        )}
+                        {isAuthorizedApprover && (
+                            <span className="block mt-1 text-xs text-emerald-400 font-medium">
+                                You are an assigned approver for this quote. Please review the details and use the Approve or Reject actions above.
+                            </span>
+                        )}
+                    </p>
+                    {currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0 && (
+                        <div className="pt-3 border-t border-amber-500/20 flex flex-wrap gap-2 items-center">
+                            <span className="text-xs font-semibold text-amber-300/80">Required Approvers:</span>
+                            {currentApprovalRequest.approvers.map((a: any, idx: number) => (
+                                <span
+                                    key={a.id || idx}
+                                    className={`text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
+                                        a.status === 'approved'
+                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                                            : a.status === 'rejected'
+                                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                            : 'bg-slate-800/90 border-slate-700 text-slate-300'
+                                    }`}
+                                >
+                                    <span className="font-medium">{a.approver_name || a.approver_email || 'Approver'}</span>
+                                    <span className="text-[10px] uppercase font-bold opacity-80">({a.status})</span>
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -877,6 +1019,14 @@ const QuoteDetailPage = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Approval History Audit Trail */}
+                    <QuoteApprovalHistory
+                        history={approvalHistory}
+                        currentRequestId={quote.current_approval_request_id}
+                        formatDate={formatDate}
+                        formatCurrency={formatCurrency}
+                    />
                 </div>
 
                 {/* Sidebar */}
@@ -1096,6 +1246,64 @@ const QuoteDetailPage = () => {
                     </button>
                 </div>
             </Modal>
+
+            {/* Withdraw Modal */}
+            {showWithdrawModal && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex items-center gap-2 mb-2 text-amber-400">
+                            <RotateCcw className="w-5 h-5" />
+                            <h2 className="text-xl font-semibold text-slate-100">Withdraw Approval Request</h2>
+                        </div>
+                        <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+                            This will cancel the active approval cycle and return this quote to <strong>Draft</strong> status, unlocking it for edits and resubmission.
+                        </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                Reason for withdrawal <span className="text-slate-500 font-normal">(optional)</span>
+                            </label>
+                            <textarea
+                                value={withdrawReason}
+                                onChange={(e) => setWithdrawReason(e.target.value)}
+                                rows={3}
+                                className={EDITABLE_FIELD_CLASS}
+                                placeholder="e.g. Updating line item quantities or pricing..."
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button
+                                onClick={() => {
+                                    setShowWithdrawModal(false);
+                                    setWithdrawReason('');
+                                }}
+                                disabled={isWithdrawing}
+                                className="px-4 py-2 text-slate-400 hover:text-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleWithdraw}
+                                disabled={isWithdrawing}
+                                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2 font-medium"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                {isWithdrawing ? 'Withdrawing...' : 'Confirm Withdrawal'}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Quote Approval Modal (Approver Selection & Submission) */}
+            <QuoteApprovalModal
+                quote={quote}
+                currentUserId={currentUserId}
+                currencyFormatter={formatCurrency}
+                isOpen={showApprovalModal}
+                onClose={() => setShowApprovalModal(false)}
+                onSubmit={handleSubmitForApproval}
+            />
         </div>
     );
 };

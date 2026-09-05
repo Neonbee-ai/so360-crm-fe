@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, FileText, Search, Filter, CheckCircle, XCircle, Clock, Send, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, FileText, Search, Filter, CheckCircle, XCircle, Clock, Send, Trash2, ChevronDown, Eye, User, Inbox, Check, X } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { Quote, QuoteStatus, Deal } from '../types/crm';
@@ -151,7 +151,24 @@ const QuotesPage = () => {
     const [dealSearchTerm, setDealSearchTerm] = useState('');
     const dealDropdownRef = useRef<HTMLDivElement>(null);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-    const statusDropdownRef = useRef<HTMLDivElement>(null);
+    // View mode: 'all' = All Quotes, 'approvals' = Approvals Inbox
+    const [activeTab, setActiveTab] = usePersistedState<'all' | 'approvals'>('quotes.activeTab', 'all');
+    const [approvals, setApprovals] = useState<any[]>([]);
+    const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+    const [approvalsStatusFilter, setApprovalsStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+    const [approvalsSearchTerm, setApprovalsSearchTerm] = useState('');
+
+    const fetchApprovals = async () => {
+        try {
+            const data = await crmService.getApprovalsInbox();
+            const list = Array.isArray(data) ? data : [];
+            setApprovals(list);
+            const pending = list.filter((a: any) => a.approver_status === 'pending');
+            setPendingApprovalsCount(pending.length);
+        } catch (err) {
+            console.error('Failed to load approvals inbox', err);
+        }
+    };
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -159,7 +176,8 @@ const QuotesPage = () => {
         try {
             const [quotesData, dealsData] = await Promise.all([
                 crmService.getQuotes(),
-                crmService.getDeals()
+                crmService.getDeals(),
+                fetchApprovals()
             ]);
             setQuotes(quotesData || []);
             setDeals(dealsData || []);
@@ -383,6 +401,178 @@ const QuotesPage = () => {
         }
     ];
 
+    const handleQuickApprove = async (quoteId: string) => {
+        setActionLoading(quoteId + 'approve');
+        try {
+            await crmService.approveQuote(quoteId);
+            toast.success('Quote approved successfully');
+            await fetchData();
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to approve quote');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleQuickReject = (quoteId: string) => {
+        setRejectTarget(quoteId);
+    };
+
+    const filteredApprovals = useMemo(() => {
+        return approvals.filter((item) => {
+            const matchesStatus =
+                approvalsStatusFilter === 'all' ||
+                item.approver_status === approvalsStatusFilter;
+            const term = approvalsSearchTerm.trim().toLowerCase();
+            const matchesSearch =
+                !term ||
+                item.quote_number?.toLowerCase().includes(term) ||
+                item.title?.toLowerCase().includes(term) ||
+                item.customer_name?.toLowerCase().includes(term) ||
+                item.requested_by?.toLowerCase().includes(term);
+            return matchesStatus && matchesSearch;
+        });
+    }, [approvals, approvalsStatusFilter, approvalsSearchTerm]);
+
+    const approvalColumns = [
+        {
+            key: 'quote_number',
+            header: 'Quote #',
+            accessor: (item: any) => (
+                <button
+                    onClick={(e) => { e.stopPropagation(); openQuote(item.quote_id); }}
+                    className="text-blue-400 hover:text-blue-300 font-medium text-left"
+                >
+                    {item.quote_number || `Q-${item.quote_id.slice(0, 8)}`}
+                </button>
+            )
+        },
+        {
+            key: 'title',
+            header: 'Title',
+            accessor: (item: any) => (
+                <span className="text-slate-200">{item.title || 'Untitled Quote'}</span>
+            )
+        },
+        {
+            key: 'customer',
+            header: 'Customer',
+            accessor: (item: any) => (
+                <span className="text-slate-300">{item.customer_name || '-'}</span>
+            )
+        },
+        {
+            key: 'amount',
+            header: 'Amount',
+            accessor: (item: any) => (
+                <span className="text-slate-200 font-medium">{formatCurrency(Number(item.total_amount || 0))}</span>
+            )
+        },
+        {
+            key: 'requested_by',
+            header: 'Submitted By',
+            accessor: (item: any) => (
+                <span className="text-slate-300 text-xs">{item.requested_by || 'Unknown'}</span>
+            )
+        },
+        {
+            key: 'requested_at',
+            header: 'Submitted At',
+            accessor: (item: any) => (
+                <span className="text-slate-400 text-xs">{item.requested_at ? formatDate(item.requested_at) : '-'}</span>
+            )
+        },
+        {
+            key: 'other_approvers',
+            header: 'Reviewers',
+            accessor: (item: any) => {
+                const others = item.all_approvers || [];
+                if (others.length === 0) return <span className="text-slate-500 text-xs">-</span>;
+                return (
+                    <div className="flex flex-wrap gap-1 max-w-xs">
+                        {others.map((o: any, idx: number) => {
+                            const badgeColor =
+                                o.status === 'approved'
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                    : o.status === 'rejected'
+                                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                    : 'bg-slate-800 text-slate-400 border-slate-700';
+                            return (
+                                <span
+                                    key={o.id || idx}
+                                    className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border ${badgeColor}`}
+                                >
+                                    <span>{o.approver_name || o.approver_email || 'Approver'}</span>
+                                    <span className="text-[9px] uppercase font-bold opacity-75">({o.status})</span>
+                                </span>
+                            );
+                        })}
+                    </div>
+                );
+            }
+        },
+        {
+            key: 'status',
+            header: 'Your Decision',
+            accessor: (item: any) => {
+                if (item.approver_status === 'approved') {
+                    return (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            <Check className="w-3 h-3" />
+                            Approved
+                        </span>
+                    );
+                }
+                if (item.approver_status === 'rejected') {
+                    return (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                            <X className="w-3 h-3" />
+                            Rejected
+                        </span>
+                    );
+                }
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        <Clock className="w-3 h-3" />
+                        Pending
+                    </span>
+                );
+            }
+        },
+        {
+            key: 'actions',
+            header: 'Actions',
+            accessor: (item: any) => (
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    {item.approver_status === 'pending' && (
+                        <>
+                            <button
+                                onClick={() => handleQuickApprove(item.quote_id)}
+                                disabled={actionLoading === item.quote_id + 'approve'}
+                                className="px-2.5 py-1 text-xs font-semibold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors disabled:opacity-50"
+                            >
+                                Approve
+                            </button>
+                            <button
+                                onClick={() => handleQuickReject(item.quote_id)}
+                                className="px-2.5 py-1 text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded transition-colors"
+                            >
+                                Reject
+                            </button>
+                        </>
+                    )}
+                    <button
+                        onClick={() => openQuote(item.quote_id)}
+                        className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+                        title="View Details"
+                    >
+                        <Eye className="w-4 h-4" />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
     if (isLoading) {
         return (
             <div className="p-8">
@@ -438,132 +628,235 @@ const QuotesPage = () => {
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="flex items-center gap-4 mb-6">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Search quotes..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-                <div ref={statusDropdownRef} className="relative">
-                    <button
-                        type="button"
-                        onClick={() => setStatusDropdownOpen(o => !o)}
-                        className={`flex items-center gap-2 px-3 py-2 bg-slate-800 border rounded-lg text-sm transition-colors hover:border-slate-600 ${statusFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-slate-700 text-slate-300'}`}
-                    >
-                        <Filter className={`w-4 h-4 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-slate-400'}`} />
-                        <span>
-                            {statusFilter === 'All' ? 'All Status' : (statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter)}
+            {/* View Switcher Tabs: All Quotes | Approvals */}
+            <div className="flex items-center gap-2 border-b border-slate-800 mb-6">
+                <button
+                    onClick={() => setActiveTab('all')}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                        activeTab === 'all'
+                            ? 'border-blue-500 text-blue-400'
+                            : 'border-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                >
+                    <FileText className="w-4 h-4" />
+                    All Quotes
+                    <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">
+                        {quotes.length}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('approvals')}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                        activeTab === 'approvals'
+                            ? 'border-blue-500 text-blue-400'
+                            : 'border-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                >
+                    <Inbox className="w-4 h-4" />
+                    Approvals
+                    {pendingApprovalsCount > 0 && (
+                        <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                            {pendingApprovalsCount}
                         </span>
-                        {statusFilter !== 'All' && (
-                            <span
-                                role="button"
-                                aria-label="Clear status filter"
-                                onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                className="ml-0.5 text-blue-400 hover:text-slate-50 leading-none cursor-pointer"
-                            >×</span>
-                        )}
-                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {statusDropdownOpen && (
-                        <div className="absolute left-0 top-full mt-1 z-20 w-52 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
-                            <div className="py-1">
-                                <button
-                                    type="button"
-                                    onClick={() => { setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-700 transition-colors ${statusFilter === 'All' ? 'text-blue-300 bg-blue-600/10' : 'text-slate-300'}`}
-                                >
-                                    <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
-                                    All Status
-                                </button>
-                                {(Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => (
-                                    <button
-                                        key={value}
-                                        type="button"
-                                        onClick={() => { setStatusFilter(value); setStatusDropdownOpen(false); }}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-700 transition-colors ${statusFilter === value ? 'bg-blue-600/10' : ''}`}
-                                    >
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>
-                                            {cfg.label}
-                                        </span>
-                                        <span className="ml-auto text-xs text-slate-500">
-                                            {quotes.filter(q => q.status === value).length}
-                                        </span>
-                                    </button>
+                    )}
+                </button>
+            </div>
+
+            {activeTab === 'all' && (
+                <>
+                    {/* Filters */}
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search quotes..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div ref={statusDropdownRef} className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setStatusDropdownOpen(o => !o)}
+                                className={`flex items-center gap-2 px-3 py-2 bg-slate-800 border rounded-lg text-sm transition-colors hover:border-slate-600 ${statusFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-slate-700 text-slate-300'}`}
+                            >
+                                <Filter className={`w-4 h-4 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-slate-400'}`} />
+                                <span>
+                                    {statusFilter === 'All' ? 'All Status' : (statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter)}
+                                </span>
+                                {statusFilter !== 'All' && (
+                                    <span
+                                        role="button"
+                                        aria-label="Clear status filter"
+                                        onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
+                                        className="ml-0.5 text-blue-400 hover:text-slate-50 leading-none cursor-pointer"
+                                    >×</span>
+                                )}
+                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {statusDropdownOpen && (
+                                <div className="absolute left-0 top-full mt-1 z-20 w-52 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
+                                    <div className="py-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setStatusFilter('All'); setStatusDropdownOpen(false); }}
+                                            className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-700 transition-colors ${statusFilter === 'All' ? 'text-blue-300 bg-blue-600/10' : 'text-slate-300'}`}
+                                        >
+                                            <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
+                                            All Status
+                                        </button>
+                                        {(Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => (
+                                            <button
+                                                key={value}
+                                                type="button"
+                                                onClick={() => { setStatusFilter(value); setStatusDropdownOpen(false); }}
+                                                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-700 transition-colors ${statusFilter === value ? 'bg-blue-600/10' : ''}`}
+                                            >
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>
+                                                    {cfg.label}
+                                                </span>
+                                                <span className="ml-auto text-xs text-slate-500">
+                                                    {quotes.filter(q => q.status === value).length}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="mb-6 bg-slate-900/50 border border-slate-700 rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                            <thead className="border-b border-slate-700">
+                                <tr>
+                                    <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                                    <th className="text-right px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700/50">
+                                {[
+                                    { label: 'Total Quotes', value: quotes.length, icon: FileText, textColor: 'text-blue-400' },
+                                    { label: 'Draft', value: quotes.filter(q => q.status === 'draft').length, icon: Clock, textColor: 'text-slate-300' },
+                                    { label: 'Pending Approval', value: quotes.filter(q => q.status === 'pending_approval').length, icon: Send, textColor: 'text-amber-400' },
+                                    { label: 'Approved', value: quotes.filter(q => q.status === 'approved').length, icon: CheckCircle, textColor: 'text-green-400' },
+                                ].map((stat) => (
+                                    <tr key={stat.label} className="hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-4 py-2.5">
+                                            <div className="flex items-center gap-2">
+                                                <stat.icon className={`w-4 h-4 ${stat.textColor} shrink-0`} />
+                                                <span className="text-slate-300">{stat.label}</span>
+                                            </div>
+                                        </td>
+                                        <td className={`px-4 py-2.5 text-right font-semibold ${stat.textColor}`}>{stat.value}</td>
+                                    </tr>
                                 ))}
-                            </div>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Sandbox limit notice */}
+                    {isSandboxMode && isLimited(filteredQuotes.length) && (
+                        <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                            <span className="font-semibold">Sandbox mode:</span>
+                            showing {sandboxEntryLimit} of {filteredQuotes.length} quotes — full list visible in production.
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Stats */}
-            <div className="mb-6 bg-slate-900/50 border border-slate-700 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                    <thead className="border-b border-slate-700">
-                        <tr>
-                            <th className="text-left px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                            <th className="text-right px-4 py-2.5 text-xs font-medium text-slate-400 uppercase tracking-wider">Count</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-700/50">
-                        {[
-                            { label: 'Total Quotes', value: quotes.length, icon: FileText, textColor: 'text-blue-400' },
-                            { label: 'Draft', value: quotes.filter(q => q.status === 'draft').length, icon: Clock, textColor: 'text-slate-300' },
-                            { label: 'Pending Approval', value: quotes.filter(q => q.status === 'pending_approval').length, icon: Send, textColor: 'text-amber-400' },
-                            { label: 'Approved', value: quotes.filter(q => q.status === 'approved').length, icon: CheckCircle, textColor: 'text-green-400' },
-                        ].map((stat) => (
-                            <tr key={stat.label} className="hover:bg-slate-800/30 transition-colors">
-                                <td className="px-4 py-2.5">
-                                    <div className="flex items-center gap-2">
-                                        <stat.icon className={`w-4 h-4 ${stat.textColor} shrink-0`} />
-                                        <span className="text-slate-300">{stat.label}</span>
-                                    </div>
-                                </td>
-                                <td className={`px-4 py-2.5 text-right font-semibold ${stat.textColor}`}>{stat.value}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Sandbox limit notice */}
-            {isSandboxMode && isLimited(filteredQuotes.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
-                    <span className="font-semibold">Sandbox mode:</span>
-                    showing {sandboxEntryLimit} of {filteredQuotes.length} quotes — full list visible in production.
-                </div>
+                    {/* Table */}
+                    {(isSandboxMode ? filteredQuotes.slice(0, sandboxEntryLimit) : filteredQuotes).length === 0 ? (
+                        <div className="text-center py-16 bg-slate-900/50 border border-slate-700 rounded-lg">
+                            <FileText className="w-12 h-12 mx-auto text-slate-600 mb-4" />
+                            <h3 className="text-lg font-medium text-slate-300 mb-2">No quotes found</h3>
+                            <p className="text-slate-400 mb-4">
+                                {searchTerm || statusFilter !== 'All'
+                                    ? 'Try adjusting your filters'
+                                    : 'Create your first quote to get started'}
+                            </p>
+                            {canCreateQuote && <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Create Quote
+                            </button>}
+                        </div>
+                    ) : (
+                        <Table
+                            data={isSandboxMode ? filteredQuotes.slice(0, sandboxEntryLimit) : filteredQuotes}
+                            columns={columns}
+                            onRowClick={(quote) => openQuote(quote.id)}
+                        />
+                    )}
+                </>
             )}
 
-            {/* Table */}
-            {(isSandboxMode ? filteredQuotes.slice(0, sandboxEntryLimit) : filteredQuotes).length === 0 ? (
-                <div className="text-center py-16 bg-slate-900/50 border border-slate-700 rounded-lg">
-                    <FileText className="w-12 h-12 mx-auto text-slate-600 mb-4" />
-                    <h3 className="text-lg font-medium text-slate-300 mb-2">No quotes found</h3>
-                    <p className="text-slate-400 mb-4">
-                        {searchTerm || statusFilter !== 'All'
-                            ? 'Try adjusting your filters'
-                            : 'Create your first quote to get started'}
-                    </p>
-                    {canCreateQuote && <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Create Quote
-                    </button>}
+            {activeTab === 'approvals' && (
+                <div className="space-y-6">
+                    {/* Approvals Filters & Search */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+                            {[
+                                { id: 'pending', label: 'Pending', count: approvals.filter(a => a.approver_status === 'pending').length },
+                                { id: 'approved', label: 'Approved', count: approvals.filter(a => a.approver_status === 'approved').length },
+                                { id: 'rejected', label: 'Rejected', count: approvals.filter(a => a.approver_status === 'rejected').length },
+                                { id: 'all', label: 'All', count: approvals.length },
+                            ].map((subtab) => (
+                                <button
+                                    key={subtab.id}
+                                    onClick={() => setApprovalsStatusFilter(subtab.id as any)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                                        approvalsStatusFilter === subtab.id
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                    }`}
+                                >
+                                    <span>{subtab.label}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                        approvalsStatusFilter === subtab.id
+                                            ? 'bg-blue-700 text-blue-100'
+                                            : 'bg-slate-800 text-slate-400'
+                                    }`}>
+                                        {subtab.count}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search approvals..."
+                                value={approvalsSearchTerm}
+                                onChange={(e) => setApprovalsSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Approvals Table */}
+                    {filteredApprovals.length === 0 ? (
+                        <div className="text-center py-16 bg-slate-900/50 border border-slate-700 rounded-lg">
+                            <CheckCircle className="w-12 h-12 mx-auto text-slate-600 mb-4" />
+                            <h3 className="text-lg font-medium text-slate-300 mb-2">No approval requests found</h3>
+                            <p className="text-slate-400 text-sm">
+                                {approvalsStatusFilter === 'pending'
+                                    ? "You're all caught up! There are no quotes awaiting your approval."
+                                    : 'No quotes match the selected filter.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <Table
+                            data={filteredApprovals}
+                            columns={approvalColumns}
+                            onRowClick={(item) => openQuote(item.quote_id)}
+                        />
+                    )}
                 </div>
-            ) : (
-                <Table
-                    data={isSandboxMode ? filteredQuotes.slice(0, sandboxEntryLimit) : filteredQuotes}
-                    columns={columns}
-                    onRowClick={(quote) => openQuote(quote.id)}
-                />
             )}
 
             {/* Create Quote Modal */}
@@ -670,13 +963,16 @@ const QuotesPage = () => {
 
             {/* Reject Reason Modal */}
             {rejectTarget && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
                     <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-lg font-semibold text-slate-100 mb-3">Reject Quote</h2>
+                        <h2 className="text-lg font-semibold text-slate-100 mb-2">Reject Quote</h2>
+                        <p className="text-xs text-slate-400 mb-3">
+                            Please provide a reason for rejecting this quote. Rejection reasons are mandatory.
+                        </p>
                         <textarea
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="Reason for rejection (optional)"
+                            placeholder="Reason for rejection (mandatory) *"
                             rows={3}
                             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none mb-4"
                         />
@@ -688,11 +984,26 @@ const QuotesPage = () => {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => {
-                                    const q = quotes.find(q => q.id === rejectTarget)!;
-                                    executeStatusAction(q, 'reject');
+                                onClick={async () => {
+                                    if (!rejectReason.trim()) {
+                                        toast.error('Rejection reason is required');
+                                        return;
+                                    }
+                                    setActionLoading(rejectTarget + 'reject');
+                                    try {
+                                        await crmService.rejectQuote(rejectTarget, rejectReason.trim());
+                                        toast.success('Quote rejected successfully');
+                                        setRejectTarget(null);
+                                        setRejectReason('');
+                                        await fetchData();
+                                    } catch (err: any) {
+                                        toast.error(err?.message || 'Failed to reject quote');
+                                    } finally {
+                                        setActionLoading(null);
+                                    }
                                 }}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                disabled={!rejectReason.trim()}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
                             >
                                 Confirm Reject
                             </button>

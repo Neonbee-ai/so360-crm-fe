@@ -2460,8 +2460,28 @@ export const crmService = {
         return apiClient.delete(`/quotes/${quoteId}`);
     },
 
-    async submitQuoteForApproval(quoteId: string): Promise<any> {
-        return apiClient.post<any>(`/quotes/${quoteId}/submit`, {});
+    async submitQuoteForApproval(quoteId: string, data?: { approver_user_ids?: string[]; notes?: string }): Promise<any> {
+        return apiClient.post<any>(`/quotes/${quoteId}/submit`, data || {});
+    },
+
+    async withdrawQuoteApproval(quoteId: string, reason?: string): Promise<any> {
+        return apiClient.post<any>(`/quotes/${quoteId}/withdraw`, { reason });
+    },
+
+    async getQuoteApprovalHistory(quoteId: string): Promise<any[]> {
+        const res = await apiClient.get<any>(`/quotes/${quoteId}/approval-history`);
+        return Array.isArray(res) ? res : (res?.requests || []);
+    },
+
+    async getApprovalsInbox(status?: string): Promise<any[]> {
+        const params = status && status !== 'all' ? { status } : undefined;
+        return apiClient.get<any[]>('/quotes/approvals/inbox', params);
+    },
+
+    async getApprovers(search?: string): Promise<any[]> {
+        const params = search?.trim() ? { search: search.trim() } : undefined;
+        const rows = await apiClient.get<any[]>('/v1/users/approvers', params);
+        return Array.isArray(rows) ? rows : [];
     },
 
     async approveQuote(quoteId: string, notes?: string): Promise<any> {
