@@ -114,3 +114,6 @@ export const Play = createIcon('Play');
 export const Sparkles = createIcon('Sparkles');
 export const FileEdit = createIcon('FileEdit');
 export const CalendarPlus = createIcon('CalendarPlus');
+export const Inbox = createIcon('Inbox');
+export const History = createIcon('History');
+export const RotateCcw = createIcon('RotateCcw');
