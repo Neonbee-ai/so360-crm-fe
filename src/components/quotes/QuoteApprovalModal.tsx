@@ -229,7 +229,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                   setDropdownOpen(true);
                 }}
                 onFocus={() => setDropdownOpen(true)}
-                placeholder="Search by name, email, role or department..."
+                placeholder="Search by name, email, department or role..."
                 className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
               />
             </div>
@@ -298,7 +298,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Special commercial discount approved by VP Sales..."
+              placeholder="Add context or justification for this approval (e.g. Special commercial discount approved by VP Sales)..."
               rows={3}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
             />

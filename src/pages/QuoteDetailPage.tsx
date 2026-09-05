@@ -629,12 +629,12 @@ const QuoteDetailPage = () => {
                         This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.
                         {isSubmitter && !isAuthorizedApprover && (
                             <span className="block mt-1 text-xs text-amber-300 font-medium">
-                                You submitted this quote. Self-approval is disabled, so you cannot approve or reject your own request.
+                                You submitted this quote. Self-review is not permitted.
                             </span>
                         )}
                         {isAuthorizedApprover && (
                             <span className="block mt-1 text-xs text-emerald-400 font-medium">
-                                You are an assigned approver for this quote. Please review the details and use the Approve or Reject actions above.
+                                You are an assigned reviewer for this quote. Please examine the commercial terms using the action buttons above.
                             </span>
                         )}
                     </p>
