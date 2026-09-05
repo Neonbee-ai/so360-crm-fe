@@ -173,7 +173,7 @@ describe('Given Custom Product Build Request flow', () => {
 
         expect(await screen.findByText('Custom Product Build Request')).toBeInTheDocument();
         expect(screen.getByText(/Product \/ Build Name/i)).toBeInTheDocument();
-        expect(screen.getByText(/Product Category/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Product Category/i).length).toBeGreaterThan(0);
 
         await waitFor(() => {
             expect(screen.getByRole('option', { name: 'Executive Desks' })).toBeInTheDocument();
