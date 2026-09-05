@@ -417,7 +417,7 @@ export default function TargetPlansPage() {
 
               {!taskTypes.length && (
                 <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
-                  No metrics configured yet. Click "Load starter metrics" above or "+ Custom Metric" to begin.
+                  No metrics configured yet. Click "Load starter metrics" above, add a task type, or click "+ Custom Metric" to begin.
                 </div>
               )}
 
