@@ -150,6 +150,7 @@ const QuotesPage = () => {
     const [dealDropdownOpen, setDealDropdownOpen] = useState(false);
     const [dealSearchTerm, setDealSearchTerm] = useState('');
     const dealDropdownRef = useRef<HTMLDivElement>(null);
+    const statusDropdownRef = useRef<HTMLDivElement>(null);
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
     // View mode: 'all' = All Quotes, 'approvals' = Approvals Inbox
     const [activeTab, setActiveTab] = usePersistedState<'all' | 'approvals'>('quotes.activeTab', 'all');
