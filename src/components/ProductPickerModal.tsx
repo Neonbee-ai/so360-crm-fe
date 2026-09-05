@@ -176,9 +176,15 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                             </div>
 
                                             {/* Price */}
-                                            <span className="text-sm text-slate-300 flex-shrink-0">
-                                                {item.price.toFixed(2)}
-                                            </span>
+                                            {item.price > 0 ? (
+                                                <span className="text-sm text-slate-300 flex-shrink-0">
+                                                    {item.price.toFixed(2)}
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                    No price configured
+                                                </span>
+                                            )}
 
                                             {/* Expand chevron or select arrow */}
                                             {item.has_variants ? (
@@ -224,9 +230,15 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                         </div>
 
                                                         {/* Variant price */}
-                                                        <span className="text-sm text-slate-300 flex-shrink-0">
-                                                            {variant.price.toFixed(2)}
-                                                        </span>
+                                                        {variant.price > 0 ? (
+                                                            <span className="text-sm text-slate-300 flex-shrink-0">
+                                                                {variant.price.toFixed(2)}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                                No price configured
+                                                            </span>
+                                                        )}
 
                                                         <ChevronRight className="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
                                                     </button>

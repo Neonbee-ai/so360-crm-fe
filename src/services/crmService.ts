@@ -2543,7 +2543,22 @@ export const crmService = {
         if (opts.limit != null) params.limit = String(opts.limit);
         if (opts.offset != null) params.offset = String(opts.offset);
         const result = await inventoryClient.get<any>('/v1/inventory/integration/search-with-variants', params);
-        const items: InventoryItem[] = Array.isArray(result) ? result : (result?.items || result?.data || []);
+        const rawItems = Array.isArray(result) ? result : (result?.items || result?.data || []);
+        const items: InventoryItem[] = rawItems.map((it: any) => {
+            const itemPrice = Number(it.price ?? it.selling_price ?? it.unit_price ?? 0);
+            const safeItemPrice = isNaN(itemPrice) ? 0 : itemPrice;
+            return {
+                ...it,
+                price: safeItemPrice,
+                variants: (it.variants || []).map((v: any) => {
+                    const varPrice = Number(v.price ?? v.selling_price ?? v.unit_price ?? safeItemPrice);
+                    return {
+                        ...v,
+                        price: isNaN(varPrice) ? 0 : varPrice,
+                    };
+                }),
+            };
+        });
         return {
             items,
             total: result?.total ?? items.length,
@@ -2780,15 +2795,34 @@ export const crmService = {
         return apiClient.get<LeadProduct[]>(`/leads/${leadId}/products`);
     },
 
+    getProductCategories: async (): Promise<Array<{ id: string; name: string }>> => {
+        try {
+            const res = await inventoryClient.get<any>(`/settings/${ORG_ID}`);
+            if (res?.categories && Array.isArray(res.categories)) {
+                return res.categories.map((c: any) => ({ id: c.id, name: c.name }));
+            }
+        } catch {
+            try {
+                const res = await inventoryClient.get<any>(`/v1/inventory/settings/${ORG_ID}`);
+                if (res?.categories && Array.isArray(res.categories)) {
+                    return res.categories.map((c: any) => ({ id: c.id, name: c.name }));
+                }
+            } catch {
+                // Return empty if inventory service is temporarily unavailable
+            }
+        }
+        return [];
+    },
+
     addLeadProduct: async (leadId: string, data: {
-        item_id: string; item_name: string; item_sku?: string; category_name?: string;
-        quantity?: number; unit_price?: number; status?: string; notes?: string;
+        item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
+        is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string;
     }): Promise<LeadProduct> => {
         return apiClient.post<LeadProduct>(`/leads/${leadId}/products`, data);
     },
 
     updateLeadProduct: async (leadId: string, productId: string, data: {
-        quantity?: number; unit_price?: number; status?: string; notes?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string; category_id?: string; category_name?: string;
     }): Promise<LeadProduct> => {
         return apiClient.patch<LeadProduct>(`/leads/${leadId}/products/${productId}`, data);
     },
@@ -2804,14 +2838,14 @@ export const crmService = {
     },
 
     addDealProduct: async (dealId: string, data: {
-        item_id: string; item_name: string; item_sku?: string; category_name?: string;
-        quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
+        item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
+        is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
     }): Promise<DealProduct> => {
         return apiClient.post<DealProduct>(`/deals/${dealId}/products`, data);
     },
 
     updateDealProduct: async (dealId: string, productId: string, data: {
-        quantity?: number; unit_price?: number; status?: string; notes?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string; category_id?: string; category_name?: string;
     }): Promise<DealProduct> => {
         return apiClient.patch<DealProduct>(`/deals/${dealId}/products/${productId}`, data);
     },

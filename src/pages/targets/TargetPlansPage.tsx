@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
+import { Copy, Trash2, Plus, Sparkles, X, Loader2, AlertCircle } from 'lucide-react';
+import { Modal } from '../../components/common/Modal';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
 import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
@@ -12,6 +14,7 @@ interface DraftLine {
   key: string;
   task_type_id: string;
   value: number;
+  weight: number;
   useRamp: boolean;
   ramp: number[];
   dimension_key?: string;
@@ -47,6 +50,13 @@ export default function TargetPlansPage() {
   const [endDate, setEndDate] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [lines, setLines] = useState<DraftLine[]>([]);
+
+  // Custom metric modal state
+  const [showCustomMetricModal, setShowCustomMetricModal] = useState(false);
+  const [customMetricName, setCustomMetricName] = useState('');
+  const [customMetricKind, setCustomMetricKind] = useState<'COUNT' | 'SUM' | 'TOUCHPOINT'>('COUNT');
+  const [customMetricUnit, setCustomMetricUnit] = useState('count');
+  const [customMetricSaving, setCustomMetricSaving] = useState(false);
 
   // `base_currency` is the field Core actually returns on business_settings.
   // Reading `currency` yielded undefined, so every money figure on these
@@ -123,8 +133,19 @@ export default function TargetPlansPage() {
         key: `${Date.now()}-${l.length}`,
         task_type_id: taskTypes[0]?.id ?? '',
         value: 0,
+        weight: l.length === 0 ? 100 : 0,
         useRamp: false,
         ramp: [],
+      },
+    ]);
+  };
+
+  const duplicateLine = (line: DraftLine) => {
+    setLines((l) => [
+      ...l,
+      {
+        ...line,
+        key: `${Date.now()}-${l.length}`,
       },
     ]);
   };
@@ -135,6 +156,44 @@ export default function TargetPlansPage() {
 
   const removeLine = (key: string) => {
     setLines((l) => l.filter((x) => x.key !== key));
+  };
+
+  const handleCreateCustomMetric = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customMetricName.trim()) return;
+    setCustomMetricSaving(true);
+    setError(null);
+    try {
+      const created = await salesTargetService.createTaskType({
+        name: customMetricName.trim(),
+        kind: customMetricKind,
+        unit: customMetricUnit.trim() || 'count',
+        description: `Custom ${customMetricKind} metric`,
+      });
+      const updatedTypes = await salesTargetService.listTaskTypes();
+      setTaskTypes(updatedTypes);
+      const newId = created?.id || updatedTypes[updatedTypes.length - 1]?.id;
+      if (newId) {
+        setLines((l) => [
+          ...l,
+          {
+            key: `${Date.now()}-${l.length}`,
+            task_type_id: newId,
+            value: 0,
+            weight: l.length === 0 ? 100 : 0,
+            useRamp: false,
+            ramp: [],
+          },
+        ]);
+      }
+      setShowCustomMetricModal(false);
+      setCustomMetricName('');
+      setCustomMetricUnit('count');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to create custom metric');
+    } finally {
+      setCustomMetricSaving(false);
+    }
   };
 
   const submit = async () => {
@@ -157,6 +216,7 @@ export default function TargetPlansPage() {
         lines: lines.map((l) => ({
           task_type_id: l.task_type_id,
           value: l.value,
+          weight: l.weight,
           ramp: l.useRamp && l.ramp.length ? l.ramp : undefined,
           dimension_key: l.dimension_key || undefined,
           dimension_value: l.dimension_value || undefined,
@@ -173,12 +233,16 @@ export default function TargetPlansPage() {
     }
   };
 
+  const totalWeight = lines.reduce((sum, l) => sum + (Number(l.weight) || 0), 0);
+  const isWeightValid = lines.length === 0 || Math.abs(totalWeight - 100) < 0.001;
+
   const canSubmit =
     name.trim().length > 0 &&
     startDate &&
     endDate &&
     lines.length > 0 &&
-    lines.every((l) => l.task_type_id);
+    lines.every((l) => l.task_type_id) &&
+    isWeightValid;
 
   return (
     <div className="p-6 space-y-5">
@@ -324,119 +388,223 @@ export default function TargetPlansPage() {
               </Field>
             </div>
 
-            <div className="border-t border-slate-800 pt-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-300">Target lines</span>
-                <button
-                  className="text-xs text-slate-400 hover:text-slate-200"
-                  onClick={addLine}
-                  disabled={!taskTypes.length}
-                >
-                  + Add metric
-                </button>
+            <div className="border-t border-slate-800 pt-3 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <span className="text-sm font-medium text-slate-200">Target Metrics & Weights</span>
+                  <p className="text-[11px] text-slate-400">
+                    Define measurable target lines with period quotas and weight distributions. Weights must sum to 100%.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all"
+                    onClick={() => setShowCustomMetricModal(true)}
+                  >
+                    <Sparkles size={12} className="text-amber-400" /> + Custom Metric
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-all shadow-sm"
+                    onClick={addLine}
+                    disabled={!taskTypes.length}
+                  >
+                    <Plus size={12} /> Add Metric Row
+                  </button>
+                </div>
               </div>
 
               {!taskTypes.length && (
-                <div className="text-xs text-amber-300">
-                  No metrics configured yet. Provision an industry pack or add a
-                  task type first.
+                <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
+                  No metrics configured yet. Click "Load starter metrics" above or "+ Custom Metric" to begin.
                 </div>
               )}
 
-              <div className="space-y-3">
-                {lines.map((l) => (
-                  <div
-                    key={l.key}
-                    className="rounded border border-slate-800 p-3 space-y-2"
-                  >
-                    <div className="flex flex-wrap items-end gap-3">
-                      <Field label="Metric" grow>
-                        <select
-                          className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                          value={l.task_type_id}
-                          onChange={(e) =>
-                            updateLine(l.key, { task_type_id: e.target.value })
-                          }
-                        >
-                          {taskTypes.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.name}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field label="Target">
-                        <input
-                          type="number"
-                          className="w-28 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                          value={l.value}
-                          onChange={(e) =>
-                            updateLine(l.key, { value: Number(e.target.value) })
-                          }
-                        />
-                      </Field>
-                      <Field label="Channel slice">
-                        <select
-                          className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
-                          value={l.dimension_value ?? ''}
-                          onChange={(e) =>
-                            updateLine(l.key, {
-                              dimension_key: e.target.value ? 'channel' : undefined,
-                              dimension_value: e.target.value || undefined,
-                            })
-                          }
-                        >
-                          <option value="">Roll-up (all channels)</option>
-                          {channels.map((c) => (
-                            <option key={c.id} value={c.value}>
-                              {c.label}
-                              {c.actuals_source === 'manual' ? ' (manual)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <label className="flex items-center gap-2 text-xs text-slate-300">
-                        <input
-                          type="checkbox"
-                          checked={l.useRamp}
-                          onChange={(e) =>
-                            updateLine(l.key, { useRamp: e.target.checked })
-                          }
-                        />
-                        Ramp
-                      </label>
-                      <button
-                        className="text-xs text-rose-300 hover:text-rose-200"
-                        onClick={() => removeLine(l.key)}
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    {l.useRamp && (
-                      <div>
-                        <label className="text-[11px] text-slate-400">
-                          Per-period curve (comma separated). A shorter list
-                          holds its last value for the rest of the plan.
-                        </label>
-                        <input
-                          className="mt-1 w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
-                          placeholder="30, 40, 50, 60"
-                          value={l.ramp.join(', ')}
-                          onChange={(e) =>
-                            updateLine(l.key, {
-                              ramp: e.target.value
-                                .split(',')
-                                .map((s) => Number(s.trim()))
-                                .filter((n) => Number.isFinite(n)),
-                            })
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {lines.length === 0 ? (
+                <div className="text-center py-8 border border-dashed border-slate-800 rounded-xl">
+                  <p className="text-xs text-slate-400">No target lines added yet.</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Click "Add Metric Row" to configure quotas for this plan.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-sm">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800 bg-slate-800/60 text-slate-400 uppercase tracking-wider font-semibold text-[10px]">
+                        <th className="py-2.5 px-3 w-10 text-center">#</th>
+                        <th className="py-2.5 px-3 min-w-[200px]">Metric</th>
+                        <th className="py-2.5 px-3 w-28">Unit</th>
+                        <th className="py-2.5 px-3 w-32 text-right">Target Value</th>
+                        <th className="py-2.5 px-3 w-32 text-right">Weight (%)</th>
+                        <th className="py-2.5 px-3 min-w-[170px]">Channel / Dimension</th>
+                        <th className="py-2.5 px-3 w-16 text-center">Ramp</th>
+                        <th className="py-2.5 px-3 w-20 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {lines.map((l, idx) => {
+                        const metric = taskTypes.find((t) => t.id === l.task_type_id);
+                        const isTouchpoint = metric?.kind === 'TOUCHPOINT';
+                        return (
+                          <React.Fragment key={l.key}>
+                            <tr className="hover:bg-slate-800/30 transition-colors">
+                              <td className="py-2.5 px-3 text-center text-slate-500 font-mono">{idx + 1}</td>
+                              <td className="py-2 px-3">
+                                <select
+                                  className="w-full rounded bg-slate-800 border border-slate-700/80 px-2 py-1.5 text-xs text-slate-100 focus:border-blue-500 focus:outline-none"
+                                  value={l.task_type_id}
+                                  onChange={(e) =>
+                                    updateLine(l.key, { task_type_id: e.target.value })
+                                  }
+                                >
+                                  {taskTypes.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="py-2 px-3">
+                                <span className="inline-block px-2 py-0.5 rounded bg-slate-800 border border-slate-700/70 text-[11px] text-slate-300 font-mono truncate max-w-[110px]">
+                                  {metric?.unit || metric?.kind || 'count'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step="any"
+                                  className="w-full rounded bg-slate-800 border border-slate-700/80 px-2 py-1.5 text-xs text-slate-100 text-right font-mono focus:border-blue-500 focus:outline-none"
+                                  value={l.value}
+                                  onChange={(e) =>
+                                    updateLine(l.key, { value: Number(e.target.value) })
+                                  }
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step="any"
+                                    className="w-full rounded bg-slate-800 border border-slate-700/80 pl-2 pr-5 py-1.5 text-xs text-slate-100 text-right font-mono focus:border-blue-500 focus:outline-none"
+                                    value={l.weight ?? 0}
+                                    onChange={(e) =>
+                                      updateLine(l.key, { weight: Number(e.target.value) })
+                                    }
+                                  />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] pointer-events-none">%</span>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3">
+                                {isTouchpoint ? (
+                                  <select
+                                    className="w-full rounded bg-slate-800 border border-slate-700/80 px-2 py-1.5 text-xs text-slate-100 focus:border-blue-500 focus:outline-none"
+                                    value={l.dimension_value ?? ''}
+                                    onChange={(e) =>
+                                      updateLine(l.key, {
+                                        dimension_key: e.target.value ? 'channel' : undefined,
+                                        dimension_value: e.target.value || undefined,
+                                      })
+                                    }
+                                  >
+                                    <option value="">All channels (Roll-up)</option>
+                                    {channels.map((c) => (
+                                      <option key={c.id} value={c.value}>
+                                        {c.label} {c.actuals_source === 'manual' ? '(manual)' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="text-[11px] text-slate-500 italic px-1">All Channels / N/A</span>
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-0 cursor-pointer"
+                                  checked={l.useRamp}
+                                  onChange={(e) =>
+                                    updateLine(l.key, { useRamp: e.target.checked })
+                                  }
+                                  title="Enable stepped ramp curve"
+                                />
+                              </td>
+                              <td className="py-2 px-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => duplicateLine(l)}
+                                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+                                    title="Duplicate row"
+                                  >
+                                    <Copy size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeLine(l.key)}
+                                    className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-rose-400 transition-colors"
+                                    title="Remove line"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {l.useRamp && (
+                              <tr className="bg-slate-900/90 border-b border-slate-800/80">
+                                <td colSpan={8} className="px-4 py-2 text-xs">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">Ramp Curve:</span>
+                                    <input
+                                      className="flex-1 rounded bg-slate-800 border border-slate-700/80 px-2.5 py-1 text-xs text-slate-100 font-mono focus:border-blue-500 focus:outline-none"
+                                      placeholder="e.g. 20, 35, 50, 75 (comma-separated values per period)"
+                                      value={l.ramp.join(', ')}
+                                      onChange={(e) =>
+                                        updateLine(l.key, {
+                                          ramp: e.target.value
+                                            .split(',')
+                                            .map((s) => Number(s.trim()))
+                                            .filter((n) => Number.isFinite(n)),
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-slate-800 bg-slate-800/40 text-xs font-semibold">
+                        <td colSpan={3} className="py-2.5 px-3 text-slate-400">
+                          Total Lines: <span className="text-slate-200">{lines.length}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-200">
+                          {lines.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] ${
+                              isWeightValid
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                            }`}
+                          >
+                            {totalWeight.toFixed(1)}% {isWeightValid ? '✓ 100% Valid' : '⚠ Sum to 100%'}
+                          </span>
+                        </td>
+                        <td colSpan={3} className="py-2.5 px-3 text-slate-500 text-right text-[11px]">
+                          {!isWeightValid && 'Total line weights must equal 100% to save'}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end">
@@ -512,6 +680,94 @@ export default function TargetPlansPage() {
             </table>
           </div>
         </Panel>
+      )}
+
+      {showCustomMetricModal && (
+        <Modal
+          isOpen={showCustomMetricModal}
+          onClose={() => setShowCustomMetricModal(false)}
+          title="Create Custom Metric"
+          size="md"
+        >
+          <form onSubmit={handleCreateCustomMetric} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Metric Name <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                placeholder="e.g. Enterprise Demos Held, Referral Introductions"
+                value={customMetricName}
+                onChange={(e) => setCustomMetricName(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Metric Type / Kind
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'COUNT', label: 'Count', desc: 'Number of occurrences' },
+                  { value: 'SUM', label: 'Sum / Value', desc: 'Financial or numeric total' },
+                  { value: 'TOUCHPOINT', label: 'Touchpoint', desc: 'Multi-channel interactions' },
+                ].map((k) => (
+                  <button
+                    key={k.value}
+                    type="button"
+                    onClick={() => {
+                      setCustomMetricKind(k.value as any);
+                      if (k.value === 'SUM') setCustomMetricUnit('currency');
+                      else if (k.value === 'COUNT') setCustomMetricUnit('count');
+                      else if (k.value === 'TOUCHPOINT') setCustomMetricUnit('touchpoints');
+                    }}
+                    className={`flex flex-col p-2.5 rounded-lg border text-left text-xs transition-colors ${
+                      customMetricKind === k.value
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-200'
+                        : 'border-slate-800 bg-slate-800/60 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-semibold text-slate-200">{k.label}</span>
+                    <span className="text-[10px] mt-0.5 text-slate-400">{k.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1">
+                Measurement Unit
+              </label>
+              <input
+                type="text"
+                className="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none font-mono"
+                placeholder="count, currency, hours, calls, etc."
+                value={customMetricUnit}
+                onChange={(e) => setCustomMetricUnit(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowCustomMetricModal(false)}
+                className="rounded px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!customMetricName.trim() || customMetricSaving}
+                className="rounded bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {customMetricSaving && <Loader2 size={12} className="animate-spin" />}
+                Create & Add to Plan
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

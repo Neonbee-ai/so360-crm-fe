@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Package, Plus, Trash2, ChevronDown, Loader2, Search, AlertCircle, Check } from 'lucide-react';
+import { Package, Plus, Trash2, ChevronDown, Loader2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
+import { CustomProductBuildRequestModal } from '../../components/leads/CustomProductBuildRequestModal';
 
 const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; color: string }[] = [
     { value: 'interested', label: 'Interested', color: 'bg-blue-500/15 text-blue-400' },
@@ -243,6 +244,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
     const [products, setProducts] = useState<LeadProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showCustomBuildModal, setShowCustomBuildModal] = useState(false);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     const load = useCallback(async () => {
@@ -273,6 +275,19 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
             });
             load();
         } catch { /* ignore */ }
+    };
+
+    const handleCustomBuildSubmit = async (data: {
+        item_name: string;
+        category_id: string;
+        category_name: string;
+        is_custom_build: boolean;
+        quantity: number;
+        unit_price: number;
+        notes?: string;
+    }) => {
+        await crmService.addLeadProduct(leadId, data);
+        load();
     };
 
     const handleStatusChange = async (product: LeadProduct, status: ProductInterestStatus) => {
@@ -317,12 +332,20 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                         </p>
                     )}
                 </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                >
-                    <Plus size={12} /> Add Product
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowCustomBuildModal(true)}
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800/90 hover:bg-slate-700 text-amber-300 border border-amber-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                    >
+                        <Sparkles size={12} className="text-amber-400" /> Custom Build Request
+                    </button>
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                    >
+                        <Plus size={12} /> Add Product
+                    </button>
+                </div>
             </div>
 
             {/* Product list */}
@@ -334,7 +357,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                 <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl">
                     <Package size={32} className="mx-auto mb-3 text-slate-700 opacity-40" />
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">No products added yet</p>
-                    <p className="text-xs text-slate-600 mt-1">Add products from inventory to track interest</p>
+                    <p className="text-xs text-slate-600 mt-1">Add products from inventory or create a custom build request</p>
                 </div>
             ) : (
                 <div className="space-y-3">
@@ -344,12 +367,28 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                             <div key={product.id} className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 group hover:border-slate-700 transition-all">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-bold text-slate-100 truncate">{product.item_name}</p>
-                                        {product.item_sku && (
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">SKU: {product.item_sku}</p>
-                                        )}
-                                        {product.category_name && (
-                                            <p className="text-[9px] text-slate-600 mt-0.5">{product.category_name}</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="text-xs font-bold text-slate-100 truncate">{product.item_name}</p>
+                                            {product.is_custom_build && (
+                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 flex-shrink-0">
+                                                    Custom Build
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            {product.item_sku && (
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">SKU: {product.item_sku}</p>
+                                            )}
+                                            {product.category_name && (
+                                                <span className="text-[9px] font-medium text-slate-400 bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded">
+                                                    {product.category_name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {product.notes && (
+                                            <p className="text-[11px] text-slate-400 mt-1.5 bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+                                                {product.notes}
+                                            </p>
                                         )}
                                     </div>
                                     <button
@@ -414,7 +453,15 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                 <AddProductModal
                     onClose={() => setShowAddModal(false)}
                     onAdd={handleAdd}
-                    existingItemIds={new Set(products.map(p => p.item_id))}
+                    existingItemIds={new Set(products.map(p => p.item_id).filter(Boolean) as string[])}
+                />
+            )}
+
+            {showCustomBuildModal && (
+                <CustomProductBuildRequestModal
+                    isOpen={showCustomBuildModal}
+                    onClose={() => setShowCustomBuildModal(false)}
+                    onSubmit={handleCustomBuildSubmit}
                 />
             )}
         </div>

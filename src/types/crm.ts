@@ -441,10 +441,12 @@ export type ProductInterestStatus = 'interested' | 'quoted' | 'approved' | 'orde
 export interface LeadProduct {
     id: string;
     lead_id: string;
-    item_id: string;
+    item_id?: string;
     item_name: string;
     item_sku?: string;
+    category_id?: string;
     category_name?: string;
+    is_custom_build?: boolean;
     quantity: number;
     unit_price: number;
     status: ProductInterestStatus;
@@ -457,10 +459,12 @@ export interface DealProduct {
     id: string;
     deal_id: string;
     lead_product_id?: string;
-    item_id: string;
+    item_id?: string;
     item_name: string;
     item_sku?: string;
+    category_id?: string;
     category_name?: string;
+    is_custom_build?: boolean;
     quantity: number;
     unit_price: number;
     status: ProductInterestStatus;

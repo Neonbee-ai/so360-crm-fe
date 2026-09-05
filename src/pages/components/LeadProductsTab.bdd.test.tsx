@@ -11,12 +11,15 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mockGetLeadProducts = vi.fn();
 const mockSearchInventoryItems = vi.fn();
+const mockGetProductCategories = vi.fn();
+const mockAddLeadProduct = vi.fn();
 
 vi.mock('../../services/crmService', () => ({
     crmService: {
         getLeadProducts: (...a: any[]) => mockGetLeadProducts(...a),
         searchInventoryItems: (...a: any[]) => mockSearchInventoryItems(...a),
-        addLeadProduct: vi.fn().mockResolvedValue({}),
+        getProductCategories: (...a: any[]) => mockGetProductCategories(...a),
+        addLeadProduct: (...a: any[]) => mockAddLeadProduct(...a),
         updateLeadProduct: vi.fn().mockResolvedValue({}),
         removeLeadProduct: vi.fn().mockResolvedValue({}),
     },
@@ -142,5 +145,61 @@ describe('Given the Add Product modal opens', () => {
         await openModal();
         const row = await screen.findByTitle('Already added to this record');
         expect(row).toBeDisabled();
+    });
+});
+
+describe('Given Custom Product Build Request flow', () => {
+    beforeEach(() => {
+        mockGetProductCategories.mockResolvedValue([
+            { id: 'cat-1', name: 'Executive Desks' },
+            { id: 'cat-2', name: 'Custom Joinery' },
+        ]);
+        mockAddLeadProduct.mockResolvedValue({
+            id: 'lp-custom',
+            item_name: 'Bespoke Walnut Boardroom Table',
+            category_id: 'cat-2',
+            category_name: 'Custom Joinery',
+            is_custom_build: true,
+            quantity: 1,
+            unit_price: 18000,
+            status: 'interested',
+        });
+    });
+
+    it('When Custom Build Request button is clicked / Then modal opens with category options', async () => {
+        render(<LeadProductsTab leadId="lead-1" />);
+        const customBtn = await screen.findByRole('button', { name: /Custom Build Request/i });
+        fireEvent.click(customBtn);
+
+        expect(await screen.findByText('Custom Product Build Request')).toBeInTheDocument();
+        expect(screen.getByText(/Product \/ Build Name/i)).toBeInTheDocument();
+        expect(screen.getByText(/Product Category/i)).toBeInTheDocument();
+
+        await waitFor(() => {
+            expect(screen.getByRole('option', { name: 'Executive Desks' })).toBeInTheDocument();
+            expect(screen.getByRole('option', { name: 'Custom Joinery' })).toBeInTheDocument();
+        });
+    });
+
+    it('When custom product carries is_custom_build / Then renders Custom Build badge and category name', async () => {
+        mockGetLeadProducts.mockResolvedValue([
+            {
+                id: 'lp-custom-1',
+                lead_id: 'lead-1',
+                item_name: 'Custom Conference Table',
+                category_name: 'Custom Joinery',
+                is_custom_build: true,
+                quantity: 1,
+                unit_price: 25000,
+                status: 'interested',
+                created_at: '',
+                updated_at: '',
+            },
+        ]);
+        render(<LeadProductsTab leadId="lead-1" />);
+
+        expect(await screen.findByText('Custom Conference Table')).toBeInTheDocument();
+        expect(screen.getByText('Custom Build')).toBeInTheDocument();
+        expect(screen.getByText('Custom Joinery')).toBeInTheDocument();
     });
 });

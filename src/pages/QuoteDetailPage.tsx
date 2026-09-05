@@ -325,6 +325,11 @@ const QuoteDetailPage = () => {
             description: newLines[pickerLineIndex].description || selection.name,
         };
         setLines(newLines);
+        setDraftValues(prev => {
+            const next = { ...prev };
+            delete next[`${pickerLineIndex}_unit_price`];
+            return next;
+        });
         setPickerLineIndex(-1);
     };
 
