@@ -306,7 +306,8 @@ export default function TargetPlansPage() {
     endDate &&
     lines.length > 0 &&
     lines.every((l) => l.task_type_id) &&
-    isWeightValid;
+    isWeightValid &&
+    (ownerType !== 'rep' || ownerId.trim().length > 0);
 
   return (
     <div className="p-6 space-y-5">
