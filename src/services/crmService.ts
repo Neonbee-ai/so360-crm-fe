@@ -1940,8 +1940,8 @@ export const crmService = {
      * backend's exact failure shape isn't finalized, so both are handled here
      * rather than pushed onto every caller.
      */
-    async connectTaskToProject(taskId: string, projectId: string): Promise<Task & { connected?: boolean; reason?: string }> {
-        const result = await apiClient.post<Task & { connected?: boolean; reason?: string }>(
+    async connectTaskToProject(taskId: string, projectId: string): Promise<Task & { connected?: boolean; reason?: string; warning?: string; assignee_synced?: boolean }> {
+        const result = await apiClient.post<Task & { connected?: boolean; reason?: string; warning?: string; assignee_synced?: boolean }>(
             `/tasks/${taskId}/connect-project`,
             { project_id: projectId },
         );

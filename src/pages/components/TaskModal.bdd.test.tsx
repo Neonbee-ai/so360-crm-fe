@@ -1051,6 +1051,50 @@ describe('Given a user selects a Project and submits the task form', () => {
     );
   });
 
+  it('When the link succeeds but the assignee is not a project member / Then the downgrade is surfaced instead of a bare success', async () => {
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
+    mockConnectTaskToProject.mockResolvedValue({
+      connected: true,
+      project_task_id: 'ptask-1',
+      assignee_synced: false,
+      warning:
+        'Task added to the project, but left unassigned there: the assignee is not a member of that project. Add them to the project team, then retry sync.',
+    });
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockShowWarning).toHaveBeenCalledWith(
+        expect.stringContaining('not a member of that project'),
+      )
+    );
+  });
+
+  it('When the link succeeds cleanly / Then no warning is shown', async () => {
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
+    mockConnectTaskToProject.mockResolvedValue({
+      connected: true,
+      project_task_id: 'ptask-1',
+    });
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockConnectTaskToProject).toHaveBeenCalled());
+    expect(mockShowWarning).not.toHaveBeenCalled();
+  });
+
   it('When no Project is selected / Then connectTaskToProject is never called', async () => {
     render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
     await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());

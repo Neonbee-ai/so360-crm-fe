@@ -175,7 +175,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             // or block the modal from closing — just tell the user quietly.
             if (projectId && projectId !== task?.project_id && result?.id) {
                 try {
-                    await crmService.connectTaskToProject(result.id, projectId);
+                    const connected = await crmService.connectTaskToProject(result.id, projectId);
+                    // A partial success: the task reached the project board, but
+                    // its assignee isn't a member there so it landed unassigned.
+                    // Saying only "Task created" would leave the user to discover
+                    // that on the board days later.
+                    if (connected?.warning) {
+                        toast.warning(connected.warning);
+                    }
                 } catch (connectError) {
                     const reason = (connectError as Error)?.message || 'Unknown error';
                     toast.warning(`Task ${isEditing ? 'updated' : 'created'}, but couldn't connect to Project: ${reason}`);
