@@ -127,4 +127,8 @@ describe('Given unlinkedLeadStages', () => {
   it('When the catalog failed to load / Then it returns an empty array, not undefined', () => {
     expect(unlinkedLeadStages(null)).toEqual([]);
   });
+
+  it('When the catalog has no lead_stage_metrics field / Then it returns an empty array', () => {
+    expect(unlinkedLeadStages({} as any)).toEqual([]);
+  });
 });
