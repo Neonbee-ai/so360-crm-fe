@@ -311,12 +311,14 @@ export default function TargetPlansPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-100">Target Plans</h1>
-        <button
-          className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600"
-          onClick={() => setShowForm((s) => !s)}
-        >
-          {showForm ? 'Cancel' : 'New plan'}
-        </button>
+        {shell?.hasPermission?.('sales_targets.create') && (
+          <button
+            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600"
+            onClick={() => setShowForm((s) => !s)}
+          >
+            {showForm ? 'Cancel' : 'New plan'}
+          </button>
+        )}
       </div>
 
       {error && <div className="text-sm text-rose-300">{error}</div>}
@@ -768,13 +770,15 @@ export default function TargetPlansPage() {
                     <td className="py-2 pr-4 text-slate-300">{p.status}</td>
                     <td className="py-2 text-right">
                       <div className="flex justify-end gap-3">
-                        <button
-                          className="text-xs text-slate-400 hover:text-slate-200"
-                          onClick={() => setEditing(p.id)}
-                        >
-                          Edit
-                        </button>
-                        {p.owner_type === 'team' && (
+                        {shell?.hasPermission?.('sales_targets.update') && (
+                          <button
+                            className="text-xs text-slate-400 hover:text-slate-200"
+                            onClick={() => setEditing(p.id)}
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {p.owner_type === 'team' && shell?.hasPermission?.('sales_targets.assign') && (
                           <button
                             className="text-xs text-slate-400 hover:text-slate-200"
                             onClick={() => setAllocating(p.id)}
