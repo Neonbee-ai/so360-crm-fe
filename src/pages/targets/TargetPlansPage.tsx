@@ -5,6 +5,12 @@ import { Modal } from '../../components/common/Modal';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
 import { EmptyState, Panel, PersonName, PersonPicker, formatValue } from './targetUi';
+import {
+  classifyTaskTypes,
+  unlinkedLeadStages as computeUnlinkedLeadStages,
+  buildLeadStageTaskTypePayload,
+  buildCustomMetricTaskTypePayload,
+} from './metricCatalog';
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 
@@ -32,6 +38,7 @@ export default function TargetPlansPage() {
   const shell = useShellBridge();
   const [plans, setPlans] = useState<any[]>([]);
   const [taskTypes, setTaskTypes] = useState<any[]>([]);
+  const [catalog, setCatalog] = useState<any>(null);
   const [channels, setChannels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +65,10 @@ export default function TargetPlansPage() {
   const [customMetricUnit, setCustomMetricUnit] = useState('count');
   const [customMetricSaving, setCustomMetricSaving] = useState(false);
 
+  // Lead Stage quick-add modal state
+  const [showLeadStageModal, setShowLeadStageModal] = useState(false);
+  const [leadStageSavingId, setLeadStageSavingId] = useState<string | null>(null);
+
   // `base_currency` is the field Core actually returns on business_settings.
   // Reading `currency` yielded undefined, so every money figure on these
   // screens formatted as USD regardless of the org's configured currency.
@@ -81,14 +92,20 @@ export default function TargetPlansPage() {
     setLoading(true);
     setError(null);
     try {
-      const [p, tt, ch] = await Promise.all([
+      const [p, tt, ch, cat] = await Promise.all([
         targetPlanService.listPlans(),
         salesTargetService.listTaskTypes(),
         targetPlanService.listChannels().catch(() => []),
+        // The catalog groups the metric picker by Lead Stage / Standard /
+        // Custom, but is purely additive — if it fails to load (CRM stages
+        // unreachable), the picker just falls back to one flat list instead
+        // of blocking metric selection entirely.
+        salesTargetService.getMetricCatalog().catch(() => null),
       ]);
       setPlans(p);
       setTaskTypes(tt);
       setChannels(ch);
+      setCatalog(cat);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -164,14 +181,16 @@ export default function TargetPlansPage() {
     setCustomMetricSaving(true);
     setError(null);
     try {
-      const created = await salesTargetService.createTaskType({
-        name: customMetricName.trim(),
-        kind: customMetricKind,
-        unit: customMetricUnit.trim() || 'count',
-        description: `Custom ${customMetricKind} metric`,
-      });
+      const created = await salesTargetService.createTaskType(
+        buildCustomMetricTaskTypePayload({
+          name: customMetricName.trim(),
+          kind: customMetricKind,
+          unit: customMetricUnit.trim(),
+        }),
+      );
       const updatedTypes = await salesTargetService.listTaskTypes();
       setTaskTypes(updatedTypes);
+      salesTargetService.getMetricCatalog().then(setCatalog).catch(() => {});
       const newId = created?.id || updatedTypes[updatedTypes.length - 1]?.id;
       if (newId) {
         setLines((l) => [
@@ -193,6 +212,44 @@ export default function TargetPlansPage() {
       setError(e?.message || 'Failed to create custom metric');
     } finally {
       setCustomMetricSaving(false);
+    }
+  };
+
+  /**
+   * Wires up a Lead Stage as a measurable metric: a FLOW_TRANSITION task type
+   * keyed on `to_state` (not `transition_key`), so ANY transition landing on
+   * that stage counts — a lead can reach "Qualified" via more than one path.
+   * `unit: 'leads'` matches spec §22 (stage metrics default to a leads/count unit).
+   */
+  const handleAddLeadStageMetric = async (stage: { stage_id: string; name: string }) => {
+    setLeadStageSavingId(stage.stage_id);
+    setError(null);
+    try {
+      const created = await salesTargetService.createTaskType(
+        buildLeadStageTaskTypePayload(stage),
+      );
+      const updatedTypes = await salesTargetService.listTaskTypes();
+      setTaskTypes(updatedTypes);
+      const updatedCatalog = await salesTargetService.getMetricCatalog().catch(() => null);
+      if (updatedCatalog) setCatalog(updatedCatalog);
+      const newId = created?.id || updatedTypes[updatedTypes.length - 1]?.id;
+      if (newId) {
+        setLines((l) => [
+          ...l,
+          {
+            key: `${Date.now()}-${l.length}`,
+            task_type_id: newId,
+            value: 0,
+            weight: l.length === 0 ? 100 : 0,
+            useRamp: false,
+            ramp: [],
+          },
+        ]);
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Failed to add lead stage metric');
+    } finally {
+      setLeadStageSavingId(null);
     }
   };
 
@@ -232,6 +289,12 @@ export default function TargetPlansPage() {
       setSaving(false);
     }
   };
+
+  // Groups the flat taskTypes list into Lead Stage / Standard / Custom for the
+  // metric picker (spec §11/§43). `null` — and the picker degrades to one
+  // flat list — when the catalog failed to load.
+  const groupedTaskTypes = classifyTaskTypes(catalog, taskTypes);
+  const unlinkedLeadStages = computeUnlinkedLeadStages(catalog);
 
   const totalWeight = lines.reduce((sum, l) => sum + (Number(l.weight) || 0), 0);
   const isWeightValid = lines.length === 0 || Math.abs(totalWeight - 100) < 0.001;
@@ -397,6 +460,21 @@ export default function TargetPlansPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {catalog && (
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 text-xs font-medium transition-all disabled:opacity-40"
+                      onClick={() => setShowLeadStageModal(true)}
+                      disabled={!unlinkedLeadStages.length}
+                      title={
+                        unlinkedLeadStages.length
+                          ? 'Add a CRM Lead Stage as a measurable metric'
+                          : 'Every CRM Lead Stage already has a metric'
+                      }
+                    >
+                      <Plus size={12} /> + Lead Stage Metric
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all"
@@ -457,11 +535,43 @@ export default function TargetPlansPage() {
                                     updateLine(l.key, { task_type_id: e.target.value })
                                   }
                                 >
-                                  {taskTypes.map((t) => (
-                                    <option key={t.id} value={t.id}>
-                                      {t.name}
-                                    </option>
-                                  ))}
+                                  {groupedTaskTypes ? (
+                                    <>
+                                      {groupedTaskTypes.leadStage.length > 0 && (
+                                        <optgroup label="Lead Stage Metrics">
+                                          {groupedTaskTypes.leadStage.map((t) => (
+                                            <option key={t.id} value={t.id}>
+                                              {t.name}
+                                            </option>
+                                          ))}
+                                        </optgroup>
+                                      )}
+                                      {groupedTaskTypes.standard.length > 0 && (
+                                        <optgroup label="Standard Sales Metrics">
+                                          {groupedTaskTypes.standard.map((t) => (
+                                            <option key={t.id} value={t.id}>
+                                              {t.name}
+                                            </option>
+                                          ))}
+                                        </optgroup>
+                                      )}
+                                      {groupedTaskTypes.custom.length > 0 && (
+                                        <optgroup label="Custom Metrics">
+                                          {groupedTaskTypes.custom.map((t) => (
+                                            <option key={t.id} value={t.id}>
+                                              {t.name}
+                                            </option>
+                                          ))}
+                                        </optgroup>
+                                      )}
+                                    </>
+                                  ) : (
+                                    taskTypes.map((t) => (
+                                      <option key={t.id} value={t.id}>
+                                        {t.name}
+                                      </option>
+                                    ))
+                                  )}
                                 </select>
                               </td>
                               <td className="py-2 px-3">
@@ -767,6 +877,65 @@ export default function TargetPlansPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {showLeadStageModal && (
+        <Modal
+          isOpen={showLeadStageModal}
+          onClose={() => setShowLeadStageModal(false)}
+          title="Add Lead Stage Metric"
+          size="md"
+        >
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400">
+              Sourced live from CRM Lead Stage configuration. Selecting a stage
+              measures leads entering it during the target period — moving a
+              lead onward later does not remove the earlier achievement.
+            </p>
+            {unlinkedLeadStages.length === 0 ? (
+              <p className="text-xs text-slate-500 italic">
+                Every configured Lead Stage already has a metric.
+              </p>
+            ) : (
+              <div className="space-y-1.5 max-h-80 overflow-y-auto">
+                {unlinkedLeadStages
+                  .sort((a: any, b: any) => a.order - b.order)
+                  .map((stage: any) => (
+                    <button
+                      key={stage.stage_id}
+                      type="button"
+                      disabled={leadStageSavingId === stage.stage_id}
+                      onClick={async () => {
+                        await handleAddLeadStageMetric(stage);
+                        setShowLeadStageModal(false);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-slate-800 bg-slate-800/60 hover:border-purple-500/40 text-left text-xs text-slate-200 disabled:opacity-50"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: stage.color || '#64748B' }}
+                        />
+                        {stage.name}
+                      </span>
+                      {leadStageSavingId === stage.stage_id && (
+                        <Loader2 size={12} className="animate-spin text-slate-400" />
+                      )}
+                    </button>
+                  ))}
+              </div>
+            )}
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowLeadStageModal(false)}
+                className="rounded px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

@@ -52,6 +52,10 @@ export const salesTargetService = {
     return res.json();
   },
 
+  // ─── Metric Catalog ────────────────────────────────────────────────────
+
+  getMetricCatalog: () => salesTargetService.fetch<any>('/metric-catalog'),
+
   // ─── Task Types ────────────────────────────────────────────────────────
 
   listTaskTypes: () => salesTargetService.fetch<any[]>('/task-types'),
