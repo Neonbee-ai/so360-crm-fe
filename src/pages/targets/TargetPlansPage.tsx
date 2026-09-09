@@ -13,6 +13,7 @@ import {
 } from './metricCatalog';
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
+import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
 
@@ -311,7 +312,7 @@ export default function TargetPlansPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-100">Target Plans</h1>
-        {shell?.hasPermission?.('sales_targets.create') && (
+        {canCreatePlan(shell) && (
           <button
             className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600"
             onClick={() => setShowForm((s) => !s)}
@@ -770,7 +771,7 @@ export default function TargetPlansPage() {
                     <td className="py-2 pr-4 text-slate-300">{p.status}</td>
                     <td className="py-2 text-right">
                       <div className="flex justify-end gap-3">
-                        {shell?.hasPermission?.('sales_targets.update') && (
+                        {canEditPlan(shell) && (
                           <button
                             className="text-xs text-slate-400 hover:text-slate-200"
                             onClick={() => setEditing(p.id)}
@@ -778,7 +779,7 @@ export default function TargetPlansPage() {
                             Edit
                           </button>
                         )}
-                        {p.owner_type === 'team' && shell?.hasPermission?.('sales_targets.assign') && (
+                        {canAllocatePlan(shell, p.owner_type) && (
                           <button
                             className="text-xs text-slate-400 hover:text-slate-200"
                             onClick={() => setAllocating(p.id)}
