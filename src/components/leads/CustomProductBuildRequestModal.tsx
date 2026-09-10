@@ -4,10 +4,12 @@ import { RequiredMark } from '../common/RequiredMark';
 import { EDITABLE_FIELD_CLASS } from '../common/fieldStyles';
 import { crmService } from '../../services/crmService';
 import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { buildCategoryTree, flattenCategoryTree, indentLabel } from '../../utils/categoryTree';
 
 interface CategoryOption {
     id: string;
     name: string;
+    parent_id?: string | null;
 }
 
 interface CustomProductBuildRequestModalProps {
@@ -77,11 +79,19 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
         };
     }, [isOpen]);
 
+    // Same hierarchy Inventory owns — parent immediately followed by its
+    // children, depth-first, so the flat <select> still reads as a tree via
+    // indentation instead of an alphabetical dump with no structure.
+    const hierarchicalCategories = useMemo(
+        () => flattenCategoryTree(buildCategoryTree(categories)),
+        [categories]
+    );
+
     const filteredCategories = useMemo(() => {
-        if (!categorySearch.trim()) return categories;
+        if (!categorySearch.trim()) return hierarchicalCategories;
         const q = categorySearch.toLowerCase();
-        return categories.filter(c => c.name.toLowerCase().includes(q));
-    }, [categories, categorySearch]);
+        return hierarchicalCategories.filter(c => c.name.toLowerCase().includes(q));
+    }, [hierarchicalCategories, categorySearch]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -178,7 +188,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                         <option value="">-- Select Product Category --</option>
                         {filteredCategories.map(cat => (
                             <option key={cat.id} value={cat.id}>
-                                {cat.name}
+                                {indentLabel(cat.name, cat.depth)}
                             </option>
                         ))}
                     </select>

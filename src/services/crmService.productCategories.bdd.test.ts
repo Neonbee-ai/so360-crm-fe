@@ -52,7 +52,7 @@ describe('crmService.getProductCategories — Inventory settings prefix', () => 
                 expect.objectContaining({ method: 'GET' })
             );
             expect(categories).toEqual([
-                { id: 'cat-1', name: 'Packaging & Storage' },
+                { id: 'cat-1', name: 'Packaging & Storage', parent_id: null },
             ]);
         });
 

@@ -13,6 +13,31 @@
   display: none;              /* Chrome, Safari, and Chromium Edge */
 }
 
+/* ── Pipeline board: keep the horizontal scrollbar visible & draggable ──
+   Subtle by default, more prominent on hover — the board needs a real,
+   grabbable affordance (dragging a card toward an off-screen stage has no
+   other way to reveal it, since there is no drag auto-scroll on touch/some
+   browsers), but it shouldn't compete visually with the cards. */
+.pipeline-scrollbar {
+  scrollbar-width: thin;                                  /* Firefox */
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;  /* Firefox */
+}
+.pipeline-scrollbar::-webkit-scrollbar {
+  height: 10px;
+}
+.pipeline-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pipeline-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.pipeline-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.6);
+}
+
 /* ── Light theme: calendar/date picker icon should NOT be inverted ── */
 /* Default (dark): invert the icon so it appears light on dark inputs   */
 input[type="date"]::-webkit-calendar-picker-indicator,

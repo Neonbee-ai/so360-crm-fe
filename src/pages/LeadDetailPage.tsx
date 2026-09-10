@@ -131,6 +131,17 @@ const LeadDetailPage = () => {
     // Destructive action — gate on the delete permission, fail closed. The backend
     // already enforces leads.delete; this stops offering a control the user can't use.
     const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
+    // Lead Detail activity toolbar — gated per-action so an Admin can grant each
+    // independently via Settings > Roles & Permissions instead of the buttons
+    // being visible to every role by default. Backend already enforces the same
+    // codes (notes/calls/meetings/crm_tasks/crm_documents controllers, and
+    // messages.create in Inbox for Send Email) — this only controls visibility.
+    const canAddNote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('notes.create') ?? false);
+    const canSendEmail = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('messages.create') ?? false);
+    const canLogCall = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('crm_calls.create') ?? false);
+    const canScheduleMeeting = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('meetings.create') ?? false);
+    const canCreateTask = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('crm_tasks.create') ?? false);
+    const canUploadDocument = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('crm_documents.create') ?? false);
     const canUseNeuraAi = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isInboxEnabled = isModuleEnabled('inbox');
@@ -585,6 +596,12 @@ const LeadDetailPage = () => {
                     // the tab that contains the (hidden) file input.
                     window.setTimeout(() => documentInputRef.current?.click(), 350);
                 }}
+                canAddNote={canAddNote}
+                canSendEmail={canSendEmail}
+                canLogCall={canLogCall}
+                canScheduleMeeting={canScheduleMeeting}
+                canCreateTask={canCreateTask}
+                canUploadDocument={canUploadDocument}
             />
 
             {/* Executive Summary Dashboard */}

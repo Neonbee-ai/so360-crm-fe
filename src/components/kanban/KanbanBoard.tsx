@@ -17,10 +17,70 @@ interface KanbanBoardProps {
     onStageChange: (deal: Deal, targetState: string) => void;
 }
 
+/** Distance in px from the scroll container's edge that triggers auto-scroll while dragging. */
+export const AUTO_SCROLL_EDGE_PX = 80;
+/** Max px scrolled per animation frame, reached right at the edge. */
+export const AUTO_SCROLL_MAX_SPEED = 18;
+
 export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: KanbanBoardProps) => {
     const formatters = useCRMFormatters();
     const [draggedDealId, setDraggedDealId] = React.useState<string | null>(null);
     const [dragOverStage, setDragOverStage] = React.useState<string | null>(null);
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+    const scrollDirection = React.useRef(0); // -1 left, 0 idle, 1 right
+    const scrollSpeed = React.useRef(0);
+    const rafId = React.useRef<number | null>(null);
+
+    const stopAutoScroll = () => {
+        scrollDirection.current = 0;
+        scrollSpeed.current = 0;
+        if (rafId.current !== null) {
+            cancelAnimationFrame(rafId.current);
+            rafId.current = null;
+        }
+    };
+
+    const runAutoScrollLoop = () => {
+        const el = scrollRef.current;
+        if (!el || scrollDirection.current === 0) {
+            rafId.current = null;
+            return;
+        }
+        el.scrollLeft += scrollDirection.current * scrollSpeed.current;
+        rafId.current = requestAnimationFrame(runAutoScrollLoop);
+    };
+
+    // Auto-scrolls the board horizontally when a card is dragged near the
+    // left/right edge, so a stage that's currently off-screen can be reached
+    // without releasing the drag — native HTML5 DnD doesn't do this on its own.
+    const handleBoardDragOver = (e: React.DragEvent) => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const distFromLeft = e.clientX - rect.left;
+        const distFromRight = rect.right - e.clientX;
+
+        let direction = 0;
+        let proximity = 0;
+        if (distFromLeft < AUTO_SCROLL_EDGE_PX) {
+            direction = -1;
+            proximity = AUTO_SCROLL_EDGE_PX - distFromLeft;
+        } else if (distFromRight < AUTO_SCROLL_EDGE_PX) {
+            direction = 1;
+            proximity = AUTO_SCROLL_EDGE_PX - distFromRight;
+        }
+
+        if (direction === 0) {
+            stopAutoScroll();
+            return;
+        }
+
+        scrollDirection.current = direction;
+        scrollSpeed.current = Math.max(4, Math.min(AUTO_SCROLL_MAX_SPEED, (proximity / AUTO_SCROLL_EDGE_PX) * AUTO_SCROLL_MAX_SPEED));
+        if (rafId.current === null) {
+            rafId.current = requestAnimationFrame(runAutoScrollLoop);
+        }
+    };
 
     const handleDragStart = (e: React.DragEvent, deal: Deal) => {
         setDraggedDealId(deal.id);
@@ -37,6 +97,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
     const handleDragEnd = (e: React.DragEvent) => {
         setDraggedDealId(null);
         setDragOverStage(null);
+        stopAutoScroll();
         const target = e.target as HTMLElement;
         target.style.opacity = '1';
     };
@@ -58,6 +119,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
     const handleDrop = (e: React.DragEvent, targetStageId: string) => {
         e.preventDefault();
         setDragOverStage(null);
+        stopAutoScroll();
         const dealId = e.dataTransfer.getData('dealId');
         const deal = deals.find(d => d.id === dealId);
 
@@ -66,8 +128,14 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
         }
     };
 
+    React.useEffect(() => stopAutoScroll, []);
+
     return (
-        <div className="flex gap-6 overflow-x-auto pb-6 h-full min-h-[650px] scrollbar-hide">
+        <div
+            ref={scrollRef}
+            onDragOver={handleBoardDragOver}
+            className="flex gap-6 overflow-x-auto pb-6 h-full min-h-[650px] pipeline-scrollbar"
+        >
             {stages.map((stage) => {
                 // Use current_flow_state as the authoritative source; fall back to stage name only
                 // when current_flow_state is absent. The OR fallback caused deals to appear in

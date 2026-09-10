@@ -2866,15 +2866,20 @@ export const crmService = {
         return apiClient.get<LeadProduct[]>(`/leads/${leadId}/products`);
     },
 
-    getProductCategories: async (): Promise<Array<{ id: string; name: string }>> => {
+    getProductCategories: async (): Promise<Array<{ id: string; name: string; parent_id?: string | null }>> => {
         // Inventory serves this under its /v1/inventory prefix. The old
         // unprefixed `/settings/:orgId` was tried first and 404'd on every
         // modal open before falling through to this one — same missing-prefix
         // class as the CRM→Inventory draft-item call.
+        //
+        // Inventory's raw rows already carry parent_id (it's a `select("*")`),
+        // so the hierarchy just needs to survive this mapping instead of being
+        // dropped — the flat {id,name}-only shape used to strip it, collapsing
+        // the tree into an unordered flat list in the Custom Product picker.
         try {
             const res = await inventoryClient.get<any>(`/v1/inventory/settings/${ORG_ID}`);
             if (res?.categories && Array.isArray(res.categories)) {
-                return res.categories.map((c: any) => ({ id: c.id, name: c.name }));
+                return res.categories.map((c: any) => ({ id: c.id, name: c.name, parent_id: c.parent_id ?? null }));
             }
         } catch {
             // Return empty if inventory service is temporarily unavailable

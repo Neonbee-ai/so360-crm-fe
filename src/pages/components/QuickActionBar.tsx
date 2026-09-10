@@ -8,6 +8,17 @@ interface Props {
     onScheduleMeeting: () => void;
     onCreateTask: () => void;
     onUploadDocument: () => void;
+    /**
+     * Per-action RBAC gates. Each defaults to `true` when omitted so existing
+     * callers that haven't wired permissions yet keep their current behavior;
+     * Lead Detail passes real `shell.hasPermission(...)` results for all six.
+     */
+    canAddNote?: boolean;
+    canSendEmail?: boolean;
+    canLogCall?: boolean;
+    canScheduleMeeting?: boolean;
+    canCreateTask?: boolean;
+    canUploadDocument?: boolean;
 }
 
 /** Window, in ms, during which a repeat click on the same action is ignored. */
@@ -25,7 +36,10 @@ export const DOUBLE_CLICK_GUARD_MS = 400;
  * an action that navigates could fire the handler twice and race two openings
  * against each other.
  */
-const QuickActionBar: React.FC<Props> = ({ onAddNote, onSendEmail, onLogCall, onScheduleMeeting, onCreateTask, onUploadDocument }) => {
+const QuickActionBar: React.FC<Props> = ({
+    onAddNote, onSendEmail, onLogCall, onScheduleMeeting, onCreateTask, onUploadDocument,
+    canAddNote = true, canSendEmail = true, canLogCall = true, canScheduleMeeting = true, canCreateTask = true, canUploadDocument = true,
+}) => {
     const lastFiredAt = useRef<Record<string, number>>({});
 
     const guard = (label: string, handler: () => void) => () => {
@@ -36,13 +50,15 @@ const QuickActionBar: React.FC<Props> = ({ onAddNote, onSendEmail, onLogCall, on
     };
 
     const actions = [
-        { label: 'Add Note', icon: <FileEdit size={13} />, onClick: onAddNote },
-        { label: 'Send Email', icon: <Mail size={13} />, onClick: onSendEmail },
-        { label: 'Log Call', icon: <Phone size={13} />, onClick: onLogCall },
-        { label: 'Schedule Meeting', icon: <CalendarPlus size={13} />, onClick: onScheduleMeeting },
-        { label: 'Create Task', icon: <CheckSquare size={13} />, onClick: onCreateTask },
-        { label: 'Add Document', icon: <UploadCloud size={13} />, onClick: onUploadDocument },
-    ];
+        { label: 'Add Note', icon: <FileEdit size={13} />, onClick: onAddNote, visible: canAddNote },
+        { label: 'Send Email', icon: <Mail size={13} />, onClick: onSendEmail, visible: canSendEmail },
+        { label: 'Log Call', icon: <Phone size={13} />, onClick: onLogCall, visible: canLogCall },
+        { label: 'Schedule Meeting', icon: <CalendarPlus size={13} />, onClick: onScheduleMeeting, visible: canScheduleMeeting },
+        { label: 'Create Task', icon: <CheckSquare size={13} />, onClick: onCreateTask, visible: canCreateTask },
+        { label: 'Add Document', icon: <UploadCloud size={13} />, onClick: onUploadDocument, visible: canUploadDocument },
+    ].filter(a => a.visible);
+
+    if (actions.length === 0) return null;
 
     return (
         <div className="flex flex-wrap items-center gap-2 mb-6">
