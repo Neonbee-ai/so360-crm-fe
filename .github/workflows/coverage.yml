@@ -1,10 +1,16 @@
-# Coverage probe. Dispatch-only and deploy-free by construction: it exists to
+# Coverage probe. Deploy-free by construction: it exists to
 # MEASURE coverage on the Contabo runner, because coverage cannot be run on a
 # developer machine here and the Mac Mini gate is frequently offline.
 name: Coverage
 
+# Also runs on push to main: this repo's default branch is `develop`, and
+# workflow_dispatch only registers workflows that exist on the default branch,
+# so dispatch is unavailable here until develop catches up. A push trigger is
+# the only way to measure coverage on main today.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
   coverage:
