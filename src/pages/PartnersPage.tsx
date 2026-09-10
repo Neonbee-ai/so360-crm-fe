@@ -467,6 +467,7 @@ const PartnersPage = () => {
     const formatters = useFormatters({
         currency: settings?.base_currency || 'USD',
         locale: settings?.document_language || 'en-US',
+        timezone: settings?.timezone || 'UTC',
     });
 
     const fetchData = async () => {
