@@ -52,7 +52,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
     const hasActiveFilters = Object.keys(filters).length > 0;
 
     return (
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl mb-6 flex flex-wrap gap-4 items-end">
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl mb-4 flex flex-wrap gap-4 items-end">
             {/* Date Range */}
             <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Date Range</label>

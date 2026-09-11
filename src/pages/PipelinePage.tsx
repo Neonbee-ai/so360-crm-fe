@@ -12,9 +12,11 @@ import CreateDealModal from '../pages/components/CreateDealModal';
 import { DealFilters } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
 import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
+import { useFillViewportHeight } from '../hooks/useFillViewportHeight';
 
 const PipelinePage = () => {
     const navigate = useNavigate();
+    const { ref: boardWrapperRef, height: boardHeight } = useFillViewportHeight<HTMLDivElement>();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
@@ -131,8 +133,8 @@ const PipelinePage = () => {
     }
 
     return (
-        <div className="p-8 h-full flex flex-col">
-            <header className="mb-8 flex justify-between items-start">
+        <div className="p-8 flex flex-col">
+            <header className="mb-4 flex justify-between items-start">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Deals Pipeline</h1>
                     <p className="text-slate-400 mt-1">Visualize deal movement and sales progress</p>
@@ -158,7 +160,11 @@ const PipelinePage = () => {
 
             <DealFilters filters={filters} onChange={setFilters} />
 
-            <div className={`flex-1 overflow-hidden transition-opacity duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            <div
+                ref={boardWrapperRef}
+                style={{ height: boardHeight }}
+                className={`transition-opacity duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
+            >
                 <KanbanBoard
                     deals={deals}
                     stages={stages}

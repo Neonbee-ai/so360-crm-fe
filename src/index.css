@@ -24,6 +24,7 @@
 }
 .pipeline-scrollbar::-webkit-scrollbar {
   height: 10px;
+  width: 8px;
 }
 .pipeline-scrollbar::-webkit-scrollbar-track {
   background: transparent;

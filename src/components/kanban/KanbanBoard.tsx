@@ -134,7 +134,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
         <div
             ref={scrollRef}
             onDragOver={handleBoardDragOver}
-            className="flex gap-6 overflow-x-auto pb-6 h-full min-h-[650px] pipeline-scrollbar"
+            className="flex gap-6 overflow-x-auto overflow-y-hidden pb-6 h-full pipeline-scrollbar"
         >
             {stages.map((stage) => {
                 // Use current_flow_state as the authoritative source; fall back to stage name only
@@ -151,10 +151,11 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                 return (
                     <div
                         key={stage.id}
-                        className="w-80 flex-shrink-0 flex flex-col gap-4"
+                        className="w-80 flex-shrink-0 h-full flex flex-col gap-4"
                     >
-                        {/* Stage Header */}
-                        <div className="flex items-center justify-between px-2">
+                        {/* Stage Header — a non-scrolling flex item, so it stays put while
+                            the drop zone below it scrolls independently. */}
+                        <div className="flex-shrink-0 flex items-center justify-between px-2">
                             <h3
                                 className="font-black text-slate-100 flex items-center gap-2 text-sm uppercase tracking-wider"
                                 style={{ color: accentColor }}
@@ -172,12 +173,16 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                             </span>
                         </div>
 
-                        {/* Drop Zone */}
+                        {/* Drop Zone — scrolls independently within the column's bounded
+                            height so the stage header above never scrolls out of view.
+                            min-h-0 overrides flex's default min-height:auto, which would
+                            otherwise stop this from shrinking to fit and force the
+                            overflow to leak out into the board instead of scrolling here. */}
                         <div
                             onDragOver={(e) => handleDragOver(e, stage.id)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, stage.id)}
-                            className={`flex-1 flex flex-col gap-3 rounded-2xl p-3 min-h-[550px] transition-all duration-200 ${isOver
+                            className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 rounded-2xl p-3 pipeline-scrollbar transition-all duration-200 ${isOver
                                 ? 'bg-blue-600/10 ring-2 ring-blue-500/50 ring-dashed border-transparent'
                                 : 'bg-slate-900/40 border border-slate-700/40 shadow-sm'
                                 }`}
