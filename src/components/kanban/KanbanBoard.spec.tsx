@@ -80,7 +80,7 @@ describe('Given a Pipeline board with more stages than fit the viewport', () => 
         const { container } = render(
             <KanbanBoard deals={[deal]} stages={STAGES} onDealClick={onDealClick} onStageChange={onStageChange} />
         );
-        const dropZones = container.querySelectorAll('[class*="min-h-[550px]"]');
+        const dropZones = container.querySelectorAll('[class*="min-h-0"]');
         const qualifiedDropZone = dropZones[1] as HTMLElement;
 
         const dataTransfer = { getData: () => 'deal-1', setData: () => {}, dropEffect: '', effectAllowed: '' };
@@ -94,7 +94,7 @@ describe('Given a Pipeline board with more stages than fit the viewport', () => 
         const { container } = render(
             <KanbanBoard deals={[deal]} stages={STAGES} onDealClick={onDealClick} onStageChange={onStageChange} />
         );
-        const dropZones = container.querySelectorAll('[class*="min-h-[550px]"]');
+        const dropZones = container.querySelectorAll('[class*="min-h-0"]');
         const newDropZone = dropZones[0] as HTMLElement;
 
         const dataTransfer = { getData: () => 'deal-1', setData: () => {}, dropEffect: '', effectAllowed: '' };
