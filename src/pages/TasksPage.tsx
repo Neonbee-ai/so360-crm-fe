@@ -22,6 +22,11 @@ const TasksPage = () => {
     const shell = useShell();
     const shellBridge = useShellBridge();
     const canCreateTask = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('activities.create') ?? false) && (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    // The backend clamps scope to what the caller actually holds regardless
+    // of these flags (tasks.controller.ts TaskScope decorator) — these only
+    // decide which tabs are worth rendering, never widen access on their own.
+    const canViewTeamTasks = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('crm_tasks.view_team') ?? false);
+    const canViewAllTasks = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('crm_tasks.view_all') ?? false);
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
@@ -35,6 +40,10 @@ const TasksPage = () => {
 
     // View state survives a trip to a task's detail page and back — see
     // usePersistedState. Everything else above is transient by design.
+    // Default scope is 'own' ("My Tasks") — broader tabs only render once
+    // canViewTeamTasks/canViewAllTasks resolve true, and the backend clamps
+    // the request regardless of what's persisted here.
+    const [taskScope, setTaskScope] = usePersistedState<'own' | 'team' | 'all'>('tasks.scope', 'own');
     const [filter, setFilter] = usePersistedState('tasks.filter', 'All');
     const [searchTerm, setSearchTerm] = usePersistedState('tasks.search', '');
     const [sortField, setSortField] = usePersistedState<SortField | null>('tasks.sortField', null);
@@ -47,9 +56,10 @@ const TasksPage = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            setIsLoading(true);
             try {
                 const [tasksData, usersData] = await Promise.all([
-                    crmService.getTasks(),
+                    crmService.getTasks(taskScope),
                     crmService.getUsers()
                 ]);
                 setTasks(tasksData);
@@ -61,7 +71,7 @@ const TasksPage = () => {
             }
         };
         fetchData();
-    }, []);
+    }, [taskScope]);
 
     const handleStatusChange = async (task: Task, newStatus: string) => {
         try {
@@ -390,6 +400,27 @@ const TasksPage = () => {
                     </button>
                 )}
             </header>
+
+            {(canViewTeamTasks || canViewAllTasks) && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {([
+                        { key: 'own' as const, label: 'My Tasks' },
+                        ...(canViewTeamTasks ? [{ key: 'team' as const, label: 'Team Tasks' }] : []),
+                        ...(canViewAllTasks ? [{ key: 'all' as const, label: 'All Tasks' }] : []),
+                    ]).map((tab) => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setTaskScope(tab.key)}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
+                                ? 'bg-slate-700 text-white border-slate-600'
+                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
+                                }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <div className="relative flex-1">

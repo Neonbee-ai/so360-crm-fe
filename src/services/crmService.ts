@@ -878,6 +878,11 @@ export const tasksApi = {
         overdue?: boolean;
         lead_id?: string;
         deal_id?: string;
+        // Backend enforces this as an authorization ceiling, not a display
+        // preference — an 'own'-scoped caller cannot widen it by omission or
+        // by also passing owner_id. See tasks.service.ts findAll.
+        scope?: 'own' | 'team' | 'all';
+        owner_id?: string;
     }): Promise<Task[]> => {
         const tasks = await apiClient.get<any[]>('/tasks', params);
         return tasks.map(mapTaskFromApi);
@@ -1884,8 +1889,8 @@ export const crmService = {
     },
 
     // Tasks
-    getTasks: async (): Promise<Task[]> => {
-        return tasksApi.getAll();
+    getTasks: async (scope?: 'own' | 'team' | 'all'): Promise<Task[]> => {
+        return tasksApi.getAll(scope ? { scope } : undefined);
     },
 
     async getTaskById(id: string): Promise<Task | undefined> {

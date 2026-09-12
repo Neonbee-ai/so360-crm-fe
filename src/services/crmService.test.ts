@@ -311,6 +311,20 @@ describe('Given tasksApi', () => {
       const tasks = await tasksApi.getAll();
       expect(tasks[0].status).toBe('OPEN');
     });
+
+    it('When called with a scope param / Then it is forwarded on the query string', async () => {
+      mockFetchSuccess([]);
+      await tasksApi.getAll({ scope: 'team' });
+      const [url] = fetchMock.mock.calls[0];
+      expect(url).toContain('scope=team');
+    });
+
+    it('When called with no scope param / Then no scope query param is sent', async () => {
+      mockFetchSuccess([]);
+      await tasksApi.getAll();
+      const [url] = fetchMock.mock.calls[0];
+      expect(url).not.toContain('scope=');
+    });
   });
 
   describe('Given create', () => {
@@ -702,6 +716,13 @@ describe('Given crmService (legacy layer)', () => {
     const result = await crmService.getTasks();
     expect(result.length).toBe(1);
     expect(result[0]).toEqual(expect.objectContaining({ id: 't1' }));
+  });
+
+  it('When called with a scope / Then getTasks forwards it to the backend', async () => {
+    mockFetchSuccess([]);
+    await crmService.getTasks('all');
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain('scope=all');
   });
 
   it('When action / Then getUsers fetches users from core API and transforms result', async () => {

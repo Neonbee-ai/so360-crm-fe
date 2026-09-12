@@ -342,6 +342,103 @@ describe('TasksPage', () => {
   });
 });
 
+/**
+ * Task visibility scope (My/Team/All Tasks). The backend enforces the actual
+ * authorization ceiling (tasks.controller.ts TaskScope decorator) — these
+ * tests only cover that the UI (a) defaults to 'own', (b) only renders the
+ * broader tabs when the caller actually holds the corresponding permission,
+ * and (c) sends the selected scope on every fetch.
+ */
+describe('TasksPage — visibility scope tabs', () => {
+  const withPermissions = async (granted: string[]) => {
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({
+      effectiveFlagsLoaded: true,
+      permissionsLoaded: true,
+      hasPermission: (code: string) => granted.includes(code),
+      hasAnyPermission: () => true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+    } as any));
+  };
+
+  describe('Given the caller holds neither crm_tasks.view_team nor crm_tasks.view_all', () => {
+    it('When the Tasks page loads / Then no scope tabs render', async () => {
+      await withPermissions([]);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.queryByText('My Tasks')).not.toBeInTheDocument();
+      expect(screen.queryByText('Team Tasks')).not.toBeInTheDocument();
+      expect(screen.queryByText('All Tasks')).not.toBeInTheDocument();
+    });
+
+    it('When the Tasks page loads / Then it fetches with scope "own"', async () => {
+      await withPermissions([]);
+      render(<TasksPage />);
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('own'));
+    });
+  });
+
+  describe('Given the caller holds crm_tasks.view_team only', () => {
+    it('When the Tasks page loads / Then My Tasks and Team Tasks tabs render but not All Tasks', async () => {
+      await withPermissions(['crm_tasks.view_team']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+      expect(screen.getByText('Team Tasks')).toBeInTheDocument();
+      expect(screen.queryByText('All Tasks')).not.toBeInTheDocument();
+    });
+
+    it('When the Team Tasks tab is clicked / Then it refetches with scope "team"', async () => {
+      await withPermissions(['crm_tasks.view_team']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Team Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('team'));
+    });
+  });
+
+  describe('Given the caller holds crm_tasks.view_all only (not crm_tasks.view_team)', () => {
+    it('When the Tasks page loads / Then All Tasks renders but Team Tasks does not', async () => {
+      await withPermissions(['crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+      expect(screen.getByText('All Tasks')).toBeInTheDocument();
+      expect(screen.queryByText('Team Tasks')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given the caller holds crm_tasks.view_all', () => {
+    it('When the Tasks page loads / Then My Tasks, Team Tasks and All Tasks tabs all render', async () => {
+      await withPermissions(['crm_tasks.view_team', 'crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+      expect(screen.getByText('Team Tasks')).toBeInTheDocument();
+      expect(screen.getByText('All Tasks')).toBeInTheDocument();
+    });
+
+    it('When the All Tasks tab is clicked / Then it refetches with scope "all"', async () => {
+      await withPermissions(['crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('All Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('all'));
+    });
+
+    it('When switching back to My Tasks / Then it refetches with scope "own"', async () => {
+      await withPermissions(['crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('All Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('all'));
+      fireEvent.click(screen.getByText('My Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('own'));
+    });
+  });
+});
+
 describe('TasksPage — Completed tasks are read-only', () => {
   const assigneeCell = (task: any) => {
     const col = tableProps.columns.find((c: any) => {
