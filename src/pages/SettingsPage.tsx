@@ -299,15 +299,40 @@ const SettingsPage = () => {
     const handleSave = async () => {
         if (!settings) return;
         setIsSaving(true);
+        // Each category saves independently (see crmService.updateSettings) so a
+        // failure in one doesn't block the others — Deal Naming follows the same
+        // pattern here via its own endpoint, since it isn't part of the unified
+        // settings payload. Previously this tab had its own Save button/API call
+        // that the top button never triggered (task c23baf51); the tab now only
+        // lifts state via onChange and relies entirely on this button to persist.
+        let settingsError: Error | null = null;
         try {
             await crmService.updateSettings(settings);
-            toast.success('Configuration saved!');
         } catch (error) {
             console.error('Failed to save settings', error);
-            toast.error(error instanceof Error ? error.message : 'Error saving settings.');
-        } finally {
-            setIsSaving(false);
+            settingsError = error instanceof Error ? error : new Error('Error saving settings.');
         }
+
+        let dealNamingFailed = false;
+        if (settings.deal_naming) {
+            try {
+                const saved = await crmService.updateDealNamingSettings(settings.deal_naming);
+                setSettings(s => s ? { ...s, deal_naming: saved } : s);
+            } catch {
+                dealNamingFailed = true;
+            }
+        }
+
+        if (settingsError && dealNamingFailed) {
+            toast.error(`${settingsError.message} Deal Naming also failed to save.`);
+        } else if (settingsError) {
+            toast.error(settingsError.message);
+        } else if (dealNamingFailed) {
+            toast.error('Failed to save: Deal Naming');
+        } else {
+            toast.success('Configuration saved!');
+        }
+        setIsSaving(false);
     };
 
     const addStage = () => {
@@ -1136,8 +1161,7 @@ const SettingsPage = () => {
                     <DealNamingSettingsTab
                         initialConfig={settings?.deal_naming ?? null}
                         canWrite={canWriteSettings}
-                        showSuccess={(msg) => toast.success(msg)}
-                        showError={(msg) => toast.error(msg)}
+                        onChange={(cfg) => setSettings(s => s ? { ...s, deal_naming: cfg } : s)}
                     />
                 )}
             </div>
