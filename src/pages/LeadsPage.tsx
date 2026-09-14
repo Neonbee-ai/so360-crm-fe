@@ -154,6 +154,11 @@ const LeadsPage = () => {
   const shell = useShellBridge();
   const canCreateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
   const canUpdateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
+  // Destructive action — gate on the delete permission, fail closed, independent
+  // of canUpdateLead. Mirrors LeadDetailPage.tsx's canDeleteLead; the backend
+  // already enforces leads.delete on both the single and bulk delete routes —
+  // this only controls visibility of a control the user couldn't otherwise use.
+  const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
   const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
   const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
   const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
@@ -651,13 +656,14 @@ const LeadsPage = () => {
     users,
     leadStages,
     canUpdate: canUpdateLead,
+    canDelete: canDeleteLead,
     onOwnerChange: handleOwnerChange,
     onStatusChange: handleStatusChange,
     onDelete: (lead) => setShowDeleteConfirm(lead.id),
     onOpen: (lead) => navigate(`${lead.id}`),
     formatDate: formatters.formatDate,
     onInlineEdit: handleInlineEdit,
-  }), [users, leadStages, canUpdateLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
+  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
 
   const bulkActions = useMemo(() => [
     {
@@ -683,14 +689,17 @@ const LeadsPage = () => {
       icon: <Download size={14} />,
       onClick: (ids: string[]) => handleBulkExport(ids),
     },
-    {
+    // Destructive bulk action — gate on leads.delete, fail closed. Previously
+    // shown to every user regardless of permission (backend rejects it, but the
+    // control shouldn't be offered in the first place). See canDeleteLead above.
+    ...(canDeleteLead ? [{
       label: 'Delete',
       icon: <Trash2 size={14} />,
       variant: 'danger' as const,
       onClick: (ids: string[]) => handleBulkDelete(ids),
-    },
+    }] : []),
   ].filter((a: any) => !a.options || a.options.length > 0),
-  [users, leadStages, leadSources, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
+  [users, leadStages, leadSources, canDeleteLead, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
   return (
     <div className="px-4 pt-3 pb-6 md:px-6" ref={listAnchorRef}>

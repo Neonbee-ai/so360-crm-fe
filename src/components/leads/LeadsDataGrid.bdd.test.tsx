@@ -67,6 +67,7 @@ function buildContext(overrides: Partial<GridContext> = {}): GridContext {
     users: MOCK_USERS,
     leadStages: MOCK_STAGES,
     canUpdate: true,
+    canDelete: true,
     onOwnerChange: vi.fn(),
     onStatusChange: vi.fn(),
     onDelete: vi.fn(),
@@ -160,6 +161,55 @@ describe('LeadsDataGrid — row interaction', () => {
     fireEvent.contextMenu(screen.getByText('Acme Corp'));
     expect(screen.getByText('Open detail panel')).toBeDefined();
     fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(screen.queryByText('Open detail panel')).toBeNull();
+  });
+});
+
+// Regression coverage for the fix to task f0f0ef7e: the context-menu's row-level
+// Delete item was previously gated on canUpdate (leads.update), so a user with
+// update-but-not-delete permission could see and trigger it even though the
+// backend already rejects the call. It must now be gated on canDelete independently.
+describe('LeadsDataGrid — row context menu Delete permission gating', () => {
+  it('hides the row Delete item when canDelete=false, even if canUpdate=true', () => {
+    const lead = makeLead();
+    render(
+      <LeadsDataGrid
+        leads={[lead]}
+        context={buildContext({ canUpdate: true, canDelete: false })}
+        onRowClick={vi.fn()}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByText('Acme Corp'));
+    expect(screen.getByText('Open detail panel')).toBeDefined();
+    expect(screen.queryByText('Delete')).toBeNull();
+  });
+
+  it('shows the row Delete item when canDelete=true, even if canUpdate=false', () => {
+    const lead = makeLead();
+    render(
+      <LeadsDataGrid
+        leads={[lead]}
+        context={buildContext({ canUpdate: false, canDelete: true })}
+        onRowClick={vi.fn()}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByText('Acme Corp'));
+    expect(screen.getByText('Delete')).toBeDefined();
+  });
+
+  it('clicking the row Delete item calls context.onDelete with the lead and closes the menu', () => {
+    const lead = makeLead();
+    const onDelete = vi.fn();
+    render(
+      <LeadsDataGrid
+        leads={[lead]}
+        context={buildContext({ canDelete: true, onDelete })}
+        onRowClick={vi.fn()}
+      />,
+    );
+    fireEvent.contextMenu(screen.getByText('Acme Corp'));
+    fireEvent.click(screen.getByText('Delete'));
+    expect(onDelete).toHaveBeenCalledWith(lead);
     expect(screen.queryByText('Open detail panel')).toBeNull();
   });
 });
