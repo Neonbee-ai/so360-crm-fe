@@ -107,10 +107,11 @@ describe('PartnersPage', () => {
             });
         });
 
-        it('When data loads / Then shows KPI totals (total partners count)', async () => {
+        it('When data loads / Then shows the Partner Type Distribution status overview instead of KPI cards', async () => {
             render(<PartnersPage />);
             await waitFor(() => {
-                expect(screen.getByText('2')).toBeInTheDocument();
+                expect(screen.getByText('Partner Type Distribution')).toBeInTheDocument();
+                expect(screen.getByText('2 partners')).toBeInTheDocument();
             });
         });
 
@@ -547,10 +548,64 @@ describe('PartnersPage', () => {
             expect(pendingCol).toBeDefined();
         });
 
-        it('When KPI cards render / Then shows "Royalty Pending" card label', async () => {
+        it('When the Deals column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            const { container } = render(<>{tableProps.columns[3].header}</>);
+            expect(container.textContent).toContain('Deals');
+            expect(tableProps.columns[3].className).toBe('text-right');
+        });
+
+        it('When the Deal Value column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            const { container } = render(<>{tableProps.columns[4].header}</>);
+            expect(container.textContent).toContain('Deal Value');
+            expect(tableProps.columns[4].className).toBe('text-right');
+        });
+
+        it('When the Royalty Pending column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            expect(tableProps.columns[5].header).toBe('Royalty Pending');
+            expect(tableProps.columns[5].className).toBe('text-right');
+        });
+
+        it('When the Royalty Rate column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            expect(tableProps.columns[6].header).toBe('Royalty Rate');
+            expect(tableProps.columns[6].className).toBe('text-right');
+        });
+    });
+
+    // ── status overview (replaces the old KPI card grid — task 52daf7c7) ───────
+    describe('Given the Partner Status Overview', () => {
+        it('When partners span multiple types / Then shows a segment and count per type', async () => {
             render(<PartnersPage />);
             await waitFor(() => {
-                expect(screen.getByText('Royalty Pending')).toBeInTheDocument();
+                expect(screen.getByTestId('partner-status-segment-referral')).toBeInTheDocument();
+                expect(screen.getByTestId('partner-status-segment-reseller')).toBeInTheDocument();
+            });
+            // p1=referral, p2=reseller → 1 each out of 2 = 50% each
+            expect(screen.getAllByText('(50%)')).toHaveLength(2);
+        });
+
+        it('When no partners exist / Then the status overview is not rendered', async () => {
+            mockPartnersGetAll.mockResolvedValue([]);
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
+            expect(screen.queryByText('Partner Type Distribution')).not.toBeInTheDocument();
+        });
+
+        it('When a partner has a type not present in Settings / Then it still gets its own segment', async () => {
+            mockPartnersGetAll.mockResolvedValue([
+                ...partners,
+                { id: 'p3', contact_name: 'Gamma LLC', partner_type: 'legacy_unlisted', grading: 'low', total_deals: 0, total_deal_value: 0, pending_commission: 0 },
+            ]);
+            render(<PartnersPage />);
+            await waitFor(() => {
+                expect(screen.getByTestId('partner-status-segment-legacy_unlisted')).toBeInTheDocument();
             });
         });
     });

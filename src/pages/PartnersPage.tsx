@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, UserCheck, Plus, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, BarChart2, X } from 'lucide-react';
+import { Search, Plus, ChevronUp, ChevronDown, ChevronsUpDown, X } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
+import { PartnerStatusOverview } from '../components/partners/PartnerStatusOverview';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
 import {
@@ -507,8 +508,11 @@ const PartnersPage = () => {
         return <ChevronsUpDown size={14} className="text-slate-600" />;
     };
 
-    const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
-        <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer">
+    const SortableHeader = ({ label, field, align }: { label: string; field: SortField; align?: 'left' | 'right' }) => (
+        <button
+            onClick={() => toggleSort(field)}
+            className={`flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer ${align === 'right' ? 'ml-auto' : ''}`}
+        >
             {label}
             <SortIcon field={field} />
         </button>
@@ -552,7 +556,7 @@ const PartnersPage = () => {
         if (!grading) return <span className="text-slate-600 text-sm">-</span>;
         const config = GRADING_CONFIG[grading] || GRADING_CONFIG.low;
         return (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
                 {config.label}
             </span>
         );
@@ -562,13 +566,6 @@ const PartnersPage = () => {
         const found = partnerTypes.find(pt => pt.value === value);
         return found?.label || value || '-';
     };
-
-    const totals = useMemo(() => ({
-        total: partners.length,
-        totalDeals: partners.reduce((s, p) => s + (p.total_deals || 0), 0),
-        totalValue: partners.reduce((s, p) => s + (p.total_deal_value || 0), 0),
-        pendingCommission: partners.reduce((s, p) => s + (p.pending_commission || 0), 0),
-    }), [partners]);
 
     const columns = [
         {
@@ -593,32 +590,36 @@ const PartnersPage = () => {
             accessor: (p: any) => <GradingBadge grading={p.grading} />,
         },
         {
-            header: <SortableHeader label="Deals" field="total_deals" />,
+            header: <SortableHeader label="Deals" field="total_deals" align="right" />,
             accessor: (p: any) => (
                 <span className="text-slate-300 text-sm font-medium">{p.total_deals || 0}</span>
             ),
+            className: 'text-right',
         },
         {
-            header: <SortableHeader label="Deal Value" field="total_deal_value" />,
+            header: <SortableHeader label="Deal Value" field="total_deal_value" align="right" />,
             accessor: (p: any) => (
-                <span className="text-slate-300 text-sm">
+                <span className="text-slate-300 text-sm font-mono">
                     {formatters.formatCurrency(p.total_deal_value || 0)}
                 </span>
             ),
+            className: 'text-right',
         },
         {
             header: 'Royalty Pending',
             accessor: (p: any) => (
-                <span className={`text-sm font-medium ${(p.pending_commission || 0) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                <span className={`text-sm font-medium font-mono ${(p.pending_commission || 0) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
                     {formatters.formatCurrency(p.pending_commission || 0)}
                 </span>
             ),
+            className: 'text-right',
         },
         {
             header: 'Royalty Rate',
             accessor: (p: any) => (
-                <span className="text-slate-400 text-sm">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
+                <span className="text-slate-400 text-sm font-mono">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
             ),
+            className: 'text-right',
         },
     ];
 
@@ -638,25 +639,8 @@ const PartnersPage = () => {
                 </button>
             </header>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><UserCheck size={14} /> Total Partners</div>
-                    <div className="text-2xl font-bold text-slate-50">{totals.total}</div>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><BarChart2 size={14} /> Total Deals</div>
-                    <div className="text-2xl font-bold text-slate-50">{totals.totalDeals}</div>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} /> Total Deal Value</div>
-                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.totalValue)}</div>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} /> Royalty Pending</div>
-                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.pendingCommission)}</div>
-                </div>
-            </div>
+            {/* Status Overview — replaces the old 4-card KPI grid (task 52daf7c7) */}
+            <PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
