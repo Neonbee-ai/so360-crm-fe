@@ -22,6 +22,7 @@ import React from 'react';
 
 const mockGetSettings = vi.fn();
 const mockUpdateSettings = vi.fn();
+const mockUpdateDealNaming = vi.fn();
 
 const mockShowSuccess = vi.hoisted(() => vi.fn());
 const mockShowError = vi.hoisted(() => vi.fn());
@@ -30,6 +31,7 @@ vi.mock('../services/crmService', () => ({
   crmService: {
     getSettings: (...a: any[]) => mockGetSettings(...a),
     updateSettings: (...a: any[]) => mockUpdateSettings(...a),
+    updateDealNamingSettings: (...a: any[]) => mockUpdateDealNaming(...a),
   },
   settingsApi: {
     sourceTypes: {
@@ -123,6 +125,7 @@ describe('SettingsPage BDD', () => {
     vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
     mockGetSettings.mockResolvedValue(mockSettings);
     mockUpdateSettings.mockResolvedValue(mockSettings);
+    mockUpdateDealNaming.mockResolvedValue({ enabled: true, template: '{lead_name}', prefix: '', suffix: '', separator: ' - ', sequence: { enabled: false, reset_mode: 'none', padding: 4, start_at: 1 } });
   });
 
   describe('Given settings are loading', () => {
@@ -313,6 +316,73 @@ describe('SettingsPage BDD', () => {
 
       // Resolve to avoid hanging test
       resolveUpdate!(mockSettings);
+    });
+  });
+
+  // Regression coverage for task c23baf51: Deal Naming previously saved via its
+  // own local button/endpoint that the top "Save Configuration" button never
+  // triggered. It's now lifted into `settings.deal_naming` and persisted here.
+  describe('Given the Deal Naming tab has been edited', () => {
+    const settingsWithDealNaming = {
+      ...mockSettings,
+      deal_naming: {
+        enabled: true, template: '{lead_name} - {YYYYMMDD}', prefix: '', suffix: '', separator: ' - ',
+        sequence: { enabled: false, reset_mode: 'none' as const, padding: 4, start_at: 1 },
+      },
+    };
+
+    it('When Save clicked / Then also calls updateDealNamingSettings with the current deal naming config', async () => {
+      mockGetSettings.mockResolvedValue(settingsWithDealNaming);
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('button', { name: /save configuration/i }));
+
+      await waitFor(() => {
+        expect(mockUpdateDealNaming).toHaveBeenCalledWith(
+          expect.objectContaining({ template: '{lead_name} - {YYYYMMDD}' }),
+        );
+      });
+    });
+
+    it('When settings has no deal_naming configured yet / Then updateDealNamingSettings is not called', async () => {
+      mockGetSettings.mockResolvedValue(mockSettings);
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: /save configuration/i }));
+      await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalled());
+      expect(mockUpdateDealNaming).not.toHaveBeenCalled();
+    });
+
+    it('When Deal Naming save fails but the rest of settings save succeeds / Then shows a Deal Naming-specific error', async () => {
+      mockGetSettings.mockResolvedValue(settingsWithDealNaming);
+      mockUpdateDealNaming.mockRejectedValue(new Error('boom'));
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('button', { name: /save configuration/i }));
+
+      await waitFor(() => {
+        expect(mockShowError).toHaveBeenCalledWith('Failed to save: Deal Naming');
+      });
+    });
+
+    it('When the Deal Naming tab is open / Then no local Save Configuration button is rendered inside it', async () => {
+      mockGetSettings.mockResolvedValue(settingsWithDealNaming);
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+
+      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await waitFor(() => expect(screen.getByText(/deal naming convention/i)).toBeInTheDocument());
+      // Exactly one Save Configuration control on the page — the global one.
+      expect(screen.getAllByRole('button', { name: /save configuration/i })).toHaveLength(1);
     });
   });
 

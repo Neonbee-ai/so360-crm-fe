@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Save, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
+import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { crmService } from '../../../services/crmService';
 import { DealNamingConfig, DealNamingResetMode, DEFAULT_DEAL_NAMING_CONFIG } from '../../../types/crm';
 import { DEAL_NAME_TOKENS } from '../../../utils/dealNamingTokens';
@@ -7,8 +7,14 @@ import { DEAL_NAME_TOKENS } from '../../../utils/dealNamingTokens';
 interface DealNamingSettingsTabProps {
     initialConfig: DealNamingConfig | null;
     canWrite: boolean;
-    showSuccess: (msg: string) => void;
-    showError: (msg: string) => void;
+    /**
+     * Lifts local edits up to the parent's `settings.deal_naming` in real time,
+     * so the page-level "Save Configuration" button persists them like every
+     * other tab — this tab no longer has its own Save button/API call (task
+     * c23baf51: the two previously saved independently, and the top button
+     * silently discarded Deal Naming edits because it never saw them).
+     */
+    onChange: (config: DealNamingConfig) => void;
 }
 
 const RESET_MODES: { value: DealNamingResetMode; label: string }[] = [
@@ -21,17 +27,31 @@ const RESET_MODES: { value: DealNamingResetMode; label: string }[] = [
 
 const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 transition-all font-bold text-sm';
 
-const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialConfig, canWrite, showSuccess, showError }) => {
+const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialConfig, canWrite, onChange }) => {
     const [config, setConfig] = useState<DealNamingConfig>(initialConfig ?? DEFAULT_DEAL_NAMING_CONFIG);
-    const [isSaving, setIsSaving] = useState(false);
     const [preview, setPreview] = useState<string>('');
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
     const templateInputRef = useRef<HTMLInputElement>(null);
     const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Guards against re-seeding `config` from a stale `initialConfig` prop right
+    // after this tab's own edit already pushed a newer value up to the parent
+    // (parent re-render → new initialConfig reference → would otherwise clobber
+    // the in-progress edit the user just made).
+    const isLocalEdit = useRef(false);
 
     useEffect(() => {
+        if (isLocalEdit.current) {
+            isLocalEdit.current = false;
+            return;
+        }
         if (initialConfig) setConfig(initialConfig);
     }, [initialConfig]);
+
+    useEffect(() => {
+        isLocalEdit.current = true;
+        onChange(config);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [config]);
 
     // Debounced live preview — calls the backend so it always matches actual
     // generation logic exactly (reset-mode bucket math, padding, etc.), rather
@@ -72,19 +92,6 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
             const cursor = start + token.length;
             input.setSelectionRange(cursor, cursor);
         });
-    };
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            const saved = await crmService.updateDealNamingSettings(config);
-            setConfig(saved);
-            showSuccess('Deal naming convention saved');
-        } catch {
-            showError('Failed to save deal naming convention');
-        } finally {
-            setIsSaving(false);
-        }
     };
 
     return (
@@ -201,14 +208,9 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                 </div>
 
                 {canWrite && (
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50"
-                    >
-                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                        {isSaving ? 'Saving...' : 'Save Configuration'}
-                    </button>
+                    <p className="text-[10px] text-slate-500 font-bold">
+                        Changes here are saved with the "Save Configuration" button at the top of the page, same as every other Settings tab.
+                    </p>
                 )}
             </div>
         </section>
