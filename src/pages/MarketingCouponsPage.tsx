@@ -148,7 +148,7 @@ const MarketingCouponsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
           {/* `md:items-end` rather than a bare `items-end`: another remote's
               Tailwind sheet can flatten `md:flex-row` to a column (media
               queries add no specificity, so source order wins), and an
@@ -156,24 +156,19 @@ const MarketingCouponsPage: React.FC = () => {
               child to its content — collapsing the search box. Keeping the
               alignment behind the same breakpoint as the direction makes the
               pair fail safe together; `w-full` covers it either way. */}
-          <div className="flex flex-col md:flex-row gap-6 md:items-end">
-            <div className="flex-1 w-full">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Context & Search</h3>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:w-64">
-                  <MarketingStorePicker storeId={storeId} onChange={applyStore} />
-                </div>
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
-                    placeholder="Search by coupon code..."
-                  />
-                </div>
-              </div>
+          <div className="flex flex-col md:flex-row gap-4 md:items-end">
+            <div className="w-full sm:w-64">
+              <MarketingStorePicker storeId={storeId} onChange={applyStore} />
+            </div>
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                placeholder="Search by coupon code..."
+              />
             </div>
           </div>
         </section>

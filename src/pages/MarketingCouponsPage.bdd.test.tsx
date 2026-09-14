@@ -208,6 +208,43 @@ describe('MarketingCouponsPage BDD', () => {
     });
   });
 
+  // Regression coverage for task e9829d23: removed the redundant "Context &
+  // Search" heading, fixed the search icon's missing pointer-events-none (it
+  // was intercepting clicks near the input's left edge), and restyled the
+  // input to match the standard CRM search pattern (Customers/Leads/Partners).
+  describe('Given the search & filter section', () => {
+    it('When rendered / Then the "Context & Search" heading is no longer present', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      expect(screen.queryByText(/context & search/i)).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the search icon does not intercept clicks (pointer-events-none)', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      const search = screen.getByPlaceholderText(/search by coupon code/i);
+      const icon = search.previousElementSibling;
+      expect(icon).toHaveClass('pointer-events-none');
+    });
+
+    it('When rendered / Then the search input matches the standard CRM search styling', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      const search = screen.getByPlaceholderText(/search by coupon code/i);
+      expect(search).toHaveClass('pl-10', 'pr-4', 'py-2', 'rounded-lg');
+    });
+
+    it('When rendered / Then the store picker and search input remain in the same flex row with the same-breakpoint direction/alignment pairing intact', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      const storePicker = screen.getByTestId('store-picker');
+      const row = storePicker.closest('.flex');
+      expect(row).toHaveClass('md:flex-row', 'md:items-end');
+      // Same element also contains the search input, confirming they're still siblings in one row.
+      expect(row?.contains(screen.getByPlaceholderText(/search by coupon code/i))).toBe(true);
+    });
+  });
+
   describe('Given Create Coupon button', () => {
     it('When clicked / Then shows New Discount Code form', async () => {
       const user = userEvent.setup();
