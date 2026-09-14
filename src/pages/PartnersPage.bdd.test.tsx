@@ -110,8 +110,12 @@ describe('PartnersPage', () => {
         it('When data loads / Then shows the Partner Type Distribution status overview instead of KPI cards', async () => {
             render(<PartnersPage />);
             await waitFor(() => {
+                // "Partner Type Distribution" is unique to the new overview component —
+                // its own "N partners" count text is NOT asserted here because the
+                // pre-existing pagination footer independently renders the same
+                // "2 partners" string (see the dedicated segment-count assertions in
+                // "Given the Partner Status Overview" below for count/percentage coverage).
                 expect(screen.getByText('Partner Type Distribution')).toBeInTheDocument();
-                expect(screen.getByText('2 partners')).toBeInTheDocument();
             });
         });
 
