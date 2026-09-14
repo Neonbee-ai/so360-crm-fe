@@ -53,6 +53,8 @@ export interface GridContext {
   users: User[];
   leadStages: { id: string; name: string }[];
   canUpdate: boolean;
+  /** Gates the row-level Delete action independently of canUpdate — see LeadsPage.tsx canDeleteLead. */
+  canDelete: boolean;
   onOwnerChange: (lead: Lead, ownerId: string) => void;
   onStatusChange: (lead: Lead, stageId: string) => void;
   onDelete: (lead: Lead) => void;
@@ -796,13 +798,14 @@ interface ContextMenuProps {
   x: number;
   y: number;
   canUpdate: boolean;
+  canDelete: boolean;
   onOpen: () => void;
   onDelete: () => void;
   onClose: () => void;
   onNavigate: (lead: Lead) => void;
 }
 
-function ContextMenu({ lead, x, y, canUpdate, onOpen, onDelete, onClose, onNavigate }: ContextMenuProps) {
+function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavigate }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -819,7 +822,7 @@ function ContextMenu({ lead, x, y, canUpdate, onOpen, onDelete, onClose, onNavig
     { icon: <Copy size={14} />, label: 'Copy company name', onClick: () => { navigator.clipboard.writeText(lead.company_name).catch(() => {}); onClose(); } },
     { icon: <Mail size={14} />, label: 'Send email', onClick: () => { window.open(`mailto:${lead.contact_email}`); onClose(); } },
     { icon: <Phone size={14} />, label: 'Call', onClick: () => { if (lead.phone) window.open(`tel:${lead.phone}`); onClose(); } },
-    ...(canUpdate ? [
+    ...(canDelete ? [
       { icon: <Trash2 size={14} />, label: 'Delete', onClick: onDelete, danger: true },
     ] : []),
   ];
@@ -1572,6 +1575,7 @@ export function LeadsDataGrid({
           x={contextMenu.x}
           y={contextMenu.y}
           canUpdate={context.canUpdate}
+          canDelete={context.canDelete}
           onOpen={() => { onRowClick(contextMenu.lead); setContextMenu(null); }}
           onDelete={() => { context.onDelete(contextMenu.lead); setContextMenu(null); }}
           onClose={() => setContextMenu(null)}

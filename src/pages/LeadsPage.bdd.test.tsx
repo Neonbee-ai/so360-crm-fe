@@ -879,3 +879,65 @@ describe('LeadsPage — New Lead permission gating', () => {
     expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
   });
 });
+
+// Regression coverage for the fix to task f0f0ef7e: the Leads grid's row context-menu
+// Delete and the bulk-action-bar Delete were previously gated on leads.update (or not
+// gated at all), so a user without leads.delete could see and trigger both controls
+// even though the backend already rejects the call. Both must now independently
+// fail-closed on leads.delete, exactly like LeadDetailPage.tsx's existing canDeleteLead.
+describe('LeadsPage — Delete Lead permission gating (RBAC)', () => {
+  const setShell = async (overrides: Record<string, unknown>) => {
+    const { useShellBridge } = await import('@so360/shell-context');
+    vi.mocked(useShellBridge).mockReturnValue({
+      effectiveFlagsLoaded: true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+      currentOrg: { id: 'org-1' },
+      ...overrides,
+    } as any);
+  };
+
+  it('Given the user lacks leads.delete / When the grid loads / Then context.canDelete is false and no Delete bulk action is offered', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c !== 'leads.delete' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(false);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).not.toContain('Delete');
+  });
+
+  it('Given the user has leads.update but not leads.delete / When the grid loads / Then context.canDelete is still false (delete is independent of update)', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c === 'leads.update' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canUpdate).toBe(true);
+    expect(capturedGridProps.context.canDelete).toBe(false);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).not.toContain('Delete');
+  });
+
+  it('Given the user holds leads.delete / When the grid loads / Then context.canDelete is true and the Delete bulk action is offered', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c === 'leads.delete' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(true);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).toContain('Delete');
+  });
+
+  it('Given an owner/admin wildcard / When the grid loads / Then context.canDelete is true', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(true);
+  });
+
+  it('Given entitlements have not resolved / When the grid loads / Then canDelete fails closed (false) even if hasPermission would return true', async () => {
+    await setShell({ permissionsLoaded: false, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(false);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).not.toContain('Delete');
+  });
+});
