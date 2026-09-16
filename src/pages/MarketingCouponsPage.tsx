@@ -6,6 +6,7 @@ import { toast } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
+import { validateCouponForm, CouponFormErrors } from '../utils/couponValidation';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -25,6 +26,7 @@ const MarketingCouponsPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<CouponFormErrors>({});
 
   const [form, setForm] = useState({
     code: '',
@@ -73,6 +75,7 @@ const MarketingCouponsPage: React.FC = () => {
       is_active: true
     });
     setEditingId(null);
+    setFieldErrors({});
   };
 
   const handleEdit = (coupon: any) => {
@@ -88,12 +91,19 @@ const MarketingCouponsPage: React.FC = () => {
       is_active: coupon.is_active ?? true
     });
     setEditingId(coupon.id);
+    setFieldErrors({});
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!storeId || !form.code) {
-      toast.error('Coupon code is required');
+    if (!storeId) {
+      toast.error('Select a store first');
+      return;
+    }
+    const errors = validateCouponForm(form);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error(Object.values(errors)[0] as string);
       return;
     }
     try {
@@ -190,8 +200,11 @@ const MarketingCouponsPage: React.FC = () => {
                     value={form.code} 
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
-                    placeholder="WELCOME20" 
+                    placeholder="WELCOME20"
                   />
+                  {fieldErrors.code && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.code}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Type</label>
@@ -214,46 +227,58 @@ const MarketingCouponsPage: React.FC = () => {
                       type="number" 
                       value={form.discount_value} 
                       onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })} 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     />
                   </div>
+                  {fieldErrors.discount_value && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.discount_value}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Min Order</label>
-                  <input 
-                    type="number" 
-                    value={form.min_order_amount} 
-                    onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="number"
+                    value={form.min_order_amount}
+                    onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   />
+                  {fieldErrors.min_order_amount && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.min_order_amount}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Usage Limit</label>
-                  <input 
-                    type="number" 
-                    value={form.usage_limit} 
-                    onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="number"
+                    value={form.usage_limit}
+                    onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     placeholder="0 = Unlimited"
                   />
+                  {fieldErrors.usage_limit && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.usage_limit}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Valid From</label>
-                  <input 
-                    type="date" 
-                    value={form.valid_from} 
-                    onChange={(e) => setForm({ ...form, valid_from: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="date"
+                    value={form.valid_from}
+                    onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Valid Until</label>
-                  <input 
-                    type="date" 
-                    value={form.valid_until} 
-                    onChange={(e) => setForm({ ...form, valid_until: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="date"
+                    value={form.valid_until}
+                    onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   />
+                  {fieldErrors.valid_until && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.valid_until}</p>
+                  )}
                 </div>
                 <div className="lg:col-span-4">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Description</label>
