@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -445,6 +445,96 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
       await waitFor(() => expect(screen.getByText('No notes captured for this lead yet.')).toBeInTheDocument());
+    });
+
+    it('When no notes exist on the customer route / Then the empty state is entity-agnostic', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ notes: [] }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('No notes captured for this customer yet.')).toBeInTheDocument());
+      expect(screen.queryByText('No notes captured for this lead yet.')).not.toBeInTheDocument();
+    });
+
+    it('When switching to notes tab / Then each top-level note renders in its own card container', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Hot lead from conference')).toBeInTheDocument());
+      const noteOneCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40');
+      const noteTwoCard = screen.getByText('Needs follow up').closest('div.bg-slate-900\\/40');
+      expect(noteOneCard).not.toBeNull();
+      expect(noteTwoCard).not.toBeNull();
+      expect(noteOneCard).not.toBe(noteTwoCard);
+    });
+
+    it('When a note has replies / Then the reply composer starts collapsed behind a Reply affordance', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [{
+          id: 'n1',
+          content: 'Hot lead from conference',
+          author: owner,
+          created_at: '2025-01-02T10:00:00Z',
+          replies: [
+            { id: 'r1', content: '<p>Following up now</p>', author: owner, created_at: '2025-01-02T11:00:00Z' },
+          ],
+        }],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Following up now')).toBeInTheDocument());
+      // Reply lives inside its own indented/nested container, distinct from the parent note card
+      const replyContainer = screen.getByText('Following up now').closest('div.border-l-2');
+      expect(replyContainer).not.toBeNull();
+      expect(replyContainer?.className).toContain('border-slate-700/60');
+      // Composer is collapsed by default — only the "Reply" trigger is present
+      expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/Reply… use @ to mention someone/)).not.toBeInTheDocument();
+    });
+
+    it('When the Reply affordance is clicked / Then the composer expands, and collapses again after a successful submit', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument());
+      await user.click(screen.getByTestId('open-reply-n1'));
+      const replyInput = await screen.findByPlaceholderText(/Reply… use @ to mention someone/);
+      expect(replyInput).toBeInTheDocument();
+      fireEvent.change(replyInput, { target: { value: 'On it' } });
+      fireEvent.keyDown(replyInput, { key: 'Enter' });
+      await waitFor(() => expect(mockCreateNote).toHaveBeenCalledWith({ lead_id: 'lead-1', content: '<p>On it</p>', parent_note_id: 'n1' }));
+      await waitFor(() => expect(screen.queryByPlaceholderText(/Reply… use @ to mention someone/)).not.toBeInTheDocument());
+      expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument();
+    });
+
+    it('When a note has consecutive replies from the same author / Then the author/timestamp header renders once per run', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [{
+          id: 'n1',
+          content: 'Hot lead from conference',
+          author: owner,
+          created_at: '2025-01-02T10:00:00Z',
+          replies: [
+            { id: 'r1', content: '<p>First reply</p>', author: owner, created_at: '2025-01-02T11:00:00Z' },
+            { id: 'r2', content: '<p>Second reply</p>', author: owner, created_at: '2025-01-02T11:05:00Z' },
+          ],
+        }],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument());
+      expect(screen.getByText('Second reply')).toBeInTheDocument();
+      // "Test Owner" appears once for the note itself, and once for the grouped reply run (not once per reply)
+      const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40') as HTMLElement;
+      expect(within(noteCard).getAllByText('Test Owner')).toHaveLength(2);
     });
 
     it('When a note\'s edit button is clicked / Then an editor pre-filled with its content replaces the display', async () => {

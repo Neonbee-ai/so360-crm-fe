@@ -79,6 +79,24 @@ const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: (counts: TabCou
 // .trim() check isn't enough — strip tags first to see if there's real content.
 const isNoteContentEmpty = (html: string): boolean => html.replace(/<[^>]*>/g, '').trim().length === 0;
 
+// Notes timeline redesign (Task dfae6177): collapse consecutive replies from
+// the same author into one run so the author/timestamp header only prints
+// once per run instead of once per reply.
+const groupConsecutiveReplies = <T extends { author?: { id?: string; full_name?: string } | null }>(replies: T[]): T[][] => {
+    const runs: T[][] = [];
+    replies.forEach((reply) => {
+        const lastRun = runs[runs.length - 1];
+        const lastReply = lastRun?.[lastRun.length - 1];
+        const sameAuthor = lastReply && (lastReply.author?.id ?? lastReply.author?.full_name) === (reply.author?.id ?? reply.author?.full_name);
+        if (lastRun && sameAuthor) {
+            lastRun.push(reply);
+        } else {
+            runs.push([reply]);
+        }
+    });
+    return runs;
+};
+
 const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'contact_name'>): string =>
     lead.first_name
         ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
@@ -179,6 +197,9 @@ const LeadDetailPage = () => {
     const [noteEditorKey, setNoteEditorKey] = useState(0);
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
     const [editingNoteContent, setEditingNoteContent] = useState('');
+    // Notes timeline redesign (Task dfae6177): reply composer is collapsed
+    // behind a "Reply" affordance per note, opened on demand.
+    const [openReplyNoteId, setOpenReplyNoteId] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [partners, setPartners] = useState<Lead[]>([]);
@@ -1071,11 +1092,11 @@ const LeadDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         {lead.notes.length === 0 ? (
-                                            <p className="text-slate-400 italic text-sm">No notes captured for this lead yet.</p>
+                                            <p className="text-slate-400 italic text-sm">No notes captured for this {isCustomerDetailRoute ? 'customer' : 'lead'} yet.</p>
                                         ) : (
                                             <div className="space-y-4">
                                                 {lead.notes.map(note => (
-                                                    <div key={note.id} className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group/note relative">
+                                                    <div key={note.id} className="text-sm bg-slate-900/40 border border-slate-800 rounded-xl p-4 group/note relative">
                                                         {editingNoteId === note.id ? (
                                                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-2">
                                                                 <NoteEditor value={editingNoteContent} onChange={setEditingNoteContent} autoFocus />
@@ -1145,29 +1166,45 @@ const LeadDetailPage = () => {
                                                         </div>
 
                                                         {(note.replies || []).length > 0 && (
-                                                            <div className="mt-3 ml-4 space-y-3 border-l border-slate-800 pl-4">
-                                                                {(note.replies || []).map((reply) => (
-                                                                    <div key={reply.id} className="text-sm">
-                                                                        <NoteContent html={reply.content} />
-                                                                        <div className="flex items-center justify-between mt-1">
-                                                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{reply.author?.full_name}</span>
-                                                                            <span className="text-[9px] text-slate-500 font-bold">{formatters.formatDate(reply.created_at)}</span>
+                                                            <div className="mt-3 ml-3 space-y-3 border-l-2 border-slate-700/60 pl-4">
+                                                                {groupConsecutiveReplies(note.replies || []).map((run) => (
+                                                                    <div key={run[0].id} className="space-y-1.5">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{run[0].author?.full_name}</span>
+                                                                            <span className="text-[10px] text-slate-500 font-bold">{formatters.formatDate(run[0].created_at)}</span>
                                                                         </div>
+                                                                        {run.map((reply) => (
+                                                                            <div key={reply.id} className="text-sm">
+                                                                                <NoteContent html={reply.content} />
+                                                                            </div>
+                                                                        ))}
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         )}
-                                                        <div className="mt-2 ml-4">
-                                                            <NoteReplyComposer
-                                                                people={allUsers}
-                                                                onSubmit={async (content) => {
-                                                                    const freshReply = await crmService.createNote({ lead_id: lead.id, content, parent_note_id: note.id });
-                                                                    setLead({
-                                                                        ...lead,
-                                                                        notes: lead.notes.map((n) => n.id === note.id ? { ...n, replies: [...(n.replies || []), freshReply] } : n),
-                                                                    });
-                                                                }}
-                                                            />
+                                                        <div className="mt-3 ml-3 pl-4">
+                                                            {openReplyNoteId === note.id ? (
+                                                                <NoteReplyComposer
+                                                                    people={allUsers}
+                                                                    onSubmit={async (content) => {
+                                                                        const freshReply = await crmService.createNote({ lead_id: lead.id, content, parent_note_id: note.id });
+                                                                        setLead({
+                                                                            ...lead,
+                                                                            notes: lead.notes.map((n) => n.id === note.id ? { ...n, replies: [...(n.replies || []), freshReply] } : n),
+                                                                        });
+                                                                        setOpenReplyNoteId(null);
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    data-testid={`open-reply-${note.id}`}
+                                                                    onClick={() => setOpenReplyNoteId(note.id)}
+                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 hover:text-blue-400 uppercase tracking-widest transition-colors"
+                                                                >
+                                                                    <MessageSquare size={11} /> Reply
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
