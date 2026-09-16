@@ -266,41 +266,121 @@ describe('SettingsPage BDD', () => {
         expect(screen.getByDisplayValue('Only Stage')).toBeInTheDocument();
       }
     });
+
+    // Task d83ed444: Add/Remove Stage already only called setSettings (no
+    // auto-save) before this change and are unaffected by it — they now simply
+    // participate in the same dirty-flag/Save flow as everything else.
+    it('When ADD STAGE is clicked / Then the new stage stays local (no save call) but Save Configuration becomes enabled', async () => {
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled());
+
+      await user.click(screen.getByRole('button', { name: /add stage/i }));
+
+      expect(mockUpdateSettings).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+        expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
+        expect(screen.getByDisplayValue('New Stage')).toBeInTheDocument();
+      });
+    });
+
+    it('When a stage is removed / Then it stays local (no save call) but Save Configuration becomes enabled', async () => {
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByDisplayValue('Won')).toBeInTheDocument());
+
+      const allButtons = screen.getAllByRole('button');
+      const trashBtn = allButtons.find(btn => btn.title === 'Remove Stage');
+      expect(trashBtn).toBeTruthy();
+      await user.click(trashBtn!);
+
+      expect(mockUpdateSettings).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+        expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
+      });
+    });
   });
 
   describe('Given Save Configuration', () => {
-    it('When Save clicked / Then calls updateSettings', async () => {
-      const user = userEvent.setup();
+    // Task d83ed444: Save Configuration is manual-save-only and disabled until
+    // something in `settings` actually diverges from what was last persisted.
+    const dirtyStageName = async (user: ReturnType<typeof userEvent.setup>) => {
+      const input = screen.getByDisplayValue('New');
+      await user.clear(input);
+      await user.type(input, 'Prospect');
+      return input;
+    };
+
+    it('When nothing has changed since load / Then Save Configuration is disabled', async () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+      expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
+    });
 
-      await user.click(screen.getByRole('button', { name: /save configuration/i }));
+    it('When a stage name is edited / Then Save Configuration becomes enabled and an unsaved-changes indicator appears', async () => {
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByDisplayValue('New')).toBeInTheDocument());
+
+      await dirtyStageName(user);
+
       await waitFor(() => {
-        expect(mockUpdateSettings).toHaveBeenCalledWith(mockSettings);
+        expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+        expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
       });
     });
 
-    it('When save succeeds / Then shows success toast', async () => {
+    it('When Save clicked / Then calls updateSettings with the edited settings', async () => {
       const user = userEvent.setup();
       render(<SettingsPage />);
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByDisplayValue('New')).toBeInTheDocument());
 
+      await dirtyStageName(user);
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
+
+      await waitFor(() => {
+        expect(mockUpdateSettings).toHaveBeenCalledWith(
+          expect.objectContaining({
+            deal_stages: expect.arrayContaining([
+              expect.objectContaining({ id: 'st-1', name: 'Prospect' }),
+            ]),
+          }),
+        );
+      });
+    });
+
+    it('When save succeeds / Then shows success toast and clears the unsaved-changes indicator', async () => {
+      const user = userEvent.setup();
+      render(<SettingsPage />);
+      await waitFor(() => expect(screen.getByDisplayValue('New')).toBeInTheDocument());
+
+      await dirtyStageName(user);
+      await user.click(screen.getByRole('button', { name: /save configuration/i }));
+
       await waitFor(() => {
         expect(mockShowSuccess).toHaveBeenCalledWith('Configuration saved!');
       });
+      await waitFor(() => {
+        expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
+      });
     });
 
-    it('When save fails with an Error / Then surfaces the actual error message', async () => {
+    it('When save fails with an Error / Then surfaces the actual error message and keeps the unsaved-changes indicator', async () => {
       mockUpdateSettings.mockRejectedValue(new Error('Server error'));
       const user = userEvent.setup();
       render(<SettingsPage />);
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByDisplayValue('New')).toBeInTheDocument());
 
+      await dirtyStageName(user);
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
+
       await waitFor(() => {
         expect(mockShowError).toHaveBeenCalledWith('Server error');
       });
+      expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
     });
 
     it('When saving / Then shows Saving... text on button', async () => {
@@ -309,8 +389,9 @@ describe('SettingsPage BDD', () => {
 
       const user = userEvent.setup();
       render(<SettingsPage />);
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByDisplayValue('New')).toBeInTheDocument());
 
+      await dirtyStageName(user);
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
       expect(screen.getByText(/saving\.\.\./i)).toBeInTheDocument();
 
@@ -338,11 +419,17 @@ describe('SettingsPage BDD', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      // Edit the template so `settings` actually diverges — the tab's own
+      // mount-time onChange call alone doesn't dirty anything.
+      await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
+      fireEvent.change(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}'), { target: { value: 'DL-{seq}' } });
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
+
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
 
       await waitFor(() => {
         expect(mockUpdateDealNaming).toHaveBeenCalledWith(
-          expect.objectContaining({ template: '{lead_name} - {YYYYMMDD}' }),
+          expect.objectContaining({ template: 'DL-{seq}' }),
         );
       });
     });
@@ -351,7 +438,12 @@ describe('SettingsPage BDD', () => {
       mockGetSettings.mockResolvedValue(mockSettings);
       const user = userEvent.setup();
       render(<SettingsPage />);
-      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByDisplayValue('New')).toBeInTheDocument());
+
+      const input = screen.getByDisplayValue('New');
+      await user.clear(input);
+      await user.type(input, 'Prospect');
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
 
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
       await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalled());
@@ -366,6 +458,10 @@ describe('SettingsPage BDD', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
+      fireEvent.change(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}'), { target: { value: 'DL-{seq}' } });
+      await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
+
       await user.click(screen.getByRole('button', { name: /save configuration/i }));
 
       await waitFor(() => {
@@ -545,9 +641,12 @@ describe('SettingsPage BDD', () => {
 });
 
 // ── Inline stage rename: keyboard contract ───────────────────────────────────
-// Regression cover for "Inline stage name edit does not save when pressing Enter":
-// the input had onChange only — no key handling at all — so Enter appeared dead
-// and the rename survived only if the user happened to hit the Save button.
+// Task d83ed444 "Resolve Inconsistent Save Behavior in CRM Pipeline
+// Configuration": Stage Name previously auto-saved on blur/Enter while Stage
+// Type / Add Stage / Remove Stage only staged local state, pending the manual
+// "Save Configuration" click. All four now behave the same way — local-only
+// until Save is clicked — with an empty-name guard and a dirty indicator
+// tying it together.
 describe('Given a pipeline stage is being renamed inline', () => {
   const stageInput = (name: string) =>
     Array.from(document.querySelectorAll('input[placeholder="Stage Name"]')).find(
@@ -561,7 +660,7 @@ describe('Given a pipeline stage is being renamed inline', () => {
     mockUpdateSettings.mockResolvedValue({});
   });
 
-  it('When Enter is pressed / Then the rename is saved immediately', async () => {
+  it('When Enter is pressed / Then the rename is NOT saved — it stays local, pending manual Save', async () => {
     render(<SettingsPage />);
     await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
 
@@ -570,9 +669,10 @@ describe('Given a pipeline stage is being renamed inline', () => {
     fireEvent.change(input, { target: { value: 'Stage 6' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 
-    await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalled());
-    const saved = mockUpdateSettings.mock.calls[0][0];
-    expect(saved.deal_stages.map((s: any) => s.name)).toContain('Stage 6');
+    // Edit is retained locally...
+    await waitFor(() => expect(stageInput('Stage 6')).toBeTruthy());
+    // ...but nothing was persisted yet.
+    expect(mockUpdateSettings).not.toHaveBeenCalled();
   });
 
   it('When Enter is pressed / Then edit mode is left (the field loses focus)', async () => {
@@ -588,17 +688,20 @@ describe('Given a pipeline stage is being renamed inline', () => {
     await waitFor(() => expect(document.activeElement).not.toBe(input));
   });
 
-  it('When Enter is pressed / Then exactly one save is issued, not one per handler', async () => {
+  it('When Enter is pressed / Then the Save Configuration button becomes enabled and shows the unsaved-changes indicator', async () => {
     render(<SettingsPage />);
     await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+    expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
 
     const input = stageInput('Qualified');
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: 'Stage 6' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    fireEvent.blur(input);
 
-    await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled();
+      expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument();
+    });
   });
 
   it('When Escape is pressed / Then the edit is reverted and nothing is saved', async () => {
@@ -613,9 +716,10 @@ describe('Given a pipeline stage is being renamed inline', () => {
 
     await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
     expect(mockUpdateSettings).not.toHaveBeenCalled();
+    expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument();
   });
 
-  it('When the field is blurred after a change / Then click-outside still saves, as before', async () => {
+  it('When the field is blurred after a change / Then click-outside no longer auto-saves — the edit stays pending', async () => {
     render(<SettingsPage />);
     await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
 
@@ -624,10 +728,12 @@ describe('Given a pipeline stage is being renamed inline', () => {
     fireEvent.change(input, { target: { value: 'Stage 6' } });
     fireEvent.blur(input);
 
-    await waitFor(() => expect(mockUpdateSettings).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mockUpdateSettings).not.toHaveBeenCalled();
+    await waitFor(() => expect(stageInput('Stage 6')).toBeTruthy());
   });
 
-  it('When the field is blurred without any edit / Then no needless save is issued', async () => {
+  it('When the field is blurred without any edit / Then no needless save is issued and it stays clean', async () => {
     render(<SettingsPage />);
     await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
 
@@ -636,6 +742,40 @@ describe('Given a pipeline stage is being renamed inline', () => {
     fireEvent.blur(input);
 
     await new Promise((r) => setTimeout(r, 0));
+    expect(mockUpdateSettings).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /save configuration/i })).toBeDisabled();
+  });
+
+  it('When the name is cleared and Enter is pressed / Then it reverts to the pre-edit value and shows an error toast', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(mockShowError).toHaveBeenCalledWith('Stage name cannot be empty.');
+      expect(stageInput('Qualified')).toBeTruthy();
+    });
+    expect(mockUpdateSettings).not.toHaveBeenCalled();
+    expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument();
+  });
+
+  it('When the name is cleared and the field is blurred / Then it reverts to the pre-edit value and shows an error toast', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => expect(stageInput('Qualified')).toBeTruthy());
+
+    const input = stageInput('Qualified');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+
+    await waitFor(() => {
+      expect(mockShowError).toHaveBeenCalledWith('Stage name cannot be empty.');
+      expect(stageInput('Qualified')).toBeTruthy();
+    });
     expect(mockUpdateSettings).not.toHaveBeenCalled();
   });
 });
