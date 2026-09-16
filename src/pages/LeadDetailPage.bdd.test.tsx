@@ -479,7 +479,7 @@ describe('LeadDetailPage', () => {
           author: owner,
           created_at: '2025-01-02T10:00:00Z',
           replies: [
-            { id: 'r1', content: '<p>Following up now</p>', author: owner, created_at: '2025-01-02T11:00:00Z' },
+            { id: 'r1', content: 'Following up now', author: owner, created_at: '2025-01-02T11:00:00Z' },
           ],
         }],
       }));
@@ -521,8 +521,8 @@ describe('LeadDetailPage', () => {
           author: owner,
           created_at: '2025-01-02T10:00:00Z',
           replies: [
-            { id: 'r1', content: '<p>First reply</p>', author: owner, created_at: '2025-01-02T11:00:00Z' },
-            { id: 'r2', content: '<p>Second reply</p>', author: owner, created_at: '2025-01-02T11:05:00Z' },
+            { id: 'r1', content: 'First reply', author: owner, created_at: '2025-01-02T11:00:00Z' },
+            { id: 'r2', content: 'Second reply', author: owner, created_at: '2025-01-02T11:05:00Z' },
           ],
         }],
       }));
@@ -530,7 +530,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
-      await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument(), { timeout: 3000 });
+      await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument());
       expect(screen.getByText('Second reply')).toBeInTheDocument();
       // "Test Owner" appears once for the note itself, and once for the grouped reply run (not once per reply)
       const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40') as HTMLElement;
