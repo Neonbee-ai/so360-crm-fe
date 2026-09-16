@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
 import { useActivity } from '@so360/shell-context';
+import DetailBackLink from '../components/common/DetailBackLink';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCampaignDetailPage: React.FC = () => {
   const formatters = useCRMFormatters();
-  const navigate = useNavigate();
   const { campaignId } = useParams<{ campaignId: string }>();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const { recordActivity } = useActivity();
@@ -48,12 +48,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      <button
-        onClick={() => navigate('/crm/marketing/campaigns')}
-        className="text-slate-400 hover:text-slate-100 mb-4 text-sm"
-      >
-        ← Back to Campaigns
-      </button>
+      <DetailBackLink fallbackTo="/crm/marketing/campaigns" className="mb-4 text-sm" />
 
       {loading && <p className="text-slate-400">Loading...</p>}
       {error && <p className="text-rose-400">{error}</p>}

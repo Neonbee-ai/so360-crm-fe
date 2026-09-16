@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Heart, Package, User, Clock, ExternalLink, Loader2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { Link } from 'react-router-dom';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -14,7 +14,6 @@ const MarketingWishlistPage: React.FC = () => {
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const { toasts, showError, dismissToast } = useToast();
 
   const applyStore = (value: string) => {
     setStoreId(value);
@@ -28,7 +27,7 @@ const MarketingWishlistPage: React.FC = () => {
       const data = await crmService.getMarketingWishlist(storeId);
       setWishlist(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      showError(e.message || 'Failed to load wishlist items');
+      toast.error(e.message || 'Failed to load wishlist items');
     } finally {
       setLoading(false);
     }
@@ -49,7 +48,6 @@ const MarketingWishlistPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="mb-8">
         <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Customer Wishlists</h1>
         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Track high-intent items across storefront customers</p>

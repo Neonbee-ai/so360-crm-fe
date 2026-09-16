@@ -1,10 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, UserCheck, Plus, ChevronUp, ChevronDown, ChevronsUpDown, DollarSign, BarChart2, X } from 'lucide-react';
+import { Search, Plus, ChevronUp, ChevronDown, ChevronsUpDown, X } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { Table } from '../components/common/Table';
+import { PartnerStatusOverview } from '../components/partners/PartnerStatusOverview';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
+import {
+    validateFirstNameRequired,
+    validateLastName,
+    validateCompanyName,
+    validateAddress,
+    validateCity,
+} from '../utils/leadFieldValidation';
+import {
+    getPostalCodeRule,
+    countryOptions,
+    validatePostalCode,
+    DEFAULT_COUNTRY,
+} from '../utils/postalCodeRules';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
@@ -37,6 +52,9 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         address: '',
         city: '',
         pin_code: '',
+        // Postal-code rules are country-specific; partners share the leads
+        // table, so this lands on the same `country` column.
+        country: DEFAULT_COUNTRY,
         partner_type: '',
         grading: '',
         area_served: [] as string[],
@@ -55,6 +73,12 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
     const [error, setError] = useState<string | null>(null);
     const [phoneError, setPhoneError] = useState<string | null>(null);
     const [altPhoneError, setAltPhoneError] = useState<string | null>(null);
+    // Partners carry the same name/company/address/city/PIN fields as leads and
+    // fed the same downstream search, invoices and mail merges, so they get the
+    // same rules rather than a second, looser standard.
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+
+    const postalRule = getPostalCodeRule(form.country);
 
     useEffect(() => {
         Promise.all([
@@ -76,7 +100,16 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         const apErr = validatePhone(form.alt_phone);
         setPhoneError(pErr);
         setAltPhoneError(apErr);
-        if (pErr || apErr) return;
+        const nextFieldErrors = {
+            first_name: validateFirstNameRequired(form.first_name),
+            last_name: validateLastName(form.last_name),
+            company_name: validateCompanyName(form.company_name),
+            address: validateAddress(form.address),
+            city: validateCity(form.city),
+            pin_code: validatePostalCode(form.pin_code, form.country),
+        };
+        setFieldErrors(nextFieldErrors);
+        if (pErr || apErr || Object.values(nextFieldErrors).some(Boolean)) return;
         setSaving(true);
         setError(null);
         try {
@@ -90,6 +123,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 address: form.address || undefined,
                 city: form.city || undefined,
                 pin_code: form.pin_code || undefined,
+                country: form.country || undefined,
                 partner_type: form.partner_type,
                 grading: form.grading || undefined,
                 area_served: form.area_served.length ? form.area_served : undefined,
@@ -135,14 +169,20 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             <div>
                                 <label className={labelCls}>First Name *</label>
                                 <input type="text" required value={form.first_name}
-                                    onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                                    onChange={e => { setForm(f => ({ ...f, first_name: e.target.value })); setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) }))}
+                                    aria-invalid={!!fieldErrors.first_name}
                                     className={inputCls} placeholder="Dhanooj" />
+                                {fieldErrors.first_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.first_name}</p>}
                             </div>
                             <div>
                                 <label className={labelCls}>Last Name *</label>
                                 <input type="text" required value={form.last_name}
-                                    onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                                    onChange={e => { setForm(f => ({ ...f, last_name: e.target.value })); setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) }))}
+                                    aria-invalid={!!fieldErrors.last_name}
                                     className={inputCls} placeholder="B S" />
+                                {fieldErrors.last_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.last_name}</p>}
                             </div>
                         </div>
 
@@ -150,8 +190,11 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         <div>
                             <label className={labelCls}>Company Name</label>
                             <input type="text" value={form.company_name}
-                                onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))}
+                                onChange={e => { setForm(f => ({ ...f, company_name: e.target.value })); setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) }))}
+                                aria-invalid={!!fieldErrors.company_name}
                                 className={inputCls} placeholder="Moonhive Pvt Ltd" />
+                            {fieldErrors.company_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.company_name}</p>}
                         </div>
 
                         {/* Partner Type */}
@@ -248,8 +291,23 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         <div>
                             <label className={labelCls}>Address</label>
                             <input type="text" value={form.address}
-                                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                                onChange={e => { setForm(f => ({ ...f, address: e.target.value })); setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) }))}
+                                aria-invalid={!!fieldErrors.address}
                                 className={inputCls} placeholder="Street / area" />
+                            {fieldErrors.address && <p className="text-rose-400 text-xs mt-1">{fieldErrors.address}</p>}
+                        </div>
+
+                        {/* Country */}
+                        <div>
+                            <label className={labelCls}>Country</label>
+                            <select value={form.country}
+                                onChange={e => { const country = e.target.value; setForm(f => ({ ...f, country })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(form.pin_code, country) })); }}
+                                className={inputCls}>
+                                {countryOptions().map(c => (
+                                    <option key={c.code} value={c.code}>{c.name}</option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* City + Pin Code */}
@@ -257,14 +315,30 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             <div>
                                 <label className={labelCls}>City</label>
                                 <input type="text" value={form.city}
-                                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                                    onChange={e => { setForm(f => ({ ...f, city: e.target.value })); setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) }))}
+                                    aria-invalid={!!fieldErrors.city}
                                     className={inputCls} placeholder="Bangalore" />
+                                {fieldErrors.city && <p className="text-rose-400 text-xs mt-1">{fieldErrors.city}</p>}
                             </div>
                             <div>
-                                <label className={labelCls}>Pin Code</label>
-                                <input type="text" value={form.pin_code}
-                                    onChange={e => setForm(f => ({ ...f, pin_code: e.target.value }))}
-                                    className={inputCls} placeholder="560001" />
+                                <label className={labelCls}>
+                                    {postalRule.label}
+                                    {postalRule.digits && (
+                                        <span className="ml-2 text-xs font-normal text-slate-500 normal-case">
+                                            {form.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
+                                        </span>
+                                    )}
+                                    {!postalRule.pattern && (
+                                        <span className="ml-2 text-xs font-normal text-slate-500 normal-case">not used in {postalRule.name}</span>
+                                    )}
+                                </label>
+                                <input type="text" inputMode={postalRule.numericOnly ? 'numeric' : 'text'} maxLength={postalRule.maxLength} value={form.pin_code}
+                                    onChange={e => { const v = postalRule.numericOnly ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength) : e.target.value; setForm(f => ({ ...f, pin_code: v })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(v, form.country) })); }}
+                                    onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(e.target.value, form.country) }))}
+                                    aria-invalid={!!fieldErrors.pin_code}
+                                    className={inputCls} placeholder={postalRule.example} />
+                                {fieldErrors.pin_code && <p className="text-rose-400 text-xs mt-1">{fieldErrors.pin_code}</p>}
                             </div>
                         </div>
 
@@ -379,17 +453,22 @@ const PartnersPage = () => {
     const [partnerTypes, setPartnerTypes] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('All');
-    const [sortField, setSortField] = useState<SortField | null>('contact_name');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-    const [currentPage, setCurrentPage] = useState(1);
+    // View state survives a trip to a partner's detail page and back.
+    const [searchTerm, setSearchTerm] = usePersistedState('partners.search', '');
+    const [typeFilter, setTypeFilter] = usePersistedState('partners.type', 'All');
+    const [sortField, setSortField] = usePersistedState<SortField | null>('partners.sortField', 'contact_name');
+    const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('partners.sortDirection', 'asc');
+    const [currentPage, setCurrentPage] = usePersistedState('partners.page', 1);
     const [pageSize] = useState(20);
+
+    const listAnchorRef = useRef<HTMLDivElement>(null);
+    useListScrollRestore('partners', listAnchorRef, !isLoading);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const { settings } = useBusinessSettings();
     const formatters = useFormatters({
         currency: settings?.base_currency || 'USD',
         locale: settings?.document_language || 'en-US',
+        timezone: settings?.timezone || 'UTC',
     });
 
     const fetchData = async () => {
@@ -429,8 +508,11 @@ const PartnersPage = () => {
         return <ChevronsUpDown size={14} className="text-slate-600" />;
     };
 
-    const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
-        <button onClick={() => toggleSort(field)} className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer">
+    const SortableHeader = ({ label, field, align }: { label: string; field: SortField; align?: 'left' | 'right' }) => (
+        <button
+            onClick={() => toggleSort(field)}
+            className={`flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer ${align === 'right' ? 'ml-auto' : ''}`}
+        >
             {label}
             <SortIcon field={field} />
         </button>
@@ -474,7 +556,7 @@ const PartnersPage = () => {
         if (!grading) return <span className="text-slate-600 text-sm">-</span>;
         const config = GRADING_CONFIG[grading] || GRADING_CONFIG.low;
         return (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
                 {config.label}
             </span>
         );
@@ -484,13 +566,6 @@ const PartnersPage = () => {
         const found = partnerTypes.find(pt => pt.value === value);
         return found?.label || value || '-';
     };
-
-    const totals = useMemo(() => ({
-        total: partners.length,
-        totalDeals: partners.reduce((s, p) => s + (p.total_deals || 0), 0),
-        totalValue: partners.reduce((s, p) => s + (p.total_deal_value || 0), 0),
-        pendingCommission: partners.reduce((s, p) => s + (p.pending_commission || 0), 0),
-    }), [partners]);
 
     const columns = [
         {
@@ -515,41 +590,45 @@ const PartnersPage = () => {
             accessor: (p: any) => <GradingBadge grading={p.grading} />,
         },
         {
-            header: <SortableHeader label="Deals" field="total_deals" />,
+            header: <SortableHeader label="Deals" field="total_deals" align="right" />,
             accessor: (p: any) => (
                 <span className="text-slate-300 text-sm font-medium">{p.total_deals || 0}</span>
             ),
+            className: 'text-right',
         },
         {
-            header: <SortableHeader label="Deal Value" field="total_deal_value" />,
+            header: <SortableHeader label="Deal Value" field="total_deal_value" align="right" />,
             accessor: (p: any) => (
-                <span className="text-slate-300 text-sm">
+                <span className="text-slate-300 text-sm font-mono">
                     {formatters.formatCurrency(p.total_deal_value || 0)}
                 </span>
             ),
+            className: 'text-right',
         },
         {
             header: 'Royalty Pending',
             accessor: (p: any) => (
-                <span className={`text-sm font-medium ${(p.pending_commission || 0) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                <span className={`text-sm font-medium font-mono ${(p.pending_commission || 0) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
                     {formatters.formatCurrency(p.pending_commission || 0)}
                 </span>
             ),
+            className: 'text-right',
         },
         {
             header: 'Royalty Rate',
             accessor: (p: any) => (
-                <span className="text-slate-400 text-sm">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
+                <span className="text-slate-400 text-sm font-mono">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
             ),
+            className: 'text-right',
         },
     ];
 
     return (
-        <div className="p-8">
+        <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8 flex items-start justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Partners</h1>
-                    <p className="text-slate-400 mt-1">Referral agents, resellers, and dealers who bring in deals</p>
+                    <p className="text-slate-300 mt-1">Referral agents, resellers, and dealers who bring in deals</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
@@ -560,25 +639,8 @@ const PartnersPage = () => {
                 </button>
             </header>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><UserCheck size={14} /> Total Partners</div>
-                    <div className="text-2xl font-bold text-slate-50">{totals.total}</div>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><BarChart2 size={14} /> Total Deals</div>
-                    <div className="text-2xl font-bold text-slate-50">{totals.totalDeals}</div>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium mb-1"><DollarSign size={14} /> Total Deal Value</div>
-                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.totalValue)}</div>
-                </div>
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-amber-400 text-xs font-medium mb-1"><DollarSign size={14} /> Royalty Pending</div>
-                    <div className="text-xl font-bold text-slate-50">{formatters.formatCurrency(totals.pendingCommission)}</div>
-                </div>
-            </div>
+            {/* Status Overview — replaces the old 4-card KPI grid (task 52daf7c7) */}
+            <PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">

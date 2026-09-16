@@ -39,3 +39,4 @@ coverage
 
 # Misc
 .federation
+.claude/worktrees/

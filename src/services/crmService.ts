@@ -1,5 +1,6 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
 import { createRequestCache } from './requestCache';
+import { notifyQuotaExceeded } from './quotaExceeded';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -21,56 +22,72 @@ export interface TimelineEvent {
 // API Configuration
 // In `npm run preview` (static), Vite proxy is not available (or unreliable across MFEs),
 // so default to absolute backend origins. Allow overrides via `window.*` or `import.meta.env`.
-const env = (import.meta as any)?.env || {};
+//
+// Each origin MUST read the LITERAL `import.meta.env.VITE_SO360_X`. Vite performs a
+// textual substitution on exactly that expression at build time. This file previously
+// captured `const env = (import.meta as any)?.env || {}` — the optional chaining makes
+// the source read `import.meta?.env`, which never matches, so `env` was `{}` in every
+// production build and ALL EIGHT origins silently became localhost. It went unnoticed
+// because the shell injects `window.VITE_SO360_CRM_API` and `_CORE_API` at runtime,
+// rescuing those two; the other six pointed at the user's own machine in production.
+//
+// The `VITE_API_BASE_URL` fallback that used to sit under CRM and CORE is gone: it is
+// set nowhere in this repo, and it resolves to the Core origin, so a missing CRM value
+// would have addressed the wrong service rather than failing. Localhost fails loudly.
 const win = typeof window !== 'undefined' ? (window as any) : {};
 
 const CRM_API_ORIGIN = String(
     win.VITE_SO360_CRM_API ||
-    env.VITE_SO360_CRM_API ||
-    env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_SO360_CRM_API ||
     'http://localhost:3003'
 ).replace(/\/$/, '');
 
 const CORE_API_ORIGIN = String(
     win.VITE_SO360_CORE_API ||
-    env.VITE_SO360_CORE_API ||
-    env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_SO360_CORE_API ||
     'http://localhost:3000'
 ).replace(/\/$/, '');
+
 const DAILYSTORE_API_ORIGIN = String(
     win.VITE_SO360_DAILYSTORE_API ||
-    env.VITE_SO360_DAILYSTORE_API ||
+    import.meta.env.VITE_SO360_DAILYSTORE_API ||
     'http://localhost:3016'
 ).replace(/\/$/, '');
 
 const INVENTORY_API_ORIGIN = String(
     win.VITE_SO360_INVENTORY_API ||
-    env.VITE_SO360_INVENTORY_API ||
+    import.meta.env.VITE_SO360_INVENTORY_API ||
     'http://localhost:3006'
 ).replace(/\/$/, '');
 
 const FULFILLMENT_API_ORIGIN = String(
     win.VITE_SO360_FULFILLMENT_API ||
-    env.VITE_SO360_FULFILLMENT_API ||
+    import.meta.env.VITE_SO360_FULFILLMENT_API ||
     'http://localhost:3032'
 ).replace(/\/$/, '');
 
 const ACCOUNTING_API_ORIGIN = String(
     win.VITE_SO360_ACCOUNTING_API ||
-    env.VITE_SO360_ACCOUNTING_API ||
+    import.meta.env.VITE_SO360_ACCOUNTING_API ||
     'http://localhost:3008'
 ).replace(/\/$/, '');
 
 const NEURA_API_ORIGIN = String(
     win.VITE_SO360_NEURA_API ||
-    env.VITE_SO360_NEURA_API ||
+    import.meta.env.VITE_SO360_NEURA_API ||
     'http://localhost:3018'
 ).replace(/\/$/, '');
 
 const INBOX_API_ORIGIN = String(
     win.VITE_SO360_INBOX_API ||
-    env.VITE_SO360_INBOX_API ||
+    import.meta.env.VITE_SO360_INBOX_API ||
     'http://localhost:3017'
+).replace(/\/$/, '');
+
+const PROJECTS_API_ORIGIN = String(
+    win.VITE_SO360_PROJECTS_API ||
+    import.meta.env.VITE_SO360_PROJECTS_API ||
+    'http://localhost:3010'
 ).replace(/\/$/, '');
 
 const API_BASE_URL = CRM_API_ORIGIN;
@@ -261,13 +278,16 @@ class ApiClient {
                 ...options,
                 headers,
             });
+            await notifyQuotaExceeded(response);
 
             const text = await response.text();
 
             if (!response.ok) {
                 let errorMessage = `API Error: ${response.status}`;
+                let errorBody: unknown = null;
                 try {
                     const errorJson = JSON.parse(text);
+                    errorBody = errorJson;
                     if (errorJson.message) {
                         if (Array.isArray(errorJson.message)) {
                             errorMessage = errorJson.message.join(', ');
@@ -280,7 +300,17 @@ class ApiClient {
                 } catch (e) {
                     errorMessage = text || errorMessage;
                 }
-                throw new Error(errorMessage);
+                // Carry the status on the Error. Without it every failure looked
+                // identical to callers, so a 403 was indistinguishable from a
+                // missing record — which is how an access denial ended up being
+                // rendered as "Lead not found."
+                const apiError = new Error(errorMessage) as Error & { status?: number; body?: unknown };
+                apiError.status = response.status;
+                // The structured body too (a 409 names the existing record's
+                // id and type) so a form can offer "open it" rather than only
+                // repeat the sentence.
+                apiError.body = errorBody;
+                throw apiError;
             }
 
             try {
@@ -336,6 +366,7 @@ class ApiClient {
             ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
         };
         const response = await fetch(url, { method: 'GET', headers });
+        await notifyQuotaExceeded(response);
         const text = await response.text();
         if (!response.ok) {
             let errorMessage = `API Error: ${response.status}`;
@@ -414,6 +445,7 @@ class ApiClient {
             headers,
             body: formData,
         });
+        await notifyQuotaExceeded(res);
         if (!res.ok) {
             let msg = `Upload failed: ${res.status}`;
             try { const j = await res.json(); if (j?.message) msg = Array.isArray(j.message) ? j.message.join(', ') : j.message; } catch { /* ignore */ }
@@ -442,6 +474,7 @@ class ApiClient {
             ...(this.accessToken ? { 'Authorization': `Bearer ${this.accessToken}` } : {}),
         };
         const response = await fetch(`${this.baseURL}${endpoint}${queryString}`, { method: 'GET', headers });
+        await notifyQuotaExceeded(response);
         if (!response.ok) {
             let msg = `API Error: ${response.status}`;
             try { const j = await response.json(); msg = j?.message || j?.error || msg; } catch { /* ignore */ }
@@ -459,12 +492,16 @@ const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
 const inventoryClient = new ApiClient(INVENTORY_API_ORIGIN, TENANT_ID);
 const fulfillmentClient = new ApiClient(`${FULFILLMENT_API_ORIGIN}/v1/fulfillment`, TENANT_ID);
 const accountingClient = new ApiClient(ACCOUNTING_API_ORIGIN, TENANT_ID);
-const inboxClient = new ApiClient(INBOX_API_ORIGIN, TENANT_ID);
+const inboxClient = new ApiClient(`${INBOX_API_ORIGIN}/v1/inbox`, TENANT_ID);
 // Neura AI's own public conversations API — called directly (same pattern as
 // coreClient/dailystoreClient/etc. above), not proxied through CRM's backend,
 // so the Neura AI Lead Copilot adds zero new logic to so360-crm-be. Neura BE
 // sets no global route prefix (routes are bare /conversations, /agents, ...).
 const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
+// Projects module's own backend — Task <-> Project linking and the Project
+// selector both need this. Projects BE sets no global route prefix (bare
+// /projects, matching the neuraClient comment above's pattern).
+const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -553,10 +590,34 @@ export const leadsApi = {
     },
 
     /**
-     * DELETE /leads/:id - Delete a lead
+     * DELETE /leads/:id — soft-delete a lead.
+     *
+     * The backend stamps `deleted_at`, which drops the lead out of every
+     * active-lead query (lists, counts, dashboard metrics, pipeline stages,
+     * analytics, search). Reversible via restore().
      */
     delete: async (id: string): Promise<void> => {
         await apiClient.delete(`/leads/${id}`);
+    },
+
+    /** POST /leads/:id/restore — bring a soft-deleted lead back. */
+    restore: async (id: string): Promise<Lead> => {
+        const lead = await apiClient.post<any>(`/leads/${id}/restore`, {});
+        return mapLeadFromApi(lead);
+    },
+
+    /** POST /leads/bulk/restore — restore many soft-deleted leads. */
+    bulkRestore: async (ids: string[]): Promise<{ requested: number; restored: string[]; failed: Array<{ id: string; error: string }> }> => {
+        return apiClient.post('/leads/bulk/restore', { ids });
+    },
+
+    /**
+     * GET /leads?only_deleted=true — the recycle bin. Same filter/sort/paging
+     * pipeline as the active list, so the two views can never disagree.
+     */
+    getDeleted: async (params: { skip?: number; take?: number; q?: string; type?: string } = {}): Promise<Lead[]> => {
+        const rows = await apiClient.get<any[]>('/leads', { ...params, only_deleted: 'true' });
+        return (rows || []).map(mapLeadFromApi);
     },
 
     /**
@@ -730,6 +791,15 @@ export const dealsApi = {
     },
 
     /**
+     * GET /deals/generate-name - Auto-generate a deal name from the org naming
+     * convention. Returns { name: '', isAutoGenerated: false } when the org has
+     * auto-generation disabled (manual entry only).
+     */
+    generateName: async (params: { leadId?: string; companyName?: string; contactName?: string; ownerId?: string }): Promise<{ name: string; isAutoGenerated: boolean }> => {
+        return apiClient.get('/deals/generate-name', params as any);
+    },
+
+    /**
      * GET /deals/pipeline - Get deals grouped by stage for Kanban pipeline
      */
     getPipeline: async (params?: DealFilters): Promise<PipelineResponse> => {
@@ -808,6 +878,11 @@ export const tasksApi = {
         overdue?: boolean;
         lead_id?: string;
         deal_id?: string;
+        // Backend enforces this as an authorization ceiling, not a display
+        // preference — an 'own'-scoped caller cannot widen it by omission or
+        // by also passing owner_id. See tasks.service.ts findAll.
+        scope?: 'own' | 'team' | 'all';
+        owner_id?: string;
     }): Promise<Task[]> => {
         const tasks = await apiClient.get<any[]>('/tasks', params);
         return tasks.map(mapTaskFromApi);
@@ -1465,6 +1540,7 @@ export const crmService = {
     // Bulk lead operations
     bulkUpdateLeads: (ids: string[], patch: Record<string, any>) => leadsApi.bulkUpdate(ids, patch),
     bulkDeleteLeads: (ids: string[]) => leadsApi.bulkDelete(ids),
+    bulkRestoreLeads: (ids: string[]) => leadsApi.bulkRestore(ids),
     bulkTagLeads: (ids: string[], add?: string[], remove?: string[]) => leadsApi.bulkTags(ids, add, remove),
 
     // Grid preferences (saved views + column layout), delegated to gridPrefsApi
@@ -1664,6 +1740,8 @@ export const crmService = {
             address: (lead as any).address,
             city: (lead as any).city,
             pin_code: (lead as any).pin_code,
+            // Carries the postal-code rule the record was validated against.
+            country: (lead as any).country,
             status: lead.status || 'New',
             source: lead.source,
             owner_id: lead.owner_id || USER_ID,
@@ -1676,6 +1754,12 @@ export const crmService = {
         try {
             return await leadsApi.getById(id);
         } catch (error) {
+            // A permission denial is not "no such lead". Collapsing both into
+            // `undefined` is what made Lead Detail tell users a lead did not exist
+            // when they simply were not allowed to see it. Callers that only care
+            // about presence still get undefined for every other failure; the two
+            // chained callers (LeadDetailPanel, QuoteDetailPage) already catch.
+            if ((error as { status?: number })?.status === 403) throw error;
             return undefined;
         }
     },
@@ -1708,6 +1792,14 @@ export const crmService = {
 
     deleteLead: async (id: string): Promise<void> => {
         return leadsApi.delete(id);
+    },
+
+    restoreLead: async (id: string): Promise<Lead> => {
+        return leadsApi.restore(id);
+    },
+
+    getDeletedLeads: async (params?: { skip?: number; take?: number; q?: string; type?: string }): Promise<Lead[]> => {
+        return leadsApi.getDeleted(params);
     },
 
     getPartners: async (): Promise<Lead[]> => {
@@ -1797,8 +1889,8 @@ export const crmService = {
     },
 
     // Tasks
-    getTasks: async (): Promise<Task[]> => {
-        return tasksApi.getAll();
+    getTasks: async (scope?: 'own' | 'team' | 'all'): Promise<Task[]> => {
+        return tasksApi.getAll(scope ? { scope } : undefined);
     },
 
     async getTaskById(id: string): Promise<Task | undefined> {
@@ -1846,11 +1938,37 @@ export const crmService = {
         return tasksApi.delete(id);
     },
 
+    /**
+     * Connect a CRM task to a Project task. Success responses include the
+     * updated task fields (incl. `sync_status: 'connected'`); a non-2xx or a
+     * `{ connected: false, reason }`-shaped body both count as failure. The
+     * backend's exact failure shape isn't finalized, so both are handled here
+     * rather than pushed onto every caller.
+     */
+    async connectTaskToProject(taskId: string, projectId: string): Promise<Task & { connected?: boolean; reason?: string; warning?: string; assignee_synced?: boolean }> {
+        const result = await apiClient.post<Task & { connected?: boolean; reason?: string; warning?: string; assignee_synced?: boolean }>(
+            `/tasks/${taskId}/connect-project`,
+            { project_id: projectId },
+        );
+        if (result && (result as any).connected === false) {
+            throw new Error((result as any).reason || 'Failed to connect task to project.');
+        }
+        return result;
+    },
+
+    async disconnectTaskFromProject(taskId: string, mode: 'remove_project_task' | 'keep_but_disconnect'): Promise<Task> {
+        return apiClient.post<Task>(`/tasks/${taskId}/disconnect-project`, { mode });
+    },
+
+    async retryTaskProjectSync(taskId: string): Promise<Task> {
+        return apiClient.post<Task>(`/tasks/${taskId}/retry-sync`, {});
+    },
+
     // Settings
     getSettings: async (): Promise<CRMSettings> => {
       return orgStaticCache.run(`settings|${apiClient.getOrgId()}`, async () => {
         try {
-            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, partnerFieldsResult, sourceTypesResult, scoringRulesResult, scoreCategoriesResult] = await Promise.allSettled([
+            const [stagesResult, leadStagesResult, leadFieldsResult, dealFieldsResult, partnerFieldsResult, sourceTypesResult, scoringRulesResult, scoreCategoriesResult, dealNamingResult] = await Promise.allSettled([
                 apiClient.get<any[]>('/settings/pipeline-stages'),
                 apiClient.get<any[]>('/settings/lead-stages'),
                 apiClient.get<any[]>('/settings/custom-fields?entity_type=LEAD'),
@@ -1859,6 +1977,7 @@ export const crmService = {
                 apiClient.get<any[]>('/settings/source-types'),
                 apiClient.get<any[]>('/settings/scoring-rules'),
                 apiClient.get<any[]>('/settings/score-categories'),
+                apiClient.get<DealNamingConfig>('/settings/deal-naming'),
             ]);
 
             const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
@@ -1869,6 +1988,7 @@ export const crmService = {
             const sourceTypes = sourceTypesResult.status === 'fulfilled' ? sourceTypesResult.value : [];
             const scoringRules = scoringRulesResult.status === 'fulfilled' ? scoringRulesResult.value : [];
             const scoreCategories = scoreCategoriesResult.status === 'fulfilled' ? scoreCategoriesResult.value : [];
+            const dealNaming = dealNamingResult.status === 'fulfilled' ? dealNamingResult.value : DEFAULT_DEAL_NAMING_CONFIG;
 
             if (stagesResult.status === 'rejected') console.error('[CRM] Failed to fetch pipeline stages', stagesResult.reason);
             if (leadStagesResult.status === 'rejected') console.error('[CRM] Failed to fetch lead stages', leadStagesResult.reason);
@@ -1888,6 +2008,7 @@ export const crmService = {
                 partner_custom_fields: partnerFields,
                 lead_scoring: scoringRules,
                 score_categories: scoreCategories,
+                deal_naming: dealNaming,
             };
         } catch (error) {
             console.error('Failed to fetch settings', error);
@@ -1902,9 +2023,28 @@ export const crmService = {
                 partner_custom_fields: [],
                 lead_scoring: [],
                 score_categories: [],
+                deal_naming: DEFAULT_DEAL_NAMING_CONFIG,
             };
         }
       });
+    },
+
+    // Deal Naming Convention
+    getDealNamingSettings: async (): Promise<DealNamingConfig> => {
+        try {
+            return await apiClient.get<DealNamingConfig>('/settings/deal-naming');
+        } catch (error) {
+            console.error('[CRM] Failed to fetch deal naming settings', error);
+            return DEFAULT_DEAL_NAMING_CONFIG;
+        }
+    },
+
+    updateDealNamingSettings: async (config: Partial<DealNamingConfig>): Promise<DealNamingConfig> => {
+        return apiClient.patch<DealNamingConfig>('/settings/deal-naming', config);
+    },
+
+    previewDealNamingSettings: async (draftConfig: Partial<DealNamingConfig>): Promise<{ name: string; isAutoGenerated: boolean }> => {
+        return apiClient.post('/settings/deal-naming/preview', draftConfig);
     },
 
     updateSettings: async (settings: CRMSettings): Promise<CRMSettings> => {
@@ -2068,6 +2208,22 @@ export const crmService = {
     },
 
     // Users
+    /**
+     * Active employees from People Connect's People Registry — the option set
+     * for every CRM ownership field (Sales Rep, Lead/Deal Owner, Account
+     * Manager, Task Assignee).
+     *
+     * Routed through crm-be rather than calling People Connect from the
+     * browser: its public `/people` endpoint requires People Connect
+     * permissions a CRM user does not hold, which is why this dropdown used to
+     * render empty. crm-be brokers the call and scopes it to the caller's org.
+     */
+    getSalesReps: async (search?: string): Promise<SalesRep[]> => {
+        const params = search?.trim() ? { search: search.trim() } : undefined;
+        const rows = await apiClient.get<any[]>('/v1/users/sales-reps', params);
+        return Array.isArray(rows) ? rows : [];
+    },
+
     getUsers: async (): Promise<User[]> => {
       return orgStaticCache.run(`users|${apiClient.getOrgId()}`, async () => {
         try {
@@ -2269,13 +2425,42 @@ export const crmService = {
 
     async getProjects(): Promise<any[]> {
         try {
-            // Call the Projects Microservice (proxied through shell)
-            const projects = await apiClient.get<any[]>('/projects-api/projects');
-            return projects || [];
+            // Was: apiClient.get('/projects-api/projects') — apiClient is bound to
+            // CRM_API_ORIGIN, so that resolved to `${CRM_API_ORIGIN}/projects-api/projects`,
+            // a path that doesn't exist on the CRM backend (crm-be has no
+            // /projects-api prefix). Every call 404'd and was silently swallowed
+            // by this try/catch, so the Task modal's Project dropdown always
+            // showed only "No Project". Fixed to call the Projects backend
+            // directly via projectsClient (GET /projects, list capped at 100 —
+            // this is a dropdown, not a paginated table).
+            const result = await projectsClient.get<any>('/projects', { limit: 100 });
+            // findAll() on the Projects side returns { data, pagination }, not a
+            // flat array — unwrap defensively so an API shape change degrades to
+            // an empty list instead of throwing (Array.isArray(result) covers a
+            // hypothetical future flat-array response too).
+            if (Array.isArray(result)) return result;
+            if (Array.isArray(result?.data)) return result.data;
+            return [];
         } catch (error: any) {
             console.error('[CRM] Failed to fetch projects list:', error.message);
             // Return empty array instead of mock data - let UI handle empty state
             return [];
+        }
+    },
+
+    async getProjectById(projectId: string): Promise<any | null> {
+        try {
+            // Same class of bug as getProjects() above: callers previously did a
+            // raw `fetch('/projects-api/projects/:id')` — a relative URL with no
+            // auth/tenant/org headers at all, resolvable only through the Vite
+            // dev-server-only proxy rule in so360-shell-fe/vite.config.ts (absent
+            // in staging/production), AND missing the Bearer/X-Tenant-Id/X-Org-Id
+            // headers this route's PermissionsGuard requires regardless. Routed
+            // through projectsClient instead, which already carries all three.
+            return await projectsClient.get<any>(`/projects/${projectId}`);
+        } catch (error: any) {
+            console.error('[CRM] Failed to fetch project details:', error.message);
+            return null;
         }
     },
 
@@ -2300,8 +2485,17 @@ export const crmService = {
         title?: string;
         notes?: string;
         terms_and_conditions?: string;
+        /** Commercial terms, each a distinct obligation (see crm-be migration 047). */
+        payment_terms?: string;
+        delivery_terms?: string;
+        incoterm?: string;
+        customer_reference?: string;
         valid_until?: string;
-        lines: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
+        /**
+         * Omit to have crm-be seed the quote from the deal's own products. Passing
+         * an array — even an empty one — is taken as the caller's own line set.
+         */
+        lines?: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
     }): Promise<any> {
         return apiClient.post<any>('/quotes', data);
     },
@@ -2310,18 +2504,60 @@ export const crmService = {
         title?: string;
         notes?: string;
         terms_and_conditions?: string;
+        /** Commercial terms, each a distinct obligation (see crm-be migration 047). */
+        payment_terms?: string;
+        delivery_terms?: string;
+        incoterm?: string;
+        customer_reference?: string;
         valid_until?: string;
         lines?: { item_id?: string; description: string; quantity: number; unit_price: number; discount_percent?: number; tax_rate?: number }[];
     }): Promise<any> {
         return apiClient.patch<any>(`/quotes/${quoteId}`, data);
     },
 
+    /**
+     * Email the quotation to the customer with the PDF attached.
+     *
+     * The PDF is generated server-side — the browser print path cannot produce a
+     * file to attach, only a print dialog. Returns { sent, to } or, when there is
+     * no address to send to, { sent: false, reason }.
+     */
+    async sendQuote(
+        quoteId: string,
+        payload: { to?: string; message?: string } = {},
+    ): Promise<{ sent: boolean; to?: string; reason?: string }> {
+        return apiClient.post<{ sent: boolean; to?: string; reason?: string }>(
+            `/quotes/${quoteId}/send`,
+            payload,
+        );
+    },
+
     async deleteQuote(quoteId: string): Promise<void> {
         return apiClient.delete(`/quotes/${quoteId}`);
     },
 
-    async submitQuoteForApproval(quoteId: string): Promise<any> {
-        return apiClient.post<any>(`/quotes/${quoteId}/submit`, {});
+    async submitQuoteForApproval(quoteId: string, data?: { approver_user_ids?: string[]; notes?: string }): Promise<any> {
+        return apiClient.post<any>(`/quotes/${quoteId}/submit`, data || {});
+    },
+
+    async withdrawQuoteApproval(quoteId: string, reason?: string): Promise<any> {
+        return apiClient.post<any>(`/quotes/${quoteId}/withdraw`, { reason });
+    },
+
+    async getQuoteApprovalHistory(quoteId: string): Promise<any[]> {
+        const res = await apiClient.get<any>(`/quotes/${quoteId}/approval-history`);
+        return Array.isArray(res) ? res : (res?.requests || []);
+    },
+
+    async getApprovalsInbox(status?: string): Promise<any[]> {
+        const params = status && status !== 'all' ? { status } : undefined;
+        return apiClient.get<any[]>('/quotes/approvals/inbox', params);
+    },
+
+    async getApprovers(search?: string): Promise<any[]> {
+        const params = search?.trim() ? { search: search.trim() } : undefined;
+        const rows = await apiClient.get<any[]>('/v1/users/approvers', params);
+        return Array.isArray(rows) ? rows : [];
     },
 
     async approveQuote(quoteId: string, notes?: string): Promise<any> {
@@ -2353,6 +2589,7 @@ export const crmService = {
                 `${INVENTORY_API_ORIGIN}/v1/inventory/integration/stock-availability?item_ids=${encodeURIComponent(idsParam)}`,
                 { headers },
             );
+            await notifyQuotaExceeded(res);
             if (!res.ok) return { items: [] };
             return res.json();
         } catch {
@@ -2361,16 +2598,48 @@ export const crmService = {
     },
 
     // Inventory item search — used by ProductPickerModal
-    async searchInventoryItems(q: string, categoryId?: string): Promise<{ items: InventoryItem[] }> {
-        try {
-            const params: Record<string, string> = { q };
-            if (categoryId) params.category_id = categoryId;
-            const result = await inventoryClient.get<any>('/v1/inventory/integration/search-with-variants', params);
-            const items: InventoryItem[] = Array.isArray(result) ? result : (result?.items || result?.data || []);
-            return { items };
-        } catch {
-            return { items: [] };
-        }
+    /**
+     * Browse/search sellable inventory.
+     *
+     * `q` is optional: called with no term (the default when a product picker
+     * opens) the backend returns the most recent active items, so users can
+     * browse without knowing a name or SKU. `offset` drives lazy-loading.
+     *
+     * Errors are NOT swallowed — pickers surface them with a retry action
+     * rather than rendering a misleading "no products found" empty state.
+     */
+    async searchInventoryItems(
+        q: string,
+        categoryId?: string,
+        opts: { limit?: number; offset?: number } = {},
+    ): Promise<{ items: InventoryItem[]; total: number; has_more: boolean }> {
+        const params: Record<string, string> = {};
+        if (q && q.trim()) params.q = q.trim();
+        if (categoryId) params.category_id = categoryId;
+        if (opts.limit != null) params.limit = String(opts.limit);
+        if (opts.offset != null) params.offset = String(opts.offset);
+        const result = await inventoryClient.get<any>('/v1/inventory/integration/search-with-variants', params);
+        const rawItems = Array.isArray(result) ? result : (result?.items || result?.data || []);
+        const items: InventoryItem[] = rawItems.map((it: any) => {
+            const itemPrice = Number(it.price ?? it.selling_price ?? it.unit_price ?? 0);
+            const safeItemPrice = isNaN(itemPrice) ? 0 : itemPrice;
+            return {
+                ...it,
+                price: safeItemPrice,
+                variants: (it.variants || []).map((v: any) => {
+                    const varPrice = Number(v.price ?? v.selling_price ?? v.unit_price ?? safeItemPrice);
+                    return {
+                        ...v,
+                        price: isNaN(varPrice) ? 0 : varPrice,
+                    };
+                }),
+            };
+        });
+        return {
+            items,
+            total: result?.total ?? items.length,
+            has_more: Boolean(result?.has_more),
+        };
     },
 
     // Customers
@@ -2602,15 +2871,36 @@ export const crmService = {
         return apiClient.get<LeadProduct[]>(`/leads/${leadId}/products`);
     },
 
+    getProductCategories: async (): Promise<Array<{ id: string; name: string; parent_id?: string | null }>> => {
+        // Inventory serves this under its /v1/inventory prefix. The old
+        // unprefixed `/settings/:orgId` was tried first and 404'd on every
+        // modal open before falling through to this one — same missing-prefix
+        // class as the CRM→Inventory draft-item call.
+        //
+        // Inventory's raw rows already carry parent_id (it's a `select("*")`),
+        // so the hierarchy just needs to survive this mapping instead of being
+        // dropped — the flat {id,name}-only shape used to strip it, collapsing
+        // the tree into an unordered flat list in the Custom Product picker.
+        try {
+            const res = await inventoryClient.get<any>(`/v1/inventory/settings/${ORG_ID}`);
+            if (res?.categories && Array.isArray(res.categories)) {
+                return res.categories.map((c: any) => ({ id: c.id, name: c.name, parent_id: c.parent_id ?? null }));
+            }
+        } catch {
+            // Return empty if inventory service is temporarily unavailable
+        }
+        return [];
+    },
+
     addLeadProduct: async (leadId: string, data: {
-        item_id: string; item_name: string; item_sku?: string; category_name?: string;
-        quantity?: number; unit_price?: number; status?: string; notes?: string;
+        item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
+        is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string;
     }): Promise<LeadProduct> => {
         return apiClient.post<LeadProduct>(`/leads/${leadId}/products`, data);
     },
 
     updateLeadProduct: async (leadId: string, productId: string, data: {
-        quantity?: number; unit_price?: number; status?: string; notes?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string; category_id?: string; category_name?: string;
     }): Promise<LeadProduct> => {
         return apiClient.patch<LeadProduct>(`/leads/${leadId}/products/${productId}`, data);
     },
@@ -2626,14 +2916,14 @@ export const crmService = {
     },
 
     addDealProduct: async (dealId: string, data: {
-        item_id: string; item_name: string; item_sku?: string; category_name?: string;
-        quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
+        item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
+        is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
     }): Promise<DealProduct> => {
         return apiClient.post<DealProduct>(`/deals/${dealId}/products`, data);
     },
 
     updateDealProduct: async (dealId: string, productId: string, data: {
-        quantity?: number; unit_price?: number; status?: string; notes?: string;
+        quantity?: number; unit_price?: number; status?: string; notes?: string; category_id?: string; category_name?: string;
     }): Promise<DealProduct> => {
         return apiClient.patch<DealProduct>(`/deals/${dealId}/products/${productId}`, data);
     },
@@ -2663,6 +2953,7 @@ export const crmService = {
         accountingClient.setTenantId(id);
         neuraClient.setTenantId(id);
         inboxClient.setTenantId(id);
+        projectsClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
         ORG_ID = id;
@@ -2674,6 +2965,7 @@ export const crmService = {
         accountingClient.setOrgId(id);
         neuraClient.setOrgId(id);
         inboxClient.setOrgId(id);
+        projectsClient.setOrgId(id);
     },
     setUser: (user: User) => {
         CURRENT_USER = user;
@@ -2693,6 +2985,7 @@ export const crmService = {
         accountingClient.setAccessToken(token);
         neuraClient.setAccessToken(token);
         inboxClient.setAccessToken(token);
+        projectsClient.setAccessToken(token);
     },
 };
 

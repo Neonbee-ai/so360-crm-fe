@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventBus } from '@so360/event-bus';
 import { useActivity, useShell } from '@so360/shell-context';
 import {
-    ChevronLeft, Calendar, DollarSign, Clock, MessageSquare,
+    Calendar, DollarSign, Clock, MessageSquare,
     AtSign, Phone, FileText, Plus, CheckCircle2, User as UserIcon, Users,
     Tag, Edit2, Trash2, X, Download, UploadCloud, FileIcon, File,
     ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature
@@ -11,15 +11,15 @@ import {
 import SignRequestModal from '../components/sign/SignRequestModal';
 import DealProductsTab from './components/DealProductsTab';
 import CallsTab from './components/CallsTab';
-import { CrossLinkChip } from '@so360/design-system';
+import { CrossLinkChip, toast } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
-import { ToastContainer, useToast } from '../components/common/Toast';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
+import DetailBackLink from '../components/common/DetailBackLink';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls';
 
@@ -49,7 +49,6 @@ const DealDetailPage = () => {
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
 
     const [deal, setDeal] = useState<Deal | null>(null);
@@ -61,6 +60,11 @@ const DealDetailPage = () => {
     const [dealStages, setDealStages] = useState<{ id: string, name: string }[]>([]);
 
     const [activeTab, setActiveTab] = useState<TabType>('activity');
+    const activeDealTabRef = useRef<HTMLButtonElement | null>(null);
+
+    useEffect(() => {
+        activeDealTabRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }, [activeTab]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -86,7 +90,9 @@ const DealDetailPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [signOpen, setSignOpen] = useState(false);
-    const { isModuleEnabled } = useShell();
+    const { isModuleEnabled, hasPermission, permissionsLoaded } = useShell();
+    // Destructive action — gate on deals.delete, fail closed. Backend already enforces it.
+    const canDeleteDeal = permissionsLoaded === true && (hasPermission?.('deals.delete') ?? false);
     const isSignEnabled = isModuleEnabled('sign');
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
@@ -112,19 +118,10 @@ const DealDetailPage = () => {
     const [fulfillmentOrder, setFulfillmentOrder] = useState<any | null>(null);
 
     const fetchProjectDetails = async (projectId: string) => {
-        try {
-            const response = await fetch(`/projects-api/projects/${projectId}`);
-            if (response.ok) {
-                const project = await response.json();
-                setProjectDetails(project);
-            } else {
-                console.error('Failed to fetch project details:', response.statusText);
-                setProjectDetails(null);
-            }
-        } catch (error) {
-            console.error('Failed to fetch project details:', error);
-            setProjectDetails(null);
-        }
+        // crmService.getProjectById() already logs its own failures and
+        // resolves null rather than throwing.
+        const project = await crmService.getProjectById(projectId);
+        setProjectDetails(project);
     };
 
     const fetchData = useCallback(async () => {
@@ -189,7 +186,7 @@ const DealDetailPage = () => {
             setAllUsers(usersData);
         } catch (error) {
             console.error('Failed to fetch deal workspace', error);
-            showError('Failed to load deal details');
+            toast.error('Failed to load deal details');
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -270,7 +267,7 @@ const DealDetailPage = () => {
         try {
             await dealsApi.update(deal.id, updates);
             setDeal(prev => prev ? { ...prev, ...updates } : null);
-            showSuccess('Deal updated successfully');
+            toast.success('Deal updated successfully');
 
             // Auto-log activity
             await crmService.logActivity({
@@ -283,7 +280,7 @@ const DealDetailPage = () => {
             recordActivity({ eventType: 'deal.updated', eventCategory: 'crm', description: `Updated deal "${deal.name}"`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
             fetchData();
         } catch (error) {
-            showError('Failed to update deal');
+            toast.error('Failed to update deal');
         }
     };
 
@@ -300,16 +297,23 @@ const DealDetailPage = () => {
                 notes: `Task "${task.title}" marked as ${newStatus}`,
                 date: new Date().toISOString()
             });
-            showSuccess(`Task ${newStatus}`);
+            toast.success(`Task ${newStatus}`);
         } catch (error) {
-            showError('Failed to update task');
+            toast.error('Failed to update task');
         }
     };
 
+    // Both document flows hand Accounting the SAME deal context — the deal id
+    // (so the existing estimate/invoice form can load this deal's associated
+    // products as line items) plus the deal's customer. Nothing is duplicated
+    // here: the products are read from CRM by the form itself, so what the user
+    // sees is always the deal's current product list.
     const handleCreateEstimate = () => {
         if (!deal) return;
         const params = new URLSearchParams({ create: 'true' });
+        if (id) params.set('deal_id', id);
         if (deal.name) params.set('opportunity_ref', deal.name);
+        if (deal.partner_id) params.set('customer_id', deal.partner_id);
         if (deal.company_name) params.set('customer_name', deal.company_name);
         navigate(`/accounting/estimations?${params.toString()}`);
     };
@@ -319,6 +323,7 @@ const DealDetailPage = () => {
         const params = new URLSearchParams({ create: 'true' });
         if (id) params.set('deal_id', id);
         if (deal.name) params.set('deal_name', deal.name);
+        if (deal.partner_id) params.set('customer_id', deal.partner_id);
         if (deal.company_name) params.set('customer_name', deal.company_name);
         if (deal.value != null) params.set('amount', String(deal.value));
         navigate(`/accounting/invoices?${params.toString()}`);
@@ -331,7 +336,7 @@ const DealDetailPage = () => {
             const projects = await crmService.getProjects();
             setAvailableProjects(projects);
         } catch (error) {
-            showError('Failed to fetch available projects');
+            toast.error('Failed to fetch available projects');
         } finally {
             setIsFetchingProjects(false);
         }
@@ -349,12 +354,12 @@ const DealDetailPage = () => {
 
     const handleLinkExistingProject = async () => {
         if (!selectedProjectId) {
-            showError('Please select a project to link');
+            toast.error('Please select a project to link');
             return;
         }
         try {
             await crmService.linkProject(id, selectedProjectId);
-            showSuccess('Project linked successfully');
+            toast.success('Project linked successfully');
             await crmService.logActivity({
                 lead_id: deal?.lead_id,
                 deal_id: id,
@@ -365,7 +370,7 @@ const DealDetailPage = () => {
             setIsProjectModalOpen(false);
             fetchData();
         } catch (error) {
-            showError('Failed to link project');
+            toast.error('Failed to link project');
         }
     };
 
@@ -374,7 +379,7 @@ const DealDetailPage = () => {
 
         try {
             await crmService.unlinkProject(id);
-            showSuccess('Project unlinked successfully');
+            toast.success('Project unlinked successfully');
 
             // Log activity
             await crmService.logActivity({
@@ -391,7 +396,7 @@ const DealDetailPage = () => {
             fetchData();
         } catch (error) {
             console.error('Failed to unlink project:', error);
-            showError('Failed to unlink project. Please try again.');
+            toast.error('Failed to unlink project. Please try again.');
         }
     };
 
@@ -417,7 +422,7 @@ const DealDetailPage = () => {
             setIsEditingSummary(false);
             resetEditState();
         } catch (error) {
-            showError('Failed to save profile changes');
+            toast.error('Failed to save profile changes');
         } finally {
             setIsSavingProfile(false);
         }
@@ -451,11 +456,11 @@ const DealDetailPage = () => {
         const dealName = deal?.name || id;
         try {
             await crmService.deleteDeal(id);
-            showSuccess('Deal deleted successfully');
+            toast.success('Deal deleted successfully');
             recordActivity({ eventType: 'deal.deleted', eventCategory: 'crm', description: `Deleted deal "${dealName}"`, resourceType: 'deal', resourceId: id }).catch(() => {});
             navigate('/crm/pipeline');
         } catch (error: any) {
-            showError(error.message || 'Failed to delete deal');
+            toast.error(error.message || 'Failed to delete deal');
             setIsDeleting(false);
         }
     };
@@ -480,14 +485,10 @@ const DealDetailPage = () => {
 
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
             <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
-                    <button onClick={() => navigate('/crm/pipeline')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors group">
-                        <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                        Back to Pipeline
-                    </button>
+                    <DetailBackLink fallbackTo="/crm/pipeline" />
                     {isRefreshing && (
                         <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
                             <Loader2 size={10} className="animate-spin" /> Syncing...
@@ -535,12 +536,15 @@ const DealDetailPage = () => {
                     </div>
 
                     <div className="flex gap-3">
-                        <button
+                        {/* Icon-only — see LeadDetailPage for the rationale. */}
+                        {canDeleteDeal && <button
                             onClick={() => setShowDeleteConfirm(true)}
-                            className="bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-400 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700 hover:border-red-500/50"
+                            aria-label="Delete"
+                            title="Delete"
+                            className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-2.5 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
-                            <Trash2 size={14} /> Delete
-                        </button>
+                            <Trash2 size={14} />
+                        </button>}
                         {isSignEnabled && (
                             <button
                                 type="button"
@@ -677,6 +681,40 @@ const DealDetailPage = () => {
                                         </div>
                                     )}
                                 </div>
+                                {/* Sales Rep — resolved from People Connect's People
+                                    Registry. An assignment survives the person going
+                                    inactive: the name stays and is badged, never
+                                    silently dropped. */}
+                                {deal.owner_person_id && (
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep</span>
+                                        {deal.owner_person ? (
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold overflow-hidden border border-slate-700">
+                                                    {deal.owner_person.avatar_url
+                                                        ? <img src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
+                                                        : (deal.owner_person.full_name || '?').charAt(0)}
+                                                </div>
+                                                <span className="text-sm font-bold text-slate-200">{deal.owner_person.full_name}</span>
+                                                {deal.owner_person.job_title && (
+                                                    <span className="text-xs font-bold text-slate-500">{deal.owner_person.job_title}</span>
+                                                )}
+                                                {deal.owner_person.department_name && (
+                                                    <span className="text-xs font-bold text-slate-500">· {deal.owner_person.department_name}</span>
+                                                )}
+                                                {deal.owner_person.status !== 'active' && (
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/40 rounded px-1.5 py-0.5">
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm font-bold text-slate-500">
+                                                Sales rep unavailable from People Connect
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Activity</span>
                                     <p className="text-sm font-bold text-slate-300 flex items-center gap-1.5">
@@ -690,24 +728,31 @@ const DealDetailPage = () => {
 
                     {/* Navigation Tabs */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="flex border-b border-slate-800 bg-slate-900/50">
-                            {[
-                                { id: 'activity', name: 'Activity', icon: MessageSquare },
-                                { id: 'notes', name: 'Notes', icon: FileText },
-                                { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
-                                { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
-                                { id: 'products', name: 'Products', icon: Briefcase },
-                                { id: 'custom', name: 'Additional Info', icon: Tag },
-                                { id: 'calls', name: 'Calls', icon: Phone }
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as TabType)}
-                                    className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
-                                >
-                                    <tab.icon size={14} /> {tab.name}
-                                </button>
-                            ))}
+                        <div className="relative flex border-b border-slate-800 bg-slate-900/50 min-w-0">
+                            <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="deal-detail-tab-strip">
+                                {[
+                                    { id: 'activity', name: 'Activity', icon: MessageSquare },
+                                    { id: 'notes', name: 'Notes', icon: FileText },
+                                    { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
+                                    { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
+                                    { id: 'products', name: 'Products', icon: Briefcase },
+                                    { id: 'custom', name: 'Additional Info', icon: Tag },
+                                    { id: 'calls', name: 'Calls', icon: Phone }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        ref={activeTab === tab.id ? activeDealTabRef : undefined}
+                                        onClick={() => setActiveTab(tab.id as TabType)}
+                                        className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        <tab.icon size={14} /> {tab.name}
+                                    </button>
+                                ))}
+                            </div>
+                            <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 to-transparent"
+                            />
                         </div>
 
                         <div className="p-8">
@@ -876,9 +921,9 @@ const DealDetailPage = () => {
                                                                 {task.title}
                                                             </h4>
                                                         </div>
-                                                        <div className="flex items-center gap-4 mt-3 text-[10px] font-black text-slate-500 uppercase tracking-widest pt-2 border-t border-slate-800/50">
-                                                            <span className="flex items-center gap-1 text-rose-400/70">
-                                                                <Clock size={10} /> Due {formatters.formatDate(task.due_date)}
+                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-slate-300 uppercase tracking-wider pt-2 border-t border-slate-800/50">
+                                                            <span className="flex items-center gap-1 text-slate-300">
+                                                                <Clock size={11} /> Due {formatters.formatDate(task.due_date)}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -1340,8 +1385,9 @@ const DealDetailPage = () => {
                 <TaskModal
                     task={editingTask}
                     dealId={id}
+                    dealProjectId={deal?.project_id}
                     onClose={() => { setIsCreatingTask(false); setEditingTask(null); }}
-                    onSuccess={() => { fetchData(); showSuccess('Timeline updated'); }}
+                    onSuccess={() => { fetchData(); toast.success('Timeline updated'); }}
                 />
             )}
 
@@ -1374,7 +1420,6 @@ const DealDetailPage = () => {
                 </div>
             )}
 
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         </div>
     );
 };

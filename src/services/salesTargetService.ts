@@ -1,11 +1,28 @@
-const env = (import.meta as any)?.env || {};
+import { notifyQuotaExceeded } from './quotaExceeded';
+
 const win = typeof window !== 'undefined' ? (window as any) : {};
 
+/**
+ * CRM API origin.
+ *
+ * Read as the LITERAL `import.meta.env.VITE_SO360_CRM_API` — Vite substitutes
+ * these at build time by matching that exact expression, so reading the value
+ * off a captured `env` object leaves `undefined` in the built bundle.
+ *
+ * No cross-module fallback: the old chain ended in `VITE_API_BASE_URL`, which
+ * resolves to the CORE origin, so a missing CRM value silently addressed the
+ * wrong service instead of failing. Localhost fails loudly, which is what a
+ * misconfiguration should do.
+ */
 const CRM_API_ORIGIN = String(
-  win.VITE_SO360_CRM_API || env.VITE_SO360_CRM_API || env.VITE_API_BASE_URL || 'http://localhost:3003'
+  win.VITE_SO360_CRM_API ||
+    import.meta.env.VITE_SO360_CRM_API ||
+    'http://localhost:3003'
 ).replace(/\/$/, '');
 
-const BASE = `${CRM_API_ORIGIN}/v1/sales-targets`;
+// No `/v1`: crm-be sets no global prefix and nginx adds none, so the routes
+// live at `/sales-targets/...` on the root. See targetPlanService for detail.
+const BASE = `${CRM_API_ORIGIN}/sales-targets`;
 
 let _tenantId = '';
 let _orgId = '';
@@ -27,12 +44,17 @@ export const salesTargetService = {
 
   async fetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(`${BASE}${path}`, { ...init, headers: { ...this.headers(), ...(init.headers ?? {}) } });
+    await notifyQuotaExceeded(res);
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: res.statusText }));
       throw new Error(err?.message ?? res.statusText);
     }
     return res.json();
   },
+
+  // ─── Metric Catalog ────────────────────────────────────────────────────
+
+  getMetricCatalog: () => salesTargetService.fetch<any>('/metric-catalog'),
 
   // ─── Task Types ────────────────────────────────────────────────────────
 

@@ -25,7 +25,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useNotify: () => ({ emitNotification: mockEmitNotification }),
   useActivity: () => ({ recordActivity: mockRecordActivity }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
 }));
 
@@ -65,11 +65,6 @@ vi.mock('../components/kanban/StageTransitionModal', () => ({
       </div>
     );
   },
-}));
-
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showError: vi.fn(), showSuccess: vi.fn(), dismissToast: vi.fn() }),
 }));
 
 vi.mock('./components/DealFilters', () => ({
@@ -332,6 +327,40 @@ describe('PipelinePage', () => {
       await user.click(screen.getByText('Confirm'));
       await waitFor(() => expect(mockUpdateDealStage).toHaveBeenCalled());
       expect(mockEmitNotification).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CRM → Pipeline layout — filters use the space above the board, and the
+  // board is given a measured (not assumed) height so the stage headers
+  // inside KanbanBoard can stay pinned while a long deal list scrolls.
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('Given the pipeline page has rendered', () => {
+    it('When laid out / Then the filter bar appears above the pipeline board in the DOM', async () => {
+      render(<PipelinePage />);
+      await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+      const filters = screen.getByTestId('deal-filters');
+      const board = screen.getByTestId('kanban');
+      // DOCUMENT_POSITION_FOLLOWING = 4: filters precede the board.
+      expect(filters.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('When laid out / Then the board wrapper is given an explicit, measured height rather than relying on an assumed h-full/flex-1 chain', async () => {
+      render(<PipelinePage />);
+      await waitFor(() => expect(screen.getByTestId('kanban')).toBeInTheDocument());
+      const boardWrapper = screen.getByTestId('kanban').parentElement!;
+      expect(boardWrapper.style.height).toBeTruthy();
+      expect(boardWrapper.className).not.toMatch(/\bh-full\b/);
+      expect(boardWrapper.className).not.toMatch(/\bflex-1\b/);
+    });
+
+    it('When the pipeline is filtering / Then the board wrapper still carries its measured height alongside the dimmed state', async () => {
+      const user = userEvent.setup();
+      render(<PipelinePage />);
+      await waitFor(() => expect(screen.getByTestId('deal-filters')).toBeInTheDocument());
+      await user.click(screen.getByTestId('apply-owner-filter'));
+      const boardWrapper = screen.getByTestId('kanban').parentElement!;
+      expect(boardWrapper.style.height).toBeTruthy();
     });
   });
 });

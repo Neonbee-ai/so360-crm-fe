@@ -22,12 +22,15 @@ vi.mock('../services/crmService', () => ({
 
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
+  // The list stamps its own URL onto each quote it opens, so Quote Detail's
+  // Back control can return here instead of guessing from history.
+  useLocation: () => ({ pathname: '/crm/quotes', search: '', hash: '', state: null, key: 'test' }),
 }));
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
@@ -138,7 +141,9 @@ describe('Given QuotesPage — data display', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getByText('Q-001'));
     fireEvent.click(screen.getByText('Q-001'));
-    expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1');
+    // The list records where the reader came from, so Quote Detail's Back
+      // control returns here rather than falling through to the linked deal.
+      expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1', { state: { from: '/crm/quotes' } });
   });
 
   it('When action / Then shows "No valid until" dash for quote without valid_until', async () => {

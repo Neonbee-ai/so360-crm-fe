@@ -87,9 +87,14 @@ function renderModal(props: Partial<React.ComponentProps<typeof SignRequestModal
 // ===========================================================================
 describe('Given SignRequestModal renders', () => {
 
-    it('When the window override is absent, Then it falls back to the localhost:3038 Sign origin and still fetches templates', async () => {
+    it('When neither the window override nor the build-time env is set, Then it falls back to the localhost:3038 dev origin', async () => {
         // Remove the window override — resolution should fall back to the dev default
         delete (window as any).VITE_SO360_SIGN_API;
+        // .env defines VITE_SO360_SIGN_API for real builds, so clearing only the
+        // window override still resolves to that value — which is the documented
+        // precedence, not a bug. Clear the build-time value too to reach the
+        // localhost fallback this test is actually about.
+        vi.stubEnv('VITE_SO360_SIGN_API', '');
         mockTemplatesFetch();
 
         renderModal();

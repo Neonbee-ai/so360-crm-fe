@@ -215,16 +215,35 @@ describe('crmService — searchInventoryItems (Add Product modal)', () => {
     });
 
     describe('Given the request fails', () => {
-        it('When the endpoint 404s / Then it resolves to { items: [] } (graceful, no throw)', async () => {
+        // Errors are deliberately NOT swallowed: a silent `{ items: [] }` made a
+        // dead inventory service look identical to "no products found", so the
+        // picker rendered a misleading empty state with no way to retry.
+        it('When the endpoint 404s / Then it rejects so the caller can show an error and a retry', async () => {
             fail(404);
-            const result = await crmService.searchInventoryItems('chair');
-            expect(result).toEqual({ items: [] });
+            await expect(crmService.searchInventoryItems('chair')).rejects.toBeDefined();
         });
 
-        it('When the endpoint 500s / Then it resolves to { items: [] } (graceful, no throw)', async () => {
+        it('When the endpoint 500s / Then it rejects so the caller can show an error and a retry', async () => {
             fail(500);
-            const result = await crmService.searchInventoryItems('chair');
-            expect(result).toEqual({ items: [] });
+            await expect(crmService.searchInventoryItems('chair')).rejects.toBeDefined();
+        });
+    });
+
+    describe('Given the picker opens with no search term (browse mode)', () => {
+        it('When called with an empty term / Then no `q` param is sent so the backend returns a default list', async () => {
+            ok({ items: [sampleItem], total: 1, has_more: false });
+            await crmService.searchInventoryItems('', undefined, { limit: 25, offset: 0 });
+            const url = String(fetchMock.mock.calls[0][0]);
+            expect(url).not.toContain('q=');
+            expect(url).toContain('limit=25');
+            expect(url).toContain('offset=0');
+        });
+
+        it('When the backend reports more rows / Then has_more and total are surfaced for lazy loading', async () => {
+            ok({ items: [sampleItem], total: 90, has_more: true });
+            const result = await crmService.searchInventoryItems('');
+            expect(result.total).toBe(90);
+            expect(result.has_more).toBe(true);
         });
     });
 });

@@ -25,8 +25,8 @@ const mockCreateCoupon = vi.fn();
 const mockUpdateCoupon = vi.fn();
 const mockDeleteCoupon = vi.fn();
 
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -37,15 +37,13 @@ vi.mock('../services/crmService', () => ({
   },
 }));
 
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({
-    toasts: [],
-    showSuccess: mockShowSuccess,
-    showError: mockShowError,
-    dismissToast: vi.fn(),
-  }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('../components/MarketingStorePicker', () => ({
   MarketingStorePicker: ({ onChange }: any) => (
@@ -210,6 +208,43 @@ describe('MarketingCouponsPage BDD', () => {
     });
   });
 
+  // Regression coverage for task e9829d23: removed the redundant "Context &
+  // Search" heading, fixed the search icon's missing pointer-events-none (it
+  // was intercepting clicks near the input's left edge), and restyled the
+  // input to match the standard CRM search pattern (Customers/Leads/Partners).
+  describe('Given the search & filter section', () => {
+    it('When rendered / Then the "Context & Search" heading is no longer present', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      expect(screen.queryByText(/context & search/i)).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the search icon does not intercept clicks (pointer-events-none)', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      const search = screen.getByPlaceholderText(/search by coupon code/i);
+      const icon = search.previousElementSibling;
+      expect(icon).toHaveClass('pointer-events-none');
+    });
+
+    it('When rendered / Then the search input matches the standard CRM search styling', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      const search = screen.getByPlaceholderText(/search by coupon code/i);
+      expect(search).toHaveClass('pl-10', 'pr-4', 'py-2', 'rounded-lg');
+    });
+
+    it('When rendered / Then the store picker and search input remain in the same flex row with the same-breakpoint direction/alignment pairing intact', async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      const storePicker = screen.getByTestId('store-picker');
+      const row = storePicker.closest('.flex');
+      expect(row).toHaveClass('md:flex-row', 'md:items-end');
+      // Same element also contains the search input, confirming they're still siblings in one row.
+      expect(row?.contains(screen.getByPlaceholderText(/search by coupon code/i))).toBe(true);
+    });
+  });
+
   describe('Given Create Coupon button', () => {
     it('When clicked / Then shows New Discount Code form', async () => {
       const user = userEvent.setup();
@@ -260,11 +295,31 @@ describe('MarketingCouponsPage BDD', () => {
       await waitFor(() => expect(screen.getByPlaceholderText('WELCOME20')).toBeInTheDocument());
 
       await user.type(screen.getByPlaceholderText('WELCOME20'), 'NEWCODE');
+      const discountInput = screen.getByTestId('coupon-discount-value');
+      await user.clear(discountInput);
+      await user.type(discountInput, '10');
       await user.click(screen.getAllByRole('button', { name: /create coupon/i }).at(-1)!);
 
       await waitFor(() => {
-        expect(mockCreateCoupon).toHaveBeenCalledWith('store-1', expect.objectContaining({ code: 'NEWCODE' }));
+        expect(mockCreateCoupon).toHaveBeenCalledWith('store-1', expect.objectContaining({ code: 'NEWCODE', discount_value: 10 }));
         expect(mockShowSuccess).toHaveBeenCalledWith(expect.stringContaining('NEWCODE'));
+      });
+    });
+
+    it('When discount value is missing / Then shows error and does not call API', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i })[0]);
+      await waitFor(() => expect(screen.getByPlaceholderText('WELCOME20')).toBeInTheDocument());
+
+      await user.type(screen.getByPlaceholderText('WELCOME20'), 'NEWCODE');
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i }).at(-1)!);
+
+      await waitFor(() => {
+        expect(mockShowError).toHaveBeenCalledWith('Discount value must be greater than 0');
+        expect(mockCreateCoupon).not.toHaveBeenCalled();
       });
     });
   });

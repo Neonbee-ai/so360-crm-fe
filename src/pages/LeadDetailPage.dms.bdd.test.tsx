@@ -63,7 +63,7 @@ vi.mock('@so360/shell-context', () => ({
     useActivity: () => ({ recordActivity: vi.fn() }),
     useShellBridge: vi.fn(() => ({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
         isFeatureHidden: () => false,
     })),
     useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
@@ -89,11 +89,6 @@ vi.mock('../utils/formatters', () => ({
         formatPhone: (p: string) => p,
     }),
     useCRMCurrencySymbol: () => '$',
-}));
-
-vi.mock('../components/common/Toast', () => ({
-    ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
 }));
 
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));
@@ -260,7 +255,7 @@ describe('LeadDetailPage — DMS-backed documents', () => {
 
         it('When the Delete button is confirmed / Then documents:changed is published for the lead', async () => {
             await renderAndOpenDocumentsTab();
-            await act(async () => { fireEvent.click(screen.getByTitle('Delete')); });
+            await act(async () => { fireEvent.click(screen.getByTitle('Delete document')); });
             await waitFor(() => expect(mockDeleteDocument).toHaveBeenCalledWith('lead-test-id', 'doc-dms-1'));
             expect(mockPublish).toHaveBeenCalledWith('documents:changed', {
                 source: 'crm', entity_type: 'crm:lead', entity_id: 'lead-test-id',

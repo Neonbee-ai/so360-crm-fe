@@ -63,7 +63,7 @@ vi.mock('@so360/shell-context', () => ({
     useActivity: () => ({ recordActivity: vi.fn() }),
     useShellBridge: vi.fn(() => ({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
         isFeatureHidden: () => false,
     })),
     useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
@@ -83,11 +83,6 @@ vi.mock('../utils/formatters', () => ({
         formatPhone: (p: string) => p,
     }),
     useCRMCurrencySymbol: () => '$',
-}));
-
-vi.mock('../components/common/Toast', () => ({
-    ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
 }));
 
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));

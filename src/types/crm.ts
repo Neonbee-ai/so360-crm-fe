@@ -90,6 +90,11 @@ export interface Deal {
     current_flow_state?: string;
     owner: User;
     owner_id?: string;  // Used for updating owner
+    // Sales Rep — a People Connect person, not a CRM user. The deal stores only
+    // the id; `owner_person` is resolved by crm-be from the People Registry and
+    // is null when that person can no longer be resolved.
+    owner_person_id?: string | null;
+    owner_person?: SalesRep | null;
     last_activity_at?: string;
     notes: Note[];
     activities: Activity[];
@@ -130,12 +135,35 @@ export interface Note {
 
 export type TaskType = 'EMAIL' | 'TODO' | 'REMINDER' | 'CALL' | 'MEETING';
 
+/**
+ * Task priority. `tasks` is shared with the Projects module, which owns the
+ * column and its CHECK — projects-be migration 002 pinned the uppercase
+ * vocabulary LOW | MEDIUM | HIGH | CRITICAL. CRM must speak that set; a
+ * lowercase value violates tasks_priority_check and 500s the insert.
+ */
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export const TASK_PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
+    { value: 'LOW', label: 'Low' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HIGH', label: 'High' },
+    { value: 'CRITICAL', label: 'Critical' },
+];
+
+export const TASK_PRIORITY_STYLES: Record<TaskPriority, string> = {
+    LOW: 'bg-slate-700/40 text-slate-300',
+    MEDIUM: 'bg-sky-500/15 text-sky-400',
+    HIGH: 'bg-amber-500/15 text-amber-400',
+    CRITICAL: 'bg-rose-500/15 text-rose-400',
+};
+
 export interface Task {
     id: string;
     title: string;
     due_date: string;
     start_date?: string;
     status: 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'ON_HOLD' | 'CANCELLED';
+    priority?: TaskPriority;
     type: TaskType;
     deal_id?: string;
     deal_name?: string;
@@ -146,6 +174,13 @@ export interface Task {
     assigned_to: User;
     created_at: string;
     reminder_minutes_before?: number;
+    // Project sync — populated once the connect-project migration lands on the
+    // backend. Absent/undefined on a task means "no project connection", which
+    // is the current unaffected behavior — every consumer must treat it that way.
+    project_id?: string;
+    project_task_id?: string;
+    sync_status?: 'connected' | 'syncing' | 'sync_failed' | 'disconnected' | null;
+    last_synced_at?: string;
 }
 
 export interface LeadScoringRule {
@@ -188,6 +223,33 @@ export interface SourceTypeOption {
     sort_order: number;
 }
 
+export type DealNamingResetMode = 'none' | 'daily' | 'monthly' | 'yearly' | 'continuous';
+
+export interface DealNamingSequenceConfig {
+    enabled: boolean;
+    reset_mode: DealNamingResetMode;
+    padding: number;
+    start_at: number;
+}
+
+export interface DealNamingConfig {
+    enabled: boolean;
+    template: string;
+    prefix: string;
+    suffix: string;
+    separator: string;
+    sequence: DealNamingSequenceConfig;
+}
+
+export const DEFAULT_DEAL_NAMING_CONFIG: DealNamingConfig = {
+    enabled: true,
+    template: '{lead_name} - {YYYYMMDD}',
+    prefix: '',
+    suffix: '',
+    separator: ' - ',
+    sequence: { enabled: false, reset_mode: 'none', padding: 4, start_at: 1 },
+};
+
 export interface CRMSettings {
     deal_stages: { id: string; name: string; type: 'OPEN' | 'WON' | 'LOST' }[];
     lead_stages: { id: string; name: string }[];
@@ -199,6 +261,7 @@ export interface CRMSettings {
     partner_custom_fields: CustomFieldDefinition[];
     lead_scoring: LeadScoringRule[];
     score_categories: ScoreCategory[];
+    deal_naming: DealNamingConfig;
 }
 
 export interface DealFilters {
@@ -223,6 +286,10 @@ export interface QuoteLine {
     item_image_url?: string | null;
     description: string;
     quantity: number;
+    /** Unit of measure, e.g. "pcs", "kg", "hrs". */
+    unit?: string;
+    /** HSN/SAC tax classification code. */
+    hsn_code?: string;
     unit_price: number;
     discount_percent?: number;
     tax_rate?: number;
@@ -237,6 +304,8 @@ export interface InventoryVariant {
     price: number;
     variant_attributes: Record<string, string>;
     image_url: string | null;
+    /** On-hand minus reserved, summed across warehouses. */
+    available_stock?: number;
 }
 
 export interface InventoryItem {
@@ -248,7 +317,26 @@ export interface InventoryItem {
     image_url: string | null;
     metadata: Record<string, any>;
     has_variants: boolean;
+    /** On-hand minus reserved, summed across warehouses (and variants). */
+    available_stock?: number;
     variants: InventoryVariant[];
+}
+
+/**
+ * A person from People Connect's People Registry, as served to CRM ownership
+ * pickers. People Connect stays the source of truth — CRM stores only the
+ * person id on the record and re-resolves display data from here.
+ */
+export interface SalesRep {
+    id: string;
+    full_name: string;
+    email: string | null;
+    avatar_url: string | null;
+    job_title: string | null;
+    employee_id: string | null;
+    department_id: string | null;
+    department_name: string | null;
+    status: string;
 }
 
 export interface ProductPickerSelection {
@@ -271,13 +359,56 @@ export interface Quote {
     title?: string;
     status: QuoteStatus;
     lines: QuoteLine[];
-    subtotal: number;
-    tax_total: number;
-    discount_total: number;
-    grand_total: number;
+    // The API returns the raw `quotes` columns (`subtotal`, `total_tax`,
+    // `total_discount`, `total_amount`). The `*_total` / `grand_total` aliases
+    // below are the shapes older FE code reads; both are optional because
+    // neither set is guaranteed to be present on a given response.
+    subtotal?: number;
+    tax_total?: number;
+    discount_total?: number;
+    grand_total?: number;
+    /** Persisted tax total — actual `quotes` column name. */
+    total_tax?: number;
+    /** Persisted discount total — actual `quotes` column name. */
+    total_discount?: number;
+    /** Persisted grand total — actual `quotes` column name. */
+    total_amount?: number;
     notes?: string;
+    /** Standing legal terms text. */
     terms_and_conditions?: string;
+    /** When payment falls due, e.g. "Net 30". */
+    payment_terms?: string;
+    /** Delivery commitment in prose. */
+    delivery_terms?: string;
+    /** Incoterms 2020 rule governing cost/risk transfer. */
+    incoterm?: string;
+    /** Buyer's own RFQ/PO number. */
+    customer_reference?: string;
     valid_until?: string;
+    submitted_by?: string;
+    current_approval_request_id?: string | null;
+    current_approval_request?: {
+        id: string;
+        quote_id: string;
+        requested_by: string;
+        requested_at: string;
+        status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+        decision_at?: string | null;
+        total_amount_snapshot?: number | null;
+        notes?: string | null;
+        approvers: {
+            id?: string;
+            request_id: string;
+            quote_id: string;
+            approver_user_id: string;
+            approver_person_id?: string | null;
+            approver_name?: string | null;
+            approver_email?: string | null;
+            status: 'pending' | 'approved' | 'rejected';
+            decision_at?: string | null;
+            notes?: string | null;
+        }[];
+    } | null;
     created_by: User;
     approved_by?: User;
     approved_at?: string;
@@ -317,10 +448,12 @@ export type ProductInterestStatus = 'interested' | 'quoted' | 'approved' | 'orde
 export interface LeadProduct {
     id: string;
     lead_id: string;
-    item_id: string;
+    item_id?: string;
     item_name: string;
     item_sku?: string;
+    category_id?: string;
     category_name?: string;
+    is_custom_build?: boolean;
     quantity: number;
     unit_price: number;
     status: ProductInterestStatus;
@@ -333,10 +466,12 @@ export interface DealProduct {
     id: string;
     deal_id: string;
     lead_product_id?: string;
-    item_id: string;
+    item_id?: string;
     item_name: string;
     item_sku?: string;
+    category_id?: string;
     category_name?: string;
+    is_custom_build?: boolean;
     quantity: number;
     unit_price: number;
     status: ProductInterestStatus;

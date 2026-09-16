@@ -6,8 +6,8 @@ const mockGetCoupons = vi.fn();
 const mockCreateCoupon = vi.fn();
 const mockUpdateCoupon = vi.fn();
 const mockDeleteCoupon = vi.fn();
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -27,10 +27,13 @@ vi.mock('../components/MarketingStorePicker', () => ({
   ),
 }));
 
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),

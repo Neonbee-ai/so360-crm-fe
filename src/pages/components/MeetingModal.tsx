@@ -53,7 +53,7 @@ const MeetingModal: React.FC<Props> = ({ leadId, dealId, stakeholderId, meeting,
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
                     <p className="text-xs font-black text-slate-50 uppercase tracking-widest">

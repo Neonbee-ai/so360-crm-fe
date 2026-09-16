@@ -11,12 +11,15 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mockGetLeadProducts = vi.fn();
 const mockSearchInventoryItems = vi.fn();
+const mockGetProductCategories = vi.fn();
+const mockAddLeadProduct = vi.fn();
 
 vi.mock('../../services/crmService', () => ({
     crmService: {
         getLeadProducts: (...a: any[]) => mockGetLeadProducts(...a),
         searchInventoryItems: (...a: any[]) => mockSearchInventoryItems(...a),
-        addLeadProduct: vi.fn().mockResolvedValue({}),
+        getProductCategories: (...a: any[]) => mockGetProductCategories(...a),
+        addLeadProduct: (...a: any[]) => mockAddLeadProduct(...a),
         updateLeadProduct: vi.fn().mockResolvedValue({}),
         removeLeadProduct: vi.fn().mockResolvedValue({}),
     },
@@ -34,7 +37,7 @@ import LeadProductsTab from './LeadProductsTab';
 beforeEach(() => {
     vi.clearAllMocks();
     mockGetLeadProducts.mockResolvedValue([]);
-    mockSearchInventoryItems.mockResolvedValue({ items: [] });
+    mockSearchInventoryItems.mockResolvedValue({ items: [], total: 0, has_more: false });
 });
 
 describe('Given LeadProductsTab', () => {
@@ -76,5 +79,127 @@ describe('Given LeadProductsTab', () => {
             );
             expect(panels.length).toBe(0);
         });
+    });
+});
+
+describe('Given the Add Product modal opens', () => {
+    const openModal = async () => {
+        render(<LeadProductsTab leadId="lead-1" />);
+        await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
+    };
+
+    it('When it opens / Then inventory is fetched with no search term so products show immediately', async () => {
+        mockSearchInventoryItems.mockResolvedValue({
+            items: [{ id: 'i1', name: 'Blue Widget', sku: 'BW-1', price: 100, cost: 0, image_url: null, metadata: {}, has_variants: false, variants: [], available_stock: 7 }],
+            total: 1, has_more: false,
+        });
+        await openModal();
+        await waitFor(() => {
+            expect(mockSearchInventoryItems).toHaveBeenCalledWith('', undefined, expect.objectContaining({ offset: 0 }));
+        });
+        expect(await screen.findByText('Blue Widget')).toBeInTheDocument();
+    });
+
+    it('When products carry stock / Then availability is displayed alongside name, SKU and price', async () => {
+        mockSearchInventoryItems.mockResolvedValue({
+            items: [{ id: 'i1', name: 'Blue Widget', sku: 'BW-1', price: 100, cost: 0, image_url: null, metadata: {}, has_variants: false, variants: [], available_stock: 7 }],
+            total: 1, has_more: false,
+        });
+        await openModal();
+        expect(await screen.findByText('7 in stock')).toBeInTheDocument();
+        expect(screen.getByText('SKU: BW-1')).toBeInTheDocument();
+    });
+
+    it('When a search term matches nothing on screen / Then the displayed list filters without waiting on a request', async () => {
+        mockSearchInventoryItems.mockResolvedValue({
+            items: [
+                { id: 'i1', name: 'Blue Widget', sku: 'BW-1', price: 100, cost: 0, image_url: null, metadata: {}, has_variants: false, variants: [] },
+                { id: 'i2', name: 'Red Gadget', sku: 'RG-9', price: 50, cost: 0, image_url: null, metadata: {}, has_variants: false, variants: [] },
+            ],
+            total: 2, has_more: false,
+        });
+        await openModal();
+        expect(await screen.findByText('Red Gadget')).toBeInTheDocument();
+        fireEvent.change(screen.getByPlaceholderText(/Search product name or SKU/i), { target: { value: 'blue' } });
+        expect(screen.queryByText('Red Gadget')).not.toBeInTheDocument();
+        expect(screen.getByText('Blue Widget')).toBeInTheDocument();
+    });
+
+    it('When inventory fails to load / Then an error with Retry is shown instead of a misleading empty state', async () => {
+        mockSearchInventoryItems.mockRejectedValue(new Error('inventory is down'));
+        await openModal();
+        expect(await screen.findByText('inventory is down')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+        expect(screen.queryByText(/No products in inventory/i)).not.toBeInTheDocument();
+    });
+
+    it('When a product is already on the record / Then it is shown as added and cannot be selected again', async () => {
+        mockGetLeadProducts.mockResolvedValue([
+            { id: 'lp1', lead_id: 'lead-1', item_id: 'i1', item_name: 'Blue Widget', quantity: 1, unit_price: 100, status: 'interested', created_at: '', updated_at: '' },
+        ]);
+        mockSearchInventoryItems.mockResolvedValue({
+            items: [{ id: 'i1', name: 'Blue Widget', sku: 'BW-1', price: 100, cost: 0, image_url: null, metadata: {}, has_variants: false, variants: [] }],
+            total: 1, has_more: false,
+        });
+        await openModal();
+        const row = await screen.findByTitle('Already added to this record');
+        expect(row).toBeDisabled();
+    });
+});
+
+describe('Given Custom Product Build Request flow', () => {
+    beforeEach(() => {
+        mockGetProductCategories.mockResolvedValue([
+            { id: 'cat-1', name: 'Executive Desks' },
+            { id: 'cat-2', name: 'Custom Joinery' },
+        ]);
+        mockAddLeadProduct.mockResolvedValue({
+            id: 'lp-custom',
+            item_name: 'Bespoke Walnut Boardroom Table',
+            category_id: 'cat-2',
+            category_name: 'Custom Joinery',
+            is_custom_build: true,
+            quantity: 1,
+            unit_price: 18000,
+            status: 'interested',
+        });
+    });
+
+    it('When Custom Build Request button is clicked / Then modal opens with category options', async () => {
+        render(<LeadProductsTab leadId="lead-1" />);
+        const customBtn = await screen.findByRole('button', { name: /Custom Build Request/i });
+        fireEvent.click(customBtn);
+
+        expect(await screen.findByText('Custom Product Build Request')).toBeInTheDocument();
+        expect(screen.getByText(/Product \/ Build Name/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Product Category/i).length).toBeGreaterThan(0);
+
+        await waitFor(() => {
+            expect(screen.getByRole('option', { name: 'Executive Desks' })).toBeInTheDocument();
+            expect(screen.getByRole('option', { name: 'Custom Joinery' })).toBeInTheDocument();
+        });
+    });
+
+    it('When custom product carries is_custom_build / Then renders Custom Build badge and category name', async () => {
+        mockGetLeadProducts.mockResolvedValue([
+            {
+                id: 'lp-custom-1',
+                lead_id: 'lead-1',
+                item_name: 'Custom Conference Table',
+                category_name: 'Custom Joinery',
+                is_custom_build: true,
+                quantity: 1,
+                unit_price: 25000,
+                status: 'interested',
+                created_at: '',
+                updated_at: '',
+            },
+        ]);
+        render(<LeadProductsTab leadId="lead-1" />);
+
+        expect(await screen.findByText('Custom Conference Table')).toBeInTheDocument();
+        expect(screen.getByText('Custom Build')).toBeInTheDocument();
+        expect(screen.getByText('Custom Joinery')).toBeInTheDocument();
     });
 });

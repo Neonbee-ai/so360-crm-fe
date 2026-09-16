@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Percent, Clock } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
+import { validateCouponForm, CouponFormErrors } from '../utils/couponValidation';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -25,7 +26,7 @@ const MarketingCouponsPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const { toasts, showSuccess, showError, dismissToast } = useToast();
+  const [fieldErrors, setFieldErrors] = useState<CouponFormErrors>({});
 
   const [form, setForm] = useState({
     code: '',
@@ -51,7 +52,7 @@ const MarketingCouponsPage: React.FC = () => {
       const data = await crmService.getCoupons(storeId);
       setCoupons(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      showError(e.message || 'Failed to load coupons');
+      toast.error(e.message || 'Failed to load coupons');
     } finally {
       setLoading(false);
     }
@@ -74,6 +75,7 @@ const MarketingCouponsPage: React.FC = () => {
       is_active: true
     });
     setEditingId(null);
+    setFieldErrors({});
   };
 
   const handleEdit = (coupon: any) => {
@@ -89,29 +91,36 @@ const MarketingCouponsPage: React.FC = () => {
       is_active: coupon.is_active ?? true
     });
     setEditingId(coupon.id);
+    setFieldErrors({});
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!storeId || !form.code) {
-      showError('Coupon code is required');
+    if (!storeId) {
+      toast.error('Select a store first');
+      return;
+    }
+    const errors = validateCouponForm(form);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error(Object.values(errors)[0] as string);
       return;
     }
     try {
       setSaving(true);
       if (editingId) {
         await crmService.updateCoupon(storeId, editingId, form);
-        showSuccess(`Coupon "${form.code}" updated`);
+        toast.success(`Coupon "${form.code}" updated`);
       } else {
         const newCoupon = await crmService.createCoupon(storeId, form);
-        showSuccess(`Coupon "${form.code}" created`);
+        toast.success(`Coupon "${form.code}" created`);
         recordActivity({ eventType: 'coupon.created', eventCategory: 'crm', description: `Created coupon "${form.code}"`, resourceType: 'coupon', resourceId: newCoupon?.id || form.code }).catch(() => {});
       }
       setShowForm(false);
       resetForm();
       load();
     } catch (e: any) {
-      showError(e.message || 'Failed to save coupon');
+      toast.error(e.message || 'Failed to save coupon');
     } finally {
       setSaving(false);
     }
@@ -121,11 +130,11 @@ const MarketingCouponsPage: React.FC = () => {
     if (!confirm(`Delete coupon "${coupon.code}"?`)) return;
     try {
       await crmService.deleteCoupon(storeId, coupon.id);
-      showSuccess(`Coupon "${coupon.code}" deleted`);
+      toast.success(`Coupon "${coupon.code}" deleted`);
       recordActivity({ eventType: 'coupon.deactivated', eventCategory: 'crm', description: `Deleted coupon "${coupon.code}"`, resourceType: 'coupon', resourceId: coupon.id }).catch(() => {});
       load();
     } catch (e: any) {
-      showError(e.message || 'Failed to delete coupon');
+      toast.error(e.message || 'Failed to delete coupon');
     }
   };
 
@@ -135,7 +144,6 @@ const MarketingCouponsPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Discount Coupons</h1>
@@ -150,25 +158,27 @@ const MarketingCouponsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <div className="flex flex-col md:flex-row gap-6 items-end">
-            <div className="flex-1">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Context & Search</h3>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:w-64">
-                  <MarketingStorePicker storeId={storeId} onChange={applyStore} />
-                </div>
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
-                    placeholder="Search by coupon code..."
-                  />
-                </div>
-              </div>
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          {/* `md:items-end` rather than a bare `items-end`: another remote's
+              Tailwind sheet can flatten `md:flex-row` to a column (media
+              queries add no specificity, so source order wins), and an
+              unprefixed cross-axis pin would then shrink-wrap this `flex-1`
+              child to its content — collapsing the search box. Keeping the
+              alignment behind the same breakpoint as the direction makes the
+              pair fail safe together; `w-full` covers it either way. */}
+          <div className="flex flex-col md:flex-row gap-4 md:items-end">
+            <div className="w-full sm:w-64">
+              <MarketingStorePicker storeId={storeId} onChange={applyStore} />
+            </div>
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                placeholder="Search by coupon code..."
+              />
             </div>
           </div>
         </section>
@@ -190,8 +200,11 @@ const MarketingCouponsPage: React.FC = () => {
                     value={form.code} 
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
-                    placeholder="WELCOME20" 
+                    placeholder="WELCOME20"
                   />
+                  {fieldErrors.code && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.code}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Type</label>
@@ -210,50 +223,63 @@ const MarketingCouponsPage: React.FC = () => {
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                       {form.discount_type === 'percentage' ? <Percent size={14} /> : <DollarSign size={14} />}
                     </div>
-                    <input 
-                      type="number" 
-                      value={form.discount_value} 
-                      onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })} 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                    <input
+                      type="number"
+                      data-testid="coupon-discount-value"
+                      value={form.discount_value}
+                      onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     />
                   </div>
+                  {fieldErrors.discount_value && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.discount_value}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Min Order</label>
-                  <input 
-                    type="number" 
-                    value={form.min_order_amount} 
-                    onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="number"
+                    value={form.min_order_amount}
+                    onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   />
+                  {fieldErrors.min_order_amount && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.min_order_amount}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Usage Limit</label>
-                  <input 
-                    type="number" 
-                    value={form.usage_limit} 
-                    onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="number"
+                    value={form.usage_limit}
+                    onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     placeholder="0 = Unlimited"
                   />
+                  {fieldErrors.usage_limit && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.usage_limit}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Valid From</label>
-                  <input 
-                    type="date" 
-                    value={form.valid_from} 
-                    onChange={(e) => setForm({ ...form, valid_from: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="date"
+                    value={form.valid_from}
+                    onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Valid Until</label>
-                  <input 
-                    type="date" 
-                    value={form.valid_until} 
-                    onChange={(e) => setForm({ ...form, valid_until: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                  <input
+                    type="date"
+                    value={form.valid_until}
+                    onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                   />
+                  {fieldErrors.valid_until && (
+                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.valid_until}</p>
+                  )}
                 </div>
                 <div className="lg:col-span-4">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Description</label>

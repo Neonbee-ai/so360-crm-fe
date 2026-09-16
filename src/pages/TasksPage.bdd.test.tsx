@@ -26,15 +26,10 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useShell: () => ({ user: { id: 'user-1', full_name: 'Test User' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),
   useSandboxLimit: () => ({ isSandboxMode: false, sandboxEntryLimit: 0, isLimited: false }),}));
-
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
-}));
 
 let tableProps: any = {};
 vi.mock('../components/common/Table', () => ({
@@ -72,7 +67,7 @@ const makeUsers = () => [
 beforeEach(async () => {
   vi.clearAllMocks();
   const shell = await import('@so360/shell-context');
-  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   tableProps = {};
   mockGetTasks.mockResolvedValue(makeTasks());
   mockGetUsers.mockResolvedValue(makeUsers());
@@ -320,7 +315,7 @@ describe('TasksPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: false,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
@@ -335,7 +330,7 @@ describe('TasksPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValue({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
       } as any);
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
@@ -343,6 +338,235 @@ describe('TasksPage', () => {
       const cell = actionsCol.accessor(makeTasks()[0]);
       const { container } = render(cell);
       expect(container.querySelector('button')).not.toBeNull();
+    });
+  });
+});
+
+/**
+ * Task visibility scope (My/Team/All Tasks). The backend enforces the actual
+ * authorization ceiling (tasks.controller.ts TaskScope decorator) — these
+ * tests only cover that the UI (a) defaults to 'own', (b) only renders the
+ * broader tabs when the caller actually holds the corresponding permission,
+ * and (c) sends the selected scope on every fetch.
+ */
+describe('TasksPage — visibility scope tabs', () => {
+  const withPermissions = async (granted: string[]) => {
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({
+      effectiveFlagsLoaded: true,
+      permissionsLoaded: true,
+      hasPermission: (code: string) => granted.includes(code),
+      hasAnyPermission: () => true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+    } as any));
+  };
+
+  describe('Given the caller holds neither crm_tasks.view_team nor crm_tasks.view_all', () => {
+    it('When the Tasks page loads / Then no scope tabs render', async () => {
+      await withPermissions([]);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.queryByText('My Tasks')).not.toBeInTheDocument();
+      expect(screen.queryByText('Team Tasks')).not.toBeInTheDocument();
+      expect(screen.queryByText('All Tasks')).not.toBeInTheDocument();
+    });
+
+    it('When the Tasks page loads / Then it fetches with scope "own"', async () => {
+      await withPermissions([]);
+      render(<TasksPage />);
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('own'));
+    });
+  });
+
+  describe('Given the caller holds crm_tasks.view_team only', () => {
+    it('When the Tasks page loads / Then My Tasks and Team Tasks tabs render but not All Tasks', async () => {
+      await withPermissions(['crm_tasks.view_team']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+      expect(screen.getByText('Team Tasks')).toBeInTheDocument();
+      expect(screen.queryByText('All Tasks')).not.toBeInTheDocument();
+    });
+
+    it('When the Team Tasks tab is clicked / Then it refetches with scope "team"', async () => {
+      await withPermissions(['crm_tasks.view_team']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Team Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('team'));
+    });
+  });
+
+  describe('Given the caller holds crm_tasks.view_all only (not crm_tasks.view_team)', () => {
+    it('When the Tasks page loads / Then All Tasks renders but Team Tasks does not', async () => {
+      await withPermissions(['crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+      expect(screen.getByText('All Tasks')).toBeInTheDocument();
+      expect(screen.queryByText('Team Tasks')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Given the caller holds crm_tasks.view_all', () => {
+    it('When the Tasks page loads / Then My Tasks, Team Tasks and All Tasks tabs all render', async () => {
+      await withPermissions(['crm_tasks.view_team', 'crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+      expect(screen.getByText('Team Tasks')).toBeInTheDocument();
+      expect(screen.getByText('All Tasks')).toBeInTheDocument();
+    });
+
+    it('When the All Tasks tab is clicked / Then it refetches with scope "all"', async () => {
+      await withPermissions(['crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('All Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('all'));
+    });
+
+    it('When switching back to My Tasks / Then it refetches with scope "own"', async () => {
+      await withPermissions(['crm_tasks.view_all']);
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('All Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('all'));
+      fireEvent.click(screen.getByText('My Tasks'));
+      await waitFor(() => expect(mockGetTasks).toHaveBeenCalledWith('own'));
+    });
+  });
+});
+
+describe('TasksPage — Completed tasks are read-only', () => {
+  const assigneeCell = (task: any) => {
+    const col = tableProps.columns.find((c: any) => {
+      const header = c.header;
+      const label = header?.props?.label ?? header;
+      return label === 'Assigned To';
+    });
+    return render(col.accessor(task)).container;
+  };
+
+  describe('Given a task with status DONE', () => {
+    it('When the assignee cell renders / Then the assignee select is disabled', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const doneTask = makeTasks()[1];
+      const container = assigneeCell(doneTask);
+      expect(container.querySelector('select')).toBeDisabled();
+    });
+
+    it('When the assignee cell renders / Then the disabled select explains why', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const container = assigneeCell(makeTasks()[1]);
+      expect(container.querySelector('select')?.getAttribute('title')).toMatch(/Mark as Open/i);
+    });
+
+    it('When the assignee select is changed anyway / Then no update request is sent', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const container = assigneeCell(makeTasks()[1]);
+      const select = container.querySelector('select') as HTMLSelectElement;
+      fireEvent.change(select, { target: { value: 'user-1' } });
+      expect(mockUpdateTask).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given a task that is still OPEN', () => {
+    it('When the assignee cell renders / Then the assignee select stays enabled', async () => {
+      render(<TasksPage />);
+      await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
+      const container = assigneeCell(makeTasks()[0]);
+      expect(container.querySelector('select')).not.toBeDisabled();
+    });
+  });
+});
+
+/**
+ * Cover for "opening a task and coming back drops the filter and the page you
+ * were on". The list now persists its view state per active organisation
+ * (see useListViewState), so a round trip through a detail page returns the
+ * user to the list they built rather than to an unfiltered page 1.
+ */
+describe('TasksPage — the view survives a trip to a task and back', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.setItem('active_org', JSON.stringify({ id: 'org-1' }));
+  });
+
+  const remount = async () => {
+    const view = render(<TasksPage />);
+    await waitFor(() => expect(tableProps.data).toBeDefined());
+    return view;
+  };
+
+  describe('Given the user filtered the list before opening a record', () => {
+    it('When they return / Then the same filter is still applied', async () => {
+      const first = await remount();
+      fireEvent.click(screen.getByText('Done'));
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+      first.unmount();
+
+      await remount();
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+    });
+
+    it('When they return / Then the active filter chip is still highlighted', async () => {
+      const first = await remount();
+      fireEvent.click(screen.getByText('Overdue'));
+      first.unmount();
+
+      await remount();
+      const chip = screen.getByText('Overdue');
+      expect(chip.className).toMatch(/bg-blue-600/);
+    });
+  });
+
+  describe('Given the user searched before opening a record', () => {
+    it('When they return / Then the search box still holds their query', async () => {
+      const first = await remount();
+      fireEvent.change(screen.getByPlaceholderText('Search tasks...'), { target: { value: 'proposal' } });
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+      first.unmount();
+
+      await remount();
+      expect(screen.getByPlaceholderText('Search tasks...')).toHaveValue('proposal');
+    });
+  });
+
+  describe('Given the user changed the page size', () => {
+    it('When they return / Then the page size is remembered', async () => {
+      const first = await remount();
+      const sizeSelect = await screen.findByDisplayValue('10');
+      fireEvent.change(sizeSelect, { target: { value: '25' } });
+      first.unmount();
+
+      await remount();
+      expect(await screen.findByDisplayValue('25')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a different organisation is active', () => {
+    it('When the list loads / Then the previous org\'s filter is not carried over', async () => {
+      const first = await remount();
+      fireEvent.click(screen.getByText('Done'));
+      await waitFor(() => expect(tableProps.data.map((t: any) => t.id)).toEqual(['t2']));
+      first.unmount();
+
+      localStorage.setItem('active_org', JSON.stringify({ id: 'org-2' }));
+      await remount();
+      await waitFor(() => expect(tableProps.data).toHaveLength(3));
+    });
+  });
+
+  describe('Given a fresh browser tab', () => {
+    it('When nothing was stored / Then the list opens unfiltered on page 1', async () => {
+      await remount();
+      await waitFor(() => expect(tableProps.data).toHaveLength(3));
+      expect(screen.getByText(/Page 1 of/)).toBeInTheDocument();
     });
   });
 });

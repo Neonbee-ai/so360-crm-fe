@@ -44,17 +44,12 @@ vi.mock('react-router-dom', () => ({
     Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-vi.mock('../components/common/Toast', () => ({
-    ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: vi.fn(), dismissToast: vi.fn() }),
-}));
-
 vi.mock('./components/TaskModal', () => ({ default: () => null }));
 
 vi.mock('@so360/shell-context', () => ({
     useShell: () => ({ isModuleEnabled: () => false }),
     useActivity: () => ({ recordActivity: async () => {} }),
-    useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true }),
+    useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true }),
 }));
 
 const mockPublish = vi.fn();

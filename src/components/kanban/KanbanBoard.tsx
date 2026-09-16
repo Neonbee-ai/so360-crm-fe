@@ -17,10 +17,70 @@ interface KanbanBoardProps {
     onStageChange: (deal: Deal, targetState: string) => void;
 }
 
+/** Distance in px from the scroll container's edge that triggers auto-scroll while dragging. */
+export const AUTO_SCROLL_EDGE_PX = 80;
+/** Max px scrolled per animation frame, reached right at the edge. */
+export const AUTO_SCROLL_MAX_SPEED = 18;
+
 export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: KanbanBoardProps) => {
     const formatters = useCRMFormatters();
     const [draggedDealId, setDraggedDealId] = React.useState<string | null>(null);
     const [dragOverStage, setDragOverStage] = React.useState<string | null>(null);
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+    const scrollDirection = React.useRef(0); // -1 left, 0 idle, 1 right
+    const scrollSpeed = React.useRef(0);
+    const rafId = React.useRef<number | null>(null);
+
+    const stopAutoScroll = () => {
+        scrollDirection.current = 0;
+        scrollSpeed.current = 0;
+        if (rafId.current !== null) {
+            cancelAnimationFrame(rafId.current);
+            rafId.current = null;
+        }
+    };
+
+    const runAutoScrollLoop = () => {
+        const el = scrollRef.current;
+        if (!el || scrollDirection.current === 0) {
+            rafId.current = null;
+            return;
+        }
+        el.scrollLeft += scrollDirection.current * scrollSpeed.current;
+        rafId.current = requestAnimationFrame(runAutoScrollLoop);
+    };
+
+    // Auto-scrolls the board horizontally when a card is dragged near the
+    // left/right edge, so a stage that's currently off-screen can be reached
+    // without releasing the drag — native HTML5 DnD doesn't do this on its own.
+    const handleBoardDragOver = (e: React.DragEvent) => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const distFromLeft = e.clientX - rect.left;
+        const distFromRight = rect.right - e.clientX;
+
+        let direction = 0;
+        let proximity = 0;
+        if (distFromLeft < AUTO_SCROLL_EDGE_PX) {
+            direction = -1;
+            proximity = AUTO_SCROLL_EDGE_PX - distFromLeft;
+        } else if (distFromRight < AUTO_SCROLL_EDGE_PX) {
+            direction = 1;
+            proximity = AUTO_SCROLL_EDGE_PX - distFromRight;
+        }
+
+        if (direction === 0) {
+            stopAutoScroll();
+            return;
+        }
+
+        scrollDirection.current = direction;
+        scrollSpeed.current = Math.max(4, Math.min(AUTO_SCROLL_MAX_SPEED, (proximity / AUTO_SCROLL_EDGE_PX) * AUTO_SCROLL_MAX_SPEED));
+        if (rafId.current === null) {
+            rafId.current = requestAnimationFrame(runAutoScrollLoop);
+        }
+    };
 
     const handleDragStart = (e: React.DragEvent, deal: Deal) => {
         setDraggedDealId(deal.id);
@@ -37,6 +97,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
     const handleDragEnd = (e: React.DragEvent) => {
         setDraggedDealId(null);
         setDragOverStage(null);
+        stopAutoScroll();
         const target = e.target as HTMLElement;
         target.style.opacity = '1';
     };
@@ -58,6 +119,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
     const handleDrop = (e: React.DragEvent, targetStageId: string) => {
         e.preventDefault();
         setDragOverStage(null);
+        stopAutoScroll();
         const dealId = e.dataTransfer.getData('dealId');
         const deal = deals.find(d => d.id === dealId);
 
@@ -66,8 +128,14 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
         }
     };
 
+    React.useEffect(() => stopAutoScroll, []);
+
     return (
-        <div className="flex gap-6 overflow-x-auto pb-6 h-full min-h-[650px] scrollbar-hide">
+        <div
+            ref={scrollRef}
+            onDragOver={handleBoardDragOver}
+            className="flex gap-6 overflow-x-auto overflow-y-hidden pb-6 h-full pipeline-scrollbar"
+        >
             {stages.map((stage) => {
                 // Use current_flow_state as the authoritative source; fall back to stage name only
                 // when current_flow_state is absent. The OR fallback caused deals to appear in
@@ -83,10 +151,11 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                 return (
                     <div
                         key={stage.id}
-                        className="w-80 flex-shrink-0 flex flex-col gap-4"
+                        className="w-80 flex-shrink-0 h-full flex flex-col gap-4"
                     >
-                        {/* Stage Header */}
-                        <div className="flex items-center justify-between px-2">
+                        {/* Stage Header — a non-scrolling flex item, so it stays put while
+                            the drop zone below it scrolls independently. */}
+                        <div className="flex-shrink-0 flex items-center justify-between px-2">
                             <h3
                                 className="font-black text-slate-100 flex items-center gap-2 text-sm uppercase tracking-wider"
                                 style={{ color: accentColor }}
@@ -104,12 +173,16 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                             </span>
                         </div>
 
-                        {/* Drop Zone */}
+                        {/* Drop Zone — scrolls independently within the column's bounded
+                            height so the stage header above never scrolls out of view.
+                            min-h-0 overrides flex's default min-height:auto, which would
+                            otherwise stop this from shrinking to fit and force the
+                            overflow to leak out into the board instead of scrolling here. */}
                         <div
                             onDragOver={(e) => handleDragOver(e, stage.id)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, stage.id)}
-                            className={`flex-1 flex flex-col gap-3 rounded-2xl p-3 min-h-[550px] transition-all duration-200 ${isOver
+                            className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 rounded-2xl p-3 pipeline-scrollbar transition-all duration-200 ${isOver
                                 ? 'bg-blue-600/10 ring-2 ring-blue-500/50 ring-dashed border-transparent'
                                 : 'bg-slate-900/40 border border-slate-700/40 shadow-sm'
                                 }`}

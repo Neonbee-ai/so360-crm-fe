@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
+import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
 
-type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring';
+type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming';
 
 // Activity types available for scoring rules
 const SCOREABLE_ACTIVITY_TYPES = [
@@ -79,13 +80,19 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
 };
 
 const SettingsPage = () => {
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const shell = useShellBridge();
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const [settings, setSettings] = useState<CRMSettings | null>(null);
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+    // JSON snapshot of `settings` as last persisted (initial fetch, or last fully
+    // successful save). Compared against the live `settings` object to drive the
+    // dirty indicator — see the effect below.
+    const savedSnapshotRef = useRef<string | null>(null);
+    // Value each stage-name field held when it gained focus, so Escape can revert it.
+    const stageNameOnFocus = useRef<Record<number, string>>({});
 
     const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
     const [newSourceLabel, setNewSourceLabel] = useState('');
@@ -105,6 +112,7 @@ const SettingsPage = () => {
             try {
                 const data = await crmService.getSettings();
                 setSettings(data);
+                savedSnapshotRef.current = JSON.stringify(data);
                 setSourceTypes(data.source_type_options ?? []);
                 setScoringRules(data.lead_scoring ?? []);
                 setScoreCategories(data.score_categories ?? []);
@@ -116,6 +124,18 @@ const SettingsPage = () => {
         };
         fetchSettings();
     }, []);
+
+    // Dirty flag: true whenever `settings` (Pipeline, Custom Fields, Deal Naming —
+    // everything routed through handleSave) has diverged from the last-persisted
+    // snapshot. Lead Scoring / Lead Source Types save through their own API calls
+    // immediately and never touch `settings`, so they correctly stay outside this.
+    useEffect(() => {
+        if (!settings || savedSnapshotRef.current === null) {
+            setIsDirty(false);
+            return;
+        }
+        setIsDirty(JSON.stringify(settings) !== savedSnapshotRef.current);
+    }, [settings]);
 
     const slugify = (text: string) =>
         text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -129,9 +149,9 @@ const SettingsPage = () => {
             const created = await settingsApi.sourceTypes.create({ label, value });
             setSourceTypes(prev => [...prev, created]);
             setNewSourceLabel('');
-            showSuccess('Source type added');
+            toast.success('Source type added');
         } catch {
-            showError('Failed to add source type');
+            toast.error('Failed to add source type');
         } finally {
             setIsAddingSource(false);
         }
@@ -142,7 +162,7 @@ const SettingsPage = () => {
             const updated = await settingsApi.sourceTypes.update(option.id, { is_active: !option.is_active });
             setSourceTypes(prev => prev.map(o => o.id === option.id ? updated : o));
         } catch {
-            showError('Failed to update source type');
+            toast.error('Failed to update source type');
         }
     };
 
@@ -150,9 +170,9 @@ const SettingsPage = () => {
         try {
             await settingsApi.sourceTypes.delete(id);
             setSourceTypes(prev => prev.filter(o => o.id !== id));
-            showSuccess('Source type deleted');
+            toast.success('Source type deleted');
         } catch {
-            showError('Cannot delete system source type');
+            toast.error('Cannot delete system source type');
         }
     };
 
@@ -186,7 +206,7 @@ const SettingsPage = () => {
 
     const handleSaveNewRule = async () => {
         if (!draftRule.name?.trim() || !draftRule.target_field) {
-            showError('Rule name and target field are required');
+            toast.error('Rule name and target field are required');
             return;
         }
         setIsSavingRule(true);
@@ -195,9 +215,9 @@ const SettingsPage = () => {
             setScoringRules(prev => [...prev, created]);
             setIsAddingRule(false);
             setDraftRule(BLANK_RULE);
-            showSuccess('Scoring rule created');
+            toast.success('Scoring rule created');
         } catch {
-            showError('Failed to create scoring rule');
+            toast.error('Failed to create scoring rule');
         } finally {
             setIsSavingRule(false);
         }
@@ -205,7 +225,7 @@ const SettingsPage = () => {
 
     const handleSaveRuleEdit = async () => {
         if (!editingRuleId || !draftRule.name?.trim() || !draftRule.target_field) {
-            showError('Rule name and target field are required');
+            toast.error('Rule name and target field are required');
             return;
         }
         setIsSavingRule(true);
@@ -214,9 +234,9 @@ const SettingsPage = () => {
             setScoringRules(prev => prev.map(r => r.id === editingRuleId ? updated : r));
             setEditingRuleId(null);
             setDraftRule(BLANK_RULE);
-            showSuccess('Scoring rule updated');
+            toast.success('Scoring rule updated');
         } catch {
-            showError('Failed to update scoring rule');
+            toast.error('Failed to update scoring rule');
         } finally {
             setIsSavingRule(false);
         }
@@ -227,7 +247,7 @@ const SettingsPage = () => {
             const updated = await settingsApi.scoringRules.update(rule.id, { is_active: !rule.is_active });
             setScoringRules(prev => prev.map(r => r.id === rule.id ? updated : r));
         } catch {
-            showError('Failed to update rule');
+            toast.error('Failed to update rule');
         }
     };
 
@@ -236,9 +256,9 @@ const SettingsPage = () => {
             await settingsApi.scoringRules.delete(id);
             setScoringRules(prev => prev.filter(r => r.id !== id));
             if (editingRuleId === id) handleCancelRuleEdit();
-            showSuccess('Scoring rule deleted');
+            toast.success('Scoring rule deleted');
         } catch {
-            showError('Failed to delete scoring rule');
+            toast.error('Failed to delete scoring rule');
         }
     };
 
@@ -248,12 +268,12 @@ const SettingsPage = () => {
             const result = await settingsApi.scoringRules.recalculate();
             const count = result?.recalculated ?? 0;
             if (count === 0) {
-                showSuccess('Scores recalculated — no active leads found or no active rules.');
+                toast.success('Scores recalculated — no active leads found or no active rules.');
             } else {
-                showSuccess(`Lead scores recalculated successfully. ${count} lead(s) updated.`);
+                toast.success(`Lead scores recalculated successfully. ${count} lead(s) updated.`);
             }
         } catch {
-            showError('Failed to recalculate lead scores');
+            toast.error('Failed to recalculate lead scores');
         } finally {
             setIsRecalculating(false);
         }
@@ -264,7 +284,7 @@ const SettingsPage = () => {
             const updated = await settingsApi.scoreCategories.update(cat.id, data);
             setScoreCategories(prev => prev.map(c => c.id === cat.id ? updated : c));
         } catch {
-            showError('Failed to update score band');
+            toast.error('Failed to update score band');
         }
     };
 
@@ -297,15 +317,49 @@ const SettingsPage = () => {
     const handleSave = async () => {
         if (!settings) return;
         setIsSaving(true);
+        // Each category saves independently (see crmService.updateSettings) so a
+        // failure in one doesn't block the others — Deal Naming follows the same
+        // pattern here via its own endpoint, since it isn't part of the unified
+        // settings payload. Previously this tab had its own Save button/API call
+        // that the top button never triggered (task c23baf51); the tab now only
+        // lifts state via onChange and relies entirely on this button to persist.
+        let settingsError: Error | null = null;
         try {
             await crmService.updateSettings(settings);
-            showSuccess('Configuration saved!');
         } catch (error) {
             console.error('Failed to save settings', error);
-            showError(error instanceof Error ? error.message : 'Error saving settings.');
-        } finally {
-            setIsSaving(false);
+            settingsError = error instanceof Error ? error : new Error('Error saving settings.');
         }
+
+        let dealNamingFailed = false;
+        let savedDealNaming = settings.deal_naming;
+        if (settings.deal_naming) {
+            try {
+                savedDealNaming = await crmService.updateDealNamingSettings(settings.deal_naming);
+                setSettings(s => s ? { ...s, deal_naming: savedDealNaming } : s);
+            } catch {
+                dealNamingFailed = true;
+            }
+        }
+
+        if (settingsError && dealNamingFailed) {
+            toast.error(`${settingsError.message} Deal Naming also failed to save.`);
+        } else if (settingsError) {
+            toast.error(settingsError.message);
+        } else if (dealNamingFailed) {
+            toast.error('Failed to save: Deal Naming');
+        } else {
+            // Full success — the dirty snapshot must reflect what was actually
+            // persisted (deal_naming may have come back transformed by the API),
+            // not the in-flight `settings` closure. Set isDirty explicitly rather
+            // than relying on the settings-keyed effect: when deal_naming is absent
+            // the success path never calls setSettings, so `settings`'s reference
+            // never changes and the effect would never rerun.
+            savedSnapshotRef.current = JSON.stringify({ ...settings, deal_naming: savedDealNaming });
+            setIsDirty(false);
+            toast.success('Configuration saved!');
+        }
+        setIsSaving(false);
     };
 
     const addStage = () => {
@@ -324,7 +378,7 @@ const SettingsPage = () => {
     const removeStage = (id: string) => {
         if (!settings) return;
         if (settings.deal_stages.length <= 1) {
-            showError('Pipeline must have at least one stage.');
+            toast.error('Pipeline must have at least one stage.');
             return;
         }
         setSettings({
@@ -335,9 +389,61 @@ const SettingsPage = () => {
 
     const updateStageName = (idx: number, name: string) => {
         if (!settings) return;
-        const newStages = [...settings.deal_stages];
-        newStages[idx].name = name;
+        // `deal_stages[idx]` was mutated in place, so the pre-edit value was gone
+        // by the time Escape could restore it. Replace the object instead.
+        const newStages = settings.deal_stages.map((s, i) => (i === idx ? { ...s, name } : s));
         setSettings({ ...settings, deal_stages: newStages });
+    };
+
+    /**
+     * Inline-edit keyboard contract for a pipeline stage name:
+     *   Enter  → validate + leave edit mode (state stays local — no auto-save;
+     *            persisting now happens only via the top "Save Configuration"
+     *            button, same as Stage Type / Add Stage / Remove Stage)
+     *   Escape → revert to the value the field held on focus, and leave edit mode
+     * Blur follows the same validate-only contract as Enter.
+     */
+    const handleStageNameKeyDown = (
+        e: React.KeyboardEvent<HTMLInputElement>,
+        idx: number,
+    ) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // Drop the focus snapshot first so the blur handler below treats this
+            // as already-committed and doesn't re-run validation a second time.
+            const original = stageNameOnFocus.current[idx];
+            delete stageNameOnFocus.current[idx];
+            commitStageName(idx, original);
+            e.currentTarget.blur();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            const original = stageNameOnFocus.current[idx];
+            if (original !== undefined) updateStageName(idx, original);
+            // Drop the snapshot so the blur that follows doesn't re-validate.
+            delete stageNameOnFocus.current[idx];
+            e.currentTarget.blur();
+        }
+    };
+
+    /**
+     * Shared commit logic for both Enter and blur: reject an empty/whitespace
+     * name by reverting to the pre-edit value, otherwise leave the (already
+     * locally-applied) edit in place for the user to persist via Save.
+     */
+    const commitStageName = (idx: number, original: string | undefined) => {
+        const current = settings?.deal_stages[idx]?.name ?? '';
+        if (!current.trim()) {
+            if (original !== undefined) updateStageName(idx, original);
+            toast.error('Stage name cannot be empty.');
+        }
+    };
+
+    /** Validate on click-outside; no longer auto-saves. */
+    const handleStageNameBlur = (idx: number) => {
+        const original = stageNameOnFocus.current[idx];
+        delete stageNameOnFocus.current[idx];
+        if (original === undefined) return;
+        commitStageName(idx, original);
     };
 
     const addSource = () => {
@@ -381,20 +487,29 @@ const SettingsPage = () => {
 
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-10 flex justify-between items-center">
                 <div>
                     <h1 className="text-4xl font-black text-slate-50 tracking-tight">CRM Settings</h1>
                     <p className="text-slate-400 mt-1 font-medium">Configure your workspace and custom data points</p>
                 </div>
-                {canWriteSettings && <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
-                >
-                    <Save size={20} />
-                    {isSaving ? 'Saving...' : 'Save Configuration'}
-                </button>}
+                {canWriteSettings && (
+                    <div className="flex items-center gap-3">
+                        {isDirty && !isSaving && (
+                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                                <AlertCircle size={14} />
+                                Unsaved changes
+                            </span>
+                        )}
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving || !isDirty}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
+                        >
+                            <Save size={20} />
+                            {isSaving ? 'Saving...' : 'Save Configuration'}
+                        </button>
+                    </div>
+                )}
             </header>
 
             <div className="flex gap-1 mb-8 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 shadow-sm w-fit">
@@ -428,6 +543,12 @@ const SettingsPage = () => {
                 >
                     Lead Scoring
                 </button>
+                <button
+                    onClick={() => setActiveTab('deal-naming')}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'deal-naming' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                    Deal Naming
+                </button>
             </div>
 
             <div className="space-y-10">
@@ -457,6 +578,9 @@ const SettingsPage = () => {
                                                 type="text"
                                                 value={stage.name}
                                                 onChange={(e) => updateStageName(idx, e.target.value)}
+                                                onFocus={() => { stageNameOnFocus.current[idx] = stage.name; }}
+                                                onKeyDown={(e) => handleStageNameKeyDown(e, idx)}
+                                                onBlur={() => handleStageNameBlur(idx)}
                                                 placeholder="Stage Name"
                                                 className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300 placeholder:text-slate-500"
                                             />
@@ -1083,11 +1207,18 @@ const SettingsPage = () => {
                         </section>
                     </div>
                 )}
+
+                {activeTab === 'deal-naming' && (
+                    <DealNamingSettingsTab
+                        initialConfig={settings?.deal_naming ?? null}
+                        canWrite={canWriteSettings}
+                        onChange={(cfg) => setSettings(s => s ? { ...s, deal_naming: cfg } : s)}
+                    />
+                )}
             </div>
         </div>
     );
 };
-
 
 // ─── Scoring Rule Form (inline) ───────────────────────────────────────────────
 

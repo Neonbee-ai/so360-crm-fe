@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
@@ -7,9 +7,11 @@ import { Task } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import { canCurrentUserBeAssigned, isTaskAssignedToUser } from '../utils/taskUtils';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
+import { toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
@@ -19,30 +21,45 @@ const TasksPage = () => {
     const formatters = useCRMFormatters();
     const shell = useShell();
     const shellBridge = useShellBridge();
-    const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    const canCreateTask = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('activities.create') ?? false) && (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    // The backend clamps scope to what the caller actually holds regardless
+    // of these flags (tasks.controller.ts TaskScope decorator) — these only
+    // decide which tabs are worth rendering, never widen access on their own.
+    const canViewTeamTasks = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('crm_tasks.view_team') ?? false);
+    const canViewAllTasks = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('crm_tasks.view_all') ?? false);
     const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [users, setUsers] = useState<any[]>([]); // Using any for User to avoid import issues if not exported
     const [isLoading, setIsLoading] = useState(true);
-    const [filter, setFilter] = useState('All');
-    const [searchTerm, setSearchTerm] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [sortField, setSortField] = useState<SortField | null>(null);
-    const [sortDirection, setSortDirection] = useState<SortDirection>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
     const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // View state survives a trip to a task's detail page and back — see
+    // usePersistedState. Everything else above is transient by design.
+    // Default scope is 'own' ("My Tasks") — broader tabs only render once
+    // canViewTeamTasks/canViewAllTasks resolve true, and the backend clamps
+    // the request regardless of what's persisted here.
+    const [taskScope, setTaskScope] = usePersistedState<'own' | 'team' | 'all'>('tasks.scope', 'own');
+    const [filter, setFilter] = usePersistedState('tasks.filter', 'All');
+    const [searchTerm, setSearchTerm] = usePersistedState('tasks.search', '');
+    const [sortField, setSortField] = usePersistedState<SortField | null>('tasks.sortField', null);
+    const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('tasks.sortDirection', null);
+    const [currentPage, setCurrentPage] = usePersistedState('tasks.page', 1);
+    const [pageSize, setPageSize] = usePersistedState('tasks.pageSize', 10);
+
+    const listAnchorRef = useRef<HTMLDivElement>(null);
+    useListScrollRestore('tasks', listAnchorRef, !isLoading);
 
     useEffect(() => {
         const fetchData = async () => {
+            setIsLoading(true);
             try {
                 const [tasksData, usersData] = await Promise.all([
-                    crmService.getTasks(),
+                    crmService.getTasks(taskScope),
                     crmService.getUsers()
                 ]);
                 setTasks(tasksData);
@@ -54,7 +71,7 @@ const TasksPage = () => {
             }
         };
         fetchData();
-    }, []);
+    }, [taskScope]);
 
     const handleStatusChange = async (task: Task, newStatus: string) => {
         try {
@@ -68,6 +85,10 @@ const TasksPage = () => {
     const handleAssigneeChange = async (task: Task, newAssigneeId: string) => {
         const newAssignee = users.find(u => u.id === newAssigneeId);
         if (!newAssignee) return;
+        if (isTaskLocked(task.status)) {
+            toast.warning(TASK_LOCKED_HINT);
+            return;
+        }
 
         try {
             await crmService.updateTask(task.id, { assignee_id: newAssigneeId });
@@ -79,18 +100,23 @@ const TasksPage = () => {
 
     const handleQuickAssignToMe = async (task: Task) => {
         if (!currentUserId) {
-            showError?.('User context not available');
+            toast.error('User context not available');
             return;
         }
 
         if (!canCurrentUserBeAssigned(currentUser, users)) {
-            showError?.("You don't have permission to be assigned tasks");
+            toast.error("You don't have permission to be assigned tasks");
+            return;
+        }
+
+        if (isTaskLocked(task.status)) {
+            toast.warning(TASK_LOCKED_HINT);
             return;
         }
 
         try {
             await crmService.updateTask(task.id, { assignee_id: currentUserId });
-            showSuccess?.('Task assigned to you');
+            toast.success('Task assigned to you');
 
             // Optimistic update
             const currentUserObj = users.find(u => u.id === currentUserId);
@@ -101,7 +127,7 @@ const TasksPage = () => {
             }
         } catch (error) {
             console.error('Failed to assign task:', error);
-            showError?.('Failed to assign task to yourself');
+            toast.error('Failed to assign task to yourself');
         }
     };
 
@@ -164,9 +190,7 @@ const TasksPage = () => {
             if (filter === 'Done') return task.status === 'DONE';
             if (filter === 'On Hold') return task.status === 'ON_HOLD';
             if (filter === 'Cancelled') return task.status === 'CANCELLED';
-            if (filter === 'Overdue') {
-                return (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
-            }
+            if (filter === 'Overdue') return isTaskOverdue(task);
             return true;
         });
 
@@ -237,11 +261,15 @@ const TasksPage = () => {
         {
             header: <SortableHeader label="Due Date" field="due_date" />,
             accessor: (task: Task) => {
-                const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
+                const isOverdue = isTaskOverdue(task);
                 return (
-                    <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-400'}`}>
+                    <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
                         {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
-                        {formatters.formatDate(task.due_date)}
+                        {formatters.formatDate(dueDateCalendarDay(task.due_date))}
+                        {/* Only a task the user gave a time to shows one. */}
+                        {hasTimeComponent(task.due_date) && (
+                            <span className="text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                        )}
                         {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
                     </div>
                 );
@@ -265,7 +293,7 @@ const TasksPage = () => {
                         <Building2 size={13} className={entity.type === 'deal' ? 'text-violet-400 shrink-0' : 'text-blue-400 shrink-0'} />
                         <div className="flex flex-col gap-0.5 min-w-0">
                             <span className="text-sm text-slate-200 truncate">{entity.label}</span>
-                            {entity.sub && <span className="text-[11px] text-slate-500 truncate">{entity.sub}</span>}
+                            {entity.sub && <span className="text-[11px] text-slate-400 truncate">{entity.sub}</span>}
                             <span className={`text-[9px] font-black uppercase tracking-widest ${entity.type === 'deal' ? 'text-violet-500' : 'text-blue-500'}`}>
                                 {entity.type}
                             </span>
@@ -281,7 +309,9 @@ const TasksPage = () => {
                     <select
                         value={task.assigned_to.id}
                         onChange={(e) => handleAssigneeChange(task, e.target.value)}
-                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1"
+                        disabled={isTaskLocked(task.status)}
+                        title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : undefined}
+                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {users.map(user => (
                             <option key={user.id} value={user.id} className="bg-slate-900 text-slate-300">
@@ -294,12 +324,14 @@ const TasksPage = () => {
                     {!isTaskAssignedToUser(task, currentUserId) && (
                         <button
                             onClick={() => handleQuickAssignToMe(task)}
-                            disabled={!canCurrentUserBeAssigned(currentUser, users)}
+                            disabled={!canCurrentUserBeAssigned(currentUser, users) || isTaskLocked(task.status)}
                             className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-600/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title={
-                                canCurrentUserBeAssigned(currentUser, users)
-                                    ? "Assign to me"
-                                    : "You don't have permission to be assigned tasks"
+                                isTaskLocked(task.status)
+                                    ? TASK_LOCKED_HINT
+                                    : canCurrentUserBeAssigned(currentUser, users)
+                                        ? "Assign to me"
+                                        : "You don't have permission to be assigned tasks"
                             }
                         >
                             <UserPlus className="w-4 h-4" />
@@ -352,12 +384,11 @@ const TasksPage = () => {
     ];
 
     return (
-        <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>
-                    <p className="text-slate-400 mt-2">Personal execution discipline and daily tasks</p>
+                    <p className="text-slate-300 mt-2">Personal execution discipline and daily tasks</p>
                 </div>
                 {canCreateTask && (
                     <button
@@ -369,6 +400,27 @@ const TasksPage = () => {
                     </button>
                 )}
             </header>
+
+            {(canViewTeamTasks || canViewAllTasks) && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {([
+                        { key: 'own' as const, label: 'My Tasks' },
+                        ...(canViewTeamTasks ? [{ key: 'team' as const, label: 'Team Tasks' }] : []),
+                        ...(canViewAllTasks ? [{ key: 'all' as const, label: 'All Tasks' }] : []),
+                    ]).map((tab) => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setTaskScope(tab.key)}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
+                                ? 'bg-slate-700 text-white border-slate-600'
+                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
+                                }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <div className="relative flex-1">

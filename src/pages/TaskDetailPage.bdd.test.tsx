@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
+import { toast } from '@so360/design-system';
 
 const mockGetTaskById = vi.fn();
 const mockGetUsers = vi.fn();
@@ -12,6 +13,8 @@ const mockUpdateNote = vi.fn();
 const mockDeleteNote = vi.fn();
 const mockNavigate = vi.fn();
 const mockRecordActivity = vi.fn().mockResolvedValue(undefined);
+const mockRetryTaskProjectSync = vi.fn();
+const mockDisconnectTaskFromProject = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -23,6 +26,8 @@ vi.mock('../services/crmService', () => ({
     createNote: (...a: any[]) => mockCreateNote(...a),
     updateNote: (...a: any[]) => mockUpdateNote(...a),
     deleteNote: (...a: any[]) => mockDeleteNote(...a),
+    retryTaskProjectSync: (...a: any[]) => mockRetryTaskProjectSync(...a),
+    disconnectTaskFromProject: (...a: any[]) => mockDisconnectTaskFromProject(...a),
   },
 }));
 
@@ -36,7 +41,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: React.createContext({ user: { id: 'user-1' } }),
   useActivity: () => ({ recordActivity: (...a: any[]) => mockRecordActivity(...a) }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -76,7 +81,7 @@ const makeNotes = () => [
 beforeEach(async () => {
   vi.clearAllMocks();
   const shell = await import('@so360/shell-context');
-  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockGetTaskById.mockResolvedValue(makeTask());
   mockGetUsers.mockResolvedValue([]);
   mockGetTaskNotes.mockResolvedValue(makeNotes());
@@ -86,6 +91,8 @@ beforeEach(async () => {
   mockUpdateNote.mockResolvedValue({});
   mockDeleteNote.mockResolvedValue({});
   mockRecordActivity.mockResolvedValue(undefined);
+  mockRetryTaskProjectSync.mockResolvedValue(makeTask({ sync_status: 'connected' }));
+  mockDisconnectTaskFromProject.mockResolvedValue(makeTask({ sync_status: 'disconnected' }));
 });
 
 describe('TaskDetailPage', () => {
@@ -119,10 +126,10 @@ describe('TaskDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
     });
 
-    it('When the header Back to Tasks is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
+    it('When the header Back is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Back to Tasks'));
+      fireEvent.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
 
@@ -297,8 +304,8 @@ describe('TaskDetailPage', () => {
       await waitFor(() => expect(mockRecordActivity).toHaveBeenCalledWith(expect.objectContaining({ eventType: 'note.deleted', resourceId: 'task-1' })));
     });
 
-    it('When creating a note fails / Then shows an error alert and keeps the composer open', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When creating a note fails / Then shows an error toast and keeps the composer open', async () => {
+      const toastSpy = vi.spyOn(toast, 'error');
       mockGetTaskNotes.mockResolvedValue([]);
       mockCreateNote.mockRejectedValueOnce(new Error('insert failed'));
       render(<TaskDetailPage />);
@@ -306,46 +313,46 @@ describe('TaskDetailPage', () => {
       fireEvent.click(screen.getByText('+ Add Note'));
       fireEvent.change(screen.getByPlaceholderText('Add a note or comment...'), { target: { value: 'Will fail' } });
       fireEvent.click(screen.getByText('Add Note'));
-      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to add note. Please try again.'));
+      await waitFor(() => expect(toastSpy).toHaveBeenCalledWith('Failed to add note. Please try again.'));
       expect(mockRecordActivity).not.toHaveBeenCalled();
-      alertSpy.mockRestore();
+      toastSpy.mockRestore();
     });
 
-    it('When Save Changes is clicked with blank content / Then shows a validation alert and never calls updateNote', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When Save Changes is clicked with blank content / Then shows a validation warning toast and never calls updateNote', async () => {
+      const toastSpy = vi.spyOn(toast, 'warning');
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
       fireEvent.click(screen.getByTitle('Edit note'));
       const textarea = screen.getByPlaceholderText('Note content...');
       fireEvent.change(textarea, { target: { value: '   ' } });
       fireEvent.click(screen.getByText('Save Changes'));
-      expect(alertSpy).toHaveBeenCalledWith('Note content cannot be empty.');
+      expect(toastSpy).toHaveBeenCalledWith('Note content cannot be empty.');
       expect(mockUpdateNote).not.toHaveBeenCalled();
-      alertSpy.mockRestore();
+      toastSpy.mockRestore();
     });
 
-    it('When updating a note fails / Then shows an error alert', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When updating a note fails / Then shows an error toast', async () => {
+      const toastSpy = vi.spyOn(toast, 'error');
       mockUpdateNote.mockRejectedValueOnce(new Error('update failed'));
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
       fireEvent.click(screen.getByTitle('Edit note'));
       fireEvent.change(screen.getByPlaceholderText('Note content...'), { target: { value: 'Updated content' } });
       fireEvent.click(screen.getByText('Save Changes'));
-      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to update note. Please try again.'));
-      alertSpy.mockRestore();
+      await waitFor(() => expect(toastSpy).toHaveBeenCalledWith('Failed to update note. Please try again.'));
+      toastSpy.mockRestore();
     });
 
-    it('When deleting a note fails / Then shows an error alert', async () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    it('When deleting a note fails / Then shows an error toast', async () => {
+      const toastSpy = vi.spyOn(toast, 'error');
       mockDeleteNote.mockRejectedValueOnce(new Error('delete failed'));
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('First note')).toBeInTheDocument());
       fireEvent.click(screen.getByTitle('Delete note'));
       const confirmBtn = screen.getAllByText('Delete Note').find(el => el.closest('button'));
       fireEvent.click(confirmBtn!);
-      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to delete note. Please try again.'));
-      alertSpy.mockRestore();
+      await waitFor(() => expect(toastSpy).toHaveBeenCalledWith('Failed to delete note. Please try again.'));
+      toastSpy.mockRestore();
     });
 
     it('Given a note authored by someone else / When rendered / Then edit/delete controls are not offered', async () => {
@@ -402,7 +409,7 @@ describe('TaskDetailPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: false,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
@@ -415,7 +422,7 @@ describe('TaskDetailPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
       } as any);
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
@@ -423,5 +430,230 @@ describe('TaskDetailPage', () => {
       const trashBtn = document.querySelector('[data-testid="icon-Trash2"]')?.closest('button');
       expect(trashBtn).toBeTruthy();
     });
+  });
+
+  describe('Given a completed task (status DONE)', () => {
+    beforeEach(() => {
+      mockGetTaskById.mockResolvedValue(makeTask({ status: 'DONE' }));
+    });
+
+    it('When the detail page renders / Then Reschedule is disabled', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
+      expect(screen.getByText('Reschedule').closest('button')).toBeDisabled();
+    });
+
+    it('When the detail page renders / Then a hint explains why actions are unavailable', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('task-locked-hint')).toBeInTheDocument());
+      expect(screen.getByText('Reschedule').closest('button')?.getAttribute('title'))
+        .toMatch(/Mark as Open/i);
+    });
+
+    it('When Reschedule is clicked / Then the reschedule modal does not open', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Reschedule'));
+      expect(screen.queryByTestId('reschedule-modal')).not.toBeInTheDocument();
+      expect(mockUpdateTask).not.toHaveBeenCalled();
+    });
+
+    it('When the detail page renders / Then the Edit action is disabled', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.getByLabelText('Edit Task')).toBeDisabled();
+    });
+
+    it('When the detail page renders / Then adding a note is still permitted for audit history', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('+ Add Note')).toBeInTheDocument());
+      expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given an open task', () => {
+    it('When the detail page renders / Then Reschedule and Edit are enabled', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Reschedule')).toBeInTheDocument());
+      expect(screen.getByText('Reschedule').closest('button')).not.toBeDisabled();
+      expect(screen.getByLabelText('Edit Task')).not.toBeDisabled();
+      expect(screen.queryByTestId('task-locked-hint')).not.toBeInTheDocument();
+    });
+
+    it('When the task is marked complete / Then Reschedule becomes disabled immediately', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Mark as Complete')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('Mark as Complete'));
+      await waitFor(() =>
+        expect(screen.getByText('Reschedule').closest('button')).toBeDisabled(),
+      );
+    });
+  });
+
+  describe('Given task-level actions on the detail header', () => {
+    it('When the page renders / Then Edit and Delete are grouped in one action area', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      const group = screen.getByTestId('task-actions');
+      expect(group.querySelector('[aria-label="Edit Task"]')).toBeTruthy();
+      expect(group.querySelector('[aria-label="Delete Task"]')).toBeTruthy();
+    });
+
+    it('When the page renders / Then both actions expose descriptive tooltips', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.getByLabelText('Edit Task').getAttribute('title')).toBe('Edit Task');
+      expect(screen.getByLabelText('Delete Task').getAttribute('title')).toBe('Delete Task');
+    });
+  });
+
+  describe('Given the Notes & Comments composer', () => {
+    it('When idle / Then only a compact input is shown and no Cancel exists', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      expect(screen.getByTestId('note-composer-trigger')).toHaveTextContent('Add a note or comment...');
+      expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+    });
+
+    it('When the compact input is clicked / Then the editor expands with exactly one Cancel', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('note-composer-trigger'));
+      expect(screen.getByPlaceholderText('Add a note or comment...')).toBeInTheDocument();
+      expect(screen.getAllByText('Cancel')).toHaveLength(1);
+      // header affordance collapses away while editing — no duplicate control
+      expect(screen.queryByText('+ Add Note')).not.toBeInTheDocument();
+    });
+
+    it('When Cancel is clicked / Then the editor collapses and unsaved input is discarded', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('note-composer-trigger'));
+      fireEvent.change(screen.getByPlaceholderText('Add a note or comment...'), { target: { value: 'draft' } });
+      fireEvent.click(screen.getByText('Cancel'));
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      expect(mockCreateNote).not.toHaveBeenCalled();
+    });
+
+    it('When a note is submitted / Then the editor collapses back to the compact input', async () => {
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId('note-composer-trigger'));
+      fireEvent.change(screen.getByPlaceholderText('Add a note or comment...'), { target: { value: 'a note' } });
+      fireEvent.click(screen.getByText('Add Note'));
+      await waitFor(() => expect(mockCreateNote).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('note-composer-trigger')).toBeInTheDocument());
+    });
+
+    it('When notes failed to load / Then the compact composer is not offered', async () => {
+      mockGetTaskNotes.mockRejectedValue(new Error('boom'));
+      render(<TaskDetailPage />);
+      await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+      expect(screen.queryByTestId('note-composer-trigger')).not.toBeInTheDocument();
+    });
+  });
+});
+
+// ── Project connection status (optional) ────────────────────────────────────
+describe('Given a task with no sync_status', () => {
+  it('When TaskDetailPage renders / Then no connection UI is shown at all', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask());
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
+    expect(screen.queryByTestId('project-sync-connected')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('project-sync-failed')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('project-sync-disconnected')).not.toBeInTheDocument();
+  });
+});
+
+describe('Given a task with sync_status: connected', () => {
+  it('When rendered / Then the Connected indicator and a Disconnect action appear', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask({ sync_status: 'connected', project_id: 'proj-1' }));
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByTestId('project-sync-connected')).toBeInTheDocument());
+    expect(screen.getByText('Connected to Project')).toBeInTheDocument();
+    expect(screen.getByLabelText('Disconnect from Project')).toBeInTheDocument();
+  });
+
+  it('When last_synced_at is present / Then a "Last synced" timestamp is shown', async () => {
+    mockGetTaskById.mockResolvedValue(
+      makeTask({ sync_status: 'connected', project_id: 'proj-1', last_synced_at: '2026-06-10T10:00:00Z' })
+    );
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByTestId('project-sync-connected')).toBeInTheDocument());
+    expect(screen.getByText(/Last synced/)).toBeInTheDocument();
+  });
+});
+
+describe('Given a task with sync_status: sync_failed', () => {
+  it('When rendered / Then "Sync Failed" and a Retry Sync button appear', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask({ sync_status: 'sync_failed' }));
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByTestId('project-sync-failed')).toBeInTheDocument());
+    expect(screen.getByText('Sync Failed')).toBeInTheDocument();
+    expect(screen.getByText('Retry Sync')).toBeInTheDocument();
+  });
+
+  it('When the Retry Sync button is clicked / Then retryTaskProjectSync is called with the task id', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask({ sync_status: 'sync_failed' }));
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByText('Retry Sync')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Retry Sync'));
+    await waitFor(() => expect(mockRetryTaskProjectSync).toHaveBeenCalledWith('task-1'));
+  });
+});
+
+describe('Given a task with sync_status: disconnected', () => {
+  it('When rendered / Then a subtle "Previously connected" note is shown, not a persistent indicator', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask({ sync_status: 'disconnected' }));
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByTestId('project-sync-disconnected')).toBeInTheDocument());
+    expect(screen.queryByTestId('project-sync-connected')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('project-sync-failed')).not.toBeInTheDocument();
+  });
+});
+
+describe('Given the Disconnect action is triggered', () => {
+  it('When the user confirms keep_but_disconnect / Then disconnectTaskFromProject is called with that exact mode', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask({ sync_status: 'connected', project_id: 'proj-1' }));
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Disconnect from Project')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Disconnect from Project'));
+
+    await waitFor(() => expect(screen.getByText('Disconnect from Project')).toBeInTheDocument());
+    // keep_but_disconnect is the default-selected radio; confirm directly.
+    fireEvent.click(screen.getByText('Disconnect'));
+
+    await waitFor(() =>
+      expect(mockDisconnectTaskFromProject).toHaveBeenCalledWith('task-1', 'keep_but_disconnect')
+    );
+  });
+
+  it('When the user picks remove_project_task and confirms / Then disconnectTaskFromProject is called with that mode', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask({ sync_status: 'connected', project_id: 'proj-1' }));
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Disconnect from Project')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Disconnect from Project'));
+
+    await waitFor(() => expect(screen.getByText('Remove the Project task too')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Remove the Project task too'));
+    fireEvent.click(screen.getByText('Disconnect'));
+
+    await waitFor(() =>
+      expect(mockDisconnectTaskFromProject).toHaveBeenCalledWith('task-1', 'remove_project_task')
+    );
+  });
+
+  it('When Cancel is clicked / Then disconnectTaskFromProject is never called', async () => {
+    mockGetTaskById.mockResolvedValue(makeTask({ sync_status: 'connected', project_id: 'proj-1' }));
+    render(<TaskDetailPage />);
+    await waitFor(() => expect(screen.getByLabelText('Disconnect from Project')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Disconnect from Project'));
+
+    await waitFor(() => expect(screen.getByText('Disconnect from Project')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Cancel'));
+
+    expect(mockDisconnectTaskFromProject).not.toHaveBeenCalled();
   });
 });

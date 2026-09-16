@@ -21,12 +21,16 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
 
     // Resolve Sign BE origin: window override → build-time env → localhost dev fallback (3038).
     // Mirrors the *_API_ORIGIN resolution used across crmService.ts so it works inside the shell.
+    //
+    // The env read must stay the LITERAL `import.meta.env.VITE_SO360_SIGN_API`: Vite
+    // substitutes that exact expression at build time, and the `(import.meta as any)?.env`
+    // capture this used to do reads as `import.meta?.env`, which is never substituted —
+    // leaving localhost:3038 baked into the production bundle.
     function getSignApiBase(): string {
-        const env = (import.meta as any)?.env || {};
         const win = typeof window !== 'undefined' ? (window as any) : {};
         return String(
             win.VITE_SO360_SIGN_API ||
-            env.VITE_SO360_SIGN_API ||
+            import.meta.env.VITE_SO360_SIGN_API ||
             'http://localhost:3038'
         ).replace(/\/$/, '');
     }

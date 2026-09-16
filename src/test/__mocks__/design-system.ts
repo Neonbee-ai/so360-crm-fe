@@ -41,3 +41,22 @@ export interface FeatureGateProps {
   fallback?: React.ReactNode;
 }
 export const FeatureGate = ({ loading, children }: any): any => loading ? null : React.createElement(React.Fragment, null, children);
+
+// Universal toast — plain functions so specs can vi.spyOn(toast, 'success') etc.
+export const toast = {
+  success: (_message: string, _opts?: any) => 'toast-id',
+  error: (_message: string, _opts?: any) => 'toast-id',
+  warning: (_message: string, _opts?: any) => 'toast-id',
+  info: (_message: string, _opts?: any) => 'toast-id',
+  promise: (p: any, _msgs?: any) => p,
+  dismiss: (_id?: string) => {},
+};
+export const useToast = () => toast;
+export const getErrorMessage = (_e: any, fallback?: string) => fallback ?? 'error';
+export const attachToastErrorHandler = () => 0;
+export const toastBus = {
+  show: () => {},
+  dismiss: () => {},
+  subscribe: () => () => {},
+  getToasts: () => [],
+};

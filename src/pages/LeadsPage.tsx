@@ -31,7 +31,10 @@ import { leadsToCsv, downloadCsv } from '../components/leads/leadsCsv';
 import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import { QuotaGate } from '@so360/design-system';
+import { describeApiError } from '../utils/apiErrorMessage';
+import { publishLeadsChanged } from '../utils/leadEvents';
+import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
+import { QuotaGate, toast } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
@@ -149,8 +152,13 @@ const LeadsPage = () => {
   const { emitNotification } = useNotify();
   const { recordActivity } = useActivity();
   const shell = useShellBridge();
-  const canCreateLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
-  const canUpdateLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
+  const canCreateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
+  const canUpdateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
+  // Destructive action — gate on the delete permission, fail closed, independent
+  // of canUpdateLead. Mirrors LeadDetailPage.tsx's canDeleteLead; the backend
+  // already enforces leads.delete on both the single and bulk delete routes —
+  // this only controls visibility of a control the user couldn't otherwise use.
+  const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
   const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
   const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
   const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
@@ -182,8 +190,9 @@ const LeadsPage = () => {
   // just the currently-loaded page.
   const [advancedFilter, setAdvancedFilter] = useState<FilterGroup | null>(null);
 
-  // Filters
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  // Filters — persisted so opening a lead and coming back keeps the list the
+  // user built rather than resetting to every-lead, page 1.
+  const [filters, setFilters] = usePersistedState<FilterState>('leads.filters', DEFAULT_FILTERS);
 
   // Saved views
   const [savedViews, setSavedViews] = useState<SavedFilterView[]>(loadSavedViews);
@@ -194,8 +203,11 @@ const LeadsPage = () => {
   const [renameValue, setRenameValue] = useState('');
 
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = usePersistedState('leads.page', 1);
+  const [pageSize, setPageSize] = usePersistedState('leads.pageSize', 50);
+
+  const listAnchorRef = useRef<HTMLDivElement>(null);
+  useListScrollRestore('leads', listAnchorRef, !isLoading);
 
   const setFilter = useCallback(<K extends keyof FilterState>(key: K, val: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: val }));
@@ -406,22 +418,57 @@ const LeadsPage = () => {
       setLeads((prev) => prev.filter((l) => l.id !== leadId));
       setShowDeleteConfirm(null);
       setDetailLead((prev) => (prev?.id === leadId ? null : prev));
+      // Tell every other lead-derived surface (dashboard KPIs, pipeline
+      // widgets) to re-read, so the counts drop without a manual refresh.
+      publishLeadsChanged('deleted', [leadId]);
+      // Soft delete means Undo is a genuine restore, history and all.
+      toast.success('Lead deleted', {
+        duration: 8000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            crmService.restoreLead(leadId)
+              .then((restored) => {
+                setLeads((prev) => (prev.some((l) => l.id === leadId) ? prev : [restored, ...prev]));
+                publishLeadsChanged('restored', [leadId]);
+                toast.success('Lead restored');
+              })
+              .catch((e: any) => toast.error(describeApiError(e, 'We couldn’t restore this lead.')));
+          },
+        },
+      });
     } catch (err: any) {
-      setError(err.message ?? 'Failed to delete lead');
+      setError(describeApiError(err, 'We couldn’t delete this lead. Please try again.'));
     } finally {
       setIsDeleting(false);
     }
   }, []);
 
   const handleBulkDelete = useCallback(async (ids: string[]) => {
-    // Single bulk request (server processes per-id and reports partial success)
-    // instead of N client round-trips. Only remove the rows the server confirms.
+    // Single bulk request (server processes per-id and reports partial success).
+    //
+    // ONLY the ids the server confirms leave the grid. Removing a row the
+    // server refused is what made a lead look deleted while it kept feeding
+    // every dashboard, count and report — the row was gone from the screen and
+    // nowhere else. An empty `deleted` array now means "nothing was deleted",
+    // not "assume they all were", and a hard failure removes nothing at all.
     try {
       const res = await crmService.bulkDeleteLeads(ids);
-      const removed = res?.deleted?.length ? res.deleted : ids;
-      setLeads((prev) => prev.filter((l) => !removed.includes(l.id)));
-    } catch {
-      setLeads((prev) => prev.filter((l) => !ids.includes(l.id)));
+      const removed = Array.isArray(res?.deleted) ? res.deleted : [];
+      if (removed.length) {
+        setLeads((prev) => prev.filter((l) => !removed.includes(l.id)));
+        publishLeadsChanged('deleted', removed);
+      }
+      const failed = res?.failed || [];
+      if (failed.length) {
+        setError(
+          failed.length === ids.length
+            ? `We couldn’t delete ${failed.length === 1 ? 'this lead' : 'these leads'}: ${failed[0].error}`
+            : `Deleted ${removed.length} of ${ids.length}. ${failed.length} could not be deleted: ${failed[0].error}`,
+        );
+      }
+    } catch (err: any) {
+      setError(describeApiError(err, 'We couldn’t delete the selected leads. Please try again.'));
     }
   }, []);
 
@@ -609,13 +656,14 @@ const LeadsPage = () => {
     users,
     leadStages,
     canUpdate: canUpdateLead,
+    canDelete: canDeleteLead,
     onOwnerChange: handleOwnerChange,
     onStatusChange: handleStatusChange,
     onDelete: (lead) => setShowDeleteConfirm(lead.id),
     onOpen: (lead) => navigate(`${lead.id}`),
     formatDate: formatters.formatDate,
     onInlineEdit: handleInlineEdit,
-  }), [users, leadStages, canUpdateLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
+  }), [users, leadStages, canUpdateLead, canDeleteLead, handleOwnerChange, handleStatusChange, navigate, formatters, handleInlineEdit]);
 
   const bulkActions = useMemo(() => [
     {
@@ -641,17 +689,20 @@ const LeadsPage = () => {
       icon: <Download size={14} />,
       onClick: (ids: string[]) => handleBulkExport(ids),
     },
-    {
+    // Destructive bulk action — gate on leads.delete, fail closed. Previously
+    // shown to every user regardless of permission (backend rejects it, but the
+    // control shouldn't be offered in the first place). See canDeleteLead above.
+    ...(canDeleteLead ? [{
       label: 'Delete',
       icon: <Trash2 size={14} />,
       variant: 'danger' as const,
       onClick: (ids: string[]) => handleBulkDelete(ids),
-    },
+    }] : []),
   ].filter((a: any) => !a.options || a.options.length > 0),
-  [users, leadStages, leadSources, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
+  [users, leadStages, leadSources, canDeleteLead, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
   return (
-    <div className="px-4 pt-3 pb-6 md:px-6">
+    <div className="px-4 pt-3 pb-6 md:px-6" ref={listAnchorRef}>
       {/* Compact header */}
       <header className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-baseline gap-2.5 min-w-0">
@@ -1098,6 +1149,7 @@ const LeadsPage = () => {
         onClose={() => setDetailLead(null)}
         onNavigate={(lead) => navigate(`${lead.id}`)}
         onNavigateDeal={(deal) => navigate(`../deal/${deal.id}`)}
+        onNavigateTask={(task) => navigate(`../tasks/${task.id}`)}
         onDelete={(lead) => setShowDeleteConfirm(lead.id)}
       />
     </div>

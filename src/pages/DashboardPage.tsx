@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
@@ -9,6 +9,30 @@ import { Link } from 'react-router-dom';
 import { CrossLinkChip } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
+import { onLeadsChanged } from '../utils/leadEvents';
+import { parseStoredTimestamp, dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
+
+/**
+ * Derive a reminder's schedule state from its due instant.
+ *
+ * The card previously hardcoded "Upcoming", which was wrong for every overdue
+ * reminder — the one case a user most needs flagged.
+ */
+export function reminderState(dueDate: string | null | undefined, now: Date = new Date()) {
+    if (!dueDate) return { label: 'No date', dot: 'bg-slate-500' };
+    const due = parseStoredTimestamp(dueDate);
+    if (isNaN(due.getTime())) return { label: 'No date', dot: 'bg-slate-500' };
+    // A task due "20 Aug" with no time is not overdue at one minute past
+    // midnight — it has the whole day. Only a task with a chosen time expires
+    // at that moment.
+    const deadline = hasTimeComponent(dueDate)
+        ? due
+        : new Date(`${dueDateCalendarDay(dueDate)}T23:59:59`);
+    const diffMs = deadline.getTime() - now.getTime();
+    if (diffMs < 0) return { label: 'Overdue', dot: 'bg-rose-500' };
+    if (diffMs <= 60 * 60 * 1000) return { label: 'Due soon', dot: 'bg-orange-400' };
+    return { label: 'Upcoming', dot: 'bg-amber-400' };
+}
 
 const DashboardPage = () => {
     const formatters = useCRMFormatters();
@@ -42,26 +66,33 @@ const DashboardPage = () => {
     } | null>(null);
     const [isCommerceLoading, setIsCommerceLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            setIsLoading(true);
-            try {
-                const data = await crmService.getDashboardStats({
-                    period,
-                    year,
-                    quarter: period === 'quarterly' ? quarter : undefined,
-                    month: period === 'monthly' ? month : undefined,
-                    week: period === 'weekly' ? week : undefined,
-                });
-                setStats(data);
-            } catch (error) {
-                console.error('Failed to fetch dashboard stats', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchStats();
+    const fetchStats = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setIsLoading(true);
+        try {
+            const data = await crmService.getDashboardStats({
+                period,
+                year,
+                quarter: period === 'quarterly' ? quarter : undefined,
+                month: period === 'monthly' ? month : undefined,
+                week: period === 'weekly' ? week : undefined,
+            });
+            setStats(data);
+        } catch (error) {
+            console.error('Failed to fetch dashboard stats', error);
+        } finally {
+            if (!opts?.silent) setIsLoading(false);
+        }
     }, [period, year, quarter, month, week]);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+
+    // Deleting or restoring a lead changes counts, pipeline/stage totals and
+    // conversion metrics. The backend already excludes soft-deleted leads from
+    // every query — this re-read is what makes the dashboard show it without a
+    // manual refresh. Silent: the numbers update in place, no loading flash.
+    useEffect(() => onLeadsChanged(() => { void fetchStats({ silent: true }); }), [fetchStats]);
 
     useEffect(() => {
         if (!isDailyStoreEnabled) return;
@@ -121,7 +152,7 @@ const DashboardPage = () => {
     const maxActivity = Math.max(...teamStats.map((s: any) => s.activityCount), 1);
 
     return (
-        <div className="p-8 space-y-8 pb-16">
+        <div className="p-8 space-y-6 pb-12">
             <header className="flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-black text-slate-50 tracking-tight mb-2">Executive Overview</h1>
@@ -434,20 +465,33 @@ const DashboardPage = () => {
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Upcoming</span>
+                                    <div className={`w-2 h-2 rounded-full ${reminderState(task.due_date).dot} animate-pulse`} />
+                                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{reminderState(task.due_date).label}</span>
                                 </div>
-                                <span className="text-[9px] font-bold text-slate-500">{formatters.formatDate(task.due_date, { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <h4 className="text-sm font-bold text-slate-50 group-hover:text-blue-400 transition-colors truncate mb-1">{task.title}</h4>
-                            <p className="text-[11px] text-slate-500 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
+                            {/* Date, and the time ONLY when the user actually chose one.
+                                Rendering the clock unconditionally turned every date-only
+                                task into a reminder for "5:30 AM" — the org-timezone
+                                reading of the UTC midnight such a task is stored at. */}
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 mb-2">
+                                <Calendar size={11} className="text-slate-300" />
+                                <span>{formatters.formatDate(dueDateCalendarDay(task.due_date), { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                {hasTimeComponent(task.due_date) && (
+                                    <>
+                                        <span className="text-slate-600">·</span>
+                                        <span className="text-slate-300">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                                    </>
+                                )}
+                            </div>
+                            <p className="text-[11px] text-slate-300 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
                             <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-400/15">
                                 <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black border border-slate-400/30">
                                     {task.assigned_to?.avatar_url ? (
                                         <img src={task.assigned_to.avatar_url} className="w-full h-full rounded-full" />
                                     ) : task.assigned_to?.full_name?.charAt(0)}
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 truncate">{task.assigned_to?.full_name}</span>
+                                <span className="text-[10px] font-bold text-slate-300 truncate">{task.assigned_to?.full_name}</span>
                             </div>
                         </Link>
                         {task.deal_id && (
@@ -463,7 +507,7 @@ const DashboardPage = () => {
             </section>
             )}
 
-            <div className={`grid grid-cols-1 ${showLeads ? 'lg:grid-cols-3' : ''} gap-8`}>
+            <div className={`grid grid-cols-1 ${showLeads ? 'lg:grid-cols-3' : ''} gap-6`}>
                 {/* Revenue Chart */}
                 <div className={`${showLeads ? 'lg:col-span-2' : ''} bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-sm`}>
                     <div className="flex justify-between items-center mb-8">
@@ -510,9 +554,17 @@ const DashboardPage = () => {
                 {/* Team Leaderboard */}
                 {showLeads && <div className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
                     <h3 className="text-lg font-black text-slate-50 tracking-tight mb-1">Top Performers</h3>
-                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">Revenue Leaders</p>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-4">Revenue Leaders</p>
 
                     <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                        {teamStats.length === 0 && (
+                            <div className="h-full min-h-[140px] flex flex-col items-center justify-center gap-2 text-center px-4 bg-slate-950/40 border border-dashed border-slate-400/25 rounded-xl">
+                                <UserIcon size={18} className="text-slate-600" />
+                                <p className="text-xs font-bold text-slate-400">No revenue attributed yet</p>
+                                <p className="text-[11px] text-slate-500 leading-relaxed">Close a deal with an owner assigned and reps will rank here.</p>
+                                <Link to="../pipeline" className="mt-1 text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors">Open pipeline</Link>
+                            </div>
+                        )}
                         {teamStats.map((stat: any, index: number) => (
                             <div key={stat.user.id} className="flex items-center gap-4 p-3 rounded-xl bg-slate-950 border border-slate-700/40 hover:border-slate-600/60 transition-all group shadow-sm">
                                 <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-black text-xs ${index === 0 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' :
@@ -549,18 +601,20 @@ const DashboardPage = () => {
                 </div>}
             </div>
 
-            {/* Employee Performance Visualization */}
-            {showPipeline && <section className="bg-slate-900 border border-slate-700/50 rounded-3xl p-8 relative overflow-hidden shadow-sm">
+            {/* Employee Performance Visualization — a per-rep breakdown has nothing
+                to say without reps, so it stays hidden rather than reserving a
+                full-width band of empty cards. */}
+            {showPipeline && teamStats.length > 0 && <section className="bg-slate-900 border border-slate-700/50 rounded-3xl p-6 relative overflow-hidden shadow-sm">
                 <div className="absolute top-0 right-0 p-64 bg-blue-500/5 rounded-full blur-[120px] shadow-2xl pointer-events-none" />
                 <div className="relative z-10">
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex justify-between items-center mb-6">
                         <div>
                             <h3 className="text-xl font-black text-slate-50 tracking-tight">Performance Analytics</h3>
                             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Activity vs. Conversion Efficiency</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                         {teamStats.slice(0, 4).map((stat: any) => (
                             <div key={stat.user.id} className="bg-slate-950/50 border border-slate-700/40 p-5 rounded-2xl hover:border-slate-600/60 transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">

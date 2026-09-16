@@ -107,10 +107,15 @@ describe('PartnersPage', () => {
             });
         });
 
-        it('When data loads / Then shows KPI totals (total partners count)', async () => {
+        it('When data loads / Then shows the Partner Type Distribution status overview instead of KPI cards', async () => {
             render(<PartnersPage />);
             await waitFor(() => {
-                expect(screen.getByText('2')).toBeInTheDocument();
+                // "Partner Type Distribution" is unique to the new overview component —
+                // its own "N partners" count text is NOT asserted here because the
+                // pre-existing pagination footer independently renders the same
+                // "2 partners" string (see the dedicated segment-count assertions in
+                // "Given the Partner Status Overview" below for count/percentage coverage).
+                expect(screen.getByText('Partner Type Distribution')).toBeInTheDocument();
             });
         });
 
@@ -547,11 +552,177 @@ describe('PartnersPage', () => {
             expect(pendingCol).toBeDefined();
         });
 
-        it('When KPI cards render / Then shows "Royalty Pending" card label', async () => {
+        it('When the Deals column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            const { container } = render(<>{tableProps.columns[3].header}</>);
+            expect(container.textContent).toContain('Deals');
+            expect(tableProps.columns[3].className).toBe('text-right');
+        });
+
+        it('When the Deal Value column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            const { container } = render(<>{tableProps.columns[4].header}</>);
+            expect(container.textContent).toContain('Deal Value');
+            expect(tableProps.columns[4].className).toBe('text-right');
+        });
+
+        it('When the Royalty Pending column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            expect(tableProps.columns[5].header).toBe('Royalty Pending');
+            expect(tableProps.columns[5].className).toBe('text-right');
+        });
+
+        it('When the Royalty Rate column renders / Then its cell is right-aligned', async () => {
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('partner-row-p1')).toBeInTheDocument());
+            expect(tableProps.columns[6].header).toBe('Royalty Rate');
+            expect(tableProps.columns[6].className).toBe('text-right');
+        });
+    });
+
+    // ── status overview (replaces the old KPI card grid — task 52daf7c7) ───────
+    describe('Given the Partner Status Overview', () => {
+        it('When partners span multiple types / Then shows a segment and count per type', async () => {
             render(<PartnersPage />);
             await waitFor(() => {
-                expect(screen.getByText('Royalty Pending')).toBeInTheDocument();
+                expect(screen.getByTestId('partner-status-segment-referral')).toBeInTheDocument();
+                expect(screen.getByTestId('partner-status-segment-reseller')).toBeInTheDocument();
             });
+            // p1=referral, p2=reseller → 1 each out of 2 = 50% each
+            expect(screen.getAllByText('(50%)')).toHaveLength(2);
+        });
+
+        it('When no partners exist / Then the status overview is not rendered', async () => {
+            mockPartnersGetAll.mockResolvedValue([]);
+            render(<PartnersPage />);
+            await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
+            expect(screen.queryByText('Partner Type Distribution')).not.toBeInTheDocument();
+        });
+
+        it('When a partner has a type not present in Settings / Then it still gets its own segment', async () => {
+            mockPartnersGetAll.mockResolvedValue([
+                ...partners,
+                { id: 'p3', contact_name: 'Gamma LLC', partner_type: 'legacy_unlisted', grading: 'low', total_deals: 0, total_deal_value: 0, pending_commission: 0 },
+            ]);
+            render(<PartnersPage />);
+            await waitFor(() => {
+                expect(screen.getByTestId('partner-status-segment-legacy_unlisted')).toBeInTheDocument();
+            });
+        });
+    });
+    // ── Field-format rules shared with the lead forms ──────────────────────────
+    //
+    // Partners carry the same name / company / address / city / PIN fields as
+    // leads and feed the same search, invoicing and mail-merge paths, so the
+    // values QA filed against Create Lead must be refused here too rather than
+    // leaving a second, looser standard in the CRM.
+    describe('Given the Add Partner form uses the shared field rules', () => {
+        const openModal = async (user: ReturnType<typeof userEvent.setup>) => {
+            render(<PartnersPage />);
+            await user.click(screen.getByRole('button', { name: /add partner/i }));
+        };
+
+        it.each([
+            ['Dhanooj', '%^&)_5454hiugi', 'Please enter a valid first name.'],
+            ['B S', '49878)&)*_knhj', 'Please enter a valid last name.'],
+            ['Moonhive Pvt Ltd', '8798798798798&^%$$*jyfutd', 'Please enter a valid company name.'],
+            ['Street / area', '(^()_)+', 'Please enter a valid address.'],
+            ['Bangalore', '&)&)_*', 'Please enter a valid city.'],
+        ])('When "%s" receives %s / Then "%s" is shown inline', async (placeholder, value, message) => {
+            const user = userEvent.setup();
+            await openModal(user);
+            const field = screen.getByPlaceholderText(placeholder as string);
+            fireEvent.change(field, { target: { value } });
+            fireEvent.blur(field);
+            await waitFor(() => expect(screen.getByText(message as string)).toBeInTheDocument());
+        });
+
+        it.each(['AT&T', 'ABC Pvt. Ltd.', '7-Eleven'])(
+            'When the company name is the legitimate "%s" / Then no error is raised',
+            async (company) => {
+                const user = userEvent.setup();
+                await openModal(user);
+                const field = screen.getByPlaceholderText('Moonhive Pvt Ltd');
+                fireEvent.change(field, { target: { value: company } });
+                fireEvent.blur(field);
+                await waitFor(() =>
+                    expect(screen.queryByText('Please enter a valid company name.')).not.toBeInTheDocument(),
+                );
+            },
+        );
+
+        it('When letters are typed into Pin Code / Then they never reach the field', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            const pin = screen.getByPlaceholderText('560001') as HTMLInputElement;
+            fireEvent.change(pin, { target: { value: '98789kgjftd?^&(' } });
+            expect(pin.value).toBe('98789');
+        });
+
+        it('When the PIN is short / Then the six-digit message appears and the count is shown', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            expect(screen.getByText('0/6 digits')).toBeInTheDocument();
+            const pin = screen.getByPlaceholderText('560001');
+            fireEvent.change(pin, { target: { value: '5600' } });
+            fireEvent.blur(pin);
+            await waitFor(() =>
+                expect(screen.getByText('Please enter a valid 6-digit PIN Code.')).toBeInTheDocument(),
+            );
+            expect(screen.getByText('4/6 digits')).toBeInTheDocument();
+        });
+
+        it('When the country switches / Then the postal field follows that country s rule', async () => {
+            // Partners share the leads table and the same country-aware rule,
+            // so a US partner must not be held to India's 6-digit PIN.
+            const user = userEvent.setup();
+            await openModal(user);
+            const countrySelect = screen.getByDisplayValue('India') as HTMLSelectElement;
+            fireEvent.change(countrySelect, { target: { value: 'US' } });
+            await waitFor(() => expect(screen.getByPlaceholderText('94105')).toBeInTheDocument());
+            const zip = screen.getByPlaceholderText('94105');
+            fireEvent.change(zip, { target: { value: '560001' } });
+            fireEvent.blur(zip);
+            await waitFor(() =>
+                expect(screen.getByText('Please enter a valid ZIP Code.')).toBeInTheDocument(),
+            );
+            fireEvent.change(zip, { target: { value: '94105' } });
+            fireEvent.blur(zip);
+            await waitFor(() =>
+                expect(screen.queryByText('Please enter a valid ZIP Code.')).not.toBeInTheDocument(),
+            );
+        });
+
+        it('When an invalid city is submitted / Then the create API is never called', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            await user.type(screen.getByPlaceholderText('Dhanooj'), 'Test');
+            await user.type(screen.getByPlaceholderText('B S'), 'Partner');
+            await waitFor(() => expect(screen.getByDisplayValue('Select type...')).toBeInTheDocument());
+            await user.selectOptions(screen.getByDisplayValue('Select type...'), 'referral');
+            fireEvent.change(screen.getByPlaceholderText('Bangalore'), { target: { value: '&)&)_*' } });
+
+            const form = document.querySelector('form#create-partner-form')!;
+            await act(async () => { fireEvent.submit(form); });
+
+            await waitFor(() => expect(screen.getByText('Please enter a valid city.')).toBeInTheDocument());
+            expect(mockPartnersCreate).not.toHaveBeenCalled();
+        });
+
+        it('When an invalid value is corrected / Then the message clears', async () => {
+            const user = userEvent.setup();
+            await openModal(user);
+            const city = screen.getByPlaceholderText('Bangalore');
+            fireEvent.change(city, { target: { value: '&)&)_*' } });
+            fireEvent.blur(city);
+            await waitFor(() => expect(screen.getByText('Please enter a valid city.')).toBeInTheDocument());
+            fireEvent.change(city, { target: { value: 'Bangalore' } });
+            await waitFor(() =>
+                expect(screen.queryByText('Please enter a valid city.')).not.toBeInTheDocument(),
+            );
         });
     });
 });

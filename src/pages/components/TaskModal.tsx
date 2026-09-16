@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
+import { X, Loader2, Calendar, Clock, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
-import { Task, TaskType, User, Lead, Deal } from '../../types/crm';
-import { ToastContainer, useToast } from '../../components/common/Toast';
+import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
+import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
+import { toast } from '@so360/design-system';
 import { useShell, useNotify, useActivity } from '@so360/shell-context';
 
 interface TaskModalProps {
@@ -10,12 +11,16 @@ interface TaskModalProps {
     leadId?: string;
     dealId?: string;
     stakeholderId?: string;
+    // The connected Deal's linked Project, when known — used only to
+    // auto-suggest a Project on this task; the user may still change or
+    // clear it. Passed by callers that already have the Deal loaded (e.g.
+    // DealDetailPage); optional so callers without that context are unaffected.
+    dealProjectId?: string;
     onClose: () => void;
     onSuccess: (task: Task) => void;
 }
 
-const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholderId, onClose, onSuccess }) => {
-    const { toasts, showError, dismissToast } = useToast();
+const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholderId, dealProjectId, onClose, onSuccess }) => {
     const shell = useShell();
     const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
@@ -31,19 +36,13 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const [description, setDescription] = useState(task?.description || '');
     const [startDate, setStartDate] = useState(() => {
         if (!task?.start_date) return '';
-        return new Date(task.start_date).toISOString().split('T')[0];
+        return dueDateCalendarDay(task.start_date);
     });
-    const [dueDate, setDueDate] = useState(() => {
-        if (!task?.due_date) return '';
-        // If it's a reminder, keep the time. task.due_date is ISO string.
-        // For input type="datetime-local", format is YYYY-MM-DDTHH:MM
-        if (task.type === 'REMINDER') {
-            return new Date(task.due_date).toISOString().slice(0, 16);
-        }
-        return new Date(task.due_date).toISOString().split('T')[0];
-    });
+    const [dueDate, setDueDate] = useState(() => splitStoredDueDate(task?.due_date).date);
+    const [dueTime, setDueTime] = useState(() => splitStoredDueDate(task?.due_date).time);
     const [status, setStatus] = useState<Task['status']>(task?.status || 'OPEN');
     const [type, setType] = useState<TaskType>(task?.type || 'TODO');
+    const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'MEDIUM');
     const [assignedToId, setAssignedToId] = useState(task?.assigned_to?.id || '');
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
@@ -53,6 +52,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const [associateId, setAssociateId] = useState('');
     const [leads, setLeads] = useState<Lead[]>([]);
     const [deals, setDeals] = useState<Deal[]>([]);
+    // Optional Project connection. Pre-selected from the task's existing
+    // connection when editing, or from the parent Deal's project when
+    // creating from a Deal context — either way the user can change/clear it.
+    const [projectId, setProjectId] = useState(task?.project_id || dealProjectId || '');
+    const [projects, setProjects] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -83,8 +87,20 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             setLeads(leadsData);
             setDeals(dealsData);
         };
+        const fetchProjects = async () => {
+            // getProjects() already swallows its own network errors and
+            // resolves []; the extra try/catch guards call sites (older test
+            // doubles, etc.) that don't stub this method at all.
+            try {
+                const projectsData = await crmService.getProjects();
+                setProjects(projectsData || []);
+            } catch {
+                setProjects([]);
+            }
+        };
         fetchUsers();
         fetchAssociateOptions();
+        fetchProjects();
     }, []);
 
     const handleAssignToMe = () => {
@@ -95,17 +111,25 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Reject past dates regardless of browser min-attribute enforcement
-        // Date-only strings (YYYY-MM-DD) must be appended with T00:00:00 so they are
-        // parsed as local midnight, not UTC midnight, for a correct timezone comparison.
         if (!dueDate) {
-            showError('Please select a due date.');
+            toast.error('Please select a due date.');
             return;
         }
-        const selectedDate = new Date(dueDate.includes('T') ? dueDate : dueDate + 'T00:00:00');
-        const startOfToday = new Date(todayDate + 'T00:00:00');
-        if (selectedDate < startOfToday) {
-            showError('Due Date cannot be in the past. Please select today or a future date.');
+        // A reminder is an alarm — it is meaningless without the moment to ring.
+        // Every other kind may stay date-only.
+        if (type === 'REMINDER' && !dueTime) {
+            toast.error('Please pick a date AND time for the reminder.');
+            return;
+        }
+        // Compare calendar days as strings: both sides are the user's own local
+        // date, so no instant — and no timezone shift — enters the comparison.
+        if (dueDate < todayDate) {
+            toast.error('Due Date cannot be in the past. Please select today or a future date.');
+            return;
+        }
+        // A time already gone by today is past too, now that tasks carry one.
+        if (dueTime && dueDate === todayDate && `${dueDate}T${dueTime}` < todayDatetime) {
+            toast.error('Due time cannot be in the past. Please pick a later time.');
             return;
         }
 
@@ -116,22 +140,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                 description,
                 status: status.toUpperCase(),
                 type: type.toUpperCase(),
+                priority,
                 assignee_id: assignedToId
             };
 
             if (startDate) {
-                data.start_date = new Date(startDate + 'T00:00:00').toISOString();
+                // Send the calendar day itself. Anchoring it to local midnight and
+                // normalising to UTC rolled it back a day east of Greenwich.
+                data.start_date = inputValueToApiValue(startDate);
             }
 
-            // Handle date formatting based on type
-            if (type === 'REMINDER') {
-                data.due_date = new Date(dueDate).toISOString();
-                if (reminderMinutes) {
-                    data.reminder_minutes_before = parseInt(reminderMinutes);
-                }
-            } else {
-                // For regular tasks, just the date part matters usually, but we store as ISO
-                data.due_date = new Date(dueDate).toISOString();
+            data.due_date = composeDueDate(dueDate, dueTime);
+            if (type === 'REMINDER' && reminderMinutes) {
+                data.reminder_minutes_before = parseInt(reminderMinutes);
             }
 
             if (leadId) data.lead_id = leadId;
@@ -148,6 +169,26 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             } else {
                 result = await crmService.createTask(data);
             }
+
+            // Project connection is best-effort: the task itself is already
+            // saved by this point, so a connect failure must not roll that back
+            // or block the modal from closing — just tell the user quietly.
+            if (projectId && projectId !== task?.project_id && result?.id) {
+                try {
+                    const connected = await crmService.connectTaskToProject(result.id, projectId);
+                    // A partial success: the task reached the project board, but
+                    // its assignee isn't a member there so it landed unassigned.
+                    // Saying only "Task created" would leave the user to discover
+                    // that on the board days later.
+                    if (connected?.warning) {
+                        toast.warning(connected.warning);
+                    }
+                } catch (connectError) {
+                    const reason = (connectError as Error)?.message || 'Unknown error';
+                    toast.warning(`Task ${isEditing ? 'updated' : 'created'}, but couldn't connect to Project: ${reason}`);
+                }
+            }
+
             if (!isEditing && assignedToId && assignedToId !== currentUserId) {
                 emitNotification({ event: 'CRM_TASK_ASSIGNED', userIds: [assignedToId], variables: { taskTitle: title, actorName: currentUser?.full_name || 'Someone' }, relatedResource: { type: 'task', id: result?.id } }).catch(() => {});
             }
@@ -156,7 +197,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             onClose();
         } catch (error) {
             console.error('Failed to save task', error);
-            showError('Failed to save task');
+            // ApiClient already unwraps the API body (class-validator returns an
+            // array of messages, joined). Discarding it turned every rejection —
+            // including precise field validation — into a bare "Failed to save
+            // task", which is what made the priority mismatch so hard to trace.
+            const status = (error as { status?: number })?.status;
+            const detail = (error as Error)?.message;
+            const isActionable = !!detail && status !== undefined && status < 500;
+            toast.error(isActionable ? detail : 'Failed to save task. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -164,7 +212,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0">
                     <h2 className="text-xl font-black text-slate-50 uppercase tracking-tight flex items-center gap-2">
@@ -201,11 +248,32 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         </div>
 
                         <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Priority</label>
+                            <div className="relative">
+                                <select
+                                    value={priority}
+                                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                                    className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    {TASK_PRIORITY_OPTIONS.map(o => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</label>
                             <div className="relative">
                                 <select
                                     value={type}
-                                    onChange={(e) => setType(e.target.value as TaskType)}
+                                    onChange={(e) => {
+                                        const nextType = e.target.value as TaskType;
+                                        setType(nextType);
+                                        // A reminder must ring at a moment; offer a
+                                        // sensible one rather than an empty field.
+                                        if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
+                                    }}
                                     className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="TODO">To Do</option>
@@ -231,20 +299,52 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                    {type === 'REMINDER' ? 'Date & Time' : 'Due Date'}
+                                <label htmlFor="task-due-date" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    Due Date
                                 </label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
                                     <input
-                                        type={type === 'REMINDER' ? "datetime-local" : "date"}
+                                        id="task-due-date"
+                                        type="date"
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
-                                        min={type === 'REMINDER' ? todayDatetime : todayDate}
+                                        min={todayDate}
                                         className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
                                         required
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Due time is optional for every kind except Reminder, which
+                            is an alarm. Left blank the task stays a plain calendar
+                            date — no invented 9am, no invented midnight. */}
+                        <div className="space-y-2">
+                            <label htmlFor="task-due-time" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                Due Time {type === 'REMINDER' ? <span className="text-red-500">*</span> : <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span>}
+                            </label>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                                    <input
+                                        id="task-due-time"
+                                        type="time"
+                                        value={dueTime}
+                                        onChange={(e) => setDueTime(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                        required={type === 'REMINDER'}
+                                    />
+                                </div>
+                                {dueTime && type !== 'REMINDER' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setDueTime('')}
+                                        className="px-3 py-3 rounded-xl border border-slate-700/50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-colors"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -300,6 +400,31 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <span className="text-[10px] font-black uppercase tracking-widest">Me</span>
                                 </button>
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                <Link2 size={12} />
+                                Project <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span>
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={projectId}
+                                    onChange={(e) => setProjectId(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                >
+                                    <option value="">No Project</option>
+                                    {projects.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                            </div>
+                            {projectId && (
+                                <p className="text-[11px] text-slate-500">
+                                    This task will be synchronized with the selected Project.
+                                </p>
+                            )}
                         </div>
 
                         {showAssociatePicker && (

@@ -21,6 +21,17 @@ const mockCrmService = vi.hoisted(() => ({
   updateNote: vi.fn(),
   updateTask: vi.fn(),
   uploadDocument: vi.fn(),
+  // useLeadDetailLayoutPreferences debounces a layout save by 800ms. This mock
+  // is a CLOSED LIST, so omitting gridColumns did not fail loudly — instead the
+  // timer fired after the suite finished, hit `crmService.gridColumns.save` on a
+  // torn-down mock, and threw "Cannot read properties of undefined (reading
+  // 'save')" OUTSIDE any test. Vitest reported 206/206 files passed and then
+  // exited 1, so the gate went red with nothing marked as failing.
+  gridColumns: {
+    get: vi.fn().mockResolvedValue(null),
+    save: vi.fn().mockResolvedValue(undefined),
+    reset: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 vi.mock('../services/crmService', () => ({
@@ -42,14 +53,14 @@ vi.mock('@so360/shell-context', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
   useShell: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     isModuleEnabled: () => true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
@@ -68,7 +79,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
 }));
 

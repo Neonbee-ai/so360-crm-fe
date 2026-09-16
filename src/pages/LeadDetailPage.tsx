@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { eventBus } from '@so360/event-bus';
+import { publishLeadsChanged } from '../utils/leadEvents';
 import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -14,19 +15,25 @@ import {
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
 import { useCRMFormatters } from '../utils/formatters';
+import { isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { validateEmailRequired } from '../utils/emailValidation';
+import { validatePhone } from '../utils/phoneValidation';
+import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
+import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { ToastContainer, useToast } from '../components/common/Toast';
+import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
+import DetailBackLink from '../components/common/DetailBackLink';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
-import CallsTab from './components/CallsTab';
+import CallsTab, { LogCallModal } from './components/CallsTab';
 import AuditHistoryTab from './components/AuditHistoryTab';
 import QuickActionBar from './components/QuickActionBar';
 import LeadLayoutSettingsPanel from './components/LeadLayoutSettingsPanel';
@@ -34,6 +41,7 @@ import { useLeadDetailLayoutPreferences } from '../hooks/useLeadDetailLayoutPref
 import StakeholdersTab from '../components/stakeholders/StakeholdersTab';
 import EmailsTab from './components/EmailsTab';
 import MeetingsTab from './components/MeetingsTab';
+import MeetingModal from './components/MeetingModal';
 import { useEntityTimeline } from './components/timeline/useEntityTimeline';
 import TimelineEventCard from './components/timeline/TimelineEventCard';
 import TimelineSummaryBanner from './components/timeline/TimelineSummaryBanner';
@@ -70,6 +78,24 @@ const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: (counts: TabCou
 // Tiptap emits '<p></p>' for an empty editor rather than '', so a plain
 // .trim() check isn't enough — strip tags first to see if there's real content.
 const isNoteContentEmpty = (html: string): boolean => html.replace(/<[^>]*>/g, '').trim().length === 0;
+
+// Notes timeline redesign (Task dfae6177): collapse consecutive replies from
+// the same author into one run so the author/timestamp header only prints
+// once per run instead of once per reply.
+const groupConsecutiveReplies = <T extends { author?: { id?: string; full_name?: string } | null }>(replies: T[]): T[][] => {
+    const runs: T[][] = [];
+    replies.forEach((reply) => {
+        const lastRun = runs[runs.length - 1];
+        const lastReply = lastRun?.[lastRun.length - 1];
+        const sameAuthor = lastReply && (lastReply.author?.id ?? lastReply.author?.full_name) === (reply.author?.id ?? reply.author?.full_name);
+        if (lastRun && sameAuthor) {
+            lastRun.push(reply);
+        } else {
+            runs.push([reply]);
+        }
+    });
+    return runs;
+};
 
 const getLeadDisplayName = (lead: Pick<Lead, 'first_name' | 'last_name' | 'contact_name'>): string =>
     lead.first_name
@@ -112,15 +138,28 @@ const LeadDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { toasts, showSuccess, showError, dismissToast } = useToast();
     const { recordActivity } = useActivity();
     const { isModuleEnabled } = useShell();
     const { setCurrentEntity } = useCurrentEntity();
     const shell = useShellBridge();
-    const canCreateDeal = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
-    const canPromoteLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
-    const canQualifyLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
-    const canConvertLead = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
+    const canCreateDeal = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('deals.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true);
+    const canPromoteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:promote') ?? true);
+    const canQualifyLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:qualify') ?? true);
+    const canConvertLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:convert') ?? true);
+    // Destructive action — gate on the delete permission, fail closed. The backend
+    // already enforces leads.delete; this stops offering a control the user can't use.
+    const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
+    // Lead Detail activity toolbar — gated per-action so an Admin can grant each
+    // independently via Settings > Roles & Permissions instead of the buttons
+    // being visible to every role by default. Backend already enforces the same
+    // codes (notes/calls/meetings/crm_tasks/crm_documents controllers, and
+    // messages.create in Inbox for Send Email) — this only controls visibility.
+    const canAddNote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('notes.create') ?? false);
+    const canSendEmail = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('messages.create') ?? false);
+    const canLogCall = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('crm_calls.create') ?? false);
+    const canScheduleMeeting = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('meetings.create') ?? false);
+    const canCreateTask = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('crm_tasks.create') ?? false);
+    const canUploadDocument = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('crm_documents.create') ?? false);
     const canUseNeuraAi = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const isDailyStoreEnabled = isModuleEnabled('dailystore');
     const isInboxEnabled = isModuleEnabled('inbox');
@@ -137,7 +176,12 @@ const LeadDetailPage = () => {
     const [activeTab, setActiveTab] = useState<TabType>('activity');
     const [infoTab, setInfoTab] = useState<'profile' | 'additional' | 'business'>('profile');
     const [isLoading, setIsLoading] = useState(true);
+    /** True when the lead fetch returned 403 — distinct from the lead not existing. */
+    const [accessDenied, setAccessDenied] = useState(false);
     const [isEditingInfo, setIsEditingInfo] = useState(false);
+    // Editing a lead ran the same fields through no validation at all, so a
+    // name or phone rejected by Create Lead could still be saved from here.
+    const [editErrors, setEditErrors] = useState<Record<string, string | null>>({});
     const [isChangingOwner, setIsChangingOwner] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
@@ -153,6 +197,9 @@ const LeadDetailPage = () => {
     const [noteEditorKey, setNoteEditorKey] = useState(0);
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
     const [editingNoteContent, setEditingNoteContent] = useState('');
+    // Notes timeline redesign (Task dfae6177): reply composer is collapsed
+    // behind a "Reply" affordance per note, opened on demand.
+    const [openReplyNoteId, setOpenReplyNoteId] = useState<string | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [partners, setPartners] = useState<Lead[]>([]);
@@ -161,11 +208,45 @@ const LeadDetailPage = () => {
     const [productValue, setProductValue] = useState(0);
     const [activityTotal, setActivityTotal] = useState(0);
     const [showActivityDrawer, setShowActivityDrawer] = useState(false);
-    const [autoOpenCallForm, setAutoOpenCallForm] = useState(false);
-    const [autoOpenMeetingForm, setAutoOpenMeetingForm] = useState(false);
+    // Quick actions open their own surface in place. They used to switch the
+    // workspace tab and scroll to a form inside it, which read as a page jump
+    // and — because the "open the form" flag was already true — did nothing at
+    // all on the second click.
+    const [isSchedulingMeeting, setIsSchedulingMeeting] = useState(false);
+    const [isLoggingCall, setIsLoggingCall] = useState(false);
+    // Bumped after a quick action saves, so the matching tab reloads when next shown.
+    const [callsRefreshKey, setCallsRefreshKey] = useState(0);
+    const [meetingsRefreshKey, setMeetingsRefreshKey] = useState(0);
     const [showLayoutSettings, setShowLayoutSettings] = useState(false);
     const [expandedStatusDropdown, setExpandedStatusDropdown] = useState<string | null>(null);
+    const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
+
+    // A reminder is a pointer to a task that already exists in the list below —
+    // clicking it focuses that task instead of opening a separate record.
+    const focusTaskInList = useCallback((taskId: string) => {
+        setHighlightedTaskId(taskId);
+        const el = document.getElementById(`task-card-${taskId}`);
+        el?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => {
+            setHighlightedTaskId(current => (current === taskId ? null : current));
+        }, 2500);
+    }, []);
     const layoutPrefs = useLeadDetailLayoutPreferences();
+
+    // Quick actions live at the top of the page; the workspace they drive sits
+    // well below the fold. Switching the tab alone therefore looked like the
+    // button did nothing — every quick action now scrolls the workspace into
+    // view and, where a composer exists, opens/focuses it.
+    const workspaceRef = useRef<HTMLDivElement>(null);
+    const noteComposerRef = useRef<HTMLDivElement>(null);
+    const documentInputRef = useRef<HTMLInputElement>(null);
+
+    const openWorkspaceTab = useCallback((tab: TabType) => {
+        setActiveTab(tab);
+        window.requestAnimationFrame(() => {
+            workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }, []);
 
     // Task 4 (Customer Timeline): unified server-side timeline, shared between
     // the inline preview below and ActivityHistoryDrawer.tsx.
@@ -206,17 +287,32 @@ const LeadDetailPage = () => {
 
     const fetchLeadData = useCallback(async () => {
         try {
-            const [leadData, dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData] = await Promise.all([
+            // Only the lead itself is critical. Everything else is supporting
+            // detail and degrades to an empty value.
+            //
+            // These nine calls used to share one Promise.all with no per-call
+            // catch, so a single 403 on any ONE of them — permitted or not —
+            // rejected the whole batch, left `lead` null, and rendered
+            // "Lead not found." A user who could read the lead perfectly well was
+            // told it did not exist because, say, they lacked partner access.
+            const [leadData, [dealsData, tasksData, settingsData, usersData, activitiesResult, partnersData, fetchedSourceTypes, documentsData]] = await Promise.all([
+                // Critical: a failure here is the page's failure.
                 crmService.getLeadById(id),
-                crmService.getDealsByLeadId(id),
-                crmService.getTasksByLeadId(id),
-                crmService.getSettings(),
-                crmService.getUsers(),
-                crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0),
-                crmService.getPartners(),
-                settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
-                crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
+                // Supporting detail: each degrades independently.
+                Promise.all([
+                    crmService.getDealsByLeadId(id).catch(() => [] as any[]),
+                    crmService.getTasksByLeadId(id).catch(() => [] as any[]),
+                    crmService.getSettings().catch(() => ({} as any)),
+                    crmService.getUsers().catch(() => [] as any[]),
+                    crmService.getActivitiesByLeadIdPaginated(id, INITIAL_ACTIVITY_LOAD, 0)
+                        .catch(() => ({ data: [] as any[], total: 0 })),
+                    crmService.getPartners().catch(() => [] as any[]),
+                    settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
+                    crmService.getDocumentsByLeadId(id).catch(() => [] as any[]),
+                ]),
             ]);
+
+            setAccessDenied(false);
             setLead(leadData || null);
             if (leadData) {
                 setLead({ ...leadData, activities: activitiesResult.data, documents: documentsData });
@@ -233,6 +329,10 @@ const LeadDetailPage = () => {
             setSourceTypes(fetchedSourceTypes);
         } catch (error) {
             console.error('Failed to fetch lead data', error);
+            // Report a permission failure as a permission failure. Reusing the
+            // "not found" state for this sent users hunting for a deleted record
+            // instead of asking an administrator for access.
+            setAccessDenied((error as { status?: number })?.status === 403);
         } finally {
             setIsLoading(false);
         }
@@ -278,6 +378,16 @@ const LeadDetailPage = () => {
             <div className="h-full flex items-center justify-center text-slate-500 gap-3">
                 <Loader2 className="animate-spin" />
                 <span>Loading lead workspace...</span>
+            </div>
+        );
+    }
+
+    if (accessDenied) {
+        return (
+            <div className="p-8 text-center text-slate-500">
+                <p className="text-slate-700 dark:text-slate-200 font-medium">You don't have permission to view this lead.</p>
+                <p className="mt-1 text-sm">Ask an administrator to grant your role access to CRM leads.</p>
+                <button onClick={() => navigate(backRoute)} className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</button>
             </div>
         );
     }
@@ -359,7 +469,7 @@ const LeadDetailPage = () => {
             fetchLeadData(); // Refresh to ensure consistency
         } catch (error) {
             console.error('Failed to toggle task status:', error);
-            showError('Failed to update task status');
+            toast.error('Failed to update task status');
             // Revert on error
             setAssociatedTasks(prev => prev.map(t => t.id === task.id ? task : t));
         }
@@ -370,31 +480,45 @@ const LeadDetailPage = () => {
         const leadName = lead ? getLeadDisplayName(lead) : id;
         try {
             await crmService.deleteLead(id);
-            showSuccess('Lead deleted successfully');
+            // Server-confirmed: every lead-derived count re-reads from here.
+            publishLeadsChanged('deleted', [id]);
+            // The delete is a soft delete, so "Undo" is a real restore rather
+            // than a re-create — the lead comes back with its history intact.
+            toast.success('Lead deleted', {
+                duration: 8000,
+                action: {
+                    label: 'Undo',
+                    onClick: () => {
+                        crmService.restoreLead(id)
+                            .then(() => {
+                                publishLeadsChanged('restored', [id]);
+                                toast.success('Lead restored');
+                            })
+                            .catch((e: any) => toast.error(describeApiError(e, 'We couldn’t restore this lead.')));
+                    },
+                },
+            });
             recordActivity({ eventType: 'lead.deleted', eventCategory: 'crm', description: `Deleted lead "${leadName}"`, resourceType: 'lead', resourceId: id }).catch(() => {});
             navigate(isCustomerDetailRoute ? '/crm/customers' : '/crm/leads');
         } catch (error: any) {
-            showError(error.message || 'Failed to delete lead');
+            // Never the raw router text ("Cannot DELETE /leads/<id>") — that is
+            // exactly what users were shown when this route did not exist.
+            toast.error(describeApiError(error, 'We couldn’t delete this lead. Please try again.'));
             setIsDeleting(false);
         }
     };
 
     const tabCls = (tab: TabType) =>
-        `flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+        `flex shrink-0 items-center gap-2 px-4 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
             activeTab === tab
                 ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5'
-                : 'text-slate-500 hover:text-slate-300'
+                : 'text-slate-300 hover:text-slate-50'
         }`;
-
 
     return (
         <div className="p-8">
-            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <header className="mb-8">
-                <button onClick={() => navigate(backRoute)} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    {backLabel}
-                </button>
+                <DetailBackLink fallbackTo={backRoute} className="mb-4" />
                 <div className="flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-3 mb-2 relative">
@@ -444,13 +568,18 @@ const LeadDetailPage = () => {
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <button
+                        {/* Icon-only: the trash glyph is unambiguous, and dropping the
+                            word keeps the destructive secondary action from competing
+                            with the primary CTA beside it. Name is carried by
+                            aria-label + title so it stays announced and hoverable. */}
+                        {canDeleteLead && <button
                             onClick={() => setShowDeleteConfirm(true)}
-                            className="bg-slate-800 hover:bg-red-600/20 text-slate-400 hover:text-red-400 px-4 py-3 rounded-xl font-black transition-all text-xs flex items-center gap-2 uppercase tracking-widest border border-slate-700 hover:border-red-500/50"
+                            aria-label="Delete"
+                            title="Delete"
+                            className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-3 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
                             <Trash2 size={16} />
-                            Delete
-                        </button>
+                        </button>}
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
@@ -471,12 +600,29 @@ const LeadDetailPage = () => {
             )}
 
             <QuickActionBar
-                onAddNote={() => setActiveTab('notes')}
-                onSendEmail={() => setActiveTab('emails')}
-                onLogCall={() => { setActiveTab('calls'); setAutoOpenCallForm(true); }}
-                onScheduleMeeting={() => { setActiveTab('meetings'); setAutoOpenMeetingForm(true); }}
+                onAddNote={() => {
+                    openWorkspaceTab('notes');
+                    // The composer is the point of "Add Note" — put the caret in it.
+                    window.setTimeout(() => {
+                        noteComposerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
+                    }, 350);
+                }}
+                onSendEmail={() => openWorkspaceTab('emails')}
+                onLogCall={() => setIsLoggingCall(true)}
+                onScheduleMeeting={() => setIsSchedulingMeeting(true)}
                 onCreateTask={() => setIsCreatingTask(true)}
-                onUploadDocument={() => setActiveTab('documents')}
+                onUploadDocument={() => {
+                    openWorkspaceTab('documents');
+                    // Open the OS file dialog directly rather than only revealing
+                    // the tab that contains the (hidden) file input.
+                    window.setTimeout(() => documentInputRef.current?.click(), 350);
+                }}
+                canAddNote={canAddNote}
+                canSendEmail={canSendEmail}
+                canLogCall={canLogCall}
+                canScheduleMeeting={canScheduleMeeting}
+                canCreateTask={canCreateTask}
+                canUploadDocument={canUploadDocument}
             />
 
             {/* Executive Summary Dashboard */}
@@ -515,6 +661,20 @@ const LeadDetailPage = () => {
                                 <button
                                     onClick={async () => {
                                         if (isEditingInfo) {
+                                            const nextErrors = {
+                                                first_name: validateFirstNameRequired(lead.first_name || ''),
+                                                last_name: validateLastName(lead.last_name || ''),
+                                                contact_email: validateEmailRequired(lead.contact_email || '', 'Email'),
+                                                phone: validatePhone(lead.phone || ''),
+                                            };
+                                            if (Object.values(nextErrors).some(Boolean)) {
+                                                // Stay in edit mode with the entered values intact so the
+                                                // user can correct in place rather than retype.
+                                                setEditErrors(nextErrors);
+                                                toast.error('Please correct the highlighted fields.');
+                                                return;
+                                            }
+                                            setEditErrors({});
                                             try {
                                                 // Field-diff history is now captured server-side by the
                                                 // leads audit trigger (Task 7) — see the Audit History tab.
@@ -523,7 +683,14 @@ const LeadDetailPage = () => {
                                                 fetchLeadData();
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
-                                                showError('Failed to save changes.');
+                                                const status = (error as { status?: number })?.status;
+                                                const message = (error as Error)?.message;
+                                                toast.error(
+                                                    status && status >= 400 && status < 500 && message
+                                                        ? message
+                                                        : 'Failed to save changes.',
+                                                );
+                                                return;
                                             }
                                         }
                                         setIsEditingInfo(!isEditingInfo);
@@ -550,11 +717,18 @@ const LeadDetailPage = () => {
                                                     <input
                                                         type="text"
                                                         value={lead.first_name || ''}
-                                                        onChange={(e) => setLead({ ...lead, first_name: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, first_name: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, first_name: validateFirstNameRequired(e.target.value) }));
+                                                        }}
+                                                        aria-invalid={!!editErrors.first_name}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.first_name || '—'}</span>
+                                                )}
+                                                {isEditingInfo && editErrors.first_name && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.first_name}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -568,11 +742,18 @@ const LeadDetailPage = () => {
                                                     <input
                                                         type="text"
                                                         value={lead.last_name || ''}
-                                                        onChange={(e) => setLead({ ...lead, last_name: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, last_name: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, last_name: validateLastName(e.target.value) }));
+                                                        }}
+                                                        aria-invalid={!!editErrors.last_name}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.last_name || '—'}</span>
+                                                )}
+                                                {isEditingInfo && editErrors.last_name && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.last_name}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -584,13 +765,23 @@ const LeadDetailPage = () => {
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Email</span>
                                                 {isEditingInfo ? (
                                                     <input
-                                                        type="email"
+                                                        /* `text`, not `email`: the browser's native popup
+                                                           pre-empted the inline message here too. */
+                                                        type="text"
+                                                        inputMode="email"
                                                         value={lead.contact_email}
-                                                        onChange={(e) => setLead({ ...lead, contact_email: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, contact_email: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, contact_email: validateEmailRequired(e.target.value, 'Email') }));
+                                                        }}
+                                                        aria-invalid={!!editErrors.contact_email}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.contact_email}</a>
+                                                )}
+                                                {isEditingInfo && editErrors.contact_email && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.contact_email}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -604,9 +795,13 @@ const LeadDetailPage = () => {
                                                     <input
                                                         type="text"
                                                         value={lead.phone || ''}
-                                                        onChange={(e) => setLead({ ...lead, phone: e.target.value })}
+                                                        onChange={(e) => {
+                                                            setLead({ ...lead, phone: e.target.value });
+                                                            setEditErrors(prev => ({ ...prev, phone: validatePhone(e.target.value) }));
+                                                        }}
                                                         placeholder="Add phone..."
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        aria-invalid={!!editErrors.phone}
+                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
                                                     />
                                                 ) : (
                                                     <span className="flex items-center gap-2">
@@ -618,6 +813,9 @@ const LeadDetailPage = () => {
                                                             name={getLeadDisplayName(lead)}
                                                         />
                                                     </span>
+                                                )}
+                                                {isEditingInfo && editErrors.phone && (
+                                                    <p className="text-xs text-red-400 mt-1">{editErrors.phone}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -743,7 +941,7 @@ const LeadDetailPage = () => {
                                 <CustomerDetailsPanel
                                     lead={lead}
                                     onUpdate={(updatedLead) => setLead(updatedLead)}
-                                    showToast={(message, type) => type === 'success' ? showSuccess(message) : showError(message)}
+                                    showToast={(message, type) => type === 'success' ? toast.success(message) : toast.error(message)}
                                     partners={partners as any}
                                 />
                             )}
@@ -751,21 +949,35 @@ const LeadDetailPage = () => {
                     </section>
 
                     {/* Workspace Tabs - Now below Profile Data */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="flex items-center overflow-x-auto scrollbar-hide border-b border-slate-800 bg-slate-900/50">
-                            {layoutPrefs.visibleSections.map((section) => {
-                                const tab = TAB_CONFIG[section.key];
-                                if (!tab) return null;
-                                return (
-                                    <button key={section.key} onClick={() => setActiveTab(section.key as TabType)} className={tabCls(section.key as TabType)}>
-                                        {tab.icon} {tab.label(tabCounts)}
-                                    </button>
-                                );
-                            })}
+                    <div ref={workspaceRef} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit scroll-mt-6">
+                        {/* The settings cog sits outside the scrolling strip: inside it, it
+                            consumed the width the last tab needed and clipped its label
+                            (the "Feedbac…" report). The strip scrolls on its own, with a
+                            fade on the right edge so it reads as scrollable rather than cut
+                            off — every label stays whole at any width or zoom level. */}
+                        <div className="flex items-stretch border-b border-slate-800 bg-slate-900/50">
+                            <div className="relative flex-1 min-w-0">
+                                <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="detail-tab-strip">
+                                    {layoutPrefs.visibleSections.map((section) => {
+                                        const tab = TAB_CONFIG[section.key];
+                                        if (!tab) return null;
+                                        return (
+                                            <button key={section.key} onClick={() => setActiveTab(section.key as TabType)} className={tabCls(section.key as TabType)}>
+                                                {tab.icon} {tab.label(tabCounts)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <div
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 to-transparent"
+                                />
+                            </div>
                             <button
                                 onClick={() => setShowLayoutSettings(true)}
-                                className="ml-auto px-3 text-slate-500 hover:text-slate-200 transition-colors shrink-0"
+                                className="px-3 text-slate-300 hover:text-slate-50 transition-colors shrink-0 border-l border-slate-800"
                                 title="Layout Settings"
+                                aria-label="Layout Settings"
                             >
                                 <Settings2 size={14} />
                             </button>
@@ -880,11 +1092,11 @@ const LeadDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         {lead.notes.length === 0 ? (
-                                            <p className="text-slate-400 italic text-sm">No notes captured for this lead yet.</p>
+                                            <p className="text-slate-400 italic text-sm">No notes captured for this {isCustomerDetailRoute ? 'customer' : 'lead'} yet.</p>
                                         ) : (
                                             <div className="space-y-4">
                                                 {lead.notes.map(note => (
-                                                    <div key={note.id} className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group/note relative">
+                                                    <div key={note.id} className="text-sm bg-slate-900/40 border border-slate-800 rounded-xl p-4 group/note relative">
                                                         {editingNoteId === note.id ? (
                                                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-2">
                                                                 <NoteEditor value={editingNoteContent} onChange={setEditingNoteContent} autoFocus />
@@ -954,35 +1166,51 @@ const LeadDetailPage = () => {
                                                         </div>
 
                                                         {(note.replies || []).length > 0 && (
-                                                            <div className="mt-3 ml-4 space-y-3 border-l border-slate-800 pl-4">
-                                                                {(note.replies || []).map((reply) => (
-                                                                    <div key={reply.id} className="text-sm">
-                                                                        <NoteContent html={reply.content} />
-                                                                        <div className="flex items-center justify-between mt-1">
-                                                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{reply.author?.full_name}</span>
-                                                                            <span className="text-[9px] text-slate-500 font-bold">{formatters.formatDate(reply.created_at)}</span>
+                                                            <div className="mt-3 ml-3 space-y-3 border-l-2 border-slate-700/60 pl-4">
+                                                                {groupConsecutiveReplies(note.replies || []).map((run) => (
+                                                                    <div key={run[0].id} className="space-y-1.5">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{run[0].author?.full_name}</span>
+                                                                            <span className="text-[10px] text-slate-500 font-bold">{formatters.formatDate(run[0].created_at)}</span>
                                                                         </div>
+                                                                        {run.map((reply) => (
+                                                                            <div key={reply.id} className="text-sm">
+                                                                                <NoteContent html={reply.content} />
+                                                                            </div>
+                                                                        ))}
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         )}
-                                                        <div className="mt-2 ml-4">
-                                                            <NoteReplyComposer
-                                                                people={allUsers}
-                                                                onSubmit={async (content) => {
-                                                                    const freshReply = await crmService.createNote({ lead_id: lead.id, content, parent_note_id: note.id });
-                                                                    setLead({
-                                                                        ...lead,
-                                                                        notes: lead.notes.map((n) => n.id === note.id ? { ...n, replies: [...(n.replies || []), freshReply] } : n),
-                                                                    });
-                                                                }}
-                                                            />
+                                                        <div className="mt-3 ml-3 pl-4">
+                                                            {openReplyNoteId === note.id ? (
+                                                                <NoteReplyComposer
+                                                                    people={allUsers}
+                                                                    onSubmit={async (content) => {
+                                                                        const freshReply = await crmService.createNote({ lead_id: lead.id, content, parent_note_id: note.id });
+                                                                        setLead({
+                                                                            ...lead,
+                                                                            notes: lead.notes.map((n) => n.id === note.id ? { ...n, replies: [...(n.replies || []), freshReply] } : n),
+                                                                        });
+                                                                        setOpenReplyNoteId(null);
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    data-testid={`open-reply-${note.id}`}
+                                                                    onClick={() => setOpenReplyNoteId(note.id)}
+                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 hover:text-blue-400 uppercase tracking-widest transition-colors"
+                                                                >
+                                                                    <MessageSquare size={11} /> Reply
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
-                                        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
+                                        <div ref={noteComposerRef} className="bg-slate-950 border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
                                             <NoteEditor
                                                 key={noteEditorKey}
                                                 value={newNoteContent}
@@ -1033,28 +1261,43 @@ const LeadDetailPage = () => {
 
                                     {/* Reminders Alert Section */}
                                     {associatedTasks.filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000)).length > 0 && (
-                                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
-                                            <h4 className="flex items-center gap-2 text-xs font-black text-amber-500 uppercase tracking-widest mb-3">
-                                                <Clock size={14} /> upcoming & due reminders
-                                            </h4>
-                                            <div className="space-y-2">
+                                        /* Notification strip — deliberately NOT card-shaped, so it
+                                           never reads as a second copy of the task below. */
+                                        <div className="mb-6" data-testid="task-reminders-panel">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Clock size={12} className="text-amber-500" />
+                                                <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                                                    Upcoming &amp; Due Reminders
+                                                </h4>
+                                                <span className="text-[10px] text-slate-300 normal-case tracking-normal">
+                                                    · alerts for tasks already listed below
+                                                </span>
+                                            </div>
+                                            <div className="divide-y divide-amber-500/10 border-l-2 border-amber-500 bg-amber-500/[0.06] rounded-r">
                                                 {associatedTasks
                                                     .filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
                                                     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-                                                    .map(task => (
-                                                        <div key={task.id} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-lg border border-amber-500/10">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={`w-2 h-2 rounded-full ${new Date(task.due_date) < new Date() ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
-                                                                <span className="text-sm font-bold text-slate-200">{task.title}</span>
-                                                                <span className="text-xs text-slate-500">
-                                                                    {formatters.formatDateTime(task.due_date)}
+                                                    .map(task => {
+                                                        const reminderOverdue = new Date(task.due_date) < new Date();
+                                                        return (
+                                                            <button
+                                                                key={task.id}
+                                                                type="button"
+                                                                onClick={() => focusTaskInList(task.id)}
+                                                                data-testid={`task-reminder-${task.id}`}
+                                                                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
+                                                            >
+                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
+                                                                <span className="text-xs font-semibold text-slate-300 truncate">{task.title}</span>
+                                                                <span className={`text-[11px] shrink-0 ${reminderOverdue ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
+                                                                    {reminderOverdue ? 'Overdue · ' : ''}{formatters.formatDateTime(task.due_date)}
                                                                 </span>
-                                                            </div>
-                                                            <Link to={`/crm/tasks/${task.id}`} className="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1">
-                                                                View <ChevronLeft size={10} className="rotate-180" />
-                                                            </Link>
-                                                        </div>
-                                                    ))}
+                                                                <span className="ml-auto text-[10px] font-black text-amber-500 uppercase tracking-widest shrink-0">
+                                                                    View Task
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
                                             </div>
                                         </div>
                                     )}
@@ -1068,7 +1311,7 @@ const LeadDetailPage = () => {
                                             {associatedTasks.map(task => {
                                                 const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
                                                 return (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-amber-500/70' : ''} ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
                                                         className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
@@ -1094,7 +1337,7 @@ const LeadDetailPage = () => {
                                                                                 e.stopPropagation();
                                                                                 setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
                                                                             }}
-                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'}`}
                                                                             data-testid={`status-button-${task.id}`}
                                                                         >
                                                                             {task.status}
@@ -1111,11 +1354,11 @@ const LeadDetailPage = () => {
                                                                                                 .then(() => {
                                                                                                     setAssociatedTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: status as any } : t));
                                                                                                     setExpandedStatusDropdown(null);
-                                                                                                    showSuccess(`Task status updated to ${status}`);
+                                                                                                    toast.success(`Task status updated to ${status}`);
                                                                                                 })
                                                                                                 .catch(error => {
                                                                                                     console.error('Failed to update task status:', error);
-                                                                                                    showError('Failed to update task status');
+                                                                                                    toast.error('Failed to update task status');
                                                                                                 });
                                                                                         }}
                                                                                         className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-blue-500/20 text-blue-400 border-b border-blue-500/20' : 'hover:bg-slate-800 text-slate-300'}`}
@@ -1130,18 +1373,21 @@ const LeadDetailPage = () => {
                                                                 </div>
                                                             </div>
                                                             {task.description && (
-                                                                <p className="text-xs text-slate-400 mt-1 line-clamp-2">{task.description}</p>
+                                                                <p className="text-xs text-slate-300 mt-1 line-clamp-2">{task.description}</p>
                                                             )}
                                                         </Link>
 
-                                                        <div className="flex items-center gap-4 mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800/50 pt-2">
-                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-rose-400' : 'text-rose-400/70'}`}>
-                                                                <Clock size={10} />
+                                                        {/* Metadata row: readable in its own right, one weight below the
+                                                            title. The previous slate-500 / rose-400/70 pairing sat under
+                                                            3:1 on the light theme's white card. */}
+                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-t border-slate-800/50 pt-2">
+                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                                                                <Clock size={11} />
                                                                 Due {formatters.formatDate(task.due_date)}
                                                             </span>
 
                                                             {task.assigned_to && (
-                                                                <span className="flex items-center gap-1 text-slate-400">
+                                                                <span className="flex items-center gap-1 text-slate-300">
                                                                     <div className="w-4 h-4 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
                                                                         {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} className="w-full h-full object-cover" /> : task.assigned_to.full_name?.charAt(0)}
                                                                     </div>
@@ -1151,16 +1397,19 @@ const LeadDetailPage = () => {
 
                                                             {task.deal_name && (
                                                                 <>
-                                                                    <span className="w-1 h-1 bg-slate-400/50 rounded-full" />
-                                                                    <span className="text-blue-500/70 lowercase italic">{task.deal_name}</span>
+                                                                    <span className="w-1 h-1 bg-slate-400 rounded-full" />
+                                                                    <span className="text-blue-400 lowercase italic">{task.deal_name}</span>
                                                                 </>
                                                             )}
                                                         </div>
                                                     </div>
                                                     <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                                                         <button
-                                                            onClick={() => setEditingTask(task)}
-                                                            className="p-1.5 bg-slate-800 rounded hover:text-blue-400 hover:bg-slate-700 transition-colors"
+                                                            onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
+                                                            disabled={isTaskLocked(task.status)}
+                                                            title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit Task'}
+                                                            aria-label="Edit Task"
+                                                            className="p-1.5 bg-slate-800 rounded hover:text-blue-400 hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-800 disabled:hover:text-current"
                                                         >
                                                             <Edit2 size={12} />
                                                         </button>
@@ -1181,6 +1430,7 @@ const LeadDetailPage = () => {
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload Document'}
                                             <input
+                                                ref={documentInputRef}
                                                 type="file"
                                                 className="hidden"
                                                 disabled={isUploading}
@@ -1198,7 +1448,7 @@ const LeadDetailPage = () => {
                                                             publishLeadDocumentsChanged(lead.id);
                                                         } catch (err) {
                                                             const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
-                                                            showError(msg);
+                                                            toast.error(msg);
                                                         } finally {
                                                             setIsUploading(false);
                                                             e.target.value = '';
@@ -1291,7 +1541,8 @@ const LeadDetailPage = () => {
                                                                 }
                                                             }}
                                                             className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
-                                                            title="Delete"
+                                                            title="Delete document"
+                                                            aria-label="Delete document"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
@@ -1318,7 +1569,7 @@ const LeadDetailPage = () => {
                             )}
 
                             {activeTab === 'calls' && lead && (
-                                <CallsTab leadId={lead.id} autoOpenForm={autoOpenCallForm} />
+                                <CallsTab key={callsRefreshKey} leadId={lead.id} />
                             )}
 
                             {activeTab === 'audit' && lead && (
@@ -1340,7 +1591,7 @@ const LeadDetailPage = () => {
                             )}
 
                             {activeTab === 'meetings' && lead && (
-                                <MeetingsTab leadId={lead.id} autoOpenForm={autoOpenMeetingForm} />
+                                <MeetingsTab key={meetingsRefreshKey} leadId={lead.id} />
                             )}
 
                         </div>
@@ -1537,7 +1788,7 @@ const LeadDetailPage = () => {
                                                     setIsChangingOwner(false);
                                                 } catch (error) {
                                                     console.error('Failed to update owner:', error);
-                                                    showError('Failed to update owner.');
+                                                    toast.error('Failed to update owner.');
                                                 }
                                             }}
                                             className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'}`}
@@ -1633,7 +1884,7 @@ const LeadDetailPage = () => {
                                                     setIsChangingStage(false);
                                                 } catch (error: any) {
                                                     console.error('Failed to update stage:', error);
-                                                    showError(error.message || 'Failed to update stage. Please try again.');
+                                                    toast.error(error.message || 'Failed to update stage. Please try again.');
                                                 }
                                             }}
                                             className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
@@ -1689,7 +1940,7 @@ const LeadDetailPage = () => {
                                             setActiveTab('activity');
                                         } catch (error: any) {
                                             console.error('Failed to log email:', error);
-                                            showError(error.message || 'Failed to log email.');
+                                            toast.error(error.message || 'Failed to log email.');
                                         }
                                     }}
                                     className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
@@ -1820,6 +2071,25 @@ const LeadDetailPage = () => {
                     />
                 )
             }
+
+            {/* Schedule Meeting — page level, so the action never depends on
+                which tab happens to be open. */}
+            {isSchedulingMeeting && (
+                <MeetingModal
+                    leadId={lead.id}
+                    onClose={() => setIsSchedulingMeeting(false)}
+                    onSuccess={() => setMeetingsRefreshKey(k => k + 1)}
+                />
+            )}
+
+            {/* Log Call — same rule as Schedule Meeting. */}
+            {isLoggingCall && (
+                <LogCallModal
+                    leadId={lead.id}
+                    onClose={() => setIsLoggingCall(false)}
+                    onSuccess={() => setCallsRefreshKey(k => k + 1)}
+                />
+            )}
 
             {/* Create Deal Modal */}
             {

@@ -2,8 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-    ChevronLeft, CheckCircle2, Circle, Calendar,
-    User as UserIcon, Briefcase, Clock, AlertCircle, Trash2, Edit2
+    CheckCircle2, Circle, Calendar,
+    User as UserIcon, Briefcase, Clock, AlertCircle, Trash2, Edit2,
+    Link2, Unlink, RefreshCw
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
@@ -11,7 +12,11 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
+import { toast, getErrorMessage, CrossLinkChip } from '@so360/design-system';
+import DetailBackLink from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
+import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
@@ -21,7 +26,7 @@ const TaskDetailPage = () => {
     const currentUserId = shell?.user?.id;
     const { recordActivity } = useActivity();
     const shellBridge = useShellBridge();
-    const canCreateTask = (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
+    const canCreateTask = (shellBridge?.permissionsLoaded === true) && (shellBridge?.hasPermission?.('activities.create') ?? false) && (shellBridge?.effectiveFlagsLoaded !== false) && (shellBridge?.isFeatureEnabled?.('action:crm:tasks:create') ?? true);
     const [task, setTask] = useState<Task | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isEditingTask, setIsEditingTask] = useState(false);
@@ -34,6 +39,10 @@ const TaskDetailPage = () => {
     const [isRetryingNotes, setIsRetryingNotes] = useState(false);
     const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
     const [editingNote, setEditingNote] = useState<{ id: string; content: string } | null>(null);
+    const [isRetryingSync, setIsRetryingSync] = useState(false);
+    const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+    const [disconnectMode, setDisconnectMode] = useState<'remove_project_task' | 'keep_but_disconnect'>('keep_but_disconnect');
+    const [isDisconnecting, setIsDisconnecting] = useState(false);
 
     const refreshNotes = async (taskId: string) => {
         try {
@@ -85,6 +94,12 @@ const TaskDetailPage = () => {
         try {
             // Optimistic update
             setTask({ ...task, status: newStatus });
+            // Action availability must update immediately: close any editing
+            // surface that is no longer valid for a completed task.
+            if (isTaskLocked(newStatus)) {
+                setIsRescheduling(false);
+                setIsEditingTask(false);
+            }
 
             await crmService.updateTask(task.id, { status: newStatus });
             if (newStatus === 'DONE') {
@@ -108,6 +123,11 @@ const TaskDetailPage = () => {
 
     const handleReschedule = async (date: string) => {
         if (!task) return;
+        if (!canRescheduleTask(task.status)) {
+            toast.warning(TASK_LOCKED_HINT);
+            setIsRescheduling(false);
+            return;
+        }
         try {
             await crmService.updateTask(task.id, { due_date: date });
             setTask({ ...task, due_date: date });
@@ -125,6 +145,37 @@ const TaskDetailPage = () => {
             navigate('/crm/tasks');
         } catch (error) {
             console.error('Failed to delete task:', error);
+        }
+    };
+
+    const handleRetrySync = async () => {
+        if (!task) return;
+        setIsRetryingSync(true);
+        try {
+            const updated = await crmService.retryTaskProjectSync(task.id);
+            setTask(updated || task);
+            toast.success('Project sync retried.');
+        } catch (error) {
+            console.error('Failed to retry project sync:', error);
+            toast.error(getErrorMessage(error, 'Failed to retry sync. Please try again.'));
+        } finally {
+            setIsRetryingSync(false);
+        }
+    };
+
+    const handleDisconnect = async () => {
+        if (!task) return;
+        setIsDisconnecting(true);
+        try {
+            const updated = await crmService.disconnectTaskFromProject(task.id, disconnectMode);
+            setTask(updated || { ...task, sync_status: 'disconnected' });
+            setShowDisconnectConfirm(false);
+            toast.success('Task disconnected from Project.');
+        } catch (error) {
+            console.error('Failed to disconnect task from project:', error);
+            toast.error(getErrorMessage(error, 'Failed to disconnect from Project. Please try again.'));
+        } finally {
+            setIsDisconnecting(false);
         }
     };
 
@@ -146,15 +197,15 @@ const TaskDetailPage = () => {
         );
     }
 
-    const isOverdue = (task.status === 'OPEN' || task.status === 'IN_PROGRESS') && new Date(task.due_date) < new Date();
+    const isOverdue = isTaskOverdue(task);
+    const isLocked = isTaskLocked(task.status);
+    const canEdit = canEditTask(task.status);
+    const canReschedule = canRescheduleTask(task.status);
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
             <header className="mb-8">
-                <button onClick={() => navigate('/crm/tasks')} className="flex items-center gap-1 text-slate-400 hover:text-slate-100 transition-colors mb-4 group">
-                    <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    Back to Tasks
-                </button>
+                <DetailBackLink fallbackTo="/crm/tasks" className="mb-4" />
                 <div className="flex justify-between items-start">
                     <div className="flex items-start gap-4">
                         <button className="mt-1 text-slate-500 hover:text-blue-400 transition-colors">
@@ -165,12 +216,29 @@ const TaskDetailPage = () => {
                                 <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
                                     {task.title}
                                 </h1>
-                                <button
-                                    onClick={() => setIsEditingTask(true)}
-                                    className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
-                                >
-                                    <Edit2 size={16} />
-                                </button>
+                                {/* Task-level actions are grouped together so users find
+                                    them in a single place instead of scanning the page. */}
+                                <div className="flex items-center gap-1" data-testid="task-actions">
+                                    <button
+                                        onClick={() => canEdit && setIsEditingTask(true)}
+                                        disabled={!canEdit}
+                                        aria-label="Edit Task"
+                                        title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
+                                        className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-slate-500 disabled:hover:bg-transparent"
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                    {canCreateTask && (
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            aria-label="Delete Task"
+                                            title="Delete Task"
+                                            className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-3 mt-2">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : task.status === 'IN_PROGRESS' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : task.status === 'ON_HOLD' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : task.status === 'CANCELLED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -185,12 +253,6 @@ const TaskDetailPage = () => {
                             </div>
                         </div>
                     </div>
-                    {canCreateTask && <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="text-slate-500 hover:text-rose-400 p-2 transition-colors"
-                    >
-                        <Trash2 size={20} />
-                    </button>}
                 </div>
             </header>
 
@@ -234,10 +296,70 @@ const TaskDetailPage = () => {
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Due Date</span>
                                     <p className={`text-lg font-bold ${isOverdue ? 'text-rose-400' : 'text-slate-50'}`}>
-                                        {formatters.formatDate(task.due_date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        {formatters.formatDate(dueDateCalendarDay(task.due_date), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        {/* The time appears only when the user chose one. */}
+                                        {hasTimeComponent(task.due_date) && (
+                                            <span className="ml-2 text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                                        )}
                                     </p>
                                 </div>
                             </div>
+
+                            {/* Project connection status. `sync_status` is only present
+                                once the task has (or once had) a Project connection —
+                                absent/undefined means unaffected behavior, no UI at all. */}
+                            {task.sync_status === 'connected' && (
+                                <div className="flex items-center gap-4" data-testid="project-sync-connected">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                                        <Link2 size={20} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Connected to Project</span>
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            {task.project_id && <CrossLinkChip type="projects.project" id={task.project_id} />}
+                                            {task.last_synced_at && (
+                                                <span className="text-xs text-slate-500">
+                                                    Last synced {formatters.formatDate(task.last_synced_at, { hour: 'numeric', minute: '2-digit' })}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { setDisconnectMode('keep_but_disconnect'); setShowDisconnectConfirm(true); }}
+                                        className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all shrink-0"
+                                        aria-label="Disconnect from Project"
+                                        title="Disconnect from Project"
+                                    >
+                                        <Unlink size={16} />
+                                    </button>
+                                </div>
+                            )}
+
+                            {task.sync_status === 'sync_failed' && (
+                                <div className="flex items-center gap-4" data-testid="project-sync-failed">
+                                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 shrink-0">
+                                        <AlertCircle size={20} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <span className="text-[10px] font-bold text-rose-400 uppercase block mb-1">Sync Failed</span>
+                                        <span className="text-sm text-slate-400">This task couldn't be synchronized with its Project.</span>
+                                    </div>
+                                    <button
+                                        onClick={handleRetrySync}
+                                        disabled={isRetryingSync}
+                                        className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-blue-600/10 border border-blue-600/20 rounded-lg text-blue-400 hover:bg-blue-600/20 transition-colors disabled:opacity-50 shrink-0"
+                                    >
+                                        {isRetryingSync ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                        Retry Sync
+                                    </button>
+                                </div>
+                            )}
+
+                            {task.sync_status === 'disconnected' && (
+                                <p className="text-xs text-slate-600 italic" data-testid="project-sync-disconnected">
+                                    Previously connected to a Project.
+                                </p>
+                            )}
                         </div>
                     </section>
 
@@ -252,12 +374,14 @@ const TaskDetailPage = () => {
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
                             <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Notes & Comments</h3>
-                            {canCreateTask && !notesError && (
+                            {/* Only one Cancel exists in this section — inside the editor.
+                                The header keeps a single "open editor" affordance. */}
+                            {canCreateTask && !notesError && !isAddingNote && (
                                 <button
-                                    onClick={() => setIsAddingNote(!isAddingNote)}
+                                    onClick={() => setIsAddingNote(true)}
                                     className="text-xs text-blue-400 hover:text-blue-300 font-bold"
                                 >
-                                    {isAddingNote ? 'Cancel' : '+ Add Note'}
+                                    + Add Note
                                 </button>
                             )}
                         </div>
@@ -275,9 +399,23 @@ const TaskDetailPage = () => {
                             </div>
                         )}
 
+                        {/* Collapsed state: a compact input that expands into the full
+                            editor on click, so the section stays quiet when idle. */}
+                        {canCreateTask && !notesError && !isAddingNote && (
+                            <button
+                                type="button"
+                                onClick={() => setIsAddingNote(true)}
+                                data-testid="note-composer-trigger"
+                                className="w-full text-left bg-slate-950 border border-slate-800 hover:border-blue-500/50 text-slate-500 rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
+                            >
+                                Add a note or comment...
+                            </button>
+                        )}
+
                         {isAddingNote && (
                             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 mb-4">
                                 <textarea
+                                    autoFocus
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     placeholder="Add a note or comment..."
@@ -301,7 +439,7 @@ const TaskDetailPage = () => {
                                                 recordActivity({ eventType: 'note.added', eventCategory: 'crm', description: `Added a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                             } catch (error) {
                                                 console.error('Failed to create note:', error);
-                                                alert('Failed to add note. Please try again.');
+                                                toast.error(getErrorMessage(error, 'Failed to add note. Please try again.'));
                                             }
                                         }}
                                         className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm"
@@ -399,11 +537,18 @@ const TaskDetailPage = () => {
                                 {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
                             </button>
                             <button
-                                onClick={() => setIsRescheduling(true)}
-                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50"
+                                onClick={() => canReschedule && setIsRescheduling(true)}
+                                disabled={!canReschedule}
+                                title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
+                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-700/60"
                             >
                                 Reschedule
                             </button>
+                            {isLocked && (
+                                <p className="text-[10px] text-slate-500 leading-snug pt-1" data-testid="task-locked-hint">
+                                    {TASK_LOCKED_HINT}
+                                </p>
+                            )}
                         </div>
                     </section>
                 </div>
@@ -466,7 +611,7 @@ const TaskDetailPage = () => {
                             <button
                                 onClick={async () => {
                                     if (!editingNote.content.trim()) {
-                                        alert('Note content cannot be empty.');
+                                        toast.warning('Note content cannot be empty.');
                                         return;
                                     }
                                     try {
@@ -476,7 +621,7 @@ const TaskDetailPage = () => {
                                         recordActivity({ eventType: 'note.updated', eventCategory: 'crm', description: `Edited a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to update note:', error);
-                                        alert('Failed to update note. Please try again.');
+                                        toast.error(getErrorMessage(error, 'Failed to update note. Please try again.'));
                                     }
                                 }}
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-500/20 active:scale-95"
@@ -520,12 +665,77 @@ const TaskDetailPage = () => {
                                         recordActivity({ eventType: 'note.deleted', eventCategory: 'crm', description: `Deleted a note on task "${task.title}"`, resourceType: 'task', resourceId: task.id }).catch(() => {});
                                     } catch (error) {
                                         console.error('Failed to delete note:', error);
-                                        alert('Failed to delete note. Please try again.');
+                                        toast.error(getErrorMessage(error, 'Failed to delete note. Please try again.'));
                                     }
                                 }}
                                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95"
                             >
                                 Delete Note
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Disconnect from Project Confirmation Modal */}
+            {showDisconnectConfirm && createPortal(
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                        <div className="flex items-start gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
+                                <Unlink className="text-rose-400" size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-50 mb-1">Disconnect from Project</h3>
+                                <p className="text-sm text-slate-400">
+                                    Choose what happens to the linked Project task.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="space-y-2 mb-4">
+                            <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="disconnect-mode"
+                                    checked={disconnectMode === 'keep_but_disconnect'}
+                                    onChange={() => setDisconnectMode('keep_but_disconnect')}
+                                    className="mt-1"
+                                />
+                                <span>
+                                    <span className="block text-sm font-bold text-slate-200">Keep Project task, just disconnect</span>
+                                    <span className="block text-xs text-slate-500">The Project task stays as-is; this CRM task stops syncing with it.</span>
+                                </span>
+                            </label>
+                            <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="disconnect-mode"
+                                    checked={disconnectMode === 'remove_project_task'}
+                                    onChange={() => setDisconnectMode('remove_project_task')}
+                                    className="mt-1"
+                                />
+                                <span>
+                                    <span className="block text-sm font-bold text-slate-200">Remove the Project task too</span>
+                                    <span className="block text-xs text-slate-500">Deletes the connected task on the Project side as well.</span>
+                                </span>
+                            </label>
+                        </div>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setShowDisconnectConfirm(false)}
+                                disabled={isDisconnecting}
+                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-lg font-bold text-sm transition-all border border-slate-600/50 disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDisconnect}
+                                disabled={isDisconnecting}
+                                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {isDisconnecting && <Loader2 size={12} className="animate-spin" />}
+                                Disconnect
                             </button>
                         </div>
                     </div>

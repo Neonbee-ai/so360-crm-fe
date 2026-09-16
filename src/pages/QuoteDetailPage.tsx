@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer } from 'lucide-react';
+import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
+import DetailBackLink from '../components/common/DetailBackLink';
+import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
+import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection } from '../types/crm';
+import { toast, getErrorMessage } from '@so360/design-system';
+import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
+import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
+import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
+import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
@@ -23,9 +30,9 @@ const QuoteDetailPage = () => {
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
-    const canCreateQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
-    const canApproveQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true);
-    const canConvertQuote = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true);
+    const canCreateQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:create') ?? true);
+    const canApproveQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.approve') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:approve') ?? true);
+    const canConvertQuote = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('quotes.convert') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:quotes:convert') ?? true);
 
     // Use dynamic formatters from business settings
     const { settings } = useBusinessSettings();
@@ -37,6 +44,16 @@ const QuoteDetailPage = () => {
     });
 
     const [quote, setQuote] = useState<Quote | null>(null);
+    // The linked customer record, resolved so the printed quotation can carry a
+    // complete "Quotation To" block (address, tax registration, contact) rather
+    // than the customer's name alone.
+    const [customer, setCustomer] = useState<Lead | null>(null);
+    // Emailing the quotation: the PDF is built server-side, so this is a real
+    // attachment rather than the print dialog the Print button opens.
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [sendTo, setSendTo] = useState('');
+    const [sendMessage, setSendMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -46,6 +63,10 @@ const QuoteDetailPage = () => {
     const [title, setTitle] = useState('');
     const [notes, setNotes] = useState('');
     const [termsAndConditions, setTermsAndConditions] = useState('');
+    const [paymentTerms, setPaymentTerms] = useState('');
+    const [deliveryTerms, setDeliveryTerms] = useState('');
+    const [incoterm, setIncoterm] = useState('');
+    const [customerReference, setCustomerReference] = useState('');
     const [validUntil, setValidUntil] = useState('');
     const [lines, setLines] = useState<QuoteLine[]>([]);
     // Tracks raw string values while user is mid-typing in numeric fields (prevents Number() from swallowing "5." or "")
@@ -61,6 +82,11 @@ const QuoteDetailPage = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     const [showConvertModal, setShowConvertModal] = useState(false);
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [approvalHistory, setApprovalHistory] = useState<ApprovalRequestRecord[]>([]);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [withdrawReason, setWithdrawReason] = useState('');
+    const [isWithdrawing, setIsWithdrawing] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -83,15 +109,70 @@ const QuoteDetailPage = () => {
         }).catch(() => {});
     }, [lines]);
 
+    const openSendModal = () => {
+        // Prefill with the address on file; the user can redirect it to a
+        // procurement mailbox, which is common for B2B quotes.
+        setSendTo(customer?.contact_email || '');
+        setSendMessage('');
+        setShowSendModal(true);
+    };
+
+    const handleSendQuote = async () => {
+        if (!id) return;
+        setIsSending(true);
+        try {
+            const result = await crmService.sendQuote(id, {
+                to: sendTo.trim() || undefined,
+                message: sendMessage.trim() || undefined,
+            });
+            if (result.sent) {
+                toast.success(`Quotation emailed to ${result.to}`);
+                setShowSendModal(false);
+            } else {
+                // The backend refuses rather than sending to nobody — surface its
+                // reason instead of a generic failure.
+                toast.error(result.reason || 'Could not send the quotation.');
+            }
+        } catch (err) {
+            toast.error(getErrorMessage(err, 'Could not send the quotation.'));
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const fetchApprovalHistory = async (quoteId: string) => {
+        try {
+            const data = await crmService.getQuoteApprovalHistory(quoteId);
+            setApprovalHistory(data || []);
+        } catch {
+            // Ignore error if approval history endpoint fails
+        }
+    };
+
     const fetchQuote = async () => {
         setIsLoading(true);
         setError(null);
         try {
             const data = await crmService.getQuoteById(id!);
             setQuote(data);
+            setCustomer(null);
+            fetchApprovalHistory(id!);
+            if (data.customer_id) {
+                crmService
+                    .getLeadById(data.customer_id)
+                    .then((c) => setCustomer(c ?? null))
+                    .catch(() => {
+                        // Customer deleted or not visible — the quote still prints,
+                        // just without the expanded party block.
+                    });
+            }
             setTitle(data.title || '');
             setNotes(data.notes || '');
             setTermsAndConditions(data.terms_and_conditions || '');
+            setPaymentTerms(data.payment_terms || '');
+            setDeliveryTerms(data.delivery_terms || '');
+            setIncoterm(data.incoterm || '');
+            setCustomerReference(data.customer_reference || '');
             setValidUntil(data.valid_until ? data.valid_until.split('T')[0] : '');
             setLines((data.lines || []).map((l: any) => ({
                 ...l,
@@ -115,6 +196,10 @@ const QuoteDetailPage = () => {
                 title,
                 notes,
                 terms_and_conditions: termsAndConditions,
+                payment_terms: paymentTerms || undefined,
+                delivery_terms: deliveryTerms || undefined,
+                incoterm: incoterm || undefined,
+                customer_reference: customerReference || undefined,
                 valid_until: validUntil || undefined,
                 lines: lines.map(l => ({
                     item_id: l.item_id,
@@ -128,6 +213,7 @@ const QuoteDetailPage = () => {
             setQuote(updatedQuote);
             setIsEditing(false);
             setDraftValues({});
+            fetchApprovalHistory(quote.id);
             recordActivity({ eventType: 'quote.updated', eventCategory: 'crm', description: `Updated quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
             setError(err.message || 'Failed to save quote');
@@ -136,7 +222,7 @@ const QuoteDetailPage = () => {
         }
     };
 
-    const handleSubmitForApproval = async () => {
+    const handleOpenApprovalModal = () => {
         if (!quote) return;
         // Warn if any line exceeds available stock
         const oosLines = lines.filter(l => l.item_id && stockMap.has(l.item_id) && (stockMap.get(l.item_id) ?? 0) < l.quantity);
@@ -144,12 +230,41 @@ const QuoteDetailPage = () => {
             const names = oosLines.map(l => l.description || l.item_id).join(', ');
             if (!window.confirm(`Warning: ${oosLines.length} line item(s) may have insufficient stock (${names}). Submit anyway?`)) return;
         }
+        setShowApprovalModal(true);
+    };
+
+    const handleSubmitForApproval = async (approverUserIds: string[], notes?: string) => {
+        if (!quote) return;
         try {
-            const updated = await crmService.submitQuoteForApproval(quote.id);
+            const updated = await crmService.submitQuoteForApproval(quote.id, {
+                approver_user_ids: approverUserIds,
+                notes,
+            });
             setQuote(updated);
+            fetchApprovalHistory(quote.id);
+            toast.success('Quote submitted for approval');
             recordActivity({ eventType: 'quote.sent', eventCategory: 'crm', description: `Submitted quote "${quote.quote_number || quote.id}" for approval`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
-            setError(err.message || 'Failed to submit quote');
+            toast.error(getErrorMessage(err, 'Failed to submit quote for approval'));
+            throw err;
+        }
+    };
+
+    const handleWithdraw = async () => {
+        if (!quote) return;
+        setIsWithdrawing(true);
+        try {
+            const updated = await crmService.withdrawQuoteApproval(quote.id, withdrawReason.trim() || undefined);
+            setQuote(updated);
+            setShowWithdrawModal(false);
+            setWithdrawReason('');
+            fetchApprovalHistory(quote.id);
+            toast.success('Approval request withdrawn');
+            recordActivity({ eventType: 'quote.updated', eventCategory: 'crm', description: `Withdrew approval request for quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
+        } catch (err: any) {
+            toast.error(getErrorMessage(err, 'Failed to withdraw approval request'));
+        } finally {
+            setIsWithdrawing(false);
         }
     };
 
@@ -158,22 +273,29 @@ const QuoteDetailPage = () => {
         try {
             const updated = await crmService.approveQuote(quote.id);
             setQuote(updated);
+            fetchApprovalHistory(quote.id);
+            toast.success('Quote approved');
             recordActivity({ eventType: 'quote.accepted', eventCategory: 'crm', description: `Approved quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
-            setError(err.message || 'Failed to approve quote');
+            toast.error(getErrorMessage(err, 'Failed to approve quote'));
         }
     };
 
     const handleReject = async () => {
-        if (!quote || !rejectReason) return;
+        if (!quote || !rejectReason.trim()) {
+            toast.error('Please provide a reason for rejection');
+            return;
+        }
         try {
-            const updated = await crmService.rejectQuote(quote.id, rejectReason);
+            const updated = await crmService.rejectQuote(quote.id, rejectReason.trim());
             setQuote(updated);
             setShowRejectModal(false);
             setRejectReason('');
+            fetchApprovalHistory(quote.id);
+            toast.success('Quote rejected');
             recordActivity({ eventType: 'quote.rejected', eventCategory: 'crm', description: `Rejected quote "${quote.quote_number || quote.id}"`, resourceType: 'quote', resourceId: quote.id }).catch(() => {});
         } catch (err: any) {
-            setError(err.message || 'Failed to reject quote');
+            toast.error(getErrorMessage(err, 'Failed to reject quote'));
         }
     };
 
@@ -203,6 +325,11 @@ const QuoteDetailPage = () => {
             description: newLines[pickerLineIndex].description || selection.name,
         };
         setLines(newLines);
+        setDraftValues(prev => {
+            const next = { ...prev };
+            delete next[`${pickerLineIndex}_unit_price`];
+            return next;
+        });
         setPickerLineIndex(-1);
     };
 
@@ -310,22 +437,33 @@ const QuoteDetailPage = () => {
 
     const status = statusConfig[quote.status];
     const totals = calculateTotals();
-    const canEdit = quote.status === 'draft';
-    const canSubmit = quote.status === 'draft' && lines.length > 0;
-    const canApprove = quote.status === 'pending_approval';
+
+    const currentUserId = shell?.user?.id;
+    const currentApprovalRequest = quote.current_approval_request;
+    const hasApproversList = Boolean(currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0);
+    const isAuthorizedApprover = hasApproversList
+        ? Boolean(currentApprovalRequest?.approvers?.some((a: any) => a.approver_user_id === currentUserId && a.status === 'pending'))
+        : true;
+    const canApprove = quote.status === 'pending_approval' && canApproveQuote && isAuthorizedApprover;
+    const isSubmitter = Boolean(
+        currentUserId && (
+            quote.submitted_by === currentUserId ||
+            (quote.created_by as any)?.id === currentUserId ||
+            (quote as any).created_by === currentUserId ||
+            currentApprovalRequest?.requested_by === currentUserId
+        )
+    );
+    const canWithdraw = quote.status === 'pending_approval' && isSubmitter;
+    const canEdit = (quote.status === 'draft' || quote.status === 'rejected');
+    const canSubmit = (quote.status === 'draft' || quote.status === 'rejected') && lines.length > 0;
     const canConvert = quote.status === 'approved';
 
     return (
         <div className="p-8">
             {/* Header */}
+            <DetailBackLink fallbackTo="/crm/quotes" className="mb-4" />
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/crm/quotes')}
-                        className="p-2 text-slate-400 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
                     <div>
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-100">
@@ -376,11 +514,20 @@ const QuoteDetailPage = () => {
                     )}
                     {canSubmit && !isEditing && (
                         <button
-                            onClick={handleSubmitForApproval}
+                            onClick={handleOpenApprovalModal}
                             className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
                         >
                             <Send className="w-4 h-4" />
                             Submit for Approval
+                        </button>
+                    )}
+                    {canWithdraw && !isEditing && (
+                        <button
+                            onClick={() => setShowWithdrawModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 text-amber-300 hover:text-amber-100 border border-amber-500/40 hover:bg-amber-500/20 rounded-lg transition-colors"
+                        >
+                            <RotateCcw className="w-4 h-4" />
+                            Withdraw Request
                         </button>
                     )}
                     {canApproveQuote && canApprove && (
@@ -424,12 +571,27 @@ const QuoteDetailPage = () => {
                                           ].filter(Boolean).join(', ')
                                         : undefined,
                                     tax_number: (currentOrg as any)?.tax_id,
+                                    pan: (currentOrg as any)?.pan,
                                 },
+                                customer,
+                                // Compared against the buyer's state to decide
+                                // whether the supply is intra- or inter-state.
+                                sellerState: (currentOrg as any)?.billing_address?.state,
+                                sellerCountry: (currentOrg as any)?.billing_address?.country,
                             }))}
                             className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
                         >
                             <Printer className="w-4 h-4" />
                             Print Quote
+                        </button>
+                    )}
+                    {!isEditing && (
+                        <button
+                            onClick={openSendModal}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        >
+                            <Send className="w-4 h-4" />
+                            Email to Customer
                         </button>
                     )}
                 </div>
@@ -438,6 +600,60 @@ const QuoteDetailPage = () => {
             {error && (
                 <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
                     {error}
+                </div>
+            )}
+
+            {/* Approval in Progress Banner */}
+            {quote.status === 'pending_approval' && (
+                <div className="mb-6 p-5 rounded-xl border border-amber-500/30 bg-amber-500/10 space-y-3">
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <Clock className="w-5 h-5 text-amber-400" />
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-slate-100 text-base">
+                                        Approval in Progress
+                                    </span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold border border-amber-400/30">
+                                        Locked
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-sm text-slate-400 leading-relaxed">
+                        This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.
+                        {isSubmitter && !isAuthorizedApprover && (
+                            <span className="block mt-1 text-xs text-amber-300 font-medium">
+                                You submitted this quote. Self-review is not permitted.
+                            </span>
+                        )}
+                        {isAuthorizedApprover && (
+                            <span className="block mt-1 text-xs text-emerald-400 font-medium">
+                                You are an assigned reviewer for this quote. Please examine the commercial terms using the action buttons above.
+                            </span>
+                        )}
+                    </p>
+                    {currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0 && (
+                        <div className="pt-3 border-t border-amber-500/20 flex flex-wrap gap-2 items-center">
+                            <span className="text-xs font-semibold text-slate-400">Required Approvers:</span>
+                            {currentApprovalRequest.approvers.map((a: any, idx: number) => (
+                                <span
+                                    key={a.id || idx}
+                                    className={`text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
+                                        a.status === 'approved'
+                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                                            : a.status === 'rejected'
+                                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                            : 'bg-slate-800/90 border-slate-700 text-slate-300'
+                                    }`}
+                                >
+                                    <span className="font-medium text-slate-200">{a.approver_name || a.approver_email || 'Approver'}</span>
+                                    <span className="text-[10px] uppercase font-bold opacity-80">({a.status})</span>
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -455,7 +671,7 @@ const QuoteDetailPage = () => {
                                         type="text"
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Enter quote title..."
                                     />
                                 ) : (
@@ -469,7 +685,7 @@ const QuoteDetailPage = () => {
                                         type="date"
                                         value={validUntil}
                                         onChange={(e) => setValidUntil(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                     />
                                 ) : (
                                     <p className="text-slate-200">
@@ -549,7 +765,7 @@ const QuoteDetailPage = () => {
                                                             type="text"
                                                             value={line.description}
                                                             onChange={(e) => updateLine(index, 'description', e.target.value)}
-                                                            className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            className={EDITABLE_FIELD_SM_CLASS}
                                                             placeholder="Description / notes..."
                                                         />
                                                     </div>
@@ -595,7 +811,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_quantity`] ?? String(line.quantity)}
                                                         onChange={(e) => handleNumericInput(index, 'quantity', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'quantity', e.target.value, 1)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{line.quantity}</span>
@@ -609,7 +825,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_unit_price`] ?? String(line.unit_price)}
                                                         onChange={(e) => handleNumericInput(index, 'unit_price', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'unit_price', e.target.value, 0)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-200">{formatCurrency(line.unit_price)}</span>
@@ -623,7 +839,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_discount_percent`] ?? String(line.discount_percent || 0)}
                                                         onChange={(e) => handleNumericInput(index, 'discount_percent', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'discount_percent', e.target.value, 0)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.discount_percent || 0}%</span>
@@ -637,7 +853,7 @@ const QuoteDetailPage = () => {
                                                         value={draftValues[`${index}_tax_rate`] ?? String(line.tax_rate || 0)}
                                                         onChange={(e) => handleNumericInput(index, 'tax_rate', e.target.value)}
                                                         onBlur={(e) => commitNumericInput(index, 'tax_rate', e.target.value, 0)}
-                                                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
                                                     <span className="text-slate-300">{line.tax_rate || 0}%</span>
@@ -707,12 +923,79 @@ const QuoteDetailPage = () => {
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         rows={3}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Add any notes..."
                                     />
                                 ) : (
                                     <p className="text-slate-300">{quote.notes || 'No notes'}</p>
                                 )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Payment Terms</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={paymentTerms}
+                                            onChange={(e) => setPaymentTerms(e.target.value)}
+                                            className={EDITABLE_FIELD_CLASS}
+                                            placeholder="e.g. Net 30"
+                                        />
+                                    ) : (
+                                        <p className="text-slate-300">{quote.payment_terms || '—'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Customer Reference</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={customerReference}
+                                            onChange={(e) => setCustomerReference(e.target.value)}
+                                            className={EDITABLE_FIELD_CLASS}
+                                            placeholder="Buyer's RFQ / PO number"
+                                        />
+                                    ) : (
+                                        <p className="text-slate-300">{quote.customer_reference || '—'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">Delivery Terms</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={deliveryTerms}
+                                            onChange={(e) => setDeliveryTerms(e.target.value)}
+                                            className={EDITABLE_FIELD_CLASS}
+                                            placeholder="e.g. Ex-stock, 2-3 weeks from PO"
+                                        />
+                                    ) : (
+                                        <p className="text-slate-300">{quote.delivery_terms || '—'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-1">
+                                        Incoterm <span className="text-slate-500 font-normal">(Incoterms&reg; 2020)</span>
+                                    </label>
+                                    {isEditing ? (
+                                        <select
+                                            value={incoterm}
+                                            onChange={(e) => setIncoterm(e.target.value)}
+                                            className={EDITABLE_FIELD_CLASS}
+                                        >
+                                            <option value="">Not specified</option>
+                                            {INCOTERMS_2020.map((t) => (
+                                                <option key={t.code} value={t.code}>{t.code} — {t.label}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <p className="text-slate-300">
+                                            {quote.incoterm
+                                                ? `${quote.incoterm} — ${INCOTERM_LABELS[quote.incoterm] ?? ''}`.trim()
+                                                : '—'}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-400 mb-1">Terms & Conditions</label>
@@ -721,7 +1004,7 @@ const QuoteDetailPage = () => {
                                         value={termsAndConditions}
                                         onChange={(e) => setTermsAndConditions(e.target.value)}
                                         rows={4}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={EDITABLE_FIELD_CLASS}
                                         placeholder="Add terms and conditions..."
                                     />
                                 ) : (
@@ -732,6 +1015,14 @@ const QuoteDetailPage = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Approval History Audit Trail */}
+                    <QuoteApprovalHistory
+                        history={approvalHistory}
+                        currentRequestId={quote.current_approval_request_id}
+                        formatDate={formatDate}
+                        formatCurrency={formatCurrency}
+                    />
                 </div>
 
                 {/* Sidebar */}
@@ -755,6 +1046,47 @@ const QuoteDetailPage = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* The customer the quote is raised for — resolved from the deal
+                        when the quote was created. Read-only here: the record lives
+                        in Customers, and a quote must reference it rather than keep
+                        its own divergent copy. */}
+                    {customer && (
+                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
+                            <h2 className="text-lg font-semibold text-slate-100 mb-4">Customer</h2>
+                            <button
+                                onClick={() => navigate(`/crm/customers/${customer.id}`)}
+                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors"
+                            >
+                                <p className="font-medium text-slate-200">
+                                    {customer.company_name || customer.contact_name || '—'}
+                                </p>
+                                {customer.company_name && customer.contact_name && (
+                                    <p className="text-sm text-slate-400">{customer.contact_name}</p>
+                                )}
+                            </button>
+                            <div className="mt-4 space-y-2 text-sm">
+                                {customer.contact_email && (
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-400">Email</span>
+                                        <span className="text-slate-300 truncate">{customer.contact_email}</span>
+                                    </div>
+                                )}
+                                {customer.phone && (
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-400">Phone</span>
+                                        <span className="text-slate-300">{customer.phone}</span>
+                                    </div>
+                                )}
+                                {customer.tax_id && (
+                                    <div className="flex justify-between gap-3">
+                                        <span className="text-slate-400">Tax ID</span>
+                                        <span className="text-slate-300 truncate">{customer.tax_id}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {quote.deal && (
                         <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
@@ -798,7 +1130,7 @@ const QuoteDetailPage = () => {
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 rows={4}
-                                className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className={EDITABLE_FIELD_CLASS}
                                 placeholder="Please provide a reason..."
                             />
                         </div>
@@ -851,6 +1183,123 @@ const QuoteDetailPage = () => {
                 </div>,
                 document.body
             )}
+
+            <Modal
+                isOpen={showSendModal}
+                onClose={() => !isSending && setShowSendModal(false)}
+                title="Email quotation to customer"
+                size="lg"
+            >
+                <div className="px-6 py-5 space-y-4">
+                    <p className="text-sm text-slate-400">
+                        The quotation PDF is generated and attached automatically.
+                    </p>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">Send to</label>
+                        <input
+                            type="email"
+                            value={sendTo}
+                            onChange={(e) => setSendTo(e.target.value)}
+                            placeholder="customer@example.com"
+                            className={EDITABLE_FIELD_CLASS}
+                        />
+                        {!customer?.contact_email && (
+                            <p className="mt-1 text-xs text-amber-400">
+                                This quote has no linked customer email — enter an address to send it.
+                            </p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-400 mb-1">
+                            Message <span className="text-slate-500 font-normal">(optional)</span>
+                        </label>
+                        <textarea
+                            value={sendMessage}
+                            onChange={(e) => setSendMessage(e.target.value)}
+                            rows={3}
+                            placeholder="As discussed, please find our quotation attached."
+                            className={EDITABLE_FIELD_CLASS}
+                        />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-700/50">
+                    <button
+                        type="button"
+                        onClick={() => setShowSendModal(false)}
+                        disabled={isSending}
+                        className="px-4 py-2 text-slate-400 hover:text-slate-50 transition-colors disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSendQuote}
+                        disabled={isSending || !sendTo.trim()}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Send className="w-4 h-4" />
+                        {isSending ? 'Sending…' : 'Send quotation'}
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Withdraw Modal */}
+            {showWithdrawModal && createPortal(
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex items-center gap-2 mb-2 text-amber-400">
+                            <RotateCcw className="w-5 h-5" />
+                            <h2 className="text-xl font-semibold text-slate-100">Withdraw Approval Request</h2>
+                        </div>
+                        <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+                            This will cancel the active approval cycle and return this quote to <strong>Draft</strong> status, unlocking it for edits and resubmission.
+                        </p>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                                Reason for withdrawal <span className="text-slate-500 font-normal">(optional)</span>
+                            </label>
+                            <textarea
+                                value={withdrawReason}
+                                onChange={(e) => setWithdrawReason(e.target.value)}
+                                rows={3}
+                                className={EDITABLE_FIELD_CLASS}
+                                placeholder="e.g. Updating line item quantities or pricing..."
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button
+                                onClick={() => {
+                                    setShowWithdrawModal(false);
+                                    setWithdrawReason('');
+                                }}
+                                disabled={isWithdrawing}
+                                className="px-4 py-2 text-slate-400 hover:text-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleWithdraw}
+                                disabled={isWithdrawing}
+                                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2 font-medium"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                {isWithdrawing ? 'Withdrawing...' : 'Confirm Withdrawal'}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Quote Approval Modal (Approver Selection & Submission) */}
+            <QuoteApprovalModal
+                quote={quote}
+                currentUserId={currentUserId}
+                currencyFormatter={formatCurrency}
+                isOpen={showApprovalModal}
+                onClose={() => setShowApprovalModal(false)}
+                onSubmit={handleSubmitForApproval}
+            />
         </div>
     );
 };

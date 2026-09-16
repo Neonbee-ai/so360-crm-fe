@@ -14,8 +14,8 @@ const mockGetDocumentsByLeadId = vi.fn();
 const mockUpdateLead = vi.fn();
 const mockLogActivity = vi.fn();
 const mockCreateNote = vi.fn();
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -66,14 +66,17 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false, user: { id: 'u1' } }),
   useCurrentEntity: () => ({ setCurrentEntity: vi.fn() }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));
 vi.mock('./components/TaskModal', () => ({ default: () => null }));
@@ -239,7 +242,7 @@ describe('Given LeadDetailPage', () => {
   it('When action / Then displays back to leads link', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Back to Leads')).toBeInTheDocument();
+      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
     });
   });
 });

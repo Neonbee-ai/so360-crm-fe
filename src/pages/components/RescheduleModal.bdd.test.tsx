@@ -74,3 +74,60 @@ describe('RescheduleModal', () => {
     });
   });
 });
+
+/**
+ * Rescheduling used to move only the calendar day, so a task pushed from
+ * "20 Aug 2:30 PM" to the 22nd came back at midnight — and every reminder card
+ * then read "5:30 AM", the local rendering of that UTC midnight.
+ */
+describe('Given a task is rescheduled', () => {
+  const timeInput = () => document.querySelector('input[type="time"]') as HTMLInputElement;
+  const dateInput = () => document.querySelector('input[type="date"]') as HTMLInputElement;
+
+  it('When the modal opens / Then a New Due Time field is offered alongside the date', () => {
+    render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={vi.fn()} onConfirm={vi.fn()} />);
+    expect(screen.getByText(/new due time/i)).toBeInTheDocument();
+    expect(timeInput()).toBeInTheDocument();
+  });
+
+  it('Given a task with a time / When the modal opens / Then both halves are pre-filled', () => {
+    const saved = new Date('2024-06-15T14:30:00').toISOString();
+    render(<RescheduleModal currentDate={saved} onClose={vi.fn()} onConfirm={vi.fn()} />);
+    expect(dateInput().value).toBe('2024-06-15');
+    expect(timeInput().value).toBe('14:30');
+  });
+
+  it('Given a date-only task / When the modal opens / Then the time stays empty rather than showing midnight', () => {
+    render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={vi.fn()} onConfirm={vi.fn()} />);
+    expect(timeInput().value).toBe('');
+  });
+
+  it('When only the date is changed / Then a bare calendar date is confirmed, with no invented time', () => {
+    const onConfirm = vi.fn();
+    render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={vi.fn()} onConfirm={onConfirm} />);
+    fireEvent.change(dateInput(), { target: { value: '2024-06-22' } });
+    fireEvent.submit(document.querySelector('form')!);
+    expect(onConfirm).toHaveBeenCalledWith('2024-06-22');
+  });
+
+  it('When a time is chosen / Then the confirmed value keeps that wall clock and states its zone', () => {
+    const onConfirm = vi.fn();
+    render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={vi.fn()} onConfirm={onConfirm} />);
+    fireEvent.change(dateInput(), { target: { value: '2024-06-22' } });
+    fireEvent.change(timeInput(), { target: { value: '11:00' } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    const sent = onConfirm.mock.calls[0][0] as string;
+    expect(sent.startsWith('2024-06-22T11:00:00')).toBe(true);
+    expect(sent).toMatch(/[+-]\d{2}:\d{2}$/);
+  });
+
+  it('Given a timed task / When the time is cleared / Then it reverts to a plain calendar date', () => {
+    const onConfirm = vi.fn();
+    const saved = new Date('2024-06-15T14:30:00').toISOString();
+    render(<RescheduleModal currentDate={saved} onClose={vi.fn()} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole('button', { name: /clear/i }));
+    fireEvent.submit(document.querySelector('form')!);
+    expect(onConfirm).toHaveBeenCalledWith('2024-06-15');
+  });
+});

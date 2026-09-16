@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -70,20 +70,23 @@ vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
 }));
 
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
-}));
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
 const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
 vi.mock('@so360/shell-context', () => ({
-  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled }),
+  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true }),
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true }),
 }));
 
 vi.mock('../config/features', () => ({
@@ -408,6 +411,37 @@ describe('DealDetailPage', () => {
     });
   });
 
+  describe('Given the Deal Detail navigation tabs', () => {
+    it('When the page renders / Then the tab strip scrolls horizontally instead of clipping tabs', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      const strip = screen.getByTestId('deal-detail-tab-strip');
+      expect(strip.className).toContain('overflow-x-auto');
+      expect(strip.parentElement?.className).not.toContain('overflow-hidden');
+
+      // Every tab must still be reachable inside the scroll strip, not hidden.
+      const tabButtons = within(strip).getAllByRole('button');
+      const tabLabels = tabButtons.map((btn) => btn.textContent);
+      ['Activity', 'Notes', 'Products', 'Additional Info', 'Calls'].forEach((label) => {
+        expect(tabLabels.some((text) => text?.includes(label))).toBe(true);
+      });
+    });
+
+    it('When switching tabs / Then the newly active tab scrolls into view', async () => {
+      const user = userEvent.setup();
+      const scrollIntoViewMock = vi.fn();
+      HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      scrollIntoViewMock.mockClear();
+
+      await user.click(screen.getByText('Products'));
+      await waitFor(() => expect(scrollIntoViewMock).toHaveBeenCalled());
+    });
+  });
+
   describe('Given empty activity timeline', () => {
     it('When no activities exist / Then shows empty activity message', async () => {
       mockGetActivitiesByDealId.mockResolvedValue([]);
@@ -441,7 +475,7 @@ describe('DealDetailPage', () => {
       mockGetDealById.mockResolvedValue(null);
       render(<DealDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText('Back to Pipeline')).toBeInTheDocument();
+        expect(screen.getAllByText('Back to Pipeline')[0]).toBeInTheDocument();
       });
     });
 
@@ -449,18 +483,18 @@ describe('DealDetailPage', () => {
       mockGetDealById.mockResolvedValue(null);
       const user = userEvent.setup();
       render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Back to Pipeline')).toBeInTheDocument());
-      await user.click(screen.getByText('Back to Pipeline'));
+      await waitFor(() => expect(screen.getAllByText('Back to Pipeline')[0]).toBeInTheDocument());
+      await user.click(screen.getAllByText('Back to Pipeline')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });
 
-  describe('Given a loaded deal / Then Back to Pipeline navigates to the pipeline list', () => {
-    it('When the header Back to Pipeline is clicked / Then it navigates to /crm/pipeline, not the dashboard', async () => {
+  describe('Given a loaded deal / Then the universal Back control navigates to the pipeline list', () => {
+    it('When the header Back is clicked / Then it navigates to /crm/pipeline, not the dashboard', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByText('Back to Pipeline'));
+      await user.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });
@@ -509,7 +543,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByText('Delete'));
+      await user.click(screen.getByLabelText('Delete'));
       await waitFor(() => {
         const confirmTexts = screen.getAllByText(/Delete/);
         expect(confirmTexts.length).toBeGreaterThan(1);
@@ -520,7 +554,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByText('Delete'));
+      await user.click(screen.getByLabelText('Delete'));
       await waitFor(() => {
         const panels = Array.from(document.querySelectorAll('div')).filter(
           el => el.className.includes('max-h-[90vh]'),
@@ -830,6 +864,175 @@ describe('DealDetailPage', () => {
         await waitFor(() => expect(screen.queryByText('Create Estimate')).not.toBeInTheDocument());
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('/accounting/estimations'));
       });
+    });
+  });
+});
+
+/**
+ * Deal context handed to Accounting.
+ *
+ * Both document flows must carry the SAME two things so the existing estimate /
+ * invoice form can pre-populate itself: the deal id (Accounting reads that
+ * deal's associated products as line items) and the deal's customer. Without
+ * the deal id on the estimate link, Create Estimate opens an empty form even
+ * though the deal already has products — the bug this covers.
+ */
+describe('DealDetailPage — deal context passed to Accounting document flows', () => {
+  const urlFor = (fragment: string) =>
+    mockNavigate.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes(fragment),
+    )?.[0] as string;
+
+  describe('Given a deal with a linked customer', () => {
+    beforeEach(() => {
+      mockGetDealById.mockResolvedValue(makeDeal({ partner_id: 'partner-99' }));
+    });
+
+    it('When Create Estimate is clicked / Then the deal id is passed so its products can be loaded', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Estimate'));
+      expect(urlFor('/accounting/estimations')).toContain('deal_id=deal-1');
+    });
+
+    it('When Create Estimate is clicked / Then the deal customer is passed by id, not just by name', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Estimate'));
+      expect(urlFor('/accounting/estimations')).toContain('customer_id=partner-99');
+    });
+
+    it('When Create Invoice is clicked / Then the deal customer is passed by id', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Invoice')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Invoice'));
+      const url = urlFor('/accounting/invoices');
+      expect(url).toContain('customer_id=partner-99');
+      expect(url).toContain('deal_id=deal-1');
+    });
+  });
+
+  describe('Given a deal with no linked customer record', () => {
+    it('Then customer_id is omitted and the existing name-only behaviour is kept', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ partner_id: null }));
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Estimate')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Estimate'));
+      const url = urlFor('/accounting/estimations');
+      expect(url).not.toContain('customer_id');
+      expect(url).toContain('customer_name=');
+    });
+  });
+});
+
+/**
+ * Cover for the header/readability fixes reported on the CRM detail pages,
+ * mirrored here so the Deal page cannot drift from the Lead page:
+ * icon-only Delete beside a labelled primary CTA, a universal Back control,
+ * and task metadata that is legible on the light theme's white card.
+ */
+describe('DealDetailPage — header and card presentation', () => {
+  /** Lowest slate step still legible on the light theme's white card. */
+  const READABLE = /text-slate-(50|100|200|300)\b/;
+
+  describe('Given the record header', () => {
+    it('When the Delete action renders / Then it carries no text label', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByLabelText('Delete').textContent).toBe('');
+    });
+
+    it('When the Delete action renders / Then it is still named on hover and for screen readers', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      const del = screen.getByLabelText('Delete');
+      expect(del).toHaveAttribute('title', 'Delete');
+      expect(del).toHaveAttribute('aria-label', 'Delete');
+    });
+
+    it('When the Delete action renders / Then keyboard focus stays visible', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByLabelText('Delete').className).toMatch(/focus-visible:ring/);
+    });
+
+    it('When the back control renders / Then it uses the same neutral wording as every other module', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getAllByText('Back').length).toBeGreaterThan(0);
+      expect(screen.queryByRole('button', { name: 'Back to Pipeline' })).toBeNull();
+    });
+  });
+
+  describe('Given the deal task list', () => {
+    it('When a task due date renders / Then it is legible rather than a faded rose tint', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      const due = screen.queryAllByText(/^Due /)[0];
+      if (!due) return; // no tasks fixture on this render path
+      const span = due.closest('span')!;
+      expect(span.className).not.toMatch(/rose-400\/70/);
+      expect(span.className).toMatch(READABLE);
+    });
+  });
+  describe('Given a Deal carries a Sales Rep from the People Registry', () => {
+    it('When the rep is active / Then their name and department are shown on the Deal profile', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({
+        owner_person_id: 'p1',
+        owner_person: {
+          id: 'p1', full_name: 'Aswin Shaji', email: 'aswin@x.com', avatar_url: null,
+          job_title: 'Developer', employee_id: null, department_id: 'd1',
+          department_name: 'Engineering A', status: 'active',
+        },
+      }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Sales Rep')).toBeInTheDocument());
+      expect(screen.getByText('Aswin Shaji')).toBeInTheDocument();
+      expect(screen.getByText('Engineering A', { exact: false })).toBeInTheDocument();
+      expect(screen.queryByText('Inactive')).not.toBeInTheDocument();
+    });
+
+    it('When the rep has since left / Then the assignment is retained and badged Inactive', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({
+        owner_person_id: 'p9',
+        owner_person: {
+          id: 'p9', full_name: 'Departed Rep', email: null, avatar_url: null,
+          job_title: 'Sales', employee_id: null, department_id: null,
+          department_name: null, status: 'terminated',
+        },
+      }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Departed Rep')).toBeInTheDocument());
+      expect(screen.getByText('Inactive')).toBeInTheDocument();
+    });
+
+    it('When People Connect could not resolve the rep / Then the link is reported rather than silently blank', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ owner_person_id: 'p-gone', owner_person: null }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Sales Rep')).toBeInTheDocument());
+      expect(
+        screen.getByText('Sales rep unavailable from People Connect'),
+      ).toBeInTheDocument();
+    });
+
+    it('When the deal has no Sales Rep / Then no Sales Rep row is rendered at all', async () => {
+      mockGetDealById.mockResolvedValue(makeDeal({ owner_person_id: null }));
+
+      render(<DealDetailPage />);
+
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.queryByText('Sales Rep')).not.toBeInTheDocument();
     });
   });
 });

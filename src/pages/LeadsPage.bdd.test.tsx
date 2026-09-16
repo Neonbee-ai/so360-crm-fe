@@ -6,6 +6,8 @@ import React from 'react';
 const mockGetLeads = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
+const mockGetPartners = vi.fn();
+const mockGetSourceTypes = vi.fn();
 const mockUpdateLead = vi.fn();
 const mockLogActivity = vi.fn();
 const mockDeleteLead = vi.fn();
@@ -26,6 +28,7 @@ vi.mock('../services/crmService', () => ({
     getLeadsPaged: (...a: any[]) => mockGetLeadsPaged(...a),
     getSettings: (...a: any[]) => mockGetSettings(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
+    getPartners: (...a: any[]) => mockGetPartners(...a),
     getCustomerSegmentLeads: vi.fn().mockResolvedValue({ leads: [] }),
     updateLead: (...a: any[]) => mockUpdateLead(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
@@ -42,6 +45,11 @@ vi.mock('../services/crmService', () => ({
       setDefault: (...a: any[]) => mockViewsSetDefault(...a),
     },
   },
+  settingsApi: {
+    sourceTypes: {
+      getAll: (...a: any[]) => mockGetSourceTypes(...a),
+    },
+  },
 }));
 
 const mockNavigate = vi.fn();
@@ -56,7 +64,7 @@ vi.mock('@so360/shell-context', () => ({
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
   useShellBridge: vi.fn(() => ({
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
     currentOrg: { id: 'org-1' },
   })),
@@ -176,7 +184,7 @@ beforeEach(async () => {
   const shell = await import('@so360/shell-context');
   vi.mocked(shell.useShellBridge).mockImplementation(() => ({
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
     currentOrg: { id: 'org-1' },
   }));
@@ -192,6 +200,8 @@ beforeEach(async () => {
   mockGetLeads.mockResolvedValue(leads);
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue(users);
+  mockGetPartners.mockResolvedValue([]);
+  mockGetSourceTypes.mockResolvedValue([]);
   mockUpdateLead.mockResolvedValue({});
   mockLogActivity.mockResolvedValue({});
   mockDeleteLead.mockResolvedValue({});
@@ -480,7 +490,7 @@ describe('LeadsPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: false,
-        isFeatureEnabled: () => false,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => false,
       } as any);
       render(<LeadsPage />);
       expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
@@ -490,7 +500,7 @@ describe('LeadsPage', () => {
       const { useShellBridge } = await import('@so360/shell-context');
       vi.mocked(useShellBridge).mockReturnValueOnce({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
         currentOrg: { id: 'org-1' },
       } as any);
       render(<LeadsPage />);
@@ -567,14 +577,48 @@ describe('LeadsPage — bulk actions', () => {
     expect(mockBulkUpdateLeads).toHaveBeenCalledWith(['l1'], { owner_id: 'u1' });
   });
 
-  it('When the bulk delete endpoint fails / Then rows are still optimistically removed', async () => {
+  // A row that leaves the grid without leaving the database is the whole bug:
+  // it looks deleted while still driving every count, dashboard and report.
+  // Only server-confirmed ids may disappear.
+  it('When the bulk delete endpoint fails / Then the row stays in the grid', async () => {
     mockBulkDeleteLeads.mockRejectedValueOnce(new Error('offline'));
     render(<LeadsPage />);
     await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
 
     await act(async () => { getBulkAction('Delete').onClick(['l1']); });
 
+    expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
+  });
+
+  it('When the server confirms no deletions / Then no row is removed', async () => {
+    // An empty `deleted` array means nothing was deleted — it must never be
+    // read as "assume they all were".
+    mockBulkDeleteLeads.mockResolvedValueOnce({
+      requested: 1,
+      deleted: [],
+      failed: [{ id: 'l1', error: 'Lead l1 not found' }],
+    });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1']); });
+
+    expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument();
+  });
+
+  it('When only some ids are confirmed / Then only those rows leave the grid', async () => {
+    mockBulkDeleteLeads.mockResolvedValueOnce({
+      requested: 2,
+      deleted: ['l1'],
+      failed: [{ id: 'l2', error: 'Lead l2 has DailyStore orders' }],
+    });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+
+    await act(async () => { getBulkAction('Delete').onClick(['l1', 'l2']); });
+
     await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
+    expect(screen.getByTestId('lead-row-l2')).toBeInTheDocument();
   });
 });
 
@@ -787,5 +831,113 @@ describe('LeadsPage — saved views (backend)', () => {
         expect(screen.getByTestId('lead-row-l1').textContent).toContain('Acme Corp'),
       );
     });
+  });
+});
+
+// ── Role-permission gating (RBAC action-level) ─────────────────────────────
+// The New Lead action was gated only on a plan feature flag with a fail-open
+// default, so any member of an entitled org saw it regardless of role. It now
+// also requires the leads.create permission, fail-closed — matching the backend,
+// which already enforces @Permissions(leads.create).
+describe('LeadsPage — New Lead permission gating', () => {
+  const setShell = async (overrides: Record<string, unknown>) => {
+    const { useShellBridge } = await import('@so360/shell-context');
+    vi.mocked(useShellBridge).mockReturnValue({
+      effectiveFlagsLoaded: true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+      currentOrg: { id: 'org-1' },
+      ...overrides,
+    } as any);
+  };
+
+  it('Given the user lacks leads.create / When loaded / Then New Lead is hidden', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c !== 'leads.create' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
+  });
+
+  it('Given the user holds leads.create / When loaded / Then New Lead is shown', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c === 'leads.create' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.getByText('New Lead')).toBeInTheDocument();
+  });
+
+  it('Given an owner/admin wildcard / When loaded / Then New Lead is shown', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.getByText('New Lead')).toBeInTheDocument();
+  });
+
+  it('Given entitlements have not resolved / When loaded / Then New Lead fails closed (hidden)', async () => {
+    await setShell({ permissionsLoaded: false, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('Leads & Accounts')).toBeInTheDocument());
+    expect(screen.queryByText('New Lead')).not.toBeInTheDocument();
+  });
+});
+
+// Regression coverage for the fix to task f0f0ef7e: the Leads grid's row context-menu
+// Delete and the bulk-action-bar Delete were previously gated on leads.update (or not
+// gated at all), so a user without leads.delete could see and trigger both controls
+// even though the backend already rejects the call. Both must now independently
+// fail-closed on leads.delete, exactly like LeadDetailPage.tsx's existing canDeleteLead.
+describe('LeadsPage — Delete Lead permission gating (RBAC)', () => {
+  const setShell = async (overrides: Record<string, unknown>) => {
+    const { useShellBridge } = await import('@so360/shell-context');
+    vi.mocked(useShellBridge).mockReturnValue({
+      effectiveFlagsLoaded: true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+      currentOrg: { id: 'org-1' },
+      ...overrides,
+    } as any);
+  };
+
+  it('Given the user lacks leads.delete / When the grid loads / Then context.canDelete is false and no Delete bulk action is offered', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c !== 'leads.delete' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(false);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).not.toContain('Delete');
+  });
+
+  it('Given the user has leads.update but not leads.delete / When the grid loads / Then context.canDelete is still false (delete is independent of update)', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c === 'leads.update' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canUpdate).toBe(true);
+    expect(capturedGridProps.context.canDelete).toBe(false);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).not.toContain('Delete');
+  });
+
+  it('Given the user holds leads.delete / When the grid loads / Then context.canDelete is true and the Delete bulk action is offered', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c === 'leads.delete' });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(true);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).toContain('Delete');
+  });
+
+  it('Given an owner/admin wildcard / When the grid loads / Then context.canDelete is true', async () => {
+    await setShell({ permissionsLoaded: true, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(true);
+  });
+
+  it('Given entitlements have not resolved / When the grid loads / Then canDelete fails closed (false) even if hasPermission would return true', async () => {
+    await setShell({ permissionsLoaded: false, hasPermission: () => true });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    expect(capturedGridProps.context.canDelete).toBe(false);
+    const labels = capturedGridProps.bulkActions.map((a: any) => a.label);
+    expect(labels).not.toContain('Delete');
   });
 });

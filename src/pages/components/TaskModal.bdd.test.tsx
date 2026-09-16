@@ -9,10 +9,13 @@ const mockGetUsers = vi.fn();
 const mockCreateTask = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockRecordActivity = vi.fn();
-const mockShowError = vi.fn();
+const mockShowError = vi.hoisted(() => vi.fn());
 const mockEmitNotification = vi.fn();
 const mockGetLeads = vi.fn();
 const mockGetDeals = vi.fn();
+const mockGetProjects = vi.fn();
+const mockConnectTaskToProject = vi.fn();
+const mockShowWarning = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
@@ -21,13 +24,18 @@ vi.mock('../../services/crmService', () => ({
     updateTask: (...a: any[]) => mockUpdateTask(...a),
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getDeals: (...a: any[]) => mockGetDeals(...a),
+    getProjects: (...a: any[]) => mockGetProjects(...a),
+    connectTaskToProject: (...a: any[]) => mockConnectTaskToProject(...a),
   },
 }));
 
-vi.mock('../../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, error: mockShowError, warning: mockShowWarning },
+  };
+});
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
@@ -73,8 +81,21 @@ const BASE_TASK = {
 const dateInputs    = () => document.querySelectorAll('input[type="date"]');
 const startInput    = () => dateInputs()[0] as HTMLInputElement;
 const dueInput      = () => (dateInputs()[1] ?? dateInputs()[0]) as HTMLInputElement;
-const datetimeInput = () => document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
-const selects       = () => document.querySelectorAll('select');
+const timeInput     = () => document.querySelector('input[type="time"]') as HTMLInputElement;
+// The Priority select is filtered out so the positional index map below stays
+// stable as fields are added around it — see prioritySelect() for that field.
+// 'CRITICAL' is the top of the shared tasks_priority_check vocabulary and
+// appears in no other select, so it identifies the Priority field positionally.
+const isPrioritySelect = (el: HTMLSelectElement) =>
+  Array.from(el.options).some((o) => o.value === 'CRITICAL');
+const selects       = () =>
+  Array.from(document.querySelectorAll('select')).filter(
+    (el) => !isPrioritySelect(el),
+  );
+const prioritySelect = () =>
+  Array.from(document.querySelectorAll('select')).find(
+    isPrioritySelect,
+  ) as HTMLSelectElement;
 // select indices in create/TODO mode: [0]=type, [1]=assignee
 // select indices in REMINDER mode:    [0]=type, [1]=reminderMinutes, [2]=assignee
 // select indices in edit/TODO mode:   [0]=type, [1]=assignee, [2]=status
@@ -87,6 +108,10 @@ const MOCK_DEALS = [
   { id: 'deal-1', name: 'Enterprise Deal', company_name: 'Acme Corp' },
   { id: 'deal-2', name: '',                company_name: 'Beta Ltd' },
 ];
+const MOCK_PROJECTS = [
+  { id: 'proj-1', name: 'Website Revamp' },
+  { id: 'proj-2', name: 'Mobile App' },
+];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -98,6 +123,8 @@ beforeEach(() => {
   mockEmitNotification.mockResolvedValue(undefined);
   mockGetLeads.mockResolvedValue(MOCK_LEADS);
   mockGetDeals.mockResolvedValue(MOCK_DEALS);
+  mockGetProjects.mockResolvedValue(MOCK_PROJECTS);
+  mockConnectTaskToProject.mockResolvedValue({ id: 't-new', sync_status: 'connected' });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,39 +234,45 @@ describe('TaskModal', () => {
       await waitFor(() => expect(dueInput().value).toBe(''));
     });
 
-    it('When task type is REMINDER / Then due_date renders as datetime-local input', async () => {
+    it('When task type is REMINDER / Then the stored instant splits across the Due Date and Due Time inputs', async () => {
+      const savedInstant = new Date('2025-08-15T10:30:00').toISOString();
       const task = {
         ...BASE_TASK,
         type: 'REMINDER' as const,
-        due_date: '2025-08-15T10:30:00.000Z',
+        due_date: savedInstant,
         reminder_minutes_before: 30,
       };
       render(<TaskModal task={task as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => {
-        expect(datetimeInput()).toBeTruthy();
-        expect(datetimeInput().value).toContain('2025-08-15T');
+        expect(dueInput().value).toBe('2025-08-15');
+        expect(timeInput().value).toBe('10:30');
       });
     });
   });
 
   // ── Type selector behaviour ───────────────────────────────────────────────
   describe('Given the user changes the task type', () => {
-    it('When changed to REMINDER / Then shows "Date & Time" label, datetime-local input and reminder dropdown', async () => {
+    it('When changed to REMINDER / Then a default time is offered and the reminder dropdown appears', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByText('New Task'));
       fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
-      expect(screen.getByText(/date & time/i)).toBeInTheDocument();
-      expect(datetimeInput()).toBeInTheDocument();
+      expect(timeInput()).toBeInTheDocument();
+      // A reminder must ring at a moment, so it never starts out timeless.
+      expect(timeInput().value).toBe('09:00');
+      expect(timeInput().required).toBe(true);
       expect(screen.getByText(/remind me before/i)).toBeInTheDocument();
     });
 
-    it('When changed back from REMINDER / Then shows "Due Date" label and date input, hides reminder dropdown', async () => {
+    it('When changed back from REMINDER / Then Due Date and an optional Due Time remain, reminder dropdown hidden', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByText('New Task'));
       fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
       fireEvent.change(selects()[0], { target: { value: 'CALL' } });
       expect(screen.getByText(/due date/i)).toBeInTheDocument();
       expect(dateInputs()).toHaveLength(2);
+      // Time survives the switch — every kind of task may carry one now.
+      expect(timeInput()).toBeInTheDocument();
+      expect(timeInput().required).toBe(false);
       expect(screen.queryByText(/remind me before/i)).not.toBeInTheDocument();
     });
   });
@@ -272,18 +305,20 @@ describe('TaskModal', () => {
       expect(mockCreateTask).not.toHaveBeenCalled();
     });
 
-    it('When REMINDER type with a past datetime / Then past-date branch handles T-format string and blocks', async () => {
+    it('When REMINDER type with a past date / Then the past-date rule still blocks', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
-      fireEvent.change(datetimeInput(), { target: { value: '2020-01-01T10:00' } });
+      fireEvent.change(dueInput(), { target: { value: pastDate } });
+      fireEvent.change(timeInput(), { target: { value: '10:00' } });
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() =>
         expect(mockShowError).toHaveBeenCalledWith(
           'Due Date cannot be in the past. Please select today or a future date.'
         )
       );
+      expect(mockCreateTask).not.toHaveBeenCalled();
     });
   });
 
@@ -307,6 +342,54 @@ describe('TaskModal', () => {
       await waitFor(() =>
         expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ lead_id: 'lead-123' }))
       );
+    });
+
+    it('When no priority is chosen / Then the payload defaults to MEDIUM', async () => {
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'MEDIUM' }))
+      );
+    });
+
+    it('When a priority is chosen / Then it reaches the create payload', async () => {
+      // Regression: `tasks` is shared with Projects, which pinned the uppercase
+      // vocabulary in tasks_priority_check. CRM used to submit lowercase, which
+      // passed both the form and the DTO and then 500'd on the insert.
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.change(prioritySelect(), { target: { value: 'CRITICAL' } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ priority: 'CRITICAL' }))
+      );
+    });
+
+    it('When editing a task / Then its stored priority preloads into the selector', async () => {
+      render(<TaskModal task={{ ...BASE_TASK, priority: 'HIGH' } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      expect(prioritySelect().value).toBe('HIGH');
+    });
+
+    it('When the priority selector is rendered / Then every option value matches the DB CHECK vocabulary', async () => {
+      // Guards the exact mismatch that caused the 500: a UI option whose value
+      // is not one of LOW | MEDIUM | HIGH | CRITICAL cannot be persisted.
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      const values = Array.from(prioritySelect().options).map((o) => o.value);
+      expect(values).toEqual(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+    });
+
+    it('When the priority selector is rendered / Then it still reads Low/Medium/High/Critical to the user', async () => {
+      render(<TaskModal leadId="lead-123" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      const labels = Array.from(prioritySelect().options).map((o) => o.textContent);
+      expect(labels).toEqual(['Low', 'Medium', 'High', 'Critical']);
     });
 
     it('When dealId provided / Then payload includes deal_id', async () => {
@@ -365,7 +448,8 @@ describe('TaskModal', () => {
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Reminder task' } });
-      fireEvent.change(datetimeInput(), { target: { value: futureDatetime } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.change(timeInput(), { target: { value: '10:00' } });
       // selects after REMINDER: [type=0, reminderMinutes=1, assignee=2]
       fireEvent.change(selects()[1], { target: { value: '30' } });
       fireEvent.submit(document.querySelector('form')!);
@@ -381,7 +465,8 @@ describe('TaskModal', () => {
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Reminder task' } });
-      fireEvent.change(datetimeInput(), { target: { value: futureDatetime } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.change(timeInput(), { target: { value: '10:00' } });
       // leave reminderMinutes as default ''
       fireEvent.submit(document.querySelector('form')!);
       await waitFor(() => {
@@ -429,6 +514,34 @@ describe('TaskModal', () => {
       });
     });
 
+    it('When the API rejects with a 4xx / Then the API message is surfaced instead of the generic fallback', async () => {
+      // A bare "Failed to save task" is what hid the tasks_priority_check
+      // mismatch; actionable validation detail must reach the user.
+      const apiError = Object.assign(new Error('priority must be one of the following values: LOW, MEDIUM, HIGH, CRITICAL'), { status: 400 });
+      mockCreateTask.mockRejectedValue(apiError);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockShowError).toHaveBeenCalledWith('priority must be one of the following values: LOW, MEDIUM, HIGH, CRITICAL')
+      );
+    });
+
+    it('When the API rejects with a 5xx / Then the raw server message is not shown to the user', async () => {
+      const apiError = Object.assign(new Error('new row for relation "tasks" violates check constraint "tasks_priority_check"'), { status: 500 });
+      mockCreateTask.mockRejectedValue(apiError);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockShowError).toHaveBeenCalledWith('Failed to save task. Please try again.')
+      );
+    });
+
     it('When API throws / Then shows error toast and does not call onSuccess', async () => {
       mockCreateTask.mockRejectedValue(new Error('Network error'));
       const onSuccess = vi.fn();
@@ -437,7 +550,7 @@ describe('TaskModal', () => {
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
       fireEvent.change(dueInput(), { target: { value: futureDate } });
       fireEvent.submit(document.querySelector('form')!);
-      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task'));
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task. Please try again.'));
       expect(onSuccess).not.toHaveBeenCalled();
     });
   });
@@ -483,7 +596,7 @@ describe('TaskModal', () => {
       render(<TaskModal task={BASE_TASK as any} onClose={vi.fn()} onSuccess={onSuccess} />);
       await waitFor(() => screen.getByDisplayValue('Follow up call'));
       fireEvent.submit(document.querySelector('form')!);
-      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task'));
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save task. Please try again.'));
       expect(onSuccess).not.toHaveBeenCalled();
     });
   });
@@ -743,5 +856,281 @@ describe('TaskModal', () => {
         expect(screen.getByText(/select lead/i)).toBeInTheDocument()
       );
     });
+  });
+});
+
+// ── Due date & time contract ─────────────────────────────────────────────────
+// Regression cover for two defects that share one root cause — the browser
+// normalising a picked calendar date to UTC:
+//   1. "Due date cannot be in the past" on a task the user scheduled for today.
+//   2. Every reminder card reading "5:30 AM" / "12:00 AM".
+describe('Given a due date is being chosen', () => {
+  it('When today is picked / Then the request carries today, not the day before', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up email/i), { target: { value: 'Call back' } });
+    fireEvent.change(dueInput(), { target: { value: today } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockCreateTask).toHaveBeenCalled());
+    // Not `2026-08-12T18:30:00.000Z` — the calendar day survives intact.
+    expect(mockCreateTask.mock.calls[0][0].due_date).toBe(today);
+    expect(mockShowError).not.toHaveBeenCalled();
+  });
+
+  it('When no time is given / Then the payload is a bare calendar date with no instant at all', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up email/i), { target: { value: 'Call back' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockCreateTask).toHaveBeenCalled());
+    expect(mockCreateTask.mock.calls[0][0].due_date).toBe(futureDate);
+  });
+
+  it('When a time is given / Then the payload keeps the wall clock AND states its zone', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up email/i), { target: { value: 'Call back' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(timeInput(), { target: { value: '14:30' } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockCreateTask).toHaveBeenCalled());
+    const sent = mockCreateTask.mock.calls[0][0].due_date as string;
+    // The calendar date the user saw is still readable off the front of the
+    // value — that is what the server's past-date rule keys on.
+    expect(sent.startsWith(`${futureDate}T14:30:00`)).toBe(true);
+    expect(sent).toMatch(/[+-]\d{2}:\d{2}$/);
+    expect(new Date(sent).getTime()).toBe(new Date(`${futureDate}T14:30:00`).getTime());
+  });
+
+  it('When the start date is given / Then it too travels as a plain calendar date', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up email/i), { target: { value: 'Call back' } });
+    fireEvent.change(startInput(), { target: { value: futureDate } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockCreateTask).toHaveBeenCalled());
+    expect(mockCreateTask.mock.calls[0][0].start_date).toBe(futureDate);
+  });
+
+  it('When a time earlier today is chosen / Then it is rejected as past', async () => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    // Only meaningful once the day is under way; before 00:01 there is no
+    // earlier time to pick.
+    if (now.getHours() === 0 && now.getMinutes() === 0) return;
+
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up email/i), { target: { value: 'Call back' } });
+    fireEvent.change(dueInput(), { target: { value: today } });
+    fireEvent.change(timeInput(), { target: { value: '00:00' } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockShowError).toHaveBeenCalledWith('Due time cannot be in the past. Please pick a later time.')
+    );
+    expect(mockCreateTask).not.toHaveBeenCalled();
+  });
+
+  it('When an existing timed task is reopened / Then the editor shows the wall clock it was saved with', async () => {
+    const savedInstant = new Date(`${futureDate}T10:00:00`).toISOString();
+    render(
+      <TaskModal
+        task={{ ...BASE_TASK, type: 'REMINDER', due_date: savedInstant } as any}
+        onClose={() => {}}
+        onSuccess={() => {}}
+      />,
+    );
+    await waitFor(() => expect(timeInput()).toBeTruthy());
+    expect(dueInput().value).toBe(futureDate);
+    expect(timeInput().value).toBe('10:00');
+  });
+
+  it('When a timed task is saved again untouched / Then the instant does not drift', async () => {
+    const savedInstant = new Date(`${futureDate}T10:00:00`).toISOString();
+    render(
+      <TaskModal
+        task={{ ...BASE_TASK, type: 'REMINDER', due_date: savedInstant } as any}
+        onClose={() => {}}
+        onSuccess={() => {}}
+      />,
+    );
+    await waitFor(() => expect(timeInput().value).toBe('10:00'));
+
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(new Date(mockUpdateTask.mock.calls[0][1].due_date).toISOString()).toBe(savedInstant);
+  });
+
+  it('When a date-only task is reopened / Then the time field stays empty rather than inventing midnight', async () => {
+    render(
+      <TaskModal
+        task={{ ...BASE_TASK, due_date: `${futureDate}T00:00:00.000Z` } as any}
+        onClose={() => {}}
+        onSuccess={() => {}}
+      />,
+    );
+    await waitFor(() => expect(dueInput().value).toBe(futureDate));
+    expect(timeInput().value).toBe('');
+  });
+
+  it('When a REMINDER reaches submit with its time cleared / Then it is rejected rather than stored at midnight', async () => {
+    render(<TaskModal onClose={() => {}} onSuccess={() => {}} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(selects()[0], { target: { value: 'REMINDER' } });
+    await waitFor(() => expect(timeInput()).toBeTruthy());
+    fireEvent.change(timeInput(), { target: { value: '' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() =>
+      expect(mockShowError).toHaveBeenCalledWith('Please pick a date AND time for the reminder.')
+    );
+    expect(mockCreateTask).not.toHaveBeenCalled();
+  });
+});
+
+// ── Project connection (optional) ───────────────────────────────────────────
+describe('Given a Deal-context task with an auto-suggested Project', () => {
+  it('When the modal renders / Then the Project dropdown is pre-selected with the Deal\'s project', async () => {
+    render(
+      <TaskModal dealId="deal-1" dealProjectId="proj-2" onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    const projectSelect = await screen.findByDisplayValue('Mobile App');
+    expect(projectSelect).toBeInTheDocument();
+  });
+
+  it('When rendered without a dealProjectId / Then the Project dropdown defaults to "No Project"', async () => {
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    expect(screen.getByDisplayValue('No Project')).toBeInTheDocument();
+  });
+
+  it('When a Project is selected / Then the user may still clear it back to "No Project"', async () => {
+    render(
+      <TaskModal dealId="deal-1" dealProjectId="proj-2" onClose={vi.fn()} onSuccess={vi.fn()} />
+    );
+    await waitFor(() => expect(screen.getByDisplayValue('Mobile App')).toBeInTheDocument());
+    fireEvent.change(screen.getByDisplayValue('Mobile App'), { target: { value: '' } });
+    expect(screen.getByDisplayValue('No Project')).toBeInTheDocument();
+  });
+});
+
+describe('Given a user selects a Project and submits the task form', () => {
+  it('When submission succeeds / Then connectTaskToProject is called with the new task id and selected project id', async () => {
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockConnectTaskToProject).toHaveBeenCalledWith('new-task-99', 'proj-1')
+    );
+  });
+
+  it('When the link succeeds but the assignee is not a project member / Then the downgrade is surfaced instead of a bare success', async () => {
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
+    mockConnectTaskToProject.mockResolvedValue({
+      connected: true,
+      project_task_id: 'ptask-1',
+      assignee_synced: false,
+      warning:
+        'Task added to the project, but left unassigned there: the assignee is not a member of that project. Add them to the project team, then retry sync.',
+    });
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockShowWarning).toHaveBeenCalledWith(
+        expect.stringContaining('not a member of that project'),
+      )
+    );
+  });
+
+  it('When the link succeeds cleanly / Then no warning is shown', async () => {
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
+    mockConnectTaskToProject.mockResolvedValue({
+      connected: true,
+      project_task_id: 'ptask-1',
+    });
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockConnectTaskToProject).toHaveBeenCalled());
+    expect(mockShowWarning).not.toHaveBeenCalled();
+  });
+
+  it('When no Project is selected / Then connectTaskToProject is never called', async () => {
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockCreateTask).toHaveBeenCalled());
+    expect(mockConnectTaskToProject).not.toHaveBeenCalled();
+  });
+});
+
+describe('Given the connect call fails after task creation succeeds', () => {
+  it('When connectTaskToProject rejects / Then the task creation flow still completes and a non-blocking notice is shown', async () => {
+    mockCreateTask.mockResolvedValue({ id: 'new-task-1', title: 'Task', status: 'OPEN' });
+    mockConnectTaskToProject.mockRejectedValue(new Error('Project not found'));
+    const onSuccess = vi.fn();
+    const onClose = vi.fn();
+
+    render(<TaskModal dealId="deal-1" onClose={onClose} onSuccess={onSuccess} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    // The task creation flow completes normally — modal closes, onSuccess fires —
+    // a failed connect must never roll back or block the already-saved task.
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ id: 'new-task-1' })));
+    expect(onClose).toHaveBeenCalled();
+    expect(mockShowWarning).toHaveBeenCalledWith(
+      expect.stringContaining("couldn't connect to Project: Project not found")
+    );
+    // Crucially: this is a warning notice, never the hard failure path.
+    expect(mockShowError).not.toHaveBeenCalledWith('Failed to save task. Please try again.');
   });
 });

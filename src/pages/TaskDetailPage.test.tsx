@@ -33,7 +33,7 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   ShellContext: React.createContext({ user: { id: 'u1' } }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: () => ({ isFeatureEnabled: () => true, isFeatureHidden: () => false }),
+  useShellBridge: () => ({ permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }),
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
@@ -154,10 +154,10 @@ describe('Given TaskDetailPage', () => {
     });
   });
 
-  it('When action / Then shows back to tasks link', async () => {
+  it('When action / Then shows the universal Back link', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Back to Tasks')).toBeInTheDocument();
+      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
     });
   });
 });

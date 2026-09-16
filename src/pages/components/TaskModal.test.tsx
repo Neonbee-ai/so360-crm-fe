@@ -7,7 +7,7 @@ const mockCreateTask = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockEmitNotification = vi.fn();
 const mockRecordActivity = vi.fn();
-const mockShowError = vi.fn();
+const mockShowError = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/crmService', () => ({
   crmService: {
@@ -17,10 +17,13 @@ vi.mock('../../services/crmService', () => ({
   },
 }));
 
-vi.mock('../../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showError: mockShowError, dismissToast: vi.fn() }),
-}));
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, error: mockShowError },
+  };
+});
 
 vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),

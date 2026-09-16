@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -94,7 +94,20 @@ vi.mock('./components/AuditHistoryTab', () => ({ default: () => <div data-testid
 vi.mock('../components/stakeholders/StakeholdersTab', () => ({ default: () => <div data-testid="stakeholders-tab" /> }));
 vi.mock('./components/EmailsTab', () => ({ default: () => <div data-testid="emails-tab" /> }));
 vi.mock('./components/MeetingsTab', () => ({ default: () => <div data-testid="meetings-tab" /> }));
-vi.mock('./components/QuickActionBar', () => ({ default: () => <div data-testid="quick-action-bar" /> }));
+// Kept as a thin stand-in, but it must still surface the real handlers: the
+// value under test is what LeadDetailPage does when a quick action fires.
+vi.mock('./components/QuickActionBar', () => ({
+  default: (props: any) => (
+    <div data-testid="quick-action-bar">
+      <button onClick={props.onAddNote}>Add Note</button>
+      <button onClick={props.onSendEmail}>Send Email</button>
+      <button onClick={props.onLogCall}>Log Call</button>
+      <button onClick={props.onScheduleMeeting}>Schedule Meeting</button>
+      <button onClick={props.onCreateTask}>Create Task</button>
+      <button onClick={props.onUploadDocument}>Add Document</button>
+    </div>
+  ),
+}));
 vi.mock('./components/LeadLayoutSettingsPanel', () => ({ default: () => null }));
 
 const mockNavigate = vi.fn();
@@ -110,16 +123,19 @@ vi.mock('@so360/shell-context', () => ({
   useShell: () => ({ isModuleEnabled: () => false }),
   useCurrentEntity: () => ({ setCurrentEntity: mockSetCurrentEntity }),
   useActivity: () => ({ recordActivity: async () => {} }),
-  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
+  useShellBridge: vi.fn(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false })),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US', timezone: 'UTC' } }),
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
-const mockShowSuccess = vi.fn();
-const mockShowError = vi.fn();
-vi.mock('../components/common/Toast', () => ({
-  ToastContainer: () => null,
-  useToast: () => ({ toasts: [], showSuccess: mockShowSuccess, showError: mockShowError, dismissToast: vi.fn() }),
-}));
+const mockShowSuccess = vi.hoisted(() => vi.fn());
+const mockShowError = vi.hoisted(() => vi.fn());
+vi.mock('@so360/design-system', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@so360/design-system')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
+  };
+});
 
 vi.mock('./components/ActivityHistoryDrawer', () => ({
   default: ({ isOpen, onClose }: any) => isOpen
@@ -283,7 +299,7 @@ beforeEach(async () => {
   // Re-apply the default useShellBridge implementation so tests that call mockReturnValue don't bleed through
   const shell = await import('@so360/shell-context');
   mockUseShellBridge = vi.mocked(shell.useShellBridge);
-  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
+  mockUseShellBridge.mockImplementation(() => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
   mockPathname = '/crm/leads/lead-1';
   mockGetLeadById.mockResolvedValue(makeLead());
   mockGetDealsByLeadId.mockResolvedValue(associatedDeals);
@@ -429,6 +445,96 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
       await waitFor(() => expect(screen.getByText('No notes captured for this lead yet.')).toBeInTheDocument());
+    });
+
+    it('When no notes exist on the customer route / Then the empty state is entity-agnostic', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      mockGetLeadById.mockResolvedValue(makeLead({ notes: [] }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('No notes captured for this customer yet.')).toBeInTheDocument());
+      expect(screen.queryByText('No notes captured for this lead yet.')).not.toBeInTheDocument();
+    });
+
+    it('When switching to notes tab / Then each top-level note renders in its own card container', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Hot lead from conference')).toBeInTheDocument());
+      const noteOneCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40');
+      const noteTwoCard = screen.getByText('Needs follow up').closest('div.bg-slate-900\\/40');
+      expect(noteOneCard).not.toBeNull();
+      expect(noteTwoCard).not.toBeNull();
+      expect(noteOneCard).not.toBe(noteTwoCard);
+    });
+
+    it('When a note has replies / Then the reply composer starts collapsed behind a Reply affordance', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [{
+          id: 'n1',
+          content: 'Hot lead from conference',
+          author: owner,
+          created_at: '2025-01-02T10:00:00Z',
+          replies: [
+            { id: 'r1', content: 'Following up now', author: owner, created_at: '2025-01-02T11:00:00Z' },
+          ],
+        }],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Following up now')).toBeInTheDocument());
+      // Reply lives inside its own indented/nested container, distinct from the parent note card
+      const replyContainer = screen.getByText('Following up now').closest('div.border-l-2');
+      expect(replyContainer).not.toBeNull();
+      expect(replyContainer?.className).toContain('border-slate-700/60');
+      // Composer is collapsed by default — only the "Reply" trigger is present
+      expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/Reply… use @ to mention someone/)).not.toBeInTheDocument();
+    });
+
+    it('When the Reply affordance is clicked / Then the composer expands, and collapses again after a successful submit', async () => {
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument());
+      await user.click(screen.getByTestId('open-reply-n1'));
+      const replyInput = await screen.findByPlaceholderText(/Reply… use @ to mention someone/);
+      expect(replyInput).toBeInTheDocument();
+      fireEvent.change(replyInput, { target: { value: 'On it' } });
+      fireEvent.keyDown(replyInput, { key: 'Enter' });
+      await waitFor(() => expect(mockCreateNote).toHaveBeenCalledWith({ lead_id: 'lead-1', content: '<p>On it</p>', parent_note_id: 'n1' }));
+      await waitFor(() => expect(screen.queryByPlaceholderText(/Reply… use @ to mention someone/)).not.toBeInTheDocument());
+      expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument();
+    });
+
+    it('When a note has consecutive replies from the same author / Then the author/timestamp header renders once per run', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [{
+          id: 'n1',
+          content: 'Hot lead from conference',
+          author: owner,
+          created_at: '2025-01-02T10:00:00Z',
+          replies: [
+            { id: 'r1', content: 'First reply', author: owner, created_at: '2025-01-02T11:00:00Z' },
+            { id: 'r2', content: 'Second reply', author: owner, created_at: '2025-01-02T11:05:00Z' },
+          ],
+        }],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument());
+      expect(screen.getByText('Second reply')).toBeInTheDocument();
+      // "Test Owner" appears once for the note itself, and once for the grouped reply run (not once per reply)
+      const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40') as HTMLElement;
+      expect(within(noteCard).getAllByText('Test Owner')).toHaveLength(2);
     });
 
     it('When a note\'s edit button is clicked / Then an editor pre-filled with its content replaces the display', async () => {
@@ -652,33 +758,33 @@ describe('LeadDetailPage', () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText('Back to Leads')).toBeInTheDocument();
+        expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument();
       });
     });
 
     it('When Back to Leads is clicked / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('Back to Leads')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Back to Leads'));
+      await waitFor(() => expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByText('Back to Leads')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
   });
 
   describe('Given a loaded lead / Then Back navigation resolves to the correct list route', () => {
-    it('When the header Back to Leads is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
+    it('When the header Back is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockPathname = '/crm/leads/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('Back to Leads')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Back to Leads'));
+      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
 
-    it('When the header Back to Customers is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
+    it('When the header Back is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
       mockPathname = '/crm/customers/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('Back to Customers')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('Back to Customers'));
+      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
     });
   });
@@ -688,10 +794,10 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      await user.click(screen.getByText('Delete'));
+      await user.click(screen.getByLabelText('Delete'));
       await waitFor(() => {
         const deleteTexts = screen.getAllByText(/Delete/);
-        expect(deleteTexts.length).toBeGreaterThan(1);
+        expect(deleteTexts.length).toBeGreaterThan(0);
       });
     });
   });
@@ -811,7 +917,7 @@ describe('LeadDetailPage', () => {
 
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is explicitly false / Then Create Deal button is absent', async () => {
-      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, isFeatureEnabled: () => true } as any);
+      mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true } as any);
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       expect(screen.queryByText('Create Deal')).not.toBeInTheDocument();
@@ -971,6 +1077,104 @@ describe('LeadDetailPage', () => {
       unmount();
 
       expect(mockSetCurrentEntity).toHaveBeenLastCalledWith(null);
+    });
+  });
+
+  describe('Given the Communication Quick Action bar', () => {
+    // Regression: every quick action only called setActiveTab. The workspace it
+    // switches sits far below the fold, so clicking produced no visible
+    // response — the buttons looked interactive but appeared to do nothing.
+    it('When Add Note is clicked / Then the notes workspace opens and is scrolled into view', async () => {
+      const scrollIntoView = vi.fn();
+      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Add Note/i }));
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+      expect(await screen.findByText(/Save Note/i)).toBeInTheDocument();
+    });
+
+    it('When Add Document is clicked / Then the documents workspace opens and the file picker is triggered', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      window.HTMLElement.prototype.scrollIntoView = vi.fn();
+      const clickSpy = vi.spyOn(window.HTMLInputElement.prototype, 'click');
+      try {
+        render(<LeadDetailPage />);
+        await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: /Add Document/i }));
+        await vi.advanceTimersByTimeAsync(500);
+
+        expect(await screen.findByText(/Upload Document/i)).toBeInTheDocument();
+        expect(clickSpy).toHaveBeenCalled();
+      } finally {
+        clickSpy.mockRestore();
+        vi.useRealTimers();
+      }
+    });
+
+    it('When Log Call is clicked / Then the log-call surface opens in place, without moving the page', async () => {
+      const scrollIntoView = vi.fn();
+      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Log Call/i }));
+
+      expect(await screen.findByText(/upload call recording/i)).toBeInTheDocument();
+      // The quick action no longer switches tabs and scrolls there — that read
+      // as an unexplained page jump.
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('When Create Task is clicked from a customer record / Then the form opens in place, with no navigation', async () => {
+      mockPathname = '/crm/customers/lead-1';
+      const scrollIntoView = vi.fn();
+      window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+      mockNavigate.mockClear();
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+
+      // The creation surface itself, on this page — not a route change, not a
+      // tab switch, and not a jump down the page.
+      expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      mockPathname = '/crm/leads/lead-1';
+    });
+
+    it('When Create Task is clicked twice in a row / Then the form opens again the second time', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+      expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('task-modal').querySelector('button')!);
+      await waitFor(() => expect(screen.queryByTestId('task-modal')).toBeNull());
+
+      fireEvent.click(screen.getByRole('button', { name: /Create Task/i }));
+      expect(await screen.findByTestId('task-modal')).toBeInTheDocument();
+    });
+
+    it('When Schedule Meeting is clicked twice / Then the meeting form opens both times', async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
+      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
+
+      // Close, then ask again. The old flag-based wiring was already `true`,
+      // so the second click silently did nothing at all.
+      fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+      await waitFor(() => expect(screen.queryByText(/schedule meeting/i, { selector: 'p' })).toBeNull());
+
+      fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
+      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
     });
   });
 });

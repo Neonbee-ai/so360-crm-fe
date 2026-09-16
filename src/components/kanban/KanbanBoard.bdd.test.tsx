@@ -441,4 +441,79 @@ describe('KanbanBoard', () => {
       });
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Fixed stage headers — CRM → Pipeline: filters/headers use the available
+  // space and stage headers stay visible while a long deal list scrolls.
+  // Each column gets its own bounded height with a non-scrolling header on
+  // top and an independently-scrolling drop zone below it, so the header
+  // never scrolls out of view — no position:sticky, no scroll listeners.
+  // ─────────────────────────────────────────────────────────────────────────
+  describe('Given the pipeline has many deals in a stage', () => {
+    it('When rendered / Then the board scrolls horizontally but not vertically at the board level', () => {
+      const { container } = render(<KanbanBoard deals={deals} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const board = container.querySelector('.pipeline-scrollbar.flex.gap-6')!;
+      expect(board.className).toMatch(/overflow-x-auto/);
+      expect(board.className).toMatch(/overflow-y-hidden/);
+      expect(board.className).toMatch(/h-full/);
+    });
+
+    it('When rendered / Then each stage column fills the board height so its own drop zone can scroll independently', () => {
+      const { container } = render(<KanbanBoard deals={deals} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const columns = container.querySelectorAll('.w-80');
+      expect(columns.length).toBe(stages.length);
+      columns.forEach((column) => {
+        expect(column.className).toMatch(/h-full/);
+      });
+    });
+
+    it('When rendered / Then the stage header is a non-shrinking, non-scrolling item pinned above the deal list', () => {
+      const { container } = render(<KanbanBoard deals={deals} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const newColumn = container.querySelectorAll('.w-80')[0];
+      const header = newColumn.querySelector('h3')!.closest('div')!;
+      expect(header.className).toMatch(/flex-shrink-0/);
+      // A non-scrolling flex item has no overflow of its own to hide content behind.
+      expect(header.className).not.toMatch(/overflow-y-auto/);
+    });
+
+    it('When rendered / Then the drop zone (deal list) scrolls independently within its own bounded column height', () => {
+      const { container } = render(<KanbanBoard deals={deals} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const qualifiedColumn = container.querySelectorAll('.w-80')[1];
+      const dropZone = qualifiedColumn.querySelector('[class*="min-h-"]')!;
+      expect(dropZone.className).toMatch(/overflow-y-auto/);
+      expect(dropZone.className).toMatch(/min-h-0/);
+      expect(dropZone.className).toMatch(/flex-1/);
+    });
+
+    it('Given a stage header renders above the drop zone in the DOM / When queried / Then the header appears before the deal cards, preserving column alignment', () => {
+      const { container } = render(<KanbanBoard deals={deals} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const newColumn = container.querySelectorAll('.w-80')[0];
+      const children = Array.from(newColumn.children);
+      expect(children).toHaveLength(2);
+      expect(children[0].textContent).toContain('New');
+      expect(children[1].querySelector('[draggable]')).toBeTruthy();
+    });
+
+    it('Given the header stays fixed and only the drop zone scrolls / When a deal is dragged and dropped / Then the existing drag-and-drop behaviour still fires onStageChange', () => {
+      const { container } = render(<KanbanBoard deals={deals} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const columns = container.querySelectorAll('.w-80');
+      const qualifiedColumn = columns[1];
+      const dropZone = qualifiedColumn.querySelector('[class*="min-h-"]')!;
+      const dataTransfer = { getData: (key: string) => key === 'dealId' ? 'd1' : '', setData: vi.fn(), dropEffect: '', effectAllowed: '' };
+      fireEvent.dragOver(dropZone, { dataTransfer } as any);
+      fireEvent.drop(dropZone, { dataTransfer } as any);
+      expect(mockOnStageChange).toHaveBeenCalledWith(deals[0], 'qualified');
+    });
+  });
+
+  describe('Given a stage column has zero deals', () => {
+    it('When rendered / Then the empty-state placeholder still fills the available column height', () => {
+      const { container } = render(<KanbanBoard deals={[]} stages={stages} onDealClick={mockOnDealClick} onStageChange={mockOnStageChange} />);
+      const columns = container.querySelectorAll('.w-80');
+      columns.forEach((column) => {
+        expect(column.className).toMatch(/h-full/);
+      });
+      expect(screen.getAllByText(/Drop here/i).length).toBe(stages.length);
+    });
+  });
 });

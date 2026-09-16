@@ -9,12 +9,16 @@ const mockCrmService = vi.hoisted(() => ({
   getLeads: vi.fn(),
   getSettings: vi.fn(),
   getUsers: vi.fn(),
+  getPartners: vi.fn(),
   logActivity: vi.fn(),
   updateLead: vi.fn(),
 }));
 
 vi.mock('../services/crmService', () => ({
   crmService: mockCrmService,
+  settingsApi: {
+    sourceTypes: { getAll: vi.fn().mockResolvedValue([]) },
+  },
 }));
 
 vi.mock('@so360/shell-context', () => ({
@@ -23,14 +27,14 @@ vi.mock('@so360/shell-context', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
   useShell: () => ({
     tenantId: '3cf1c619-c8f6-49ac-9207-447418d5beee',
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     isModuleEnabled: () => true,
-    isFeatureEnabled: () => true,
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
     isFeatureHidden: () => false,
   }),
   useBusinessSettings: () => ({ base_currency: 'USD', locale: 'en-US', currency: 'USD' }),
@@ -56,7 +60,7 @@ vi.mock('../hooks/useShellBridge', () => ({
     orgId: '8317fe18-6ac4-4ac4-b71d-dc13122a905d',
     userId: '4a1832f4-f7bb-44bf-ad01-9431d8b14efc',
     effectiveFlagsLoaded: true,
-    isFeatureEnabled: vi.fn().mockReturnValue(true),
+    permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: vi.fn().mockReturnValue(true),
   }),
 }));
 
@@ -70,8 +74,9 @@ describe('Given LeadsPage — Lead Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCrmService.getLeads.mockResolvedValue(mockLeads);
-    mockCrmService.getSettings.mockResolvedValue({});
+    mockCrmService.getSettings.mockResolvedValue({ lead_stages: [], lead_custom_fields: [] });
     mockCrmService.getUsers.mockResolvedValue([]);
+    mockCrmService.getPartners.mockResolvedValue([]);
   });
 
   test('Given user visits leads page / When loaded / Then displays lead list', async () => {

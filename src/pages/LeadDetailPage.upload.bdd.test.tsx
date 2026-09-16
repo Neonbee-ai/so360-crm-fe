@@ -64,7 +64,7 @@ vi.mock('@so360/shell-context', () => ({
     useActivity: () => ({ recordActivity: vi.fn() }),
     useShellBridge: vi.fn(() => ({
         effectiveFlagsLoaded: true,
-        isFeatureEnabled: () => true,
+        permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true,
         isFeatureHidden: () => false,
     })),
     useBusinessSettings: () => ({ settings: { base_currency: 'USD' } }),
@@ -86,11 +86,14 @@ vi.mock('../utils/formatters', () => ({
     useCRMCurrencySymbol: () => '$',
 }));
 
-const mockShowError = vi.fn();
-vi.mock('../components/common/Toast', () => ({
-    ToastContainer: () => null,
-    useToast: () => ({ toasts: [], showSuccess: vi.fn(), showError: mockShowError, dismissToast: vi.fn() }),
-}));
+const mockShowError = vi.hoisted(() => vi.fn());
+vi.mock('@so360/design-system', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@so360/design-system')>();
+    return {
+        ...actual,
+        toast: { ...actual.toast, error: mockShowError },
+    };
+});
 
 vi.mock('./components/CreateDealModal', () => ({ default: () => null }));
 vi.mock('./components/TaskModal', () => ({ default: () => null }));
