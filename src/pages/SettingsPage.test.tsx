@@ -98,9 +98,19 @@ describe('Given SettingsPage', () => {
     });
   });
 
+  // Task d83ed444: Save Configuration is disabled until `settings` diverges
+  // from what was last persisted, so these save-path tests dirty a field first.
+  it('When Save Configuration is not yet dirty / Then the button is disabled', async () => {
+    render(<SettingsPage />);
+    await waitFor(() => screen.getByDisplayValue('Lead'));
+    expect(screen.getByText(/save configuration/i).closest('button')).toBeDisabled();
+  });
+
   it('When action / Then saves settings when Save button is clicked', async () => {
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
+    fireEvent.change(screen.getByDisplayValue('Lead'), { target: { value: 'Prospect' } });
+    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toBeDisabled());
     fireEvent.click(screen.getByText(/save configuration/i));
     await waitFor(() => {
       expect(mockUpdateSettings).toHaveBeenCalled();
@@ -112,6 +122,8 @@ describe('Given SettingsPage', () => {
     mockUpdateSettings.mockRejectedValue(new Error('Failed to save: Deal Fields'));
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
+    fireEvent.change(screen.getByDisplayValue('Lead'), { target: { value: 'Prospect' } });
+    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toBeDisabled());
     fireEvent.click(screen.getByText(/save configuration/i));
     await waitFor(() => {
       expect(mockShowError).toHaveBeenCalledWith('Failed to save: Deal Fields');
@@ -122,6 +134,8 @@ describe('Given SettingsPage', () => {
     mockUpdateSettings.mockRejectedValue('boom');
     render(<SettingsPage />);
     await waitFor(() => screen.getByDisplayValue('Lead'));
+    fireEvent.change(screen.getByDisplayValue('Lead'), { target: { value: 'Prospect' } });
+    await waitFor(() => expect(screen.getByText(/save configuration/i).closest('button')).not.toBeDisabled());
     fireEvent.click(screen.getByText(/save configuration/i));
     await waitFor(() => {
       expect(mockShowError).toHaveBeenCalledWith('Error saving settings.');

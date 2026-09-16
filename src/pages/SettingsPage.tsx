@@ -86,6 +86,11 @@ const SettingsPage = () => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+    // JSON snapshot of `settings` as last persisted (initial fetch, or last fully
+    // successful save). Compared against the live `settings` object to drive the
+    // dirty indicator — see the effect below.
+    const savedSnapshotRef = useRef<string | null>(null);
     // Value each stage-name field held when it gained focus, so Escape can revert it.
     const stageNameOnFocus = useRef<Record<number, string>>({});
 
@@ -107,6 +112,7 @@ const SettingsPage = () => {
             try {
                 const data = await crmService.getSettings();
                 setSettings(data);
+                savedSnapshotRef.current = JSON.stringify(data);
                 setSourceTypes(data.source_type_options ?? []);
                 setScoringRules(data.lead_scoring ?? []);
                 setScoreCategories(data.score_categories ?? []);
@@ -118,6 +124,18 @@ const SettingsPage = () => {
         };
         fetchSettings();
     }, []);
+
+    // Dirty flag: true whenever `settings` (Pipeline, Custom Fields, Deal Naming —
+    // everything routed through handleSave) has diverged from the last-persisted
+    // snapshot. Lead Scoring / Lead Source Types save through their own API calls
+    // immediately and never touch `settings`, so they correctly stay outside this.
+    useEffect(() => {
+        if (!settings || savedSnapshotRef.current === null) {
+            setIsDirty(false);
+            return;
+        }
+        setIsDirty(JSON.stringify(settings) !== savedSnapshotRef.current);
+    }, [settings]);
 
     const slugify = (text: string) =>
         text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -314,10 +332,11 @@ const SettingsPage = () => {
         }
 
         let dealNamingFailed = false;
+        let savedDealNaming = settings.deal_naming;
         if (settings.deal_naming) {
             try {
-                const saved = await crmService.updateDealNamingSettings(settings.deal_naming);
-                setSettings(s => s ? { ...s, deal_naming: saved } : s);
+                savedDealNaming = await crmService.updateDealNamingSettings(settings.deal_naming);
+                setSettings(s => s ? { ...s, deal_naming: savedDealNaming } : s);
             } catch {
                 dealNamingFailed = true;
             }
@@ -330,6 +349,10 @@ const SettingsPage = () => {
         } else if (dealNamingFailed) {
             toast.error('Failed to save: Deal Naming');
         } else {
+            // Full success — the dirty snapshot must reflect what was actually
+            // persisted (deal_naming may have come back transformed by the API),
+            // not the in-flight `settings` closure.
+            savedSnapshotRef.current = JSON.stringify({ ...settings, deal_naming: savedDealNaming });
             toast.success('Configuration saved!');
         }
         setIsSaving(false);
@@ -370,10 +393,11 @@ const SettingsPage = () => {
 
     /**
      * Inline-edit keyboard contract for a pipeline stage name:
-     *   Enter  → commit (persist) and leave edit mode
+     *   Enter  → validate + leave edit mode (state stays local — no auto-save;
+     *            persisting now happens only via the top "Save Configuration"
+     *            button, same as Stage Type / Add Stage / Remove Stage)
      *   Escape → revert to the value the field held on focus, and leave edit mode
-     * Blur still commits, so the previous click-outside behaviour is preserved
-     * rather than replaced.
+     * Blur follows the same validate-only contract as Enter.
      */
     const handleStageNameKeyDown = (
         e: React.KeyboardEvent<HTMLInputElement>,
@@ -382,27 +406,40 @@ const SettingsPage = () => {
         if (e.key === 'Enter') {
             e.preventDefault();
             // Drop the focus snapshot first so the blur handler below treats this
-            // as already-committed and doesn't fire a second save.
+            // as already-committed and doesn't re-run validation a second time.
+            const original = stageNameOnFocus.current[idx];
             delete stageNameOnFocus.current[idx];
+            commitStageName(idx, original);
             e.currentTarget.blur();
-            handleSave();
         } else if (e.key === 'Escape') {
             e.preventDefault();
             const original = stageNameOnFocus.current[idx];
             if (original !== undefined) updateStageName(idx, original);
-            // Drop the snapshot so the blur that follows doesn't save the revert.
+            // Drop the snapshot so the blur that follows doesn't re-validate.
             delete stageNameOnFocus.current[idx];
             e.currentTarget.blur();
         }
     };
 
-    /** Commit on click-outside, but only when the name actually changed. */
+    /**
+     * Shared commit logic for both Enter and blur: reject an empty/whitespace
+     * name by reverting to the pre-edit value, otherwise leave the (already
+     * locally-applied) edit in place for the user to persist via Save.
+     */
+    const commitStageName = (idx: number, original: string | undefined) => {
+        const current = settings?.deal_stages[idx]?.name ?? '';
+        if (!current.trim()) {
+            if (original !== undefined) updateStageName(idx, original);
+            toast.error('Stage name cannot be empty.');
+        }
+    };
+
+    /** Validate on click-outside; no longer auto-saves. */
     const handleStageNameBlur = (idx: number) => {
         const original = stageNameOnFocus.current[idx];
-        const current = settings?.deal_stages[idx]?.name;
         delete stageNameOnFocus.current[idx];
-        if (original === undefined || original === current) return;
-        handleSave();
+        if (original === undefined) return;
+        commitStageName(idx, original);
     };
 
     const addSource = () => {
@@ -451,14 +488,24 @@ const SettingsPage = () => {
                     <h1 className="text-4xl font-black text-slate-50 tracking-tight">CRM Settings</h1>
                     <p className="text-slate-400 mt-1 font-medium">Configure your workspace and custom data points</p>
                 </div>
-                {canWriteSettings && <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
-                >
-                    <Save size={20} />
-                    {isSaving ? 'Saving...' : 'Save Configuration'}
-                </button>}
+                {canWriteSettings && (
+                    <div className="flex items-center gap-3">
+                        {isDirty && !isSaving && (
+                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                                <AlertCircle size={14} />
+                                Unsaved changes
+                            </span>
+                        )}
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving || !isDirty}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
+                        >
+                            <Save size={20} />
+                            {isSaving ? 'Saving...' : 'Save Configuration'}
+                        </button>
+                    </div>
+                )}
             </header>
 
             <div className="flex gap-1 mb-8 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 shadow-sm w-fit">
