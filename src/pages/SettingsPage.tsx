@@ -351,8 +351,12 @@ const SettingsPage = () => {
         } else {
             // Full success — the dirty snapshot must reflect what was actually
             // persisted (deal_naming may have come back transformed by the API),
-            // not the in-flight `settings` closure.
+            // not the in-flight `settings` closure. Set isDirty explicitly rather
+            // than relying on the settings-keyed effect: when deal_naming is absent
+            // the success path never calls setSettings, so `settings`'s reference
+            // never changes and the effect would never rerun.
             savedSnapshotRef.current = JSON.stringify({ ...settings, deal_naming: savedDealNaming });
+            setIsDirty(false);
             toast.success('Configuration saved!');
         }
         setIsSaving(false);

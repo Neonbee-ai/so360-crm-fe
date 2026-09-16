@@ -223,10 +223,11 @@ const MarketingCouponsPage: React.FC = () => {
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                       {form.discount_type === 'percentage' ? <Percent size={14} /> : <DollarSign size={14} />}
                     </div>
-                    <input 
-                      type="number" 
-                      value={form.discount_value} 
-                      onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })} 
+                    <input
+                      type="number"
+                      data-testid="coupon-discount-value"
+                      value={form.discount_value}
+                      onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
                     />
                   </div>

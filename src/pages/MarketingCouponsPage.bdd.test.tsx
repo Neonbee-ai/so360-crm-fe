@@ -295,11 +295,31 @@ describe('MarketingCouponsPage BDD', () => {
       await waitFor(() => expect(screen.getByPlaceholderText('WELCOME20')).toBeInTheDocument());
 
       await user.type(screen.getByPlaceholderText('WELCOME20'), 'NEWCODE');
+      const discountInput = screen.getByTestId('coupon-discount-value');
+      await user.clear(discountInput);
+      await user.type(discountInput, '10');
       await user.click(screen.getAllByRole('button', { name: /create coupon/i }).at(-1)!);
 
       await waitFor(() => {
-        expect(mockCreateCoupon).toHaveBeenCalledWith('store-1', expect.objectContaining({ code: 'NEWCODE' }));
+        expect(mockCreateCoupon).toHaveBeenCalledWith('store-1', expect.objectContaining({ code: 'NEWCODE', discount_value: 10 }));
         expect(mockShowSuccess).toHaveBeenCalledWith(expect.stringContaining('NEWCODE'));
+      });
+    });
+
+    it('When discount value is missing / Then shows error and does not call API', async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i })[0]);
+      await waitFor(() => expect(screen.getByPlaceholderText('WELCOME20')).toBeInTheDocument());
+
+      await user.type(screen.getByPlaceholderText('WELCOME20'), 'NEWCODE');
+      await user.click(screen.getAllByRole('button', { name: /create coupon/i }).at(-1)!);
+
+      await waitFor(() => {
+        expect(mockShowError).toHaveBeenCalledWith('Discount value must be greater than 0');
+        expect(mockCreateCoupon).not.toHaveBeenCalled();
       });
     });
   });
