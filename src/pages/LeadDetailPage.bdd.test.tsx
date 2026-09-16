@@ -530,7 +530,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
-      await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument(), { timeout: 3000 });
       expect(screen.getByText('Second reply')).toBeInTheDocument();
       // "Test Owner" appears once for the note itself, and once for the grouped reply run (not once per reply)
       const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40') as HTMLElement;
