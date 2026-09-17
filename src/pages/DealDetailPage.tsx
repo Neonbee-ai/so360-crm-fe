@@ -521,9 +521,40 @@ const DealDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-slate-500 gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Initializing deal workspace...</span>
+            <div className="p-8" data-testid="deal-detail-skeleton">
+                <div className="animate-pulse space-y-8">
+                    {/* Header region: reserves the deal-name/stage row + button group row */}
+                    <div data-testid="deal-detail-skeleton-header">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="h-4 bg-slate-800 rounded w-24" />
+                        </div>
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                            <div className="space-y-2">
+                                <div className="h-9 bg-slate-800 rounded w-64" />
+                                <div className="h-4 bg-slate-800 rounded w-40" />
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                <div className="h-10 w-10 bg-slate-800 rounded-xl" />
+                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
+                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Lifecycle stepper region */}
+                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-28" />
+
+                    {/* Two-column grid region */}
+                    <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-8">
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-40" />
+                            <div data-testid="deal-detail-skeleton-tabs" className="bg-slate-900 border border-slate-800 rounded-2xl h-96" />
+                        </div>
+                        <div className="space-y-8">
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-64" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -611,7 +642,7 @@ const DealDetailPage = () => {
                         </p>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap justify-end gap-3">
                         {/* Icon-only — see LeadDetailPage for the rationale. */}
                         {canDeleteDeal && <button
                             onClick={() => setShowDeleteConfirm(true)}

@@ -50,7 +50,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ curr
                             }`}>
                                 {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                             </div>
-                            <span className={`text-xs mt-2 text-center w-16 ${
+                            <span className={`text-xs mt-2 text-center w-16 truncate ${
                                 isCompleted || isCurrent ? (state === 'won' ? 'text-emerald-400' : 'text-teal-400') : 'text-slate-400'
                             }`}>
                                 {STATE_LABELS[state]}

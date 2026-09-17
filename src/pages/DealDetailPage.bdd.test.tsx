@@ -1163,4 +1163,43 @@ describe('DealDetailPage — deal stage selector', () => {
       expect(mockUpdateDealStage).not.toHaveBeenCalled();
     });
   });
+
+  describe('Given the deal data is still loading', () => {
+    it('When the page first renders / Then a structural skeleton is shown instead of a bare spinner', async () => {
+      let resolveDeal: (v: any) => void;
+      mockGetDealById.mockReturnValue(new Promise((resolve) => { resolveDeal = resolve; }));
+
+      render(<DealDetailPage />);
+
+      // Structural regions are reserved up front, matching the loaded layout's shape.
+      expect(screen.getByTestId('deal-detail-skeleton')).toBeInTheDocument();
+      expect(screen.getByTestId('deal-detail-skeleton-header')).toBeInTheDocument();
+      expect(screen.getByTestId('deal-detail-skeleton-lifecycle')).toBeInTheDocument();
+      expect(screen.getByTestId('deal-detail-skeleton-grid')).toBeInTheDocument();
+      expect(screen.getByTestId('deal-detail-skeleton-tabs')).toBeInTheDocument();
+
+      // Resolve so the effect cleans up without an unhandled rejection / act warning.
+      resolveDeal!(makeDeal());
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+    });
+  });
+
+  describe('Given the header button group has multiple conditionally-rendered actions', () => {
+    it('When Delete, Sign, Estimate, Invoice and Project actions are all visible / Then all five render without breaking and the group is wrap-capable', async () => {
+      shellCtl.signEnabled = true;
+      shellCtl.canEditDeal = true;
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      expect(screen.getByLabelText('Delete')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /request signature/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /create estimate/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /create invoice/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /create project/i })).toBeInTheDocument();
+
+      // The button row must allow wrapping rather than squeezing the title at md widths.
+      const buttonGroup = screen.getByRole('button', { name: /request signature/i }).parentElement;
+      expect(buttonGroup?.className).toContain('flex-wrap');
+    });
+  });
 });
