@@ -30,6 +30,7 @@ const mockCreateProjectFromDeal = vi.fn().mockResolvedValue({ id: 'p1' });
 const mockLinkProject = vi.fn().mockResolvedValue({});
 const mockUnlinkProject = vi.fn().mockResolvedValue({});
 const mockDeleteDeal = vi.fn().mockResolvedValue({});
+const mockUpdateDealStage = vi.fn().mockResolvedValue({});
 
 vi.mock('../services/crmService', () => ({
   crmService: {
@@ -43,7 +44,7 @@ vi.mock('../services/crmService', () => ({
     getLeadById: (...a: any[]) => mockGetLeadById(...a),
     getInvoiceStatus: (...a: any[]) => mockGetInvoiceStatus(...a),
     getFulfillmentOrderByDeal: (...a: any[]) => mockGetFulfillmentOrderByDeal(...a),
-    updateDealStage: vi.fn(),
+    updateDealStage: (...a: any[]) => mockUpdateDealStage(...a),
     logActivity: (...a: any[]) => mockLogActivity(...a),
     updateTask: (...a: any[]) => mockUpdateTask(...a),
     createNote: (...a: any[]) => mockCreateNote(...a),
@@ -82,9 +83,14 @@ vi.mock('@so360/design-system', async (importOriginal) => {
 
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
-const shellCtl = vi.hoisted(() => ({ signEnabled: false }));
+const shellCtl = vi.hoisted(() => ({ signEnabled: false, canEditDeal: true }));
 vi.mock('@so360/shell-context', () => ({
-  useShell: () => ({ isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true }),
+  useShell: () => ({
+    isModuleEnabled: (m: string) => m === 'sign' && shellCtl.signEnabled,
+    permissionsLoaded: true,
+    hasPermission: (perm: string) => (perm === 'deals.update' ? shellCtl.canEditDeal : true),
+    hasAnyPermission: () => true,
+  }),
   useActivity: () => ({ recordActivity: async () => {} }),
   useShellBridge: () => ({ effectiveFlagsLoaded: true, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true }),
 }));
@@ -186,6 +192,7 @@ const settings = {
 beforeEach(() => {
   vi.clearAllMocks();
   shellCtl.signEnabled = false;
+  shellCtl.canEditDeal = true;
   mockGetDealById.mockResolvedValue(makeDeal());
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue([owner, owner2]);
@@ -1033,6 +1040,127 @@ describe('DealDetailPage — header and card presentation', () => {
 
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
       expect(screen.queryByText('Sales Rep')).not.toBeInTheDocument();
+    });
+  });
+});
+
+/**
+ * Regression cover for Pulse task aa3d965d: clicking anywhere in the old header
+ * group (including near the deal name) swapped the whole header for a bare
+ * native <select>, and that control wrote `stage_id` via a plain PATCH instead
+ * of going through the same `updateDealStage` path the Pipeline board uses.
+ */
+describe('DealDetailPage — deal stage selector', () => {
+  describe('Given a user with deals.update permission', () => {
+    it('When the stage badge is clicked / Then a dropdown opens without touching the deal name', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      await user.click(screen.getByTestId('deal-stage-trigger'));
+
+      expect(screen.getByTestId('deal-stage-list')).toBeInTheDocument();
+      // The deal name is the SAME element throughout — never swapped for a <select>.
+      expect(screen.getByText('Big Deal').tagName).toBe('H1');
+    });
+
+    it('When the dropdown is open / Then the deal name stays visible', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      await user.click(screen.getByTestId('deal-stage-trigger'));
+
+      expect(screen.getByText('Big Deal')).toBeInTheDocument();
+      expect(screen.getByTestId('deal-stage-list')).toBeInTheDocument();
+    });
+
+    it('When the dropdown opens / Then the current stage is highlighted with a check', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      await user.click(screen.getByTestId('deal-stage-trigger'));
+
+      const currentOption = screen.getByTestId('deal-stage-option-qualified');
+      expect(currentOption).toHaveAttribute('aria-selected', 'true');
+      expect(currentOption.className).toContain('bg-blue-600');
+      const otherOption = screen.getByTestId('deal-stage-option-new');
+      expect(otherOption).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('When the dropdown is open and the user clicks outside / Then it closes without calling any update API', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      await user.click(screen.getByTestId('deal-stage-trigger'));
+      expect(screen.getByTestId('deal-stage-list')).toBeInTheDocument();
+
+      await user.click(document.body);
+
+      await waitFor(() => expect(screen.queryByTestId('deal-stage-list')).not.toBeInTheDocument());
+      expect(mockUpdateDealStage).not.toHaveBeenCalled();
+      expect(mockDealsApiUpdate).not.toHaveBeenCalled();
+    });
+
+    it('When the dropdown is open and Escape is pressed / Then it closes without calling any update API', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      await user.click(screen.getByTestId('deal-stage-trigger'));
+      expect(screen.getByTestId('deal-stage-list')).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+
+      await waitFor(() => expect(screen.queryByTestId('deal-stage-list')).not.toBeInTheDocument());
+      expect(mockUpdateDealStage).not.toHaveBeenCalled();
+    });
+
+    it('When a different stage is selected and confirmed / Then it calls crmService.updateDealStage with the deal id and new stage (not the old stage_id PATCH path)', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      await user.click(screen.getByTestId('deal-stage-trigger'));
+      await user.click(screen.getByTestId('deal-stage-option-new'));
+
+      // Selecting opens the same transition confirmation the Pipeline board uses.
+      await waitFor(() => expect(screen.getByText(/Move to New/i)).toBeInTheDocument());
+      await user.click(screen.getByRole('button', { name: /confirm transition/i }));
+
+      await waitFor(() => expect(mockUpdateDealStage).toHaveBeenCalledWith('deal-1', 'new', ''));
+      // The old bug wrote stage_id straight through dealsApi.update — must not happen anymore.
+      expect(mockDealsApiUpdate).not.toHaveBeenCalledWith('deal-1', expect.objectContaining({ stage_id: expect.anything() }));
+    });
+
+    it('When the same (current) stage is clicked / Then no update call is made and no confirmation opens', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      await user.click(screen.getByTestId('deal-stage-trigger'));
+      await user.click(screen.getByTestId('deal-stage-option-qualified'));
+
+      expect(screen.queryByText(/Move to Qualified/i)).not.toBeInTheDocument();
+      expect(mockUpdateDealStage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given a user without deals.update permission', () => {
+    it('When the header renders / Then the stage trigger is disabled and cannot open the dropdown', async () => {
+      shellCtl.canEditDeal = false;
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      const trigger = screen.getByTestId('deal-stage-trigger');
+      expect(trigger).toBeDisabled();
+
+      await user.click(trigger);
+      expect(screen.queryByTestId('deal-stage-list')).not.toBeInTheDocument();
+      expect(mockUpdateDealStage).not.toHaveBeenCalled();
     });
   });
 });
