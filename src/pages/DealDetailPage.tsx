@@ -6,8 +6,9 @@ import {
     Calendar, DollarSign, Clock, MessageSquare,
     AtSign, Phone, FileText, Plus, CheckCircle2, User as UserIcon, Users,
     Tag, Edit2, Trash2, X, Download, UploadCloud, FileIcon, File,
-    ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature
+    ExternalLink, Briefcase, Receipt, Info, LayoutDashboard, Loader2, Zap, FileSignature, Check
 } from 'lucide-react';
+import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
 import SignRequestModal from '../components/sign/SignRequestModal';
 import DealProductsTab from './components/DealProductsTab';
 import CallsTab from './components/CallsTab';
@@ -71,6 +72,12 @@ const DealDetailPage = () => {
     // UI Modals / States
     const [isEditingSummary, setIsEditingSummary] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
+    const stageDropdownRef = useRef<HTMLDivElement>(null);
+    const [stageTransition, setStageTransition] = useState<{
+        isOpen: boolean;
+        newStage: string;
+        newStageId: string | null;
+    }>({ isOpen: false, newStage: '', newStageId: null });
     const [isChangingOwner, setIsChangingOwner] = useState(false);
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -93,6 +100,8 @@ const DealDetailPage = () => {
     const { isModuleEnabled, hasPermission, permissionsLoaded } = useShell();
     // Destructive action — gate on deals.delete, fail closed. Backend already enforces it.
     const canDeleteDeal = permissionsLoaded === true && (hasPermission?.('deals.delete') ?? false);
+    // Stage changes mutate the deal — gate on deals.update, fail closed. Backend already enforces it.
+    const canEditDeal = permissionsLoaded === true && (hasPermission?.('deals.update') ?? false);
     const isSignEnabled = isModuleEnabled('sign');
     const [projectDetails, setProjectDetails] = useState<{
         id: string;
@@ -261,6 +270,51 @@ const DealDetailPage = () => {
             .then(order => setFulfillmentOrder(order))
             .catch(() => {});
     }, [id]);
+
+    // Close the stage popover on an outside click or Escape — mirrors StageStatusSelect's
+    // interaction pattern. Only wired up while the popover is actually open.
+    useEffect(() => {
+        if (!isChangingStage) return;
+        const handleOutsideClick = (e: MouseEvent) => {
+            if (stageDropdownRef.current && !stageDropdownRef.current.contains(e.target as Node)) {
+                setIsChangingStage(false);
+            }
+        };
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsChangingStage(false);
+        };
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isChangingStage]);
+
+    // Selecting a stage from the popover doesn't commit immediately — it opens the same
+    // transition confirmation used by the Pipeline board, keeping both entry points on
+    // one API path (crmService.updateDealStage -> target_state) and one UX.
+    const handleSelectStage = (stageId: string) => {
+        setIsChangingStage(false);
+        if (!deal) return;
+        if (stageId === (deal.stage_id || deal.stage)) return;
+        const stage = dealStages.find(s => s.id === stageId);
+        setStageTransition({ isOpen: true, newStage: stage?.name || stageId, newStageId: stageId });
+    };
+
+    const confirmStageTransition = async (reason: string) => {
+        if (!deal || !stageTransition.newStageId) return;
+        const { newStage, newStageId } = stageTransition;
+        try {
+            await crmService.updateDealStage(deal.id, newStageId, reason);
+            setDeal(prev => prev ? { ...prev, stage: newStage as Deal['stage'], stage_id: newStageId, current_flow_state: newStageId } : null);
+            toast.success('Deal stage updated');
+            recordActivity({ eventType: 'deal.stage_changed', eventCategory: 'crm', description: `Deal "${deal.name}" moved to ${newStage}`, resourceType: 'deal', resourceId: deal.id }).catch(() => {});
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to update stage');
+        }
+    };
 
     const handleUpdateDeal = async (updates: Partial<Deal>) => {
         if (!deal) return;
@@ -467,9 +521,40 @@ const DealDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-slate-500 gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Initializing deal workspace...</span>
+            <div className="p-8" data-testid="deal-detail-skeleton">
+                <div className="animate-pulse space-y-8">
+                    {/* Header region: reserves the deal-name/stage row + button group row */}
+                    <div data-testid="deal-detail-skeleton-header">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="h-4 bg-slate-800 rounded w-24" />
+                        </div>
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                            <div className="space-y-2">
+                                <div className="h-9 bg-slate-800 rounded w-64" />
+                                <div className="h-4 bg-slate-800 rounded w-40" />
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                <div className="h-10 w-10 bg-slate-800 rounded-xl" />
+                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
+                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Lifecycle stepper region */}
+                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-28" />
+
+                    {/* Two-column grid region */}
+                    <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-8">
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-40" />
+                            <div data-testid="deal-detail-skeleton-tabs" className="bg-slate-900 border border-slate-800 rounded-2xl h-96" />
+                        </div>
+                        <div className="space-y-8">
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-64" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -498,31 +583,53 @@ const DealDetailPage = () => {
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-2 relative">
-                            {isChangingStage ? (
-                                <select
-                                    value={deal.stage_id || deal.stage}
-                                    onChange={async (e) => {
-                                        await handleUpdateDeal({ stage_id: e.target.value });
-                                        setIsChangingStage(false);
-                                    }}
-                                    onBlur={() => setIsChangingStage(false)}
-                                    autoFocus
-                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-slate-50 rounded px-2 py-1 outline-none"
+                        <div className="flex items-center gap-3 mb-2">
+                            {/* The deal name never changes shape — only the stage badge/trigger opens a popover. */}
+                            <h1 className="text-4xl font-black text-slate-50 tracking-tight leading-tight">{deal.name}</h1>
+                            <div className="relative" ref={stageDropdownRef}>
+                                <button
+                                    type="button"
+                                    role="combobox"
+                                    aria-expanded={isChangingStage}
+                                    aria-haspopup="listbox"
+                                    disabled={!canEditDeal}
+                                    onClick={() => { if (canEditDeal) setIsChangingStage(o => !o); }}
+                                    title={canEditDeal ? 'Change stage' : undefined}
+                                    className={`group flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-blue-500/10 text-blue-400 border-blue-500/20 transition-all outline-none ${canEditDeal ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
+                                    data-testid="deal-stage-trigger"
                                 >
-                                    {dealStages.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStage(true)}>
-                                    <h1 className="text-4xl font-black text-slate-50 tracking-tight leading-tight">{deal.name}</h1>
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-blue-500/10 text-blue-400 border-blue-500/20 transition-all group-hover:scale-105">
-                                        {deal.stage}
-                                    </span>
-                                    <Edit2 size={12} className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                            )}
+                                    {deal.stage}
+                                    {canEditDeal && <Edit2 size={12} className="text-blue-400/70 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                                </button>
+
+                                {isChangingStage && canEditDeal && (
+                                    <div
+                                        role="listbox"
+                                        data-testid="deal-stage-list"
+                                        className="absolute z-50 top-full left-0 mt-1 min-w-[160px] bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden"
+                                    >
+                                        {dealStages.map(s => {
+                                            const isCurrent = s.id === (deal.stage_id || deal.stage);
+                                            return (
+                                                <button
+                                                    key={s.id}
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={isCurrent}
+                                                    onClick={() => handleSelectStage(s.id)}
+                                                    className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                                                        isCurrent ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+                                                    }`}
+                                                    data-testid={`deal-stage-option-${s.id}`}
+                                                >
+                                                    {s.name}
+                                                    {isCurrent && <Check size={12} />}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <p className="text-slate-400 flex items-center gap-2 mt-1">
                             <span className="font-semibold text-slate-50">{deal.company_name}</span>
@@ -535,7 +642,7 @@ const DealDetailPage = () => {
                         </p>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap justify-end gap-3">
                         {/* Icon-only — see LeadDetailPage for the rationale. */}
                         {canDeleteDeal && <button
                             onClick={() => setShowDeleteConfirm(true)}
@@ -1390,6 +1497,15 @@ const DealDetailPage = () => {
                     onSuccess={() => { fetchData(); toast.success('Timeline updated'); }}
                 />
             )}
+
+            {/* Stage Transition Confirmation Modal — same component & confirmation flow as the Pipeline board */}
+            <StageTransitionModal
+                isOpen={stageTransition.isOpen}
+                onClose={() => setStageTransition(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmStageTransition}
+                deal={deal}
+                newStage={stageTransition.newStage}
+            />
 
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
