@@ -465,7 +465,7 @@ describe('DealDetailPage', () => {
     it('When data is not yet resolved / Then shows loading state', () => {
       mockGetDealById.mockReturnValue(new Promise(() => {}));
       render(<DealDetailPage />);
-      expect(screen.getByText('Initializing deal workspace...')).toBeInTheDocument();
+      expect(screen.getByTestId('deal-detail-skeleton')).toBeInTheDocument();
     });
   });
 
