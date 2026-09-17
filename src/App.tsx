@@ -212,7 +212,7 @@ const App = () => {
                 <CrossLinkBridge>
                 <Routes>
                     <Route path="/" element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<DashboardPage />} />
+                    <Route path="dashboard" element={<PermissionGuard permission='crm.dashboard.view'><DashboardPage /></PermissionGuard>} />
                     <Route path="leads" element={<PermissionGuard permission='leads.read'><FlagGuard flagKey="submodule:crm:leads"><LeadsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="leads/:id" element={<PermissionGuard permission='leads.read'><FlagGuard flagKey="submodule:crm:leads"><LeadDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="partners" element={<PermissionGuard permission={['companies.read', 'partners.manage']}><FlagGuard flagKey="submodule:crm:partners"><PartnersPage /></FlagGuard></PermissionGuard>} />

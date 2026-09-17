@@ -790,7 +790,7 @@ describe('Given crmService (legacy layer)', () => {
 
   it('When action / Then getDashboardStats returns fallback on error', async () => {
     mockFetchNetworkError();
-    const result = await crmService.getDashboardStats();
+    const result = await crmService.getDashboardStats({ period: 'monthly' });
     expect(result.financials.totalRevenue).toBe(0);
     expect(result.counts.leads).toBe(0);
   });
@@ -1872,35 +1872,28 @@ describe('Given crmService (legacy layer)', () => {
     expect(result.counts.tasks).toBe(2);
   });
 
-  it('When action / Then getDashboardStats legacy path (no period)', async () => {
-    // getLeads
-    mockFetchSuccess([
-      { id: 'l1', status: 'NEW', owner: { id: 'u1' }, owner_id: 'u1', notes: [], documents: [], deals: [], tasks: [], activities: [] },
-    ]);
-    // getDeals
-    mockFetchSuccess([
-      { id: 'd1', stage: 'Won', value: '1000', owner: { id: 'u1' }, owner_id: 'u1', notes: [], documents: [], activities: [], created_at: new Date().toISOString() },
-    ]);
-    // getUsers
-    mockFetchSuccess([{ id: 'u1', full_name: 'Alice', email: 'a@b.com' }]);
-    // getTasks
-    mockFetchSuccess([
-      { id: 't1', status: 'open', type: 'REMINDER', due_date: '2099-01-01' },
-    ]);
-    // getSettings (8 calls — pipeline-stages, lead-stages, custom-fields LEAD, custom-fields DEAL, custom-fields PARTNER, source-types, scoring-rules, score-categories)
-    mockFetchSuccess([{ id: 's1', name: 'Won', type: 'WON' }, { id: 's2', name: 'Lost', type: 'LOST' }]);
+  it('When action / Then getDashboardStats with no params still routes through the gated analytics endpoint (Pulse 5174b5ae — no client-side aggregation fallback)', async () => {
+    // Analytics dashboard — must be called even with no explicit period,
+    // defaulting to 'monthly' rather than falling back to raw
+    // getLeads()/getDeals()/getUsers() aggregation that bypassed the
+    // crm_analytics.read / crm.dashboard.view backend gate.
+    mockFetchSuccess({
+      financials: { totalRevenue: 1000, pipelineValue: 500, avgDealSize: 250 },
+      metrics: { winRate: 50 },
+      counts: { totalLeads: 10, totalDeals: 5 },
+      chartData: { labels: ['Jan'], values: [1000] },
+    });
+    // Performance
     mockFetchSuccess([]);
-    mockFetchSuccess([]);
-    mockFetchSuccess([]);
-    mockFetchSuccess([]);
-    mockFetchSuccess([]);
-    mockFetchSuccess([]);
+    // Tasks
     mockFetchSuccess([]);
 
     const result = await crmService.getDashboardStats();
+
+    expect(fetchMock.mock.calls[0][0]).toEqual(expect.stringContaining('/analytics/dashboard'));
+    expect(fetchMock.mock.calls[0][0]).toEqual(expect.stringContaining('period=monthly'));
     expect(result.financials.totalRevenue).toBe(1000);
-    expect(result.counts.leads).toBe(1);
-    expect(result.teamStats).toHaveLength(1);
+    expect(result.counts.leads).toBe(10);
   });
 });
 

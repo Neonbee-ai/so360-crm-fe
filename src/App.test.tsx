@@ -139,13 +139,38 @@ describe('Given a page gated on role permissions', () => {
     expect(screen.queryByText(/don't have access/i)).toBeNull();
   });
 
-  it('When the dashboard is opened with no page codes / Then it stays reachable', () => {
+  // Pulse 5174b5ae: the dashboard used to have NO permission gate at all
+  // (any authenticated user could reach it), and the shell nav item OR'd in
+  // leads.read/deals.read/a phantom dashboard.sales_kpis code so holding a
+  // basic Tasks/Leads permission surfaced business-metrics in nav. It is now
+  // gated on the dedicated crm.dashboard.view permission.
+  it('When the user lacks crm.dashboard.view / Then the dashboard is withheld with a notice', async () => {
     shellState.hasPermission = () => false;
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <App />
       </MemoryRouter>,
     );
+    expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
+  });
+
+  it('When the user holds crm.dashboard.view / Then the dashboard is reachable', () => {
+    shellState.hasPermission = (c) => c === 'crm.dashboard.view';
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>,
+    );
     expect(screen.queryByText(/don't have access/i)).toBeNull();
+  });
+
+  it('When the user holds only leads.read or deals.read (the old OR-gate codes) / Then the dashboard is still withheld', async () => {
+    shellState.hasPermission = (c) => c === 'leads.read' || c === 'deals.read';
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
   });
 });
