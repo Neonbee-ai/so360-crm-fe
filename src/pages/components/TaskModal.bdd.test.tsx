@@ -542,6 +542,33 @@ describe('TaskModal', () => {
       );
     });
 
+    it('When the API rejects with a 409 conflict / Then the specific conflict reason is surfaced instead of the generic fallback', async () => {
+      const apiError = Object.assign(new Error('A task with this title already exists for this lead today'), { status: 409 });
+      mockCreateTask.mockRejectedValue(apiError);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockShowError).toHaveBeenCalledWith('A task with this title already exists for this lead today')
+      );
+    });
+
+    it('When the network is down (no HTTP status at all, e.g. a timed-out axios request) / Then the generic fallback is shown rather than a raw "Network Error" string', async () => {
+      const apiError = Object.assign(new Error('Network Error'), { code: 'ECONNABORTED', status: undefined });
+      mockCreateTask.mockRejectedValue(apiError);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      await waitFor(() => screen.getByPlaceholderText(/follow up/i));
+      fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+      fireEvent.change(dueInput(), { target: { value: futureDate } });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() =>
+        expect(mockShowError).toHaveBeenCalledWith('Failed to save task. Please try again.')
+      );
+      expect(mockShowError).not.toHaveBeenCalledWith('Network Error');
+    });
+
     it('When API throws / Then shows error toast and does not call onSuccess', async () => {
       mockCreateTask.mockRejectedValue(new Error('Network error'));
       const onSuccess = vi.fn();
