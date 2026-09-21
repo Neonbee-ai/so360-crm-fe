@@ -2876,6 +2876,12 @@ export const crmService = {
             // switch anyway so the map doesn't grow unbounded across a long session.
             USERS_CACHE.clear();
             USERS_CACHE_LOADED = false;
+            // getUsers() is memoized in orgStaticCache; if this org's entry is still
+            // warm from an earlier visit, a cache-hit skips the fetcher entirely and
+            // never re-populates the USERS_CACHE we just cleared above, leaving owner
+            // lookups falling through to "Unknown User" until the TTL expires. Force a
+            // fresh fetch for the org we're switching into so it repopulates both.
+            orgStaticCache.invalidate(`users|${id}`);
         }
         ORG_ID = id;
         apiClient.setOrgId(id);
