@@ -249,8 +249,19 @@ describe('Given LeadJourneyStepper', () => {
 // DealLifecycleStepper
 // ══════════════════════════════════════════════════════════════════════════════
 describe('Given DealLifecycleStepper', () => {
-  it('Given currentState=new / When rendered / Then all five stage labels are shown', () => {
-    render(<DealLifecycleStepper currentState="new" />);
+  // Real org-configured pipeline_stages — the fix removes the old hardcoded 5-state map,
+  // so these tests exercise the component against actual stage config like production does.
+  const STAGES = [
+    { id: 's1', name: 'New', type: 'OPEN' },
+    { id: 's2', name: 'Qualified', type: 'OPEN' },
+    { id: 's3', name: 'Proposal', type: 'OPEN' },
+    { id: 's4', name: 'Negotiation', type: 'OPEN' },
+    { id: 's5', name: 'Won', type: 'WON' },
+  ];
+  const LOST_STAGE = { id: 's6', name: 'Lost', type: 'LOST' };
+
+  it('Given currentStageId=s1 / When rendered / Then all five configured stage labels are shown', () => {
+    render(<DealLifecycleStepper stages={STAGES} currentStageId="s1" />);
 
     expect(screen.getByText('New')).toBeTruthy();
     expect(screen.getByText('Qualified')).toBeTruthy();
@@ -259,20 +270,20 @@ describe('Given DealLifecycleStepper', () => {
     expect(screen.getByText('Won')).toBeTruthy();
   });
 
-  it('Given currentState=won / When rendered / Then terminal won stage is highlighted', () => {
-    render(<DealLifecycleStepper currentState="won" />);
+  it('Given currentStageId=s5 (WON-typed) / When rendered / Then terminal won stage is highlighted', () => {
+    render(<DealLifecycleStepper stages={STAGES} currentStageId="s5" />);
     expect(screen.getByText('Won')).toBeTruthy();
   });
 
-  it('Given currentState=lost / When rendered / Then deal lost banner is shown instead of stepper', () => {
-    render(<DealLifecycleStepper currentState="lost" />);
+  it('Given currentStageId on a LOST-typed stage / When rendered / Then deal lost banner is shown instead of stepper', () => {
+    render(<DealLifecycleStepper stages={[...STAGES, LOST_STAGE]} currentStageId="s6" />);
 
     expect(screen.getByText('Deal Lost')).toBeTruthy();
     expect(screen.queryByText('New')).toBeNull();
   });
 
-  it('Given currentState=negotiation / When rendered / Then negotiation step is current and preceding steps are completed', () => {
-    render(<DealLifecycleStepper currentState="negotiation" />);
+  it('Given currentStageId=s4 (Negotiation) / When rendered / Then negotiation step is current and preceding steps are completed', () => {
+    render(<DealLifecycleStepper stages={STAGES} currentStageId="s4" />);
 
     // Label for the current step must be present
     expect(screen.getByText('Negotiation')).toBeTruthy();
@@ -282,9 +293,9 @@ describe('Given DealLifecycleStepper', () => {
     expect(screen.getByText('Proposal')).toBeTruthy();
   });
 
-  it('Given empty currentState / When rendered / Then defaults to first stage without crashing', () => {
-    render(<DealLifecycleStepper currentState="" />);
-    expect(screen.getByText('New')).toBeTruthy();
+  it('Given no stages configured / When rendered / Then shows an explicit empty state without crashing', () => {
+    render(<DealLifecycleStepper stages={[]} currentStageId="" />);
+    expect(screen.getByText('No pipeline stages configured')).toBeTruthy();
   });
 });
 
