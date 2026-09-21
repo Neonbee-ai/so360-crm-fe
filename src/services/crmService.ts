@@ -131,12 +131,16 @@ const STATUS_MAP_BE_TO_FE: Record<string, string> = {
     'customer': 'Converted',
 };
 
+// Users cache is keyed by org so switching orgs in the same tab can never resolve
+// a name/avatar pair left over from a previously-viewed organization's cache entry.
+const usersCacheKey = (userId: string) => `${apiClient.getOrgId()}:${userId}`;
+
 const mapUser = (userObj: any, userId: string) => {
     if (userObj) return userObj;
 
     // Try to get from cache first
-    if (userId && USERS_CACHE.has(userId)) {
-        return USERS_CACHE.get(userId)!;
+    if (userId && USERS_CACHE.has(usersCacheKey(userId))) {
+        return USERS_CACHE.get(usersCacheKey(userId))!;
     }
 
     // If we have the current user and IDs match, use it
@@ -1567,154 +1571,65 @@ export const crmService = {
         week?: number;
     }) => {
         try {
-            // If period filtering is requested, use the new backend endpoint
-            if (params?.period) {
-                const queryParams = new URLSearchParams();
-                queryParams.append('period', params.period);
-                if (params.year) queryParams.append('year', params.year.toString());
-                if (params.quarter) queryParams.append('quarter', params.quarter.toString());
-                if (params.month) queryParams.append('month', params.month.toString());
-                if (params.week) queryParams.append('week', params.week.toString());
+            // NOTE: This method always routes through the permission-gated
+            // /analytics/dashboard backend endpoint (requires
+            // crm_analytics.read + crm.dashboard.view server-side). A prior
+            // "legacy client-side aggregation" fallback used to compute these
+            // stats from raw getLeads()/getDeals()/getUsers()/getTasks() calls
+            // whenever no `period` was supplied, bypassing the analytics gate
+            // entirely (Pulse 5174b5ae). That branch has been removed —
+            // default to a monthly period instead of falling back to it.
+            const period = params?.period ?? 'monthly';
+            const queryParams = new URLSearchParams();
+            queryParams.append('period', period);
+            if (params?.year) queryParams.append('year', params.year.toString());
+            if (params?.quarter) queryParams.append('quarter', params.quarter.toString());
+            if (params?.month) queryParams.append('month', params.month.toString());
+            if (params?.week) queryParams.append('week', params.week.toString());
 
-                const [periodStats, performanceStats, tasks] = await Promise.all([
-                    apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`),
-                    apiClient.get<any>('/analytics/performance').catch(() => []),
-                    crmService.getTasks(),
-                ]);
-
-                // Compute team stats from real performance data
-                const teamStats = (performanceStats || []).map((p: any) => ({
-                    user: {
-                        id: p.user.id,
-                        full_name: p.user.name,
-                        email: p.user.email,
-                        avatar_url: null,
-                        role: 'Sales Rep'
-                    },
-                    revenue: 0,
-                    dealCount: p.metrics.won,
-                    activeLeads: p.metrics.leads,
-                    activityCount: p.metrics.activityPoints,
-                    conversionRate: p.metrics.conversionRate,
-                })).sort((a: any, b: any) => b.dealCount - a.dealCount);
-
-                // Get reminders
-                const reminders = tasks.filter((t: any) =>
-                    t.status === 'OPEN' && t.type === 'REMINDER'
-                ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
-
-                return {
-                    financials: {
-                        totalRevenue: periodStats.financials.totalRevenue,
-                        pipelineValue: periodStats.financials.pipelineValue,
-                        avgDealSize: periodStats.financials.avgDealSize,
-                        winRate: periodStats.metrics.winRate,
-                    },
-                    counts: {
-                        leads: periodStats.counts.totalLeads,
-                        deals: periodStats.counts.totalDeals,
-                        tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
-                        reminders: reminders.length
-                    },
-                    teamStats,
-                    monthlyRevenue: periodStats.chartData.values,
-                    chartLabels: periodStats.chartData.labels,
-                    reminders
-                };
-            }
-
-            // Otherwise, use the legacy client-side aggregation
-            const [leads, deals, users, tasks, settings] = await Promise.all([
-                crmService.getLeads(),
-                crmService.getDeals(),
-                crmService.getUsers(),
+            const [periodStats, performanceStats, tasks] = await Promise.all([
+                apiClient.get<any>(`/analytics/dashboard?${queryParams.toString()}`),
+                apiClient.get<any>('/analytics/performance').catch(() => []),
                 crmService.getTasks(),
-                crmService.getSettings()
             ]);
 
-            // Map deal stages for easier lookup
-            const wonStageIds = settings.deal_stages.filter((s: any) => s.type === 'WON' || s.name === 'Won').map((s: any) => s.id);
-            const lostStageIds = settings.deal_stages.filter((s: any) => s.type === 'LOST' || s.name === 'Lost').map((s: any) => s.id);
+            // Compute team stats from real performance data
+            const teamStats = (performanceStats || []).map((p: any) => ({
+                user: {
+                    id: p.user.id,
+                    full_name: p.user.name,
+                    email: p.user.email,
+                    avatar_url: null,
+                    role: 'Sales Rep'
+                },
+                revenue: 0,
+                dealCount: p.metrics.won,
+                activeLeads: p.metrics.leads,
+                activityCount: p.metrics.activityPoints,
+                conversionRate: p.metrics.conversionRate,
+            })).sort((a: any, b: any) => b.dealCount - a.dealCount);
 
-            // 1. Financials
-            const wonDeals = deals.filter((d: any) =>
-                (d.stage_id && wonStageIds.includes(d.stage_id)) || d.stage === 'Won'
-            );
-            const openDeals = deals.filter((d: any) =>
-                (d.stage !== 'Won' && d.stage !== 'Lost') &&
-                (!d.stage_id || (!wonStageIds.includes(d.stage_id) && !lostStageIds.includes(d.stage_id)))
-            );
-
-            const totalRevenue = wonDeals.reduce((sum: number, d: any) => sum + d.value, 0);
-            const pipelineValue = openDeals.reduce((sum: number, d: any) => sum + d.value, 0);
-            const avgDealSize = wonDeals.length > 0 ? totalRevenue / wonDeals.length : 0;
-            const closedDealsCount = deals.filter((d: any) =>
-                d.stage === 'Won' || d.stage === 'Lost' ||
-                (d.stage_id && (wonStageIds.includes(d.stage_id) || lostStageIds.includes(d.stage_id)))
-            ).length;
-            const winRate = closedDealsCount > 0 ? (wonDeals.length / closedDealsCount) * 100 : 0;
-
-            // 2. Team Performance
-            const teamStats = users.map((user: User) => {
-                const userWonDeals = wonDeals.filter((d: any) => d.owner.id === user.id);
-                const revenue = userWonDeals.reduce((sum: number, d: any) => sum + d.value, 0);
-                const dealCount = userWonDeals.length;
-
-                const userLeads = leads.filter((l: any) => l.owner.id === user.id);
-                const totalUserLeads = userLeads.length;
-                const activeLeads = userLeads.filter((l: any) => l.status !== 'Converted' && l.status !== 'Lost').length;
-
-                // Aggregate activities for this user across all leads and deals
-                const leadActivities = leads.reduce((sum: number, lead: any) => {
-                    return sum + (lead.activities || []).filter((a: any) => a.author.id === user.id).length;
-                }, 0);
-                const dealActivities = deals.reduce((sum: number, deal: any) => {
-                    return sum + (deal.activities || []).filter((a: any) => a.author.id === user.id).length;
-                }, 0);
-                const activityCount = leadActivities + dealActivities;
-
-                // Conversion Rate: Won Deals / Total Leads (if any)
-                const conversionRate = totalUserLeads > 0 ? (dealCount / totalUserLeads) * 100 : 0;
-
-                return {
-                    user,
-                    revenue,
-                    dealCount,
-                    activeLeads,
-                    activityCount,
-                    conversionRate
-                };
-            }).sort((a, b) => b.revenue - a.revenue);
-
-            // 3. Periodic Data
-            const monthlyRevenue = new Array(12).fill(0);
-            wonDeals.forEach(d => {
-                const date = new Date(d.created_at);
-                if (date.getFullYear() === new Date().getFullYear()) {
-                    monthlyRevenue[date.getMonth()] += d.value;
-                }
-            });
-
-            // 4. Reminders
-            const reminders = tasks.filter(t =>
+            // Get reminders
+            const reminders = tasks.filter((t: any) =>
                 t.status === 'OPEN' && t.type === 'REMINDER'
-            ).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+            ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
 
             return {
                 financials: {
-                    totalRevenue,
-                    pipelineValue,
-                    avgDealSize,
-                    winRate: isNaN(winRate) ? 0 : winRate
+                    totalRevenue: periodStats.financials.totalRevenue,
+                    pipelineValue: periodStats.financials.pipelineValue,
+                    avgDealSize: periodStats.financials.avgDealSize,
+                    winRate: periodStats.metrics.winRate,
                 },
                 counts: {
-                    leads: leads.length,
-                    deals: deals.length,
+                    leads: periodStats.counts.totalLeads,
+                    deals: periodStats.counts.totalDeals,
                     tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
                     reminders: reminders.length
                 },
                 teamStats,
-                monthlyRevenue,
+                monthlyRevenue: periodStats.chartData.values,
+                chartLabels: periodStats.chartData.labels,
                 reminders
             };
         } catch (error) {
@@ -2239,10 +2154,10 @@ export const crmService = {
                 avatar_url: u.avatar_url || null
             }));
 
-            // Populate cache for note/activity enrichment
+            // Populate cache for note/activity enrichment (keyed per-org, see usersCacheKey)
             mappedUsers.forEach(user => {
                 if (user.id) {
-                    USERS_CACHE.set(user.id, user);
+                    USERS_CACHE.set(usersCacheKey(user.id), user);
                 }
             });
             USERS_CACHE_LOADED = true;
@@ -2956,6 +2871,18 @@ export const crmService = {
         projectsClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
+        if (id !== ORG_ID) {
+            // Cache is namespaced per-org (see usersCacheKey), but drop stale entries on
+            // switch anyway so the map doesn't grow unbounded across a long session.
+            USERS_CACHE.clear();
+            USERS_CACHE_LOADED = false;
+            // getUsers() is memoized in orgStaticCache; if this org's entry is still
+            // warm from an earlier visit, a cache-hit skips the fetcher entirely and
+            // never re-populates the USERS_CACHE we just cleared above, leaving owner
+            // lookups falling through to "Unknown User" until the TTL expires. Force a
+            // fresh fetch for the org we're switching into so it repopulates both.
+            orgStaticCache.invalidate(`users|${id}`);
+        }
         ORG_ID = id;
         apiClient.setOrgId(id);
         coreClient.setOrgId(id);

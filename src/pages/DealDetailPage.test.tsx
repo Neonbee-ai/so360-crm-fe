@@ -116,7 +116,7 @@ describe('Given DealDetailPage', () => {
   it('When action / Then shows loading state initially', () => {
     mockGetDealById.mockReturnValue(new Promise(() => {}));
     render(<DealDetailPage />);
-    expect(screen.getByText('Initializing deal workspace...')).toBeInTheDocument();
+    expect(screen.getByTestId('deal-detail-skeleton')).toBeInTheDocument();
   });
 
   it('When action / Then shows not found when deal is null', async () => {
