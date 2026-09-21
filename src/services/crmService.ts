@@ -131,12 +131,16 @@ const STATUS_MAP_BE_TO_FE: Record<string, string> = {
     'customer': 'Converted',
 };
 
+// Users cache is keyed by org so switching orgs in the same tab can never resolve
+// a name/avatar pair left over from a previously-viewed organization's cache entry.
+const usersCacheKey = (userId: string) => `${apiClient.getOrgId()}:${userId}`;
+
 const mapUser = (userObj: any, userId: string) => {
     if (userObj) return userObj;
 
     // Try to get from cache first
-    if (userId && USERS_CACHE.has(userId)) {
-        return USERS_CACHE.get(userId)!;
+    if (userId && USERS_CACHE.has(usersCacheKey(userId))) {
+        return USERS_CACHE.get(usersCacheKey(userId))!;
     }
 
     // If we have the current user and IDs match, use it
@@ -2150,10 +2154,10 @@ export const crmService = {
                 avatar_url: u.avatar_url || null
             }));
 
-            // Populate cache for note/activity enrichment
+            // Populate cache for note/activity enrichment (keyed per-org, see usersCacheKey)
             mappedUsers.forEach(user => {
                 if (user.id) {
-                    USERS_CACHE.set(user.id, user);
+                    USERS_CACHE.set(usersCacheKey(user.id), user);
                 }
             });
             USERS_CACHE_LOADED = true;
@@ -2867,6 +2871,18 @@ export const crmService = {
         projectsClient.setTenantId(id);
     },
     setOrgId: (id: string) => {
+        if (id !== ORG_ID) {
+            // Cache is namespaced per-org (see usersCacheKey), but drop stale entries on
+            // switch anyway so the map doesn't grow unbounded across a long session.
+            USERS_CACHE.clear();
+            USERS_CACHE_LOADED = false;
+            // getUsers() is memoized in orgStaticCache; if this org's entry is still
+            // warm from an earlier visit, a cache-hit skips the fetcher entirely and
+            // never re-populates the USERS_CACHE we just cleared above, leaving owner
+            // lookups falling through to "Unknown User" until the TTL expires. Force a
+            // fresh fetch for the org we're switching into so it repopulates both.
+            orgStaticCache.invalidate(`users|${id}`);
+        }
         ORG_ID = id;
         apiClient.setOrgId(id);
         coreClient.setOrgId(id);
