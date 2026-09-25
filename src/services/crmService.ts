@@ -491,6 +491,9 @@ class ApiClient {
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
+
+/** Inventory `items.type` values CRM may sell; mirrors CRM BE's CRM_SELLABLE_ITEM_TYPES. */
+export const CRM_SELLABLE_ITEM_TYPES = ['product', 'finished_good', 'service', 'bundle'] as const;
 const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
 const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
 const inventoryClient = new ApiClient(INVENTORY_API_ORIGIN, TENANT_ID);
@@ -2540,6 +2543,9 @@ export const crmService = {
      * `q` is optional: called with no term (the default when a product picker
      * opens) the backend returns the most recent active items, so users can
      * browse without knowing a name or SKU. `offset` drives lazy-loading.
+     * Only sellable item types are requested, so raw materials, consumables
+     * and fixed assets from the shared item master never reach a sales picker
+     * (CRM BE also rejects them on add).
      *
      * Errors are NOT swallowed — pickers surface them with a retry action
      * rather than rendering a misleading "no products found" empty state.
@@ -2549,7 +2555,7 @@ export const crmService = {
         categoryId?: string,
         opts: { limit?: number; offset?: number } = {},
     ): Promise<{ items: InventoryItem[]; total: number; has_more: boolean }> {
-        const params: Record<string, string> = {};
+        const params: Record<string, string> = { type: CRM_SELLABLE_ITEM_TYPES.join(',') };
         if (q && q.trim()) params.q = q.trim();
         if (categoryId) params.category_id = categoryId;
         if (opts.limit != null) params.limit = String(opts.limit);
