@@ -625,3 +625,28 @@ describe('CreateLeadModal', () => {
     });
   });
 });
+
+describe("Given the org has won stages among its lead stages (Pulse ac4009ad)", () => {
+  it("When the create form opens / Then Converted, Won and Closed Won are not offered, while open stages and Lost are", async () => {
+    mockGetSettings.mockResolvedValue({
+      lead_stages: [
+        { id: "ls1", name: "New" },
+        { id: "ls2", name: "Qualified" },
+        { id: "ls3", name: "Converted" },
+        { id: "ls4", name: "Closed Won" },
+        { id: "ls5", name: "won" },
+        { id: "ls6", name: "Lost" },
+      ],
+      lead_custom_fields: [],
+      deal_stages: [], deal_custom_fields: [], lead_sources: [], lead_scoring: [], default_owner_id: "u1",
+    });
+    render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+    await waitFor(() => expect(screen.getByRole("option", { name: "Qualified" })).toBeInTheDocument());
+
+    expect(screen.getByRole("option", { name: "New" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Lost" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Converted" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "Closed Won" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "won" })).toBeNull();
+  });
+});
