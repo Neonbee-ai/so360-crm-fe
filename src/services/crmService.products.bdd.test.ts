@@ -187,6 +187,23 @@ describe('crmService — searchInventoryItems (Add Product modal)', () => {
         });
     });
 
+    describe('Given the picker must only offer sellable items (raw materials stay internal)', () => {
+        it('When searching / Then it requests only the CRM-sellable item types', async () => {
+            ok([sampleItem]);
+            await crmService.searchInventoryItems('screw');
+            const url = new URL(lastFetchUrl(), 'http://localhost');
+            expect(url.searchParams.get('type')).toBe('product,finished_good,service,bundle');
+        });
+
+        it('When browsing with no term / Then the type filter is still sent', async () => {
+            ok([sampleItem]);
+            await crmService.searchInventoryItems('');
+            const url = new URL(lastFetchUrl(), 'http://localhost');
+            expect(url.searchParams.get('type')).toBe('product,finished_good,service,bundle');
+            expect(url.searchParams.has('q')).toBe(false);
+        });
+    });
+
     describe('Given the backend returns various response shapes', () => {
         it('When the body is a bare array / Then items resolves to that array', async () => {
             ok([sampleItem]);
