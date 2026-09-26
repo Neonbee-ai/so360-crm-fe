@@ -1824,14 +1824,18 @@ export const crmService = {
     },
 
     async updateTask(id: string, updates: Partial<Task> | any): Promise<Task> {
-        // Whitelist safe fields - REMOVED description to fix schema mismatch
+        // Whitelist the fields UpdateTaskDto accepts. description, priority and
+        // start_date were dropped here, so edits to them silently never saved
+        // (tasks has had all three columns for a while; create already sends them).
         const data: any = {};
         if (updates.title !== undefined) data.title = updates.title;
+        if (updates.description !== undefined) data.description = updates.description;
+        if (updates.priority !== undefined) data.priority = updates.priority;
+        if (updates.start_date !== undefined) data.start_date = updates.start_date;
         if (updates.due_date !== undefined) data.due_date = updates.due_date;
         if (updates.status !== undefined) data.status = updates.status.toUpperCase();
         if (updates.type !== undefined) data.type = updates.type.toUpperCase();
         if (updates.assignee_id !== undefined) data.assignee_id = updates.assignee_id;
-        // Description removed - backend schema doesn't support it
         if (updates.reminder_minutes_before !== undefined) data.reminder_minutes_before = updates.reminder_minutes_before;
         if (updates.assigned_to !== undefined && updates.assigned_to?.id) {
             data.assignee_id = updates.assigned_to.id;
@@ -2363,6 +2367,23 @@ export const crmService = {
             console.error('[CRM] Failed to fetch projects list:', error.message);
             // Return empty array instead of mock data - let UI handle empty state
             return [];
+        }
+    },
+
+    /**
+     * User ids on a project's team — the only people a project-linked task
+     * can be assigned to (Projects rejects anyone else). Resolves null when
+     * the team can't be read, so callers can tell "unknown" from "empty" and
+     * leave the final say to the backend instead of blocking on a blip.
+     */
+    async getProjectTeamUserIds(projectId: string): Promise<string[] | null> {
+        try {
+            const result = await projectsClient.get<any>(`/projects/${projectId}/team`);
+            const rows: any[] = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : []);
+            return rows.map(m => m?.user_id).filter(Boolean);
+        } catch (error: any) {
+            console.error('[CRM] Failed to fetch project team:', error?.message);
+            return null;
         }
     },
 
