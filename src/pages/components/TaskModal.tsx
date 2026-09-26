@@ -4,7 +4,7 @@ import { crmService } from '../../services/crmService';
 import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
 import { toast } from '@so360/design-system';
-import { useShell, useNotify, useActivity } from '@so360/shell-context';
+import { useShell, useActivity } from '@so360/shell-context';
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -22,7 +22,6 @@ interface TaskModalProps {
 
 const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholderId, dealProjectId, onClose, onSuccess }) => {
     const shell = useShell();
-    const { emitNotification } = useNotify();
     const { recordActivity } = useActivity();
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
@@ -43,7 +42,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const [status, setStatus] = useState<Task['status']>(task?.status || 'OPEN');
     const [type, setType] = useState<TaskType>(task?.type || 'TODO');
     const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'MEDIUM');
-    const [assignedToId, setAssignedToId] = useState(task?.assigned_to?.id || '');
+    // The assignee the task was loaded with. Edits only send assignee_id when
+    // it differs from this, so saving an unrelated field can never reassign.
+    const originalAssigneeId = task?.assigned_to?.id || '';
+    const [assignedToId, setAssignedToId] = useState(originalAssigneeId);
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,8 +76,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             }
 
             setUsers(finalUsers);
-            if (!assignedToId && finalUsers.length > 0) {
-                setAssignedToId(finalUsers[0].id);
+            // A new task starts assigned to its creator — never to whoever the
+            // user list happens to return first, which is how tasks landed on
+            // the wrong person. An existing task keeps exactly what it had.
+            if (!isEditing && !assignedToId && currentUserId && finalUsers.some(u => u.id === currentUserId)) {
+                setAssignedToId(currentUserId);
             }
         };
         const fetchAssociateOptions = async () => {
@@ -132,17 +137,40 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             toast.error('Due time cannot be in the past. Please pick a later time.');
             return;
         }
+        if (!isEditing && !assignedToId) {
+            toast.error('Please choose who this task is assigned to.');
+            return;
+        }
+
+        const assigneeChanged = assignedToId !== originalAssigneeId;
+        const projectChanged = projectId !== (task?.project_id || '');
 
         setIsSubmitting(true);
         try {
+            // A project-linked task can only belong to a member of that
+            // project. Checked before saving so the task is never created in
+            // CRM with an owner the project board would silently drop.
+            if (projectId && assignedToId && (projectChanged || assigneeChanged)) {
+                const teamUserIds = await crmService.getProjectTeamUserIds(projectId);
+                if (teamUserIds && !teamUserIds.includes(assignedToId)) {
+                    const name = users.find(u => u.id === assignedToId)?.full_name || 'The selected assignee';
+                    toast.error(`${name} is not a member of the selected project. Assign the task to a project member, or add them to the project team first.`);
+                    return;
+                }
+            }
+
             const data: any = {
                 title,
                 description,
                 status: status.toUpperCase(),
                 type: type.toUpperCase(),
                 priority,
-                assignee_id: assignedToId
             };
+            if (!isEditing) {
+                data.assignee_id = assignedToId;
+            } else if (assigneeChanged) {
+                data.assignee_id = assignedToId || null;
+            }
 
             if (startDate) {
                 // Send the calendar day itself. Anchoring it to local midnight and
@@ -176,22 +204,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             if (projectId && projectId !== task?.project_id && result?.id) {
                 try {
                     const connected = await crmService.connectTaskToProject(result.id, projectId);
-                    // A partial success: the task reached the project board, but
-                    // its assignee isn't a member there so it landed unassigned.
-                    // Saying only "Task created" would leave the user to discover
-                    // that on the board days later.
-                    if (connected?.warning) {
-                        toast.warning(connected.warning);
-                    }
+                    // Hand callers the task as it is *after* linking (project_id,
+                    // sync status), not the pre-link copy — otherwise lists show
+                    // the task unlinked until a refresh.
+                    const linkedTask = (connected as any)?.task;
+                    if (linkedTask?.id === result.id) result = linkedTask;
                 } catch (connectError) {
                     const reason = (connectError as Error)?.message || 'Unknown error';
                     toast.warning(`Task ${isEditing ? 'updated' : 'created'}, but couldn't connect to Project: ${reason}`);
                 }
             }
 
-            if (!isEditing && assignedToId && assignedToId !== currentUserId) {
-                emitNotification({ event: 'CRM_TASK_ASSIGNED', userIds: [assignedToId], variables: { taskTitle: title, actorName: currentUser?.full_name || 'Someone' }, relatedResource: { type: 'task', id: result?.id } }).catch(() => {});
-            }
+            // The assignment notification is sent by the backend on create and
+            // on reassignment; emitting one here too double-notified.
             recordActivity({ eventType: isEditing ? 'task.updated' : 'task.created', eventCategory: 'crm', description: `${isEditing ? 'Updated' : 'Created'} task "${title}"`, resourceType: 'task', resourceId: result?.id }).catch(() => {});
             onSuccess(result);
             onClose();
@@ -375,6 +400,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         onChange={(e) => setAssignedToId(e.target.value)}
                                         className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
+                                        <option value="">{isEditing ? 'Unassigned' : 'Select assignee…'}</option>
                                         {users.map(u => (
                                             <option key={u.id} value={u.id}>
                                                 {u.full_name}
