@@ -28,6 +28,7 @@ import {
     DEFAULT_COUNTRY,
 } from '../../utils/postalCodeRules';
 import { describeApiError } from '../../utils/apiErrorMessage';
+import { isWonLeadStage } from '../../utils/leadStages';
 import { RequiredMark } from '../common/RequiredMark';
 
 /**
@@ -120,7 +121,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     settingsApi.sourceTypes.getAll().catch(() => [] as any[]),
                 ]);
                 setCustomFieldDefs(settings.lead_custom_fields);
-                setLeadStages(settings.lead_stages);
+                // A new lead can't start out already won. Picking "Converted"
+                // here saved a lead that looked converted but was never made a
+                // customer; won/converted is reached by moving an existing lead.
+                setLeadStages(settings.lead_stages.filter(stage => !isWonLeadStage(stage.name)));
                 setSourceTypes(fetchedSourceTypes);
                 setUsers(fetchedUsers);
                 setPartners(fetchedPartners);
