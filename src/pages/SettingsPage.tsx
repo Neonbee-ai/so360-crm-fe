@@ -6,8 +6,10 @@ import { toast } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
+import AssignmentRulesSettingsTab from './components/settings/AssignmentRulesSettingsTab';
+import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 
-type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming';
+type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment';
 
 // Activity types available for scoring rules
 const SCOREABLE_ACTIVITY_TYPES = [
@@ -82,6 +84,7 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
 const SettingsPage = () => {
     const shell = useShellBridge();
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
+    const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
     const [settings, setSettings] = useState<CRMSettings | null>(null);
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);
@@ -549,6 +552,14 @@ const SettingsPage = () => {
                 >
                     Deal Naming
                 </button>
+                {assignmentEnabled && (
+                    <button
+                        onClick={() => setActiveTab('assignment')}
+                        className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'assignment' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Assignment
+                    </button>
+                )}
             </div>
 
             <div className="space-y-10">
@@ -1214,6 +1225,10 @@ const SettingsPage = () => {
                         canWrite={canWriteSettings}
                         onChange={(cfg) => setSettings(s => s ? { ...s, deal_naming: cfg } : s)}
                     />
+                )}
+
+                {activeTab === 'assignment' && assignmentEnabled && (
+                    <AssignmentRulesSettingsTab canWrite={canWriteSettings} />
                 )}
             </div>
         </div>
