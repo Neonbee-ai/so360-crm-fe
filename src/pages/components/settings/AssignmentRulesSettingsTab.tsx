@@ -10,7 +10,9 @@ import {
     ASSIGNMENT_METHODS,
     CONDITION_FIELDS,
     CONDITION_OPS,
+    MAX_REASSIGN_AFTER_MINUTES,
     emptyRule,
+    parseReassignMinutes,
     toRuleBody,
     validateRule,
 } from '../../../services/assignmentRulesService';
@@ -34,6 +36,10 @@ function ruleToInput(rule: AssignmentRule): AssignmentRuleInput {
         target_user_ids: rule.target_user_ids ?? [],
         method: rule.method,
         skip_inactive: rule.skip_inactive,
+        // G5: carried only when the row has them, so an edit never writes a
+        // column the server does not have yet.
+        ...(rule.skip_on_leave !== undefined && { skip_on_leave: rule.skip_on_leave }),
+        ...(rule.reassign_after_minutes !== undefined && { reassign_after_minutes: rule.reassign_after_minutes }),
     };
 }
 
@@ -54,7 +60,8 @@ function targetSummary(rule: AssignmentRule): string {
     const who = rule.target_type === 'department'
         ? 'a department'
         : `${rule.target_user_ids?.length ?? 0} ${rule.target_user_ids?.length === 1 ? 'person' : 'people'}`;
-    return `${who} · ${method}`;
+    const reassign = rule.reassign_after_minutes ? ` · reassign after ${rule.reassign_after_minutes} min` : '';
+    return `${who} · ${method}${reassign}`;
 }
 
 /**
@@ -76,7 +83,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
     const [draft, setDraft] = useState<AssignmentRuleInput>(emptyRule());
     const [draftError, setDraftError] = useState<string | null>(null);
 
-    const [sample, setSample] = useState<Record<string, string>>({ source: '', project: '', campaign: '', city: '' });
+    const [sample, setSample] = useState<Record<string, string>>({ source: '', project: '', campaign: '', city: '', language: '' });
     const [testing, setTesting] = useState(false);
     const [testResult, setTestResult] = useState<AssignmentTestResult | null>(null);
     const [assigneeName, setAssigneeName] = useState<string | null>(null);
@@ -334,6 +341,32 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         onChange={(e) => setDraft((d) => ({ ...d, skip_inactive: e.target.checked }))}
                     />
                     Skip people who are inactive
+                </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 items-end">
+                <div>
+                    <label htmlFor="assignment-rule-reassign" className={LABEL_CLS}>Reassign if not contacted within (minutes)</label>
+                    <input
+                        id="assignment-rule-reassign"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={MAX_REASSIGN_AFTER_MINUTES}
+                        step={1}
+                        className={FIELD_CLS}
+                        placeholder="Never"
+                        value={draft.reassign_after_minutes ?? ''}
+                        onChange={(e) => setDraft((d) => ({ ...d, reassign_after_minutes: parseReassignMinutes(e.target.value) }))}
+                    />
+                </div>
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-300 pb-2.5">
+                    <input
+                        type="checkbox"
+                        checked={draft.skip_on_leave !== false}
+                        onChange={(e) => setDraft((d) => ({ ...d, skip_on_leave: e.target.checked }))}
+                    />
+                    Skip people on leave today
                 </label>
             </div>
 

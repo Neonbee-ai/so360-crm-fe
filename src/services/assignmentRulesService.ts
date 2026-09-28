@@ -9,6 +9,11 @@ import { crmApiClient } from './crmService';
  *  DELETE /assignment-rules/:id          → { success: true }
  *  POST   /assignment-rules/reorder {ids} → AssignmentRule[] (first id = priority 0)
  *  POST   /assignment-rules/test {lead}   → AssignmentTestResult (dry run)
+ *
+ * G5 fields (crm-be migration 075): `skip_on_leave` (default true on the
+ * server) and `reassign_after_minutes` (1..10080, null = never). Both are only
+ * sent once the rule carries a value for them, so saving a rule never depends
+ * on those columns existing.
  */
 
 export type AssignmentTargetType = 'department' | 'users';
@@ -16,7 +21,7 @@ export type AssignmentMethod = 'round_robin' | 'least_loaded' | 'fixed';
 export type AssignmentConditionOp = 'eq' | 'in' | 'contains';
 
 export interface AssignmentCondition {
-    /** source | project | campaign | city | custom:<key> */
+    /** source | project | campaign | city | language | custom:<key> */
     field: string;
     op: AssignmentConditionOp;
     value: string | string[];
@@ -33,7 +38,14 @@ export interface AssignmentRule {
     target_user_ids: string[];
     method: AssignmentMethod;
     skip_inactive: boolean;
+    /** Skip pool members on approved leave today (People Connect). Server default true. */
+    skip_on_leave?: boolean;
+    /** Reassign when the owner logs no activity within this many minutes. null = never. */
+    reassign_after_minutes?: number | null;
 }
+
+/** Longest reassign window crm-be accepts: one week. */
+export const MAX_REASSIGN_AFTER_MINUTES = 10080;
 
 export type AssignmentRuleInput = Omit<AssignmentRule, 'id' | 'priority'> & { priority?: number };
 
@@ -52,6 +64,7 @@ export const CONDITION_FIELDS: Array<{ value: string; label: string }> = [
     { value: 'project', label: 'Project' },
     { value: 'campaign', label: 'Campaign' },
     { value: 'city', label: 'City' },
+    { value: 'language', label: 'Language' },
 ];
 
 export const CONDITION_OPS: Array<{ value: AssignmentConditionOp; label: string }> = [
@@ -102,6 +115,8 @@ export function toRuleBody(rule: AssignmentRuleInput): Record<string, unknown> {
         method: rule.method,
         skip_inactive: rule.skip_inactive,
     };
+    if (rule.skip_on_leave !== undefined) body.skip_on_leave = rule.skip_on_leave;
+    if (rule.reassign_after_minutes !== undefined) body.reassign_after_minutes = rule.reassign_after_minutes;
     if (rule.target_type === 'department') {
         if (rule.target_department_id) body.target_department_id = rule.target_department_id;
     } else {
@@ -110,11 +125,22 @@ export function toRuleBody(rule: AssignmentRuleInput): Record<string, unknown> {
     return body;
 }
 
+/** Editor text → minutes: empty clears the window (null); anything else is validated on save. */
+export function parseReassignMinutes(text: string): number | null {
+    const trimmed = text.trim();
+    return trimmed === '' ? null : Number(trimmed);
+}
+
 /** Why the rule cannot be saved yet, or null when it can. */
 export function validateRule(rule: AssignmentRuleInput): string | null {
     if (!rule.name.trim()) return 'Give the rule a name.';
     if (rule.target_type === 'department' && !rule.target_department_id) return 'Pick a department.';
     if (rule.target_type === 'users' && rule.target_user_ids.length === 0) return 'Pick at least one person.';
+    const minutes = rule.reassign_after_minutes;
+    if (minutes !== undefined && minutes !== null
+        && (!Number.isInteger(minutes) || minutes < 1 || minutes > MAX_REASSIGN_AFTER_MINUTES)) {
+        return `Reassign after must be a whole number of minutes from 1 to ${MAX_REASSIGN_AFTER_MINUTES}, or empty.`;
+    }
     return null;
 }
 
