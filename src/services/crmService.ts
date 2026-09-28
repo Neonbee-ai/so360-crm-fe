@@ -491,6 +491,9 @@ class ApiClient {
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
+
+/** Inventory `items.type` values CRM may sell; mirrors CRM BE's CRM_SELLABLE_ITEM_TYPES. */
+export const CRM_SELLABLE_ITEM_TYPES = ['product', 'finished_good', 'service', 'bundle'] as const;
 const coreClient = new ApiClient(CORE_API_ORIGIN, TENANT_ID);
 const dailystoreClient = new ApiClient(DAILYSTORE_API_ORIGIN, TENANT_ID);
 const inventoryClient = new ApiClient(INVENTORY_API_ORIGIN, TENANT_ID);
@@ -1821,14 +1824,18 @@ export const crmService = {
     },
 
     async updateTask(id: string, updates: Partial<Task> | any): Promise<Task> {
-        // Whitelist safe fields - REMOVED description to fix schema mismatch
+        // Whitelist the fields UpdateTaskDto accepts. description, priority and
+        // start_date were dropped here, so edits to them silently never saved
+        // (tasks has had all three columns for a while; create already sends them).
         const data: any = {};
         if (updates.title !== undefined) data.title = updates.title;
+        if (updates.description !== undefined) data.description = updates.description;
+        if (updates.priority !== undefined) data.priority = updates.priority;
+        if (updates.start_date !== undefined) data.start_date = updates.start_date;
         if (updates.due_date !== undefined) data.due_date = updates.due_date;
         if (updates.status !== undefined) data.status = updates.status.toUpperCase();
         if (updates.type !== undefined) data.type = updates.type.toUpperCase();
         if (updates.assignee_id !== undefined) data.assignee_id = updates.assignee_id;
-        // Description removed - backend schema doesn't support it
         if (updates.reminder_minutes_before !== undefined) data.reminder_minutes_before = updates.reminder_minutes_before;
         if (updates.assigned_to !== undefined && updates.assigned_to?.id) {
             data.assignee_id = updates.assigned_to.id;
@@ -2363,6 +2370,23 @@ export const crmService = {
         }
     },
 
+    /**
+     * User ids on a project's team — the only people a project-linked task
+     * can be assigned to (Projects rejects anyone else). Resolves null when
+     * the team can't be read, so callers can tell "unknown" from "empty" and
+     * leave the final say to the backend instead of blocking on a blip.
+     */
+    async getProjectTeamUserIds(projectId: string): Promise<string[] | null> {
+        try {
+            const result = await projectsClient.get<any>(`/projects/${projectId}/team`);
+            const rows: any[] = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : []);
+            return rows.map(m => m?.user_id).filter(Boolean);
+        } catch (error: any) {
+            console.error('[CRM] Failed to fetch project team:', error?.message);
+            return null;
+        }
+    },
+
     async getProjectById(projectId: string): Promise<any | null> {
         try {
             // Same class of bug as getProjects() above: callers previously did a
@@ -2519,6 +2543,9 @@ export const crmService = {
      * `q` is optional: called with no term (the default when a product picker
      * opens) the backend returns the most recent active items, so users can
      * browse without knowing a name or SKU. `offset` drives lazy-loading.
+     * Only sellable item types are requested, so raw materials, consumables
+     * and fixed assets from the shared item master never reach a sales picker
+     * (CRM BE also rejects them on add).
      *
      * Errors are NOT swallowed — pickers surface them with a retry action
      * rather than rendering a misleading "no products found" empty state.
@@ -2528,7 +2555,7 @@ export const crmService = {
         categoryId?: string,
         opts: { limit?: number; offset?: number } = {},
     ): Promise<{ items: InventoryItem[]; total: number; has_more: boolean }> {
-        const params: Record<string, string> = {};
+        const params: Record<string, string> = { type: CRM_SELLABLE_ITEM_TYPES.join(',') };
         if (q && q.trim()) params.q = q.trim();
         if (categoryId) params.category_id = categoryId;
         if (opts.limit != null) params.limit = String(opts.limit);

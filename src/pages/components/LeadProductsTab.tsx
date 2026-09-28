@@ -246,6 +246,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showCustomBuildModal, setShowCustomBuildModal] = useState(false);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [addError, setAddError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -265,6 +266,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
 
     const handleAdd = async (item: InventoryItem, qty: number) => {
         setShowAddModal(false);
+        setAddError(null);
         try {
             await crmService.addLeadProduct(leadId, {
                 item_id: item.id,
@@ -274,7 +276,11 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                 unit_price: item.price ?? 0,
             });
             load();
-        } catch { /* ignore */ }
+        } catch (e: any) {
+            // e.g. the backend rejecting a non-sellable item — say why instead
+            // of the product silently not appearing.
+            setAddError(e?.message || 'Could not add the product.');
+        }
     };
 
     const handleCustomBuildSubmit = async (data: {
@@ -347,6 +353,12 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                     </button>
                 </div>
             </div>
+
+            {addError && (
+                <p role="alert" className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2">
+                    {addError}
+                </p>
+            )}
 
             {/* Product list */}
             {loading ? (

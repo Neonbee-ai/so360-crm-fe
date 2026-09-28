@@ -15,6 +15,7 @@ const mockGetLeads = vi.fn();
 const mockGetDeals = vi.fn();
 const mockGetProjects = vi.fn();
 const mockConnectTaskToProject = vi.fn();
+const mockGetProjectTeamUserIds = vi.fn();
 const mockShowWarning = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/crmService', () => ({
@@ -26,6 +27,7 @@ vi.mock('../../services/crmService', () => ({
     getDeals: (...a: any[]) => mockGetDeals(...a),
     getProjects: (...a: any[]) => mockGetProjects(...a),
     connectTaskToProject: (...a: any[]) => mockConnectTaskToProject(...a),
+    getProjectTeamUserIds: (...a: any[]) => mockGetProjectTeamUserIds(...a),
   },
 }));
 
@@ -117,6 +119,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockCurrentUser = { id: 'u1', full_name: 'Test User', email: 'test@test.com' };
   mockGetUsers.mockResolvedValue(USERS);
+  // Both fixture users are on every project unless a test says otherwise.
+  mockGetProjectTeamUserIds.mockResolvedValue(['u1', 'u2']);
   mockCreateTask.mockResolvedValue({ id: 't-new', title: 'New Task', status: 'OPEN' });
   mockUpdateTask.mockResolvedValue({ id: 't1', title: 'Updated', status: 'OPEN' });
   mockRecordActivity.mockResolvedValue(undefined);
@@ -475,7 +479,7 @@ describe('TaskModal', () => {
       });
     });
 
-    it('When assigned to another user / Then emits task-assigned notification', async () => {
+    it('When assigned to another user / Then that user is saved as assignee and the backend (not the modal) notifies them', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByPlaceholderText(/follow up/i));
       fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
@@ -483,7 +487,11 @@ describe('TaskModal', () => {
       // selects in TODO mode: [type=0, assignee=1]
       fireEvent.change(selects()[1], { target: { value: 'u2' } });
       fireEvent.submit(document.querySelector('form')!);
-      await waitFor(() => expect(mockEmitNotification).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ assignee_id: 'u2' })),
+      );
+      // A second, client-side CRM_TASK_ASSIGNED double-notified the assignee.
+      expect(mockEmitNotification).not.toHaveBeenCalled();
     });
 
     it('When assigned to self / Then does NOT emit notification', async () => {
@@ -1078,15 +1086,50 @@ describe('Given a user selects a Project and submits the task form', () => {
     );
   });
 
-  it('When the link succeeds but the assignee is not a project member / Then the downgrade is surfaced instead of a bare success', async () => {
+  it('When the assignee is not a member of the selected project / Then the save is blocked with an explanation and nothing is created', async () => {
+    mockGetProjectTeamUserIds.mockResolvedValue(['u2']); // u1 (the default assignee) is not on the team
+    const onClose = vi.fn();
+    render(<TaskModal dealId="deal-1" onClose={onClose} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(selects()[1].value).toBe('u1'));
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockShowError).toHaveBeenCalledWith(
+        expect.stringContaining('Test User is not a member of the selected project'),
+      ),
+    );
+    expect(mockGetProjectTeamUserIds).toHaveBeenCalledWith('proj-1');
+    expect(mockCreateTask).not.toHaveBeenCalled();
+    expect(mockConnectTaskToProject).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('When the assignee is switched to a project member / Then the task is created and linked', async () => {
+    mockGetProjectTeamUserIds.mockResolvedValue(['u2']);
     mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
-    mockConnectTaskToProject.mockResolvedValue({
-      connected: true,
-      project_task_id: 'ptask-1',
-      assignee_synced: false,
-      warning:
-        'Task added to the project, but left unassigned there: the assignee is not a member of that project. Add them to the project team, then retry sync.',
-    });
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(selects()[1], { target: { value: 'u2' } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockConnectTaskToProject).toHaveBeenCalledWith('new-task-99', 'proj-1'));
+    expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ assignee_id: 'u2' }));
+  });
+
+  it('When the project team cannot be read / Then the save goes ahead and the backend has the final say', async () => {
+    mockGetProjectTeamUserIds.mockResolvedValue(null);
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
     await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
 
@@ -1096,10 +1139,29 @@ describe('Given a user selects a Project and submits the task form', () => {
 
     fireEvent.submit(document.querySelector('form')!);
 
+    await waitFor(() => expect(mockConnectTaskToProject).toHaveBeenCalledWith('new-task-99', 'proj-1'));
+  });
+
+  it('When the link succeeds / Then onSuccess receives the linked task, not the pre-link copy', async () => {
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
+    mockConnectTaskToProject.mockResolvedValue({
+      connected: true,
+      project_task_id: 'ptask-1',
+      task: { id: 'new-task-99', title: 'Task', status: 'OPEN', project_id: 'proj-1', sync_status: 'connected' },
+    });
+    const onSuccess = vi.fn();
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={onSuccess} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    fireEvent.submit(document.querySelector('form')!);
+
     await waitFor(() =>
-      expect(mockShowWarning).toHaveBeenCalledWith(
-        expect.stringContaining('not a member of that project'),
-      )
+      expect(onSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'new-task-99', project_id: 'proj-1', sync_status: 'connected' }),
+      ),
     );
   });
 
@@ -1159,5 +1221,106 @@ describe('Given the connect call fails after task creation succeeds', () => {
     );
     // Crucially: this is a warning notice, never the hard failure path.
     expect(mockShowError).not.toHaveBeenCalledWith('Failed to save task. Please try again.');
+  });
+});
+
+// ── Assignee integrity (Pulse 4dc7892e) ─────────────────────────────────────
+describe('Given the assignee field of the task form', () => {
+  it('When creating a task and the user list does not start with the current user / Then the task defaults to the current user, not the first user returned', async () => {
+    mockGetUsers.mockResolvedValue([USERS[1], USERS[0]]); // u2 first
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(selects()[1].value).toBe('u1'));
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ assignee_id: 'u1' })),
+    );
+  });
+
+  it('When creating a task and the current user is not an assignable user / Then nobody is preselected and saving asks for an assignee', async () => {
+    mockCurrentUser = { id: 'outsider', full_name: 'Outsider' };
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText('Select assignee…')).toBeInTheDocument());
+    expect(selects()[1].value).toBe('');
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockShowError).toHaveBeenCalledWith('Please choose who this task is assigned to.'),
+    );
+    expect(mockCreateTask).not.toHaveBeenCalled();
+  });
+
+  it('When editing only the due date / Then assignee_id is not sent, so the owner cannot change as a side effect', async () => {
+    mockUpdateTask.mockResolvedValue({ ...BASE_TASK });
+    render(<TaskModal task={{ ...BASE_TASK, assigned_to: { ...USERS[1] } } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+    await waitFor(() => expect(selects()[1].value).toBe('u2'));
+
+    const later = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    fireEvent.change(dueInput(), { target: { value: later } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).not.toHaveProperty('assignee_id');
+  });
+
+  it('When editing a task that has no assignee / Then it is not silently given one', async () => {
+    mockUpdateTask.mockResolvedValue({ ...BASE_TASK, assigned_to: null });
+    render(<TaskModal task={{ ...BASE_TASK, assigned_to: null } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText('Unassigned')).toBeInTheDocument());
+    expect(selects()[1].value).toBe('');
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).not.toHaveProperty('assignee_id');
+  });
+
+  it('When editing and the assignee is changed / Then only then is the new assignee sent', async () => {
+    mockUpdateTask.mockResolvedValue({ ...BASE_TASK });
+    render(<TaskModal task={BASE_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(selects()[1].value).toBe('u1'));
+
+    fireEvent.change(selects()[1], { target: { value: 'u2' } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockUpdateTask).toHaveBeenCalledWith('t1', expect.objectContaining({ assignee_id: 'u2' })),
+    );
+  });
+
+  it('When editing a project-linked task and reassigning it to a non-member / Then the save is blocked', async () => {
+    mockGetProjectTeamUserIds.mockResolvedValue(['u1']);
+    render(<TaskModal task={{ ...BASE_TASK, project_id: 'proj-1' } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(selects()[1].value).toBe('u1'));
+
+    fireEvent.change(selects()[1], { target: { value: 'u2' } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockShowError).toHaveBeenCalledWith(
+        expect.stringContaining('Other User is not a member of the selected project'),
+      ),
+    );
+    expect(mockUpdateTask).not.toHaveBeenCalled();
+  });
+
+  it('When editing a project-linked task without touching assignee or project / Then no membership lookup is made', async () => {
+    mockUpdateTask.mockResolvedValue({ ...BASE_TASK, project_id: 'proj-1' });
+    render(<TaskModal task={{ ...BASE_TASK, project_id: 'proj-1' } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(selects()[1].value).toBe('u1'));
+
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockGetProjectTeamUserIds).not.toHaveBeenCalled();
   });
 });
