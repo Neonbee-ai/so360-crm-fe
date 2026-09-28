@@ -26,6 +26,8 @@ const pickOther = async () => {
 
 beforeEach(() => {
     vi.clearAllMocks();
+    // clearAllMocks keeps queued *Once values; drain them so none leak across tests.
+    mocks.getLeads.mockReset();
     mocks.getLeads.mockResolvedValue([keep, other]);
     mocks.merge.mockResolvedValue({ id: 'k' });
 });
@@ -128,6 +130,7 @@ describe('Given the merge panel search states', () => {
             mocks.getLeads.mockResolvedValueOnce(null);
             render(<MergeLeadPanel keepLead={keep} onClose={vi.fn()} onMerged={vi.fn()} />);
             typeQuery('acme');
+            await waitFor(() => expect(mocks.getLeads).toHaveBeenCalled());
             expect(await screen.findByText('No other leads match.')).toBeInTheDocument();
         });
 

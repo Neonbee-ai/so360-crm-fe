@@ -77,7 +77,7 @@ describe('Given the lead import wizard', () => {
             expect(screen.getByLabelText('Field for Name')).toHaveValue('contact_name');
             expect(screen.getByLabelText('Field for Email')).toHaveValue('email');
             expect(screen.getByLabelText('Field for Budget')).toHaveValue('');
-            expect(screen.getByRole('option', { name: 'Budget (custom)' })).toBeInTheDocument();
+            expect(within(screen.getByLabelText('Field for Budget')).getByRole('option', { name: 'Budget (custom)' })).toBeInTheDocument();
         });
     });
 

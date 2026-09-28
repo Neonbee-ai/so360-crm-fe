@@ -48,7 +48,7 @@ describe('Given the matching units panel on a lead', () => {
             expect(rows).toHaveLength(2);
             expect(screen.getByText('Matching units (2)')).toBeInTheDocument();
             expect(screen.getByText('82% match')).toBeInTheDocument();
-            expect(screen.getByText('2 BR · 1200 sq ft · $950000')).toBeInTheDocument();
+            expect(screen.getAllByText('2 BR · 1200 sq ft · $950000')).toHaveLength(2);
             expect(screen.getByText('Within budget · 2 BR as asked')).toBeInTheDocument();
         });
     });
