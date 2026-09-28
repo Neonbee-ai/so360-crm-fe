@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
     Phone, Users, AtSign, FileText, CheckCircle2, File, Briefcase,
-    TrendingUp, Info, Edit2, Trash2, Bookmark,
+    TrendingUp, Info, Edit2, Trash2, Bookmark, MessageCircle, MessageSquare, Home,
 } from 'lucide-react';
 import { EntityTimelineEvent } from '../../../services/crmService';
 import { useCRMFormatters } from '../../../utils/formatters';
@@ -23,6 +23,12 @@ function getEventIcon(event: EntityTimelineEvent) {
         case 'document': return <File size={13} className="text-indigo-400" />;
         case 'deal': return <Briefcase size={13} className="text-emerald-400" />;
         case 'call': return <Phone size={13} className="text-blue-400" />;
+        // G8 Client 360: meetings, bookings and Inbox-sourced conversations
+        case 'meeting': return <Users size={13} className="text-purple-400" />;
+        case 'email': return <AtSign size={13} className="text-emerald-400" />;
+        case 'whatsapp': return <MessageCircle size={13} className="text-green-400" />;
+        case 'message': return <MessageSquare size={13} className="text-sky-400" />;
+        case 'booking': return <Home size={13} className="text-rose-400" />;
         case 'activity':
             if (event.group_key.includes('MEETING')) return <Users size={13} className="text-purple-400" />;
             if (event.group_key.includes('EMAIL')) return <AtSign size={13} className="text-emerald-400" />;

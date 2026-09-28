@@ -209,4 +209,111 @@ describe('ActivityHistoryDrawer', () => {
             await waitFor(() => expect(screen.getByText('Load More')).toBeInTheDocument());
         });
     });
+
+    describe('Given the G8 Client 360 interaction-type chips', () => {
+        const SUMMARY_WITH_COUNTS = {
+            ...SUMMARY,
+            type_counts: { call: 3, whatsapp: 2, email: 0, meeting: 1, booking: 4 },
+        };
+
+        beforeEach(() => {
+            vi.mocked(timelineApi.getTimeline).mockImplementation((_t, _id, filters: any = {}) => {
+                const types = filters.types ? String(filters.types).split(',') : null;
+                const data = types ? ALL_EVENTS.filter((e) => types.includes(e.icon)) : ALL_EVENTS;
+                return Promise.resolve({ data, nextCursor: null, summary: SUMMARY_WITH_COUNTS }) as any;
+            });
+        });
+
+        it('When the drawer opens / Then every type chip renders, "All types" is pressed and no types filter is sent', async () => {
+            renderDrawer();
+            await waitFor(() => screen.getByText('Outbound call logged'));
+
+            for (const key of ['call', 'whatsapp', 'email', 'meeting', 'task', 'note', 'document', 'booking']) {
+                expect(screen.getByTestId(`type-chip-${key}`)).toHaveAttribute('aria-pressed', 'false');
+            }
+            expect(screen.getByRole('button', { name: 'All types' })).toHaveAttribute('aria-pressed', 'true');
+            expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined }));
+        });
+
+        it('When summary.type_counts is present / Then chips show their counts (including zero) and omit counts for absent types', async () => {
+            renderDrawer();
+            await waitFor(() => screen.getByText('Outbound call logged'));
+
+            expect(screen.getByTestId('type-chip-call')).toHaveTextContent('Calls(3)');
+            expect(screen.getByTestId('type-chip-whatsapp')).toHaveTextContent('WhatsApp(2)');
+            expect(screen.getByTestId('type-chip-email')).toHaveTextContent('Email(0)');
+            expect(screen.getByTestId('type-chip-booking')).toHaveTextContent('Bookings(4)');
+            expect(screen.getByTestId('type-chip-task')).toHaveTextContent(/^Tasks$/);
+        });
+
+        it('When summary has no type_counts / Then chips render without counts', async () => {
+            vi.mocked(timelineApi.getTimeline).mockResolvedValue({ data: ALL_EVENTS, nextCursor: null, summary: SUMMARY } as any);
+            renderDrawer();
+            await waitFor(() => screen.getByText('Outbound call logged'));
+            expect(screen.getByTestId('type-chip-call')).toHaveTextContent(/^Calls$/);
+        });
+
+        it('When Calls then WhatsApp are toggled on / Then the query sends types=call,whatsapp and both chips are pressed', async () => {
+            renderDrawer();
+            await waitFor(() => screen.getByText('Outbound call logged'));
+
+            fireEvent.click(screen.getByTestId('type-chip-call'));
+            await waitFor(() =>
+                expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: 'call' })),
+            );
+            await waitFor(() => expect(screen.queryByText('Note added')).not.toBeInTheDocument());
+            expect(screen.getByText('Outbound call logged')).toBeInTheDocument();
+
+            fireEvent.click(screen.getByTestId('type-chip-whatsapp'));
+            await waitFor(() =>
+                expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: 'call,whatsapp' })),
+            );
+            expect(screen.getByTestId('type-chip-call')).toHaveAttribute('aria-pressed', 'true');
+            expect(screen.getByTestId('type-chip-whatsapp')).toHaveAttribute('aria-pressed', 'true');
+            expect(screen.getByRole('button', { name: 'All types' })).toHaveAttribute('aria-pressed', 'false');
+        });
+
+        it('When a pressed chip is clicked again / Then it is toggled off and the types filter is dropped', async () => {
+            renderDrawer();
+            await waitFor(() => screen.getByText('Outbound call logged'));
+
+            fireEvent.click(screen.getByTestId('type-chip-call'));
+            await waitFor(() => expect(screen.getByTestId('type-chip-call')).toHaveAttribute('aria-pressed', 'true'));
+            fireEvent.click(screen.getByTestId('type-chip-call'));
+
+            await waitFor(() => expect(screen.getByTestId('type-chip-call')).toHaveAttribute('aria-pressed', 'false'));
+            expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined }));
+        });
+
+        it('When "All types" is clicked after selecting chips / Then every chip is cleared and all events return', async () => {
+            renderDrawer();
+            await waitFor(() => screen.getByText('Outbound call logged'));
+
+            fireEvent.click(screen.getByTestId('type-chip-call'));
+            await waitFor(() => expect(screen.queryByText('Note added')).not.toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'All types' }));
+            await waitFor(() => expect(screen.getByText('Note added')).toBeInTheDocument());
+            expect(screen.getByRole('button', { name: 'All types' })).toHaveAttribute('aria-pressed', 'true');
+            expect(timelineApi.getTimeline).toHaveBeenLastCalledWith('lead', 'lead-1', expect.objectContaining({ types: undefined }));
+        });
+
+        it('When a type filter matches nothing / Then the "No matching activities" empty state is shown', async () => {
+            renderDrawer();
+            await waitFor(() => screen.getByText('Outbound call logged'));
+
+            fireEvent.click(screen.getByTestId('type-chip-booking'));
+
+            await waitFor(() => expect(screen.getByText('No matching activities')).toBeInTheDocument());
+            expect(screen.getByText('Try adjusting your search or filter.')).toBeInTheDocument();
+        });
+
+        it('When no filters are set and nothing exists / Then the generic empty-state copy refers to the record, not a lead', async () => {
+            vi.mocked(timelineApi.getTimeline).mockResolvedValue({ data: [], nextCursor: null, summary: SUMMARY } as any);
+            renderDrawer({ entityType: 'deal', entityId: 'deal-1' });
+            await waitFor(() => expect(screen.getByText('No Activity Yet')).toBeInTheDocument());
+            expect(screen.getByText(/interact with this record\./)).toBeInTheDocument();
+            expect(timelineApi.getTimeline).toHaveBeenCalledWith('deal', 'deal-1', expect.any(Object));
+        });
+    });
 });

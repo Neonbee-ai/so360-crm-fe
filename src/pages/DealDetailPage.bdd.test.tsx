@@ -81,6 +81,15 @@ vi.mock('@so360/design-system', async (importOriginal) => {
   };
 });
 
+// G8 Client 360: the drawer is exercised in its own spec — here we only assert the deal page wires it up.
+vi.mock('./components/ActivityHistoryDrawer', () => ({
+  default: ({ isOpen, onClose, entityType, entityId }: any) => (isOpen ? (
+    <div data-testid="activity-history-drawer" data-entity-type={entityType} data-entity-id={entityId}>
+      <button onClick={onClose}>Close history</button>
+    </div>
+  ) : null),
+}));
+
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
 const shellCtl = vi.hoisted(() => ({ signEnabled: false, canEditDeal: true }));
@@ -1200,6 +1209,28 @@ describe('DealDetailPage — deal stage selector', () => {
       // The button row must allow wrapping rather than squeezing the title at md widths.
       const buttonGroup = screen.getByRole('button', { name: /request signature/i }).parentElement;
       expect(buttonGroup?.className).toContain('flex-wrap');
+    });
+  });
+
+  describe('Given the G8 Client 360 full-history drawer', () => {
+    it('When the deal page loads / Then the drawer is not rendered until requested', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByRole('button', { name: 'View All History' })).toBeInTheDocument();
+      expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument();
+    });
+
+    it('When View All History is clicked / Then the drawer opens scoped to this deal, and closing it unmounts it', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'View All History' }));
+      const drawer = await screen.findByTestId('activity-history-drawer');
+      expect(drawer).toHaveAttribute('data-entity-type', 'deal');
+      expect(drawer).toHaveAttribute('data-entity-id', 'deal-1');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close history' }));
+      await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
     });
   });
 });

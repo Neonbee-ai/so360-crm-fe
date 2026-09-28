@@ -20,16 +20,19 @@ export function useEntityTimeline({ entityType, entityId, pageSize = 20 }: UseEn
     const [moduleFilter, setModuleFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [range, setRange] = useState<TimelineFilters['range'] | ''>('');
+    const [typeFilter, setTypeFilter] = useState<string[]>([]);
     const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+    const typesParam = typeFilter.join(',');
 
     const buildFilters = useCallback((cursorValue?: string | null): TimelineFilters => ({
         search: search || undefined,
         module: moduleFilter || undefined,
         category: categoryFilter || undefined,
         range: (range || undefined) as TimelineFilters['range'],
+        types: typesParam || undefined,
         cursor: cursorValue || undefined,
         limit: pageSize,
-    }), [search, moduleFilter, categoryFilter, range, pageSize]);
+    }), [search, moduleFilter, categoryFilter, range, typesParam, pageSize]);
 
     const load = useCallback(async () => {
         if (!entityId) return;
@@ -66,7 +69,11 @@ export function useEntityTimeline({ entityType, entityId, pageSize = 20 }: UseEn
     useEffect(() => {
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [entityType, entityId, search, moduleFilter, categoryFilter, range]);
+    }, [entityType, entityId, search, moduleFilter, categoryFilter, range, typesParam]);
+
+    const toggleType = useCallback((type: string) => {
+        setTypeFilter((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
+    }, []);
 
     const togglePin = useCallback((id: string) => {
         setPinnedIds((prev) => {
@@ -104,6 +111,7 @@ export function useEntityTimeline({ entityType, entityId, pageSize = 20 }: UseEn
         moduleFilter, setModuleFilter,
         categoryFilter, setCategoryFilter,
         range, setRange,
+        typeFilter, setTypeFilter, toggleType,
         pinnedIds, togglePin,
         removeEvent,
         updateEventDescription,
