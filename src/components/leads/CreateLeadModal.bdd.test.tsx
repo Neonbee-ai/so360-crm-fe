@@ -669,6 +669,48 @@ describe('CreateLeadModal', () => {
       await screen.findByTestId('open-existing-record');
       expect(screen.queryByTestId('duplicate-lead-warning')).toBeNull();
     });
+
+    it('When the user resubmits after the warning / Then the warning clears and a success closes the modal', async () => {
+      rejectDuplicate();
+      const onClose = vi.fn();
+      const onSuccess = vi.fn();
+      render(<CreateLeadModal isOpen={true} onClose={onClose} onSuccess={onSuccess} existingLeads={[]} />);
+      await fillValidForm();
+      fireEvent.submit(document.querySelector('form')!);
+      await screen.findByTestId('duplicate-lead-warning');
+      mockCreateLead.mockReset();
+      mockCreateLead.mockResolvedValue({ id: 'l-new', company_name: 'Acme Corp' });
+      fireEvent.submit(document.querySelector('form')!);
+      await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+      expect(screen.queryByTestId('duplicate-lead-warning')).toBeNull();
+    });
+
+    it('When a DUPLICATE_EMAIL banner is followed by a DUPLICATE_LEAD / Then only the lead warning remains', async () => {
+      const emailErr = new Error('Email already used') as Error & { status?: number; body?: any };
+      emailErr.status = 409;
+      emailErr.body = { code: 'DUPLICATE_EMAIL', existing_id: 'c1', existing_type: 'customer' };
+      mockCreateLead.mockRejectedValueOnce(emailErr);
+      render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await fillValidForm();
+      fireEvent.submit(document.querySelector('form')!);
+      await screen.findByTestId('open-existing-record');
+      rejectDuplicate();
+      fireEvent.submit(document.querySelector('form')!);
+      await screen.findByTestId('duplicate-lead-warning');
+      expect(screen.queryByTestId('open-existing-record')).toBeNull();
+    });
+
+    it('When the modal is closed and reopened / Then the warning is gone', async () => {
+      rejectDuplicate();
+      const { rerender } = render(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await fillValidForm();
+      fireEvent.submit(document.querySelector('form')!);
+      await screen.findByTestId('duplicate-lead-warning');
+      rerender(<CreateLeadModal isOpen={false} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      rerender(<CreateLeadModal isOpen={true} onClose={vi.fn()} onSuccess={vi.fn()} existingLeads={[]} />);
+      await waitFor(() => screen.getByTestId('modal'));
+      expect(screen.queryByTestId('duplicate-lead-warning')).toBeNull();
+    });
   });
 });
 
