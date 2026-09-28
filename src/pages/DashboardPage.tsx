@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { CrossLinkChip } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
+import REWidgets from '../components/dashboard/REWidgets';
 import { onLeadsChanged } from '../utils/leadEvents';
 import { parseStoredTimestamp, dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 
@@ -448,6 +449,9 @@ const DashboardPage = () => {
                     )}
                 </section>
             )}
+
+            {/* Real-estate widgets — renders nothing unless submodule:crm:re_widgets is on */}
+            <REWidgets />
 
             {/* Active Reminders Row */}
             {showTasks && (

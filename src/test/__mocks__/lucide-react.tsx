@@ -120,3 +120,4 @@ export const History = createIcon('History');
 export const RotateCcw = createIcon('RotateCcw');
 export const MoreVertical = createIcon('MoreVertical');
 export const Square = createIcon('Square');
+export const GitMerge = createIcon('GitMerge');
