@@ -10,7 +10,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, Users, FileText,
     DollarSign, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, Settings2
+    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, Settings2, GitMerge
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
@@ -49,6 +49,9 @@ import NoteEditor from '../components/notes/NoteEditor';
 import NoteContent from '../components/notes/NoteContent';
 import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
+import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
+import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
+import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
@@ -149,6 +152,9 @@ const LeadDetailPage = () => {
     // Destructive action — gate on the delete permission, fail closed. The backend
     // already enforces leads.delete; this stops offering a control the user can't use.
     const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
+    // A6 merge: the kept lead is updated and the other one removed, so require
+    // both update and delete rights. Fail closed.
+    const canMergeLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.hasPermission?.('leads.delete') ?? false);
     // Lead Detail activity toolbar — gated per-action so an Admin can grant each
     // independently via Settings > Roles & Permissions instead of the buttons
     // being visible to every role by default. Backend already enforces the same
@@ -167,6 +173,8 @@ const LeadDetailPage = () => {
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const backRoute = isCustomerDetailRoute ? '/crm/customers' : '/crm/leads';
     const [lead, setLead] = useState<Lead | null>(null);
+    const [isMergeOpen, setIsMergeOpen] = useState(false);
+    const [saveDuplicate, setSaveDuplicate] = useState<DuplicateLeadInfo | null>(null);
     const [associatedDeals, setAssociatedDeals] = useState<Deal[]>([]);
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
@@ -580,6 +588,14 @@ const LeadDetailPage = () => {
                         >
                             <Trash2 size={16} />
                         </button>}
+                        {canMergeLead && !isCustomerDetailRoute && <button
+                            onClick={() => setIsMergeOpen(true)}
+                            aria-label="Merge"
+                            title="Merge a duplicate lead into this one"
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all flex items-center justify-center border border-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                        >
+                            <GitMerge size={16} />
+                        </button>}
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
@@ -590,6 +606,33 @@ const LeadDetailPage = () => {
                     </div>
                 </div>
             </header>
+
+            {saveDuplicate && (
+                <div className="mb-6">
+                    <DuplicateLeadWarning
+                        duplicate={saveDuplicate}
+                        onCancel={() => {
+                            // Back out of the conflicting edit: drop the warning,
+                            // leave edit mode and reload the saved values.
+                            setSaveDuplicate(null);
+                            setIsEditingInfo(false);
+                            fetchLeadData();
+                        }}
+                    />
+                </div>
+            )}
+
+            {isMergeOpen && (
+                <MergeLeadPanel
+                    keepLead={lead}
+                    onClose={() => setIsMergeOpen(false)}
+                    onMerged={(mergedId) => {
+                        setIsMergeOpen(false);
+                        publishLeadsChanged('deleted', [mergedId]);
+                        fetchLeadData();
+                    }}
+                />
+            )}
 
             {/* Lead Journey Stepper — only for leads, not customers */}
             {!isCustomerDetailRoute && (
@@ -679,10 +722,16 @@ const LeadDetailPage = () => {
                                                 // Field-diff history is now captured server-side by the
                                                 // leads audit trigger (Task 7) — see the Audit History tab.
                                                 await crmService.updateLead(lead.id, lead);
+                                                setSaveDuplicate(null);
                                                 recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${getLeadDisplayName(lead)}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
                                                 fetchLeadData();
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
+                                                const dup = parseDuplicateLead(error);
+                                                if (dup) {
+                                                    setSaveDuplicate(dup);
+                                                    return;
+                                                }
                                                 const status = (error as { status?: number })?.status;
                                                 const message = (error as Error)?.message;
                                                 toast.error(
