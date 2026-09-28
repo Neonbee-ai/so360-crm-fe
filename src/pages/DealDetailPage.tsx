@@ -21,6 +21,7 @@ import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import DetailBackLink from '../components/common/DetailBackLink';
+import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls';
 
@@ -54,6 +55,8 @@ const DealDetailPage = () => {
 
     const [deal, setDeal] = useState<Deal | null>(null);
     const [associatedLead, setAssociatedLead] = useState<any>(null);
+    // G8 Client 360: full cross-module timeline (calls, WhatsApp, email, meetings, tasks, notes, documents, bookings)
+    const [showActivityDrawer, setShowActivityDrawer] = useState(false);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
@@ -869,6 +872,17 @@ const DealDetailPage = () => {
                         <div className="p-8">
                             {/* ACTIVITY TAB */}
                             {activeTab === 'activity' && (
+                                <div className="flex justify-end mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowActivityDrawer(true)}
+                                        className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                                    >
+                                        View All History
+                                    </button>
+                                </div>
+                            )}
+                            {activeTab === 'activity' && (
                                 <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-800">
                                     {getAggregatedTimeline().length === 0 ? (
                                         <div className="text-center py-12 ml-6">
@@ -1538,6 +1552,15 @@ const DealDetailPage = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showActivityDrawer && (
+                <ActivityHistoryDrawer
+                    isOpen={showActivityDrawer}
+                    onClose={() => setShowActivityDrawer(false)}
+                    entityType="deal"
+                    entityId={deal.id}
+                />
             )}
 
         </div>

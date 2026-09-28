@@ -1038,6 +1038,8 @@ export interface EntityTimelineEvent {
     related_id: string | null;
     status_badge: string | null;
     group_key: string;
+    /** G8 Client 360: normalized interaction type (call, whatsapp, email, meeting, task, note, document, booking, …). */
+    type?: string;
 }
 
 export interface EntityTimelineSummary {
@@ -1048,6 +1050,8 @@ export interface EntityTimelineSummary {
     latest_stage: string | null;
     idle_days: number | null;
     health_status: 'very_active' | 'healthy' | 'neutral' | 'at_risk' | 'dormant';
+    /** G8 Client 360: per-type event counts (computed before the `types` filter). */
+    type_counts?: Record<string, number>;
 }
 
 export interface TimelineFilters {
@@ -1057,6 +1061,8 @@ export interface TimelineFilters {
     start?: string;
     end?: string;
     search?: string;
+    /** G8 Client 360: comma-separated event types to include. */
+    types?: string;
     cursor?: string;
     limit?: number;
 }

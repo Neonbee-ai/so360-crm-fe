@@ -117,6 +117,7 @@ export const FileEdit = createIcon('FileEdit');
 export const CalendarPlus = createIcon('CalendarPlus');
 export const Inbox = createIcon('Inbox');
 export const History = createIcon('History');
+export const Home = createIcon('Home');
 export const RotateCcw = createIcon('RotateCcw');
 export const MoreVertical = createIcon('MoreVertical');
 export const Square = createIcon('Square');
