@@ -516,6 +516,12 @@ const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
 // selector both need this. Projects BE sets no global route prefix (bare
 // /projects, matching the neuraClient comment above's pattern).
 const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
+/**
+ * Core and Inventory clients for the record importers (existing clients →
+ * Core channel import; projects/towers/units → Inventory), sharing the
+ * tenant/org/user/token wiring above.
+ */
+export { coreClient as crmCoreClient, inventoryClient as crmInventoryClient };
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {

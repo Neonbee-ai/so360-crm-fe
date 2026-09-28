@@ -24,7 +24,7 @@ import {
 import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
-import { ImportLeadsWizard } from '../components/leads/ImportLeadsWizard';
+import { ImportHub } from '../components/import/ImportHub';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
@@ -780,7 +780,7 @@ const LeadsPage = () => {
         existingLeads={leads.map((l) => l.company_name)}
       />
       {canImportLeads && (
-        <ImportLeadsWizard
+        <ImportHub
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
           onImported={fetchInitialData}
