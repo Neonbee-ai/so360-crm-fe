@@ -12,11 +12,17 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 const mockGetDealProducts = vi.fn();
 const mockSearchInventoryItems = vi.fn();
 
+// The alias shell-context mock turns every flag on, so the A9 MatchingUnitsPanel
+// renders here and reads through crmApiClient; A7 controls read categories.
+const mockApiGet = vi.hoisted(() => vi.fn());
+
 vi.mock('../../services/crmService', () => ({
+    crmApiClient: { get: (...a: any[]) => mockApiGet(...a) },
     crmService: {
         getDealProducts: (...a: any[]) => mockGetDealProducts(...a),
         searchInventoryItems: (...a: any[]) => mockSearchInventoryItems(...a),
         getLeadProducts: vi.fn().mockResolvedValue([]),
+        getProductCategories: vi.fn().mockResolvedValue([]),
         addDealProduct: vi.fn().mockResolvedValue({}),
         updateDealProduct: vi.fn().mockResolvedValue({}),
         removeDealProduct: vi.fn().mockResolvedValue({}),
@@ -34,6 +40,7 @@ import DealProductsTab from './DealProductsTab';
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mockApiGet.mockResolvedValue([]);
     mockGetDealProducts.mockResolvedValue([]);
     mockSearchInventoryItems.mockResolvedValue({ items: [] });
 });
@@ -75,5 +82,13 @@ describe('Given DealProductsTab', () => {
             fireEvent.click(screen.getByText('✕'));
             expect(screen.queryByText(/Add Product to Deal/i)).not.toBeInTheDocument();
         });
+    });
+});
+
+describe('Given the default (all flags on) shell in this spec', () => {
+    it('When the tab mounts / Then matching units are read for this deal through crmApiClient, and an empty result renders no panel', async () => {
+        render(<DealProductsTab dealId="deal-1" />);
+        await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/deals/deal-1/matching-units', { limit: 10 }));
+        expect(screen.queryByTestId('matching-units-panel')).not.toBeInTheDocument();
     });
 });
