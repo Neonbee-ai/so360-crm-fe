@@ -3,6 +3,10 @@ import { Package, Plus, Trash2, ChevronDown, Loader2, Search, Copy } from 'lucid
 import { crmService } from '../../services/crmService';
 import { DealProduct, LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
+import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
+import { UnitBookingControls } from '../../components/unitBooking/UnitBookingControls';
+import { ReservationChip } from '../../components/unitBooking/ReservationChip';
+import { DEFAULT_HOLD_HOURS, filterAvailable } from '../../components/unitBooking/unitBooking';
 
 const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; color: string }[] = [
     { value: 'interested', label: 'Interested', color: 'bg-blue-500/15 text-blue-400' },
@@ -20,11 +24,13 @@ interface AddProductModalProps {
     dealId: string;
     leadId?: string;
     onClose: () => void;
-    onAdd: (item: InventoryItem, qty: number) => void;
+    onAdd: (item: InventoryItem, qty: number, holdHours?: number) => void;
     onImportFromLead: (products: LeadProduct[]) => void;
+    /** Unit booking (flag `submodule:crm:unit_booking`): project filter, availability, hold. */
+    unitBooking?: boolean;
 }
 
-function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead }: AddProductModalProps) {
+function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, unitBooking = false }: AddProductModalProps) {
     const [tab, setTab] = useState<'search' | 'from-lead'>(leadId ? 'from-lead' : 'search');
     const [query, setQuery] = useState('');
     const [items, setItems] = useState<InventoryItem[]>([]);
@@ -34,6 +40,10 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead }: A
     const [leadProducts, setLeadProducts] = useState<LeadProduct[]>([]);
     const [leadLoading, setLeadLoading] = useState(false);
     const [selectedLeadProducts, setSelectedLeadProducts] = useState<Set<string>>(new Set());
+    const [projectId, setProjectId] = useState('');
+    const [onlyAvailable, setOnlyAvailable] = useState(false);
+    const [holdHours, setHoldHours] = useState<number>(DEFAULT_HOLD_HOURS);
+    const categoryId = unitBooking && projectId ? projectId : undefined;
 
     useEffect(() => {
         if (tab === 'from-lead' && leadId) {
@@ -46,15 +56,21 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead }: A
     }, [tab, leadId]);
 
     const search = useCallback(async (q: string) => {
-        if (!q.trim()) { setItems([]); return; }
+        // With a project picked, list its units even before typing.
+        if (!q.trim() && !categoryId) { setItems([]); return; }
         setLoading(true);
         try {
-            const result = await crmService.searchInventoryItems(q);
+            const result = categoryId
+                ? await crmService.searchInventoryItems(q, categoryId)
+                : await crmService.searchInventoryItems(q);
             setItems(result.items ?? []);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [categoryId]);
+
+    const visibleItems = filterAvailable(items, unitBooking && onlyAvailable);
+    const hasCriteria = !!query.trim() || !!categoryId;
 
     useEffect(() => {
         if (tab !== 'search') return;
@@ -152,15 +168,25 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead }: A
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
+                                {unitBooking && (
+                                    <UnitBookingControls
+                                        projectId={projectId}
+                                        onProjectChange={setProjectId}
+                                        onlyAvailable={onlyAvailable}
+                                        onOnlyAvailableChange={setOnlyAvailable}
+                                        holdHours={holdHours}
+                                        onHoldHoursChange={setHoldHours}
+                                    />
+                                )}
                                 {loading && <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-blue-400" /></div>}
-                                {!loading && items.length === 0 && query.trim() && (
+                                {!loading && visibleItems.length === 0 && hasCriteria && (
                                     <p className="text-center text-slate-500 text-xs py-8 uppercase font-bold tracking-widest">No products found</p>
                                 )}
-                                {!loading && !query.trim() && (
+                                {!loading && !hasCriteria && (
                                     <p className="text-center text-slate-600 text-xs py-8 italic">Start typing to search inventory…</p>
                                 )}
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {items.map(item => (
+                                    {visibleItems.map(item => (
                                         <button key={item.id} onClick={() => setSelected(item)} className="w-full text-left p-3 bg-slate-800 border border-slate-700 hover:border-blue-500/50 rounded-xl transition-all group">
                                             <div className="flex items-center justify-between">
                                                 <div>
@@ -187,7 +213,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead }: A
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={onClose} className="flex-1 py-2.5 border border-slate-700 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:border-slate-500 transition-all">Cancel</button>
-                                    <button onClick={() => onAdd(selected, qty)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all">Add Product</button>
+                                    <button onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all">Add Product</button>
                                 </div>
                             </div>
                         )}
@@ -205,6 +231,7 @@ interface Props {
 
 export default function DealProductsTab({ dealId, leadId }: Props) {
     const formatters = useCRMFormatters();
+    const unitBooking = useCrmFeatureFlag(RE_FLAGS.UNIT_BOOKING);
     const [products, setProducts] = useState<DealProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -225,7 +252,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
 
     useEffect(() => { load(); }, [load]);
 
-    const handleAdd = async (item: InventoryItem, qty: number) => {
+    const handleAdd = async (item: InventoryItem, qty: number, holdHours?: number) => {
         setShowAddModal(false);
         setAddError(null);
         try {
@@ -235,11 +262,13 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                 item_sku: item.sku,
                 quantity: qty,
                 unit_price: item.price ?? 0,
+                ...(holdHours != null ? { hold_hours: holdHours } : {}),
             });
             load();
         } catch (e: any) {
-            // e.g. the backend rejecting a non-sellable item — say why instead
-            // of the product silently not appearing.
+            // e.g. the backend rejecting a non-sellable item, or a 409 for a
+            // unit already held/sold — say why instead of the product
+            // silently not appearing.
             setAddError(e?.message || 'Could not add the product.');
         }
     };
@@ -336,7 +365,15 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                             <div key={product.id} className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 group hover:border-slate-700 transition-all">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-bold text-slate-100 truncate">{product.item_name}</p>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <p className="text-xs font-bold text-slate-100 truncate">{product.item_name}</p>
+                                            {unitBooking && (
+                                                <ReservationChip
+                                                    status={product.reservation_status}
+                                                    expiresAt={product.reservation_expires_at}
+                                                />
+                                            )}
+                                        </div>
                                         {product.item_sku && (
                                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">SKU: {product.item_sku}</p>
                                         )}
@@ -395,6 +432,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                     onClose={() => setShowAddModal(false)}
                     onAdd={handleAdd}
                     onImportFromLead={handleImportFromLead}
+                    unitBooking={unitBooking}
                 />
             )}
         </div>

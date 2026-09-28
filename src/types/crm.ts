@@ -445,6 +445,9 @@ export interface QuoteFilters {
 
 export type ProductInterestStatus = 'interested' | 'quoted' | 'approved' | 'ordered' | 'cancelled';
 
+/** Unit booking state of a product line (Real Estate: a held or sold unit). */
+export type ReservationStatus = 'held' | 'sold' | 'released' | 'expired';
+
 export interface LeadProduct {
     id: string;
     lead_id: string;
@@ -460,6 +463,9 @@ export interface LeadProduct {
     notes?: string;
     created_at: string;
     updated_at: string;
+    /** Unit booking — present only when the line holds/sold a unit. */
+    reservation_status?: ReservationStatus | null;
+    reservation_expires_at?: string | null;
 }
 
 export interface DealProduct {
@@ -478,6 +484,9 @@ export interface DealProduct {
     notes?: string;
     created_at: string;
     updated_at: string;
+    /** Unit booking — present only when the line holds/sold a unit. */
+    reservation_status?: ReservationStatus | null;
+    reservation_expires_at?: string | null;
 }
 
 // ============================================================================

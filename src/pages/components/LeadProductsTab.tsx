@@ -4,6 +4,10 @@ import { crmService } from '../../services/crmService';
 import { LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
 import { CustomProductBuildRequestModal } from '../../components/leads/CustomProductBuildRequestModal';
+import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
+import { UnitBookingControls } from '../../components/unitBooking/UnitBookingControls';
+import { ReservationChip } from '../../components/unitBooking/ReservationChip';
+import { DEFAULT_HOLD_HOURS, filterAvailable } from '../../components/unitBooking/unitBooking';
 
 const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; color: string }[] = [
     { value: 'interested', label: 'Interested', color: 'bg-blue-500/15 text-blue-400' },
@@ -34,12 +38,14 @@ function matchesQuery(item: InventoryItem, q: string): boolean {
 
 interface AddProductModalProps {
     onClose: () => void;
-    onAdd: (item: InventoryItem, qty: number) => void;
+    onAdd: (item: InventoryItem, qty: number, holdHours?: number) => void;
     /** item_ids already associated with this record — shown as "Added" and not selectable. */
     existingItemIds: Set<string>;
+    /** Unit booking (flag `submodule:crm:unit_booking`): project filter, availability, hold. */
+    unitBooking?: boolean;
 }
 
-function AddProductModal({ onClose, onAdd, existingItemIds }: AddProductModalProps) {
+function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false }: AddProductModalProps) {
     const [query, setQuery] = useState('');
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -51,12 +57,16 @@ function AddProductModal({ onClose, onAdd, existingItemIds }: AddProductModalPro
     const listRef = useRef<HTMLDivElement>(null);
     // Bumped by "Retry" to re-run the current search without touching `query`.
     const [reloadToken, setReloadToken] = useState(0);
+    const [projectId, setProjectId] = useState('');
+    const [onlyAvailable, setOnlyAvailable] = useState(false);
+    const [holdHours, setHoldHours] = useState<number>(DEFAULT_HOLD_HOURS);
+    const categoryId = unitBooking && projectId ? projectId : undefined;
 
     const search = useCallback(async (q: string) => {
         setLoading(true);
         setError(null);
         try {
-            const result = await crmService.searchInventoryItems(q, undefined, {
+            const result = await crmService.searchInventoryItems(q, categoryId, {
                 limit: PAGE_SIZE,
                 offset: 0,
             });
@@ -69,13 +79,13 @@ function AddProductModal({ onClose, onAdd, existingItemIds }: AddProductModalPro
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [categoryId]);
 
     const loadMore = useCallback(async () => {
         if (loadingMore || loading || !hasMore) return;
         setLoadingMore(true);
         try {
-            const result = await crmService.searchInventoryItems(query, undefined, {
+            const result = await crmService.searchInventoryItems(query, categoryId, {
                 limit: PAGE_SIZE,
                 offset: items.length,
             });
@@ -87,7 +97,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds }: AddProductModalPro
         } finally {
             setLoadingMore(false);
         }
-    }, [loadingMore, loading, hasMore, query, items.length]);
+    }, [loadingMore, loading, hasMore, query, items.length, categoryId]);
 
     // Initial browse list loads with an empty term, so the modal opens showing
     // inventory instead of demanding a keyword first.
@@ -105,7 +115,10 @@ function AddProductModal({ onClose, onAdd, existingItemIds }: AddProductModalPro
 
     // Filter locally first: results already on screen react to every keystroke,
     // while the debounced request above widens the set beyond the loaded page.
-    const visibleItems = items.filter(item => matchesQuery(item, query));
+    const visibleItems = filterAvailable(
+        items.filter(item => matchesQuery(item, query)),
+        unitBooking && onlyAvailable,
+    );
 
     return (
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -127,6 +140,16 @@ function AddProductModal({ onClose, onAdd, existingItemIds }: AddProductModalPro
                                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
                             />
                         </div>
+                        {unitBooking && (
+                            <UnitBookingControls
+                                projectId={projectId}
+                                onProjectChange={setProjectId}
+                                onlyAvailable={onlyAvailable}
+                                onOnlyAvailableChange={setOnlyAvailable}
+                                holdHours={holdHours}
+                                onHoldHoursChange={setHoldHours}
+                            />
+                        )}
                         {loading && (
                             <div className="flex items-center justify-center py-8">
                                 <Loader2 size={20} className="animate-spin text-blue-400" />
@@ -221,7 +244,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds }: AddProductModalPro
                                 Cancel
                             </button>
                             <button
-                                onClick={() => onAdd(selected, qty)}
+                                onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)}
                                 className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all"
                             >
                                 Add Product
@@ -241,6 +264,7 @@ interface Props {
 
 export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
     const formatters = useCRMFormatters();
+    const unitBooking = useCrmFeatureFlag(RE_FLAGS.UNIT_BOOKING);
     const [products, setProducts] = useState<LeadProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -264,7 +288,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
 
     useEffect(() => { load(); }, [load]);
 
-    const handleAdd = async (item: InventoryItem, qty: number) => {
+    const handleAdd = async (item: InventoryItem, qty: number, holdHours?: number) => {
         setShowAddModal(false);
         setAddError(null);
         try {
@@ -274,11 +298,13 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                 item_sku: item.sku,
                 quantity: qty,
                 unit_price: item.price ?? 0,
+                ...(holdHours != null ? { hold_hours: holdHours } : {}),
             });
             load();
         } catch (e: any) {
-            // e.g. the backend rejecting a non-sellable item — say why instead
-            // of the product silently not appearing.
+            // e.g. the backend rejecting a non-sellable item, or a 409 for a
+            // unit already held/sold — say why instead of the product
+            // silently not appearing.
             setAddError(e?.message || 'Could not add the product.');
         }
     };
@@ -386,6 +412,12 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                                     Custom Build
                                                 </span>
                                             )}
+                                            {unitBooking && (
+                                                <ReservationChip
+                                                    status={product.reservation_status}
+                                                    expiresAt={product.reservation_expires_at}
+                                                />
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                                             {product.item_sku && (
@@ -466,6 +498,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                     onClose={() => setShowAddModal(false)}
                     onAdd={handleAdd}
                     existingItemIds={new Set(products.map(p => p.item_id).filter(Boolean) as string[])}
+                    unitBooking={unitBooking}
                 />
             )}
 

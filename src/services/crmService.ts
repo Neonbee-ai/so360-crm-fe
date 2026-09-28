@@ -491,6 +491,13 @@ class ApiClient {
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
+/**
+ * The CRM client itself, for per-feature service files (assignment rules,
+ * dedup/merge, import, matching units, dashboard widgets) so they share the
+ * tenant/org/user/token wiring set up here instead of duplicating it.
+ */
+export { apiClient as crmApiClient };
+export type CrmApiClient = ApiClient;
 
 /** Inventory `items.type` values CRM may sell; mirrors CRM BE's CRM_SELLABLE_ITEM_TYPES. */
 export const CRM_SELLABLE_ITEM_TYPES = ['product', 'finished_good', 'service', 'bundle'] as const;
@@ -2837,6 +2844,8 @@ export const crmService = {
     addLeadProduct: async (leadId: string, data: {
         item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
         is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string;
+        /** Unit booking: hours to hold the unit for this lead (backend places the hold). */
+        hold_hours?: number;
     }): Promise<LeadProduct> => {
         return apiClient.post<LeadProduct>(`/leads/${leadId}/products`, data);
     },
@@ -2860,6 +2869,8 @@ export const crmService = {
     addDealProduct: async (dealId: string, data: {
         item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
         is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
+        /** Unit booking: hours to hold the unit for this deal (backend places the hold). */
+        hold_hours?: number;
     }): Promise<DealProduct> => {
         return apiClient.post<DealProduct>(`/deals/${dealId}/products`, data);
     },
