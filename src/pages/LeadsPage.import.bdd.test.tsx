@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 
-const flags = vi.hoisted(() => ({ on: new Set<string>(), canCreate: true }));
+const flags = vi.hoisted(() => ({ on: new Set<string>(), canCreate: true, loaded: true }));
 const mockGetLeads = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
@@ -34,7 +34,7 @@ vi.mock('@so360/shell-context', () => ({
   useNotify: () => ({ emitNotification: vi.fn().mockResolvedValue(undefined) }),
   useActivity: () => ({ recordActivity: vi.fn().mockResolvedValue(undefined) }),
   useShellBridge: () => ({
-    effectiveFlagsLoaded: true,
+    effectiveFlagsLoaded: flags.loaded,
     permissionsLoaded: true,
     hasPermission: (p: string) => p !== 'leads.create' || flags.canCreate,
     hasAnyPermission: () => true,
@@ -81,7 +81,14 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
 }));
 
 vi.mock('../components/leads/ImportLeadsWizard', () => ({
-  ImportLeadsWizard: ({ isOpen }: any) => (isOpen ? <div data-testid="import-wizard" /> : null),
+  ImportLeadsWizard: ({ isOpen, onClose, onImported }: { isOpen: boolean; onClose: () => void; onImported: () => void }) => (
+    isOpen ? (
+      <div data-testid="import-wizard">
+        <button type="button" onClick={onClose}>close wizard</button>
+        <button type="button" onClick={onImported}>finish import</button>
+      </div>
+    ) : null
+  ),
 }));
 
 import LeadsPage from './LeadsPage';
@@ -90,6 +97,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   flags.on.clear();
   flags.canCreate = true;
+  flags.loaded = true;
   mockGetLeads.mockResolvedValue([]);
   mockGetSettings.mockResolvedValue({ deal_stages: [], lead_stages: [{ id: 'new', name: 'New' }], lead_custom_fields: [], deal_custom_fields: [], lead_sources: [], lead_scoring: [] });
   mockGetUsers.mockResolvedValue([]);
@@ -121,6 +129,40 @@ describe('Given the Leads page header', () => {
       render(<LeadsPage />);
       fireEvent.click(await screen.findByRole('button', { name: /^import$/i }));
       expect(screen.getByTestId('import-wizard')).toBeInTheDocument();
+    });
+  });
+
+  describe('When the wizard is closed', () => {
+    it('Then it unmounts and Import can reopen it', async () => {
+      flags.on.add('action:crm:bulk_import');
+      render(<LeadsPage />);
+      fireEvent.click(await screen.findByRole('button', { name: /^import$/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'close wizard' }));
+      expect(screen.queryByTestId('import-wizard')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /^import$/i }));
+      expect(screen.getByTestId('import-wizard')).toBeInTheDocument();
+    });
+  });
+
+  describe('When the wizard reports an import', () => {
+    it('Then the leads list is fetched again', async () => {
+      flags.on.add('action:crm:bulk_import');
+      render(<LeadsPage />);
+      fireEvent.click(await screen.findByRole('button', { name: /^import$/i }));
+      await waitFor(() => expect(mockGetLeads).toHaveBeenCalled());
+      const before = mockGetLeads.mock.calls.length;
+      fireEvent.click(screen.getByRole('button', { name: 'finish import' }));
+      await waitFor(() => expect(mockGetLeads.mock.calls.length).toBeGreaterThan(before));
+    });
+  });
+
+  describe('When the flag is on but effective flags have not loaded', () => {
+    it('Then there is no Import button (fail closed)', async () => {
+      flags.on.add('action:crm:bulk_import');
+      flags.loaded = false;
+      render(<LeadsPage />);
+      await screen.findByText('Leads & Accounts');
+      expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
     });
   });
 });

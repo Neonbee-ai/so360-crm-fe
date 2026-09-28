@@ -27,6 +27,8 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('@so360/shell-context', () => ({
+  // REWidgets reads useShellBridge; RE flags off keeps it out of these specs.
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => false, isFeatureHidden: () => false }),
   useShell: () => ({
     isModuleEnabled: () => false,
     isFeatureHidden: () => false,

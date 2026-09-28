@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 
-const flags = vi.hoisted(() => ({ on: new Set<string>() }));
+const flags = vi.hoisted(() => ({ on: new Set<string>(), loaded: true }));
 const mockGetDashboardStats = vi.hoisted(() => vi.fn());
 const mockGetWidgets = vi.hoisted(() => vi.fn());
 
@@ -23,7 +23,7 @@ vi.mock('react-router-dom', () => ({
 vi.mock('@so360/shell-context', () => ({
     useBusinessSettings: () => ({ settings: { base_currency: 'AED', document_language: 'en-US' } }),
     useShell: () => ({ isModuleEnabled: () => false, isFeatureHidden: () => false }),
-    useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: (k: string) => flags.on.has(k) }),
+    useShellBridge: () => ({ effectiveFlagsLoaded: flags.loaded, isFeatureEnabled: (k: string) => flags.on.has(k) }),
     useActivity: () => ({ recordActivity: async () => {} }),
 }));
 
@@ -42,6 +42,7 @@ const stats = {
 beforeEach(() => {
     vi.clearAllMocks();
     flags.on.clear();
+    flags.loaded = true;
     mockGetDashboardStats.mockResolvedValue(stats);
     mockGetWidgets.mockResolvedValue(normalizeREWidgets({
         inventory_by_project: [{ project: 'Marina', available: 84, held: 12, sold: 24 }],
@@ -74,6 +75,27 @@ describe('Given the CRM dashboard', () => {
             await waitFor(() => expect(mockGetWidgets).toHaveBeenCalled());
             expect(screen.getByText('Executive Overview')).toBeInTheDocument();
             expect(screen.queryByTestId('re-widgets')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('When the flag is on but effective flags have not loaded yet', () => {
+        it('Then no widget renders and no request is made (fail closed)', async () => {
+            flags.on.add('submodule:crm:re_widgets');
+            flags.loaded = false;
+            render(<DashboardPage />);
+            await waitFor(() => expect(screen.getByText('Executive Overview')).toBeInTheDocument());
+            expect(screen.queryByTestId('re-widgets')).not.toBeInTheDocument();
+            expect(mockGetWidgets).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('When an unrelated RE flag is on but re_widgets is off', () => {
+        it('Then the widgets stay hidden', async () => {
+            flags.on.add('action:crm:bulk_import');
+            render(<DashboardPage />);
+            await waitFor(() => expect(screen.getByText('Executive Overview')).toBeInTheDocument());
+            expect(screen.queryByTestId('re-widgets')).not.toBeInTheDocument();
+            expect(mockGetWidgets).not.toHaveBeenCalled();
         });
     });
 });
