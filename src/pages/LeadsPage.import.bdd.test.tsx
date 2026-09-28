@@ -80,8 +80,8 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
   CreateLeadModal: () => null,
 }));
 
-vi.mock('../components/leads/ImportLeadsWizard', () => ({
-  ImportLeadsWizard: ({ isOpen, onClose, onImported }: { isOpen: boolean; onClose: () => void; onImported: () => void }) => (
+vi.mock('../components/import/ImportHub', () => ({
+  ImportHub: ({ isOpen, onClose, onImported }: { isOpen: boolean; onClose: () => void; onImported: () => void }) => (
     isOpen ? (
       <div data-testid="import-wizard">
         <button type="button" onClick={onClose}>close wizard</button>
