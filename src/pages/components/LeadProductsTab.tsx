@@ -8,6 +8,8 @@ import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
 import { UnitBookingControls } from '../../components/unitBooking/UnitBookingControls';
 import { ReservationChip } from '../../components/unitBooking/ReservationChip';
 import { DEFAULT_HOLD_HOURS, filterAvailable } from '../../components/unitBooking/unitBooking';
+import { MatchingUnitsPanel } from '../../components/matching/MatchingUnitsPanel';
+import { MatchingUnit, unitLabel } from '../../services/matchingUnitsService';
 
 const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; color: string }[] = [
     { value: 'interested', label: 'Interested', color: 'bg-blue-500/15 text-blue-400' },
@@ -265,6 +267,7 @@ interface Props {
 export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
     const formatters = useCRMFormatters();
     const unitBooking = useCrmFeatureFlag(RE_FLAGS.UNIT_BOOKING);
+    const propertyMatching = useCrmFeatureFlag(RE_FLAGS.PROPERTY_MATCHING);
     const [products, setProducts] = useState<LeadProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -320,6 +323,24 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
     }) => {
         await crmService.addLeadProduct(leadId, data);
         load();
+    };
+
+    // A9: attach a matched unit through the same add-product call (and the
+    // same default hold when unit booking is on).
+    const handleAttachMatch = async (unit: MatchingUnit) => {
+        setAddError(null);
+        try {
+            await crmService.addLeadProduct(leadId, {
+                item_id: unit.item_id,
+                item_name: unitLabel(unit),
+                quantity: 1,
+                unit_price: unit.price ?? 0,
+                ...(unitBooking ? { hold_hours: DEFAULT_HOLD_HOURS } : {}),
+            });
+            load();
+        } catch (e: any) {
+            setAddError(e?.message || 'Could not attach the unit.');
+        }
     };
 
     const handleStatusChange = async (product: LeadProduct, status: ProductInterestStatus) => {
@@ -491,6 +512,15 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                         );
                     })}
                 </div>
+            )}
+
+            {propertyMatching && (
+                <MatchingUnitsPanel
+                    entity="lead"
+                    id={leadId}
+                    existingItemIds={new Set(products.map(p => p.item_id).filter(Boolean) as string[])}
+                    onAttach={handleAttachMatch}
+                />
             )}
 
             {showAddModal && (
