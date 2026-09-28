@@ -31,6 +31,10 @@ const full = () => normalizeREWidgets({
     pipeline_by_project: [{ project: 'Marina', value: 38000000, count: 9 }],
     holds_expiring: [{ item_id: 'i1', unit_number: 'MH-A-1201', project: 'Marina', hours_left: 6 }],
     source_performance: [{ source: 'Meta', leads: 50, won: 19, rate: 38 }, { source: 'Bayut', leads: 50, won: 11, rate: 22 }],
+    agent_leaderboard: [
+        { person_id: 'p1', user_id: 'u1', name: 'Asha Rep', leads: 12, deals_won: 3, won_value: 4500000, conversion_rate: 25 },
+        { person_id: null, user_id: 'u2', name: 'Bala Rep', leads: 40, deals_won: 5, won_value: 900000, conversion_rate: 12.5 },
+    ],
 });
 
 beforeEach(() => {
@@ -205,5 +209,74 @@ describe('Given a shell that throws while rendering the widgets', () => {
         const { container } = render(<REWidgets />);
         expect(container).toBeEmptyDOMElement();
         expect(mockGet).not.toHaveBeenCalled();
+    });
+});
+
+describe('Given the Top agents leaderboard card', () => {
+    beforeEach(() => { flags.on.add(FLAG); });
+
+    describe('When agents load', () => {
+        it('Then each shows rank, name, leads, wins, conversion and won value in the server order', async () => {
+            render(<REWidgets />);
+            const card = await screen.findByTestId('re-widget-agents');
+            const rows = within(card).getAllByRole('listitem');
+            expect(rows).toHaveLength(2);
+
+            expect(within(rows[0]).getByText('1')).toBeInTheDocument();
+            expect(within(rows[0]).getByText('Asha Rep')).toBeInTheDocument();
+            expect(within(rows[0]).getByText('12 leads')).toBeInTheDocument();
+            expect(within(rows[0]).getByText('3 won')).toBeInTheDocument();
+            expect(within(rows[0]).getByText('25%')).toBeInTheDocument();
+            expect(within(rows[0]).getByText('AED 4500000')).toBeInTheDocument();
+
+            expect(within(rows[1]).getByText('2')).toBeInTheDocument();
+            expect(within(rows[1]).getByText('Bala Rep')).toBeInTheDocument();
+            expect(within(rows[1]).getByText('12.5%')).toBeInTheDocument();
+            expect(within(rows[1]).getByText('AED 900000')).toBeInTheDocument();
+        });
+
+        it('Then the card spans the full widget row', async () => {
+            render(<REWidgets />);
+            const card = await screen.findByTestId('re-widget-agents');
+            expect(card.className).toMatch(/md:col-span-2/);
+            expect(card.className).toMatch(/xl:col-span-4/);
+            expect(screen.getByTestId('re-widget-sources').className).not.toMatch(/col-span/);
+        });
+    });
+
+    describe('When no agent has activity but other sections do', () => {
+        it('Then the card explains itself', async () => {
+            mockGet.mockResolvedValue({ ...full(), agent_leaderboard: [] });
+            render(<REWidgets />);
+            const card = await screen.findByTestId('re-widget-agents');
+            expect(within(card).getByText('No agent activity yet')).toBeInTheDocument();
+        });
+    });
+
+    describe('When only the leaderboard has data', () => {
+        it('Then the widgets still show', async () => {
+            mockGet.mockResolvedValue(normalizeREWidgets({
+                agent_leaderboard: [{ user_id: 'u1', name: 'Solo', leads: 1, deals_won: 0, won_value: 0, conversion_rate: 0 }],
+            }));
+            render(<REWidgets />);
+            const card = await screen.findByTestId('re-widget-agents');
+            expect(within(card).getByText('Solo')).toBeInTheDocument();
+        });
+    });
+
+    describe('When more than five agents arrive, some without ids', () => {
+        it('Then only the top five show and id-less rows still render', async () => {
+            mockGet.mockResolvedValue({
+                ...full(),
+                agent_leaderboard: Array.from({ length: 7 }, (_, i) => ({
+                    person_id: null, user_id: null, name: `Agent ${i + 1}`, leads: 1, deals_won: 1, won_value: 100 - i, conversion_rate: 100,
+                })),
+            });
+            render(<REWidgets />);
+            const card = await screen.findByTestId('re-widget-agents');
+            expect(within(card).getAllByRole('listitem')).toHaveLength(5);
+            expect(within(card).getByText('Agent 5')).toBeInTheDocument();
+            expect(within(card).queryByText('Agent 6')).not.toBeInTheDocument();
+        });
     });
 });

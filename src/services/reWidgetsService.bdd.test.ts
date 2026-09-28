@@ -9,6 +9,7 @@ import {
     hoursLeft,
     conversionRate,
     isREWidgetsEmpty,
+    UNKNOWN_AGENT,
 } from './reWidgetsService';
 
 const NOW = new Date('2026-09-28T12:00:00Z');
@@ -158,5 +159,49 @@ describe('Given isREWidgetsEmpty', () => {
         expect(isREWidgetsEmpty({ ...empty, pipeline_by_project: [{ project: 'P', value: 1, count: 1 }] })).toBe(false);
         expect(isREWidgetsEmpty({ ...empty, holds_expiring: [{ item_id: null, unit_number: 'U', project: null, hours_left: 1 }] })).toBe(false);
         expect(isREWidgetsEmpty({ ...empty, source_performance: [{ source: 'S', leads: 1, won: 0, rate: 0 }] })).toBe(false);
+        expect(isREWidgetsEmpty({
+            ...empty,
+            agent_leaderboard: [{ person_id: null, user_id: 'u1', name: 'A', leads: 1, deals_won: 0, won_value: 0, conversion_rate: 0 }],
+        })).toBe(false);
+    });
+});
+
+describe('Given the agent leaderboard section', () => {
+    describe('When crm-be sends ranked agents', () => {
+        it('Then they are kept in the server ranking with every field', () => {
+            const d = normalizeREWidgets({
+                agent_leaderboard: [
+                    { person_id: 'p1', user_id: 'u1', name: 'Asha', leads: 12, deals_won: 3, won_value: 4500000, conversion_rate: 25 },
+                    { person_id: null, user_id: 'u2', name: 'Bala', leads: 40, deals_won: 5, won_value: 900000, conversion_rate: 12.5 },
+                ],
+            }, NOW);
+            expect(d.agent_leaderboard).toEqual([
+                { person_id: 'p1', user_id: 'u1', name: 'Asha', leads: 12, deals_won: 3, won_value: 4500000, conversion_rate: 25 },
+                { person_id: null, user_id: 'u2', name: 'Bala', leads: 40, deals_won: 5, won_value: 900000, conversion_rate: 12.5 },
+            ]);
+        });
+    });
+
+    describe('When rows are sparse or malformed', () => {
+        it('Then nameless rows with an id read as Unknown agent, bad numbers become 0 and rows with neither are dropped', () => {
+            const d = normalizeREWidgets({
+                agent_leaderboard: [
+                    { person_id: 'p9', leads: '7', deals_won: 'x', won_value: '1200.5', conversion_rate: null },
+                    { user_id: 'u9', name: '  ' },
+                    { name: '', person_id: '', user_id: null },
+                    'junk',
+                    null,
+                ],
+            }, NOW);
+            expect(d.agent_leaderboard).toEqual([
+                { person_id: 'p9', user_id: null, name: UNKNOWN_AGENT, leads: 7, deals_won: 0, won_value: 1200.5, conversion_rate: 0 },
+                { person_id: null, user_id: 'u9', name: UNKNOWN_AGENT, leads: 0, deals_won: 0, won_value: 0, conversion_rate: 0 },
+            ]);
+        });
+
+        it('Then a missing or non-list section reads as empty', () => {
+            expect(normalizeREWidgets({}, NOW).agent_leaderboard).toEqual([]);
+            expect(normalizeREWidgets({ agent_leaderboard: { a: 1 } }, NOW).agent_leaderboard).toEqual([]);
+        });
     });
 });
