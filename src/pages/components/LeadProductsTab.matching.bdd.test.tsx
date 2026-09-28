@@ -22,7 +22,6 @@ vi.mock('../../services/crmService', () => ({
         addLeadProduct: (...a: any[]) => mocks.addLeadProduct(...a),
         searchInventoryItems: vi.fn().mockResolvedValue({ items: [], total: 0, has_more: false }),
         getProductCategories: vi.fn().mockResolvedValue([]),
-        getLeadProducts: vi.fn().mockResolvedValue([]),
         updateLeadProduct: vi.fn().mockResolvedValue({}),
         removeLeadProduct: vi.fn().mockResolvedValue({}),
         updateDealProduct: vi.fn().mockResolvedValue({}),
