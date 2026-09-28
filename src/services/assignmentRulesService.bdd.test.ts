@@ -3,7 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() }));
 vi.mock('./crmService', () => ({ crmApiClient: api }));
 
-import { assignmentRulesService, toRuleBody, validateRule, emptyRule } from './assignmentRulesService';
+import {
+    assignmentRulesService, toRuleBody, validateRule, emptyRule, CONDITION_FIELDS, CONDITION_OPS, ASSIGNMENT_METHODS,
+} from './assignmentRulesService';
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -76,5 +78,79 @@ describe('Given validateRule', () => {
             expect(validateRule({ ...emptyRule(), name: 'x', target_type: 'department' })).toMatch(/department/i);
             expect(validateRule({ ...emptyRule(), name: 'x', target_user_ids: ['u1'] })).toBeNull();
         });
+    });
+});
+
+describe('Given further toRuleBody inputs', () => {
+    describe('When a condition value is already an array', () => {
+        it('Then an "in" array is trimmed and an "eq" array is joined into one string', () => {
+            const body = toRuleBody({
+                ...emptyRule(),
+                name: 'Arr',
+                conditions: [
+                    { field: 'source', op: 'in', value: [' a ', '', 'b'] },
+                    { field: 'city', op: 'eq', value: ['x', 'y'] },
+                ],
+            });
+            expect(body.conditions).toEqual([
+                { field: 'source', op: 'in', value: ['a', 'b'] },
+                { field: 'city', op: 'eq', value: 'x,y' },
+            ]);
+        });
+    });
+    describe('When a condition value is null or an "in" list is all blanks', () => {
+        it('Then those conditions are dropped', () => {
+            const body = toRuleBody({
+                ...emptyRule(),
+                name: 'Nulls',
+                conditions: [
+                    { field: 'source', op: 'eq', value: null as unknown as string },
+                    { field: 'campaign', op: 'in', value: undefined as unknown as string },
+                    { field: 'city', op: 'in', value: ' , ,' },
+                ],
+            });
+            expect(body.conditions).toEqual([]);
+        });
+    });
+    describe('When the department target has no department picked', () => {
+        it('Then neither target id key is sent', () => {
+            const body = toRuleBody({ ...emptyRule(), name: 'D', target_type: 'department', target_department_id: null });
+            expect(body).not.toHaveProperty('target_department_id');
+            expect(body).not.toHaveProperty('target_user_ids');
+            expect(body).toMatchObject({ name: 'D', is_active: true, method: 'round_robin', skip_inactive: true, target_type: 'department' });
+        });
+    });
+    describe('When the users target is chosen', () => {
+        it('Then the department id is never sent', () => {
+            const body = toRuleBody({ ...emptyRule(), name: 'U', target_department_id: 'd9', target_user_ids: ['u1', 'u2'] });
+            expect(body.target_user_ids).toEqual(['u1', 'u2']);
+            expect(body).not.toHaveProperty('target_department_id');
+        });
+    });
+});
+
+describe('Given reorder returns something that is not a list', () => {
+    it('Then it reads as an empty list', async () => {
+        api.post.mockResolvedValueOnce({ unexpected: true });
+        expect(await assignmentRulesService.reorder(['a'])).toEqual([]);
+    });
+});
+
+describe('Given the editor option catalogues', () => {
+    it('Then fields, operators and methods carry the agreed values', () => {
+        expect(CONDITION_FIELDS.map(f => f.value)).toEqual(['source', 'project', 'campaign', 'city']);
+        expect(CONDITION_OPS.map(o => o.value)).toEqual(['eq', 'in', 'contains']);
+        expect(ASSIGNMENT_METHODS.map(m => m.value)).toEqual(['round_robin', 'least_loaded', 'fixed']);
+        expect(emptyRule()).toEqual({
+            name: '', is_active: true, conditions: [], target_type: 'users', target_department_id: null,
+            target_user_ids: [], method: 'round_robin', skip_inactive: true,
+        });
+    });
+});
+
+describe('Given validateRule with whitespace names and a picked department', () => {
+    it('Then a blank name is rejected and a department rule with an id passes', () => {
+        expect(validateRule({ ...emptyRule(), name: '   ', target_user_ids: ['u1'] })).toBe('Give the rule a name.');
+        expect(validateRule({ ...emptyRule(), name: 'x', target_type: 'department', target_department_id: 'd1' })).toBeNull();
     });
 });

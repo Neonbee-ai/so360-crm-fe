@@ -91,3 +91,72 @@ describe('Given the RE widgets service', () => {
         });
     });
 });
+
+describe('Given loosely typed widget rows', () => {
+    describe('When lists contain nulls, primitives and odd value types', () => {
+        it('Then non-object rows drop, numbers default to 0 and numeric labels are stringified', () => {
+            const d = normalizeREWidgets({
+                pipeline_by_project: [null, 3, 'x', { project: 101, value: true, count: '4' }, { project: '  ', value: 9 }],
+            }, NOW);
+            expect(d.pipeline_by_project).toEqual([{ project: '101', value: 0, count: 4 }]);
+        });
+    });
+
+    describe('When holds miss their project or both identifiers', () => {
+        it('Then the project reads null and an unidentified hold is dropped', () => {
+            const d = normalizeREWidgets({
+                holds_expiring: [
+                    { unit_number: 'C-3', project: null, hours_left: 2 },
+                    { unit_number: '', item_id: null, hours_left: 1 },
+                    { hours_left: 1 },
+                ],
+            }, NOW);
+            expect(d.holds_expiring).toEqual([{ item_id: null, unit_number: 'C-3', project: null, hours_left: 2 }]);
+        });
+    });
+
+    describe('When sources lack a label', () => {
+        it('Then they are dropped', () => {
+            const d = normalizeREWidgets({ source_performance: [{ source: '', rate: 90 }, { source: 'Web', leads: 4, won: 1 }] }, NOW);
+            expect(d.source_performance).toEqual([{ source: 'Web', leads: 4, won: 1, rate: 25 }]);
+        });
+    });
+});
+
+describe('Given hoursLeft edge values', () => {
+    it('When hours_left is not numeric / Then expires_at is used instead', () => {
+        expect(hoursLeft({ hours_left: 'soon', expires_at: '2026-09-28T15:00:00Z' }, NOW)).toBe(3);
+    });
+    it('When hours_left is negative or fractional / Then it is clamped and rounded', () => {
+        expect(hoursLeft({ hours_left: -5 }, NOW)).toBe(0);
+        expect(hoursLeft({ hours_left: '2.6' }, NOW)).toBe(3);
+    });
+    it('When no clock is passed / Then the current time is used', () => {
+        const inTwoHours = new Date(Date.now() + 2 * 3_600_000 + 60_000).toISOString();
+        expect(hoursLeft({ expires_at: inTwoHours })).toBe(2);
+    });
+});
+
+describe('Given conversionRate with a non-numeric rate', () => {
+    it('Then won / leads is used', () => {
+        expect(conversionRate({ rate: 'n/a', leads: '10', won: 5 })).toBe(50);
+        expect(conversionRate({})).toBe(0);
+    });
+});
+
+describe('Given normalizeREWidgets without a clock', () => {
+    it('Then holds are measured against now', () => {
+        const at = new Date(Date.now() + 5 * 3_600_000 + 60_000).toISOString();
+        expect(normalizeREWidgets({ holds_expiring: [{ unit_number: 'Z', expires_at: at }] }).holds_expiring[0].hours_left).toBe(5);
+    });
+});
+
+describe('Given isREWidgetsEmpty', () => {
+    const empty = normalizeREWidgets({}, NOW);
+    it('When any single section has a row / Then it is not empty', () => {
+        expect(isREWidgetsEmpty({ ...empty, inventory_by_project: [{ project: 'P', available: 1, held: 0, sold: 0 }] })).toBe(false);
+        expect(isREWidgetsEmpty({ ...empty, pipeline_by_project: [{ project: 'P', value: 1, count: 1 }] })).toBe(false);
+        expect(isREWidgetsEmpty({ ...empty, holds_expiring: [{ item_id: null, unit_number: 'U', project: null, hours_left: 1 }] })).toBe(false);
+        expect(isREWidgetsEmpty({ ...empty, source_performance: [{ source: 'S', leads: 1, won: 0, rate: 0 }] })).toBe(false);
+    });
+});

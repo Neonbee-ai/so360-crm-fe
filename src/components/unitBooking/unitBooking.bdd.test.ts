@@ -61,3 +61,34 @@ describe('Given the unit booking helpers', () => {
         });
     });
 });
+
+describe('Given describeReservation edge timings', () => {
+    describe('When a hold has under a minute left', () => {
+        it('Then it reads at least 1m left', () => {
+            expect(describeReservation('held', new Date(NOW + 10_000).toISOString(), NOW)).toEqual({ label: 'Held · 1m left', tone: 'held' });
+        });
+    });
+    describe('When a hold has exactly one hour or exactly one day left', () => {
+        it('Then the hour and day thresholds are inclusive', () => {
+            expect(describeReservation('held', inHours(1), NOW)?.label).toBe('Held · 1h left');
+            expect(describeReservation('held', inHours(24), NOW)?.label).toBe('Held · 1d 0h left');
+        });
+    });
+    describe('When a hold expires exactly now', () => {
+        it('Then zero milliseconds left reads Hold expired', () => {
+            expect(describeReservation('held', new Date(NOW).toISOString(), NOW)?.label).toBe('Hold expired');
+        });
+    });
+    describe('When no clock is passed', () => {
+        it('Then the default Date.now() is used', () => {
+            const farFuture = new Date(Date.now() + 5 * 24 * 3_600_000 + 60_000).toISOString();
+            expect(describeReservation('held', farFuture)).toEqual({ label: 'Held · 5d 0h left', tone: 'held' });
+            expect(describeReservation('held', '2000-01-01T00:00:00Z')?.label).toBe('Hold expired');
+        });
+    });
+    describe('When the hold option list is read', () => {
+        it('Then every option has a label', () => {
+            expect(HOLD_HOUR_OPTIONS.map(holdHoursLabel)).toEqual(['1 day', '2 days', '3 days', '7 days']);
+        });
+    });
+});

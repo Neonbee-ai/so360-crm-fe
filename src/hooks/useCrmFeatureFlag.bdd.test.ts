@@ -56,3 +56,18 @@ describe('Given the useCrmFeatureFlag hook', () => {
         });
     });
 });
+
+describe('Given a bridge that never reports effectiveFlagsLoaded', () => {
+    describe('When the key is enabled', () => {
+        it('Then an undefined loaded marker does not block the flag', () => {
+            mockUseShellBridge.mockReturnValue({ isFeatureEnabled: () => true });
+            expect(renderHook(() => useCrmFeatureFlag(RE_FLAGS.PROPERTY_MATCHING)).result.current).toBe(true);
+        });
+    });
+    describe('When isFeatureEnabled returns undefined', () => {
+        it('Then the ?? fallback reads it as off', () => {
+            mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: true, isFeatureEnabled: () => undefined });
+            expect(renderHook(() => useCrmFeatureFlag(RE_FLAGS.PROPERTY_MATCHING)).result.current).toBe(false);
+        });
+    });
+});

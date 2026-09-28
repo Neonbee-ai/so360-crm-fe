@@ -10,6 +10,8 @@ import {
     compactMapping,
     describeImportError,
     MAX_IMPORT_BYTES,
+    DUPLICATE_POLICIES,
+    ACCEPTED_IMPORT_TYPES,
 } from './leadImportService';
 
 const fileOf = (name: string, size: number) => {
@@ -96,5 +98,45 @@ describe('Given describeImportError', () => {
             expect(describeImportError(new Error('Internal server error'), 'fb')).toBe('fb');
             expect(describeImportError(undefined, 'fb')).toBe('fb');
         });
+    });
+});
+
+describe('Given more describeImportError inputs', () => {
+    describe('When the error has an empty message or is a plain object', () => {
+        it('Then an empty message falls back and a plain {message} is shown', () => {
+            expect(describeImportError(new Error(''), 'fb')).toBe('fb');
+            expect(describeImportError(null, 'fb')).toBe('fb');
+            expect(describeImportError({ message: 'Too many rows (max 5000)' }, 'fb')).toBe('Too many rows (max 5000)');
+        });
+    });
+    describe('When the route-miss or 500 text differs only in case or verb', () => {
+        it('Then it still falls back', () => {
+            expect(describeImportError(new Error('cannot get /leads/import/preview'), 'fb')).toBe('fb');
+            expect(describeImportError(new Error('Cannot DELETE /x'), 'fb')).toBe('fb');
+            expect(describeImportError(new Error('INTERNAL SERVER ERROR'), 'fb')).toBe('fb');
+        });
+    });
+    describe('When the message only looks like a status echo', () => {
+        it('Then it is shown as-is', () => {
+            expect(describeImportError(new Error('Upload failed: bad header'), 'fb')).toBe('Upload failed: bad header');
+            expect(describeImportError(new Error('Cannotation'), 'fb')).toBe('Cannotation');
+        });
+    });
+});
+
+describe('Given the import catalogues and file boundaries', () => {
+    it('Then the three duplicate policies and accepted types are exposed', () => {
+        expect(DUPLICATE_POLICIES.map(p => p.value)).toEqual(['skip', 'update', 'create']);
+        expect(ACCEPTED_IMPORT_TYPES).toBe('.csv,.xlsx');
+        expect(MAX_IMPORT_BYTES).toBe(10 * 1024 * 1024);
+    });
+    it('Then a file of exactly 10 MB and undefined input are handled', () => {
+        expect(checkImportFile(fileOf('leads.csv', MAX_IMPORT_BYTES))).toBeNull();
+        expect(checkImportFile(undefined)).toMatch(/choose/i);
+        expect(checkImportFile(fileOf('leads.csv.txt', 10))).toMatch(/only/i);
+    });
+    it('Then an empty mapping asks for a name and compacts to nothing', () => {
+        expect(checkMapping({})).toMatch(/first name or full name/i);
+        expect(compactMapping({})).toEqual({});
     });
 });

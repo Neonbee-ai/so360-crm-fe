@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const api = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock('./crmService', () => ({ crmApiClient: api }));
 
-import { matchingUnitsService, unitLabel, unitShareText, MatchingUnit } from './matchingUnitsService';
+import { matchingUnitsService, unitLabel, unitShareText, DEFAULT_MATCH_LIMIT } from './matchingUnitsService';
+import type { MatchingUnit } from './matchingUnitsService';
 
 const unit = (over: Partial<MatchingUnit> = {}): MatchingUnit => ({
     item_id: 'item-1',
@@ -63,6 +64,45 @@ describe('Given a matching unit', () => {
             expect(unitShareText(unit({ tower: null, bedrooms: null, area_sqft: null, price: null }), String)).toBe(
                 'Unit A-101\nPalm Heights',
             );
+        });
+    });
+});
+
+describe('Given unusual ids and limits', () => {
+    describe('When the id needs URL encoding and the limit is fractional', () => {
+        it('Then the id is encoded and the limit floored', async () => {
+            api.get.mockResolvedValue([]);
+            await matchingUnitsService.forLead('a/b c', 7.9);
+            expect(api.get).toHaveBeenCalledWith('/leads/a%2Fb%20c/matching-units', { limit: 7 });
+        });
+    });
+    describe('When the generic entry is used for a deal without a limit', () => {
+        it('Then the deal route gets the default limit', async () => {
+            api.get.mockResolvedValue([]);
+            await matchingUnitsService.for('deal', 'd1');
+            expect(api.get).toHaveBeenCalledWith('/deals/d1/matching-units', { limit: DEFAULT_MATCH_LIMIT });
+        });
+    });
+});
+
+describe('Given sparse matching units', () => {
+    describe('When unit number or project is whitespace', () => {
+        it('Then only the real parts are joined', () => {
+            expect(unitLabel(unit({ unit_number: '  ', project: 'Palm' }))).toBe('Palm');
+            expect(unitLabel(unit({ unit_number: 'B-2', project: ' ' }))).toBe('B-2');
+            expect(unitLabel(unit({ unit_number: ' ', project: '' }))).toBe('item-1');
+        });
+    });
+    describe('When the share text has no unit number and no project but a tower', () => {
+        it('Then the item id is used and the tower stands alone', () => {
+            expect(unitShareText(unit({ unit_number: null, project: null, bedrooms: null, price: null }), String))
+                .toBe('Unit item-1\nTower A\n1200 sq ft');
+        });
+    });
+    describe('When only bedrooms and a zero price are known', () => {
+        it('Then a zero price is still shown', () => {
+            expect(unitShareText(unit({ project: null, tower: null, area_sqft: null, price: 0 }), (n) => `AED ${n}`))
+                .toBe('Unit A-101\n2 BR\nPrice: AED 0');
         });
     });
 });

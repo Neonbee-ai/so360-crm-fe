@@ -11,6 +11,7 @@ import {
     leadDisplayName,
     MERGE_FIELDS,
 } from './leadDedupService';
+import type { Lead } from '../types/crm';
 
 const apiError = (status: number, body: any) => Object.assign(new Error('x'), { status, body });
 
@@ -64,5 +65,63 @@ describe('Given the merge field helpers', () => {
         expect(leadDisplayName({ company_name: 'Acme' } as any)).toBe('Acme');
         expect(leadDisplayName({ first_name: 'A', last_name: 'B' } as any)).toBe('A B');
         expect(leadDisplayName({} as any)).toBe('Untitled lead');
+    });
+});
+
+describe('Given more shapes of a DUPLICATE_LEAD rejection', () => {
+    describe('When the error carries no status at all', () => {
+        it('Then the body alone is trusted', () => {
+            expect(parseDuplicateLead({ body: { code: 'DUPLICATE_LEAD', existing: { id: 'l2', name: 'Beta' } } }))
+                .toEqual({ id: 'l2', name: 'Beta', owner_name: null });
+        });
+    });
+    describe('When existing.id is blank or not a string', () => {
+        it('Then null is returned', () => {
+            expect(parseDuplicateLead(apiError(409, { code: 'DUPLICATE_LEAD', existing: { id: '' } }))).toBeNull();
+            expect(parseDuplicateLead(apiError(409, { code: 'DUPLICATE_LEAD', existing: { id: 42 } }))).toBeNull();
+        });
+    });
+    describe('When name and owner are blank strings or wrong types', () => {
+        it('Then the fallbacks are used', () => {
+            expect(parseDuplicateLead(apiError(409, { code: 'DUPLICATE_LEAD', existing: { id: 'l3', name: '', owner_name: '' } })))
+                .toEqual({ id: 'l3', name: 'Existing lead', owner_name: null });
+            expect(parseDuplicateLead(apiError(409, { code: 'DUPLICATE_LEAD', existing: { id: 'l3', name: 7, owner_name: {} } })))
+                .toEqual({ id: 'l3', name: 'Existing lead', owner_name: null });
+        });
+    });
+    describe('When the error is null or has no body', () => {
+        it('Then null is returned', () => {
+            expect(parseDuplicateLead(null)).toBeNull();
+            expect(parseDuplicateLead({ status: 409 })).toBeNull();
+        });
+    });
+});
+
+describe('Given displayFieldValue edge values', () => {
+    it('When the lead or value is missing / Then a dash is shown', () => {
+        expect(displayFieldValue(null, 'phone')).toBe('—');
+        expect(displayFieldValue(undefined, 'phone')).toBe('—');
+        expect(displayFieldValue({ phone: null } as unknown as Partial<Lead>, 'phone')).toBe('—');
+        expect(displayFieldValue({}, 'phone')).toBe('—');
+    });
+    it('When the value is an object / Then full_name is used, else a dash', () => {
+        expect(displayFieldValue({ owner: { full_name: 'Ravi K' } } as unknown as Partial<Lead>, 'owner')).toBe('Ravi K');
+        expect(displayFieldValue({ owner: { id: 'u1' } } as unknown as Partial<Lead>, 'owner')).toBe('—');
+    });
+    it('When the value is a number / Then it is stringified', () => {
+        expect(displayFieldValue({ score: 0 } as unknown as Partial<Lead>, 'score')).toBe('0');
+    });
+});
+
+describe('Given leadDisplayName edge values', () => {
+    it('When the lead is null / Then an empty string is returned', () => {
+        expect(leadDisplayName(null)).toBe('');
+        expect(leadDisplayName(undefined)).toBe('');
+    });
+    it('When only contact_name exists / Then it is used', () => {
+        expect(leadDisplayName({ contact_name: 'Meera' } as unknown as Partial<Lead>)).toBe('Meera');
+    });
+    it('When only a first name exists / Then it alone is used', () => {
+        expect(leadDisplayName({ first_name: 'Solo', last_name: null } as unknown as Partial<Lead>)).toBe('Solo');
     });
 });
