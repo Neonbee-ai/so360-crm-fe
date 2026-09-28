@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, BarChart3, Clock, PieChart } from 'lucide-react';
+import { Building2, BarChart3, Clock, PieChart, Trophy } from 'lucide-react';
 import { useCRMFormatters } from '../../utils/formatters';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
 import { reWidgetsService, REWidgetsData, isREWidgetsEmpty } from '../../services/reWidgetsService';
@@ -10,8 +10,8 @@ const EMPTY = 'text-xs text-slate-500';
 /** Rows shown per card; the dashboard is a glance, not a report. */
 const MAX_ROWS = 5;
 
-const Card: React.FC<{ title: string; icon: React.ReactNode; testId: string; children: React.ReactNode }> = ({ title, icon, testId, children }) => (
-    <div className={CARD} data-testid={testId}>
+const Card: React.FC<{ title: string; icon: React.ReactNode; testId: string; className?: string; children: React.ReactNode }> = ({ title, icon, testId, className, children }) => (
+    <div className={className ? `${CARD} ${className}` : CARD} data-testid={testId}>
         <p className={TITLE}>{icon}{title}</p>
         {children}
     </div>
@@ -88,6 +88,27 @@ const REWidgetsInner: React.FC = () => {
                                 <span className="text-slate-200 truncate">{s.source}</span>
                                 <span className="text-xs font-bold text-blue-300 whitespace-nowrap" title={`${s.won} won of ${s.leads} leads`}>
                                     {s.rate}%
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </Card>
+
+            <Card title="Top agents" icon={<Trophy size={12} />} testId="re-widget-agents" className="md:col-span-2 xl:col-span-4">
+                {data.agent_leaderboard.length === 0 ? <p className={EMPTY}>No agent activity yet</p> : (
+                    <ul className="space-y-1.5">
+                        {data.agent_leaderboard.slice(0, MAX_ROWS).map((a, i) => (
+                            <li key={a.person_id ?? a.user_id ?? `${a.name}-${i}`} className="flex items-center justify-between gap-2 text-sm">
+                                <span className="flex items-center gap-2 min-w-0">
+                                    <span className="text-[10px] font-black text-slate-500 w-4 shrink-0">{i + 1}</span>
+                                    <span className="text-slate-200 truncate">{a.name}</span>
+                                </span>
+                                <span className="flex items-center gap-3 text-xs font-bold whitespace-nowrap">
+                                    <span className="text-slate-400" title="Leads">{a.leads} leads</span>
+                                    <span className="text-emerald-400" title="Deals won">{a.deals_won} won</span>
+                                    <span className="text-blue-300" title="Lead → won conversion">{a.conversion_rate}%</span>
+                                    <span className="text-slate-100 text-sm">{formatCurrency(a.won_value)}</span>
                                 </span>
                             </li>
                         ))}

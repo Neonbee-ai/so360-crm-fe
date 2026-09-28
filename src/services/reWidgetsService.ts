@@ -4,7 +4,8 @@ import { crmApiClient } from './crmService';
  * Real-estate dashboard widgets (A10). crm-be has no /v1 prefix.
  *
  *  GET /dashboard/re-widgets → {
- *    inventory_by_project, pipeline_by_project, holds_expiring, source_performance
+ *    inventory_by_project, pipeline_by_project, holds_expiring, source_performance,
+ *    agent_leaderboard
  *  }
  *
  * The payload is normalised defensively: a missing or malformed section reads
@@ -40,11 +41,27 @@ export interface SourcePerformance {
     rate: number;
 }
 
+/** One agent on the leaderboard; already narrowed to the caller's record scope by crm-be. */
+export interface AgentLeaderboardEntry {
+    person_id: string | null;
+    user_id: string | null;
+    name: string;
+    leads: number;
+    deals_won: number;
+    won_value: number;
+    /** Owned leads that ended in a won deal, 0–100 (one decimal). */
+    conversion_rate: number;
+}
+
+/** Label for an agent row that arrives without a name. */
+export const UNKNOWN_AGENT = 'Unknown agent';
+
 export interface REWidgetsData {
     inventory_by_project: InventoryByProject[];
     pipeline_by_project: PipelineByProject[];
     holds_expiring: ExpiringHold[];
     source_performance: SourcePerformance[];
+    agent_leaderboard: AgentLeaderboardEntry[];
 }
 
 const num = (v: unknown): number => {
@@ -93,12 +110,25 @@ export function normalizeREWidgets(raw: any, now: Date = new Date()): REWidgetsD
             .map((r) => ({ source: str(r.source), leads: num(r.leads), won: num(r.won), rate: conversionRate(r) }))
             .filter((r) => r.source)
             .sort((a, b) => b.rate - a.rate),
+        // Kept in the server's ranking; a row with no name and no id is noise.
+        agent_leaderboard: list(d.agent_leaderboard)
+            .filter((r) => str(r.name) || str(r.person_id) || str(r.user_id))
+            .map((r) => ({
+                person_id: str(r.person_id) || null,
+                user_id: str(r.user_id) || null,
+                name: str(r.name) || UNKNOWN_AGENT,
+                leads: num(r.leads),
+                deals_won: num(r.deals_won),
+                won_value: num(r.won_value),
+                conversion_rate: num(r.conversion_rate),
+            })),
     };
 }
 
 export const isREWidgetsEmpty = (d: REWidgetsData): boolean =>
     !d.inventory_by_project.length && !d.pipeline_by_project.length
-    && !d.holds_expiring.length && !d.source_performance.length;
+    && !d.holds_expiring.length && !d.source_performance.length
+    && !d.agent_leaderboard.length;
 
 export const reWidgetsService = {
     get: async (): Promise<REWidgetsData> =>
