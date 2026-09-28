@@ -35,3 +35,40 @@ describe('Given a product line ReservationChip', () => {
         });
     });
 });
+
+describe('Given the remaining ReservationChip tones', () => {
+    describe('When a hold carries no expiry', () => {
+        it('Then the chip reads Held with the clock icon and no title', () => {
+            render(<ReservationChip status="held" />);
+            const chip = screen.getByTestId('reservation-chip');
+            expect(chip).toHaveTextContent('Held');
+            expect(chip).not.toHaveAttribute('title');
+            expect(chip.className).toMatch(/amber/);
+            expect(screen.getByTestId('icon-Clock')).toBeInTheDocument();
+        });
+    });
+
+    describe('When the unit is sold', () => {
+        it('Then the lock icon and emerald tone are used', () => {
+            render(<ReservationChip status="sold" />);
+            expect(screen.getByTestId('icon-Lock')).toBeInTheDocument();
+            expect(screen.getByTestId('reservation-chip').className).toMatch(/emerald/);
+        });
+    });
+
+    describe('When the hold was released', () => {
+        it('Then the chip is muted', () => {
+            render(<ReservationChip status="released" expiresAt={null} />);
+            const chip = screen.getByTestId('reservation-chip');
+            expect(chip).toHaveTextContent('Released');
+            expect(chip.className).toMatch(/slate/);
+        });
+    });
+
+    describe('When no props are passed at all', () => {
+        it('Then nothing renders', () => {
+            const { container } = render(<ReservationChip />);
+            expect(container).toBeEmptyDOMElement();
+        });
+    });
+});

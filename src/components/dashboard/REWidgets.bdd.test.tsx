@@ -1,15 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 
-const flags = vi.hoisted(() => ({ on: new Set<string>(), loaded: true }));
+const flags = vi.hoisted(() => ({ on: new Set<string>(), loaded: true, throws: false }));
 const mockGet = vi.hoisted(() => vi.fn());
 
 vi.mock('@so360/shell-context', () => ({
-    useShellBridge: () => ({
-        effectiveFlagsLoaded: flags.loaded,
-        isFeatureEnabled: (key: string) => flags.on.has(key),
-    }),
+    useShellBridge: () => {
+        if (flags.throws) throw new Error('no shell bridge');
+        return {
+            effectiveFlagsLoaded: flags.loaded,
+            isFeatureEnabled: (key: string) => flags.on.has(key),
+        };
+    },
 }));
 vi.mock('../../utils/formatters', () => ({
     useCRMFormatters: () => ({ formatCurrency: (v: number) => `AED ${v}` }),
@@ -34,6 +37,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     flags.on.clear();
     flags.loaded = true;
+    flags.throws = false;
     mockGet.mockResolvedValue(full());
 });
 
@@ -109,5 +113,97 @@ describe('Given the RE dashboard widgets', () => {
             await waitFor(() => expect(mockGet).toHaveBeenCalled());
             expect(container).toBeEmptyDOMElement();
         });
+    });
+});
+
+describe('Given the RE widgets with sparse or long data', () => {
+    beforeEach(() => { flags.on.add(FLAG); });
+
+    describe('When inventory, pipeline and sources are all empty but a hold exists', () => {
+        it('Then each empty card explains itself', async () => {
+            mockGet.mockResolvedValue(normalizeREWidgets({ holds_expiring: [{ unit_number: 'X-1', hours_left: 3 }] }));
+            render(<REWidgets />);
+            await screen.findByTestId('re-widgets');
+            expect(within(screen.getByTestId('re-widget-inventory')).getByText('No units yet')).toBeInTheDocument();
+            expect(within(screen.getByTestId('re-widget-pipeline')).getByText('No open deals')).toBeInTheDocument();
+            expect(within(screen.getByTestId('re-widget-sources')).getByText('No leads yet')).toBeInTheDocument();
+        });
+    });
+
+    describe('When holds have under an hour, six hours or more than six hours left', () => {
+        it('Then they read <1h in red, 6h in red and 7h in amber, keyed even without an item id', async () => {
+            mockGet.mockResolvedValue(normalizeREWidgets({
+                holds_expiring: [
+                    { unit_number: 'U-0', hours_left: 0, project: 'Palm' },
+                    { unit_number: 'U-6', hours_left: 6 },
+                    { item_id: 'i7', unit_number: 'U-7', hours_left: 7 },
+                ],
+            }));
+            render(<REWidgets />);
+            const holds = await screen.findByTestId('re-widget-holds');
+            expect(within(holds).getByText('<1h').className).toMatch(/text-red-400/);
+            expect(within(holds).getByText('6h').className).toMatch(/text-red-400/);
+            expect(within(holds).getByText('7h').className).toMatch(/text-amber-400/);
+            expect(within(holds).getByText('U-0')).toHaveAttribute('title', 'Palm');
+            expect(within(holds).getByText('U-6')).not.toHaveAttribute('title');
+        });
+    });
+
+    describe('When a section has more than five rows', () => {
+        it('Then only the first five show', async () => {
+            const projects = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'];
+            mockGet.mockResolvedValue(normalizeREWidgets({
+                inventory_by_project: projects.map((project) => ({ project, available: 1, held: 0, sold: 0 })),
+                pipeline_by_project: projects.map((project) => ({ project, value: 1, count: 1 })),
+                holds_expiring: projects.map((p, i) => ({ unit_number: `H-${p}`, hours_left: i + 1 })),
+                source_performance: projects.map((source, i) => ({ source, rate: 60 - i })),
+            }));
+            render(<REWidgets />);
+            await screen.findByTestId('re-widgets');
+            for (const id of ['re-widget-inventory', 're-widget-pipeline', 're-widget-holds', 're-widget-sources']) {
+                expect(within(screen.getByTestId(id)).getAllByRole('listitem')).toHaveLength(5);
+            }
+            expect(within(screen.getByTestId('re-widget-inventory')).queryByText('P6')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('When the dashboard unmounts before the request settles', () => {
+        it('Then a late success or failure is ignored', async () => {
+            let resolveGet: (v: unknown) => void = () => {};
+            mockGet.mockReturnValueOnce(new Promise((r) => { resolveGet = r; }));
+            render(<REWidgets />).unmount();
+            resolveGet(full());
+
+            let rejectGet: (e: unknown) => void = () => {};
+            mockGet.mockReturnValueOnce(new Promise((_, rej) => { rejectGet = rej; }));
+            render(<REWidgets />).unmount();
+            rejectGet(new Error('late'));
+
+            await Promise.resolve();
+            expect(screen.queryByTestId('re-widgets')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('When the flag turns off after the widgets showed', () => {
+        it('Then they disappear', async () => {
+            const view = render(<REWidgets />);
+            await screen.findByTestId('re-widgets');
+            flags.on.delete(FLAG);
+            view.rerender(<REWidgets />);
+            await waitFor(() => expect(screen.queryByTestId('re-widgets')).not.toBeInTheDocument());
+        });
+    });
+});
+
+describe('Given a shell that throws while rendering the widgets', () => {
+    let errorSpy: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => { errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {}); });
+    afterEach(() => { errorSpy.mockRestore(); });
+
+    it('When the bridge throws / Then the boundary swallows it and renders nothing', () => {
+        flags.throws = true;
+        const { container } = render(<REWidgets />);
+        expect(container).toBeEmptyDOMElement();
+        expect(mockGet).not.toHaveBeenCalled();
     });
 });

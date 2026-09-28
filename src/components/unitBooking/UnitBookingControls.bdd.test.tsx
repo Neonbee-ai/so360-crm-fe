@@ -71,3 +71,42 @@ describe('Given the unit booking controls in a product picker', () => {
         });
     });
 });
+
+describe('Given unusual category responses', () => {
+    describe('When Inventory returns something other than a list', () => {
+        it('Then only All projects is offered', async () => {
+            mockGetProductCategories.mockResolvedValue({ data: [] });
+            setup();
+            await waitFor(() => expect(mockGetProductCategories).toHaveBeenCalled());
+            await Promise.resolve();
+            expect((screen.getByLabelText('Project') as HTMLSelectElement).options).toHaveLength(1);
+        });
+    });
+
+    describe('When the picker closes before categories resolve or fail', () => {
+        it('Then late results are ignored without errors', async () => {
+            let resolveCats: (v: unknown) => void = () => {};
+            mockGetProductCategories.mockReturnValueOnce(new Promise((r) => { resolveCats = r; }));
+            const first = render(<UnitBookingControls projectId="" onProjectChange={vi.fn()} onlyAvailable onOnlyAvailableChange={vi.fn()} holdHours={24} onHoldHoursChange={vi.fn()} />);
+            first.unmount();
+            resolveCats([{ id: 'late', name: 'Late Project' }]);
+
+            let rejectCats: (e: unknown) => void = () => {};
+            mockGetProductCategories.mockReturnValueOnce(new Promise((_, rej) => { rejectCats = rej; }));
+            const second = render(<UnitBookingControls projectId="" onProjectChange={vi.fn()} onlyAvailable={false} onOnlyAvailableChange={vi.fn()} holdHours={24} onHoldHoursChange={vi.fn()} />);
+            second.unmount();
+            rejectCats(new Error('late failure'));
+
+            await Promise.resolve();
+            expect(screen.queryByText('Late Project')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('When the checkbox is already on and gets unticked', () => {
+        it('Then false is reported', () => {
+            const props = setup({ onlyAvailable: true });
+            fireEvent.click(screen.getByLabelText('Only available'));
+            expect(props.onOnlyAvailableChange).toHaveBeenCalledWith(false);
+        });
+    });
+});
