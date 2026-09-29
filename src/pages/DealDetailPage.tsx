@@ -12,6 +12,9 @@ import { StageTransitionModal } from '../components/kanban/StageTransitionModal'
 import SignRequestModal from '../components/sign/SignRequestModal';
 import DealProductsTab from './components/DealProductsTab';
 import CallsTab from './components/CallsTab';
+import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
+import DealCommissionPanel from './components/DealCommissionPanel';
+import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { CrossLinkChip, toast } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -23,7 +26,7 @@ import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import DetailBackLink from '../components/common/DetailBackLink';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
 
 // Notify other MFEs (e.g. the Documents module) that a CRM deal document changed
 // so they can refresh linked-document views. Uses the shared event bus with a
@@ -52,6 +55,9 @@ const DealDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
+    // RE Phase C: payment plan + commission tabs, each behind its own flag.
+    const paymentPlansOn = useCrmFeatureFlag(RE_FLAGS.PAYMENT_PLANS);
+    const commissionsOn = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
 
     const [deal, setDeal] = useState<Deal | null>(null);
     const [associatedLead, setAssociatedLead] = useState<any>(null);
@@ -851,7 +857,9 @@ const DealDetailPage = () => {
                                     { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
                                     { id: 'products', name: 'Products', icon: Briefcase },
                                     { id: 'custom', name: 'Additional Info', icon: Tag },
-                                    { id: 'calls', name: 'Calls', icon: Phone }
+                                    { id: 'calls', name: 'Calls', icon: Phone },
+                                    ...(paymentPlansOn ? [{ id: 'payment-plan', name: 'Payment plan', icon: Receipt }] : []),
+                                    ...(commissionsOn ? [{ id: 'commission', name: 'Commission', icon: DollarSign }] : []),
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
@@ -1160,6 +1168,14 @@ const DealDetailPage = () => {
 
                             {activeTab === 'calls' && (
                                 <CallsTab dealId={deal.id} />
+                            )}
+
+                            {activeTab === 'payment-plan' && paymentPlansOn && (
+                                <DealPaymentPlanPanel dealId={deal.id} />
+                            )}
+
+                            {activeTab === 'commission' && commissionsOn && (
+                                <DealCommissionPanel dealId={deal.id} />
                             )}
                         </div>
                     </div>

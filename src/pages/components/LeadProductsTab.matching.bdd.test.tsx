@@ -105,5 +105,13 @@ describe('Given a lead products tab', () => {
             fireEvent.click(await screen.findByRole('button', { name: 'Attach A-101' }));
             expect(await screen.findByRole('alert')).toHaveTextContent('Unit is already held');
         });
+
+        it('Then a 403 UNIT_NOT_ALLOCATED attach tells the agent to ask their manager', async () => {
+            mocks.flags.add(MATCHING);
+            mocks.addLeadProduct.mockRejectedValueOnce(Object.assign(new Error('Forbidden'), { status: 403, body: { error: 'UNIT_NOT_ALLOCATED' } }));
+            renderTab();
+            fireEvent.click(await screen.findByRole('button', { name: 'Attach A-101' }));
+            expect(await screen.findByRole('alert')).toHaveTextContent("This unit isn't allocated to you — ask your manager");
+        });
     });
 });

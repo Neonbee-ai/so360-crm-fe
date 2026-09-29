@@ -10,6 +10,9 @@ export const RE_FLAGS = {
     UNIT_BOOKING: 'submodule:crm:unit_booking',
     PROPERTY_MATCHING: 'submodule:crm:property_matching',
     RE_WIDGETS: 'submodule:crm:re_widgets',
+    PAYMENT_PLANS: 'submodule:crm:payment_plans',
+    COMMISSIONS: 'submodule:crm:commissions',
+    UNIT_ALLOCATION: 'action:crm:unit_allocation',
 } as const;
 
 /**

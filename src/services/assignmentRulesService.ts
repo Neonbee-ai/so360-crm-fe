@@ -27,6 +27,13 @@ export interface AssignmentCondition {
     value: string | string[];
 }
 
+/**
+ * RE Phase C: where the rule's pool comes from. `project_assigned` = the
+ * agents allocated to the lead's project (resolved server-side); the
+ * target fields are ignored then. Absent/null = the rule's own target.
+ */
+export type AssignmentPoolSource = 'project_assigned';
+
 export interface AssignmentRule {
     id: string;
     name: string;
@@ -42,6 +49,8 @@ export interface AssignmentRule {
     skip_on_leave?: boolean;
     /** Reassign when the owner logs no activity within this many minutes. null = never. */
     reassign_after_minutes?: number | null;
+    /** RE Phase C — see AssignmentPoolSource. */
+    pool_source?: AssignmentPoolSource | null;
 }
 
 /** Longest reassign window crm-be accepts: one week. */
@@ -117,7 +126,11 @@ export function toRuleBody(rule: AssignmentRuleInput): Record<string, unknown> {
     };
     if (rule.skip_on_leave !== undefined) body.skip_on_leave = rule.skip_on_leave;
     if (rule.reassign_after_minutes !== undefined) body.reassign_after_minutes = rule.reassign_after_minutes;
-    if (rule.target_type === 'department') {
+    if (rule.pool_source !== undefined) body.pool_source = rule.pool_source;
+    if (rule.pool_source === 'project_assigned') {
+        body.target_type = 'users';
+        body.target_user_ids = [];
+    } else if (rule.target_type === 'department') {
         if (rule.target_department_id) body.target_department_id = rule.target_department_id;
     } else {
         body.target_user_ids = rule.target_user_ids;
@@ -134,8 +147,10 @@ export function parseReassignMinutes(text: string): number | null {
 /** Why the rule cannot be saved yet, or null when it can. */
 export function validateRule(rule: AssignmentRuleInput): string | null {
     if (!rule.name.trim()) return 'Give the rule a name.';
-    if (rule.target_type === 'department' && !rule.target_department_id) return 'Pick a department.';
-    if (rule.target_type === 'users' && rule.target_user_ids.length === 0) return 'Pick at least one person.';
+    if (rule.pool_source !== 'project_assigned') {
+        if (rule.target_type === 'department' && !rule.target_department_id) return 'Pick a department.';
+        if (rule.target_type === 'users' && rule.target_user_ids.length === 0) return 'Pick at least one person.';
+    }
     const minutes = rule.reassign_after_minutes;
     if (minutes !== undefined && minutes !== null
         && (!Number.isInteger(minutes) || minutes < 1 || minutes > MAX_REASSIGN_AFTER_MINUTES)) {
