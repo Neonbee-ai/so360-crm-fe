@@ -263,14 +263,14 @@ const TasksPage = () => {
             accessor: (task: Task) => {
                 const isOverdue = isTaskOverdue(task);
                 return (
-                    <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
-                        {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
-                        {formatters.formatDate(dueDateCalendarDay(task.due_date))}
+                    <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                        {isOverdue ? <AlertCircle size={14} className="shrink-0" /> : <Calendar size={14} className="shrink-0" />}
+                        <span>{formatters.formatDate(dueDateCalendarDay(task.due_date))}</span>
                         {/* Only a task the user gave a time to shows one. */}
                         {hasTimeComponent(task.due_date) && (
                             <span className="text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
                         )}
-                        {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
+                        {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter">Overdue</span>}
                     </div>
                 );
             }
