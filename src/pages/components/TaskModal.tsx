@@ -59,6 +59,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     // creating from a Deal context — either way the user can change/clear it.
     const [projectId, setProjectId] = useState(task?.project_id || dealProjectId || '');
     const [projects, setProjects] = useState<any[]>([]);
+    // True when the Projects request FAILED, distinct from an empty list, so a
+    // 403/5xx never masquerades as "you have no projects".
+    const [projectsLoadFailed, setProjectsLoadFailed] = useState(false);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -93,14 +96,16 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             setDeals(dealsData);
         };
         const fetchProjects = async () => {
-            // getProjects() already swallows its own network errors and
-            // resolves []; the extra try/catch guards call sites (older test
-            // doubles, etc.) that don't stub this method at all.
+            // throwOnError so a failed request is reported to the user instead of
+            // being indistinguishable from "no projects". The catch also guards
+            // test doubles that don't stub this method at all.
             try {
-                const projectsData = await crmService.getProjects();
+                const projectsData = await crmService.getProjects({ throwOnError: true });
                 setProjects(projectsData || []);
+                setProjectsLoadFailed(false);
             } catch {
                 setProjects([]);
+                setProjectsLoadFailed(true);
             }
         };
         fetchUsers();
@@ -446,6 +451,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 </select>
                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                             </div>
+                            {projectsLoadFailed && (
+                                <p role="alert" className="text-[11px] text-amber-500">
+                                    Couldn't load your Projects, so the list above may be incomplete. Close and reopen this form to retry.
+                                </p>
+                            )}
                             {projectId && (
                                 <p className="text-[11px] text-slate-500">
                                     This task will be synchronized with the selected Project.

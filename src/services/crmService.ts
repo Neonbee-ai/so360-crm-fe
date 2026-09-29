@@ -2364,7 +2364,13 @@ export const crmService = {
         return apiClient.post<{ id: string }>(`/deals/${dealId}/create-project`, {});
     },
 
-    async getProjects(): Promise<any[]> {
+    /**
+     * @param opts.throwOnError - Default false: failures resolve [] so best-effort
+     * callers (DealDetailPage) never break. A caller that renders the result as a
+     * picker passes true to tell "the request failed" from "there are no
+     * projects" — otherwise a 403/5xx looks like the project vanished.
+     */
+    async getProjects(opts?: { throwOnError?: boolean }): Promise<any[]> {
         try {
             // Was: apiClient.get('/projects-api/projects') — apiClient is bound to
             // CRM_API_ORIGIN, so that resolved to `${CRM_API_ORIGIN}/projects-api/projects`,
@@ -2384,6 +2390,7 @@ export const crmService = {
             return [];
         } catch (error: any) {
             console.error('[CRM] Failed to fetch projects list:', error.message);
+            if (opts?.throwOnError) throw error;
             // Return empty array instead of mock data - let UI handle empty state
             return [];
         }

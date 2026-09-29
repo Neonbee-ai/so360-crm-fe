@@ -1324,3 +1324,30 @@ describe('Given the assignee field of the task form', () => {
     expect(mockGetProjectTeamUserIds).not.toHaveBeenCalled();
   });
 });
+
+// ── Project list load failure ───────────────────────────────────────────────
+// Regression (Pulse 6825d296): a failing GET /projects was swallowed to [] and
+// the dropdown showed only "No Project", so a 403/5xx read as "the project
+// vanished". The modal now asks for errors and says so.
+describe('Given the Projects request fails while the modal loads', () => {
+  it('When the modal renders / Then the user is told the Project list could not be loaded', async () => {
+    mockGetProjects.mockRejectedValue(new Error('Forbidden'));
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't load your projects/i);
+    expect(screen.getByDisplayValue('No Project')).toBeInTheDocument();
+  });
+
+  it('When the modal renders / Then it asks getProjects to throw rather than swallow', async () => {
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalledWith({ throwOnError: true }));
+  });
+});
+
+describe('Given the Projects request succeeds', () => {
+  it('When the modal renders / Then no load-failure warning is shown', async () => {
+    render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});

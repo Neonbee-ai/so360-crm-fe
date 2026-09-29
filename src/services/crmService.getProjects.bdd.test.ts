@@ -97,6 +97,24 @@ describe('crmService.getProjects()', () => {
         });
     });
 
+    describe('Given the Projects backend request fails and the caller opts in with { throwOnError: true }', () => {
+        it('When getProjects() is called / Then it rejects, so a picker can tell "failed" from "no projects"', async () => {
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+            vi.stubGlobal('fetch', mockFetchFail(403, 'Forbidden'));
+
+            await expect(crmService.getProjects({ throwOnError: true })).rejects.toBeDefined();
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+        });
+
+        it('When the request succeeds / Then the projects are returned as usual', async () => {
+            const projects = [makeProject()];
+            vi.stubGlobal('fetch', mockFetchOk({ data: projects }));
+
+            await expect(crmService.getProjects({ throwOnError: true })).resolves.toEqual(projects);
+        });
+    });
+
     describe('Given a network error (fetch itself rejects)', () => {
         it('When getProjects() is called / Then it returns [] rather than propagating the rejection', async () => {
             vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
