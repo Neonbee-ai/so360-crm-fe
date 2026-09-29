@@ -919,45 +919,139 @@ describe('LeadDetailPage', () => {
   // stored it and the persisted record is back on screen.
   describe('Given the profile editor is saving', () => {
     // The editor validates before saving; the shared fixture has no first name.
+    const editableLead = (overrides: any = {}) =>
+      makeLead({ first_name: 'John', last_name: 'Doe', phone: '+91 9876543210', ...overrides });
+
+    const deferred = <T,>() => {
+      let resolve!: (v: T) => void;
+      let reject!: (e: unknown) => void;
+      const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+      return { promise, resolve, reject };
+    };
+
+    const openEditor = async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      fireEvent.click(document.querySelector('[title="Edit Intelligence"]') as HTMLElement);
+      await waitFor(() => expect(document.querySelector('[title="Save Changes"]')).not.toBeNull());
+    };
+
+    const clickSave = () =>
+      fireEvent.click(document.querySelector('[title="Save Changes"]') as HTMLElement);
+
+    const changeEmail = (from: string, to: string) =>
+      fireEvent.change(screen.getByDisplayValue(from), { target: { value: to } });
+
     beforeEach(() => {
-      mockGetLeadById.mockResolvedValue(makeLead({ first_name: 'John', last_name: 'Doe', phone: '+91 9876543210' }));
+      mockGetLeadById.mockResolvedValue(editableLead());
     });
 
-    it('When Save is clicked twice while the PATCH is in flight / Then only one update is sent and edit mode waits for the reload', async () => {
-      let resolveUpdate!: (v: any) => void;
-      mockUpdateLead.mockImplementationOnce(() => new Promise((r) => { resolveUpdate = r; }));
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      fireEvent.click(document.querySelector('[title="Edit Intelligence"]') as HTMLElement);
-      await waitFor(() => expect(document.querySelector('[title="Save Changes"]')).not.toBeNull());
-      const fetchesBeforeSave = mockGetLeadById.mock.calls.length;
+    it('When Save is clicked / Then the button turns into a disabled, busy spinner until the save settles', async () => {
+      const update = deferred<any>();
+      mockUpdateLead.mockReturnValueOnce(update.promise);
+      await openEditor();
 
-      fireEvent.click(document.querySelector('[title="Save Changes"]') as HTMLElement);
-      await waitFor(() => expect(document.querySelector('[title="Saving…"]')).not.toBeNull());
-      const savingBtn = document.querySelector('[title="Saving…"]') as HTMLButtonElement;
-      expect(savingBtn).toBeDisabled();
-      fireEvent.click(savingBtn);
-      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+      clickSave();
 
-      resolveUpdate({});
-      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
-      expect(mockGetLeadById.mock.calls.length).toBeGreaterThan(fetchesBeforeSave);
-    });
-
-    it('When the update fails / Then the editor stays open and Save is usable again', async () => {
-      mockUpdateLead.mockRejectedValueOnce(new Error('boom'));
-      render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      fireEvent.click(document.querySelector('[title="Edit Intelligence"]') as HTMLElement);
-      await waitFor(() => expect(document.querySelector('[title="Save Changes"]')).not.toBeNull());
-
-      fireEvent.click(document.querySelector('[title="Save Changes"]') as HTMLElement);
-
-      await waitFor(() => {
-        const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement | null;
+      const savingBtn = await waitFor(() => {
+        const btn = document.querySelector('[title="Saving…"]') as HTMLButtonElement | null;
         expect(btn).not.toBeNull();
-        expect(btn).not.toBeDisabled();
+        return btn!;
       });
+      expect(savingBtn).toBeDisabled();
+      expect(savingBtn).toHaveAttribute('aria-busy', 'true');
+      expect(savingBtn.querySelector('.animate-spin')).not.toBeNull();
+
+      update.resolve({});
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeDisabled();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toHaveAttribute('aria-busy', 'false');
+    });
+
+    it('When Save is clicked again while the first save is in flight / Then only one update is sent', async () => {
+      const update = deferred<any>();
+      mockUpdateLead.mockReturnValueOnce(update.promise);
+      await openEditor();
+
+      clickSave();
+      await waitFor(() => expect(document.querySelector('[title="Saving…"]')).not.toBeNull());
+      fireEvent.click(document.querySelector('[title="Saving…"]') as HTMLElement);
+      fireEvent.click(document.querySelector('[title="Saving…"]') as HTMLElement);
+
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+      update.resolve({});
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+    });
+
+    it('When the update succeeds / Then edit mode stays open until the persisted lead has been reloaded', async () => {
+      await openEditor();
+      const fetchesBeforeSave = mockGetLeadById.mock.calls.length;
+      const reload = deferred<any>();
+      mockGetLeadById.mockReturnValueOnce(reload.promise);
+
+      clickSave();
+
+      await waitFor(() => expect(mockUpdateLead).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(mockGetLeadById).toHaveBeenCalledTimes(fetchesBeforeSave + 1));
+      // Update is done but the reload is not: still saving, still editing.
+      expect(document.querySelector('[title="Saving…"]')).not.toBeNull();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toBeNull();
+
+      reload.resolve(editableLead());
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+    });
+
+    it('When the email is edited and saved / Then the value shown afterwards is the one the server returns on reload', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'new@acme.com');
+      mockGetLeadById.mockResolvedValue(editableLead({ contact_email: 'new@acme.com' }));
+
+      clickSave();
+
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockUpdateLead).toHaveBeenCalledWith('lead-1', expect.objectContaining({ contact_email: 'new@acme.com' }));
+      expect(screen.getByText('new@acme.com')).toBeInTheDocument();
+      expect(screen.queryByText('john@acme.com')).not.toBeInTheDocument();
+    });
+
+    it('When the server rejects the save with a 4xx message / Then that message is shown, the editor stays open with the entered email, and Save is usable again', async () => {
+      const err = Object.assign(new Error('Email is invalid for this org'), { status: 422 });
+      mockUpdateLead.mockRejectedValueOnce(err);
+      await openEditor();
+      changeEmail('john@acme.com', 'typed@acme.com');
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Email is invalid for this org'));
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+      expect(screen.getByDisplayValue('typed@acme.com')).toBeInTheDocument();
+    });
+
+    it('When the save fails without a client-error status / Then a generic failure toast is shown and the editor stays open', async () => {
+      mockUpdateLead.mockRejectedValueOnce(new Error('socket hang up'));
+      await openEditor();
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save changes.'));
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+    });
+
+    it('When a field fails validation / Then no update is sent and the button never enters the saving state', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'not-an-email');
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Please correct the highlighted fields.'));
+      expect(mockUpdateLead).not.toHaveBeenCalled();
+      expect(document.querySelector('[title="Saving…"]')).toBeNull();
+      expect(document.querySelector('[title="Save Changes"]')).not.toBeDisabled();
     });
   });
 

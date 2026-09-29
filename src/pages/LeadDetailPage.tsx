@@ -706,7 +706,6 @@ const LeadDetailPage = () => {
                                 <button
                                     disabled={isSavingInfo}
                                     onClick={async () => {
-                                        if (isSavingInfo) return;
                                         if (isEditingInfo) {
                                             const nextErrors = {
                                                 first_name: validateFirstNameRequired(lead.first_name || ''),
