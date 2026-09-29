@@ -915,6 +915,52 @@ describe('LeadDetailPage', () => {
     });
   });
 
+  // Task 29299155: an edited lead must not look saved until the server has
+  // stored it and the persisted record is back on screen.
+  describe('Given the profile editor is saving', () => {
+    // The editor validates before saving; the shared fixture has no first name.
+    beforeEach(() => {
+      mockGetLeadById.mockResolvedValue(makeLead({ first_name: 'John', last_name: 'Doe', phone: '+91 9876543210' }));
+    });
+
+    it('When Save is clicked twice while the PATCH is in flight / Then only one update is sent and edit mode waits for the reload', async () => {
+      let resolveUpdate!: (v: any) => void;
+      mockUpdateLead.mockImplementationOnce(() => new Promise((r) => { resolveUpdate = r; }));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      fireEvent.click(document.querySelector('[title="Edit Intelligence"]') as HTMLElement);
+      await waitFor(() => expect(document.querySelector('[title="Save Changes"]')).not.toBeNull());
+      const fetchesBeforeSave = mockGetLeadById.mock.calls.length;
+
+      fireEvent.click(document.querySelector('[title="Save Changes"]') as HTMLElement);
+      await waitFor(() => expect(document.querySelector('[title="Saving…"]')).not.toBeNull());
+      const savingBtn = document.querySelector('[title="Saving…"]') as HTMLButtonElement;
+      expect(savingBtn).toBeDisabled();
+      fireEvent.click(savingBtn);
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+
+      resolveUpdate({});
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockGetLeadById.mock.calls.length).toBeGreaterThan(fetchesBeforeSave);
+    });
+
+    it('When the update fails / Then the editor stays open and Save is usable again', async () => {
+      mockUpdateLead.mockRejectedValueOnce(new Error('boom'));
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      fireEvent.click(document.querySelector('[title="Edit Intelligence"]') as HTMLElement);
+      await waitFor(() => expect(document.querySelector('[title="Save Changes"]')).not.toBeNull());
+
+      fireEvent.click(document.querySelector('[title="Save Changes"]') as HTMLElement);
+
+      await waitFor(() => {
+        const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement | null;
+        expect(btn).not.toBeNull();
+        expect(btn).not.toBeDisabled();
+      });
+    });
+  });
+
   describe('Given effectiveFlagsLoaded guard — flicker prevention', () => {
     it('When effectiveFlagsLoaded is explicitly false / Then Create Deal button is absent', async () => {
       mockUseShellBridge.mockReturnValue({ effectiveFlagsLoaded: false, permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true, isFeatureEnabled: () => true } as any);
