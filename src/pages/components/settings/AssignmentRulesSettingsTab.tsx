@@ -40,6 +40,7 @@ function ruleToInput(rule: AssignmentRule): AssignmentRuleInput {
         // column the server does not have yet.
         ...(rule.skip_on_leave !== undefined && { skip_on_leave: rule.skip_on_leave }),
         ...(rule.reassign_after_minutes !== undefined && { reassign_after_minutes: rule.reassign_after_minutes }),
+        ...(rule.pool_source !== undefined && { pool_source: rule.pool_source }),
     };
 }
 
@@ -57,7 +58,9 @@ function conditionSummary(rule: AssignmentRule): string {
 
 function targetSummary(rule: AssignmentRule): string {
     const method = ASSIGNMENT_METHODS.find((m) => m.value === rule.method)?.label ?? rule.method;
-    const who = rule.target_type === 'department'
+    const who = rule.pool_source === 'project_assigned'
+        ? "the lead's project agents"
+        : rule.target_type === 'department'
         ? 'a department'
         : `${rule.target_user_ids?.length ?? 0} ${rule.target_user_ids?.length === 1 ? 'person' : 'people'}`;
     const reassign = rule.reassign_after_minutes ? ` · reassign after ${rule.reassign_after_minutes} min` : '';
@@ -287,20 +290,39 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             <div>
                 <span className={LABEL_CLS}>Assign to</span>
                 <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 w-fit mb-3" role="radiogroup" aria-label="Assign to">
-                    {(['users', 'department'] as const).map((t) => (
-                        <button
-                            key={t}
-                            type="button"
-                            role="radio"
-                            aria-checked={draft.target_type === t}
-                            onClick={() => setDraft((d) => ({ ...d, target_type: t }))}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${draft.target_type === t ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                        >
-                            {t === 'users' ? 'People' : 'Department'}
-                        </button>
-                    ))}
+                    {(['users', 'department'] as const).map((t) => {
+                        const on = draft.pool_source !== 'project_assigned' && draft.target_type === t;
+                        return (
+                            <button
+                                key={t}
+                                type="button"
+                                role="radio"
+                                aria-checked={on}
+                                // Leaving the project pool writes null so the server clears it.
+                                onClick={() => setDraft((d) => ({
+                                    ...d,
+                                    target_type: t,
+                                    ...(d.pool_source === 'project_assigned' ? { pool_source: null } : {}),
+                                }))}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${on ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                                {t === 'users' ? 'People' : 'Department'}
+                            </button>
+                        );
+                    })}
+                    <button
+                        type="button"
+                        role="radio"
+                        aria-checked={draft.pool_source === 'project_assigned'}
+                        onClick={() => setDraft((d) => ({ ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }))}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${draft.pool_source === 'project_assigned' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Project agents
+                    </button>
                 </div>
-                {draft.target_type === 'department' ? (
+                {draft.pool_source === 'project_assigned' ? (
+                    <p className="text-xs text-slate-400">The pool is the agents (and team members) allocated to the lead's project.</p>
+                ) : draft.target_type === 'department' ? (
                     <DepartmentSelector
                         value={draft.target_department_id ?? undefined}
                         onChange={(id: string | null) => setDraft((d) => ({ ...d, target_department_id: id }))}

@@ -50,3 +50,22 @@ export function describeReservation(
     if (status === 'released') return { label: 'Released', tone: 'muted' };
     return null;
 }
+
+/** Shown when `unit_visibility=assigned_only` blocks a hold/book on someone else's unit. */
+export const UNIT_NOT_ALLOCATED_MESSAGE = "This unit isn't allocated to you — ask your manager";
+
+/**
+ * Error text for a failed unit hold/book. The backend answers 403
+ * `UNIT_NOT_ALLOCATED` (as `code`, `error` or in the message) when the unit
+ * belongs to another agent's allocation; that becomes a plain-language hint.
+ * Anything else keeps the backend's own sentence, else the fallback.
+ */
+export function unitBookingErrorMessage(e: unknown, fallback: string): string {
+    const err = (e ?? {}) as { status?: number; message?: string; body?: { code?: unknown; error?: unknown; message?: unknown } | null };
+    if (err.status === 403) {
+        const b = err.body ?? {};
+        const hay = [b.code, b.error, b.message, err.message].map((v) => (typeof v === 'string' ? v : '')).join(' ');
+        if (hay.includes('UNIT_NOT_ALLOCATED')) return UNIT_NOT_ALLOCATED_MESSAGE;
+    }
+    return err.message || fallback;
+}

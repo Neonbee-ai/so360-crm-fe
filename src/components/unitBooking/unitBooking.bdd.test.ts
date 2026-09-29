@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     HOLD_HOUR_OPTIONS, DEFAULT_HOLD_HOURS, holdHoursLabel, filterAvailable, describeReservation,
+    unitBookingErrorMessage, UNIT_NOT_ALLOCATED_MESSAGE,
 } from './unitBooking';
 import type { InventoryItem } from '../../types/crm';
 
@@ -89,6 +90,32 @@ describe('Given describeReservation edge timings', () => {
     describe('When the hold option list is read', () => {
         it('Then every option has a label', () => {
             expect(HOLD_HOUR_OPTIONS.map(holdHoursLabel)).toEqual(['1 day', '2 days', '3 days', '7 days']);
+        });
+    });
+});
+
+describe('Given a failed unit hold or booking', () => {
+    const err = (message: string, status?: number, body?: unknown) => Object.assign(new Error(message), { status, body });
+    describe('When the backend answers 403 UNIT_NOT_ALLOCATED', () => {
+        it.each([
+            ['as body.code', err('Forbidden', 403, { code: 'UNIT_NOT_ALLOCATED' })],
+            ['as body.error', err('Forbidden', 403, { error: 'UNIT_NOT_ALLOCATED' })],
+            ['inside body.message', err('x', 403, { message: 'UNIT_NOT_ALLOCATED: unit u1' })],
+            ['only in the error message', err('UNIT_NOT_ALLOCATED', 403, null)],
+        ])('Then %s reads as the ask-your-manager hint', (_label, e) => {
+            expect(unitBookingErrorMessage(e, 'fallback')).toBe(UNIT_NOT_ALLOCATED_MESSAGE);
+        });
+    });
+    describe('When it is a different 403 or another status', () => {
+        it('Then the backend sentence is kept', () => {
+            expect(unitBookingErrorMessage(err('No access to deals', 403, { code: 42 }), 'fb')).toBe('No access to deals');
+            expect(unitBookingErrorMessage(err('UNIT_NOT_ALLOCATED', 409), 'fb')).toBe('UNIT_NOT_ALLOCATED');
+        });
+    });
+    describe('When there is no message at all', () => {
+        it('Then the fallback is used', () => {
+            expect(unitBookingErrorMessage(undefined, 'Could not add')).toBe('Could not add');
+            expect(unitBookingErrorMessage({ status: 403 }, 'Could not add')).toBe('Could not add');
         });
     });
 });

@@ -107,6 +107,15 @@ describe('Given unit booking is enabled for the tenant', () => {
             fireEvent.click(addButtons[addButtons.length - 1]);
             expect(await screen.findByRole('alert')).toHaveTextContent('Unit A-101 is held on another lead until 30 Sep');
         });
+
+        it('Then a 403 UNIT_NOT_ALLOCATED tells the agent to ask their manager', async () => {
+            mocks.addLeadProduct.mockRejectedValue(Object.assign(new Error('UNIT_NOT_ALLOCATED'), { status: 403, body: { statusCode: 403, code: 'UNIT_NOT_ALLOCATED', message: 'Unit is not allocated to the caller' } }));
+            await openPicker();
+            fireEvent.click(screen.getByText('Unit A-101'));
+            const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
+            fireEvent.click(addButtons[addButtons.length - 1]);
+            expect(await screen.findByRole('alert')).toHaveTextContent("This unit isn't allocated to you — ask your manager");
+        });
     });
 
     describe('When a product line carries a reservation', () => {

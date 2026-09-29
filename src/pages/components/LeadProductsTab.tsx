@@ -7,7 +7,7 @@ import { CustomProductBuildRequestModal } from '../../components/leads/CustomPro
 import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
 import { UnitBookingControls } from '../../components/unitBooking/UnitBookingControls';
 import { ReservationChip } from '../../components/unitBooking/ReservationChip';
-import { DEFAULT_HOLD_HOURS, filterAvailable } from '../../components/unitBooking/unitBooking';
+import { DEFAULT_HOLD_HOURS, filterAvailable, unitBookingErrorMessage } from '../../components/unitBooking/unitBooking';
 import { MatchingUnitsPanel } from '../../components/matching/MatchingUnitsPanel';
 import { MatchingUnit, unitLabel } from '../../services/matchingUnitsService';
 
@@ -308,7 +308,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
             // e.g. the backend rejecting a non-sellable item, or a 409 for a
             // unit already held/sold — say why instead of the product
             // silently not appearing.
-            setAddError(e?.message || 'Could not add the product.');
+            setAddError(unitBookingErrorMessage(e, 'Could not add the product.'));
         }
     };
 
@@ -339,7 +339,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
             });
             load();
         } catch (e: any) {
-            setAddError(e?.message || 'Could not attach the unit.');
+            setAddError(unitBookingErrorMessage(e, 'Could not attach the unit.'));
         }
     };
 
