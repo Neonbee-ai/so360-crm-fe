@@ -157,6 +157,8 @@ const LeadsPage = () => {
   const shell = useShellBridge();
   const canCreateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
   const canUpdateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
+  // RE §26 — UTM / ad attribution filters; off unless the flag is explicitly on.
+  const canFilterAttribution = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:utm_attribution') ?? false);
   // Destructive action — gate on the delete permission, fail closed, independent
   // of canUpdateLead. Mirrors LeadDetailPage.tsx's canDeleteLead; the backend
   // already enforces leads.delete on both the single and bulk delete routes —
@@ -1064,6 +1066,7 @@ const LeadsPage = () => {
                   value={advancedFilter}
                   onApply={handleApplyAdvancedFilter}
                   onClose={() => setShowAdvancedFilters(false)}
+                  includeAttribution={canFilterAttribution}
                 />
               </div>
             )}
