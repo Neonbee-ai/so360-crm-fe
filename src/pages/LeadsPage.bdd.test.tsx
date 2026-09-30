@@ -941,3 +941,62 @@ describe('LeadsPage — Delete Lead permission gating (RBAC)', () => {
     expect(labels).not.toContain('Delete');
   });
 });
+
+describe('Given the RE §26 utm_attribution flag gates the attribution filter fields', () => {
+  const UTM_KEY = 'action:crm:leads:utm_attribution';
+
+  const setBridge = async (over: Record<string, unknown>) => {
+    const shell = await import('@so360/shell-context');
+    vi.mocked(shell.useShellBridge).mockImplementation(() => ({
+      effectiveFlagsLoaded: true,
+      permissionsLoaded: true, hasPermission: () => true, hasAnyPermission: () => true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+      currentOrg: { id: 'org-1' },
+      ...over,
+    }) as any);
+  };
+
+  const fieldOptions = async () => {
+    const user = userEvent.setup();
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    await user.click(screen.getByText('Advanced'));
+    await user.click(screen.getByText(/add condition/i));
+    const select = screen.getByTestId('filter-rule').querySelector('select[aria-label="Field"]')!;
+    return Array.from(select.querySelectorAll('option')).map((o) => (o as HTMLOptionElement).value);
+  };
+
+  describe('When the flag is on and flags are loaded', () => {
+    it('Then the advanced-filter Field picker offers the UTM / ad attribution fields', async () => {
+      await setBridge({ isFeatureEnabled: () => true });
+      const opts = await fieldOptions();
+      expect(opts).toEqual(expect.arrayContaining(['utm_source', 'utm_campaign']));
+    });
+  });
+
+  describe('When the flag is off', () => {
+    it('Then the attribution fields are withheld from the Field picker', async () => {
+      await setBridge({ isFeatureEnabled: (k: string) => k !== UTM_KEY });
+      const opts = await fieldOptions();
+      expect(opts).not.toContain('utm_source');
+      expect(opts).toContain('company_name');
+    });
+  });
+
+  describe('When effective flags have not loaded yet', () => {
+    it('Then the attribution fields stay hidden (fail-closed)', async () => {
+      await setBridge({ effectiveFlagsLoaded: false });
+      const opts = await fieldOptions();
+      expect(opts).not.toContain('utm_source');
+    });
+  });
+
+  describe('When the shell exposes no isFeatureEnabled', () => {
+    it('Then the attribution fields stay hidden (missing checker reads as off)', async () => {
+      await setBridge({ isFeatureEnabled: undefined });
+      const opts = await fieldOptions();
+      expect(opts).not.toContain('utm_source');
+    });
+  });
+});
