@@ -13,6 +13,8 @@ import {
 import { maskedMoney } from '../services/commissionsService';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
+import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { exportService } from '../services/exportService';
 
 export const SALES_PAGE_SIZE = 25;
 
@@ -34,6 +36,7 @@ const TD = 'px-4 py-3 text-xs font-bold text-slate-300 whitespace-nowrap';
  */
 const SalesPage: React.FC = () => {
     const fmt = useCRMFormatters();
+    const canExport = useCanExport('deals.export');
     const [filters, setFilters] = useState<SalesFilters>({});
     const [page, setPage] = useState(1);
     const [rows, setRows] = useState<SaleRow[]>([]);
@@ -87,9 +90,14 @@ const SalesPage: React.FC = () => {
 
     return (
         <div className="p-6 space-y-6">
-            <div>
-                <h1 className="text-2xl font-black text-slate-50">Sales</h1>
-                <p className="text-sm text-slate-400">Every unit sale with its payment progress and commission.</p>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                    <h1 className="text-2xl font-black text-slate-50">Sales</h1>
+                    <p className="text-sm text-slate-400">Every unit sale with its payment progress and commission.</p>
+                </div>
+                {canExport ? (
+                    <ExportMenu label="Export sales" onExport={(format) => exportService.sales(filters, format)} />
+                ) : null}
             </div>
 
             <SalesFiltersBar value={filters} onChange={onFilters} developers={developers} />
