@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../common/Modal';
 import { PartnerSearchDropdown } from '../common/PartnerSearchDropdown';
-import { crmService, settingsApi } from '../../services/crmService';
+import { crmService, settingsApi, leadsApi } from '../../services/crmService';
+import { useCrmDataLayer, CrmCreateSection, missingRequiredCustomFields } from '../../dataLayer/crmDataLayer';
 import { AlertCircle } from 'lucide-react';
 import { CustomFieldDefinition, User, Lead, SourceTypeOption } from '../../types/crm';
 import { useNotify, useActivity, useIdentity } from '@so360/shell-context';
@@ -108,6 +109,12 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     });
 
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
+    // Data Layer Class B values (lead row `custom_fields`, not legacy meta_data).
+    const dl = useCrmDataLayer('crm.lead');
+    const [classBValues, setClassBValues] = useState<Record<string, unknown>>({});
+    // Set when the lead was created but its Class B values failed to save, so a
+    // re-submit retries only the PATCH instead of creating a duplicate lead.
+    const [classBPendingLeadId, setClassBPendingLeadId] = useState<string | null>(null);
     const [leadStages, setLeadStages] = useState<{ id: string, name: string }[]>([]);
     const [sourceTypes, setSourceTypes] = useState<SourceTypeOption[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -194,7 +201,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const isFormValid =
         Object.keys(fieldValidators).every(
             name => !fieldValidators[name]((formData as any)[name] || ''),
-        ) && !missingRequiredCustomField;
+        ) && !missingRequiredCustomField
+        && missingRequiredCustomFields(dl, classBValues).length === 0;
 
     const isDuplicate = existingLeads.some(
         name => name && (name as string).toLowerCase() === (formData.company_name || '').toLowerCase() && (formData.company_name || '').length > 0
@@ -221,7 +229,42 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             return;
         }
 
+        const missingClassB = missingRequiredCustomFields(dl, classBValues);
+        if (missingClassB.length > 0) {
+            const labels = dl.fields.filter(f => missingClassB.includes(f.field_key)).map(f => f.label);
+            setError(`Please fill in: ${labels.join(', ')}`);
+            return;
+        }
+
+        // Class B save path: createLead maps FE custom_fields to legacy meta_data,
+        // so Class B values are written by the native PATCH /leads/:id
+        // ({ custom_fields }) right after the create.
+        const saveClassB = async (leadId: string) => {
+            if (Object.keys(classBValues).length === 0) return true;
+            try {
+                await leadsApi.update(leadId, { custom_fields: classBValues });
+                return true;
+            } catch {
+                setClassBPendingLeadId(leadId);
+                setError("The lead was created, but its custom fields couldn't be saved. Submit again to retry.");
+                return false;
+            }
+        };
+
         setIsSubmitting(true);
+
+        if (classBPendingLeadId) {
+            try {
+                if (await saveClassB(classBPendingLeadId)) {
+                    setClassBPendingLeadId(null);
+                    onSuccess();
+                    onClose();
+                }
+            } finally {
+                setIsSubmitting(false);
+            }
+            return;
+        }
 
         try {
             const newLead = await crmService.createLead({
@@ -234,6 +277,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             } as any);
             // Fire-and-forget notification + activity
             recordActivity({ eventType: 'lead.created', eventCategory: 'crm', description: `Created lead "${formData.company_name}"`, resourceType: 'lead', resourceId: newLead?.id }).catch(() => {});
+            if (newLead?.id && !(await saveClassB(newLead.id))) {
+                onSuccess();
+                return;
+            }
             onSuccess();
             onClose();
         } catch (err) {
@@ -645,6 +692,14 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         </div>
                     </div>
                 )}
+
+                <CrmCreateSection
+                    dl={dl}
+                    mode="create"
+                    values={classBValues}
+                    onValuesChange={setClassBValues}
+                    className="pt-4 border-t border-slate-800"
+                />
 
                 <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
                     <button
