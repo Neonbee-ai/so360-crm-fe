@@ -8,6 +8,7 @@ import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
 import AssignmentRulesSettingsTab from './components/settings/AssignmentRulesSettingsTab';
 import SalesCommissionSettingsTab from './components/settings/SalesCommissionSettingsTab';
+import LeadTemperatureSettingsCard from './components/settings/LeadTemperatureSettingsCard';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 
 type SettingsTab = 'pipeline' | 'lead-stages' | 'custom-fields' | 'sources' | 'scoring' | 'deal-naming' | 'assignment' | 'sales-commission';
@@ -89,6 +90,7 @@ const SettingsPage = () => {
     const commissionsEnabled = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
     const unitAllocationEnabled = useCrmFeatureFlag(RE_FLAGS.UNIT_ALLOCATION);
     const salesSettingsEnabled = commissionsEnabled || unitAllocationEnabled;
+    const leadTemperatureEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_TEMPERATURE);
     const [settings, setSettings] = useState<CRMSettings | null>(null);
     const [activeTab, setActiveTab] = useState<SettingsTab>('pipeline');
     const [isLoading, setIsLoading] = useState(true);
@@ -1047,6 +1049,7 @@ const SettingsPage = () => {
                 )}
                 {activeTab === 'scoring' && (
                     <div className="space-y-6">
+                        {leadTemperatureEnabled && <LeadTemperatureSettingsCard canWrite={canWriteSettings} />}
                         {/* ── Rules Section ── */}
                         <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
                             <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">

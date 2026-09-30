@@ -13,6 +13,8 @@ export const RE_FLAGS = {
     PAYMENT_PLANS: 'submodule:crm:payment_plans',
     COMMISSIONS: 'submodule:crm:commissions',
     UNIT_ALLOCATION: 'action:crm:unit_allocation',
+    /** RE plan E §20 — Hot/Warm/Cold badge, list filter, thresholds settings. */
+    LEAD_TEMPERATURE: 'submodule:crm:re_lead_temperature',
 } as const;
 
 /**
