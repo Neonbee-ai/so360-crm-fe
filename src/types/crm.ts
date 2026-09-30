@@ -84,6 +84,20 @@ export interface Lead {
     gclid?: string | null;
     fbclid?: string | null;
     crm_campaign_id?: string | null;
+    /** RE §20 — band stored by crm-be (null until first computed). */
+    temperature?: LeadTemperature | null;
+    temperature_score?: number | null;
+    temperature_factors?: LeadTemperatureFactors | null;
+}
+
+export type LeadTemperature = 'hot' | 'warm' | 'cold';
+
+export interface LeadTemperatureFactors {
+    budget_fit: number;
+    timeline: number;
+    engagement: number;
+    source_quality: number;
+    days_since_contact: number | null;
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
