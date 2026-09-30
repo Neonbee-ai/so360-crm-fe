@@ -54,6 +54,8 @@ export interface Lead {
     notes: Note[];
     documents?: Attachment[];
     custom_fields?: Record<string, any>;
+    /** Data Layer Class B values (leads.custom_fields column). `custom_fields` above is the legacy meta_data mapping. */
+    class_b_custom_fields?: Record<string, any>;
     creator?: User;
     customer_category?: 'b2b' | 'b2c';
     tax_id?: string;

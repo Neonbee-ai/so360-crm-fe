@@ -52,6 +52,8 @@ import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
+import { useCrmDataLayer, useCrmInjectedTabs, CrmRecordScope, CrmSlotRegion } from '../dataLayer/crmDataLayer';
+import { useCrmRecordContext } from '../dataLayer/useCrmRecordContext';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
@@ -381,6 +383,21 @@ const LeadDetailPage = () => {
         return () => setCurrentEntity(null);
     }, [lead?.id, lead?.company_name, setCurrentEntity]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Neonbee Data Layer (Class B): Shell-registered renderers for crm.lead are
+    // injected into named regions below. Disabled (flag off / older Shell) =>
+    // every region renders nothing and the page is exactly the native page.
+    const dataLayer = useCrmDataLayer('crm.lead');
+    const canEditLeadCustomFields = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false);
+    const onLeadClassBSaved = useCallback((values: Record<string, unknown>) => {
+        setLead(prev => (prev ? { ...prev, class_b_custom_fields: values } : prev));
+    }, []);
+    const dlCtx = useCrmRecordContext(dataLayer, lead?.id, lead as any, {
+        canEdit: canEditLeadCustomFields,
+        onChanged: fetchLeadData,
+        onSaved: onLeadClassBSaved,
+    });
+    const dlTabs = useCrmInjectedTabs(dataLayer, dlCtx);
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center text-slate-500 gap-3">
@@ -524,6 +541,7 @@ const LeadDetailPage = () => {
         }`;
 
     return (
+        <CrmRecordScope dl={dataLayer} recordId={lead.id}>
         <div className="p-8">
             <header className="mb-8">
                 <DetailBackLink fallbackTo={backRoute} className="mb-4" />
@@ -576,6 +594,7 @@ const LeadDetailPage = () => {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        <CrmSlotRegion dl={dataLayer} slot="detail.actions" region="actions" ctx={dlCtx} className="flex gap-2" />
                         {/* Icon-only: the trash glyph is unambiguous, and dropping the
                             word keeps the destructive secondary action from competing
                             with the primary CTA beside it. Name is carried by
@@ -997,6 +1016,9 @@ const LeadDetailPage = () => {
                         </div>
                     </section>
 
+                    {/* Data Layer: main region, directly after the core profile fields */}
+                    <CrmSlotRegion dl={dataLayer} slot="detail.section" region="main" ctx={dlCtx} className="space-y-6" />
+
                     {/* Workspace Tabs - Now below Profile Data */}
                     <div ref={workspaceRef} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit scroll-mt-6">
                         {/* The settings cog sits outside the scrolling strip: inside it, it
@@ -1016,6 +1038,11 @@ const LeadDetailPage = () => {
                                             </button>
                                         );
                                     })}
+                                    {dlTabs.map((t) => (
+                                        <button key={t.id} data-dl-tab={t.id} onClick={() => setActiveTab(t.id as TabType)} className={tabCls(t.id as TabType)}>
+                                            {t.label}
+                                        </button>
+                                    ))}
                                 </div>
                                 <div
                                     aria-hidden="true"
@@ -1643,12 +1670,16 @@ const LeadDetailPage = () => {
                                 <MeetingsTab key={meetingsRefreshKey} leadId={lead.id} />
                             )}
 
+                            {dlTabs.map((t) => (activeTab === (t.id as TabType) ? <React.Fragment key={t.id}>{t.render()}</React.Fragment> : null))}
+
                         </div>
                     </div>
                 </div>
 
                 {/* Sidebar Context */}
                 <div className="space-y-8">
+
+                    <CrmSlotRegion dl={dataLayer} slot="detail.sidebar" region="sidebar" ctx={dlCtx} className="space-y-8" />
 
                     {canUseNeuraAi && (
                         <NeuraAiSummaryCard
@@ -2200,6 +2231,7 @@ const LeadDetailPage = () => {
                 />
             )}
         </div >
+        </CrmRecordScope>
     );
 };
 

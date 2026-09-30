@@ -213,6 +213,11 @@ const mapLeadFromApi = (apiLead: any): Lead => {
         tasks: (apiLead.tasks || []).map(mapTaskFromApi),
         activities: (apiLead.activities || []).map(mapActivityFromApi),
         custom_fields: apiLead.meta_data || {},
+        // Data Layer Class B column. Kept separate from the legacy meta_data
+        // mapping above; only present when the backend returns the column.
+        ...(apiLead.custom_fields !== undefined && apiLead.custom_fields !== null
+            ? { class_b_custom_fields: apiLead.custom_fields }
+            : {}),
         contact_email: apiLead.email,
         backend_status: apiLead.status,
         status: STATUS_MAP_BE_TO_FE[apiLead.status] || apiLead.status || 'New'
