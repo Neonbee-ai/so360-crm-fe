@@ -27,6 +27,7 @@ import { CreateLeadModal } from '../components/leads/CreateLeadModal';
 import { ImportHub } from '../components/import/ImportHub';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
+import { useCrmDataLayer, useCrmCustomColumns } from '../dataLayer/crmDataLayer';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
 import { countActiveRules, type FilterGroup } from '../components/leads/leadFilterModel';
@@ -155,6 +156,9 @@ const LeadsPage = () => {
   const { emitNotification } = useNotify();
   const { recordActivity } = useActivity();
   const shell = useShellBridge();
+  // Data Layer Class B list columns (empty unless submodule:data_layer:custom_fields is on)
+  const leadDataLayer = useCrmDataLayer('crm.lead');
+  const dataLayerColumns = useCrmCustomColumns(leadDataLayer);
   const canCreateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.create') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:create') ?? true);
   const canUpdateLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('action:crm:leads:update') ?? true);
   // Destructive action — gate on the delete permission, fail closed, independent
@@ -1085,6 +1089,7 @@ const LeadsPage = () => {
         onRowClick={(lead) => setDetailLead((prev) => (prev?.id === lead.id ? null : lead))}
         bulkActions={bulkActions}
         customFields={customFields}
+        dataLayerColumns={dataLayerColumns}
       />
 
       {/* Pagination */}

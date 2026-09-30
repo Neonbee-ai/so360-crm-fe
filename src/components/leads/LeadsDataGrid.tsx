@@ -46,6 +46,9 @@ import { groupLeadsBy, GROUP_BY_OPTIONS, type GroupByKey } from './leadGrouping'
 import { nextFocusIndex, scrollToRevealIndex } from './leadKeyboardNav';
 import { useIsNarrow } from './useIsNarrow';
 import LeadCardList from './LeadCardList';
+import { formatCustomFieldValue, type CrmCustomColumn } from '../../dataLayer/crmDataLayer';
+
+const EMPTY_DL_COLUMNS: CrmCustomColumn[] = [];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,7 +102,16 @@ export interface LeadsDataGridProps {
   onRowClick: (lead: Lead) => void;
   bulkActions?: BulkAction[];
   customFields?: { id: string; label: string }[];
+  /**
+   * Data Layer Class B columns (flag `submodule:data_layer:custom_fields`).
+   * Values read from `lead.class_b_custom_fields`. Only `sortable` (indexed)
+   * columns get a sort control; the rest are display-only.
+   */
+  dataLayerColumns?: CrmCustomColumn[];
 }
+
+/** Grid key prefix for Data Layer columns (sort field = same key). */
+export const DL_COLUMN_PREFIX = 'dl_';
 
 // ─── Status helpers ────────────────────────────────────────────────────────────
 
@@ -917,6 +929,7 @@ export function LeadsDataGrid({
   onRowClick,
   bulkActions = [],
   customFields = [],
+  dataLayerColumns = EMPTY_DL_COLUMNS,
 }: LeadsDataGridProps) {
   const formatters = useCRMFormatters();
   const fmt = formatters.formatDate;
@@ -971,8 +984,39 @@ export function LeadsDataGrid({
           );
         },
       }));
-    return [...COL_DEFS, ...extras];
-  }, [customFields]);
+    const dlDefs: ColDef[] = dataLayerColumns.map((c) => ({
+      key: `${DL_COLUMN_PREFIX}${c.key}`,
+      label: c.label,
+      defaultWidth: 140,
+      minWidth: 90,
+      ...(c.sortable ? { sortKey: `${DL_COLUMN_PREFIX}${c.key}` } : {}),
+      render: (lead: Lead) => {
+        const text = formatCustomFieldValue(lead.class_b_custom_fields?.[c.key]);
+        return (
+          <span className={text === '—' ? 'text-slate-600 text-sm' : 'text-slate-300 text-sm truncate'}>
+            {text}
+          </span>
+        );
+      },
+    }));
+    return [...COL_DEFS, ...extras, ...dlDefs];
+  }, [customFields, dataLayerColumns]);
+
+  // Data Layer columns are not part of saved grid preferences; they are shown
+  // (just before the actions column) whenever the host passes them.
+  const gridColumns = useMemo(() => {
+    if (!dataLayerColumns.length) return visibleColumns;
+    const dlPrefs: ColumnPreference[] = dataLayerColumns.map((c, i) => ({
+      key: `${DL_COLUMN_PREFIX}${c.key}`,
+      visible: true,
+      width: 140,
+      pinned: false,
+      order: 1000 + i,
+    }));
+    const actionsIdx = visibleColumns.findIndex((c) => c.key === 'actions');
+    if (actionsIdx === -1) return [...visibleColumns, ...dlPrefs];
+    return [...visibleColumns.slice(0, actionsIdx), ...dlPrefs, ...visibleColumns.slice(actionsIdx)];
+  }, [visibleColumns, dataLayerColumns]);
 
   const colDefMap = useMemo(
     () => new Map(allColDefs.map((c) => [c.key, c])),
@@ -997,7 +1041,14 @@ export function LeadsDataGrid({
           case 'created_at': av = new Date(a.created_at).getTime(); bv = new Date(b.created_at).getTime(); break;
           case 'updated_at': av = new Date(a.updated_at ?? 0).getTime(); bv = new Date(b.updated_at ?? 0).getTime(); break;
           case 'lead_score': av = a.auto_score ?? 0; bv = b.auto_score ?? 0; break;
-          default: return 0;
+          default: {
+            if (!s.field.startsWith(DL_COLUMN_PREFIX)) return 0;
+            const k = s.field.slice(DL_COLUMN_PREFIX.length);
+            const ra = a.class_b_custom_fields?.[k];
+            const rb = b.class_b_custom_fields?.[k];
+            av = typeof ra === 'number' ? ra : formatCustomFieldValue(ra);
+            bv = typeof rb === 'number' ? rb : formatCustomFieldValue(rb);
+          }
         }
         const cmp =
           typeof av === 'number' && typeof bv === 'number'
@@ -1076,8 +1127,8 @@ export function LeadsDataGrid({
   }, [showDensityMenu]);
 
   // Compute sticky left offsets
-  const pinnedCols = visibleColumns.filter((c) => c.pinned);
-  const unpinnedCols = visibleColumns.filter((c) => !c.pinned);
+  const pinnedCols = gridColumns.filter((c) => c.pinned);
+  const unpinnedCols = gridColumns.filter((c) => !c.pinned);
   const orderedCols = [...pinnedCols, ...unpinnedCols];
 
   const colLeftOffsets = useMemo(() => {
