@@ -197,6 +197,8 @@ const SalesPage = lazy(() => import('./pages/SalesPage'));
 const CommissionReportPage = lazy(() => import('./pages/CommissionReportPage'));
 // RE Phase D — campaign ROI (§25)
 const CampaignRoiReportPage = lazy(() => import('./pages/CampaignRoiReportPage'));
+// RE Phase F — sales reports (§30)
+const SalesAnalyticsPage = lazy(() => import('./pages/SalesAnalyticsPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -234,6 +236,7 @@ const App = () => {
                     <Route path="sales" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:commissions"><SalesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="reports/commission" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:commissions"><CommissionReportPage /></FlagGuard></PermissionGuard>} />
                     <Route path="reports/campaign-roi" element={<PermissionGuard permission='leads.read'><FlagGuard flagKey="submodule:crm:campaign_roi"><CampaignRoiReportPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="reports/sales" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:re_reports"><SalesAnalyticsPage /></FlagGuard></PermissionGuard>} />
                     <Route path="sales-targets/task-types" element={<PermissionGuard permission='sales_targets.read'><FlagGuard flagKey="submodule:crm:sales_targets"><AdminTaskTypesPage /></FlagGuard></PermissionGuard>} />
                     {/* Retired pages. This router has no catch-all, so a stale
                         bookmark would render a blank pane rather than 404 —
