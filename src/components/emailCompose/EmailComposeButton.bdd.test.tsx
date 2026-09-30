@@ -7,16 +7,18 @@ const h = vi.hoisted(() => ({
     flags: new Set<string>(),
     perms: new Set<string>(),
     loaded: true,
+    bridge: 'default' as 'default' | 'none' | 'noHasPermission',
     listTemplates: vi.fn(),
     preview: vi.fn(),
     send: vi.fn(),
 }));
 
 vi.mock('@so360/shell-context', () => ({
-    useShellBridge: () => ({
-        permissionsLoaded: h.loaded,
-        hasPermission: (p: string) => h.perms.has(p),
-    }),
+    useShellBridge: () => {
+        if (h.bridge === 'none') return undefined;
+        if (h.bridge === 'noHasPermission') return { permissionsLoaded: true };
+        return { permissionsLoaded: h.loaded, hasPermission: (p: string) => h.perms.has(p) };
+    },
 }));
 
 vi.mock('../../hooks/useCrmFeatureFlag', () => ({
@@ -48,6 +50,7 @@ beforeEach(() => {
     h.flags = new Set([FLAG]);
     h.perms = new Set(['activities.create']);
     h.loaded = true;
+    h.bridge = 'default';
     h.listTemplates.mockReset().mockResolvedValue([{ id: 't1', name: 'RE brochure', subject: '{{project}} brochure' }]);
     h.preview.mockReset();
     h.send.mockReset();
@@ -84,6 +87,22 @@ describe('Given the Compose Email button (RE G9)', () => {
         it('Then nothing renders', () => {
             h.perms = new Set(['activities.read']);
             const { container } = render(<EmailComposeButton entityType="deal" entityId={LEAD} />);
+            expect(container).toBeEmptyDOMElement();
+        });
+    });
+
+    describe('When the shell bridge is unavailable', () => {
+        it('Then nothing renders (fail closed)', () => {
+            h.bridge = 'none';
+            const { container } = render(<EmailComposeButton entityType="lead" entityId={LEAD} />);
+            expect(container).toBeEmptyDOMElement();
+        });
+    });
+
+    describe('When the shell bridge exposes no hasPermission function', () => {
+        it('Then nothing renders (fail closed)', () => {
+            h.bridge = 'noHasPermission';
+            const { container } = render(<EmailComposeButton entityType="lead" entityId={LEAD} />);
             expect(container).toBeEmptyDOMElement();
         });
     });
@@ -160,6 +179,20 @@ describe('Given the Compose Email button (RE G9)', () => {
             });
             expect(onSent).toHaveBeenCalledTimes(1);
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('When the email is sent successfully without an onSent callback', () => {
+        it('Then it toasts and closes the modal', async () => {
+            h.send.mockResolvedValueOnce({ success: true });
+            await openModal({ entityType: 'contact' });
+            fireEvent.change(screen.getByLabelText('Subject'), { target: { value: 'Hi' } });
+            fireEvent.change(screen.getByLabelText('Body'), { target: { value: '<p>Hi</p>' } });
+            fireEvent.click(screen.getByRole('button', { name: /Send/ }));
+            await waitFor(() => expect(successSpy).toHaveBeenCalledWith('Email sent'));
+            expect(h.send.mock.calls[0][0]).toBe('contact');
+            await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+            expect(screen.getByRole('button', { name: 'Compose Email' })).toBeInTheDocument();
         });
     });
 
