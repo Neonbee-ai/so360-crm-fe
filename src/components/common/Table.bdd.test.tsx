@@ -118,4 +118,22 @@ describe('Table', () => {
       expect(screen.getByTestId('custom-header')).toBeInTheDocument();
     });
   });
+
+  describe('Given a column has no className', () => {
+    it('When rendered / Then header and cells never get a literal "undefined" class', () => {
+      const { container } = render(<Table data={rows} columns={columns} />);
+      container.querySelectorAll('th, td').forEach((el) => {
+        expect(el.className).not.toContain('undefined');
+      });
+    });
+  });
+
+  describe('Given a column has a className', () => {
+    it('When rendered / Then header and cells include it', () => {
+      const cols = [{ header: 'Name', accessor: 'name' as const, className: 'w-40' }];
+      const { container } = render(<Table data={rows} columns={cols} />);
+      expect(container.querySelector('th')?.className).toContain('w-40');
+      expect(container.querySelector('td')?.className).toContain('w-40');
+    });
+  });
 });
