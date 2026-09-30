@@ -325,7 +325,7 @@ type HubKind = 'leads' | RecordImportKind;
 /**
  * One import entry point for the CRM (RE G10). Each type goes to the importer
  * of the module that owns the record: leads & contacts → crm-be (csv/xlsx),
- * existing clients → Core, projects/towers/units → Inventory, agents →
+ * existing clients (needs contacts.import) → Core, projects/towers/units → Inventory, agents →
  * People Connect's own import page. Types the user cannot create are hidden.
  * Leads keep their own wizard, which replaces the hub rather than stacking.
  */
@@ -350,7 +350,7 @@ export const ImportHub: React.FC<Props> = ({ isOpen, onClose, onImported }) => {
 
     const options: Array<{ key: HubKind | 'agents'; label: string; hint: string; icon: React.ReactNode; show: boolean }> = [
         { key: 'leads', label: 'Leads & contacts', hint: 'CSV or Excel · owner, source, custom fields', icon: <Users size={18} />, show: true },
-        { key: 'clients', label: 'Existing clients', hint: 'CSV · name, email, phone, company, tax ID', icon: <Briefcase size={18} />, show: true },
+        { key: 'clients', label: 'Existing clients', hint: 'CSV · name, email, phone, company, tax ID', icon: <Briefcase size={18} />, show: can('contacts.import') },
         { key: 'projects', label: 'Projects & towers', hint: 'CSV · status, dates, payment plan, commission', icon: <Building2 size={18} />, show: can('categories.create') },
         { key: 'units', label: 'Units', hint: 'CSV · bedrooms, areas, prices, payment plan, commission', icon: <Package size={18} />, show: can('items.import') },
         { key: 'agents', label: 'Agents', hint: 'Opens People Connect import', icon: <UserCheck size={18} />, show: can('employees.import') },

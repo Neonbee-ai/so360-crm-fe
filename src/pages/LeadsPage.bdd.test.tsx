@@ -941,3 +941,45 @@ describe('LeadsPage — Delete Lead permission gating (RBAC)', () => {
     expect(labels).not.toContain('Delete');
   });
 });
+
+// RE G6 (RFP §33): the bulk Export action requires leads.export, fail closed.
+describe('LeadsPage — Export permission gating (RE G6)', () => {
+  const setShell = async (overrides: Record<string, unknown>) => {
+    const { useShellBridge } = await import('@so360/shell-context');
+    vi.mocked(useShellBridge).mockReturnValue({
+      effectiveFlagsLoaded: true,
+      isFeatureEnabled: () => true,
+      isFeatureHidden: () => false,
+      currentOrg: { id: 'org-1' },
+      ...overrides,
+    } as any);
+  };
+  const labels = () => capturedGridProps.bulkActions.map((a: any) => a.label);
+
+  describe('Given the user lacks leads.export', () => {
+    it('then no Export bulk action is offered', async () => {
+      await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c !== 'leads.export' });
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(labels()).not.toContain('Export');
+    });
+  });
+
+  describe('Given the user holds leads.export', () => {
+    it('then the Export bulk action is offered', async () => {
+      await setShell({ permissionsLoaded: true, hasPermission: (c: string) => c === 'leads.export' });
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(labels()).toContain('Export');
+    });
+  });
+
+  describe('Given entitlements have not resolved', () => {
+    it('then Export fails closed even if hasPermission would return true', async () => {
+      await setShell({ permissionsLoaded: false, hasPermission: () => true });
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      expect(labels()).not.toContain('Export');
+    });
+  });
+});
