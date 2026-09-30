@@ -173,9 +173,13 @@ const LeadsPage = () => {
   // RE §20 — Hot/Warm/Cold badge + filter. Off unless the flag resolves true.
   const showTemperature = useCrmFeatureFlag(RE_FLAGS.LEAD_TEMPERATURE);
   // Bulk import (A7) — flag-gated, and only for users who may create leads.
+  // RE G6 (RFP §33): also requires leads.import (the key the backend already
+  // enforces on /lead-intake/import), fail closed.
   const bulkImportEnabled = useCrmFeatureFlag(RE_FLAGS.BULK_IMPORT);
-  const canImportLeads = canCreateLead && bulkImportEnabled;
+  const canImportLeads = canCreateLead && bulkImportEnabled
+    && (shell?.hasPermission?.('leads.import') ?? false);
   // §48 server-side CSV / Excel / PDF export — RBAC-scoped on the server.
+  // RE G6 (RFP §33): leads.export, fail closed until permissions have loaded.
   const canExportLeads = useCanExport('leads.export', RE_FLAGS.DATA_EXPORT);
   const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
   const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
@@ -705,11 +709,11 @@ const LeadsPage = () => {
       options: leadSources.map((s) => ({ label: s, value: s })),
       onSelect: (ids: string[], source: string) => handleBulkSourceChange(ids, source),
     },
-    {
+    ...(canExportLeads ? [{
       label: 'Export',
       icon: <Download size={14} />,
       onClick: (ids: string[]) => handleBulkExport(ids),
-    },
+    }] : []),
     // Destructive bulk action — gate on leads.delete, fail closed. Previously
     // shown to every user regardless of permission (backend rejects it, but the
     // control shouldn't be offered in the first place). See canDeleteLead above.
@@ -720,7 +724,7 @@ const LeadsPage = () => {
       onClick: (ids: string[]) => handleBulkDelete(ids),
     }] : []),
   ].filter((a: any) => !a.options || a.options.length > 0),
-  [users, leadStages, leadSources, canDeleteLead, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
+  [users, leadStages, leadSources, canDeleteLead, canExportLeads, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
   return (
     <div className="px-4 pt-3 pb-6 md:px-6" ref={listAnchorRef}>

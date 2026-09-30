@@ -55,6 +55,7 @@ describe('Given the useCrmFeatureFlag hook', () => {
                 PAYMENT_PLANS: 'submodule:crm:payment_plans',
                 COMMISSIONS: 'submodule:crm:commissions',
                 UNIT_ALLOCATION: 'action:crm:unit_allocation',
+                EMAIL_COMPOSE: 'action:crm:leads:email_compose',
             });
         });
     });

@@ -63,7 +63,7 @@ const toMap = async (kind: string, text: string) => {
 
 beforeEach(() => {
     vi.clearAllMocks();
-    h.perms = new Set(['categories.create', 'items.import', 'employees.import']);
+    h.perms = new Set(['contacts.import', 'categories.create', 'items.import', 'employees.import']);
     h.loaded = true;
     h.importClients.mockResolvedValue({ created: 1, updated: 1, skipped: 0, problems: [{ row: 4, message: 'partner create failed' }] });
     h.importProjects.mockResolvedValue({ created: 0, updated: 0, skipped: 2, problems: [] });
@@ -88,12 +88,18 @@ describe('Given the CRM import hub', () => {
     });
 
     describe('When permissions are missing or not loaded yet', () => {
-        it('Then only leads and clients are offered', () => {
+        it('Then only leads are offered', () => {
             h.perms = new Set();
             renderHub();
             expect(screen.queryByText('Projects & towers')).toBeNull();
             expect(screen.queryByText('Units')).toBeNull();
             expect(screen.queryByText('Agents')).toBeNull();
+            expect(screen.queryByText('Existing clients')).toBeNull();
+            expect(screen.getByText('Leads & contacts')).toBeInTheDocument();
+        });
+        it('Then existing clients are offered only with contacts.import (RE G6)', () => {
+            h.perms = new Set(['contacts.import']);
+            renderHub();
             expect(screen.getByText('Existing clients')).toBeInTheDocument();
         });
         it('Then nothing gated shows before permissions load', () => {

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
+import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { validateEmailRequired } from '../utils/emailValidation';
@@ -578,6 +579,8 @@ const LeadDetailPage = () => {
                         </p>
                     </div>
                     <div className="flex gap-2">
+                        {/* RE G9 — flag + activities.create gated; renders nothing otherwise. */}
+                        <EmailComposeButton entityType="lead" entityId={lead.id} />
                         {/* Icon-only: the trash glyph is unambiguous, and dropping the
                             word keeps the destructive secondary action from competing
                             with the primary CTA beside it. Name is carried by
