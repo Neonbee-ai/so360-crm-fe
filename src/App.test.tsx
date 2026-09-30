@@ -204,3 +204,27 @@ describe('Given the RE Phase C sales + commission report routes', () => {
     },
   );
 });
+
+describe('Given the RE Phase D campaign ROI route', () => {
+  it('When /reports/campaign-roi is opened with the campaign ROI feature locked / Then the upgrade prompt is shown for that flag', async () => {
+    const asked: string[] = [];
+    shellState.getFeatureState = (flag) => { asked.push(flag); return 'locked'; };
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/upgrade plan/i)).toBeTruthy();
+    expect(asked).toContain('submodule:crm:campaign_roi');
+  });
+
+  it('When /reports/campaign-roi is opened by a user without leads.read / Then the page is withheld with a notice', async () => {
+    shellState.hasPermission = (c) => c !== 'leads.read';
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
+  });
+});
