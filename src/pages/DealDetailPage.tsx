@@ -26,7 +26,7 @@ import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import DetailBackLink from '../components/common/DetailBackLink';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import { useCrmDataLayer, useCrmInjectedTabs, CrmRecordScope, CrmSlotRegion } from '../dataLayer/crmDataLayer';
-import { useCrmRecordContext } from '../dataLayer/useCrmRecordContext';
+import { useCrmRecordContext, type ClassBRowRefresh } from '../dataLayer/useCrmRecordContext';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
 
@@ -536,8 +536,8 @@ const DealDetailPage = () => {
     // Class B values share deals.custom_fields with the legacy "Additional Info"
     // tab; saves merge over the current object so neither side drops keys.
     const dataLayer = useCrmDataLayer('crm.deal');
-    const onDealClassBSaved = useCallback((values: Record<string, unknown>) => {
-        setDeal(prev => (prev ? { ...prev, custom_fields: { ...(prev.custom_fields || {}), ...values } } : prev));
+    const onDealClassBSaved = useCallback((values: Record<string, unknown>, refresh: ClassBRowRefresh) => {
+        setDeal(prev => (prev ? { ...prev, ...refresh, custom_fields: { ...(prev.custom_fields || {}), ...values } } : prev));
     }, []);
     const dlCtx = useCrmRecordContext(dataLayer, deal?.id, deal as any, {
         canEdit: canEditDeal,

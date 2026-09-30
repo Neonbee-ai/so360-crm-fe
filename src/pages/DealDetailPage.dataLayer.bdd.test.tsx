@@ -295,12 +295,12 @@ describe('Given the data-layer flag is ON', () => {
     expect(screen.queryByTestId('probe-secret')).toBeNull();
   });
 
-  it('When a renderer saves / Then the module PATCHes /deals/:id with merged custom_fields and the page reflects it', async () => {
+  it('When a renderer saves / Then the module PATCHes /deals/:id with only the changed custom_fields and the page reflects it', async () => {
     mockDealsApiUpdate.mockResolvedValueOnce({ id: 'deal-1', custom_fields: { Priority: 'High', plate: 'KL-07' } });
     dl.regs = [reg({ id: 'sec' })];
     await renderLoaded();
     fireEvent.click(screen.getByText('save-sec'));
-    await waitFor(() => expect(mockDealsApiUpdate).toHaveBeenCalledWith('deal-1', { custom_fields: { Priority: 'High', plate: 'KL-07' } }));
+    await waitFor(() => expect(mockDealsApiUpdate).toHaveBeenCalledWith('deal-1', { custom_fields: { plate: 'KL-07' } }));
     await waitFor(() => expect(screen.getByTestId('probe-sec-value').textContent).toBe('KL-07'));
   });
 });

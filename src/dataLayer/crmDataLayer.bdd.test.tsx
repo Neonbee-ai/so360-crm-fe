@@ -68,7 +68,7 @@ import {
     useCrmCustomColumns, CrmSlotRegion, CrmRecordScope, CrmCreateSection, useCrmInjectedTabs,
     missingRequiredCustomFields, formatCustomFieldValue, isDataLayerAvailable, DATA_LAYER_CUSTOM_FIELDS_FLAG,
 } from './crmDataLayer';
-import { saveClassBCustomFields, currentClassBValues, recordVersion } from './classBSave';
+import { saveClassBCustomFields, currentClassBValues, recordVersion, wireVersion, isVersionConflict } from './classBSave';
 
 beforeEach(() => {
     dl.flag = true;
@@ -319,23 +319,66 @@ describe('Given list custom-field columns', () => {
 });
 
 describe('Given the Class B native save path', () => {
-    test('When a lead saves / Then only Class B values are merged and PATCHed as custom_fields via leadsApi', async () => {
-        api.leads.update.mockResolvedValue({ id: 'lead-1', custom_fields: { legacy: 1 }, class_b_custom_fields: { a: 1, b: 2 } });
-        const lead = { id: 'lead-1', custom_fields: { legacy: 1 }, class_b_custom_fields: { a: 1 } };
+    const httpError = (status: number, body: any) => Object.assign(new Error(body?.message ?? `HTTP ${status}`), { status, body });
+
+    test('When a lead saves / Then only the changed Class B keys are PATCHed as custom_fields via leadsApi', async () => {
+        api.leads.update.mockResolvedValue({ id: 'lead-1', custom_fields: { legacy: 1 }, class_b_custom_fields: { a: 1, b: 2 }, custom_fields_version: 2 });
+        const lead = { id: 'lead-1', custom_fields: { legacy: 1 }, class_b_custom_fields: { a: 1 }, custom_fields_version: 1 };
         const res = await saveClassBCustomFields('crm.lead', 'lead-1', lead, { b: 2 });
-        expect(api.leads.update).toHaveBeenCalledWith('lead-1', { custom_fields: { a: 1, b: 2 } });
+        expect(api.leads.update).toHaveBeenCalledWith('lead-1', { custom_fields: { b: 2 }, version: 1 });
         expect(res.ok).toBe(true);
         expect(res.record?.custom_fields).toEqual({ a: 1, b: 2 });
     });
-    test('When a deal saves / Then existing custom_fields are merged and PATCHed via dealsApi', async () => {
+    test('When a deal saves / Then only the changed keys are PATCHed via dealsApi (backend merges)', async () => {
         api.deals.update.mockResolvedValue({ id: 'd1', custom_fields: { x: 1, y: 2 } });
         await saveClassBCustomFields('crm.deal', 'd1', { custom_fields: { x: 1 } }, { y: 2 });
-        expect(api.deals.update).toHaveBeenCalledWith('d1', { custom_fields: { x: 1, y: 2 } });
+        expect(api.deals.update).toHaveBeenCalledWith('d1', { custom_fields: { y: 2 } });
     });
     test('When a partner saves / Then it PATCHes via partnersApi', async () => {
         api.partners.update.mockResolvedValue({ id: 'p1', custom_fields: { z: 3 } });
         await saveClassBCustomFields('core.partner', 'p1', null, { z: 3 });
         expect(api.partners.update).toHaveBeenCalledWith('p1', { custom_fields: { z: 3 } });
+    });
+    test('When the row carries custom_fields_version / Then it is sent as version in the PATCH body', async () => {
+        api.deals.update.mockResolvedValue({ id: 'd1', custom_fields: { y: 2 }, custom_fields_version: 5 });
+        await saveClassBCustomFields('crm.deal', 'd1', { custom_fields: {}, custom_fields_version: 4, updated_at: 't' }, { y: 2 });
+        expect(api.deals.update).toHaveBeenCalledWith('d1', { custom_fields: { y: 2 }, version: 4 });
+    });
+    test('When an explicit version is passed / Then it wins over the row version', async () => {
+        api.deals.update.mockResolvedValue({ id: 'd1', custom_fields: { y: 2 } });
+        await saveClassBCustomFields('crm.deal', 'd1', { custom_fields: {}, custom_fields_version: 4 }, { y: 2 }, 7);
+        expect(api.deals.update).toHaveBeenCalledWith('d1', { custom_fields: { y: 2 }, version: 7 });
+    });
+    test('When only updated_at is available / Then no version is sent', async () => {
+        api.deals.update.mockResolvedValue({ id: 'd1', custom_fields: { y: 2 } });
+        await saveClassBCustomFields('crm.deal', 'd1', { custom_fields: {}, updated_at: '2026-09-30T09:00:00Z' }, { y: 2 });
+        expect(api.deals.update).toHaveBeenCalledWith('d1', { custom_fields: { y: 2 } });
+    });
+    test('When a value is cleared / Then null is sent so the backend deletes the key', async () => {
+        api.deals.update.mockResolvedValue({ id: 'd1' });
+        const res = await saveClassBCustomFields('crm.deal', 'd1', { custom_fields: { x: 1, y: 2 } }, { y: null });
+        expect(api.deals.update).toHaveBeenCalledWith('d1', { custom_fields: { y: null } });
+        expect(res.record?.custom_fields).toEqual({ x: 1 });
+    });
+    test('When the save succeeds / Then the returned record carries the new custom_fields_version', async () => {
+        api.deals.update.mockResolvedValue({ id: 'd1', custom_fields: { y: 2 }, custom_fields_version: 9 });
+        const res = await saveClassBCustomFields('crm.deal', 'd1', { custom_fields: {}, custom_fields_version: 8 }, { y: 2 });
+        expect(res).toMatchObject({ ok: true, record: { custom_fields: { y: 2 }, custom_fields_version: 9 } });
+    });
+    test('When the backend answers 409 DATASET_VERSION_CONFLICT / Then the result is a conflict, not a thrown error', async () => {
+        api.deals.update.mockRejectedValue(httpError(409, { code: 'DATASET_VERSION_CONFLICT', message: 'Record changed' }));
+        const res = await saveClassBCustomFields('crm.deal', 'd1', { custom_fields: {}, custom_fields_version: 3 }, { y: 2 });
+        expect(res).toMatchObject({ ok: false, conflict: true });
+    });
+    test('When the backend answers 400 DATASET_FIELD_UNKNOWN / Then its message is returned verbatim', async () => {
+        api.deals.update.mockRejectedValue(httpError(400, { code: 'DATASET_FIELD_UNKNOWN', message: 'Unknown custom field "colour"' }));
+        const res = await saveClassBCustomFields('crm.deal', 'd1', {}, { colour: 'red' });
+        expect(res).toEqual({ ok: false, error: 'Unknown custom field "colour"' });
+    });
+    test('When a validation error carries a message array / Then the messages are joined', async () => {
+        api.deals.update.mockRejectedValue(httpError(400, { code: 'DATASET_FIELD_INVALID', message: ['a is required', 'b too long'] }));
+        const res = await saveClassBCustomFields('crm.deal', 'd1', {}, { a: '' });
+        expect(res).toEqual({ ok: false, error: 'a is required; b too long' });
     });
     test('When the native API fails / Then the result is not ok with the error message', async () => {
         api.deals.update.mockRejectedValue(new Error('boom'));
@@ -347,9 +390,20 @@ describe('Given the Class B native save path', () => {
         expect(currentClassBValues('crm.deal', { custom_fields: { a: 1 } })).toEqual({ a: 1 });
         expect(currentClassBValues('core.partner', { custom_fields: [1] })).toEqual({});
     });
-    test('When deriving the version / Then version wins over updated_at', () => {
-        expect(recordVersion({ version: 3, updated_at: 't' })).toBe(3);
+    test('When deriving the version / Then custom_fields_version wins over updated_at', () => {
+        expect(recordVersion({ custom_fields_version: 3, updated_at: 't' })).toBe(3);
         expect(recordVersion({ updated_at: 't' })).toBe('t');
         expect(recordVersion(null)).toBeNull();
+    });
+    test('When deriving the wire version / Then only integers (or digit strings) are sent', () => {
+        expect(wireVersion(4)).toBe(4);
+        expect(wireVersion('4')).toBe(4);
+        expect(wireVersion('2026-09-30T09:00:00Z')).toBeUndefined();
+        expect(wireVersion(null)).toBeUndefined();
+    });
+    test('When classifying errors / Then 409 or the conflict code is a version conflict', () => {
+        expect(isVersionConflict({ status: 409 })).toBe(true);
+        expect(isVersionConflict({ body: { code: 'DATASET_VERSION_CONFLICT' } })).toBe(true);
+        expect(isVersionConflict({ status: 400, body: { code: 'DATASET_FIELD_UNKNOWN' } })).toBe(false);
     });
 });

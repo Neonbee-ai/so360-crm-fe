@@ -13,7 +13,7 @@ import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import DetailBackLink from '../components/common/DetailBackLink';
 import { useCrmDataLayer, useCrmInjectedTabs, CrmRecordScope, CrmSlotRegion } from '../dataLayer/crmDataLayer';
-import { useCrmRecordContext } from '../dataLayer/useCrmRecordContext';
+import { useCrmRecordContext, type ClassBRowRefresh } from '../dataLayer/useCrmRecordContext';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -246,8 +246,8 @@ const PartnerDetailPage = () => {
     // canEdit mirrors the native page, which offers Edit to anyone who can
     // open it (route guarded by companies.read / partners.manage).
     const dataLayer = useCrmDataLayer('core.partner');
-    const onPartnerClassBSaved = useCallback((values: Record<string, unknown>) => {
-        setPartner((prev: any) => (prev ? { ...prev, custom_fields: { ...(prev.custom_fields || {}), ...values } } : prev));
+    const onPartnerClassBSaved = useCallback((values: Record<string, unknown>, refresh: ClassBRowRefresh) => {
+        setPartner((prev: any) => (prev ? { ...prev, ...refresh, custom_fields: { ...(prev.custom_fields || {}), ...values } } : prev));
     }, []);
     const dlCtx = useCrmRecordContext(dataLayer, partner?.id, partner, { canEdit: true, onChanged: fetchData, onSaved: onPartnerClassBSaved });
     const dlTabs = useCrmInjectedTabs(dataLayer, dlCtx);

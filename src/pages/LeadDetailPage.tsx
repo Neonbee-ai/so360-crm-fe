@@ -53,7 +53,7 @@ import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
 import { useCrmDataLayer, useCrmInjectedTabs, CrmRecordScope, CrmSlotRegion } from '../dataLayer/crmDataLayer';
-import { useCrmRecordContext } from '../dataLayer/useCrmRecordContext';
+import { useCrmRecordContext, type ClassBRowRefresh } from '../dataLayer/useCrmRecordContext';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
@@ -388,8 +388,8 @@ const LeadDetailPage = () => {
     // every region renders nothing and the page is exactly the native page.
     const dataLayer = useCrmDataLayer('crm.lead');
     const canEditLeadCustomFields = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false);
-    const onLeadClassBSaved = useCallback((values: Record<string, unknown>) => {
-        setLead(prev => (prev ? { ...prev, class_b_custom_fields: values } : prev));
+    const onLeadClassBSaved = useCallback((values: Record<string, unknown>, refresh: ClassBRowRefresh) => {
+        setLead(prev => (prev ? { ...prev, ...refresh, class_b_custom_fields: values } : prev));
     }, []);
     const dlCtx = useCrmRecordContext(dataLayer, lead?.id, lead as any, {
         canEdit: canEditLeadCustomFields,

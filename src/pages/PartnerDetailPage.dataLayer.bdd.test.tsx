@@ -211,12 +211,12 @@ describe('Given the data-layer flag is ON', () => {
     expect(screen.queryByTestId('probe-secret')).toBeNull();
   });
 
-  it('When a renderer saves / Then the module PATCHes /partners/:id with merged custom_fields and the page reflects it', async () => {
+  it('When a renderer saves / Then the module PATCHes /partners/:id with only the changed custom_fields and the page reflects it', async () => {
     mockPartnersUpdate.mockResolvedValueOnce({ ...partner, custom_fields: { region: 'south', tier: 'gold' } });
     dl.regs = [reg({ id: 'sec' })];
     await renderLoaded();
     fireEvent.click(screen.getByText('save-sec'));
-    await waitFor(() => expect(mockPartnersUpdate).toHaveBeenCalledWith('partner-1', { custom_fields: { region: 'south', tier: 'gold' } }));
+    await waitFor(() => expect(mockPartnersUpdate).toHaveBeenCalledWith('partner-1', { custom_fields: { tier: 'gold' } }));
     await waitFor(() => expect(screen.getByTestId('probe-sec-value').textContent).toBe('gold'));
   });
 });
