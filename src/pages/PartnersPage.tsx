@@ -23,7 +23,7 @@ import {
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
-import { useCrmDataLayer, useCrmCustomColumns, formatCustomFieldValue } from '../dataLayer/crmDataLayer';
+import { useCrmDataLayer, useCrmCustomColumns, formatCustomFieldValue, CrmCreateSection, missingRequiredCustomFields } from '../dataLayer/crmDataLayer';
 
 // `dl_<key>` = Data Layer Class B column (indexed fields only)
 type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value' | `dl_${string}`;
@@ -71,6 +71,9 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
     });
     const [users, setUsers] = useState<any[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
+    // Data Layer Class B values (partner row `custom_fields`; legacy defs stay in meta_data).
+    const dl = useCrmDataLayer('core.partner');
+    const [classBValues, setClassBValues] = useState<Record<string, unknown>>({});
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -112,6 +115,12 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         };
         setFieldErrors(nextFieldErrors);
         if (pErr || apErr || Object.values(nextFieldErrors).some(Boolean)) return;
+        const missingClassB = missingRequiredCustomFields(dl, classBValues);
+        if (missingClassB.length > 0) {
+            const labels = dl.fields.filter(f => missingClassB.includes(f.field_key)).map(f => f.label);
+            setError(`Please fill in: ${labels.join(', ')}`);
+            return;
+        }
         setSaving(true);
         setError(null);
         try {
@@ -137,6 +146,8 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 value_of_purchase: form.value_of_purchase ? parseFloat(form.value_of_purchase) : undefined,
                 total_purchase_till_date: form.total_purchase_till_date ? parseFloat(form.total_purchase_till_date) : undefined,
                 meta_data: Object.keys(form.custom_fields).length ? form.custom_fields : undefined,
+                // Class B values ride the native POST /partners payload.
+                ...(Object.keys(classBValues).length ? { custom_fields: classBValues } : {}),
             });
             onCreated();
         } catch (err: any) {
@@ -428,6 +439,14 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 </div>
                             </div>
                         )}
+
+                        <CrmCreateSection
+                            dl={dl}
+                            mode="create"
+                            values={classBValues}
+                            onValuesChange={setClassBValues}
+                            className="pt-4 border-t border-slate-800"
+                        />
 
                     </div>
                 </form>
