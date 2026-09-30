@@ -12,6 +12,8 @@ import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import DetailBackLink from '../components/common/DetailBackLink';
+import { useCrmDataLayer, useCrmInjectedTabs, CrmRecordScope, CrmSlotRegion } from '../dataLayer/crmDataLayer';
+import { useCrmRecordContext } from '../dataLayer/useCrmRecordContext';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -93,7 +95,8 @@ const PartnerDetailPage = () => {
     const [deals, setDeals] = useState<any>(null);
     const [commissions, setCommissions] = useState<any>(null);
     const [activities, setActivities] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    // `dl:<id>` ids belong to data-layer tabs injected by Shell renderers.
+    const [activeTab, setActiveTab] = useState<TabType | `dl:${string}`>('overview');
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<any>({});
@@ -238,6 +241,17 @@ const PartnerDetailPage = () => {
                 : 'text-slate-500 hover:text-slate-300'
         }`;
 
+    // Neonbee Data Layer (Class B custom fields) — inert unless the
+    // submodule:data_layer:custom_fields flag is on and renderers exist.
+    // canEdit mirrors the native page, which offers Edit to anyone who can
+    // open it (route guarded by companies.read / partners.manage).
+    const dataLayer = useCrmDataLayer('core.partner');
+    const onPartnerClassBSaved = useCallback((values: Record<string, unknown>) => {
+        setPartner((prev: any) => (prev ? { ...prev, custom_fields: { ...(prev.custom_fields || {}), ...values } } : prev));
+    }, []);
+    const dlCtx = useCrmRecordContext(dataLayer, partner?.id, partner, { canEdit: true, onChanged: fetchData, onSaved: onPartnerClassBSaved });
+    const dlTabs = useCrmInjectedTabs(dataLayer, dlCtx);
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center text-slate-500 gap-3 p-8">
@@ -263,6 +277,7 @@ const PartnerDetailPage = () => {
     const editInputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50';
 
     return (
+        <CrmRecordScope dl={dataLayer} recordId={partner.id}>
         <div className="p-8">
 
             {/* Header */}
@@ -307,6 +322,7 @@ const PartnerDetailPage = () => {
                             )}
                         </div>
                     </div>
+                    <CrmSlotRegion dl={dataLayer} slot="detail.actions" region="actions" ctx={dlCtx} className="flex flex-wrap gap-3" />
                 </div>
             </header>
 
@@ -316,6 +332,9 @@ const PartnerDetailPage = () => {
                 <button className={tabCls('deals')} onClick={() => setActiveTab('deals')}>Referred Deals</button>
                 <button className={tabCls('commissions')} onClick={() => setActiveTab('commissions')}>Royalties</button>
                 <button className={tabCls('activity')} onClick={() => setActiveTab('activity')}>Activity</button>
+                {dlTabs.map((t) => (
+                    <button key={t.id} data-dl-tab={t.id} className={tabCls(t.id as TabType)} onClick={() => setActiveTab(t.id as `dl:${string}`)}>{t.label}</button>
+                ))}
             </div>
 
             {/* Overview Tab */}
@@ -631,6 +650,12 @@ const PartnerDetailPage = () => {
                     )}
                 </div>
             )}
+            {activeTab === 'overview' && (
+                <>
+                    <CrmSlotRegion dl={dataLayer} slot="detail.section" region="main" ctx={dlCtx} className="mt-6 space-y-6" />
+                    <CrmSlotRegion dl={dataLayer} slot="detail.sidebar" region="sidebar" ctx={dlCtx} className="mt-6 space-y-6" />
+                </>
+            )}
 
             {/* Referred Deals Tab */}
             {activeTab === 'deals' && (
@@ -810,6 +835,8 @@ const PartnerDetailPage = () => {
                 </div>
             )}
 
+            {dlTabs.map((t) => (activeTab === t.id ? <React.Fragment key={t.id}>{t.render()}</React.Fragment> : null))}
+
             {markPaidId && (
                 <MarkPaidModal
                     commissionId={markPaidId}
@@ -818,6 +845,7 @@ const PartnerDetailPage = () => {
                 />
             )}
         </div>
+        </CrmRecordScope>
     );
 };
 
