@@ -142,6 +142,38 @@ describe('Feature: Sales reports page', () => {
         });
     });
 
+    describe('Given the report has data but one section is empty', () => {
+        it('When rendered / Then that section says there is nothing to show', async () => {
+            svc.get.mockResolvedValue({ ...data, by_project: [] });
+            renderPage();
+            const section = await screen.findByTestId('sa-section-by_project');
+            expect(within(section).getByText('Nothing to show.')).toBeInTheDocument();
+            expect(within(section).queryByRole('table')).toBeNull();
+        });
+    });
+
+    describe('Given the page unmounts mid-request', () => {
+        it('When the report resolves late / Then nothing is rendered or thrown', async () => {
+            let resolve: (v: unknown) => void = () => {};
+            svc.get.mockReturnValue(new Promise((r) => { resolve = r; }));
+            const { unmount } = renderPage();
+            unmount();
+            resolve(data);
+            await Promise.resolve();
+            expect(screen.queryByTestId('sa-section-by_agent')).toBeNull();
+        });
+
+        it('When the report fails late / Then no error is shown or thrown', async () => {
+            let reject: (e: unknown) => void = () => {};
+            svc.get.mockReturnValue(new Promise((_r, j) => { reject = j; }));
+            const { unmount } = renderPage();
+            unmount();
+            reject(Object.assign(new Error('boom'), { status: 500 }));
+            await Promise.resolve();
+            expect(screen.queryByRole('alert')).toBeNull();
+        });
+    });
+
     describe('Given an invalid date range', () => {
         it('When From is after To / Then the range error shows and no new request is made', async () => {
             svc.get.mockResolvedValue(data);
@@ -173,6 +205,14 @@ describe('Feature: sales report view model', () => {
         it('then rows without a key still get a unique key', () => {
             const s = buildSections(normalizeSalesAnalytics({ by_agent: [{}, {}] }), String);
             expect(s[0].rows.map((r) => r.key)).toEqual(['by_agent-0', 'by_agent-1']);
+        });
+    });
+
+    describe('Given lost reasons and agents without an id', () => {
+        it('then their rows fall back to positional keys', () => {
+            const s = buildSections(normalizeSalesAnalytics({ lost_reasons: [{ label: 'Price' }], agent_performance: [{ name: 'Nadia' }] }), String);
+            expect(s.find((x) => x.section === 'lost_reasons')!.rows[0].key).toBe('lost-0');
+            expect(s.find((x) => x.section === 'agent_performance')!.rows[0].key).toBe('agent-0');
         });
     });
 

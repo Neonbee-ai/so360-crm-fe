@@ -150,3 +150,17 @@ describe('Given the CRM dashboard', () => {
         });
     });
 });
+
+describe('Given the dashboard header period switcher', () => {
+    describe('When the user picks Monthly and then Yearly again', () => {
+        it('Then stats are refetched for the monthly and then the yearly period', async () => {
+            render(<DashboardPage />);
+            await ready();
+            fireEvent.click(screen.getByRole('button', { name: 'Monthly' }));
+            await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'monthly' })));
+            fireEvent.click(screen.getByRole('button', { name: 'Yearly' }));
+            await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'yearly' })));
+            expect(screen.getByRole('button', { name: 'Yearly' }).className).toContain('bg-slate-700');
+        });
+    });
+});

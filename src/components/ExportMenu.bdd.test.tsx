@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, renderHook } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, renderHook, act } from '@testing-library/react';
 
 const bridge = vi.hoisted(() => ({ value: {} as any }));
 vi.mock('@so360/shell-context', () => ({ useShellBridge: () => bridge.value }));
@@ -42,6 +42,22 @@ describe('Feature: ExportMenu', () => {
             finish();
             await waitFor(() => expect((screen.getByRole('button', { name: 'Export deals as PDF' }) as HTMLButtonElement).disabled).toBe(false));
             expect(screen.queryByRole('alert')).toBeNull();
+        });
+
+        it('then a click handler re-entered while an export is running is ignored', async () => {
+            let finish: () => void = () => {};
+            const onExport = vi.fn(() => new Promise<void>((r) => { finish = r; }));
+            render(<ExportMenu label="Export deals" onExport={onExport} className="ml-2" />);
+            fireEvent.click(screen.getByRole('button', { name: 'Export deals as CSV' }));
+            const pdf = screen.getByRole('button', { name: 'Export deals as PDF' }) as HTMLButtonElement;
+            await waitFor(() => expect(pdf.disabled).toBe(true));
+            // A disabled button swallows DOM clicks, so drive React's handler directly
+            // to prove the busy guard itself blocks a second export.
+            const propsKey = Object.keys(pdf).find((k) => k.startsWith('__reactProps$'))!;
+            await act(async () => { (pdf as any)[propsKey].onClick(); });
+            expect(onExport).toHaveBeenCalledTimes(1);
+            expect(screen.getByRole('group', { name: 'Export deals' }).parentElement!.className).toContain('ml-2');
+            await act(async () => { finish(); });
         });
 
         it('then an explained 4xx is shown as the error', async () => {
@@ -99,6 +115,11 @@ describe('Feature: useCanExport', () => {
     describe('Given a flag is required', () => {
         it('then the flag being off hides export', () => {
             bridge.value.isFeatureEnabled = (k: string) => k !== 'action:crm:data_export';
+            expect(can('leads.export', 'action:crm:data_export')).toBe(false);
+        });
+
+        it('then a shell without isFeatureEnabled fails closed', () => {
+            delete bridge.value.isFeatureEnabled;
             expect(can('leads.export', 'action:crm:data_export')).toBe(false);
         });
 
