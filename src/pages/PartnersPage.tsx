@@ -23,8 +23,10 @@ import {
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
+import { useCrmDataLayer, useCrmCustomColumns, formatCustomFieldValue } from '../dataLayer/crmDataLayer';
 
-type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value';
+// `dl_<key>` = Data Layer Class B column (indexed fields only)
+type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value' | `dl_${string}`;
 type SortDirection = 'asc' | 'desc' | null;
 
 const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
@@ -465,6 +467,9 @@ const PartnersPage = () => {
     useListScrollRestore('partners', listAnchorRef, !isLoading);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const { settings } = useBusinessSettings();
+    // Data Layer Class B list columns (empty unless submodule:data_layer:custom_fields is on)
+    const partnerDataLayer = useCrmDataLayer('core.partner');
+    const dataLayerColumns = useCrmCustomColumns(partnerDataLayer);
     const formatters = useFormatters({
         currency: settings?.base_currency || 'USD',
         locale: settings?.document_language || 'en-US',
@@ -537,7 +542,14 @@ const PartnersPage = () => {
                     case 'grading': aVal = a.grading || ''; bVal = b.grading || ''; break;
                     case 'total_deals': aVal = a.total_deals || 0; bVal = b.total_deals || 0; break;
                     case 'total_deal_value': aVal = a.total_deal_value || 0; bVal = b.total_deal_value || 0; break;
-                    default: return 0;
+                    default: {
+                        if (!sortField.startsWith('dl_')) return 0;
+                        const k = sortField.slice(3);
+                        const ra = a.custom_fields?.[k];
+                        const rb = b.custom_fields?.[k];
+                        aVal = typeof ra === 'number' && typeof rb === 'number' ? ra : formatCustomFieldValue(ra);
+                        bVal = typeof ra === 'number' && typeof rb === 'number' ? rb : formatCustomFieldValue(rb);
+                    }
                 }
                 if (typeof aVal === 'string') return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
                 return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
@@ -621,6 +633,16 @@ const PartnersPage = () => {
             ),
             className: 'text-right',
         },
+        // Class B columns: indexed fields sortable, the rest display-only.
+        ...dataLayerColumns.map((c) => ({
+            header: c.sortable
+                ? <SortableHeader label={c.label} field={`dl_${c.key}`} />
+                : c.label,
+            accessor: (p: any) => {
+                const text = formatCustomFieldValue(p.custom_fields?.[c.key]);
+                return <span className={text === '—' ? 'text-slate-600 text-sm' : 'text-slate-300 text-sm'}>{text}</span>;
+            },
+        })),
     ];
 
     return (

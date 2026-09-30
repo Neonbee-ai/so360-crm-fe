@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
 import * as ShellContextModule from '@so360/shell-context';
-import { useShellBridge } from '@so360/shell-context';
 
 /**
  * Neonbee Dynamic Data Layer — Class B enablement for CRM record pages.
@@ -170,8 +169,17 @@ export interface CrmDataLayerState {
 
 const EMPTY_FIELDS: DlFieldDef[] = [];
 
+/**
+ * `in` check (not a named import) so pages whose tests vi.mock() shell-context
+ * without useShellBridge keep rendering natively (data layer off).
+ */
+const useBridge: () => unknown =
+    'useShellBridge' in (ShellContextModule as object) && typeof (ShellContextModule as any).useShellBridge === 'function'
+        ? (ShellContextModule as any).useShellBridge
+        : () => null;
+
 function useFlagOn(): { on: boolean; isAdmin: boolean } {
-    const shell = useShellBridge() as any;
+    const shell = useBridge() as any;
     const on = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.(DATA_LAYER_CUSTOM_FIELDS_FLAG) ?? false);
     return { on: !!on, isAdmin: shell?.isAdmin === true };
 }
