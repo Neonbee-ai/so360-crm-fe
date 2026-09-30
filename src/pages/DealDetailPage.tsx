@@ -25,6 +25,8 @@ import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import DetailBackLink from '../components/common/DetailBackLink';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import { useCrmDataLayer, useCrmInjectedTabs, CrmRecordScope, CrmSlotRegion } from '../dataLayer/crmDataLayer';
+import { useCrmRecordContext } from '../dataLayer/useCrmRecordContext';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
 
@@ -528,6 +530,22 @@ const DealDetailPage = () => {
         }
     };
 
+    // Neonbee Data Layer (Class B): Shell-registered renderers for crm.deal are
+    // injected into named regions below. Disabled (flag off / older Shell) =>
+    // every region renders nothing and the page is exactly the native page.
+    // Class B values share deals.custom_fields with the legacy "Additional Info"
+    // tab; saves merge over the current object so neither side drops keys.
+    const dataLayer = useCrmDataLayer('crm.deal');
+    const onDealClassBSaved = useCallback((values: Record<string, unknown>) => {
+        setDeal(prev => (prev ? { ...prev, custom_fields: { ...(prev.custom_fields || {}), ...values } } : prev));
+    }, []);
+    const dlCtx = useCrmRecordContext(dataLayer, deal?.id, deal as any, {
+        canEdit: canEditDeal,
+        onChanged: fetchData,
+        onSaved: onDealClassBSaved,
+    });
+    const dlTabs = useCrmInjectedTabs(dataLayer, dlCtx);
+
     if (isLoading) {
         return (
             <div className="p-8" data-testid="deal-detail-skeleton">
@@ -578,6 +596,7 @@ const DealDetailPage = () => {
     }
 
     return (
+        <CrmRecordScope dl={dataLayer} recordId={deal.id}>
         <div className="p-8">
 
             <header className="mb-8">
@@ -652,6 +671,7 @@ const DealDetailPage = () => {
                     </div>
 
                     <div className="flex flex-wrap justify-end gap-3">
+                        <CrmSlotRegion dl={dataLayer} slot="detail.actions" region="actions" ctx={dlCtx} className="flex flex-wrap gap-3" />
                         {/* Icon-only — see LeadDetailPage for the rationale. */}
                         {canDeleteDeal && <button
                             onClick={() => setShowDeleteConfirm(true)}
@@ -846,6 +866,8 @@ const DealDetailPage = () => {
                         </div>
                     </section>
 
+                    <CrmSlotRegion dl={dataLayer} slot="detail.section" region="main" ctx={dlCtx} className="space-y-8" />
+
                     {/* Navigation Tabs */}
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
                         <div className="relative flex border-b border-slate-800 bg-slate-900/50 min-w-0">
@@ -868,6 +890,17 @@ const DealDetailPage = () => {
                                         className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
                                     >
                                         <tab.icon size={14} /> {tab.name}
+                                    </button>
+                                ))}
+                                {dlTabs.map((t) => (
+                                    <button
+                                        key={t.id}
+                                        data-dl-tab={t.id}
+                                        ref={activeTab === (t.id as TabType) ? activeDealTabRef : undefined}
+                                        onClick={() => setActiveTab(t.id as TabType)}
+                                        className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === (t.id as TabType) ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        {t.label}
                                     </button>
                                 ))}
                             </div>
@@ -1177,12 +1210,15 @@ const DealDetailPage = () => {
                             {activeTab === 'commission' && commissionsOn && (
                                 <DealCommissionPanel dealId={deal.id} />
                             )}
+
+                            {dlTabs.map((t) => (activeTab === (t.id as TabType) ? <React.Fragment key={t.id}>{t.render()}</React.Fragment> : null))}
                         </div>
                     </div>
                 </div>
 
                 {/* Sidebar Context */}
                 <div className="space-y-8">
+                    <CrmSlotRegion dl={dataLayer} slot="detail.sidebar" region="sidebar" ctx={dlCtx} className="space-y-8" />
                     {/* Cross-module linked records */}
                     {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
                         <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
@@ -1580,6 +1616,7 @@ const DealDetailPage = () => {
             )}
 
         </div>
+        </CrmRecordScope>
     );
 };
 
