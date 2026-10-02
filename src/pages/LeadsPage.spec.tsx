@@ -96,7 +96,7 @@ describe('Given LeadsPage — Lead Management', () => {
   test('Given import leads button / When clicked / Then opens CSV import modal', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      const importBtn = screen.queryByRole('button', { name: /import|csv/i });
+      const importBtn = screen.queryByRole('button', { name: /^import$/i });
       if (importBtn) {
         fireEvent.click(importBtn);
       }

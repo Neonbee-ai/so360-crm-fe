@@ -58,6 +58,10 @@ describe('Feature: sales analytics service', () => {
             expect(a.agent_performance[0]).toMatchObject({ key: 'u1', name: 'Unknown agent' });
         });
 
+        it('then an agent with neither person_id nor user_id gets an empty key', () => {
+            expect(normalizeSalesAnalytics({ agent_performance: [{ name: 'Nadia' }] }).agent_performance[0]).toMatchObject({ key: '', name: 'Nadia' });
+        });
+
         it('then an agent is keyed by People Connect person_id before user_id', () => {
             expect(a.agent_performance[1]).toMatchObject({ key: 'p9', name: 'Bilal' });
         });
