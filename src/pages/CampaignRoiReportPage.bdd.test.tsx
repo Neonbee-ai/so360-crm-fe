@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import type { CampaignRoiRow } from '../services/crmCampaignService';
 
@@ -115,6 +115,66 @@ describe('Feature: Campaign ROI report', () => {
         it('then null renders as a dash and ratios as percentages', () => {
             expect(formatRatio(null)).toBe('—');
             expect(formatRatio(0.125)).toBe('12.5%');
+        });
+    });
+    describe('Given the page is left before the report settles', () => {
+        it('When the request resolves after unmount / Then no state update is attempted', async () => {
+            let resolve!: (v: CampaignRoiRow[]) => void;
+            svc.roiReport.mockReturnValue(new Promise((r) => { resolve = r; }));
+            const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const { unmount } = render(<CampaignRoiReportPage />);
+            unmount();
+            await act(async () => { resolve([row()]); });
+            expect(errSpy).not.toHaveBeenCalled();
+            errSpy.mockRestore();
+        });
+        it('When the request rejects after unmount / Then the error is swallowed silently', async () => {
+            let reject!: (e: unknown) => void;
+            svc.roiReport.mockReturnValue(new Promise((_r, j) => { reject = j; }));
+            const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const { unmount } = render(<CampaignRoiReportPage />);
+            unmount();
+            await act(async () => { reject(Object.assign(new Error('late'), { status: 500 })); });
+            expect(errSpy).not.toHaveBeenCalled();
+            errSpy.mockRestore();
+        });
+    });
+
+    describe('Given the request rejects with no error object', () => {
+        it('When the rejection value is undefined / Then the generic fallback message shows', async () => {
+            svc.roiReport.mockRejectedValue(undefined);
+            render(<CampaignRoiReportPage />);
+            expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the campaign ROI report.');
+            expect(screen.queryByTestId('campaign-roi-forbidden')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Given a campaign with no spend and no leads', () => {
+        it('When the report loads / Then CPL and ROI render as dashes and ROI is not highlighted', async () => {
+            svc.roiReport.mockResolvedValue([
+                row({ utm_campaign: null }, {
+                    leads: 0, qualified: 0, deals_won: 0, revenue: 0, spend: 0, cpl: null, roi: null, conversion_rate: null,
+                }),
+            ]);
+            render(<CampaignRoiReportPage />);
+            expect(await screen.findByTestId('roi-total-cpl')).toHaveTextContent('—');
+            expect(screen.getByTestId('roi-total-roi')).toHaveTextContent('—');
+            const cells = within(screen.getByTestId('campaign-roi-row')).getAllByRole('cell');
+            const roiCell = cells[cells.length - 1];
+            expect(roiCell).toHaveTextContent('—');
+            expect(roiCell).not.toHaveClass('text-rose-400');
+            expect(within(cells[0]).queryByText(/utm:/)).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Given the service resolves with no list at all', () => {
+        it('When loading finishes / Then neither the empty state nor the table is rendered', async () => {
+            svc.roiReport.mockResolvedValue(undefined);
+            render(<CampaignRoiReportPage />);
+            await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+            expect(svc.roiReport).toHaveBeenCalledTimes(1);
+            expect(screen.queryByTestId('campaign-roi-empty')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('campaign-roi-row')).not.toBeInTheDocument();
         });
     });
 });

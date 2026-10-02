@@ -4,7 +4,7 @@ const api = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock('./crmService', () => ({ crmApiClient: api }));
 
 import {
-    crmCampaignService, normalizeCampaign, normalizeRoi, normalizeRoiList, sumRoi,
+    crmCampaignService, normalizeCampaign, normalizeRoi, normalizeRoiList, normalizeRoiRow, sumRoi,
 } from './crmCampaignService';
 
 beforeEach(() => { api.get.mockReset(); });
@@ -74,5 +74,39 @@ describe('Given sumRoi', () => {
     });
     it('When nothing was spent and there are no leads, Then ROI and CPL are null', () => {
         expect(sumRoi([])).toMatchObject({ leads: 0, spend: 0, roi: null, cpl: null });
+    });
+});
+
+describe('Given a fully populated or absent API payload', () => {
+    describe('When a campaign carries channel, currency, dates and a numeric id', () => {
+        it('Then every field is kept as sent', () => {
+            expect(normalizeCampaign({
+                id: 'c9', name: 'Palm launch', channel: 'google', status: 'completed', budget: 0, spend: 50,
+                currency: 'USD', start_date: '2026-09-01', end_date: '2026-09-30', utm_campaign: 'palm',
+            })).toEqual({
+                id: 'c9', name: 'Palm launch', channel: 'google', status: 'completed', budget: 0, spend: 50,
+                currency: 'USD', start_date: '2026-09-01', end_date: '2026-09-30', utm_campaign: 'palm',
+            });
+        });
+    });
+    describe('When the campaign or ROI payload is undefined', () => {
+        it('Then the normalisers return safe defaults', () => {
+            expect(normalizeCampaign(undefined)).toMatchObject({ id: '', name: 'Untitled campaign', status: 'draft', currency: null });
+            expect(normalizeRoi(undefined)).toMatchObject({ leads: 0, cpl: null });
+        });
+    });
+    describe('When a row is null or missing its campaign / roi halves', () => {
+        it('Then a default campaign and zeroed ROI are produced', () => {
+            for (const r of [null, {}]) {
+                const row = normalizeRoiRow(r);
+                expect(row.campaign).toMatchObject({ id: '', status: 'draft' });
+                expect(row.roi).toMatchObject({ leads: 0, spend: 0, roi: null });
+            }
+        });
+    });
+    describe('When a numeric field is non-finite', () => {
+        it('Then it is treated as missing', () => {
+            expect(normalizeRoi({ roi: 'Infinity', leads: Infinity })).toMatchObject({ roi: null, leads: 0 });
+        });
     });
 });

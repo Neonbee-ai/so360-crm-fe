@@ -44,6 +44,13 @@ vi.mock('./services/crmService', () => ({
   },
 }));
 
+// The campaign ROI page (lazy route) reads through crmCampaignService; stub the
+// report so the enabled-route test renders the page's empty state offline.
+vi.mock('./services/crmCampaignService', async (importActual) => ({
+  ...(await importActual<typeof import('./services/crmCampaignService')>()),
+  crmCampaignService: { roiReport: vi.fn().mockResolvedValue([]), campaignRoi: vi.fn() },
+}));
+
 import App from './App';
 
 beforeEach(() => {
@@ -226,5 +233,14 @@ describe('Given the RE Phase D campaign ROI route', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
+  });
+
+  it('When /reports/campaign-roi is opened with the feature enabled and leads.read granted / Then the Campaign ROI page loads', async () => {
+    render(
+      <MemoryRouter initialEntries={['/reports/campaign-roi']}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByTestId('campaign-roi-empty')).toBeTruthy();
   });
 });
