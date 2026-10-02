@@ -1046,7 +1046,6 @@ describe('Given the RE §26 utm_attribution flag gates the attribution filter fi
       await setBridge({ isFeatureEnabled: undefined });
       const opts = await fieldOptions();
       expect(opts).not.toContain('utm_source');
-      });
     });
   });
 });
