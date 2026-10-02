@@ -23,6 +23,10 @@ describe('Given the email compose service (RE G9)', () => {
             expect(normalizeTemplates(null)).toEqual([]);
             expect(normalizeTemplates({ data: 'x' })).toEqual([]);
         });
+        it('Then empty-string or non-string ids are dropped and nameless rows become Untitled', () => {
+            expect(normalizeTemplates([{ id: '' , name: 'Empty' }, { id: 7, name: 'Num' }, { id: 'u', name: 3, title: null, subject: 9 }]))
+                .toEqual([{ id: 'u', name: 'Untitled', subject: '' }]);
+        });
     });
 
     describe('When a preview is requested', () => {
@@ -35,6 +39,8 @@ describe('Given the email compose service (RE G9)', () => {
         it('Then a malformed response normalises to safe empties', () => {
             expect(normalizePreview(undefined)).toEqual({ to_email: null, to_name: null, subject: '', body_html: '', missing_fields: [] });
             expect(normalizePreview({ missing_fields: ['project', 3] }).missing_fields).toEqual(['project']);
+            expect(normalizePreview({ to_email: 5, to_name: 'Sara', subject: {}, body_html: [], missing_fields: 'x' }))
+                .toEqual({ to_email: null, to_name: 'Sara', subject: '', body_html: '', missing_fields: [] });
         });
     });
 
@@ -48,6 +54,13 @@ describe('Given the email compose service (RE G9)', () => {
         it('Then a response without success:true is reported as not sent', async () => {
             api.post.mockResolvedValueOnce({});
             expect((await emailComposeService.send('contact', 'c1', {})).success).toBe(false);
+        });
+        it('Then a null response maps to not sent with null ids', async () => {
+            api.post.mockResolvedValueOnce(null);
+            expect(await emailComposeService.send('lead', 'l1', { subject: 's', body_html: 'b', to_email: ' a@b.com ' })).toEqual({
+                success: false, conversation_id: null, message_id: null, tracking_id: null, activity_id: null,
+            });
+            expect(api.post).toHaveBeenCalledWith('/email-compose/lead/l1/send', { subject: 's', body_html: 'b', to_email: 'a@b.com' });
         });
         it('Then backend errors propagate to the caller', async () => {
             api.post.mockRejectedValueOnce(new Error('Recipient has no email address'));
