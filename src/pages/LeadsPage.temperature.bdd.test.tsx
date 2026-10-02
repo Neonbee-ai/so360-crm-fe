@@ -137,6 +137,7 @@ vi.mock('../components/leads/CreateLeadModal', () => ({
 }));
 
 import LeadsPage from './LeadsPage';
+import { listViewStorageKey } from '../hooks/useListViewState';
 
 /**
  * Feature: Hot / Warm / Cold filter on the leads list (RE plan E §20).
@@ -201,6 +202,18 @@ describe('Given the leads list with lead temperature', () => {
       fireEvent.change(select, { target: { value: 'All' } });
       await waitFor(() => expect(screen.getByTestId('lead-row-n1')).toBeInTheDocument());
       expect(screen.getByTestId('lead-row-h1')).toBeInTheDocument();
+    });
+  });
+
+  describe('When the session restores filters saved before the temperature filter existed', () => {
+    it('Then the temperature filter falls back to All and every lead is listed', async () => {
+      sessionStorage.setItem(
+        listViewStorageKey('leads.filters'),
+        JSON.stringify({ search: '', status: 'All', owner: 'All', creator: 'All', dateRange: 'All', customDateStart: '', customDateEnd: '' }),
+      );
+      await loaded();
+      expect((screen.getByTestId('lead-temperature-filter') as HTMLSelectElement).value).toBe('All');
+      for (const id of ['h1', 'w1', 'c1', 'n1']) expect(screen.getByTestId(`lead-row-${id}`)).toBeInTheDocument();
     });
   });
 

@@ -131,4 +131,41 @@ describe('Given the lead temperature settings card', () => {
             expect(screen.queryByRole('button', { name: /save temperature/i })).toBeNull();
         });
     });
+
+    describe('When the server returns no settings at all', () => {
+        it('Then the generic load message and Retry are shown instead of the form', async () => {
+            svc.get.mockResolvedValueOnce(null);
+            await renderCard();
+            expect(screen.getByRole('alert')).toHaveTextContent('Could not load lead temperature settings.');
+            expect(screen.queryByLabelText(/hot at or above/i)).toBeNull();
+            expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+        });
+    });
+
+    describe('When a save is in flight', () => {
+        it('Then the Save button is disabled with a spinner until it settles', async () => {
+            let resolve: (v: LeadTemperatureSettings) => void = () => {};
+            svc.save.mockReturnValueOnce(new Promise((r) => { resolve = r; }));
+            await renderCard();
+            const btn = screen.getByRole('button', { name: /save temperature/i });
+            expect(btn.querySelector('[data-testid="icon-Save"]')).not.toBeNull();
+            fireEvent.click(btn);
+            await waitFor(() => expect(btn).toBeDisabled());
+            expect(btn.querySelector('[data-testid="icon-Loader2"]')).not.toBeNull();
+            resolve(settings({ hot_min: 70, is_default: false }));
+            await waitFor(() => expect(btn).not.toBeDisabled());
+        });
+    });
+
+    describe('When a validation error is shown and a weight is edited', () => {
+        it('Then the error clears', async () => {
+            await renderCard();
+            fireEvent.change(input(/budget fit weight/i), { target: { value: '500' } });
+            fireEvent.click(screen.getByRole('button', { name: /save temperature/i }));
+            expect(await screen.findByRole('alert')).toHaveTextContent('Budget fit weight must be between 0 and 100.');
+            fireEvent.change(input(/budget fit weight/i), { target: { value: '' } });
+            await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+            expect(input(/budget fit weight/i).value).toBe('');
+        });
+    });
 });

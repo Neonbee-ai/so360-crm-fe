@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import React from 'react';
 import { LeadsDataGrid, GridContext } from './LeadsDataGrid';
 import type { Lead } from '../../types/crm';
@@ -89,5 +89,44 @@ describe('Given the leads grid score column', () => {
       <LeadsDataGrid leads={[makeLead({ temperature: null })]} context={ctx({ showTemperature: true })} onRowClick={vi.fn()} />,
     );
     expect(screen.queryByTestId('lead-temperature-badge')).toBeNull();
+  });
+});
+
+describe('Given the leads grid on a narrow (card) viewport', () => {
+  const setWidth = (w: number) =>
+    Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: w });
+
+  it('When temperature is on, Then the card shows the badge', () => {
+    setWidth(500);
+    try {
+      render(
+        <LeadsDataGrid
+          leads={[makeLead({ temperature: 'hot', temperature_score: 88 })]}
+          context={ctx({ showTemperature: true })}
+          onRowClick={vi.fn()}
+        />,
+      );
+      const card = screen.getByTestId('lead-card-lead-1');
+      expect(within(card).getByTestId('lead-temperature-badge')).toHaveAttribute('data-temperature', 'hot');
+    } finally {
+      setWidth(1024);
+    }
+  });
+
+  it('When temperature is off, Then the card has no badge', () => {
+    setWidth(500);
+    try {
+      render(
+        <LeadsDataGrid
+          leads={[makeLead({ temperature: 'hot', temperature_score: 88 })]}
+          context={ctx()}
+          onRowClick={vi.fn()}
+        />,
+      );
+      const card = screen.getByTestId('lead-card-lead-1');
+      expect(within(card).queryByTestId('lead-temperature-badge')).toBeNull();
+    } finally {
+      setWidth(1024);
+    }
   });
 });

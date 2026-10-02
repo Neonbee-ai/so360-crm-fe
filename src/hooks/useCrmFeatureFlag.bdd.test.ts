@@ -56,6 +56,7 @@ describe('Given the useCrmFeatureFlag hook', () => {
                 COMMISSIONS: 'submodule:crm:commissions',
                 UNIT_ALLOCATION: 'action:crm:unit_allocation',
                 EMAIL_COMPOSE: 'action:crm:leads:email_compose',
+                LEAD_TEMPERATURE: 'submodule:crm:re_lead_temperature',
             });
         });
     });

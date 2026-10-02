@@ -86,6 +86,21 @@ describe('Given raw temperature settings to normalise', () => {
         expect(d).toEqual({ ...DEFAULT_LEAD_TEMPERATURE_SETTINGS, weights: { ...DEFAULT_LEAD_TEMPERATURE_SETTINGS.weights }, is_default: false });
     });
 
+    it('When weights are absent and thresholds are blank strings, Then defaults fill every gap', () => {
+        const d = normalizeLeadTemperatureSettings({ hot_min: '  ', warm_min: '', is_default: true });
+        expect(d).toEqual({ ...DEFAULT_LEAD_TEMPERATURE_SETTINGS, weights: { ...DEFAULT_LEAD_TEMPERATURE_SETTINGS.weights } });
+    });
+
+    it('When the payload is not an object, Then the defaults apply', () => {
+        expect(normalizeLeadTemperatureSettings('nope').hot_min).toBe(70);
+    });
+
+    it('When a point map holds numeric strings and junk, Then only finite numbers are kept', () => {
+        const d = normalizeLeadTemperatureSettings({ source_quality: { a: '40', b: '', c: Infinity }, timeline: null });
+        expect(d.source_quality).toEqual({ a: 40 });
+        expect(d.timeline).toEqual({});
+    });
+
     it('When normalised twice, Then the defaults object is not mutated', () => {
         const a = normalizeLeadTemperatureSettings(undefined);
         a.weights.budget_fit = 99;
@@ -101,6 +116,9 @@ describe('Given temperature settings to validate', () => {
         expect(validateLeadTemperatureSettings(valid({ hot_min: 101 }))).toMatch(/Hot threshold/);
         expect(validateLeadTemperatureSettings(valid({ warm_min: -1 }))).toMatch(/Warm threshold/);
         expect(validateLeadTemperatureSettings(valid({ hot_min: Number.NaN }))).toMatch(/Hot threshold/);
+        expect(validateLeadTemperatureSettings(valid({ hot_min: -5 }))).toMatch(/Hot threshold/);
+        expect(validateLeadTemperatureSettings(valid({ warm_min: Number.NaN }))).toMatch(/Warm threshold/);
+        expect(validateLeadTemperatureSettings(valid({ warm_min: 150 }))).toMatch(/Warm threshold/);
     });
     it('When Hot is not above Warm, Then it is rejected', () => {
         expect(validateLeadTemperatureSettings(valid({ hot_min: 40, warm_min: 40 }))).toBe('Hot threshold must be greater than the Warm threshold.');
@@ -108,6 +126,12 @@ describe('Given temperature settings to validate', () => {
     it('When a weight is out of range, Then the factor is named', () => {
         expect(validateLeadTemperatureSettings(valid({ weights: { budget_fit: 30, timeline: 30, engagement: 200, source_quality: 15 } })))
             .toBe('Engagement weight must be between 0 and 100.');
+    });
+    it('When a weight is negative or empty, Then that factor is named', () => {
+        expect(validateLeadTemperatureSettings(valid({ weights: { budget_fit: -1, timeline: 30, engagement: 25, source_quality: 15 } })))
+            .toBe('Budget fit weight must be between 0 and 100.');
+        expect(validateLeadTemperatureSettings(valid({ weights: { budget_fit: 30, timeline: 30, engagement: 25, source_quality: Number.NaN } })))
+            .toBe('Source quality weight must be between 0 and 100.');
     });
     it('When every weight is 0, Then it is rejected', () => {
         expect(validateLeadTemperatureSettings(valid({ weights: { budget_fit: 0, timeline: 0, engagement: 0, source_quality: 0 } })))
