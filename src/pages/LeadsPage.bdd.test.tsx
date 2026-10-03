@@ -22,6 +22,12 @@ const mockViewsDuplicate = vi.fn();
 const mockViewsSetDefault = vi.fn();
 const mockGetLeadsPaged = vi.fn();
 
+const mockExportLeads = vi.fn();
+vi.mock('../services/exportService', async (importActual) => ({
+  ...(await importActual<any>()),
+  exportService: { leads: (...a: any[]) => mockExportLeads(...a) },
+}));
+
 vi.mock('../services/crmService', () => ({
   crmService: {
     getLeads: (...a: any[]) => mockGetLeads(...a),
@@ -198,6 +204,7 @@ beforeEach(async () => {
     refresh: async () => {},
   });
   mockGetLeads.mockResolvedValue(leads);
+  mockExportLeads.mockResolvedValue(undefined);
   mockGetSettings.mockResolvedValue(settings);
   mockGetUsers.mockResolvedValue(users);
   mockGetPartners.mockResolvedValue([]);
@@ -980,6 +987,17 @@ describe('LeadsPage — Export permission gating (RE G6)', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       expect(labels()).not.toContain('Export');
+    });
+  });
+});
+
+describe('LeadsPage — export (RE §48)', () => {
+  describe('Given the user may export leads and the flag is on', () => {
+    it('When CSV is clicked / Then leads are exported for the current status filter', async () => {
+      render(<LeadsPage />);
+      await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Export leads as CSV' }));
+      await waitFor(() => expect(mockExportLeads).toHaveBeenCalledWith({ status: 'All' }, 'csv'));
     });
   });
 });

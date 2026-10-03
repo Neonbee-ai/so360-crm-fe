@@ -11,6 +11,8 @@ import {
 } from '../services/salesReportService';
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
+import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { exportService } from '../services/exportService';
 
 export const TOTAL_CARDS: Array<{ key: keyof CommissionTotals; label: string }> = [
     { key: 'gross', label: 'Gross commission' },
@@ -70,6 +72,7 @@ const BucketTable: React.FC<{ title: string; nameHeader: string; rows: Commissio
  */
 const CommissionReportPage: React.FC = () => {
     const fmt = useCRMFormatters();
+    const canExport = useCanExport('deals.export');
     const [filters, setFilters] = useState<SalesFilters>({});
     const [report, setReport] = useState<CommissionReport | null>(null);
     const [loading, setLoading] = useState(true);
@@ -147,9 +150,14 @@ const CommissionReportPage: React.FC = () => {
 
     return (
         <div className="p-6 space-y-6">
-            <div>
-                <h1 className="text-2xl font-black text-slate-50">Commission report</h1>
-                <p className="text-sm text-slate-400">Commission earned across projects, agents and months.</p>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                    <h1 className="text-2xl font-black text-slate-50">Commission report</h1>
+                    <p className="text-sm text-slate-400">Commission earned across projects, agents and months.</p>
+                </div>
+                {canExport && !forbidden ? (
+                    <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
+                ) : null}
             </div>
             {/* The report carries no developer list, so the developer filter is not offered here. */}
             <SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />

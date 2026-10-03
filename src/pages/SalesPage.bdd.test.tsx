@@ -18,6 +18,16 @@ vi.mock('../services/salesReportService', async (importActual) => {
     return { ...actual, salesReportService: report };
 });
 vi.mock('../services/crmService', () => ({ crmService: crm }));
+const bridge = vi.hoisted(() => ({ value: {} as any }));
+const exp = vi.hoisted(() => ({ commission: vi.fn(), sales: vi.fn() }));
+vi.mock('@so360/shell-context', async (importActual) => ({
+    ...(await importActual<any>()),
+    useShellBridge: () => bridge.value,
+}));
+vi.mock('../services/exportService', async (importActual) => ({
+    ...(await importActual<any>()),
+    exportService: exp,
+}));
 vi.mock('../utils/formatters', () => ({
     useCRMFormatters: () => ({
         formatCurrency: (v: number) => `AED ${v}`,
@@ -50,6 +60,9 @@ const renderPage = () => render(<MemoryRouter><SalesPage /></MemoryRouter>);
 
 beforeEach(() => {
     vi.clearAllMocks();
+    bridge.value = {};
+    exp.commission.mockResolvedValue(undefined);
+    exp.sales.mockResolvedValue(undefined);
     report.listSales.mockReset();
     crm.getProductCategories.mockResolvedValue([{ id: 'p1', name: 'Marina Heights' }]);
     crm.getUsers.mockResolvedValue([{ id: 'u1', full_name: 'Asha', email: 'a@x' }]);
@@ -230,6 +243,27 @@ describe('Feature: Sales register', () => {
             fail(new Error('late'));
             await Promise.resolve();
             expect(screen.queryByTestId('sale-d1')).not.toBeInTheDocument();
+        });
+    });
+});
+
+describe('Feature: Sales register export (RE §48)', () => {
+    describe('Given the user holds deals.export', () => {
+        it('When Excel is clicked / Then the register is exported with the current filters', async () => {
+            bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
+            report.listSales.mockResolvedValue({ rows: [row()], total: 1 });
+            renderPage();
+            fireEvent.click(await screen.findByRole('button', { name: 'Export sales as Excel' }));
+            await waitFor(() => expect(exp.sales).toHaveBeenCalledWith({}, 'xlsx'));
+        });
+    });
+
+    describe('Given the user lacks deals.export', () => {
+        it('When the page renders / Then no export menu is offered', async () => {
+            report.listSales.mockResolvedValue({ rows: [row()], total: 1 });
+            renderPage();
+            await screen.findByText('Omar');
+            expect(screen.queryByRole('group', { name: 'Export sales' })).toBeNull();
         });
     });
 });

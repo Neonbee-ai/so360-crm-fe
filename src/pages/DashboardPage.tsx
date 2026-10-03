@@ -3,7 +3,7 @@ import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
     BarChart3, ArrowUpRight, ArrowDownRight, Briefcase,
-    Calendar, User as UserIcon, Loader2, ShoppingBag, Package
+    Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CrossLinkChip } from '@so360/design-system';
@@ -12,6 +12,15 @@ import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
 import { onLeadsChanged } from '../utils/leadEvents';
 import { parseStoredTimestamp, dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
+import { RE_FLAGS, useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
+import { useDashboardLayout } from '../hooks/useDashboardLayout';
+import {
+    DASHBOARD_WIDGET_LABELS,
+    DashboardWidgetKey,
+    layoutRows,
+    visibleWidgets,
+} from '../utils/dashboardLayout';
+import LeadLayoutSettingsPanel from './components/LeadLayoutSettingsPanel';
 
 /**
  * Derive a reminder's schedule state from its due instant.
@@ -59,6 +68,10 @@ const DashboardPage = () => {
     const showPipeline = !isFeatureHidden?.('submodule:crm:pipeline');
     const showTasks    = !isFeatureHidden?.('submodule:crm:tasks');
     const showLeads    = !isFeatureHidden?.('submodule:crm:leads');
+    // RE §31 — per-user widget order / visibility (off unless flagged).
+    const customizeEnabled = useCrmFeatureFlag(RE_FLAGS.DASHBOARD_CUSTOMIZE);
+    const dashLayout = useDashboardLayout(customizeEnabled);
+    const [showCustomize, setShowCustomize] = useState(false);
 
     const [commerceKPIs, setCommerceKPIs] = useState<{
         revenue: number; orderCount: number; aov: number;
@@ -152,73 +165,12 @@ const DashboardPage = () => {
     const maxOrders = Math.max(...(commerceKPIs?.orderChartData?.values ?? [0]), 1);
     const maxActivity = Math.max(...teamStats.map((s: any) => s.activityCount), 1);
 
-    return (
-        <div className="p-8 space-y-6 pb-12">
-            <header className="flex justify-between items-end">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-50 tracking-tight mb-2">Executive Overview</h1>
-                    <p className="text-slate-400 font-medium">
-                        Sales performance and financial insights for {
-                            period === 'yearly'
-                                ? `${year}`
-                                : period === 'quarterly'
-                                    ? `Q${quarter} ${year}`
-                                    : period === 'weekly'
-                                        ? (() => {
-                                            const jan4 = new Date(year, 0, 4);
-                                            const startOfWeek1 = new Date(jan4);
-                                            startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
-                                            const wStart = new Date(startOfWeek1);
-                                            wStart.setDate(startOfWeek1.getDate() + (week - 1) * 7);
-                                            const wEnd = new Date(wStart);
-                                            wEnd.setDate(wStart.getDate() + 6);
-                                            const fmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-                                            return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
-                                        })()
-                                        : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
-                        }
-                    </p>
-                </div>
-                <div className="flex gap-2 bg-slate-900 p-1 rounded-xl border border-slate-700/50 shadow-inner">
-                    <button
-                        onClick={() => setPeriod('yearly')}
-                        className={`px-4 py-2 ${period === 'yearly'
-                            ? 'bg-slate-700 text-slate-50 shadow-md'
-                            : 'text-slate-500 hover:text-slate-300'
-                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-sm`}
-                    >
-                        Yearly
-                    </button>
-                    <button
-                        onClick={() => setPeriod('quarterly')}
-                        className={`px-4 py-2 ${period === 'quarterly'
-                            ? 'bg-slate-700 text-slate-50 shadow-md'
-                            : 'text-slate-500 hover:text-slate-300'
-                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
-                    >
-                        Quarterly
-                    </button>
-                    <button
-                        onClick={() => setPeriod('monthly')}
-                        className={`px-4 py-2 ${period === 'monthly'
-                            ? 'bg-slate-700 text-slate-50 shadow-md'
-                            : 'text-slate-500 hover:text-slate-300'
-                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
-                    >
-                        Monthly
-                    </button>
-                    <button
-                        onClick={() => setPeriod('weekly')}
-                        className={`px-4 py-2 ${period === 'weekly'
-                            ? 'bg-slate-700 text-slate-50 shadow-md'
-                            : 'text-slate-500 hover:text-slate-300'
-                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
-                    >
-                        Weekly
-                    </button>
-                </div>
-            </header>
-
+    // RE §31 — every dashboard widget by key, rendered below in the user's
+    // saved order. With the customize flag off the layout is the default,
+    // which is the original page order, so nothing changes for those tenants.
+    const widgetNodes: Record<DashboardWidgetKey, React.ReactNode> = {
+        kpis: (
+            <>
             {/* KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
@@ -310,7 +262,10 @@ const DashboardPage = () => {
                 </div>
                 )}
             </div>
-
+            </>
+        ),
+        commerce: (
+            <>
             {/* Commerce Performance — DailyStore gated */}
             {isDailyStoreEnabled && (
                 <section className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 shadow-sm">
@@ -449,10 +404,16 @@ const DashboardPage = () => {
                     )}
                 </section>
             )}
-
+            </>
+        ),
+        re_widgets: (
+            <>
             {/* Real-estate widgets — renders nothing unless submodule:crm:re_widgets is on */}
             <REWidgets />
-
+            </>
+        ),
+        reminders: (
+            <>
             {/* Active Reminders Row */}
             {showTasks && (
             <section>
@@ -510,7 +471,10 @@ const DashboardPage = () => {
                 </div>
             </section>
             )}
-
+            </>
+        ),
+        revenue: (
+            <>
             <div className={`grid grid-cols-1 ${showLeads ? 'lg:grid-cols-3' : ''} gap-6`}>
                 {/* Revenue Chart */}
                 <div className={`${showLeads ? 'lg:col-span-2' : ''} bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-sm`}>
@@ -604,7 +568,10 @@ const DashboardPage = () => {
                     </div>
                 </div>}
             </div>
-
+            </>
+        ),
+        performance: (
+            <>
             {/* Employee Performance Visualization — a per-rep breakdown has nothing
                 to say without reps, so it stays hidden rather than reserving a
                 full-width band of empty cards. */}
@@ -674,6 +641,104 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </section>}
+            </>
+        ),
+    };
+
+    return (
+        <div className="p-8 space-y-6 pb-12">
+            <header className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-50 tracking-tight mb-2">Executive Overview</h1>
+                    <p className="text-slate-400 font-medium">
+                        Sales performance and financial insights for {
+                            period === 'yearly'
+                                ? `${year}`
+                                : period === 'quarterly'
+                                    ? `Q${quarter} ${year}`
+                                    : period === 'weekly'
+                                        ? (() => {
+                                            const jan4 = new Date(year, 0, 4);
+                                            const startOfWeek1 = new Date(jan4);
+                                            startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+                                            const wStart = new Date(startOfWeek1);
+                                            wStart.setDate(startOfWeek1.getDate() + (week - 1) * 7);
+                                            const wEnd = new Date(wStart);
+                                            wEnd.setDate(wStart.getDate() + 6);
+                                            const fmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+                                            return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
+                                        })()
+                                        : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
+                        }
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    {customizeEnabled && (
+                        <button
+                            type="button"
+                            onClick={() => setShowCustomize(true)}
+                            aria-label="Customize dashboard"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-700/50 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-200 transition-all"
+                        >
+                            <LayoutDashboard size={14} /> Customize
+                        </button>
+                    )}
+                <div className="flex gap-2 bg-slate-900 p-1 rounded-xl border border-slate-700/50 shadow-inner">
+                    <button
+                        onClick={() => setPeriod('yearly')}
+                        className={`px-4 py-2 ${period === 'yearly'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
+                            : 'text-slate-500 hover:text-slate-300'
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-sm`}
+                    >
+                        Yearly
+                    </button>
+                    <button
+                        onClick={() => setPeriod('quarterly')}
+                        className={`px-4 py-2 ${period === 'quarterly'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
+                            : 'text-slate-500 hover:text-slate-300'
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
+                    >
+                        Quarterly
+                    </button>
+                    <button
+                        onClick={() => setPeriod('monthly')}
+                        className={`px-4 py-2 ${period === 'monthly'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
+                            : 'text-slate-500 hover:text-slate-300'
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
+                    >
+                        Monthly
+                    </button>
+                    <button
+                        onClick={() => setPeriod('weekly')}
+                        className={`px-4 py-2 ${period === 'weekly'
+                            ? 'bg-slate-700 text-slate-50 shadow-md'
+                            : 'text-slate-500 hover:text-slate-300'
+                            } rounded-lg text-xs font-black uppercase tracking-widest transition-all`}
+                    >
+                        Weekly
+                    </button>
+                </div>
+                </div>
+            </header>
+
+            {visibleWidgets(dashLayout.layout).map((key) => (
+                <React.Fragment key={key}>{widgetNodes[key]}</React.Fragment>
+            ))}
+
+            {customizeEnabled && showCustomize && (
+                <LeadLayoutSettingsPanel
+                    title="Customize Dashboard"
+                    labels={DASHBOARD_WIDGET_LABELS}
+                    sections={layoutRows(dashLayout.layout)}
+                    onToggleVisible={dashLayout.toggle}
+                    onMove={dashLayout.move}
+                    onReset={() => { void dashLayout.reset(); }}
+                    onClose={() => setShowCustomize(false)}
+                />
+            )}
         </div>
     );
 };
