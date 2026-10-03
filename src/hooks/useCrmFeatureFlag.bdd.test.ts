@@ -55,6 +55,9 @@ describe('Given the useCrmFeatureFlag hook', () => {
                 PAYMENT_PLANS: 'submodule:crm:payment_plans',
                 COMMISSIONS: 'submodule:crm:commissions',
                 UNIT_ALLOCATION: 'action:crm:unit_allocation',
+                RE_REPORTS: 'submodule:crm:re_reports',
+                DASHBOARD_CUSTOMIZE: 'submodule:crm:dashboard_customize',
+                DATA_EXPORT: 'action:crm:data_export',
             });
         });
     });

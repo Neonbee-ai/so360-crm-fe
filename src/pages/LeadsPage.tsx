@@ -36,6 +36,8 @@ import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } fro
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { publishLeadsChanged } from '../utils/leadEvents';
+import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { QuotaGate, toast } from '@so360/design-system';
 
@@ -165,6 +167,8 @@ const LeadsPage = () => {
   // Bulk import (A7) — flag-gated, and only for users who may create leads.
   const bulkImportEnabled = useCrmFeatureFlag(RE_FLAGS.BULK_IMPORT);
   const canImportLeads = canCreateLead && bulkImportEnabled;
+  // §48 server-side CSV / Excel / PDF export — RBAC-scoped on the server.
+  const canExportLeads = useCanExport('leads.export', RE_FLAGS.DATA_EXPORT);
   const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
   const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
   const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
@@ -719,6 +723,9 @@ const LeadsPage = () => {
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+        {canExportLeads && (
+          <ExportMenu label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />
+        )}
         {canImportLeads && (
           <button
             onClick={() => setIsImportOpen(true)}
