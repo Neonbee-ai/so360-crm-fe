@@ -13,6 +13,9 @@ import { DealFilters } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
 import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFillViewportHeight } from '../hooks/useFillViewportHeight';
+import { RE_FLAGS } from '../hooks/useCrmFeatureFlag';
+import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { exportService } from '../services/exportService';
 
 const PipelinePage = () => {
     const navigate = useNavigate();
@@ -21,6 +24,8 @@ const PipelinePage = () => {
     const { recordActivity } = useActivity();
     const shell = useShellBridge();
     const canCreateDeal = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('deals.create') ?? false) && ((shell?.effectiveFlagsLoaded ?? false) ? (shell?.isFeatureEnabled?.('action:crm:deals:create') ?? true) : true);
+    // §48 server-side CSV / Excel / PDF export — RBAC-scoped on the server.
+    const canExportDeals = useCanExport('deals.export', RE_FLAGS.DATA_EXPORT);
     const [isCreateDealOpen, setIsCreateDealOpen] = useState(false);
     const [deals, setDeals] = useState<Deal[]>([]);
     const [stages, setStages] = useState<FlowState[]>([]);
@@ -145,6 +150,9 @@ const PipelinePage = () => {
                             <Loader2 className="animate-spin" size={14} />
                             <span className="text-xs font-bold uppercase tracking-wider">Refining results...</span>
                         </div>
+                    )}
+                    {canExportDeals && (
+                        <ExportMenu label="Export deals" onExport={(format) => exportService.deals(filters, format)} />
                     )}
                     {canCreateDeal && (
                         <button

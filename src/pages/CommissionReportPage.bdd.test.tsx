@@ -17,6 +17,16 @@ vi.mock('../services/salesReportService', async (importActual) => {
     return { ...actual, salesReportService: report };
 });
 vi.mock('../services/crmService', () => ({ crmService: crm }));
+const bridge = vi.hoisted(() => ({ value: {} as any }));
+const exp = vi.hoisted(() => ({ commission: vi.fn(), sales: vi.fn() }));
+vi.mock('@so360/shell-context', async (importActual) => ({
+    ...(await importActual<any>()),
+    useShellBridge: () => bridge.value,
+}));
+vi.mock('../services/exportService', async (importActual) => ({
+    ...(await importActual<any>()),
+    exportService: exp,
+}));
 vi.mock('../utils/formatters', () => ({
     useCRMFormatters: () => ({
         formatCurrency: (v: number) => `AED ${v}`,
@@ -44,6 +54,9 @@ const emptyReport = (): CommissionReport => ({
 
 beforeEach(() => {
     vi.clearAllMocks();
+    bridge.value = {};
+    exp.commission.mockResolvedValue(undefined);
+    exp.sales.mockResolvedValue(undefined);
     report.commissionReport.mockReset();
     crm.getProductCategories.mockResolvedValue([{ id: 'p1', name: 'Marina Heights' }]);
     crm.getUsers.mockResolvedValue([{ id: 'u1', full_name: 'Asha', email: 'a@x' }]);
@@ -203,6 +216,35 @@ describe('Feature: Commission report', () => {
             ['a non-zero paid total', { ...emptyReport(), totals: { ...emptyReport().totals, paid: 5 } }, false],
         ] as Array<[string, CommissionReport, boolean]>)('Given %s / Then isEmptyReport is %s', (_n, r, expected) => {
             expect(isEmptyReport(r)).toBe(expected);
+        });
+    });
+});
+
+describe('Feature: Commission report export (RE §48)', () => {
+    describe('Given the user holds deals.export', () => {
+        it('When CSV is clicked / Then the report is exported with the current filters', async () => {
+            bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
+            report.commissionReport.mockResolvedValue(fullReport());
+            render(<CommissionReportPage />);
+            fireEvent.click(await screen.findByRole('button', { name: 'Export commission report as CSV' }));
+            await waitFor(() => expect(exp.commission).toHaveBeenCalledWith({}, 'csv'));
+        });
+
+        it('When the API answers 403 / Then the export menu is withdrawn', async () => {
+            bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
+            report.commissionReport.mockRejectedValue(Object.assign(new Error('Forbidden'), { status: 403 }));
+            render(<CommissionReportPage />);
+            await screen.findByTestId('commission-report-forbidden');
+            expect(screen.queryByRole('group', { name: 'Export commission report' })).toBeNull();
+        });
+    });
+
+    describe('Given the user lacks deals.export', () => {
+        it('When the page renders / Then no export menu is offered', async () => {
+            report.commissionReport.mockResolvedValue(fullReport());
+            render(<CommissionReportPage />);
+            await screen.findByRole('table', { name: 'By agent' });
+            expect(screen.queryByRole('group', { name: 'Export commission report' })).toBeNull();
         });
     });
 });
