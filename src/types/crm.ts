@@ -67,6 +67,23 @@ export interface Lead {
     channel?: string;
     auto_score?: number;
     score_breakdown?: ScoreBreakdownItem[];
+    // RE §26 acquisition attribution (crm-be migration 080)
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    utm_term?: string | null;
+    utm_content?: string | null;
+    ad_platform?: string | null;
+    ad_campaign_id?: string | null;
+    ad_set_id?: string | null;
+    ad_set_name?: string | null;
+    ad_id?: string | null;
+    ad_name?: string | null;
+    landing_page?: string | null;
+    referrer?: string | null;
+    gclid?: string | null;
+    fbclid?: string | null;
+    crm_campaign_id?: string | null;
 }
 
 export type DealStage = 'Lead' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';

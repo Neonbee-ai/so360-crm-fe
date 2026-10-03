@@ -97,7 +97,33 @@ export const FILTERABLE_FIELDS: FilterableField[] = [
   { key: 'updated_at', label: 'Updated', type: 'date' },
 ];
 
-const FIELD_BY_KEY = new Map(FILTERABLE_FIELDS.map((f) => [f.key, f]));
+/**
+ * Lead acquisition attribution columns (RE §26). Offered in the builder only
+ * when `action:crm:leads:utm_attribution` is on — the backend allow-list
+ * (`lead-query.util.ts` LEAD_GRID_COLUMNS) accepts them either way.
+ */
+export const ATTRIBUTION_FILTERABLE_FIELDS: FilterableField[] = [
+  { key: 'utm_source', label: 'UTM Source', type: 'text' },
+  { key: 'utm_medium', label: 'UTM Medium', type: 'text' },
+  { key: 'utm_campaign', label: 'UTM Campaign', type: 'text' },
+  { key: 'utm_term', label: 'UTM Term', type: 'text' },
+  { key: 'utm_content', label: 'UTM Content', type: 'text' },
+  { key: 'ad_platform', label: 'Ad Platform', type: 'text' },
+  { key: 'ad_campaign_id', label: 'Ad Campaign ID', type: 'text' },
+  { key: 'ad_set_name', label: 'Ad Set', type: 'text' },
+  { key: 'ad_name', label: 'Ad', type: 'text' },
+  { key: 'landing_page', label: 'Landing Page', type: 'text' },
+  { key: 'referrer', label: 'Referrer', type: 'text' },
+  { key: 'crm_campaign_id', label: 'CRM Campaign ID', type: 'text' },
+];
+
+/** Fields the builder offers — attribution columns only when the flag is on. */
+export const filterableFields = (includeAttribution = false): FilterableField[] =>
+  includeAttribution ? [...FILTERABLE_FIELDS, ...ATTRIBUTION_FILTERABLE_FIELDS] : FILTERABLE_FIELDS;
+
+const FIELD_BY_KEY = new Map(
+  [...FILTERABLE_FIELDS, ...ATTRIBUTION_FILTERABLE_FIELDS].map((f) => [f.key, f]),
+);
 
 export const getField = (key: string): FilterableField | undefined => FIELD_BY_KEY.get(key);
 
