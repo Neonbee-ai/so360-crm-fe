@@ -56,6 +56,9 @@ describe('Given the useCrmFeatureFlag hook', () => {
                 COMMISSIONS: 'submodule:crm:commissions',
                 UNIT_ALLOCATION: 'action:crm:unit_allocation',
                 LEAD_TEMPERATURE: 'submodule:crm:re_lead_temperature',
+                RE_REPORTS: 'submodule:crm:re_reports',
+                DASHBOARD_CUSTOMIZE: 'submodule:crm:dashboard_customize',
+                DATA_EXPORT: 'action:crm:data_export',
             });
         });
     });

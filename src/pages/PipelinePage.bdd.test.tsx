@@ -8,6 +8,12 @@ const mockUpdateDealStage = vi.fn();
 const mockEmitNotification = vi.fn();
 const mockRecordActivity = vi.fn();
 
+const mockExportDeals = vi.fn();
+vi.mock('../services/exportService', async (importActual) => ({
+  ...(await importActual<any>()),
+  exportService: { deals: (...a: any[]) => mockExportDeals(...a) },
+}));
+
 vi.mock('../services/crmService', () => ({
   crmService: {
     getPipeline: (...a: any[]) => mockGetPipeline(...a),
@@ -108,6 +114,7 @@ beforeEach(() => {
   kanbanProps = {};
   transitionModalProps = {};
   mockGetPipeline.mockResolvedValue(threeStages);
+  mockExportDeals.mockResolvedValue(undefined);
   mockUpdateDealStage.mockResolvedValue({});
   mockEmitNotification.mockResolvedValue(undefined);
   mockRecordActivity.mockResolvedValue(undefined);
@@ -361,6 +368,19 @@ describe('PipelinePage', () => {
       await user.click(screen.getByTestId('apply-owner-filter'));
       const boardWrapper = screen.getByTestId('kanban').parentElement!;
       expect(boardWrapper.style.height).toBeTruthy();
+    });
+  });
+});
+
+describe('PipelinePage — export (RE §48)', () => {
+  describe('Given the user may export deals and the flag is on', () => {
+    it('When a filter is applied and PDF is clicked / Then deals are exported with that filter', async () => {
+      const user = userEvent.setup();
+      render(<PipelinePage />);
+      await waitFor(() => expect(screen.getByTestId('stage-new')).toBeInTheDocument());
+      await user.click(screen.getByTestId('apply-owner-filter'));
+      await user.click(screen.getByRole('button', { name: 'Export deals as PDF' }));
+      await waitFor(() => expect(mockExportDeals).toHaveBeenCalledWith(expect.objectContaining({ owner_id: 'u1' }), 'pdf'));
     });
   });
 });

@@ -15,6 +15,9 @@ export const RE_FLAGS = {
     UNIT_ALLOCATION: 'action:crm:unit_allocation',
     /** RE plan E §20 — Hot/Warm/Cold badge, list filter, thresholds settings. */
     LEAD_TEMPERATURE: 'submodule:crm:re_lead_temperature',
+    RE_REPORTS: 'submodule:crm:re_reports',
+    DASHBOARD_CUSTOMIZE: 'submodule:crm:dashboard_customize',
+    DATA_EXPORT: 'action:crm:data_export',
 } as const;
 
 /**
