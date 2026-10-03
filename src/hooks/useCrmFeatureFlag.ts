@@ -13,6 +13,7 @@ export const RE_FLAGS = {
     PAYMENT_PLANS: 'submodule:crm:payment_plans',
     COMMISSIONS: 'submodule:crm:commissions',
     UNIT_ALLOCATION: 'action:crm:unit_allocation',
+    EMAIL_COMPOSE: 'action:crm:leads:email_compose',
     RE_REPORTS: 'submodule:crm:re_reports',
     DASHBOARD_CUSTOMIZE: 'submodule:crm:dashboard_customize',
     DATA_EXPORT: 'action:crm:data_export',

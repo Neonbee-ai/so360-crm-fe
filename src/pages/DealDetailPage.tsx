@@ -15,6 +15,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
+import { EmailComposeButton } from '../components/emailCompose/EmailComposeButton';
 import { CrossLinkChip, toast } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -652,6 +653,8 @@ const DealDetailPage = () => {
                     </div>
 
                     <div className="flex flex-wrap justify-end gap-3">
+                        {/* RE G9 — flag + activities.create gated; renders nothing otherwise. */}
+                        <EmailComposeButton entityType="deal" entityId={deal.id} />
                         {/* Icon-only — see LeadDetailPage for the rationale. */}
                         {canDeleteDeal && <button
                             onClick={() => setShowDeleteConfirm(true)}

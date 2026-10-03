@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 
-const flags = vi.hoisted(() => ({ on: new Set<string>(), canCreate: true, loaded: true }));
+const flags = vi.hoisted(() => ({ on: new Set<string>(), canCreate: true, canImport: true, loaded: true }));
 const mockGetLeads = vi.fn();
 const mockGetSettings = vi.fn();
 const mockGetUsers = vi.fn();
@@ -36,7 +36,7 @@ vi.mock('@so360/shell-context', () => ({
   useShellBridge: () => ({
     effectiveFlagsLoaded: flags.loaded,
     permissionsLoaded: true,
-    hasPermission: (p: string) => p !== 'leads.create' || flags.canCreate,
+    hasPermission: (p: string) => (p !== 'leads.create' || flags.canCreate) && (p !== 'leads.import' || flags.canImport),
     hasAnyPermission: () => true,
     isFeatureEnabled: (k: string) => k !== 'action:crm:bulk_import' || flags.on.has(k),
     isFeatureHidden: () => false,
@@ -97,6 +97,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   flags.on.clear();
   flags.canCreate = true;
+  flags.canImport = true;
   flags.loaded = true;
   mockGetLeads.mockResolvedValue([]);
   mockGetSettings.mockResolvedValue({ deal_stages: [], lead_stages: [{ id: 'new', name: 'New' }], lead_custom_fields: [], deal_custom_fields: [], lead_sources: [], lead_scoring: [] });
@@ -120,6 +121,17 @@ describe('Given the Leads page header', () => {
       render(<LeadsPage />);
       await screen.findByText('Leads & Accounts');
       expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('When the flag is on and the user can create leads but lacks leads.import (RE G6)', () => {
+    it('Then there is no Import button', async () => {
+      flags.on.add('action:crm:bulk_import');
+      flags.canImport = false;
+      render(<LeadsPage />);
+      await screen.findByText('Leads & Accounts');
+      expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
+      expect(screen.queryByTestId('import-wizard')).not.toBeInTheDocument();
     });
   });
 
