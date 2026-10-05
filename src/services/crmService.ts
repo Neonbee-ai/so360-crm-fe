@@ -2390,6 +2390,30 @@ export const crmService = {
     },
 
     /**
+     * One page of projects for a type-ahead picker. Unlike getProjects() this
+     * does NOT swallow failures: the picker needs to tell "the Projects API
+     * failed" apart from "no project matches" and offer a retry.
+     *
+     * Search runs on the Projects backend (title / description / client), so
+     * every project is reachable — not just the first 100.
+     */
+    async searchProjects(opts: { search?: string; page?: number; limit?: number } = {}): Promise<{ data: any[]; hasMore: boolean }> {
+        const { search, page = 1, limit = 25 } = opts;
+        // The backend splices `search` into a PostgREST or() filter, where a
+        // comma, parenthesis or `%`/`*` is syntax — typing one mid-search would
+        // reshape the query or 500 it. None of them is meaningful in a name.
+        const term = (search ?? '').replace(/[,()%*\\]/g, ' ').replace(/\s+/g, ' ').trim();
+        const params: Record<string, any> = { page, limit };
+        if (term) params.search = term;
+        const result = await projectsClient.get<any>('/projects', params);
+        const data: any[] = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
+        const totalPages = Number(result?.pagination?.totalPages ?? 0);
+        // Without pagination metadata, a full page is the best "more" signal.
+        const hasMore = totalPages ? page < totalPages : data.length >= limit;
+        return { data, hasMore };
+    },
+
+    /**
      * User ids on a project's team — the only people a project-linked task
      * can be assigned to (Projects rejects anyone else). Resolves null when
      * the team can't be read, so callers can tell "unknown" from "empty" and

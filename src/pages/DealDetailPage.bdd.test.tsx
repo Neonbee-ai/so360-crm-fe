@@ -749,12 +749,14 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given deal project linking', () => {
-    it('When Create Project is clicked / Then opens the project modal', async () => {
+    it('When Create Project is clicked / Then opens the project modal with the searchable project picker', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
       await user.click(screen.getByText('Create Project'));
-      await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('project-select')).toBeInTheDocument());
+      // The picker pages/searches on demand — the old load-everything call is gone.
+      expect(mockGetProjects).not.toHaveBeenCalled();
     });
 
     it('When project modal opens / Then container has max-h-[90vh]', async () => {

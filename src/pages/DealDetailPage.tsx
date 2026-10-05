@@ -24,6 +24,7 @@ import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import DetailBackLink from '../components/common/DetailBackLink';
+import { ProjectSelect } from '../components/common/ProjectSelect';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
@@ -100,8 +101,6 @@ const DealDetailPage = () => {
     const [isSavingProfile, setIsSavingProfile] = useState(false);
 
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-    const [availableProjects, setAvailableProjects] = useState<any[]>([]);
-    const [isFetchingProjects, setIsFetchingProjects] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -392,17 +391,9 @@ const DealDetailPage = () => {
         navigate(`/accounting/invoices?${params.toString()}`);
     };
 
-    const handleOpenProjectModal = async () => {
+    // The picker loads (and searches) projects itself, page by page.
+    const handleOpenProjectModal = () => {
         setIsProjectModalOpen(true);
-        setIsFetchingProjects(true);
-        try {
-            const projects = await crmService.getProjects();
-            setAvailableProjects(projects);
-        } catch (error) {
-            toast.error('Failed to fetch available projects');
-        } finally {
-            setIsFetchingProjects(false);
-        }
     };
 
     const handleCreateProject = () => {
@@ -1437,24 +1428,13 @@ const DealDetailPage = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {isFetchingProjects ? (
-                                        <div className="flex items-center gap-2 text-slate-500 text-[10px] py-2">
-                                            <Loader2 size={12} className="animate-spin" /> Fetching list...
-                                        </div>
-                                    ) : (
+                                    {(
                                         <>
-                                            <select
+                                            <ProjectSelect
                                                 value={selectedProjectId}
-                                                onChange={(e) => setSelectedProjectId(e.target.value)}
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-blue-500 appearance-none"
-                                            >
-                                                <option value="">Select current project...</option>
-                                                {availableProjects.map(proj => (
-                                                    <option key={proj.id} value={proj.id}>
-                                                        {proj.name}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                onChange={setSelectedProjectId}
+                                                noneLabel="Select current project..."
+                                            />
                                             <button
                                                 onClick={handleLinkExistingProject}
                                                 disabled={!selectedProjectId}

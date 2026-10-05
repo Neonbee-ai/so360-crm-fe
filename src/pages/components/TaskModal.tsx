@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Calendar, Clock, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
+import { ProjectSelect } from '../../components/common/ProjectSelect';
 import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
 import { toast } from '@so360/design-system';
@@ -58,7 +59,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     // connection when editing, or from the parent Deal's project when
     // creating from a Deal context — either way the user can change/clear it.
     const [projectId, setProjectId] = useState(task?.project_id || dealProjectId || '');
-    const [projects, setProjects] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -92,20 +92,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             setLeads(leadsData);
             setDeals(dealsData);
         };
-        const fetchProjects = async () => {
-            // getProjects() already swallows its own network errors and
-            // resolves []; the extra try/catch guards call sites (older test
-            // doubles, etc.) that don't stub this method at all.
-            try {
-                const projectsData = await crmService.getProjects();
-                setProjects(projectsData || []);
-            } catch {
-                setProjects([]);
-            }
-        };
         fetchUsers();
         fetchAssociateOptions();
-        fetchProjects();
     }, []);
 
     const handleAssignToMe = () => {
@@ -433,19 +421,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 <Link2 size={12} />
                                 Project <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span>
                             </label>
-                            <div className="relative">
-                                <select
-                                    value={projectId}
-                                    onChange={(e) => setProjectId(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl px-4 py-3 pr-9 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
-                                >
-                                    <option value="">No Project</option>
-                                    {projects.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                            </div>
+                            <ProjectSelect value={projectId} onChange={setProjectId} />
                             {projectId && (
                                 <p className="text-[11px] text-slate-500">
                                     This task will be synchronized with the selected Project.
