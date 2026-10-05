@@ -327,6 +327,34 @@ describe('Given tasksApi', () => {
     });
   });
 
+  describe('Given getList (smart-ordered task list)', () => {
+    it('When called with filters / Then they go to /tasks/list as query params and items are mapped', async () => {
+      mockFetchSuccess({
+        items: [{ id: 'task-1', title: 'A', status: 'open', assignee_id: 'u-1', list_bucket: 'overdue' }],
+        total: 1,
+        counts: { overdue: 1, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 1 },
+        page: 1,
+        limit: 25,
+        truncated: false,
+      });
+      const res = await tasksApi.getList({ scope: 'team', sort: 'smart', due: 'overdue' });
+      const [url] = fetchMock.mock.calls[0];
+      expect(url).toContain('/tasks/list?');
+      expect(url).toContain('scope=team');
+      expect(url).toContain('due=overdue');
+      expect(res.items[0].status).toBe('OPEN');
+      expect(res.items[0].list_bucket).toBe('overdue');
+      expect(res.counts.overdue).toBe(1);
+    });
+
+    it('When crmService.getTaskList is called / Then it delegates to the list endpoint', async () => {
+      mockFetchSuccess({ items: [], total: 0, counts: {}, page: 1, limit: 25, truncated: false });
+      const res = await crmService.getTaskList({ page: '2' });
+      expect(fetchMock.mock.calls[0][0]).toContain('/tasks/list?page=2');
+      expect(res.items).toEqual([]);
+    });
+  });
+
   describe('Given create', () => {
     it('When action / Then creates a task and maps result', async () => {
       mockFetchSuccess({ id: 'task-new', title: 'New', status: 'open' });

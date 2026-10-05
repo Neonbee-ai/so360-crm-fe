@@ -889,6 +889,22 @@ export const dealsApi = {
 // ============================================================================
 // TASKS API
 // ============================================================================
+export interface TaskListResponse {
+    items: Task[];
+    total: number;
+    counts: {
+        overdue: number;
+        today: number;
+        next_7_days: number;
+        no_due_date: number;
+        done: number;
+        total: number;
+    };
+    page: number;
+    limit: number;
+    truncated: boolean;
+}
+
 export const tasksApi = {
     /**
      * GET /tasks - Get all tasks with filtering for overdue or status
@@ -906,6 +922,16 @@ export const tasksApi = {
     }): Promise<Task[]> => {
         const tasks = await apiClient.get<any[]>('/tasks', params);
         return tasks.map(mapTaskFromApi);
+    },
+
+    /**
+     * GET /tasks/list - Smart-ordered, filtered, paginated tasks with the
+     * counter-strip counts. Visibility is enforced server-side (`scope` is a
+     * request, clamped to the caller's entitlement).
+     */
+    getList: async (params: Record<string, string>): Promise<TaskListResponse> => {
+        const res = await apiClient.get<TaskListResponse>('/tasks/list', params);
+        return { ...res, items: res.items.map(mapTaskFromApi) };
     },
 
     /**
@@ -1828,6 +1854,10 @@ export const crmService = {
     // Tasks
     getTasks: async (scope?: 'own' | 'team' | 'all'): Promise<Task[]> => {
         return tasksApi.getAll(scope ? { scope } : undefined);
+    },
+
+    getTaskList: async (params: Record<string, string>): Promise<TaskListResponse> => {
+        return tasksApi.getList(params);
     },
 
     async getTaskById(id: string): Promise<Task | undefined> {
