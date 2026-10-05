@@ -173,7 +173,9 @@ export interface Task {
     description?: string;
     assigned_to: User;
     created_at: string;
-    reminder_minutes_before?: number;
+    reminder_minutes_before?: number | null;
+    /** When the reminder rings (due date minus reminder_minutes_before); derived by the server. */
+    remind_at?: string | null;
     /** Section the smart-ordered list endpoint placed this task in (GET /tasks/list only). */
     list_bucket?: 'overdue' | 'today' | 'upcoming' | 'no_due' | 'done';
     // Project sync — populated once the connect-project migration lands on the
@@ -574,3 +576,14 @@ export interface StakeholderActivitySummary {
     meeting_history: any[];
 }
 
+
+/** An entry of the Up Next agenda (GET /tasks/up-next): a task plus where it sits on the agenda. */
+export interface UpNextTask extends Task {
+    /** The instant the agenda orders by: the due time of a booked call/meeting, the reminder time of a reminder. */
+    at: string;
+    kind: 'booked' | 'reminder';
+    /** Past due. Past-due items stay on the agenda, flagged. */
+    overdue: boolean;
+    /** Calendar days from today (negative: before today). */
+    day_offset: number;
+}
