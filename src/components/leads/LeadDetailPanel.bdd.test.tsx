@@ -485,12 +485,11 @@ describe('Given a lead whose meta_data holds only system keys', () => {
 });
 
 describe('Given the Quick View panel is closed', () => {
-  // The panel renders on document.body (portal), so look there, not in the render container.
-  const panel = () => document.body.querySelector('div.fixed.right-0') as HTMLElement;
+  const panel = (container: HTMLElement) => container.querySelector('[aria-hidden]') as HTMLElement;
 
   it('When no lead is selected / Then the panel is off-screen, invisible and non-interactive (never an empty white box over the grid)', () => {
-    render_(null);
-    const el = panel();
+    const { container } = render_(null);
+    const el = panel(container);
     expect(el).toHaveAttribute('aria-hidden', 'true');
     expect(el.className).toContain('translate-x-full');
     expect(el.className).toContain('invisible');
@@ -498,9 +497,9 @@ describe('Given the Quick View panel is closed', () => {
   });
 
   it('When a lead is selected / Then the panel slides in and is visible and exposed to assistive tech', async () => {
-    render_(makeLead());
+    const { container } = render_(makeLead());
     await waitFor(() => expect(screen.getAllByText('Acme Corp').length).toBeGreaterThan(0));
-    const el = panel();
+    const el = panel(container);
     expect(el).toHaveAttribute('aria-hidden', 'false');
     expect(el.className).toContain('translate-x-0');
     expect(el.className).toContain('visible');
@@ -508,25 +507,7 @@ describe('Given the Quick View panel is closed', () => {
   });
 
   it('When the panel animates / Then visibility transitions with the transform so slide-out stays visible', () => {
-    render_(null);
-    expect(panel().className).toContain('transition-[transform,visibility]');
-  });
-});
-
-describe('Given the Quick View panel sits inside the shell layout', () => {
-  const panel = () => document.body.querySelector('div.fixed.right-0') as HTMLElement;
-
-  it('When rendered / Then it is attached to document.body, not inside the page container (no ancestor can clip or re-stack it)', () => {
-    const { container } = render_(makeLead());
-    expect(container.contains(panel())).toBe(false);
-    expect(panel().parentElement).toBe(document.body);
-  });
-
-  it('When rendered / Then it opens below the 56px shell NavBar and under the NavBar z-index (z-500, MFE ceiling 490)', () => {
-    render_(makeLead());
-    expect(panel().className).toContain('top-14');
-    expect(panel().className).toContain('z-[490]');
-    expect(panel().className).not.toContain('top-0');
-    expect(panel().className).not.toContain('z-[500]');
+    const { container } = render_(null);
+    expect(panel(container).className).toContain('transition-[transform,visibility]');
   });
 });

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import {
   X,
   Phone,
@@ -317,16 +316,11 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
   // Audit trail = the subset of activities that record a system/state change.
   const auditActivities = sortedActivities.filter((a) => AUDIT_TYPES.has(a.type));
 
-  // Rendered on document.body, not inside the page. A `fixed` panel is placed
-  // and clipped by its nearest transformed/filtered/contained ancestor, and the
-  // shell's layout can introduce one — the panel then slid under the header with
-  // the grid painting over it. On the body it always positions against the
-  // viewport and stacks in the root context, under the shell's NavBar (z-500).
-  return createPortal(
+  return (
     <>
       {/* Backdrop — only dims, doesn't block grid interaction */}
       <div
-        className={`fixed inset-0 z-[480] transition-opacity duration-200 pointer-events-none ${
+        className={`fixed inset-0 z-[450] transition-opacity duration-200 pointer-events-none ${
           lead ? 'opacity-100' : 'opacity-0'
         }`}
       />
@@ -339,9 +333,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
         // a feature-branch preview). `visibility` is animated with the transform,
         // so it stays visible for the whole slide-out and only flips at the end.
         aria-hidden={!lead}
-        // top-14 = the shell NavBar's h-14; z-[490] = the shell's documented
-        // ceiling for MFE content (NavBar is z-500), so the panel opens below it.
-        className={`fixed right-0 top-14 bottom-0 z-[490] w-[420px] max-w-[95vw] bg-slate-950 border-l border-slate-700/50 shadow-2xl flex flex-col transition-[transform,visibility] duration-250 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-[500] w-[420px] max-w-[95vw] bg-slate-950 border-l border-slate-700/50 shadow-2xl flex flex-col transition-[transform,visibility] duration-250 ease-out ${
           lead ? 'translate-x-0 visible' : 'translate-x-full invisible pointer-events-none'
         }`}
       >
@@ -929,7 +921,6 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
           </>
         )}
       </div>
-    </>,
-    document.body,
+    </>
   );
 }
