@@ -328,8 +328,13 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 bottom-0 z-[500] w-[420px] max-w-[95vw] bg-slate-950 border-l border-slate-700/50 shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
-          lead ? 'translate-x-0' : 'translate-x-full'
+        // Closed = off-screen AND not visible. The slide alone left an empty
+        // white panel over the grid whenever the transform didn't apply (seen on
+        // a feature-branch preview). `visibility` is animated with the transform,
+        // so it stays visible for the whole slide-out and only flips at the end.
+        aria-hidden={!lead}
+        className={`fixed right-0 top-0 bottom-0 z-[500] w-[420px] max-w-[95vw] bg-slate-950 border-l border-slate-700/50 shadow-2xl flex flex-col transition-[transform,visibility] duration-250 ease-out ${
+          lead ? 'translate-x-0 visible' : 'translate-x-full invisible pointer-events-none'
         }`}
       >
         {!lead ? null : (
