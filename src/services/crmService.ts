@@ -1,4 +1,5 @@
-import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
+import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG, UpNextTask } from '../types/crm';
+import { DASHBOARD_REMINDER_FILTERS, DASHBOARD_REMINDER_LIMIT, DEFAULT_TASK_FILTERS, toTaskListApiParams } from '../utils/taskListFilters';
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
 import { plainErrorText } from '../utils/apiErrorMessage';
@@ -962,6 +963,12 @@ export interface TaskListResponse {
     truncated: boolean;
 }
 
+export interface UpNextResponse {
+    items: UpNextTask[];
+    total: number;
+    days: number;
+}
+
 export const tasksApi = {
     /**
      * GET /tasks - Get all tasks with filtering for overdue or status
@@ -989,6 +996,16 @@ export const tasksApi = {
     getList: async (params: Record<string, string>): Promise<TaskListResponse> => {
         const res = await apiClient.get<TaskListResponse>('/tasks/list', params);
         return { ...res, items: res.items.map(mapTaskFromApi) };
+    },
+
+    /**
+     * GET /tasks/up-next - open booked calls/meetings and reminders for today
+     * and the next 7 days, ordered by time; past-due items are included and
+     * flagged `overdue`. Same visibility rules as the list.
+     */
+    getUpNext: async (params: Record<string, string>): Promise<UpNextResponse> => {
+        const res = await apiClient.get<UpNextResponse>('/tasks/up-next', params);
+        return { ...res, items: res.items.map(t => ({ ...mapTaskFromApi(t), at: t.at, kind: t.kind, overdue: t.overdue, day_offset: t.day_offset })) };
     },
 
     /**
@@ -1641,7 +1658,8 @@ export const callsApi = {
 // ============================================================================
 // Maintain backward compatibility with existing code
 /** Shapes the dashboard payload from the three reads (shared by the KPI-first callback). */
-function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any[]) {
+/** reminderList: the server's reminder list (smart order); openTotal: open-task count from the same list endpoint. */
+function buildDashboardStats(periodStats: any, performanceStats: any, reminderList: { items: any[]; total: number }, openTotal: number) {
     // Compute team stats from real performance data
     const teamStats = (performanceStats || []).map((p: any) => ({
         user: {
@@ -1658,10 +1676,8 @@ function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any
         conversionRate: p.metrics.conversionRate,
     })).sort((a: any, b: any) => b.dealCount - a.dealCount);
 
-    // Get reminders
-    const reminders = tasks.filter((t: any) =>
-        t.status === 'OPEN' && t.type === 'REMINDER'
-    ).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    // Smart order from the server: overdue, then today, then upcoming.
+    const reminders = reminderList.items;
 
     return {
         financials: {
@@ -1673,8 +1689,8 @@ function buildDashboardStats(periodStats: any, performanceStats: any, tasks: any
         counts: {
             leads: periodStats.counts.totalLeads,
             deals: periodStats.counts.totalDeals,
-            tasks: tasks.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length,
-            reminders: reminders.length
+            tasks: openTotal,
+            reminders: reminderList.total
         },
         teamStats,
         monthlyRevenue: periodStats.chartData.values,
@@ -1791,18 +1807,23 @@ export const crmService = {
                 const onKpis = opts.onKpis;
                 dashboardRequest.then((periodStats) => {
                     try {
-                        onKpis({ ...buildDashboardStats(periodStats, [], []), pending: true });
+                        onKpis({ ...buildDashboardStats(periodStats, [], { items: [], total: 0 }, 0), pending: true });
                     } catch (err) {
                         console.error('Dashboard KPI callback failed', err);
                     }
                 }, () => undefined);
             }
-            const [periodStats, performanceStats, tasks] = await Promise.all([
+            // Reminders and the open-task count come from the same server list
+            // the Tasks page uses (GET /tasks/list), so the numbers match and the
+            // dashboard no longer downloads every task to filter it in the browser.
+            const tzOffsetMinutes = -new Date().getTimezoneOffset();
+            const [periodStats, performanceStats, reminderList, openList] = await Promise.all([
                 dashboardRequest,
                 apiClient.get<any>('/analytics/performance').catch(() => []),
-                crmService.getTasks(),
+                crmService.getTaskList(toTaskListApiParams(DASHBOARD_REMINDER_FILTERS, { page: 1, limit: DASHBOARD_REMINDER_LIMIT, tzOffsetMinutes })),
+                crmService.getTaskList(toTaskListApiParams({ ...DEFAULT_TASK_FILTERS, statuses: DASHBOARD_REMINDER_FILTERS.statuses }, { page: 1, limit: 1, tzOffsetMinutes })),
             ]);
-            return buildDashboardStats(periodStats, performanceStats, tasks);
+            return buildDashboardStats(periodStats, performanceStats, reminderList, openList.total);
         } catch (error) {
             console.error('Failed to get dashboard stats', error);
             return {
@@ -2004,6 +2025,10 @@ export const crmService = {
 
     getTaskList: async (params: Record<string, string>): Promise<TaskListResponse> => {
         return tasksApi.getList(params);
+    },
+
+    getUpNext: async (params: Record<string, string>): Promise<UpNextResponse> => {
+        return tasksApi.getUpNext(params);
     },
 
     async getTaskById(id: string): Promise<Task | undefined> {

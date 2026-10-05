@@ -288,3 +288,18 @@ export function groupTasksIntoSections(
         tasks: tasks.filter(t => bucketOfTask(t, now) === s.bucket),
     }));
 }
+
+/**
+ * When the task's own reminder fires, mirroring the server rule: reminder_at
+ * wins, else due − reminder_offset_minutes. Null when the task has neither (it
+ * may still ring at the org default lead time, which the browser does not know).
+ */
+export function taskReminderAt(
+    task: Pick<Task, 'due_date' | 'reminder_at' | 'reminder_offset_minutes'>,
+): string | null {
+    if (task.reminder_at) return task.reminder_at;
+    if (task.reminder_offset_minutes == null || !task.due_date) return null;
+    const due = new Date(task.due_date).getTime();
+    if (Number.isNaN(due)) return null;
+    return new Date(due - task.reminder_offset_minutes * 60_000).toISOString();
+}

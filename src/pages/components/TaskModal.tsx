@@ -48,7 +48,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     // it differs from this, so saving an unrelated field can never reassign.
     const originalAssigneeId = task?.assigned_to?.id || '';
     const [assignedToId, setAssignedToId] = useState(originalAssigneeId);
-    const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
+    // A Reminder-type task's "remind me N minutes before" is the task's reminder
+    // lead time: reminder_offset_minutes (the server has no other lead-time field).
+    const [reminderMinutes, setReminderMinutes] = useState(
+        (task?.type === 'REMINDER' ? task?.reminder_offset_minutes : null)?.toString() || '');
     // Per-task override of the org default reminder (Sales-to-Service); blank = use org default.
     const flagBridge = useShellBridge();
     const remindersEnabled = flagBridge?.isFeatureEnabled?.('submodule:crm:task_reminders') ?? false;
@@ -172,12 +175,18 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             }
 
             data.due_date = composeDueDate(dueDate, dueTime);
-            if (type === 'REMINDER' && reminderMinutes) {
-                data.reminder_minutes_before = parseInt(reminderMinutes);
-            }
-
-            if (remindersEnabled && type !== 'REMINDER' && reminderOffset.trim() !== '') {
-                data.reminder_offset_minutes = parseInt(reminderOffset, 10);
+            // One lead-time field: the Reminder-type dropdown, else the per-task
+            // override (only when the reminders flag shows it).
+            const offsetInput = type === 'REMINDER' ? reminderMinutes : (remindersEnabled ? reminderOffset : '');
+            if (offsetInput.trim() !== '') {
+                data.reminder_offset_minutes = parseInt(offsetInput, 10);
+            } else if (
+                isEditing && task?.reminder_offset_minutes != null &&
+                (type === 'REMINDER' || task.type === 'REMINDER' || remindersEnabled)
+            ) {
+                // The reminder was removed (or the task stopped being a Reminder):
+                // say so explicitly, an omitted field would leave the old one ringing.
+                data.reminder_offset_minutes = null;
             }
 
             if (leadId) data.lead_id = leadId;

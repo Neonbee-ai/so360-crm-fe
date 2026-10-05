@@ -8,6 +8,7 @@ import {
     applyFilterChange,
     parseTaskListFilters,
     serializeTaskListFilters,
+    taskReminderAt,
     toTaskListApiParams,
 } from './taskListFilters';
 
@@ -54,5 +55,28 @@ describe('Tasks filters - reminders', () => {
             const link = parseTaskListFilters(serializeTaskListFilters(DASHBOARD_REMINDER_FILTERS));
             expect(toTaskListApiParams(link, { ...OPTS, limit: DASHBOARD_REMINDER_LIMIT })).toEqual(params);
         });
+    });
+});
+
+describe('taskReminderAt (server rule: reminder_at wins, else due - offset)', () => {
+    const DUE = '2026-11-10T10:00:00.000Z';
+    it('Given an absolute reminder_at and an offset / When resolved / Then reminder_at wins', () => {
+        expect(taskReminderAt({ due_date: DUE, reminder_at: '2026-11-09T08:00:00.000Z', reminder_offset_minutes: 30 }))
+            .toBe('2026-11-09T08:00:00.000Z');
+    });
+    it('Given only an offset / When resolved / Then it is due minus the offset', () => {
+        expect(taskReminderAt({ due_date: DUE, reminder_at: null, reminder_offset_minutes: 30 })).toBe('2026-11-10T09:30:00.000Z');
+    });
+    it('Given an offset of 0 / When resolved / Then it rings at the due time', () => {
+        expect(taskReminderAt({ due_date: DUE, reminder_offset_minutes: 0 })).toBe(DUE);
+    });
+    it('Given neither field / When resolved / Then null (org default is server-side)', () => {
+        expect(taskReminderAt({ due_date: DUE })).toBeNull();
+    });
+    it('Given an offset but no due date / When resolved / Then null', () => {
+        expect(taskReminderAt({ due_date: undefined as any, reminder_offset_minutes: 15 })).toBeNull();
+    });
+    it('Given an offset and an unparseable due date / When resolved / Then null', () => {
+        expect(taskReminderAt({ due_date: 'not-a-date', reminder_offset_minutes: 15 })).toBeNull();
     });
 });
