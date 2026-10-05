@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 
@@ -6,6 +6,8 @@ import { crmService } from '../../services/crmService';
 // that is already linked to one still shows it (see `selectedLabel`).
 const CLOSED_STATUSES = ['COMPLETED', 'CANCELLED', 'ARCHIVED'];
 const PAGE_SIZE = 25;
+// Most pages read in one go while every row of them is a closed project.
+const MAX_AUTO_PAGES = 5;
 const SEARCH_DEBOUNCE_MS = 300;
 
 interface ProjectOption {
@@ -55,6 +57,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     const [activeIndex, setActiveIndex] = useState(-1);
     const [selectedLabel, setSelectedLabel] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    const listId = useId();
     // Discards the response of a superseded request (fast typing, close/reopen).
     const requestSeq = useRef(0);
 
@@ -63,12 +66,24 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
         setIsLoading(true);
         setError(false);
         try {
-            const res = await crmService.searchProjects({ search: searchTerm, page: pageNo, limit: PAGE_SIZE });
-            if (seq !== requestSeq.current) return;
-            const rows = (res?.data || []).filter((p: ProjectOption) => !CLOSED_STATUSES.includes(String(p.status || '').toUpperCase()));
+            // Closed projects are hidden client-side, so a whole page can come
+            // back with nothing to show while more pages exist. Keep reading
+            // (bounded) instead of showing "No projects found" over a non-empty
+            // list. Past the bound, "Load more" stays available.
+            let current = pageNo; // always the last page actually read
+            let rows: ProjectOption[] = [];
+            let more = false;
+            for (let i = 0; i < MAX_AUTO_PAGES; i++) {
+                current = pageNo + i;
+                const res = await crmService.searchProjects({ search: searchTerm, page: current, limit: PAGE_SIZE });
+                if (seq !== requestSeq.current) return;
+                rows = (res?.data || []).filter((p: ProjectOption) => !CLOSED_STATUSES.includes(String(p.status || '').toUpperCase()));
+                more = !!res?.hasMore;
+                if (rows.length > 0 || !more) break;
+            }
             setOptions(prev => (pageNo === 1 ? rows : [...prev, ...rows.filter(r => !prev.some(x => x.id === r.id))]));
-            setHasMore(!!res?.hasMore);
-            setPage(pageNo);
+            setHasMore(more);
+            setPage(current);
         } catch {
             if (seq !== requestSeq.current) return;
             setError(true);
@@ -158,7 +173,9 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
         }
     };
 
-    const showEmpty = !isLoading && !error && options.length === 0;
+    // "No projects found" only when there is genuinely nothing more to read.
+    const showEmpty = !isLoading && !error && options.length === 0 && !hasMore;
+    const optionId = (index: number) => `${listId}-opt-${index}`;
 
     return (
         <div ref={containerRef} className={`relative ${className}`} data-testid="project-select">
@@ -184,6 +201,9 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         onClick={(e) => e.stopPropagation()}
                         placeholder={selectedLabel || placeholder}
                         aria-label="Search projects"
+                        aria-autocomplete="list"
+                        aria-controls={listId}
+                        aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
                         className="flex-1 bg-transparent font-bold text-slate-50 outline-none placeholder:text-slate-500 min-w-0"
                         data-testid="project-select-input"
                     />
@@ -210,6 +230,8 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
             {isOpen && (
                 <div
                     role="listbox"
+                    id={listId}
+                    aria-label="Projects"
                     className="absolute z-50 top-full mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden"
                     data-testid="project-select-list"
                 >
@@ -217,6 +239,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         <button
                             type="button"
                             role="option"
+                            id={optionId(0)}
                             aria-selected={!value}
                             onClick={() => select('')}
                             className={`w-full text-left px-3 py-2 text-sm italic transition-colors ${activeIndex === 0 ? 'bg-slate-800' : 'hover:bg-slate-800'} text-slate-400`}
@@ -229,6 +252,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                                 key={p.id}
                                 type="button"
                                 role="option"
+                                id={optionId(i + 1)}
                                 aria-selected={p.id === value}
                                 onClick={() => select(p.id)}
                                 className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between

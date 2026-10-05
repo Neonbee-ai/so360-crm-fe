@@ -246,3 +246,105 @@ describe('Given interaction details of the picker', () => {
     expect(within(screen.getByTestId('project-select')).getByRole('combobox').className).toContain('extra-field');
   });
 });
+
+describe('Given whole pages of closed projects', () => {
+  const closed = (n: number, start = 0) =>
+    Array.from({ length: n }, (_, i) => ({ id: `c${start + i}`, title: `Closed ${start + i}`, status: 'ARCHIVED' }));
+
+  it('When the first page is all closed but more pages exist / Then the next page is read automatically (no false "No projects found")', async () => {
+    mockSearchProjects
+      .mockResolvedValueOnce({ data: closed(3), hasMore: true })
+      .mockResolvedValueOnce({ data: [{ id: 'open1', title: 'Open One', status: 'IN_PROGRESS' }], hasMore: false });
+    render(<ProjectSelect value="" onChange={vi.fn()} />);
+    open();
+    await flush();
+    expect(screen.getByRole('option', { name: 'Open One' })).toBeInTheDocument();
+    expect(screen.queryByTestId('project-select-empty')).not.toBeInTheDocument();
+    expect(mockSearchProjects).toHaveBeenNthCalledWith(1, expect.objectContaining({ page: 1 }));
+    expect(mockSearchProjects).toHaveBeenNthCalledWith(2, expect.objectContaining({ page: 2 }));
+  });
+
+  it('When every page is closed and there is nothing more / Then "No projects found" is shown', async () => {
+    mockSearchProjects.mockResolvedValue({ data: closed(2), hasMore: false });
+    render(<ProjectSelect value="" onChange={vi.fn()} />);
+    open();
+    await flush();
+    expect(screen.getByTestId('project-select-empty')).toBeInTheDocument();
+    expect(mockSearchProjects).toHaveBeenCalledTimes(1);
+  });
+
+  it('When closed pages keep coming / Then reading stops at the bound and "Load more" is offered instead of an empty message', async () => {
+    mockSearchProjects.mockResolvedValue({ data: closed(2), hasMore: true });
+    render(<ProjectSelect value="" onChange={vi.fn()} />);
+    open();
+    await flush();
+    expect(mockSearchProjects).toHaveBeenCalledTimes(5);
+    expect(screen.queryByTestId('project-select-empty')).not.toBeInTheDocument();
+    expect(screen.getByTestId('project-select-more')).toBeInTheDocument();
+
+    mockSearchProjects.mockResolvedValueOnce({ data: [{ id: 'late', title: 'Late Open' }], hasMore: false });
+    fireEvent.click(screen.getByTestId('project-select-more'));
+    await flush();
+    expect(screen.getByRole('option', { name: 'Late Open' })).toBeInTheDocument();
+    expect(mockSearchProjects).toHaveBeenLastCalledWith(expect.objectContaining({ page: 6 }));
+  });
+
+  it('When a later page is all closed / Then "Load more" continues through it to the next open project', async () => {
+    mockSearchProjects
+      .mockResolvedValueOnce({ data: [{ id: 'p1', title: 'Alpha' }], hasMore: true })
+      .mockResolvedValueOnce({ data: closed(2), hasMore: true })
+      .mockResolvedValueOnce({ data: [{ id: 'p3', title: 'Gamma' }], hasMore: false });
+    render(<ProjectSelect value="" onChange={vi.fn()} />);
+    open();
+    await flush();
+    fireEvent.click(screen.getByTestId('project-select-more'));
+    await flush();
+    expect(screen.getByRole('option', { name: 'Alpha' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Gamma' })).toBeInTheDocument();
+  });
+
+  it('When the search fails while reading ahead / Then the error with Retry is shown', async () => {
+    mockSearchProjects
+      .mockResolvedValueOnce({ data: closed(2), hasMore: true })
+      .mockRejectedValueOnce(new Error('503'));
+    render(<ProjectSelect value="" onChange={vi.fn()} />);
+    open();
+    await flush();
+    expect(screen.getByTestId('project-select-error')).toBeInTheDocument();
+  });
+});
+
+describe('Given assistive technology', () => {
+  it('When the picker opens / Then the search box controls the listbox and no option is announced as active yet', async () => {
+    render(<ProjectSelect value="" onChange={vi.fn()} />);
+    open();
+    await flush();
+    const input = screen.getByTestId('project-select-input');
+    const list = screen.getByRole('listbox', { name: 'Projects' });
+    expect(input).toHaveAttribute('aria-controls', list.id);
+    expect(input).toHaveAttribute('aria-autocomplete', 'list');
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('When arrows move the highlight / Then aria-activedescendant points at the highlighted option', async () => {
+    mockSearchProjects.mockResolvedValue({ data: [{ id: 'p1', title: 'Alpha' }, { id: 'p2', title: 'Beta' }], hasMore: false });
+    render(<ProjectSelect value="" onChange={vi.fn()} />);
+    open();
+    await flush();
+    const input = screen.getByTestId('project-select-input');
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(document.getElementById(input.getAttribute('aria-activedescendant')!)).toBe(screen.getByTestId('project-option-none'));
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(document.getElementById(input.getAttribute('aria-activedescendant')!)).toBe(screen.getByTestId('project-option-p1'));
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(document.getElementById(input.getAttribute('aria-activedescendant')!)).toBe(screen.getByTestId('project-option-p2'));
+  });
+
+  it('When two pickers are on the page / Then their listbox and option ids never collide', async () => {
+    render(<><ProjectSelect value="" onChange={vi.fn()} /><ProjectSelect value="" onChange={vi.fn()} /></>);
+    for (const combo of screen.getAllByRole('combobox')) fireEvent.click(combo);
+    await flush();
+    const ids = Array.from(document.querySelectorAll('[role="listbox"], [role="option"]')).map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});

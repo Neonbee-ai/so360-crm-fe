@@ -40,3 +40,20 @@ describe('crmService.searchProjects() response shapes and defaults', () => {
         expect(res).toEqual({ data: [], hasMore: false });
     });
 });
+
+describe('crmService.searchProjects() double quotes', () => {
+    beforeEach(() => {
+        crmService.setTenantId(REAL_TENANT);
+    });
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('Given a term with double quotes / When it runs / Then they are stripped so they cannot reshape the backend filter', async () => {
+        const fetchSpy = mockFetchOk({ data: [], pagination: { totalPages: 0 } });
+        vi.stubGlobal('fetch', fetchSpy);
+        await crmService.searchProjects({ search: '"quoted" name' });
+        const [url] = fetchSpy.mock.calls[0];
+        expect(new URL(url, 'http://x').searchParams.get('search')).toBe('quoted name');
+    });
+});
