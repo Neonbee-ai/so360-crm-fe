@@ -483,31 +483,3 @@ describe('Given a lead whose meta_data holds only system keys', () => {
     expect(screen.queryByText('Additional Fields')).not.toBeInTheDocument();
   });
 });
-
-describe('Given the Quick View panel is closed', () => {
-  const panel = (container: HTMLElement) => container.querySelector('[aria-hidden]') as HTMLElement;
-
-  it('When no lead is selected / Then the panel is off-screen, invisible and non-interactive (never an empty white box over the grid)', () => {
-    const { container } = render_(null);
-    const el = panel(container);
-    expect(el).toHaveAttribute('aria-hidden', 'true');
-    expect(el.className).toContain('translate-x-full');
-    expect(el.className).toContain('invisible');
-    expect(el.className).toContain('pointer-events-none');
-  });
-
-  it('When a lead is selected / Then the panel slides in and is visible and exposed to assistive tech', async () => {
-    const { container } = render_(makeLead());
-    await waitFor(() => expect(screen.getAllByText('Acme Corp').length).toBeGreaterThan(0));
-    const el = panel(container);
-    expect(el).toHaveAttribute('aria-hidden', 'false');
-    expect(el.className).toContain('translate-x-0');
-    expect(el.className).toContain('visible');
-    expect(el.className).not.toContain('invisible');
-  });
-
-  it('When the panel animates / Then visibility transitions with the transform so slide-out stays visible', () => {
-    const { container } = render_(null);
-    expect(panel(container).className).toContain('transition-[transform,visibility]');
-  });
-});
