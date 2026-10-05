@@ -15,6 +15,11 @@ export interface TaskListFilters {
     statuses: string[];
     due: string;
     assignee: string;
+    /**
+     * Only tasks with a reminder. DECISION: "has a reminder" = the task has a
+     * reminder time (remind_at) or is of the Reminder type (server rule).
+     */
+    hasReminder: boolean;
     /** Empty = the server's smart order. */
     sort: TaskSortField | '';
     order: TaskSortOrder;
@@ -46,11 +51,23 @@ export const DEFAULT_TASK_FILTERS: TaskListFilters = {
     statuses: [],
     due: '',
     assignee: '',
+    hasReminder: false,
     sort: '',
     order: 'asc',
 };
 
 export const TASK_PAGE_SIZE = 25;
+
+/**
+ * The Dashboard's "Active Reminders" strip and its "View all" link share this
+ * one filter, so the strip, the Tasks page and their counts cannot drift apart.
+ */
+export const DASHBOARD_REMINDER_FILTERS: TaskListFilters = {
+    ...DEFAULT_TASK_FILTERS,
+    hasReminder: true,
+    statuses: ['OPEN', 'IN_PROGRESS'],
+};
+export const DASHBOARD_REMINDER_LIMIT = 10;
 
 // ON_HOLD is deliberately absent: the tasks status CHECK rejects it, so
 // filtering by it could only ever 400.
@@ -75,6 +92,8 @@ export const TASK_PRIORITY_FILTER_OPTIONS = [
     { value: 'MEDIUM', label: 'Medium' },
     { value: 'LOW', label: 'Low' },
 ];
+
+export const TASK_REMINDER_FILTER_OPTIONS = [{ value: '1', label: 'With reminders' }];
 
 export const TASK_DUE_FILTER_OPTIONS = [
     { value: 'overdue', label: 'Overdue' },
@@ -130,6 +149,7 @@ export function parseTaskListFilters(sp: URLSearchParams): TaskListFilters {
         statuses: listParam(sp, 'status', STATUS_VALUES),
         due: DUE_VALUES.includes(due) ? due : '',
         assignee: sp.get('assignee') ?? '',
+        hasReminder: sp.get('reminder') === '1',
         sort: validSort ? (sort as TaskSortField) : '',
         order: validSort && sp.get('order') === 'desc' ? 'desc' : 'asc',
     };
@@ -145,6 +165,7 @@ export function serializeTaskListFilters(f: TaskListFilters): URLSearchParams {
     if (f.statuses.length) sp.set('status', f.statuses.join(','));
     if (f.due) sp.set('due', f.due);
     if (f.assignee) sp.set('assignee', f.assignee);
+    if (f.hasReminder) sp.set('reminder', '1');
     if (f.sort) {
         sp.set('sort', f.sort);
         sp.set('order', f.order);
@@ -171,6 +192,7 @@ export function toTaskListApiParams(
     if (f.statuses.length) params.status = f.statuses.join(',');
     if (f.due) params.due = f.due;
     if (f.assignee) params.assignee_id = f.assignee;
+    if (f.hasReminder) params.has_reminder = 'true';
     return params;
 }
 
@@ -182,6 +204,7 @@ export function activeFilterValues(f: TaskListFilters): Record<string, string | 
     if (f.statuses.length) active.status = f.statuses;
     if (f.due) active.due = f.due;
     if (f.assignee) active.assignee = f.assignee;
+    if (f.hasReminder) active.reminder = '1';
     return active;
 }
 
@@ -199,6 +222,7 @@ export function applyFilterChange(
         case 'status': return { ...f, statuses: list };
         case 'due': return { ...f, due: text };
         case 'assignee': return { ...f, assignee: text };
+        case 'reminder': return { ...f, hasReminder: text === '1' };
         default: return f;
     }
 }

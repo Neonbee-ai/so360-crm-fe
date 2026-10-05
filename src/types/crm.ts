@@ -598,3 +598,14 @@ export interface StakeholderActivitySummary {
     meeting_history: any[];
 }
 
+
+/** An entry of the Up Next agenda (GET /tasks/up-next): a task plus where it sits on the agenda. */
+export interface UpNextTask extends Task {
+    /** The instant the agenda orders by: the due time of a booked call/meeting, the reminder time of a reminder. */
+    at: string;
+    kind: 'booked' | 'reminder';
+    /** Past due. Past-due items stay on the agenda, flagged. */
+    overdue: boolean;
+    /** Calendar days from today (negative: before today). */
+    day_offset: number;
+}

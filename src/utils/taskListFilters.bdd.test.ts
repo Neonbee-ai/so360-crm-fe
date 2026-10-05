@@ -40,6 +40,7 @@ describe('parseTaskListFilters / serializeTaskListFilters', () => {
         statuses: ['OPEN', 'IN_PROGRESS'],
         due: 'overdue',
         assignee: 'u1',
+        hasReminder: false,
         sort: 'due',
         order: 'desc',
       });
