@@ -181,6 +181,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             data.due_date = composeDueDate(dueDate, dueTime);
             if (type === 'REMINDER' && reminderMinutes) {
                 data.reminder_minutes_before = parseInt(reminderMinutes);
+            } else if (isEditing && task?.reminder_minutes_before != null) {
+                // The reminder was removed (or the task stopped being a Reminder):
+                // say so explicitly, an omitted field would leave the old one ringing.
+                data.reminder_minutes_before = null;
             }
 
             if (leadId) data.lead_id = leadId;

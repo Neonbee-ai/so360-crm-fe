@@ -154,7 +154,8 @@ describe('crmService — dashboard stats', () => {
       };
       mockSuccess(analyticsStats);  // /analytics/dashboard
       mockSuccess([]);               // /analytics/performance
-      mockSuccess([]);               // getTasks
+      mockSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });               // reminder list (GET /tasks/list)
+      mockSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });               // open-task count (GET /tasks/list)
       const result = await crmService.getDashboardStats({ period: 'monthly' });
       expect(result.financials.totalRevenue).toBe(1000);
     });

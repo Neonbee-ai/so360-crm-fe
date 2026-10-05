@@ -363,3 +363,41 @@ describe('Given an org with no attributed performance data', () => {
     expect(screen.queryByText('No revenue attributed yet')).not.toBeInTheDocument();
   });
 });
+
+// ── Active Reminders share one source with the Tasks page (Pulse 552552b8) ───
+describe('Given the Active Reminders strip is fed by the shared task list', () => {
+  const withReminders = (reminders: any[], total = reminders.length) => ({
+    ...stats,
+    counts: { ...stats.counts, reminders: total },
+    reminders,
+  });
+
+  it('When the strip renders / Then the total is the server count, which can exceed the cards shown', async () => {
+    mockGetDashboardStats.mockResolvedValue(
+      withReminders([{ id: 'r1', title: 'Only card', due_date: '2026-08-07T10:30:00Z', assigned_to: { full_name: 'A' } }], 14),
+    );
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByText('Only card')).toBeInTheDocument());
+    expect(screen.getByTestId('reminders-total')).toHaveTextContent('14');
+  });
+
+  it('When View all is followed / Then it opens the Tasks page with the same reminder filter the strip used', async () => {
+    mockGetDashboardStats.mockResolvedValue(withReminders([{ id: 'r1', title: 'Card', due_date: '2026-08-07T10:30:00Z', assigned_to: { full_name: 'A' } }]));
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByText('Card')).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'View all' })).toHaveAttribute('href', '../tasks?status=OPEN%2CIN_PROGRESS&reminder=1');
+  });
+
+  it('When a reminder has a reminder time / Then the card shows when it will ring; without one it does not', async () => {
+    mockGetDashboardStats.mockResolvedValue(
+      withReminders([
+        { id: 'r1', title: 'With time', due_date: '2026-08-07T11:00:00Z', remind_at: '2026-08-07T10:30:00Z', assigned_to: { full_name: 'A' } },
+        { id: 'r2', title: 'Without time', due_date: '2026-08-07T11:00:00Z', assigned_to: { full_name: 'A' } },
+      ]),
+    );
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByText('With time')).toBeInTheDocument());
+    expect(screen.getAllByTestId('reminder-time')).toHaveLength(1);
+    expect(screen.getByTestId('reminder-time')).toHaveTextContent('Reminds Aug 7, 10:30 AM');
+  });
+});

@@ -1871,8 +1871,9 @@ describe('Given crmService (legacy layer)', () => {
     });
     // Performance
     mockFetchSuccess([]);
-    // Tasks
-    mockFetchSuccess([]);
+    // Reminder list + open-task count (GET /tasks/list x2)
+    mockFetchSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });
+    mockFetchSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });
 
     const result = await crmService.getDashboardStats({ period: 'monthly', year: 2024, month: 1 });
     expect(result.financials.totalRevenue).toBe(1000);
@@ -1889,15 +1890,24 @@ describe('Given crmService (legacy layer)', () => {
     mockFetchSuccess([
       { user: { id: 'u1', name: 'Alice', email: 'a@b.com' }, metrics: { won: 3, leads: 10, activityPoints: 50, conversionRate: 30 } },
     ]);
-    mockFetchSuccess([
-      { id: 't1', status: 'Open', type: 'REMINDER', due_date: '2024-01-01' },
-      { id: 't2', status: 'Open', type: 'TODO', due_date: '2024-02-01' },
-    ]);
+    // Reminder list: one reminder (server-side has_reminder filter, smart order)
+    mockFetchSuccess({ ...{ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false }, items: [{ id: 't1', status: 'OPEN', type: 'REMINDER', due_date: '2024-01-01', assigned_to: null }], total: 1 });
+    // Open-task count
+    mockFetchSuccess({ ...{ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false }, total: 2 });
 
     const result = await crmService.getDashboardStats({ period: 'quarterly', year: 2024, quarter: 1 });
     expect(result.teamStats).toHaveLength(1);
     expect(result.reminders).toHaveLength(1);
+    expect(result.counts.reminders).toBe(1);
     expect(result.counts.tasks).toBe(2);
+    // One shared source: the same endpoint and filters the Tasks page uses.
+    const urls = fetchMock.mock.calls.map((c: any[]) => String(c[0]));
+    expect(urls[2]).toContain('/tasks/list');
+    expect(urls[2]).toContain('has_reminder=true');
+    expect(urls[2]).toContain('status=OPEN%2CIN_PROGRESS');
+    expect(urls[3]).toContain('/tasks/list');
+    expect(urls[3]).toContain('limit=1');
+    expect(urls[3]).not.toContain('has_reminder');
   });
 
   it('When action / Then getDashboardStats with no params still routes through the gated analytics endpoint (Pulse 5174b5ae — no client-side aggregation fallback)', async () => {
@@ -1913,8 +1923,9 @@ describe('Given crmService (legacy layer)', () => {
     });
     // Performance
     mockFetchSuccess([]);
-    // Tasks
-    mockFetchSuccess([]);
+    // Reminder list + open-task count (GET /tasks/list x2)
+    mockFetchSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });
+    mockFetchSuccess({ items: [], total: 0, counts: { overdue: 0, today: 0, next_7_days: 0, no_due_date: 0, done: 0, total: 0 }, page: 1, limit: 25, truncated: false });
 
     const result = await crmService.getDashboardStats();
 
@@ -1922,6 +1933,28 @@ describe('Given crmService (legacy layer)', () => {
     expect(fetchMock.mock.calls[0][0]).toEqual(expect.stringContaining('period=monthly'));
     expect(result.financials.totalRevenue).toBe(1000);
     expect(result.counts.leads).toBe(10);
+  });
+});
+
+// ============================================================================
+// TASKS API - up next agenda (GET /tasks/up-next)
+// ============================================================================
+describe('Given the Up Next agenda endpoint', () => {
+  it('When getUpNext is called / Then it requests /tasks/up-next with the params and maps each task plus its agenda fields', async () => {
+    mockFetchSuccess({
+      items: [
+        { id: 't1', title: 'Call Acme', status: 'open', type: 'CALL', assignee_id: 'u1', assigned_to: null, at: '2026-10-07T15:00:00Z', kind: 'booked', overdue: false, day_offset: 0 },
+      ],
+      total: 1,
+      days: 7,
+    });
+    const res = await crmService.getUpNext({ scope: 'team', tz_offset_minutes: '240' });
+    const url = String(fetchMock.mock.calls[fetchMock.mock.calls.length - 1][0]);
+    expect(url).toContain('/tasks/up-next');
+    expect(url).toContain('scope=team');
+    expect(url).toContain('tz_offset_minutes=240');
+    expect(res.total).toBe(1);
+    expect(res.items[0]).toMatchObject({ id: 't1', status: 'OPEN', at: '2026-10-07T15:00:00Z', kind: 'booked', overdue: false, day_offset: 0 });
   });
 });
 

@@ -3,13 +3,14 @@ import { crmService } from '../services/crmService';
 import {
     DollarSign, TrendingUp, Users, CheckCircle2,
     BarChart3, ArrowUpRight, ArrowDownRight, Briefcase,
-    Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
+    Calendar, Bell, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CrossLinkChip } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
+import { DASHBOARD_REMINDER_FILTERS, serializeTaskListFilters } from '../utils/taskListFilters';
 import { onLeadsChanged } from '../utils/leadEvents';
 import { parseStoredTimestamp, dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 import { RE_FLAGS, useCrmFeatureFlag } from '../hooks/useCrmFeatureFlag';
@@ -418,8 +419,12 @@ const DashboardPage = () => {
             {showTasks && (
             <section>
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-black text-slate-50 tracking-tight">Active Reminders</h3>
-                    <Link to="../tasks" className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors">View All Tasks</Link>
+                    <h3 className="text-lg font-black text-slate-50 tracking-tight">
+                        Active Reminders
+                        <span className="ml-2 text-xs font-bold text-slate-400" data-testid="reminders-total">{counts.reminders}</span>
+                    </h3>
+                    {/* Same filter state as the strip above, so the Tasks page lists exactly these. */}
+                    <Link to={`../tasks?${serializeTaskListFilters(DASHBOARD_REMINDER_FILTERS).toString()}`} className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors">View all</Link>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                     {reminders.length > 0 ? reminders.map((task: any) => (
@@ -449,6 +454,12 @@ const DashboardPage = () => {
                                     </>
                                 )}
                             </div>
+                            {task.remind_at && (
+                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-300 mb-2" data-testid="reminder-time">
+                                    <Bell size={11} />
+                                    <span>Reminds {formatters.formatDate(task.remind_at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                                </div>
+                            )}
                             <p className="text-[11px] text-slate-300 line-clamp-1 mb-3">{task.description || "No description provided"}</p>
                             <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-400/15">
                                 <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black border border-slate-400/30">

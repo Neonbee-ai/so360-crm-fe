@@ -1324,3 +1324,50 @@ describe('Given the assignee field of the task form', () => {
     expect(mockGetProjectTeamUserIds).not.toHaveBeenCalled();
   });
 });
+
+// ── Removing a reminder must reach the server (Pulse 552552b8) ───────────────
+describe('Given an existing task that has a reminder lead time', () => {
+  const REMINDER_TASK = {
+    ...BASE_TASK,
+    type: 'REMINDER' as const,
+    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    reminder_minutes_before: 30,
+  };
+
+  it('When the reminder dropdown is set back to none and saved / Then reminder_minutes_before: null is sent so the server clears it', async () => {
+    render(<TaskModal task={REMINDER_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    // selects in REMINDER edit mode: [0]=type, [1]=reminderMinutes
+    fireEvent.change(selects()[1], { target: { value: '' } });
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).toHaveProperty('reminder_minutes_before', null);
+  });
+
+  it('When the type is changed away from Reminder and saved / Then the reminder is cleared too', async () => {
+    render(<TaskModal task={REMINDER_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    fireEvent.change(selects()[0], { target: { value: 'CALL' } });
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).toHaveProperty('reminder_minutes_before', null);
+  });
+
+  it('When the reminder is kept / Then the lead time is sent unchanged', async () => {
+    render(<TaskModal task={REMINDER_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).toHaveProperty('reminder_minutes_before', 30);
+  });
+});
+
+describe('Given an existing task without a reminder', () => {
+  it('When it is saved / Then no reminder field is sent at all', async () => {
+    render(<TaskModal task={BASE_TASK as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => screen.getByDisplayValue('Follow up call'));
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockUpdateTask).toHaveBeenCalled());
+    expect(mockUpdateTask.mock.calls[0][1]).not.toHaveProperty('reminder_minutes_before');
+  });
+});
