@@ -18,6 +18,77 @@ export const CrossLinkChip = ({ label, id }: any) =>
   React.createElement('span', { 'data-testid': 'cross-link-chip' }, label ?? id ?? '');
 export const RelatedRecordsPanel = () => null;
 
+// SortableHeader — same contract as the real <th> header (label + onSort).
+export const SortableHeader = ({ label, field, currentSort, onSort, sortable = true }: any) => {
+  const active = currentSort?.field === field ? currentSort.direction : null;
+  return React.createElement(
+    'th',
+    { onClick: () => { if (sortable) onSort(field); }, 'data-sortable': String(sortable), 'data-sort': active ?? '' },
+    label,
+  );
+};
+
+// FilterBar — mirrors the real component's observable behaviour: search box,
+// select / multiselect filters, "Clear (n)" and removable "Label: value" chips.
+export const FilterBar = ({ filters, activeFilters, onFilterChange, onClearAll, searchPlaceholder = 'Search...', searchValue = '', onSearchChange }: any) => {
+  const [open, setOpen] = React.useState<string | null>(null);
+  const count =
+    Object.values(activeFilters as Record<string, string | string[]>).reduce<number>(
+      (n, v) => n + (Array.isArray(v) ? v.length : v ? 1 : 0),
+      0,
+    ) + (searchValue ? 1 : 0);
+  const labelOf = (f: any, v: string) => f.options?.find((o: any) => o.value === v)?.label || v;
+  return React.createElement(
+    'div',
+    { 'data-testid': 'filter-bar' },
+    onSearchChange &&
+      React.createElement('input', { type: 'text', value: searchValue, placeholder: searchPlaceholder, onChange: (e: any) => onSearchChange(e.target.value) }),
+    ...filters.map((f: any) => {
+      const value = activeFilters[f.key];
+      if (f.type === 'multiselect') {
+        const selected: string[] = value || [];
+        return React.createElement(
+          'div',
+          { key: f.key },
+          React.createElement('button', { onClick: () => setOpen(open === f.key ? null : f.key) }, selected.length ? `${f.label} (${selected.length})` : f.placeholder || f.label),
+          open === f.key &&
+            f.options.map((o: any) =>
+              React.createElement(
+                'label',
+                { key: o.value },
+                React.createElement('input', {
+                  type: 'checkbox',
+                  checked: selected.includes(o.value),
+                  onChange: (e: any) => {
+                    const next = e.target.checked ? [...selected, o.value] : selected.filter((v) => v !== o.value);
+                    onFilterChange(f.key, next.length ? next : null);
+                  },
+                }),
+                o.label,
+              ),
+            ),
+        );
+      }
+      return React.createElement(
+        'select',
+        { key: f.key, 'aria-label': f.label, value: value || '', onChange: (e: any) => onFilterChange(f.key, e.target.value || null) },
+        React.createElement('option', { value: '' }, f.placeholder || `All ${f.label}`),
+        ...f.options.map((o: any) => React.createElement('option', { key: o.value, value: o.value }, o.label)),
+      );
+    }),
+    count > 0 && React.createElement('button', { onClick: onClearAll }, `Clear (${count})`),
+    searchValue &&
+      React.createElement('span', { 'data-testid': 'chip' }, `Search: ${searchValue}`, React.createElement('button', { 'aria-label': 'Remove Search', onClick: () => onSearchChange?.('') }, 'x')),
+    ...Object.entries(activeFilters as Record<string, string | string[]>).map(([key, value]) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return null;
+      const f = filters.find((x: any) => x.key === key);
+      if (!f) return null;
+      const text = Array.isArray(value) ? value.map((v) => labelOf(f, v)).join(', ') : labelOf(f, value);
+      return React.createElement('span', { key, 'data-testid': 'chip' }, `${f.label}: ${text}`, React.createElement('button', { 'aria-label': `Remove ${f.label}`, onClick: () => onFilterChange(key, null) }, 'x'));
+    }),
+  );
+};
+
 // FeatureGate / FeatureRoute — 5-state model
 export type FeatureState = 'enabled' | 'read_only' | 'locked' | 'disabled' | 'hidden';
 export interface FeatureRouteProps {

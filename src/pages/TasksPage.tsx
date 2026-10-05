@@ -1,23 +1,49 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CheckCircle2, Circle, Trash2, UserPlus, Building2, Plus, Link2, ArrowDownWideNarrow } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { Table } from '../components/common/Table';
+import { TableSkeleton } from '../components/common/Skeleton';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
-import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
-import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
-import { toast } from '@so360/design-system';
+import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, TASK_LOCKED_HINT } from '../utils/taskUtils';
+import { describeTaskDue } from '../utils/taskDueLabel';
+import {
+    EMPTY_COUNTS,
+    TASK_COUNTER_TILES,
+    TASK_DUE_FILTER_OPTIONS,
+    TASK_PAGE_SIZE,
+    TASK_PRIORITY_FILTER_OPTIONS,
+    TASK_STATUS_FILTER_OPTIONS,
+    TASK_TYPE_FILTER_OPTIONS,
+    TaskListCounts,
+    TaskSortField,
+    activeFilterValues,
+    applyFilterChange,
+    clearTaskFilters,
+    groupTasksIntoSections,
+    nextSort,
+    parseTaskListFilters,
+    serializeTaskListFilters,
+    toTaskListApiParams,
+    toggleQuickDue,
+    TaskListFilters,
+} from '../utils/taskListFilters';
+import { Button, FilterBar, toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
-import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
+import { TaskListSections, TaskColumn } from './components/TaskListSections';
+import { TaskDueCell, TaskPriorityBadge, TaskTypeBadge } from './components/TaskCells';
+import { useListScrollRestore } from '../hooks/useListViewState';
 
-type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
-type SortDirection = 'asc' | 'desc' | null;
+const SEARCH_DEBOUNCE_MS = 300;
+const MAX_REFRESH_PAGES = 4; // refresh re-reads up to 4 x 25 = the endpoint's 100-row cap
+
+const SORT_LABELS: Record<TaskSortField, string> = { title: 'Task', due: 'Due Date', priority: 'Priority' };
 
 const TasksPage = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const formatters = useCRMFormatters();
     const shell = useShell();
     const shellBridge = useShellBridge();
@@ -31,52 +57,125 @@ const TasksPage = () => {
     const currentUser = shell?.user;
     const currentUserId = currentUser?.id;
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [counts, setCounts] = useState<TaskListCounts>(EMPTY_COUNTS);
+    const [total, setTotal] = useState(0);
+    const [truncated, setTruncated] = useState(false);
     const [users, setUsers] = useState<any[]>([]); // Using any for User to avoid import issues if not exported
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [reloadTick, setReloadTick] = useState(0);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    // View state survives a trip to a task's detail page and back — see
-    // usePersistedState. Everything else above is transient by design.
-    // Default scope is 'own' ("My Tasks") — broader tabs only render once
-    // canViewTeamTasks/canViewAllTasks resolve true, and the backend clamps
-    // the request regardless of what's persisted here.
-    const [taskScope, setTaskScope] = usePersistedState<'own' | 'team' | 'all'>('tasks.scope', 'own');
-    const [filter, setFilter] = usePersistedState('tasks.filter', 'All');
-    const [searchTerm, setSearchTerm] = usePersistedState('tasks.search', '');
-    const [sortField, setSortField] = usePersistedState<SortField | null>('tasks.sortField', null);
-    const [sortDirection, setSortDirection] = usePersistedState<SortDirection>('tasks.sortDirection', null);
-    const [currentPage, setCurrentPage] = usePersistedState('tasks.page', 1);
-    const [pageSize, setPageSize] = usePersistedState('tasks.pageSize', 10);
+    // All view state lives in the URL (scope, search, filters, sort), so a
+    // filtered view survives the trip to a task's detail page and back, can be
+    // bookmarked and shared. Only the loaded-page count is transient.
+    const filters = useMemo(() => parseTaskListFilters(searchParams), [searchParams]);
+    const queryKey = serializeTaskListFilters(filters).toString();
+    const updateFilters = useCallback(
+        (next: TaskListFilters) => setSearchParams(serializeTaskListFilters(next), { replace: true }),
+        [setSearchParams],
+    );
+
+    // The search box is local so typing does not refetch on every keystroke;
+    // the URL (and so the query) follows 300ms after the last one.
+    const [searchInput, setSearchInput] = useState(filters.search);
+    useEffect(() => {
+        setSearchInput(filters.search);
+    }, [filters.search]);
+    useEffect(() => {
+        if (searchInput === filters.search) return;
+        const timer = setTimeout(() => updateFilters({ ...filters, search: searchInput }), SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [searchInput, filters, updateFilters]);
 
     const listAnchorRef = useRef<HTMLDivElement>(null);
     useListScrollRestore('tasks', listAnchorRef, !isLoading);
 
     useEffect(() => {
-        const fetchData = async () => {
+        crmService.getUsers().then(setUsers).catch(err => console.error('Failed to fetch users', err));
+    }, []);
+
+    // Pages already loaded for the current query. A filter change starts over;
+    // a refresh (after an edit) re-reads everything loaded so far in one call.
+    const pagesLoaded = useRef(1);
+    const lastQueryKey = useRef(queryKey);
+    useEffect(() => {
+        let cancelled = false;
+        if (lastQueryKey.current !== queryKey) {
+            lastQueryKey.current = queryKey;
+            pagesLoaded.current = 1;
+            // Only a new query blanks the list; an edit refresh updates it in place.
             setIsLoading(true);
+        }
+        const pages = Math.min(pagesLoaded.current, MAX_REFRESH_PAGES);
+        const fetchData = async () => {
             try {
-                const [tasksData, usersData] = await Promise.all([
-                    crmService.getTasks(taskScope),
-                    crmService.getUsers()
-                ]);
-                setTasks(tasksData);
-                setUsers(usersData);
-            } catch (error) {
-                console.error('Failed to fetch data', error);
+                const res = await crmService.getTaskList(
+                    toTaskListApiParams(filters, {
+                        page: 1,
+                        limit: TASK_PAGE_SIZE * pages,
+                        tzOffsetMinutes: -new Date().getTimezoneOffset(),
+                    }),
+                );
+                if (cancelled) return;
+                pagesLoaded.current = pages;
+                setTasks(res.items);
+                setCounts(res.counts);
+                setTotal(res.total);
+                setTruncated(res.truncated);
+                setError(null);
+            } catch (err) {
+                if (cancelled) return;
+                console.error('Failed to fetch tasks', err);
+                setError('Failed to load tasks. Please try again.');
             } finally {
-                setIsLoading(false);
+                if (!cancelled) setIsLoading(false);
             }
         };
         fetchData();
-    }, [taskScope]);
+        return () => {
+            cancelled = true;
+        };
+        // `filters` is derived from queryKey; keying on the string avoids refetching on identity changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [queryKey, reloadTick]);
+
+    const reload = () => setReloadTick(t => t + 1);
+
+    const handleLoadMore = async () => {
+        setIsLoadingMore(true);
+        try {
+            const res = await crmService.getTaskList(
+                toTaskListApiParams(filters, {
+                    page: pagesLoaded.current + 1,
+                    limit: TASK_PAGE_SIZE,
+                    tzOffsetMinutes: -new Date().getTimezoneOffset(),
+                }),
+            );
+            pagesLoaded.current += 1;
+            setTasks(prev => {
+                const seen = new Set(prev.map(t => t.id));
+                return [...prev, ...res.items.filter(t => !seen.has(t.id))];
+            });
+            setCounts(res.counts);
+            setTotal(res.total);
+        } catch (err) {
+            console.error('Failed to load more tasks', err);
+            toast.error('Failed to load more tasks');
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
 
     const handleStatusChange = async (task: Task, newStatus: string) => {
         try {
             await crmService.updateTask(task.id, { status: newStatus });
             setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus as any } : t));
+            // The task may now belong in another section and the counters moved.
+            reload();
         } catch (error) {
             console.error('Failed to update task status', error);
         }
@@ -137,6 +236,7 @@ const TasksPage = () => {
             await crmService.deleteTask(taskId);
             setTasks(prev => prev.filter(t => t.id !== taskId));
             setShowDeleteConfirm(null);
+            reload();
         } catch (err: any) {
             setError(err.message || 'Failed to delete task');
         } finally {
@@ -144,102 +244,18 @@ const TasksPage = () => {
         }
     };
 
-    const toggleSort = (field: SortField) => {
-        if (sortField === field) {
-            if (sortDirection === 'asc') setSortDirection('desc');
-            else if (sortDirection === 'desc') { setSortField(null); setSortDirection(null); }
-            else setSortDirection('asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
+    const now = useMemo(() => new Date(), [tasks]); // eslint-disable-line react-hooks/exhaustive-deps
+    const dueFormatters = useMemo(() => ({
+        formatDay: (day: string) => formatters.formatDate(day),
+        formatTime: (iso: string) => formatters.formatDate(iso, { hour: 'numeric', minute: '2-digit' }),
+    }), [formatters]);
 
-    const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-600" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
-        return <ChevronsUpDown size={14} className="text-slate-600" />;
-    };
-
-    const SortableHeader = ({ label, field }: { label: string, field: SortField }) => (
-        <button
-            onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
-        >
-            {label}
-            <SortIcon field={field} />
-        </button>
-    );
-
-    const sortedAndFilteredTasks = useMemo(() => {
-        let result = tasks.filter(task => {
-            const lc = searchTerm.toLowerCase();
-            const matchesSearch = task.title.toLowerCase().includes(lc) ||
-                task.description?.toLowerCase().includes(lc) ||
-                task.deal?.name?.toLowerCase().includes(lc) ||
-                task.deal?.company_name?.toLowerCase().includes(lc) ||
-                task.lead?.company_name?.toLowerCase().includes(lc) ||
-                task.lead?.contact_name?.toLowerCase().includes(lc);
-
-            if (!matchesSearch) return false;
-
-            if (filter === 'All') return true;
-            if (filter === 'Open') return task.status === 'OPEN';
-            if (filter === 'In Progress') return task.status === 'IN_PROGRESS';
-            if (filter === 'Done') return task.status === 'DONE';
-            if (filter === 'On Hold') return task.status === 'ON_HOLD';
-            if (filter === 'Cancelled') return task.status === 'CANCELLED';
-            if (filter === 'Overdue') return isTaskOverdue(task);
-            return true;
-        });
-
-        // Apply sorting
-        if (sortField && sortDirection) {
-            result = [...result].sort((a, b) => {
-                let aVal: any, bVal: any;
-                switch (sortField) {
-                    case 'title': aVal = a.title; bVal = b.title; break;
-                    case 'due_date': aVal = new Date(a.due_date).getTime(); bVal = new Date(b.due_date).getTime(); break;
-                    case 'status': aVal = a.status; bVal = b.status; break;
-                    case 'assigned_to': aVal = a.assigned_to?.full_name || ''; bVal = b.assigned_to?.full_name || ''; break;
-                    case 'associated_with': {
-                        const getLabel = (t: Task) => t.deal?.name || t.deal?.company_name || t.lead?.company_name || t.lead?.contact_name || '';
-                        aVal = getLabel(a); bVal = getLabel(b); break;
-                    }
-                    default: return 0;
-                }
-                if (typeof aVal === 'string') {
-                    return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-                }
-                return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-            });
-        }
-
-        return result;
-    }, [tasks, searchTerm, filter, sortField, sortDirection]);
-
-    // Sandbox limit + pagination
-    const sandboxLimitedTasks = useMemo(
-        () => isSandboxMode ? sortedAndFilteredTasks.slice(0, sandboxEntryLimit) : sortedAndFilteredTasks,
-        [sortedAndFilteredTasks, isSandboxMode, sandboxEntryLimit],
-    );
-
-    const totalPages = Math.ceil(sandboxLimitedTasks.length / pageSize);
-    const paginatedTasks = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return sandboxLimitedTasks.slice(start, start + pageSize);
-    }, [sandboxLimitedTasks, currentPage, pageSize]);
-
-    // Reset to page 1 when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, filter]);
-
-    const columns = [
+    const columns: TaskColumn[] = [
         {
-            header: <SortableHeader label="Task" field="title" />,
-            accessor: (task: Task) => (
+            key: 'title',
+            header: 'Task',
+            sortField: 'title',
+            render: (task: Task) => (
                 <div className="flex items-start gap-3">
                     <button
                         onClick={(e) => {
@@ -247,37 +263,35 @@ const TasksPage = () => {
                             handleStatusChange(task, task.status === 'DONE' ? 'OPEN' : 'DONE');
                         }}
                         className="mt-0.5 text-slate-500 hover:text-blue-400 transition-colors"
+                        aria-label={task.status === 'DONE' ? 'Reopen task' : 'Mark task done'}
                     >
                         {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
                     </button>
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1.5">
                         <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
                             {task.title}
                         </span>
+                        {task.project_id && (
+                            <span title={task.sync_status === 'sync_failed' ? 'Project sync failed' : 'Linked to a project'} className={task.sync_status === 'sync_failed' ? 'text-amber-400' : 'text-blue-400'}>
+                                <Link2 size={12} aria-label="Linked to a project" />
+                            </span>
+                        )}
                     </div>
                 </div>
-            )
+            ),
+        },
+        { key: 'priority', header: 'Priority', sortField: 'priority', render: (task: Task) => <TaskPriorityBadge priority={task.priority} /> },
+        { key: 'type', header: 'Type', render: (task: Task) => <TaskTypeBadge type={task.type} /> },
+        {
+            key: 'due',
+            header: 'Due Date',
+            sortField: 'due',
+            render: (task: Task) => <TaskDueCell due={describeTaskDue(task, now, dueFormatters, task.list_bucket)} />,
         },
         {
-            header: <SortableHeader label="Due Date" field="due_date" />,
-            accessor: (task: Task) => {
-                const isOverdue = isTaskOverdue(task);
-                return (
-                    <div className={`flex items-center gap-2 text-xs font-medium ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
-                        {isOverdue ? <AlertCircle size={14} /> : <Calendar size={14} />}
-                        {formatters.formatDate(dueDateCalendarDay(task.due_date))}
-                        {/* Only a task the user gave a time to shows one. */}
-                        {hasTimeComponent(task.due_date) && (
-                            <span className="text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
-                        )}
-                        {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter ml-1">Overdue</span>}
-                    </div>
-                );
-            }
-        },
-        {
-            header: <SortableHeader label="Associated With" field="associated_with" />,
-            accessor: (task: Task) => {
+            key: 'associated_with',
+            header: 'Associated With',
+            render: (task: Task) => {
                 const entity = task.deal
                     ? { label: task.deal.name || task.deal.company_name, sub: task.deal.company_name !== task.deal.name ? task.deal.company_name : null, type: 'deal' as const }
                     : task.lead
@@ -300,11 +314,12 @@ const TasksPage = () => {
                         </div>
                     </div>
                 );
-            }
+            },
         },
         {
-            header: <SortableHeader label="Assigned To" field="assigned_to" />,
-            accessor: (task: Task) => (
+            key: 'assigned_to',
+            header: 'Assigned To',
+            render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
                     <select
                         value={task.assigned_to.id}
@@ -338,11 +353,12 @@ const TasksPage = () => {
                         </button>
                     )}
                 </div>
-            )
+            ),
         },
         {
-            header: <SortableHeader label="Status" field="status" />,
-            accessor: (task: Task) => (
+            key: 'status',
+            header: 'Status',
+            render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
                     <select
                         value={task.status}
@@ -365,11 +381,12 @@ const TasksPage = () => {
                         <option value="CANCELLED" className="bg-slate-900 text-slate-300">CANCELLED</option>
                     </select>
                 </div>
-            )
+            ),
         },
         {
+            key: 'actions',
             header: '',
-            accessor: (task: Task) => (
+            render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
                     {canCreateTask && <button
                         onClick={() => setShowDeleteConfirm(task.id)}
@@ -379,8 +396,27 @@ const TasksPage = () => {
                         <Trash2 size={16} />
                     </button>}
                 </div>
-            )
-        }
+            ),
+        },
+    ];
+
+    // Sandbox mode caps how many rows are shown, not how many are fetched.
+    const visibleTasks = isSandboxMode ? tasks.slice(0, sandboxEntryLimit) : tasks;
+    const smartOrder = filters.sort === '';
+    const sections = smartOrder
+        ? groupTasksIntoSections(visibleTasks, counts, now)
+        : [{ bucket: 'upcoming' as const, label: 'All tasks', empty: 'No tasks match the current filters.', count: total, tasks: visibleTasks }];
+
+    const assigneeOptions = users.map(u => ({ value: u.id, label: u.full_name }));
+    const filterConfigs = [
+        { key: 'type', label: 'Type', type: 'multiselect' as const, options: TASK_TYPE_FILTER_OPTIONS },
+        { key: 'priority', label: 'Priority', type: 'multiselect' as const, options: TASK_PRIORITY_FILTER_OPTIONS },
+        { key: 'status', label: 'Status', type: 'multiselect' as const, options: TASK_STATUS_FILTER_OPTIONS },
+        { key: 'due', label: 'Due', type: 'select' as const, options: TASK_DUE_FILTER_OPTIONS, placeholder: 'Any due date' },
+        // Team / All views span several people; "My Tasks" is always just you.
+        ...(filters.scope !== 'own'
+            ? [{ key: 'assignee', label: 'Assigned to', type: 'select' as const, options: assigneeOptions, placeholder: 'Anyone' }]
+            : []),
     ];
 
     return (
@@ -410,8 +446,8 @@ const TasksPage = () => {
                     ]).map((tab) => (
                         <button
                             key={tab.key}
-                            onClick={() => setTaskScope(tab.key)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
+                            onClick={() => updateFilters({ ...filters, scope: tab.key, assignee: '' })}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${filters.scope === tab.key
                                 ? 'bg-slate-700 text-white border-slate-600'
                                 : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
                                 }`}
@@ -422,31 +458,67 @@ const TasksPage = () => {
                 </div>
             )}
 
-            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search tasks..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-400 text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                    />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {['All', 'Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map((btn) => (
+            {/* Counter strip: each tile is a one-click due filter */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" data-testid="task-counters">
+                {TASK_COUNTER_TILES.map(tile => {
+                    const active = filters.due === tile.due;
+                    const value = counts[tile.countKey];
+                    const alarming = tile.due === 'overdue' && value > 0;
+                    return (
                         <button
-                            key={btn}
-                            onClick={() => setFilter(btn)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all border ${filter === btn
-                                ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20'
-                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
+                            key={tile.due}
+                            onClick={() => updateFilters(toggleQuickDue(filters, tile.due))}
+                            aria-pressed={active}
+                            className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition-all ${active
+                                ? 'bg-blue-600/20 border-blue-500 text-slate-50'
+                                : alarming
+                                    ? 'bg-rose-500/10 border-rose-500/40 text-rose-300 hover:bg-rose-500/20'
+                                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
                                 }`}
                         >
-                            {btn}
+                            <span className="text-2xl font-bold leading-none">{value}</span>
+                            <span className="mt-1 text-xs font-semibold uppercase tracking-wider">{tile.label}</span>
                         </button>
-                    ))}
-                </div>
+                    );
+                })}
+            </div>
+
+            <FilterBar
+                className="mb-4"
+                filters={filterConfigs}
+                activeFilters={activeFilterValues(filters)}
+                onFilterChange={(key, value) => updateFilters(applyFilterChange(filters, key, value))}
+                onClearAll={() => {
+                    setSearchInput('');
+                    updateFilters(clearTaskFilters(filters));
+                }}
+                searchPlaceholder="Search tasks, leads or deals..."
+                searchValue={searchInput}
+                onSearchChange={setSearchInput}
+            />
+
+            <div className="flex flex-wrap items-center gap-3 mb-3 text-xs text-slate-400">
+                {smartOrder ? (
+                    <span
+                        className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 font-semibold text-blue-300"
+                        title="Overdue first, then due today, upcoming, no due date and done. Within a section: priority, then due date."
+                    >
+                        <ArrowDownWideNarrow size={13} />
+                        Smart order
+                    </span>
+                ) : (
+                    <>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1 font-semibold text-slate-200">
+                            Sorted by {SORT_LABELS[filters.sort as TaskSortField]} ({filters.order === 'asc' ? 'ascending' : 'descending'})
+                        </span>
+                        <button
+                            onClick={() => updateFilters({ ...filters, sort: '', order: 'asc' })}
+                            className="font-semibold text-blue-400 hover:text-blue-300"
+                        >
+                            Back to smart order
+                        </button>
+                    </>
+                )}
             </div>
 
             {error && (
@@ -456,71 +528,41 @@ const TasksPage = () => {
                 </div>
             )}
 
-            {/* Sandbox limit notice */}
-            {isSandboxMode && isLimited(sortedAndFilteredTasks.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
-                    <span className="font-semibold">Sandbox mode:</span>
-                    showing {sandboxEntryLimit} of {sortedAndFilteredTasks.length} tasks — full list visible in production.
+            {truncated && (
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm">
+                    Very large task list: showing the most recent 5,000 tasks. Narrow the filters to see older ones.
                 </div>
             )}
 
-            <Table
-                data={paginatedTasks}
-                columns={columns}
-                isLoading={isLoading}
-                onRowClick={(task) => navigate(`${task.id}`)}
-                emptyMessage="No tasks found for the selected filter."
-            />
+            {/* Sandbox limit notice */}
+            {isSandboxMode && isLimited(tasks.length) && (
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                    <span className="font-semibold">Sandbox mode:</span>
+                    showing {sandboxEntryLimit} of {tasks.length} tasks — full list visible in production.
+                </div>
+            )}
 
-            {/* Pagination Controls */}
-            {sandboxLimitedTasks.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <span>Show</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200"
-                        >
-                            {[10, 25, 50, 100].map(size => (
-                                <option key={size} value={size}>{size}</option>
-                            ))}
-                        </select>
-                        <span>of {sandboxLimitedTasks.length} tasks</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            First
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Prev
-                        </button>
-                        <span className="px-3 py-1 text-slate-300">
-                            Page {currentPage} of {totalPages || 1}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Last
-                        </button>
-                    </div>
+            {isLoading ? (
+                <TableSkeleton />
+            ) : (
+                <TaskListSections
+                    columns={columns}
+                    sections={sections}
+                    showSectionHeaders={smartOrder}
+                    sort={filters.sort ? { field: filters.sort, direction: filters.order } : null}
+                    onSort={(field) => updateFilters(nextSort(filters, field as TaskSortField))}
+                    onRowClick={(task) => navigate(`${task.id}`)}
+                />
+            )}
+
+            {!isLoading && (
+                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg text-sm text-slate-400">
+                    <span>Showing {tasks.length} of {total} tasks</span>
+                    {tasks.length < total && (
+                        <Button variant="secondary" size="sm" onClick={handleLoadMore} disabled={isLoadingMore}>
+                            {isLoadingMore ? 'Loading...' : 'Load more'}
+                        </Button>
+                    )}
                 </div>
             )}
 
@@ -529,9 +571,9 @@ const TasksPage = () => {
                 <TaskModal
                     task={null}
                     onClose={() => setShowCreateModal(false)}
-                    onSuccess={(newTask) => {
-                        setTasks(prev => [newTask, ...prev]);
+                    onSuccess={() => {
                         setShowCreateModal(false);
+                        reload();
                     }}
                 />
             )}

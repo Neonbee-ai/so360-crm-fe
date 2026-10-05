@@ -122,3 +122,7 @@ export const RotateCcw = createIcon('RotateCcw');
 export const MoreVertical = createIcon('MoreVertical');
 export const Square = createIcon('Square');
 export const GitMerge = createIcon('GitMerge');
+export const Bell = createIcon('Bell');
+export const CalendarClock = createIcon('CalendarClock');
+export const ListTodo = createIcon('ListTodo');
+export const ArrowDownWideNarrow = createIcon('ArrowDownWideNarrow');
