@@ -9,9 +9,23 @@ const mockGetTaskList = vi.fn();
 const mockGetUsers = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockDeleteTask = vi.fn();
+const mockGetUpNext = vi.fn();
+const mockViewsList = vi.fn();
+const mockViewsCreate = vi.fn();
+const mockViewsUpdate = vi.fn();
+const mockViewsRemove = vi.fn();
+const mockViewsSetDefault = vi.fn();
 
 vi.mock('../services/crmService', () => ({
   crmService: {
+    getUpNext: (...a: any[]) => mockGetUpNext(...a),
+    gridViews: {
+      list: (...a: any[]) => mockViewsList(...a),
+      create: (...a: any[]) => mockViewsCreate(...a),
+      update: (...a: any[]) => mockViewsUpdate(...a),
+      remove: (...a: any[]) => mockViewsRemove(...a),
+      setDefault: (...a: any[]) => mockViewsSetDefault(...a),
+    },
     getTaskList: (...a: any[]) => mockGetTaskList(...a),
     getUsers: (...a: any[]) => mockGetUsers(...a),
     updateTask: (...a: any[]) => mockUpdateTask(...a),
@@ -124,6 +138,8 @@ beforeEach(async () => {
   mockGetUsers.mockResolvedValue(USERS);
   mockUpdateTask.mockResolvedValue({});
   mockDeleteTask.mockResolvedValue({});
+  mockGetUpNext.mockResolvedValue({ items: [], total: 0, days: 7 });
+  mockViewsList.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -858,6 +874,209 @@ describe('TasksPage - request ordering', () => {
       await new Promise(r => setTimeout(r, 20));
       expect(screen.queryByText(/Failed to load tasks/)).toBeNull();
       spy.mockRestore();
+    });
+  });
+});
+
+// ── Up Next, reminders and saved views (Pulse 552552b8, phase 3) ──────────────
+
+const upNextItem = (id: string, over: Record<string, any> = {}) => ({
+  ...mk(id, { type: 'CALL', due_date: new Date(2026, 9, 7, 15, 30).toISOString(), list_bucket: 'today' }),
+  at: new Date(2026, 9, 7, 15, 30).toISOString(),
+  kind: 'booked',
+  overdue: false,
+  day_offset: 0,
+  ...over,
+});
+
+const savedView = (id: string, name: string, query: string, over: Record<string, any> = {}) => ({
+  id,
+  name,
+  entity_type: 'task',
+  config: { version: 1, query },
+  is_shared: false,
+  is_default: false,
+  user_id: 'user-1',
+  ...over,
+});
+
+describe('TasksPage - Up Next', () => {
+  describe('Given booked calls', () => {
+    it('When the page loads / Then the Up Next panel shows them above the counters, for the current tab', async () => {
+      mockGetUpNext.mockResolvedValue({ items: [upNextItem('call1')], total: 1, days: 7 });
+      renderPage();
+      await loaded();
+      await waitFor(() => expect(screen.getByTestId('up-next-call1')).toBeInTheDocument());
+      expect(mockGetUpNext).toHaveBeenCalledWith(expect.objectContaining({ scope: 'own' }));
+      const panel = screen.getByTestId('up-next');
+      const counters = screen.getByTestId('task-counters');
+      expect(panel.compareDocumentPosition(counters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('When the tab changes to Team / Then Up Next follows it', async () => {
+      await withPermissions(['activities.create', 'crm_tasks.view_team']);
+      renderPage();
+      await loaded();
+      await userEvent.click(screen.getByText('Team Tasks'));
+      await waitFor(() => expect(mockGetUpNext).toHaveBeenLastCalledWith(expect.objectContaining({ scope: 'team' })));
+    });
+
+    it('When a call is opened from Up Next / Then its detail page opens', async () => {
+      mockGetUpNext.mockResolvedValue({ items: [upNextItem('call1')], total: 1, days: 7 });
+      renderPage();
+      await waitFor(() => expect(screen.getByTestId('up-next-call1')).toBeInTheDocument());
+      await userEvent.click(within(screen.getByTestId('up-next-call1')).getByRole('button', { name: 'Open' }));
+      expect(screen.getByTestId('detail')).toBeInTheDocument();
+    });
+
+    it('When a call is marked done from Up Next / Then the task list and the agenda both refresh', async () => {
+      mockGetUpNext.mockResolvedValue({ items: [upNextItem('call1')], total: 1, days: 7 });
+      renderPage();
+      await waitFor(() => expect(screen.getByTestId('up-next-call1')).toBeInTheDocument());
+      const listCalls = mockGetTaskList.mock.calls.length;
+      const upNextCalls = mockGetUpNext.mock.calls.length;
+      await userEvent.click(screen.getByRole('button', { name: 'Mark Task call1 done' }));
+      await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('call1', { status: 'DONE' }));
+      await waitFor(() => expect(mockGetTaskList.mock.calls.length).toBeGreaterThan(listCalls));
+      await waitFor(() => expect(mockGetUpNext.mock.calls.length).toBeGreaterThan(upNextCalls));
+    });
+  });
+});
+
+describe('TasksPage - reminders in the list', () => {
+  describe('Given a task with a reminder time', () => {
+    it('When rendered / Then it shows a bell and the reminder time; tasks without one do not', async () => {
+      mockGetTaskList.mockResolvedValue(
+        response({ items: [mk('rem1', { list_bucket: 'upcoming', due_date: '2026-10-14T00:00:00.000Z', remind_at: new Date(2026, 9, 14, 8, 30).toISOString() }), mk('plain')] }),
+      );
+      renderPage();
+      await waitFor(() => expect(screen.getByTestId('task-row-rem1')).toBeInTheDocument());
+      const badge = within(screen.getByTestId('task-row-rem1')).getByTestId('task-reminder');
+      expect(badge.textContent).toMatch(/^Remind /);
+      expect(within(screen.getByTestId('task-row-plain')).queryByTestId('task-reminder')).toBeNull();
+    });
+  });
+
+  describe('Given the Reminders filter', () => {
+    it('When chosen / Then has_reminder=true is requested and the URL records it', async () => {
+      renderPage();
+      await loaded();
+      await userEvent.selectOptions(screen.getByLabelText('Reminders'), '1');
+      await waitFor(() => expect(lastParams().has_reminder).toBe('true'));
+      expect(loc()).toBe('/tasks?reminder=1');
+    });
+
+    it('When the Dashboard View all link is followed / Then the same open reminder tasks are requested', async () => {
+      renderPage('/tasks?reminder=1&status=OPEN,IN_PROGRESS');
+      await loaded();
+      expect(lastParams()).toMatchObject({ has_reminder: 'true', status: 'OPEN,IN_PROGRESS', sort: 'smart' });
+    });
+  });
+});
+
+describe('TasksPage - saved views', () => {
+  describe('Given the built-in views', () => {
+    it('When With reminders is clicked / Then its filters drive the list and the URL', async () => {
+      renderPage();
+      await loaded();
+      await userEvent.click(within(screen.getByTestId('task-views')).getByRole('button', { name: 'With reminders' }));
+      await waitFor(() => expect(lastParams()).toMatchObject({ has_reminder: 'true', status: 'OPEN,IN_PROGRESS' }));
+      expect(loc()).toBe('/tasks?status=OPEN%2CIN_PROGRESS&reminder=1');
+    });
+
+    it('When Assigned to me is clicked / Then the current user is the assignee filter', async () => {
+      renderPage();
+      await loaded();
+      await userEvent.click(within(screen.getByTestId('task-views')).getByRole('button', { name: 'Assigned to me' }));
+      await waitFor(() => expect(lastParams().assignee_id).toBe('user-1'));
+    });
+  });
+
+  describe('Given the user has a saved view', () => {
+    it('When the page loads / Then the task views are fetched and shown, and none is applied unless it is the default', async () => {
+      mockViewsList.mockResolvedValue([savedView('v1', 'Hot calls', 'type=CALL&priority=HIGH')]);
+      renderPage();
+      await loaded();
+      expect(mockViewsList).toHaveBeenCalledWith('task');
+      expect(await screen.findByRole('button', { name: 'Hot calls' })).toBeInTheDocument();
+      expect(lastParams()).not.toHaveProperty('type');
+    });
+
+    it('When it is clicked / Then its filters are applied on the current tab', async () => {
+      mockViewsList.mockResolvedValue([savedView('v1', 'Hot calls', 'type=CALL&priority=HIGH')]);
+      renderPage();
+      await loaded();
+      await userEvent.click(await screen.findByRole('button', { name: 'Hot calls' }));
+      await waitFor(() => expect(lastParams()).toMatchObject({ type: 'CALL', priority: 'HIGH', scope: 'own' }));
+    });
+
+    it('When the current filters are saved under a name / Then a private task view is created from them', async () => {
+      mockViewsCreate.mockResolvedValue(savedView('new', 'My filter', 'type=EMAIL'));
+      renderPage('/tasks?type=EMAIL');
+      await loaded();
+      await userEvent.click(await screen.findByRole('button', { name: 'Save view' }));
+      fireEvent.change(screen.getByLabelText('New view name'), { target: { value: 'My filter' } });
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+      await waitFor(() =>
+        expect(mockViewsCreate).toHaveBeenCalledWith(
+          expect.objectContaining({ name: 'My filter', entity_type: 'task', is_shared: false, config: { version: 1, query: 'type=EMAIL' } }),
+        ),
+      );
+      expect(await screen.findByRole('button', { name: 'My filter' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Given a saved view marked as default', () => {
+    beforeEach(() => {
+      mockViewsList.mockResolvedValue([savedView('v9', 'Mine', 'due=today', { is_default: true })]);
+    });
+
+    it('When the page opens with no filters / Then the default view is applied once', async () => {
+      renderPage();
+      await loaded();
+      await waitFor(() => expect(lastParams().due).toBe('today'));
+      expect(loc()).toBe('/tasks?due=today');
+    });
+
+    it('When the default has been applied and the user clears the filters / Then it is not applied again', async () => {
+      renderPage();
+      await waitFor(() => expect(lastParams().due).toBe('today'));
+      await userEvent.click(screen.getByRole('button', { name: /Clear \(1\)/ }));
+      await waitFor(() => expect(lastParams()).not.toHaveProperty('due'));
+      await new Promise(r => setTimeout(r, 20));
+      expect(lastParams()).not.toHaveProperty('due');
+    });
+
+    it('When the page is opened from a link that already has filters / Then the link wins and the default is not applied', async () => {
+      renderPage('/tasks?type=EMAIL');
+      await loaded();
+      await screen.findByTestId('task-view-v9');
+      await new Promise(r => setTimeout(r, 20));
+      expect(lastParams()).toMatchObject({ type: 'EMAIL' });
+      expect(lastParams()).not.toHaveProperty('due');
+    });
+  });
+
+  describe('Given a saved view that tries to widen visibility', () => {
+    it('When a view stores scope=all and another person id / Then the tab stays My Tasks and the server still receives scope=own', async () => {
+      mockViewsList.mockResolvedValue([savedView('v7', 'Everyone', 'scope=all&assignee=user-2')]);
+      renderPage();
+      await loaded();
+      await userEvent.click(await screen.findByRole('button', { name: 'Everyone' }));
+      await waitFor(() => expect(lastParams().assignee_id).toBe('user-2'));
+      // A view is only filters: the tab (and so the requested scope) is never taken from it.
+      expect(lastParams().scope).toBe('own');
+      expect(loc()).not.toContain('scope=');
+    });
+  });
+
+  describe('Given saved views cannot be loaded', () => {
+    it('When the views API fails / Then the page still works with the built-in views', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockViewsList.mockRejectedValue(new Error('403'));
+      renderPage();
+      await loaded();
+      expect(within(screen.getByTestId('task-views')).getByRole('button', { name: 'Overdue' })).toBeInTheDocument();
     });
   });
 });

@@ -15,6 +15,7 @@ import {
     TASK_DUE_FILTER_OPTIONS,
     TASK_PAGE_SIZE,
     TASK_PRIORITY_FILTER_OPTIONS,
+    TASK_REMINDER_FILTER_OPTIONS,
     TASK_STATUS_FILTER_OPTIONS,
     TASK_TYPE_FILTER_OPTIONS,
     TaskListCounts,
@@ -33,7 +34,11 @@ import {
 import { Button, FilterBar, toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
 import { TaskListSections, TaskColumn } from './components/TaskListSections';
-import { TaskDueCell, TaskPriorityBadge, TaskTypeBadge } from './components/TaskCells';
+import { TaskDueCell, TaskPriorityBadge, TaskReminderBadge, TaskTypeBadge } from './components/TaskCells';
+import { TasksUpNext } from './components/TasksUpNext';
+import { TaskSavedViews } from './components/TaskSavedViews';
+import { useTaskViews } from '../hooks/useTaskViews';
+import { filtersFromViewConfig, hasNoFilters } from '../utils/taskViews';
 import { useListScrollRestore } from '../hooks/useListViewState';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -90,6 +95,19 @@ const TasksPage = () => {
         const timer = setTimeout(() => updateFilters({ ...filters, search: searchInput }), SEARCH_DEBOUNCE_MS);
         return () => clearTimeout(timer);
     }, [searchInput, filters, updateFilters]);
+
+    // Saved views. A default view is applied once, on arrival, and only when the
+    // URL carries no filters of its own (a shared or restored link wins).
+    const taskViews = useTaskViews();
+    const defaultViewHandled = useRef(false);
+    useEffect(() => {
+        if (!taskViews.loaded || defaultViewHandled.current) return;
+        defaultViewHandled.current = true;
+        const defaultView = taskViews.views.find(v => v.is_default);
+        if (defaultView && hasNoFilters(filters)) {
+            updateFilters(filtersFromViewConfig(defaultView.config, filters.scope));
+        }
+    }, [taskViews.loaded, taskViews.views, filters, updateFilters]);
 
     const listAnchorRef = useRef<HTMLDivElement>(null);
     useListScrollRestore('tasks', listAnchorRef, !isLoading);
@@ -267,15 +285,18 @@ const TasksPage = () => {
                     >
                         {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
                     </button>
-                    <div className="flex items-center gap-1.5">
-                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
-                            {task.title}
-                        </span>
-                        {task.project_id && (
-                            <span title={task.sync_status === 'sync_failed' ? 'Project sync failed' : 'Linked to a project'} className={task.sync_status === 'sync_failed' ? 'text-amber-400' : 'text-blue-400'}>
-                                <Link2 size={12} aria-label="Linked to a project" />
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                            <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
+                                {task.title}
                             </span>
-                        )}
+                            {task.project_id && (
+                                <span title={task.sync_status === 'sync_failed' ? 'Project sync failed' : 'Linked to a project'} className={task.sync_status === 'sync_failed' ? 'text-amber-400' : 'text-blue-400'}>
+                                    <Link2 size={12} aria-label="Linked to a project" />
+                                </span>
+                            )}
+                        </div>
+                        <TaskReminderBadge task={task} formatTime={dueFormatters.formatTime} />
                     </div>
                 </div>
             ),
@@ -413,6 +434,7 @@ const TasksPage = () => {
         { key: 'priority', label: 'Priority', type: 'multiselect' as const, options: TASK_PRIORITY_FILTER_OPTIONS },
         { key: 'status', label: 'Status', type: 'multiselect' as const, options: TASK_STATUS_FILTER_OPTIONS },
         { key: 'due', label: 'Due', type: 'select' as const, options: TASK_DUE_FILTER_OPTIONS, placeholder: 'Any due date' },
+        { key: 'reminder', label: 'Reminders', type: 'select' as const, options: TASK_REMINDER_FILTER_OPTIONS, placeholder: 'Any task' },
         // Team / All views span several people; "My Tasks" is always just you.
         ...(filters.scope !== 'own'
             ? [{ key: 'assignee', label: 'Assigned to', type: 'select' as const, options: assigneeOptions, placeholder: 'Anyone' }]
@@ -458,6 +480,15 @@ const TasksPage = () => {
                 </div>
             )}
 
+            <TasksUpNext
+                scope={filters.scope}
+                refreshKey={reloadTick}
+                onChanged={reload}
+                onOpen={(task) => navigate(`${task.id}`)}
+                formatDay={dueFormatters.formatDay}
+                formatTime={dueFormatters.formatTime}
+            />
+
             {/* Counter strip: each tile is a one-click due filter */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" data-testid="task-counters">
                 {TASK_COUNTER_TILES.map(tile => {
@@ -482,6 +513,13 @@ const TasksPage = () => {
                     );
                 })}
             </div>
+
+            <TaskSavedViews
+                filters={filters}
+                currentUserId={currentUserId}
+                taskViews={taskViews}
+                onApply={(next) => updateFilters(next)}
+            />
 
             <FilterBar
                 className="mb-4"

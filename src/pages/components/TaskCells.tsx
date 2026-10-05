@@ -58,3 +58,29 @@ export const TaskDueCell = ({ due }: { due: DueDescription }) => {
         </span>
     );
 };
+
+/**
+ * Bell + reminder time under a task title, for a task that has a reminder
+ * time (remind_at). A Reminder-type task without one already shows the bell in
+ * its Type badge, so nothing extra is drawn for it.
+ */
+export const TaskReminderBadge = ({
+    task,
+    formatTime,
+}: {
+    task: { remind_at?: string | null };
+    formatTime: (isoInstant: string) => string;
+}) => {
+    if (!task.remind_at) return null;
+    const when = formatTime(task.remind_at);
+    return (
+        <span
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-400"
+            title={`Reminder at ${when}`}
+            data-testid="task-reminder"
+        >
+            <Bell size={11} className="shrink-0" />
+            Remind {when}
+        </span>
+    );
+};
