@@ -174,6 +174,8 @@ export interface Task {
     assigned_to: User;
     created_at: string;
     reminder_minutes_before?: number;
+    /** Section the smart-ordered list endpoint placed this task in (GET /tasks/list only). */
+    list_bucket?: 'overdue' | 'today' | 'upcoming' | 'no_due' | 'done';
     // Project sync — populated once the connect-project migration lands on the
     // backend. Absent/undefined on a task means "no project connection", which
     // is the current unaffected behavior — every consumer must treat it that way.
