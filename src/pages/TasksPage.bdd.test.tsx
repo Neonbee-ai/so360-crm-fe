@@ -569,4 +569,43 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
       expect(screen.getByText(/Page 1 of/)).toBeInTheDocument();
     });
   });
+
+  describe('Given the Due Date column renders a task', () => {
+    const renderDueCell = async (task: any) => {
+      mockGetTasks.mockResolvedValue([task]);
+      render(<TasksPage />);
+      await waitFor(() => expect(tableProps.data).toHaveLength(1));
+      const dueCol = tableProps.columns.find((c: any) => typeof c.accessor === 'function' && c.header?.props?.field === 'due_date');
+      return render(<>{dueCol.accessor(task)}</>).container;
+    };
+
+    it('When the task is overdue / Then the date, time and OVERDUE badge stay on one line', async () => {
+      const cell = await renderDueCell({ ...makeTasks()[2], due_date: '2024-01-01T04:05:00Z' });
+      const wrapper = cell.firstElementChild as HTMLElement;
+      expect(wrapper.className).toContain('whitespace-nowrap');
+      expect(wrapper.className).not.toContain('flex-wrap');
+      expect(wrapper.className).toContain('items-center');
+    });
+
+    it('When the task is overdue / Then the OVERDUE badge is shown and the icon does not shrink', async () => {
+      const cell = await renderDueCell({ ...makeTasks()[2], due_date: '2024-01-01' });
+      expect(cell.textContent).toContain('Overdue');
+      expect(cell.querySelector('svg')?.getAttribute('class')).toContain('shrink-0');
+    });
+
+    it('When the task is not overdue / Then no OVERDUE badge is shown', async () => {
+      const cell = await renderDueCell({ ...makeTasks()[1], due_date: '2999-01-01' });
+      expect(cell.textContent).not.toContain('Overdue');
+    });
+
+    it('When the due date has no time / Then only the date is shown', async () => {
+      const cell = await renderDueCell({ ...makeTasks()[0], due_date: '2999-01-01' });
+      expect(cell.querySelectorAll('span')).toHaveLength(1);
+    });
+
+    it('When the due date has a time / Then the time is shown in its own span', async () => {
+      const cell = await renderDueCell({ ...makeTasks()[0], due_date: '2999-01-01T04:05:00Z' });
+      expect(cell.querySelectorAll('span')).toHaveLength(2);
+    });
+  });
 });
