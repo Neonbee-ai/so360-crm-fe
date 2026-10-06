@@ -82,6 +82,18 @@ const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: (counts: TabCou
 // .trim() check isn't enough — strip tags first to see if there's real content.
 const isNoteContentEmpty = (html: string): boolean => html.replace(/<[^>]*>/g, '').trim().length === 0;
 
+// Task 8a7f43ff: the Notes tab lists the newest note first. The lead payload
+// embeds notes oldest-first (crm-be orders created_at ASC so reply threads nest
+// chronologically), so sort top-level notes here. Reversing before the stable
+// sort keeps later-inserted notes first when timestamps tie.
+export const sortNotesNewestFirst = <T extends { created_at?: string }>(notes: T[]): T[] => {
+    const time = (n: T) => {
+        const t = n.created_at ? Date.parse(n.created_at) : NaN;
+        return Number.isNaN(t) ? 0 : t;
+    };
+    return [...notes].reverse().sort((a, b) => time(b) - time(a));
+};
+
 // Notes timeline redesign (Task dfae6177): collapse consecutive replies from
 // the same author into one run so the author/timestamp header only prints
 // once per run instead of once per reply.
@@ -1144,7 +1156,7 @@ const LeadDetailPage = () => {
                                             <p className="text-slate-400 italic text-sm">No notes captured for this {isCustomerDetailRoute ? 'customer' : 'lead'} yet.</p>
                                         ) : (
                                             <div className="space-y-4">
-                                                {lead.notes.map(note => (
+                                                {sortNotesNewestFirst(lead.notes).map(note => (
                                                     <div key={note.id} className="text-sm bg-slate-900/40 border border-slate-800 rounded-xl p-4 group/note relative">
                                                         {editingNoteId === note.id ? (
                                                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-2">
@@ -1273,7 +1285,7 @@ const LeadDetailPage = () => {
                                                         const freshNote = await crmService.createNote({ lead_id: lead.id, content: newNoteContent });
                                                         setLead({
                                                             ...lead,
-                                                            notes: [...(lead.notes || []), freshNote]
+                                                            notes: [freshNote, ...(lead.notes || [])]
                                                         });
                                                         setNewNoteContent('');
                                                         setNoteEditorKey((k) => k + 1);

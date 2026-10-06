@@ -188,7 +188,7 @@ vi.mock('../utils/formatters', () => ({
   useCRMCurrencySymbol: () => '$',
 }));
 
-import LeadDetailPage from './LeadDetailPage';
+import LeadDetailPage, { sortNotesNewestFirst } from './LeadDetailPage';
 
 const owner = { id: 'u1', full_name: 'Test Owner', email: 'owner@test.com', avatar_url: null };
 
@@ -598,6 +598,94 @@ describe('LeadDetailPage', () => {
       expect(mockDeleteNote).not.toHaveBeenCalled();
       expect(screen.getByText('Hot lead from conference')).toBeInTheDocument();
       confirmSpy.mockRestore();
+    });
+  });
+
+  // Task 8a7f43ff: newest note first in the Notes tab.
+  describe('Given notes ordering on the Notes tab', () => {
+    const renderedNoteContents = () => screen.getAllByTestId('note-content').map((el) => el.textContent);
+
+    it('When the lead payload lists notes oldest-first / Then the Notes tab shows the newest note at the top', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [
+          { id: 'n1', content: 'Oldest note', author: owner, created_at: '2025-01-02T10:00:00Z' },
+          { id: 'n2', content: 'Middle note', author: owner, created_at: '2025-01-03T10:00:00Z' },
+          { id: 'n3', content: 'Newest note', author: owner, created_at: '2025-01-04T10:00:00Z' },
+        ],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Newest note')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Newest note', 'Middle note', 'Oldest note']);
+    });
+
+    it('When a new note is saved / Then it appears at the top of the Notes list above existing notes', async () => {
+      mockCreateNote.mockResolvedValueOnce({ id: 'nn1', content: 'Brand new note', author: owner, created_at: '2025-01-05T10:00:00Z' });
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Needs follow up')).toBeInTheDocument());
+      fireEvent.change(screen.getByPlaceholderText('Add a private note about this lead...'), { target: { value: 'Brand new note' } });
+      await user.click(screen.getByText('Save Note'));
+      await waitFor(() => expect(screen.getByText('Brand new note')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Brand new note', 'Needs follow up', 'Hot lead from conference']);
+    });
+
+    it('When a note has replies / Then the replies stay in chronological order under their note', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [
+          {
+            id: 'n1', content: 'Older note', author: owner, created_at: '2025-01-02T10:00:00Z',
+            replies: [
+              { id: 'r1', content: 'First reply', author: owner, created_at: '2025-01-02T11:00:00Z' },
+              { id: 'r2', content: 'Second reply', author: owner, created_at: '2025-01-02T12:00:00Z' },
+            ],
+          },
+          { id: 'n2', content: 'Newer note', author: owner, created_at: '2025-01-03T10:00:00Z' },
+        ],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Second reply')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Newer note', 'Older note', 'First reply', 'Second reply']);
+    });
+  });
+
+  describe('Given the sortNotesNewestFirst helper', () => {
+    it('When notes have different timestamps / Then they are ordered newest to oldest without mutating the input', () => {
+      const input = [
+        { id: 'a', created_at: '2025-01-01T00:00:00Z' },
+        { id: 'c', created_at: '2025-01-03T00:00:00Z' },
+        { id: 'b', created_at: '2025-01-02T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['c', 'b', 'a']);
+      expect(input.map((n) => n.id)).toEqual(['a', 'c', 'b']);
+    });
+
+    it('When two notes share a timestamp / Then the one later in the list (added later) comes first', () => {
+      const input = [
+        { id: 'first', created_at: '2025-01-01T00:00:00Z' },
+        { id: 'second', created_at: '2025-01-01T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['second', 'first']);
+    });
+
+    it('When a note has a missing or invalid timestamp / Then it sorts after dated notes', () => {
+      const input = [
+        { id: 'missing' },
+        { id: 'invalid', created_at: 'not-a-date' },
+        { id: 'dated', created_at: '2025-01-01T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['dated', 'invalid', 'missing']);
+    });
+
+    it('When the list is empty / Then it returns an empty list', () => {
+      expect(sortNotesNewestFirst([])).toEqual([]);
     });
   });
 
