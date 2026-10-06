@@ -579,11 +579,12 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
       return render(<>{dueCol.accessor(task)}</>).container;
     };
 
-    it('When the task is overdue / Then the date, time and OVERDUE badge do not wrap mid-value', async () => {
+    it('When the task is overdue / Then the date, time and OVERDUE badge stay on one line', async () => {
       const cell = await renderDueCell({ ...makeTasks()[2], due_date: '2024-01-01T04:05:00Z' });
       const wrapper = cell.firstElementChild as HTMLElement;
       expect(wrapper.className).toContain('whitespace-nowrap');
-      expect(wrapper.className).toContain('flex-wrap');
+      expect(wrapper.className).not.toContain('flex-wrap');
+      expect(wrapper.className).toContain('items-center');
     });
 
     it('When the task is overdue / Then the OVERDUE badge is shown and the icon does not shrink', async () => {

@@ -263,7 +263,7 @@ const TasksPage = () => {
             accessor: (task: Task) => {
                 const isOverdue = isTaskOverdue(task);
                 return (
-                    <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                    <div className={`flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
                         {isOverdue ? <AlertCircle size={14} className="shrink-0" /> : <Calendar size={14} className="shrink-0" />}
                         <span>{formatters.formatDate(dueDateCalendarDay(task.due_date))}</span>
                         {/* Only a task the user gave a time to shows one. */}
