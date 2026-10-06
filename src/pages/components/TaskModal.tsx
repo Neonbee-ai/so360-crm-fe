@@ -20,6 +20,11 @@ interface TaskModalProps {
     onSuccess: (task: Task) => void;
 }
 
+// Error code the Projects/CRM backend returns when the assignee is not on the
+// project team. Kept here so it is a one-line change if the backend renames it.
+const ASSIGNEE_NOT_PROJECT_MEMBER = 'ASSIGNEE_NOT_PROJECT_MEMBER';
+const NON_MEMBER_MESSAGE = 'The assignee is not a member of the selected project. Pick a project member, or add this person to the project team first.';
+
 const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholderId, dealProjectId, onClose, onSuccess }) => {
     const shell = useShell();
     const { recordActivity } = useActivity();
@@ -48,6 +53,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     const [assignedToId, setAssignedToId] = useState(originalAssigneeId);
     const [reminderMinutes, setReminderMinutes] = useState(task?.reminder_minutes_before?.toString() || '');
     const [users, setUsers] = useState<User[]>([]);
+    // Until the user list arrives the assignee select shows "Loading…" — never a
+    // placeholder person, and a new task cannot be saved with no assignee.
+    const [usersLoading, setUsersLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const showAssociatePicker = !leadId && !dealId && !isEditing;
     const [associateType, setAssociateType] = useState<'none' | 'lead' | 'deal'>('none');
@@ -65,7 +73,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
     useEffect(() => {
         const fetchUsers = async () => {
-            const usersData = await crmService.getUsers();
+            let usersData: User[] = [];
+            try {
+                usersData = (await crmService.getUsers()) || [];
+            } catch {
+                usersData = [];
+            } finally {
+                setUsersLoading(false);
+            }
 
             // If API returns no users but we have the current user from shell, use them as fallback
             let finalUsers = usersData;
@@ -142,6 +157,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
             toast.error('Due time cannot be in the past. Please pick a later time.');
             return;
         }
+        if (usersLoading) {
+            toast.error('Still loading the assignee list. Please try again in a moment.');
+            return;
+        }
         if (!isEditing && !assignedToId) {
             toast.error('Please choose who this task is assigned to.');
             return;
@@ -215,6 +234,18 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                     const linkedTask = (connected as any)?.task;
                     if (linkedTask?.id === result.id) result = linkedTask;
                 } catch (connectError) {
+                    if ((connectError as { code?: string })?.code === ASSIGNEE_NOT_PROJECT_MEMBER) {
+                        // The Projects service refused the assignee: block, don't
+                        // just warn. A task we just created is rolled back so the
+                        // user can fix the assignee and resubmit without a duplicate.
+                        if (!isEditing && result?.id) {
+                            try { await crmService.deleteTask(result.id); } catch { /* best effort */ }
+                        } else {
+                            onSuccess(result); // an edit is already saved; keep lists in sync
+                        }
+                        toast.error(NON_MEMBER_MESSAGE);
+                        return;
+                    }
                     const reason = (connectError as Error)?.message || 'Unknown error';
                     toast.warning(`Task ${isEditing ? 'updated' : 'created'}, but couldn't connect to Project: ${reason}`);
                 }
@@ -402,10 +433,16 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                                     <select
                                         value={assignedToId}
+                                        disabled={usersLoading}
+                                        aria-busy={usersLoading}
                                         onChange={(e) => setAssignedToId(e.target.value)}
                                         className="w-full bg-slate-950 border border-slate-700/50 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
                                     >
-                                        <option value="">{isEditing ? 'Unassigned' : 'Select assignee…'}</option>
+                                        {usersLoading ? (
+                                            <option value={assignedToId}>Loading assignees…</option>
+                                        ) : (
+                                            <option value="">{isEditing ? 'Unassigned' : 'Select assignee…'}</option>
+                                        )}
                                         {users.map(u => (
                                             <option key={u.id} value={u.id}>
                                                 {u.full_name}

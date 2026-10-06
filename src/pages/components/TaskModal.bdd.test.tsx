@@ -8,6 +8,7 @@ let mockCurrentUser: any = { id: 'u1', full_name: 'Test User', email: 'test@test
 const mockGetUsers = vi.fn();
 const mockCreateTask = vi.fn();
 const mockUpdateTask = vi.fn();
+const mockDeleteTask = vi.fn();
 const mockRecordActivity = vi.fn();
 const mockShowError = vi.hoisted(() => vi.fn());
 const mockEmitNotification = vi.fn();
@@ -23,6 +24,7 @@ vi.mock('../../services/crmService', () => ({
     getUsers: (...a: any[]) => mockGetUsers(...a),
     createTask: (...a: any[]) => mockCreateTask(...a),
     updateTask: (...a: any[]) => mockUpdateTask(...a),
+    deleteTask: (...a: any[]) => mockDeleteTask(...a),
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getDeals: (...a: any[]) => mockGetDeals(...a),
     getProjects: (...a: any[]) => mockGetProjects(...a),
@@ -1349,5 +1351,51 @@ describe('Given the Projects request succeeds', () => {
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
     await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
+
+// ── Assignee loading + backend non-member rejection (Pulse 4dc7892e) ────────
+describe('Given the assignee list is still loading', () => {
+  it('When the modal opens / Then the assignee select is disabled and shows a loading label, not a person', async () => {
+    let release!: (u: any[]) => void;
+    mockGetUsers.mockReturnValue(new Promise(r => { release = r; }));
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    expect(screen.getByText('Loading assignees…')).toBeInTheDocument();
+    expect(selects()[1].disabled).toBe(true);
+    expect(screen.queryByText('Test User')).not.toBeInTheDocument();
+
+    release(USERS);
+    await waitFor(() => expect(selects()[1].disabled).toBe(false));
+    expect(screen.queryByText('Loading assignees…')).not.toBeInTheDocument();
+  });
+});
+
+describe('Given the Projects service rejects the assignee as a non-member', () => {
+  const nonMemberError = () =>
+    Object.assign(new Error('Assign the task to a project member'), { code: 'ASSIGNEE_NOT_PROJECT_MEMBER' });
+
+  it('When creating a task / Then an error (not a warning) is shown, the new task is rolled back and the modal stays open', async () => {
+    mockCreateTask.mockResolvedValue({ ...BASE_TASK, id: 'new-1' });
+    mockConnectTaskToProject.mockRejectedValue(nonMemberError());
+    mockGetProjects.mockResolvedValue([{ id: 'proj-1', name: 'Proj' }]);
+    const onClose = vi.fn();
+    const onSuccess = vi.fn();
+    render(<TaskModal leadId="lead-1" onClose={onClose} onSuccess={onSuccess} />);
+    await waitFor(() => expect(selects()[1].value).toBe('u1'));
+    await waitFor(() => expect(screen.getByText('Proj')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    fireEvent.submit(document.querySelector('form')!);
+
+    await waitFor(() =>
+      expect(mockShowError).toHaveBeenCalledWith(expect.stringContaining('not a member of the selected project')),
+    );
+    expect(mockDeleteTask).toHaveBeenCalledWith('new-1');
+    expect(mockShowWarning).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

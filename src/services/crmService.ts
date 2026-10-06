@@ -1892,7 +1892,11 @@ export const crmService = {
             { project_id: projectId },
         );
         if (result && (result as any).connected === false) {
-            throw new Error((result as any).reason || 'Failed to connect task to project.');
+            const failure = new Error((result as any).reason || 'Failed to connect task to project.') as Error & { code?: string };
+            // Machine-readable reason from the backend (e.g. ASSIGNEE_NOT_PROJECT_MEMBER).
+            const code = (result as any).error_code || (result as any).code;
+            if (code) failure.code = code;
+            throw failure;
         }
         return result;
     },
