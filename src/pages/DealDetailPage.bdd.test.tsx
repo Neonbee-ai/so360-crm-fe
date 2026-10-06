@@ -26,6 +26,8 @@ const mockUploadDocument = vi.fn().mockResolvedValue({});
 const mockDeleteDocument = vi.fn().mockResolvedValue({});
 const mockRequestInvoice = vi.fn().mockResolvedValue({});
 const mockGetProjects = vi.fn().mockResolvedValue([]);
+const mockSearchProjects = vi.fn().mockResolvedValue({ data: [], hasMore: false });
+const mockGetProjectById = vi.fn().mockResolvedValue(null);
 const mockCreateProjectFromDeal = vi.fn().mockResolvedValue({ id: 'p1' });
 const mockLinkProject = vi.fn().mockResolvedValue({});
 const mockUnlinkProject = vi.fn().mockResolvedValue({});
@@ -54,6 +56,8 @@ vi.mock('../services/crmService', () => ({
     deleteDocument: (...a: any[]) => mockDeleteDocument(...a),
     requestInvoice: (...a: any[]) => mockRequestInvoice(...a),
     getProjects: (...a: any[]) => mockGetProjects(...a),
+    searchProjects: (...a: any[]) => mockSearchProjects(...a),
+    getProjectById: (...a: any[]) => mockGetProjectById(...a),
     createProjectFromDeal: (...a: any[]) => mockCreateProjectFromDeal(...a),
     linkProject: (...a: any[]) => mockLinkProject(...a),
     unlinkProject: (...a: any[]) => mockUnlinkProject(...a),
@@ -749,12 +753,56 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given deal project linking', () => {
-    it('When Create Project is clicked / Then opens the project modal', async () => {
+    it('When Create Project is clicked / Then opens the project modal with the searchable project picker', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
       await user.click(screen.getByText('Create Project'));
-      await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('project-select')).toBeInTheDocument());
+      // The picker pages/searches on demand — the old load-everything call is gone.
+      expect(mockGetProjects).not.toHaveBeenCalled();
+    });
+
+    it('When a project is picked in the picker and Confirm Link is clicked / Then the deal is linked to exactly that project', async () => {
+      const user = userEvent.setup();
+      mockSearchProjects.mockResolvedValue({ data: [{ id: 'proj-9', title: 'Harbour Tower' }, { id: 'proj-8', title: 'Other' }], hasMore: false });
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+
+      const picker = await screen.findByTestId('project-select');
+      await user.click(within(picker).getByRole('combobox'));
+      await user.click(await screen.findByRole('option', { name: 'Harbour Tower' }));
+      await user.click(screen.getByRole('button', { name: /confirm link/i }));
+
+      await waitFor(() => expect(mockLinkProject).toHaveBeenCalledWith('deal-1', 'proj-9'));
+      expect(mockShowSuccess).toHaveBeenCalledWith('Project linked successfully');
+    });
+
+    it('When Confirm Link is clicked with nothing picked / Then it is disabled and nothing is linked', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+      const confirm = await screen.findByRole('button', { name: /confirm link/i });
+      expect(confirm).toBeDisabled();
+      await user.click(confirm);
+      expect(mockLinkProject).not.toHaveBeenCalled();
+    });
+
+    it('When linking fails / Then the user is told and the modal stays open for a retry', async () => {
+      const user = userEvent.setup();
+      mockSearchProjects.mockResolvedValue({ data: [{ id: 'proj-9', title: 'Harbour Tower' }], hasMore: false });
+      mockLinkProject.mockRejectedValueOnce(new Error('409'));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+      await user.click(within(await screen.findByTestId('project-select')).getByRole('combobox'));
+      await user.click(await screen.findByRole('option', { name: 'Harbour Tower' }));
+      await user.click(screen.getByRole('button', { name: /confirm link/i }));
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to link project'));
+      expect(screen.getByTestId('project-select')).toBeInTheDocument();
     });
 
     it('When project modal opens / Then container has max-h-[90vh]', async () => {
