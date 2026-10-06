@@ -202,6 +202,8 @@ const LeadDetailPage = () => {
     // Editing a lead ran the same fields through no validation at all, so a
     // name or phone rejected by Create Lead could still be saved from here.
     const [editErrors, setEditErrors] = useState<Record<string, string | null>>({});
+    // Guards the profile Save against double clicks firing overlapping PATCHes.
+    const [isSavingInfo, setIsSavingInfo] = useState(false);
     const [isChangingOwner, setIsChangingOwner] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
@@ -305,7 +307,9 @@ const LeadDetailPage = () => {
 
     const INITIAL_ACTIVITY_LOAD = 7;
 
-    const fetchLeadData = useCallback(async () => {
+    // Resolves true when the lead was loaded, false when that load failed (the
+    // failure is still handled/logged here). Existing callers ignore the result.
+    const fetchLeadData = useCallback(async (): Promise<boolean> => {
         try {
             // Only the lead itself is critical. Everything else is supporting
             // detail and degrades to an empty value.
@@ -347,12 +351,14 @@ const LeadDetailPage = () => {
             setAllUsers(usersData);
             setPartners(partnersData);
             setSourceTypes(fetchedSourceTypes);
+            return true;
         } catch (error) {
             console.error('Failed to fetch lead data', error);
             // Report a permission failure as a permission failure. Reusing the
             // "not found" state for this sent users hunting for a deleted record
             // instead of asking an administrator for access.
             setAccessDenied((error as { status?: number })?.status === 403);
+            return false;
         } finally {
             setIsLoading(false);
         }
@@ -714,6 +720,7 @@ const LeadDetailPage = () => {
                             </button>
                             <div className="ml-auto flex items-center px-6">
                                 <button
+                                    disabled={isSavingInfo}
                                     onClick={async () => {
                                         if (isEditingInfo) {
                                             const nextErrors = {
@@ -730,13 +737,23 @@ const LeadDetailPage = () => {
                                                 return;
                                             }
                                             setEditErrors({});
+                                            setIsSavingInfo(true);
                                             try {
                                                 // Field-diff history is now captured server-side by the
                                                 // leads audit trigger (Task 7) — see the Audit History tab.
                                                 await crmService.updateLead(lead.id, lead);
                                                 setSaveDuplicate(null);
                                                 recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${getLeadDisplayName(lead)}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
-                                                fetchLeadData();
+                                                // Leave edit mode only once the persisted lead is back on
+                                                // screen, so what the user sees is what the server stored.
+                                                const reloaded = await fetchLeadData();
+                                                if (!reloaded) {
+                                                    // Saved, but the persisted lead could not be re-read. Keep
+                                                    // the editor open with the user's values rather than showing
+                                                    // them as if they were the stored record.
+                                                    toast.error('Changes were saved, but the latest lead could not be reloaded. Your edits are still shown; please refresh to confirm.');
+                                                    return;
+                                                }
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
                                                 const dup = parseDuplicateLead(error);
@@ -752,14 +769,17 @@ const LeadDetailPage = () => {
                                                         : 'Failed to save changes.',
                                                 );
                                                 return;
+                                            } finally {
+                                                setIsSavingInfo(false);
                                             }
                                         }
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
-                                    className={`p-2 rounded-lg transition-all ${isEditingInfo ? 'bg-blue-600 text-slate-50 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
-                                    title={isEditingInfo ? "Save Changes" : "Edit Intelligence"}
+                                    className={`p-2 rounded-lg transition-all disabled:opacity-60 disabled:cursor-wait ${isEditingInfo ? 'bg-blue-600 text-slate-50 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                                    title={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
+                                    aria-busy={isSavingInfo}
                                 >
-                                    {isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
+                                    {isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
                                 </button>
                             </div>
                         </div>
