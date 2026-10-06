@@ -1428,22 +1428,18 @@ const DealDetailPage = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {(
-                                        <>
-                                            <ProjectSelect
-                                                value={selectedProjectId}
-                                                onChange={setSelectedProjectId}
-                                                noneLabel="Select current project..."
-                                            />
-                                            <button
-                                                onClick={handleLinkExistingProject}
-                                                disabled={!selectedProjectId}
-                                                className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
-                                            >
-                                                Confirm Link
-                                            </button>
-                                        </>
-                                    )}
+                                    <ProjectSelect
+                                        value={selectedProjectId}
+                                        onChange={setSelectedProjectId}
+                                        noneLabel="Select current project..."
+                                    />
+                                    <button
+                                        onClick={handleLinkExistingProject}
+                                        disabled={!selectedProjectId}
+                                        className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
+                                    >
+                                        Confirm Link
+                                    </button>
                                 </div>
                             </div>
                         </div>

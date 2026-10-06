@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useId } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useId, useMemo } from 'react';
 import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 
@@ -36,6 +36,11 @@ const codeOf = (p: ProjectOption) => p.code || p.project_code || '';
  * Searchable Project picker. Search and paging run on the Projects backend, so
  * every project is reachable no matter how many the tenant has, and a failed
  * load is shown (with Retry) instead of looking like "no projects".
+ *
+ * Keyboard: the closed control is a real button (Enter / Space / ArrowDown /
+ * ArrowUp open it). Open, focus is in the search box; ArrowUp/Down move the
+ * active option (aria-activedescendant), Enter selects, Escape closes and
+ * returns focus to the button, Tab closes without trapping focus.
  */
 export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     value,
@@ -55,8 +60,14 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
-    const [selectedLabel, setSelectedLabel] = useState('');
+    // Name of the selection when it had to be fetched by id (it may be outside
+    // the loaded page, or a closed project). Keyed by id so a stale name never shows.
+    const [resolved, setResolved] = useState<{ id: string; label: string } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    // Set when the picker closes from the keyboard or a selection, so focus goes
+    // back to the trigger (but not when the user clicks or tabs elsewhere).
+    const restoreFocus = useRef(false);
     const listId = useId();
     // Discards the response of a superseded request (fast typing, close/reopen).
     const requestSeq = useRef(0);
@@ -105,29 +116,52 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
         }
     }, [isOpen, term, load]);
 
-    // Name of the current selection. It may be outside the loaded page (or a
-    // closed project), so resolve it by id rather than by looking in `options`.
-    useEffect(() => {
-        if (!value) {
-            setSelectedLabel('');
-            return;
-        }
+    // The selection's name when it is among the loaded options.
+    const knownLabel = useMemo(() => {
         const known = options.find(o => o.id === value);
-        if (known) {
-            setSelectedLabel(labelOf(known));
+        return known ? labelOf(known) : null;
+    }, [options, value]);
+
+    // Resolve the name by id only when it is not already known, and at most once
+    // per id (not on every options change or render).
+    useEffect(() => {
+        if (!value) return;
+        if (knownLabel !== null) {
+            if (resolved?.id !== value || resolved.label !== knownLabel) setResolved({ id: value, label: knownLabel });
             return;
         }
+        if (resolved?.id === value) return;
         let cancelled = false;
         (async () => {
             try {
                 const p = await crmService.getProjectById(value);
-                if (!cancelled) setSelectedLabel(p ? labelOf(p) : '');
+                if (!cancelled) setResolved({ id: value, label: p ? labelOf(p) : '' });
             } catch {
-                if (!cancelled) setSelectedLabel('');
+                if (!cancelled) setResolved({ id: value, label: '' });
             }
         })();
         return () => { cancelled = true; };
-    }, [value, options]);
+    }, [value, knownLabel, resolved]);
+
+    const selectedLabel = useMemo(() => {
+        if (!value) return '';
+        if (knownLabel !== null) return knownLabel;
+        return resolved?.id === value ? resolved.label : '';
+    }, [value, knownLabel, resolved]);
+
+    // Return focus to the trigger once it is back in the DOM after closing.
+    useEffect(() => {
+        if (!isOpen && restoreFocus.current) {
+            restoreFocus.current = false;
+            triggerRef.current?.focus();
+        }
+    }, [isOpen]);
+
+    // Keep the highlighted option visible while arrowing through a long list.
+    useEffect(() => {
+        if (!isOpen || activeIndex < 0) return;
+        document.getElementById(`${listId}-opt-${activeIndex}`)?.scrollIntoView?.({ block: 'nearest' });
+    }, [isOpen, activeIndex, listId]);
 
     useEffect(() => {
         const handleOutsideClick = (e: MouseEvent) => {
@@ -149,6 +183,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
 
     const select = (id: string) => {
         onChange(id);
+        restoreFocus.current = true;
         close();
     };
 
@@ -158,6 +193,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Escape') {
             e.stopPropagation();
+            restoreFocus.current = true;
             close();
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -173,32 +209,42 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
         }
     };
 
+    const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+        if (disabled) return;
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            setIsOpen(true);
+        }
+    };
+
+    // Tabbing out of the picker closes it (no focus trap). relatedTarget is null
+    // for clicks in browsers that don't focus buttons, so those are ignored here;
+    // the outside-mousedown handler above covers them.
+    const handleBlur = (e: React.FocusEvent) => {
+        const next = e.relatedTarget as Node | null;
+        if (isOpen && next && containerRef.current && !containerRef.current.contains(next)) close();
+    };
+
     // "No projects found" only when there is genuinely nothing more to read.
     const showEmpty = !isLoading && !error && options.length === 0 && !hasMore;
     const optionId = (index: number) => `${listId}-opt-${index}`;
 
     return (
-        <div ref={containerRef} className={`relative ${className}`} data-testid="project-select">
-            <div
-                role="combobox"
-                aria-expanded={isOpen}
-                aria-haspopup="listbox"
-                aria-disabled={disabled}
-                onClick={() => { if (!disabled) setIsOpen(true); }}
-                className={`flex items-center gap-2 w-full bg-slate-950 border rounded-xl px-4 py-3 cursor-pointer transition-all
-                    ${isOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-700/50 hover:border-slate-600'}
-                    ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                    ${inputClassName}`}
-            >
-                <Search size={14} className="text-slate-500 shrink-0" />
-                {isOpen ? (
+        <div ref={containerRef} onBlur={handleBlur} className={`relative ${className}`} data-testid="project-select">
+            {isOpen ? (
+                <div
+                    className={`flex items-center gap-2 w-full bg-slate-950 border rounded-xl px-4 py-3 transition-all border-blue-500 ring-2 ring-blue-500/20 ${inputClassName}`}
+                >
+                    <Search size={14} className="text-slate-500 shrink-0" />
                     <input
                         autoFocus
                         type="text"
+                        role="combobox"
+                        aria-expanded={true}
+                        aria-haspopup="listbox"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        onClick={(e) => e.stopPropagation()}
                         placeholder={selectedLabel || placeholder}
                         aria-label="Search projects"
                         aria-autocomplete="list"
@@ -207,25 +253,48 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         className="flex-1 bg-transparent font-bold text-slate-50 outline-none placeholder:text-slate-500 min-w-0"
                         data-testid="project-select-input"
                     />
-                ) : (
-                    <span className={`flex-1 font-bold truncate ${value ? 'text-slate-50' : 'text-slate-400'}`}>
-                        {value ? (selectedLabel || '…') : noneLabel}
-                    </span>
-                )}
-                {value && !isOpen ? (
+                    <ChevronDown size={14} className="text-slate-500 shrink-0 transition-transform rotate-180" />
+                </div>
+            ) : (
+                <>
                     <button
+                        ref={triggerRef}
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); onChange(''); }}
-                        className="text-slate-500 hover:text-slate-300 transition-colors shrink-0"
-                        aria-label="Clear project"
-                        data-testid="project-select-clear"
+                        role="combobox"
+                        aria-label="Project"
+                        aria-expanded={false}
+                        aria-haspopup="listbox"
+                        aria-controls={listId}
+                        aria-disabled={disabled}
+                        disabled={disabled}
+                        onClick={() => { if (!disabled) setIsOpen(true); }}
+                        onKeyDown={handleTriggerKeyDown}
+                        className={`flex items-center gap-2 w-full text-left bg-slate-950 border rounded-xl px-4 py-3 cursor-pointer transition-all border-slate-700/50 hover:border-slate-600 focus-visible:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/20
+                            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                            ${inputClassName}`}
                     >
-                        <X size={14} />
+                        <Search size={14} className="text-slate-500 shrink-0" />
+                        <span className={`flex-1 font-bold truncate ${value ? 'text-slate-50' : 'text-slate-400'}`}>
+                            {value ? (selectedLabel || '…') : noneLabel}
+                        </span>
+                        {/* The clear button overlays this slot when a project is selected. */}
+                        {value
+                            ? <span className="w-[14px] shrink-0" aria-hidden="true" />
+                            : <ChevronDown size={14} className="text-slate-500 shrink-0" />}
                     </button>
-                ) : (
-                    <ChevronDown size={14} className={`text-slate-500 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                )}
-            </div>
+                    {value && (
+                        <button
+                            type="button"
+                            onClick={() => onChange('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                            aria-label="Clear project"
+                            data-testid="project-select-clear"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                </>
+            )}
 
             {isOpen && (
                 <div
@@ -236,9 +305,11 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                     data-testid="project-select-list"
                 >
                     <div className="max-h-56 overflow-y-auto">
+                        {/* Options are driven by aria-activedescendant, so they stay out of the Tab order. */}
                         <button
                             type="button"
                             role="option"
+                            tabIndex={-1}
                             id={optionId(0)}
                             aria-selected={!value}
                             onClick={() => select('')}
@@ -252,6 +323,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                                 key={p.id}
                                 type="button"
                                 role="option"
+                                tabIndex={-1}
                                 id={optionId(i + 1)}
                                 aria-selected={p.id === value}
                                 onClick={() => select(p.id)}
