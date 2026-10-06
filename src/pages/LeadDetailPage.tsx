@@ -295,7 +295,9 @@ const LeadDetailPage = () => {
 
     const INITIAL_ACTIVITY_LOAD = 7;
 
-    const fetchLeadData = useCallback(async () => {
+    // Resolves true when the lead was loaded, false when that load failed (the
+    // failure is still handled/logged here). Existing callers ignore the result.
+    const fetchLeadData = useCallback(async (): Promise<boolean> => {
         try {
             // Only the lead itself is critical. Everything else is supporting
             // detail and degrades to an empty value.
@@ -337,12 +339,14 @@ const LeadDetailPage = () => {
             setAllUsers(usersData);
             setPartners(partnersData);
             setSourceTypes(fetchedSourceTypes);
+            return true;
         } catch (error) {
             console.error('Failed to fetch lead data', error);
             // Report a permission failure as a permission failure. Reusing the
             // "not found" state for this sent users hunting for a deleted record
             // instead of asking an administrator for access.
             setAccessDenied((error as { status?: number })?.status === 403);
+            return false;
         } finally {
             setIsLoading(false);
         }
@@ -730,7 +734,14 @@ const LeadDetailPage = () => {
                                                 recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${getLeadDisplayName(lead)}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
                                                 // Leave edit mode only once the persisted lead is back on
                                                 // screen, so what the user sees is what the server stored.
-                                                await fetchLeadData();
+                                                const reloaded = await fetchLeadData();
+                                                if (!reloaded) {
+                                                    // Saved, but the persisted lead could not be re-read. Keep
+                                                    // the editor open with the user's values rather than showing
+                                                    // them as if they were the stored record.
+                                                    toast.error('Changes were saved, but the latest lead could not be reloaded. Your edits are still shown; please refresh to confirm.');
+                                                    return;
+                                                }
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
                                                 const dup = parseDuplicateLead(error);

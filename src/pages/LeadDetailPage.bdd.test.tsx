@@ -1042,6 +1042,32 @@ describe('LeadDetailPage', () => {
       expect(btn).not.toBeDisabled();
     });
 
+    it('When the update succeeds but the reload fails / Then edit mode stays open with the typed edits and an error is shown', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'typed@acme.com');
+      mockGetLeadById.mockRejectedValueOnce(new Error('network down'));
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith(expect.stringContaining('could not be reloaded')));
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toBeNull();
+      expect(screen.getByDisplayValue('typed@acme.com')).toBeInTheDocument();
+    });
+
+    it('When the update and the reload both succeed / Then edit mode closes and no reload error is shown', async () => {
+      await openEditor();
+      mockShowError.mockClear();
+
+      clickSave();
+
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockShowError).not.toHaveBeenCalled();
+    });
+
     it('When a field fails validation / Then no update is sent and the button never enters the saving state', async () => {
       await openEditor();
       changeEmail('john@acme.com', 'not-an-email');
