@@ -1,5 +1,6 @@
 import type { DocumentData, DocumentLineItem, DocumentParty } from '@so360/shell-context';
 import type { Quote, QuoteLine, Lead } from '../types/crm';
+import { quoteLinePreTaxAmount } from './quoteLineAmounts';
 
 function lineLabel(line: QuoteLine): string {
     const base = line.description || line.item_name || '—';
@@ -22,15 +23,6 @@ function num(value: unknown): number | undefined {
 
 function numOr0(value: unknown): number {
     return num(value) ?? 0;
-}
-
-function lineAmount(line: QuoteLine): number {
-    const persisted = num(line.line_total);
-    if (persisted !== undefined) return persisted;
-    const sub = numOr0(line.quantity) * numOr0(line.unit_price);
-    const disc = sub * (numOr0(line.discount_percent) / 100);
-    const net = sub - disc;
-    return net + net * (numOr0(line.tax_rate) / 100);
 }
 
 
@@ -120,7 +112,7 @@ function lineToDocumentItem(line: QuoteLine): DocumentLineItem {
         unit_price: num(line.unit_price) ?? 0,
         discount_pct: num(line.discount_percent),
         tax_rate: num(line.tax_rate),
-        amount: lineAmount(line),
+        amount: quoteLinePreTaxAmount(line),
     };
 }
 

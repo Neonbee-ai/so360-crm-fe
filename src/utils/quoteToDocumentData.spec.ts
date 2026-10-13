@@ -7,7 +7,7 @@
  *     fall back to the persisted columns when the quote carries no lines
  *   - Totals are always finite numbers — never undefined, which used to crash
  *     the print renderer on `.toFixed()`
- *   - Per-line amount prefers line_total, else is computed (qty·price − disc + tax)
+ *   - Per-line amount is the pre-tax qty·price (Task a171957e); discount and tax only reach the totals
  *   - SKU is folded into the line description when present (NIL sub_sku dropped)
  *   - Buyer falls back customer_name → deal.company_name → deal.name → ''
  *   - document_title is left unset so the template label drives it
@@ -168,21 +168,24 @@ describe('quoteToDocumentData > buyer resolution', () => {
 });
 
 describe('quoteToDocumentData > line items', () => {
-    it('Given a line with line_total, Then that amount is used verbatim', () => {
+    it('Given a persisted line_total that includes discount and tax, Then the line amount is still the pre-tax Qty × Unit Price', () => {
         const d = quoteToDocumentData(
-            baseQuote({ lines: [{ description: 'Widget', quantity: 2, unit_price: 50, line_total: 99 } as any] }),
+            baseQuote({ lines: [{ description: 'Widget', quantity: 2, unit_price: 50, discount_percent: 10, tax_rate: 5, line_total: 94.5 } as any] }),
             { currency: 'AED', seller: SELLER },
         );
-        expect(d.line_items[0].amount).toBe(99);
+        expect(d.line_items[0].amount).toBe(100);
     });
 
-    it('Given no line_total, Then amount is computed from qty/price/discount/tax', () => {
+    it('Given a line with discount and tax, Then only the totals carry them and the final total is unchanged', () => {
         const d = quoteToDocumentData(
-            baseQuote({ lines: [{ description: 'Widget', quantity: 2, unit_price: 50, discount_percent: 10, tax_rate: 5 } as any] }),
-            { currency: 'AED', seller: SELLER },
+            baseQuote({ lines: [{ description: 'Table', quantity: 1, unit_price: 15999, discount_percent: 10, tax_rate: 18 } as any] }),
+            { currency: 'INR', seller: SELLER },
         );
-        // 100 - 10% = 90, + 5% tax = 94.5
-        expect(d.line_items[0].amount).toBeCloseTo(94.5);
+        expect(d.line_items[0].amount).toBe(15999);
+        expect(d.subtotal).toBe(15999);
+        expect(d.discount_amount).toBeCloseTo(1599.9);
+        expect(d.tax_amount).toBeCloseTo(2591.838);
+        expect(d.total).toBeCloseTo(16990.938);
     });
 
     it('Given a sku and sub_sku, Then they are folded into the description', () => {

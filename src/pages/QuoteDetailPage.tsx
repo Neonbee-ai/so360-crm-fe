@@ -13,6 +13,7 @@ import { useBusinessSettings, useActivity, useShellBridge, useOrganization } fro
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
+import { quoteLinePreTaxAmount } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
@@ -376,14 +377,6 @@ const QuoteDetailPage = () => {
         const num = parseFloat(rawValue);
         updateLine(index, field, isNaN(num) ? fallback : num);
         setDraftValues(prev => { const n = { ...prev }; delete n[`${index}_${field as string}`]; return n; });
-    };
-
-    const calculateLineTotal = (line: QuoteLine) => {
-        const subtotal = line.quantity * line.unit_price;
-        const discount = subtotal * ((line.discount_percent || 0) / 100);
-        const afterDiscount = subtotal - discount;
-        const tax = afterDiscount * ((line.tax_rate || 0) / 100);
-        return afterDiscount + tax;
     };
 
     const calculateTotals = () => {
@@ -861,7 +854,7 @@ const QuoteDetailPage = () => {
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 <span className="text-slate-200 font-medium">
-                                                    {formatCurrency(calculateLineTotal(line))}
+                                                    {formatCurrency(quoteLinePreTaxAmount(line))}
                                                 </span>
                                             </td>
                                             {isEditing && (

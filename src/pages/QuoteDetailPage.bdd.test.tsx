@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 
 const mockGetQuoteById = vi.fn();
@@ -149,6 +149,64 @@ describe('QuoteDetailPage', () => {
       await waitFor(() => {
         expect(mockGetStockAvailability).toHaveBeenCalledWith(['i1']);
       });
+    });
+  });
+
+  // Task a171957e: the line Total is pre-tax; discount and tax only reach the totals block.
+  describe('Given a quote line with a discount and tax', () => {
+    const taxedQuote = {
+      ...quoteData,
+      lines: [
+        { id: 'ql1', description: 'Harper 4 Seater Dining Table', quantity: 1, unit_price: 15999, line_total: 16990.94, discount_percent: 10, tax_rate: 18 },
+      ],
+    };
+    const lineRow = () => screen.getAllByText('Harper 4 Seater Dining Table')[0].closest('tr') as HTMLElement;
+
+    it('When rendered / Then the line Total shows Qty × Unit Price, not the stored after-tax line_total', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(within(lineRow()).getByText('$15999')).toBeInTheDocument();
+      expect(within(lineRow()).queryByText(/16990/)).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the totals block carries the discount and tax, and only the last Total shows the final amount', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      const subtotalRow = screen.getByText('Subtotal').parentElement as HTMLElement;
+      expect(within(subtotalRow).getByText('$15999')).toBeInTheDocument();
+      expect(screen.getByText(/^-\$1599\.9/)).toBeInTheDocument();
+      expect(screen.getAllByText(/^\$16990\.93/).length).toBeGreaterThan(0);
+      const grandTotalRow = screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
+      expect(within(grandTotalRow).getByText(/^\$16990\.93/)).toBeInTheDocument();
+    });
+
+    it('When Disc % is changed in edit mode / Then the line Total stays the same while the final Total changes', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '0' } });
+      fireEvent.change(screen.getByDisplayValue('18'), { target: { value: '0' } });
+      await waitFor(() => expect(within(lineRow()).getByText('$15999')).toBeInTheDocument());
+      const grandTotalRow = screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
+      expect(within(grandTotalRow).getByText('$15999')).toBeInTheDocument();
+    });
+
+    it('When there are several lines / Then each line shows its own pre-tax amount and Subtotal is their sum', async () => {
+      mockGetQuoteById.mockResolvedValue({
+        ...quoteData,
+        lines: [
+          { id: 'a', description: 'Line A', quantity: 2, unit_price: 100, line_total: 236, discount_percent: 0, tax_rate: 18 },
+          { id: 'b', description: 'Line B', quantity: 3, unit_price: 50, line_total: 141.75, discount_percent: 10, tax_rate: 5 },
+        ],
+      });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Line A'));
+      expect(within(screen.getByText('Line A').closest('tr') as HTMLElement).getByText('$200')).toBeInTheDocument();
+      expect(within(screen.getByText('Line B').closest('tr') as HTMLElement).getByText('$150')).toBeInTheDocument();
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$350')).toBeInTheDocument();
     });
   });
 
