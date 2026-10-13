@@ -160,13 +160,16 @@ describe('QuoteDetailPage', () => {
         { id: 'ql1', description: 'Harper 4 Seater Dining Table', quantity: 1, unit_price: 15999, line_total: 16990.94, discount_percent: 10, tax_rate: 18 },
       ],
     };
-    const lineRow = () => screen.getAllByText('Harper 4 Seater Dining Table')[0].closest('tr') as HTMLElement;
+    // Line Total is the 7th cell (Description, Stock, Qty, Unit Price, Disc %, Tax %, Total).
+    const lineTotalCell = (row: HTMLElement) => row.querySelectorAll('td')[6] as HTMLElement;
+    // In edit mode the description is an input, so fall back to its value.
+    const lineRow = () => (screen.queryByText('Harper 4 Seater Dining Table') ?? screen.getByDisplayValue('Harper 4 Seater Dining Table')).closest('tr') as HTMLElement;
 
     it('When rendered / Then the line Total shows Qty × Unit Price, not the stored after-tax line_total', async () => {
       mockGetQuoteById.mockResolvedValue(taxedQuote);
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
-      expect(within(lineRow()).getByText('$15999')).toBeInTheDocument();
+      expect(lineTotalCell(lineRow())).toHaveTextContent(/^\$15999$/);
       expect(within(lineRow()).queryByText(/16990/)).not.toBeInTheDocument();
     });
 
@@ -189,7 +192,7 @@ describe('QuoteDetailPage', () => {
       fireEvent.click(screen.getByText(/^edit$/i));
       fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '0' } });
       fireEvent.change(screen.getByDisplayValue('18'), { target: { value: '0' } });
-      await waitFor(() => expect(within(lineRow()).getByText('$15999')).toBeInTheDocument());
+      await waitFor(() => expect(lineTotalCell(lineRow())).toHaveTextContent(/^\$15999$/));
       const grandTotalRow = screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
       expect(within(grandTotalRow).getByText('$15999')).toBeInTheDocument();
     });
@@ -204,8 +207,8 @@ describe('QuoteDetailPage', () => {
       });
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Line A'));
-      expect(within(screen.getByText('Line A').closest('tr') as HTMLElement).getByText('$200')).toBeInTheDocument();
-      expect(within(screen.getByText('Line B').closest('tr') as HTMLElement).getByText('$150')).toBeInTheDocument();
+      expect(lineTotalCell(screen.getByText('Line A').closest('tr') as HTMLElement)).toHaveTextContent(/^\$200$/);
+      expect(lineTotalCell(screen.getByText('Line B').closest('tr') as HTMLElement)).toHaveTextContent(/^\$150$/);
       expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$350')).toBeInTheDocument();
     });
   });

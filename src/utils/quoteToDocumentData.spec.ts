@@ -234,7 +234,8 @@ describe('quoteToDocumentData > line items', () => {
             }),
             { currency: 'AED', seller: SELLER },
         );
-        expect(d.line_items.map(l => l.amount)).toEqual([100, 33, 0]);
+        // Pre-tax amounts (Task a171957e): B's 10% tax is only in the totals, not on its line.
+        expect(d.line_items.map(l => l.amount)).toEqual([100, 30, 0]);
         expect(d.line_items.every(l => Number.isFinite(l.amount))).toBe(true);
     });
 });
