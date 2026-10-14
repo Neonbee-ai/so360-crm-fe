@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 
 const mockGetQuoteById = vi.fn();
@@ -149,6 +149,84 @@ describe('QuoteDetailPage', () => {
       await waitFor(() => {
         expect(mockGetStockAvailability).toHaveBeenCalledWith(['i1']);
       });
+    });
+  });
+
+  // Task a171957e: the line Amount keeps the existing discount flow (Qty × Unit Price less the
+  // line discount) but never includes tax; tax shows only in the Tax row of the totals block.
+  describe('Given a quote line with a discount and tax', () => {
+    const taxedQuote = {
+      ...quoteData,
+      lines: [
+        { id: 'ql1', description: 'Harper 4 Seater Dining Table', quantity: 1, unit_price: 15999, line_total: 16990.94, discount_percent: 10, tax_rate: 18 },
+      ],
+    };
+    // In edit mode the description is an input, so fall back to its value.
+    const lineRow = () => (screen.queryByText('Harper 4 Seater Dining Table') ?? screen.getByDisplayValue('Harper 4 Seater Dining Table')).closest('tr') as HTMLElement;
+    const lineAmountCell = (row: HTMLElement) => within(row).getByTestId('quote-line-amount');
+    const grandTotalRow = () => screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
+
+    it('When rendered / Then the line column is labelled Amount, not Total', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Total' })).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the line Amount includes the discount but not the tax', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$14399\.1/);
+      expect(within(lineRow()).queryByText(/16990/)).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the totals block is unchanged: Subtotal, Discount, Tax, and the final amount only in the last Total', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$15999')).toBeInTheDocument();
+      expect(screen.getAllByText('Discount')).toHaveLength(1);
+      expect(within(screen.getByText('Discount').parentElement as HTMLElement).getByText(/^-\$1599\.9/)).toBeInTheDocument();
+      expect(within(screen.getByText('Tax').parentElement as HTMLElement).getByText(/^\$2591\.83/)).toBeInTheDocument();
+      // Same final figure as before the change: 15999 − 1599.90 + 2591.84.
+      expect(within(grandTotalRow()).getByText(/^\$16990\.93/)).toBeInTheDocument();
+    });
+
+    it('When Tax % is changed in edit mode / Then the line Amount stays the same and only the totals change', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.change(screen.getByDisplayValue('18'), { target: { value: '0' } });
+      await waitFor(() => expect(within(grandTotalRow()).getByText(/^\$14399\.1/)).toBeInTheDocument());
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$14399\.1/);
+    });
+
+    it('When Disc % is changed in edit mode / Then the line Amount and the Discount row both follow the discount, as before', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '20' } });
+      await waitFor(() => expect(within(screen.getByText('Discount').parentElement as HTMLElement).getByText(/^-\$3199\.8/)).toBeInTheDocument());
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$12799\.2/);
+    });
+
+    it('When there are several lines / Then each line shows its own after-discount amount without tax, and Subtotal is the sum of Qty × Unit Price', async () => {
+      mockGetQuoteById.mockResolvedValue({
+        ...quoteData,
+        lines: [
+          { id: 'a', description: 'Line A', quantity: 2, unit_price: 100, line_total: 236, discount_percent: 0, tax_rate: 18 },
+          { id: 'b', description: 'Line B', quantity: 3, unit_price: 50, line_total: 141.75, discount_percent: 10, tax_rate: 5 },
+        ],
+      });
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Line A'));
+      expect(lineAmountCell(screen.getByText('Line A').closest('tr') as HTMLElement)).toHaveTextContent(/^\$200$/);
+      expect(lineAmountCell(screen.getByText('Line B').closest('tr') as HTMLElement)).toHaveTextContent(/^\$135$/);
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$350')).toBeInTheDocument();
     });
   });
 

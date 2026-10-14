@@ -12,6 +12,9 @@ import { StageTransitionModal } from '../components/kanban/StageTransitionModal'
 import SignRequestModal from '../components/sign/SignRequestModal';
 import DealProductsTab from './components/DealProductsTab';
 import CallsTab from './components/CallsTab';
+import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
+import DealCommissionPanel from './components/DealCommissionPanel';
+import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { CrossLinkChip, toast } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
@@ -21,8 +24,10 @@ import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import DetailBackLink from '../components/common/DetailBackLink';
+import { ProjectSelect } from '../components/common/ProjectSelect';
+import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls';
+type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
 
 // Notify other MFEs (e.g. the Documents module) that a CRM deal document changed
 // so they can refresh linked-document views. Uses the shared event bus with a
@@ -51,9 +56,14 @@ const DealDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
+    // RE Phase C: payment plan + commission tabs, each behind its own flag.
+    const paymentPlansOn = useCrmFeatureFlag(RE_FLAGS.PAYMENT_PLANS);
+    const commissionsOn = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
 
     const [deal, setDeal] = useState<Deal | null>(null);
     const [associatedLead, setAssociatedLead] = useState<any>(null);
+    // G8 Client 360: full cross-module timeline (calls, WhatsApp, email, meetings, tasks, notes, documents, bookings)
+    const [showActivityDrawer, setShowActivityDrawer] = useState(false);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
@@ -91,8 +101,6 @@ const DealDetailPage = () => {
     const [isSavingProfile, setIsSavingProfile] = useState(false);
 
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-    const [availableProjects, setAvailableProjects] = useState<any[]>([]);
-    const [isFetchingProjects, setIsFetchingProjects] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -383,17 +391,9 @@ const DealDetailPage = () => {
         navigate(`/accounting/invoices?${params.toString()}`);
     };
 
-    const handleOpenProjectModal = async () => {
+    // The picker loads (and searches) projects itself, page by page.
+    const handleOpenProjectModal = () => {
         setIsProjectModalOpen(true);
-        setIsFetchingProjects(true);
-        try {
-            const projects = await crmService.getProjects();
-            setAvailableProjects(projects);
-        } catch (error) {
-            toast.error('Failed to fetch available projects');
-        } finally {
-            setIsFetchingProjects(false);
-        }
     };
 
     const handleCreateProject = () => {
@@ -848,7 +848,9 @@ const DealDetailPage = () => {
                                     { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
                                     { id: 'products', name: 'Products', icon: Briefcase },
                                     { id: 'custom', name: 'Additional Info', icon: Tag },
-                                    { id: 'calls', name: 'Calls', icon: Phone }
+                                    { id: 'calls', name: 'Calls', icon: Phone },
+                                    ...(paymentPlansOn ? [{ id: 'payment-plan', name: 'Payment plan', icon: Receipt }] : []),
+                                    ...(commissionsOn ? [{ id: 'commission', name: 'Commission', icon: DollarSign }] : []),
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
@@ -868,6 +870,17 @@ const DealDetailPage = () => {
 
                         <div className="p-8">
                             {/* ACTIVITY TAB */}
+                            {activeTab === 'activity' && (
+                                <div className="flex justify-end mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowActivityDrawer(true)}
+                                        className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                                    >
+                                        View All History
+                                    </button>
+                                </div>
+                            )}
                             {activeTab === 'activity' && (
                                 <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-800">
                                     {getAggregatedTimeline().length === 0 ? (
@@ -1147,6 +1160,14 @@ const DealDetailPage = () => {
                             {activeTab === 'calls' && (
                                 <CallsTab dealId={deal.id} />
                             )}
+
+                            {activeTab === 'payment-plan' && paymentPlansOn && (
+                                <DealPaymentPlanPanel dealId={deal.id} />
+                            )}
+
+                            {activeTab === 'commission' && commissionsOn && (
+                                <DealCommissionPanel dealId={deal.id} />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1407,33 +1428,18 @@ const DealDetailPage = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {isFetchingProjects ? (
-                                        <div className="flex items-center gap-2 text-slate-500 text-[10px] py-2">
-                                            <Loader2 size={12} className="animate-spin" /> Fetching list...
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <select
-                                                value={selectedProjectId}
-                                                onChange={(e) => setSelectedProjectId(e.target.value)}
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-blue-500 appearance-none"
-                                            >
-                                                <option value="">Select current project...</option>
-                                                {availableProjects.map(proj => (
-                                                    <option key={proj.id} value={proj.id}>
-                                                        {proj.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                onClick={handleLinkExistingProject}
-                                                disabled={!selectedProjectId}
-                                                className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
-                                            >
-                                                Confirm Link
-                                            </button>
-                                        </>
-                                    )}
+                                    <ProjectSelect
+                                        value={selectedProjectId}
+                                        onChange={setSelectedProjectId}
+                                        noneLabel="Select current project..."
+                                    />
+                                    <button
+                                        onClick={handleLinkExistingProject}
+                                        disabled={!selectedProjectId}
+                                        className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
+                                    >
+                                        Confirm Link
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1538,6 +1544,15 @@ const DealDetailPage = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showActivityDrawer && (
+                <ActivityHistoryDrawer
+                    isOpen={showActivityDrawer}
+                    onClose={() => setShowActivityDrawer(false)}
+                    entityType="deal"
+                    entityId={deal.id}
+                />
             )}
 
         </div>

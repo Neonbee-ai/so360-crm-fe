@@ -491,6 +491,13 @@ class ApiClient {
 }
 
 const apiClient = new ApiClient(API_BASE_URL, TENANT_ID);
+/**
+ * The CRM client itself, for per-feature service files (assignment rules,
+ * dedup/merge, import, matching units, dashboard widgets) so they share the
+ * tenant/org/user/token wiring set up here instead of duplicating it.
+ */
+export { apiClient as crmApiClient };
+export type CrmApiClient = ApiClient;
 
 /** Inventory `items.type` values CRM may sell; mirrors CRM BE's CRM_SELLABLE_ITEM_TYPES. */
 export const CRM_SELLABLE_ITEM_TYPES = ['product', 'finished_good', 'service', 'bundle'] as const;
@@ -509,6 +516,12 @@ const neuraClient = new ApiClient(NEURA_API_ORIGIN, TENANT_ID);
 // selector both need this. Projects BE sets no global route prefix (bare
 // /projects, matching the neuraClient comment above's pattern).
 const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
+/**
+ * Core and Inventory clients for the record importers (existing clients →
+ * Core channel import; projects/towers/units → Inventory), sharing the
+ * tenant/org/user/token wiring above.
+ */
+export { coreClient as crmCoreClient, inventoryClient as crmInventoryClient };
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
@@ -1031,6 +1044,8 @@ export interface EntityTimelineEvent {
     related_id: string | null;
     status_badge: string | null;
     group_key: string;
+    /** G8 Client 360: normalized interaction type (call, whatsapp, email, meeting, task, note, document, booking, …). */
+    type?: string;
 }
 
 export interface EntityTimelineSummary {
@@ -1041,6 +1056,8 @@ export interface EntityTimelineSummary {
     latest_stage: string | null;
     idle_days: number | null;
     health_status: 'very_active' | 'healthy' | 'neutral' | 'at_risk' | 'dormant';
+    /** G8 Client 360: per-type event counts (computed before the `types` filter). */
+    type_counts?: Record<string, number>;
 }
 
 export interface TimelineFilters {
@@ -1050,6 +1067,8 @@ export interface TimelineFilters {
     start?: string;
     end?: string;
     search?: string;
+    /** G8 Client 360: comma-separated event types to include. */
+    types?: string;
     cursor?: string;
     limit?: number;
 }
@@ -2371,6 +2390,31 @@ export const crmService = {
     },
 
     /**
+     * One page of projects for a type-ahead picker. Unlike getProjects() this
+     * does NOT swallow failures: the picker needs to tell "the Projects API
+     * failed" apart from "no project matches" and offer a retry.
+     *
+     * Search runs on the Projects backend (title / description / client), so
+     * every project is reachable — not just the first 100.
+     */
+    async searchProjects(opts: { search?: string; page?: number; limit?: number } = {}): Promise<{ data: any[]; hasMore: boolean }> {
+        const { search, page = 1, limit = 25 } = opts;
+        // The backend splices `search` into a PostgREST or() filter, where a
+        // comma, parenthesis, double quote or `%`/`*` is syntax — typing one
+        // mid-search would reshape the query or 500 it. None of them is
+        // meaningful in a name.
+        const term = (search ?? '').replace(/[,()"%*\\]/g, ' ').replace(/\s+/g, ' ').trim();
+        const params: Record<string, any> = { page, limit };
+        if (term) params.search = term;
+        const result = await projectsClient.get<any>('/projects', params);
+        const data: any[] = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : [];
+        const totalPages = Number(result?.pagination?.totalPages ?? 0);
+        // Without pagination metadata, a full page is the best "more" signal.
+        const hasMore = totalPages ? page < totalPages : data.length >= limit;
+        return { data, hasMore };
+    },
+
+    /**
      * User ids on a project's team — the only people a project-linked task
      * can be assigned to (Projects rejects anyone else). Resolves null when
      * the team can't be read, so callers can tell "unknown" from "empty" and
@@ -2418,8 +2462,33 @@ export const crmService = {
         return apiClient.get<any>(`/quotes/${quoteId}`);
     },
 
+    /**
+     * Whether Sales Quote numbers are generated automatically (Settings →
+     * Documents → Numbering). When false the quote form must collect the number
+     * by hand. Same rule as crm-be's resolveQuoteScheme: the panel's
+     * "Auto-number documents sequentially" checkbox (auto_numbering) is the
+     * master switch; when it is on, the Sales Quote scheme's own `enabled`
+     * decides (default on). Defaults to auto when the
+     * settings cannot be read: crm-be enforces the real setting and answers
+     * "Quote number is required" if it is actually off.
+     */
+    async isQuoteAutoNumbering(): Promise<boolean> {
+        try {
+            const settings = await coreClient.get<{ document_settings?: any }>(
+                `/v1/business-settings/${coreClient.getOrgId()}`,
+            );
+            const doc = settings?.document_settings ?? {};
+            if (doc.auto_numbering === false) return false;
+            return doc.numbering_schemes?.sales_quote?.enabled !== false;
+        } catch {
+            return true;
+        }
+    },
+
     async createQuote(data: {
         deal_id: string;
+        /** Required by crm-be when Sales Quote auto-numbering is off; ignored when on. */
+        quote_number?: string;
         customer_id?: string;
         title?: string;
         notes?: string;
@@ -2837,6 +2906,8 @@ export const crmService = {
     addLeadProduct: async (leadId: string, data: {
         item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
         is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string;
+        /** Unit booking: hours to hold the unit for this lead (backend places the hold). */
+        hold_hours?: number;
     }): Promise<LeadProduct> => {
         return apiClient.post<LeadProduct>(`/leads/${leadId}/products`, data);
     },
@@ -2860,6 +2931,8 @@ export const crmService = {
     addDealProduct: async (dealId: string, data: {
         item_id?: string; item_name: string; item_sku?: string; category_id?: string; category_name?: string;
         is_custom_build?: boolean; quantity?: number; unit_price?: number; status?: string; notes?: string; lead_product_id?: string;
+        /** Unit booking: hours to hold the unit for this deal (backend places the hold). */
+        hold_hours?: number;
     }): Promise<DealProduct> => {
         return apiClient.post<DealProduct>(`/deals/${dealId}/products`, data);
     },

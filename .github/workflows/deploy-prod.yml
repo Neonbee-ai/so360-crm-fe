@@ -1,6 +1,7 @@
 name: Deploy Crm Frontend to Production
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
 

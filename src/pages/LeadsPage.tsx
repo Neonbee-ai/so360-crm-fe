@@ -19,10 +19,13 @@ import {
   Copy,
   Star,
   Share2,
+  UploadCloud,
 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Lead, User } from '../types/crm';
 import { CreateLeadModal } from '../components/leads/CreateLeadModal';
+import { ImportHub } from '../components/import/ImportHub';
+import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
 import { LeadsDataGrid, GridContext } from '../components/leads/LeadsDataGrid';
 import { LeadDetailPanel } from '../components/leads/LeadDetailPanel';
 import LeadFilterBuilder from '../components/leads/LeadFilterBuilder';
@@ -33,6 +36,8 @@ import { useNotify, useActivity, useShellBridge, useQuota, useSandboxLimit } fro
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { publishLeadsChanged } from '../utils/leadEvents';
+import ExportMenu, { useCanExport } from '../components/ExportMenu';
+import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { QuotaGate, toast } from '@so360/design-system';
 
@@ -159,6 +164,11 @@ const LeadsPage = () => {
   // already enforces leads.delete on both the single and bulk delete routes —
   // this only controls visibility of a control the user couldn't otherwise use.
   const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
+  // Bulk import (A7) — flag-gated, and only for users who may create leads.
+  const bulkImportEnabled = useCrmFeatureFlag(RE_FLAGS.BULK_IMPORT);
+  const canImportLeads = canCreateLead && bulkImportEnabled;
+  // §48 server-side CSV / Excel / PDF export — RBAC-scoped on the server.
+  const canExportLeads = useCanExport('leads.export', RE_FLAGS.DATA_EXPORT);
   const { isSandboxMode, sandboxEntryLimit, isLimited } = useSandboxLimit();
   const quotaChecks = useMemo(() => [{ module_code: 'crm', quota_key: 'max_contacts' }], []);
   const { getQuota } = useQuota({ checks: quotaChecks, orgId: shell?.currentOrg?.id || '' });
@@ -176,6 +186,7 @@ const LeadsPage = () => {
 
   // UI
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
@@ -711,6 +722,19 @@ const LeadsPage = () => {
             {leads.length} Lead{leads.length !== 1 ? 's' : ''}
           </span>
         </div>
+        <div className="flex items-center gap-2 shrink-0">
+        {canExportLeads && (
+          <ExportMenu label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />
+        )}
+        {canImportLeads && (
+          <button
+            onClick={() => setIsImportOpen(true)}
+            className="flex items-center gap-1.5 h-10 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 rounded-lg font-semibold text-sm transition-all active:scale-95 shrink-0"
+          >
+            <UploadCloud size={16} />
+            Import
+          </button>
+        )}
         {canCreateLead && (
           <QuotaGate
             quotaKey="max_contacts"
@@ -729,6 +753,7 @@ const LeadsPage = () => {
             </button>
           </QuotaGate>
         )}
+        </div>
       </header>
 
       {/* KPI chips */}
@@ -761,6 +786,13 @@ const LeadsPage = () => {
         onSuccess={fetchInitialData}
         existingLeads={leads.map((l) => l.company_name)}
       />
+      {canImportLeads && (
+        <ImportHub
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          onImported={fetchInitialData}
+        />
+      )}
 
       {/* Toolbar — single consolidated row wherever width permits */}
       <div className="flex flex-wrap items-center gap-2 mb-3 bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/50">

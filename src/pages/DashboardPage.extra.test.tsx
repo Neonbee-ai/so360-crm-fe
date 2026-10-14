@@ -25,6 +25,8 @@ const mockIsModuleEnabled = vi.fn();
 const mockIsFeatureHidden = vi.fn();
 
 vi.mock('@so360/shell-context', () => ({
+  // REWidgets reads useShellBridge; RE flags off keeps it out of these specs.
+  useShellBridge: () => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => false, isFeatureHidden: () => false }),
   useBusinessSettings: () => ({ settings: { base_currency: 'USD', document_language: 'en-US' } }),
   useShell: () => ({
     isModuleEnabled: mockIsModuleEnabled,

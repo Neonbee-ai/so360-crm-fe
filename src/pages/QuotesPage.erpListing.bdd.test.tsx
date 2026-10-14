@@ -14,6 +14,7 @@ vi.mock('../services/crmService', () => ({
     getQuotes: (...a: any[]) => mockGetQuotes(...a),
     getDeals: (...a: any[]) => mockGetDeals(...a),
     createQuote: (...a: any[]) => mockCreateQuote(...a),
+    isQuoteAutoNumbering: async () => true,
     deleteQuote: (...a: any[]) => mockDeleteQuote(...a),
     updateQuoteStatus: (...a: any[]) => mockUpdateQuoteStatus(...a),
   },

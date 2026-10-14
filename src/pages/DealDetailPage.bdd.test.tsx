@@ -26,6 +26,8 @@ const mockUploadDocument = vi.fn().mockResolvedValue({});
 const mockDeleteDocument = vi.fn().mockResolvedValue({});
 const mockRequestInvoice = vi.fn().mockResolvedValue({});
 const mockGetProjects = vi.fn().mockResolvedValue([]);
+const mockSearchProjects = vi.fn().mockResolvedValue({ data: [], hasMore: false });
+const mockGetProjectById = vi.fn().mockResolvedValue(null);
 const mockCreateProjectFromDeal = vi.fn().mockResolvedValue({ id: 'p1' });
 const mockLinkProject = vi.fn().mockResolvedValue({});
 const mockUnlinkProject = vi.fn().mockResolvedValue({});
@@ -54,6 +56,8 @@ vi.mock('../services/crmService', () => ({
     deleteDocument: (...a: any[]) => mockDeleteDocument(...a),
     requestInvoice: (...a: any[]) => mockRequestInvoice(...a),
     getProjects: (...a: any[]) => mockGetProjects(...a),
+    searchProjects: (...a: any[]) => mockSearchProjects(...a),
+    getProjectById: (...a: any[]) => mockGetProjectById(...a),
     createProjectFromDeal: (...a: any[]) => mockCreateProjectFromDeal(...a),
     linkProject: (...a: any[]) => mockLinkProject(...a),
     unlinkProject: (...a: any[]) => mockUnlinkProject(...a),
@@ -80,6 +84,15 @@ vi.mock('@so360/design-system', async (importOriginal) => {
     toast: { ...actual.toast, success: mockShowSuccess, error: mockShowError },
   };
 });
+
+// G8 Client 360: the drawer is exercised in its own spec — here we only assert the deal page wires it up.
+vi.mock('./components/ActivityHistoryDrawer', () => ({
+  default: ({ isOpen, onClose, entityType, entityId }: any) => (isOpen ? (
+    <div data-testid="activity-history-drawer" data-entity-type={entityType} data-entity-id={entityId}>
+      <button onClick={onClose}>Close history</button>
+    </div>
+  ) : null),
+}));
 
 vi.mock('./components/TaskModal', () => ({ default: ({ onClose }: any) => <div data-testid="task-modal"><button onClick={onClose}>Close</button></div> }));
 
@@ -740,12 +753,56 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given deal project linking', () => {
-    it('When Create Project is clicked / Then opens the project modal', async () => {
+    it('When Create Project is clicked / Then opens the project modal with the searchable project picker', async () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
       await user.click(screen.getByText('Create Project'));
-      await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByTestId('project-select')).toBeInTheDocument());
+      // The picker pages/searches on demand — the old load-everything call is gone.
+      expect(mockGetProjects).not.toHaveBeenCalled();
+    });
+
+    it('When a project is picked in the picker and Confirm Link is clicked / Then the deal is linked to exactly that project', async () => {
+      const user = userEvent.setup();
+      mockSearchProjects.mockResolvedValue({ data: [{ id: 'proj-9', title: 'Harbour Tower' }, { id: 'proj-8', title: 'Other' }], hasMore: false });
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+
+      const picker = await screen.findByTestId('project-select');
+      await user.click(within(picker).getByRole('combobox'));
+      await user.click(await screen.findByRole('option', { name: 'Harbour Tower' }));
+      await user.click(screen.getByRole('button', { name: /confirm link/i }));
+
+      await waitFor(() => expect(mockLinkProject).toHaveBeenCalledWith('deal-1', 'proj-9'));
+      expect(mockShowSuccess).toHaveBeenCalledWith('Project linked successfully');
+    });
+
+    it('When Confirm Link is clicked with nothing picked / Then it is disabled and nothing is linked', async () => {
+      const user = userEvent.setup();
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+      const confirm = await screen.findByRole('button', { name: /confirm link/i });
+      expect(confirm).toBeDisabled();
+      await user.click(confirm);
+      expect(mockLinkProject).not.toHaveBeenCalled();
+    });
+
+    it('When linking fails / Then the user is told and the modal stays open for a retry', async () => {
+      const user = userEvent.setup();
+      mockSearchProjects.mockResolvedValue({ data: [{ id: 'proj-9', title: 'Harbour Tower' }], hasMore: false });
+      mockLinkProject.mockRejectedValueOnce(new Error('409'));
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Create Project')).toBeInTheDocument());
+      await user.click(screen.getByText('Create Project'));
+      await user.click(within(await screen.findByTestId('project-select')).getByRole('combobox'));
+      await user.click(await screen.findByRole('option', { name: 'Harbour Tower' }));
+      await user.click(screen.getByRole('button', { name: /confirm link/i }));
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to link project'));
+      expect(screen.getByTestId('project-select')).toBeInTheDocument();
     });
 
     it('When project modal opens / Then container has max-h-[90vh]', async () => {
@@ -1200,6 +1257,28 @@ describe('DealDetailPage — deal stage selector', () => {
       // The button row must allow wrapping rather than squeezing the title at md widths.
       const buttonGroup = screen.getByRole('button', { name: /request signature/i }).parentElement;
       expect(buttonGroup?.className).toContain('flex-wrap');
+    });
+  });
+
+  describe('Given the G8 Client 360 full-history drawer', () => {
+    it('When the deal page loads / Then the drawer is not rendered until requested', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+      expect(screen.getByRole('button', { name: 'View All History' })).toBeInTheDocument();
+      expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument();
+    });
+
+    it('When View All History is clicked / Then the drawer opens scoped to this deal, and closing it unmounts it', async () => {
+      render(<DealDetailPage />);
+      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole('button', { name: 'View All History' }));
+      const drawer = await screen.findByTestId('activity-history-drawer');
+      expect(drawer).toHaveAttribute('data-entity-type', 'deal');
+      expect(drawer).toHaveAttribute('data-entity-id', 'deal-1');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close history' }));
+      await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
     });
   });
 });

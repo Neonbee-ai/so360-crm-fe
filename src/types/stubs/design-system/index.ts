@@ -18,6 +18,8 @@ export const Dropdown: any = _any;
 export const Pagination: any = _any;
 export const QuotaBar: any = _any;
 export const QuotaGate: any = _any;
+export const DepartmentSelector: any = _any;
+export const UserSelector: any = _any;
 
 // Universal toast surface
 export const toast: {

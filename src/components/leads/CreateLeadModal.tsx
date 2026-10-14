@@ -30,6 +30,8 @@ import {
 import { describeApiError } from '../../utils/apiErrorMessage';
 import { isWonLeadStage } from '../../utils/leadStages';
 import { RequiredMark } from '../common/RequiredMark';
+import { parseDuplicateLead, type DuplicateLeadInfo } from '../../services/leadDedupService';
+import { DuplicateLeadWarning } from './DuplicateLeadWarning';
 
 /**
  * One rule per field, so the blur handler, the submit guard and the
@@ -142,6 +144,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             setErrors({});
             setError(null);
             setExistingRecord(null);
+            setDuplicateLead(null);
             fetchSettings();
         }
     }, [isOpen]);
@@ -150,6 +153,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const [error, setError] = useState<string | null>(null);
     /** A 409 from the backend: the address already belongs to this record. */
     const [existingRecord, setExistingRecord] = useState<{ id: string; type: string | null } | null>(null);
+    const [duplicateLead, setDuplicateLead] = useState<DuplicateLeadInfo | null>(null);
     const [errors, setErrors] = useState<FieldErrors>({});
     const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -199,6 +203,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setDuplicateLead(null);
 
         // Format errors are caught here too, not only on blur: a value pasted
         // and submitted without ever leaving the field must still be checked.
@@ -232,6 +237,14 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
             onSuccess();
             onClose();
         } catch (err) {
+            // A6: a DUPLICATE_LEAD rejection gets its own actionable warning
+            // (Open existing / Cancel) instead of the generic error banner.
+            const dup = parseDuplicateLead(err);
+            if (dup) {
+                setExistingRecord(null);
+                setDuplicateLead(dup);
+                return;
+            }
             const body = (err as { body?: { code?: string; existing_id?: string; existing_type?: string | null } })?.body;
             setExistingRecord(
                 body?.code === 'DUPLICATE_EMAIL' && body.existing_id
@@ -262,6 +275,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         <AlertCircle size={18} className="shrink-0" />
                         <p>Potential duplicate detected. A lead with this company name already exists.</p>
                     </div>
+                )}
+
+                {duplicateLead && (
+                    <DuplicateLeadWarning duplicate={duplicateLead} onCancel={onClose} />
                 )}
 
                 {error && (

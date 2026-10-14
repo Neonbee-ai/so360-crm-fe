@@ -174,3 +174,33 @@ describe('Given a page gated on role permissions', () => {
     expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
   });
 });
+
+describe('Given the RE Phase C sales + commission report routes', () => {
+  it.each(['/sales', '/reports/commission'])(
+    'When %s is opened with the commissions feature locked / Then the upgrade prompt is shown for the commissions flag',
+    async (path) => {
+      const asked: string[] = [];
+      shellState.getFeatureState = (flag) => { asked.push(flag); return 'locked'; };
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+        </MemoryRouter>,
+      );
+      expect(await screen.findByText(/upgrade plan/i)).toBeTruthy();
+      expect(asked).toContain('submodule:crm:commissions');
+    },
+  );
+
+  it.each(['/sales', '/reports/commission'])(
+    'When %s is opened by a user without deals.read / Then the page is withheld with a notice',
+    async (path) => {
+      shellState.hasPermission = (c) => c !== 'deals.read';
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+        </MemoryRouter>,
+      );
+      expect(await screen.findByText(/don't have access to this page/i)).toBeTruthy();
+    },
+  );
+});

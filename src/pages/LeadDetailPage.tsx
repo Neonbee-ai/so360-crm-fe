@@ -10,7 +10,7 @@ import {
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, Users, FileText,
     DollarSign, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, Settings2
+    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, Settings2, GitMerge
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
@@ -49,6 +49,9 @@ import NoteEditor from '../components/notes/NoteEditor';
 import NoteContent from '../components/notes/NoteContent';
 import NoteReplyComposer from '../components/notes/NoteReplyComposer';
 import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
+import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
+import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
+import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
@@ -78,6 +81,18 @@ const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: (counts: TabCou
 // Tiptap emits '<p></p>' for an empty editor rather than '', so a plain
 // .trim() check isn't enough — strip tags first to see if there's real content.
 const isNoteContentEmpty = (html: string): boolean => html.replace(/<[^>]*>/g, '').trim().length === 0;
+
+// Task 8a7f43ff: the Notes tab lists the newest note first. The lead payload
+// embeds notes oldest-first (crm-be orders created_at ASC so reply threads nest
+// chronologically), so sort top-level notes here. Reversing before the stable
+// sort keeps later-inserted notes first when timestamps tie.
+export const sortNotesNewestFirst = <T extends { created_at?: string }>(notes: T[]): T[] => {
+    const time = (n: T) => {
+        const t = n.created_at ? Date.parse(n.created_at) : NaN;
+        return Number.isNaN(t) ? 0 : t;
+    };
+    return [...notes].reverse().sort((a, b) => time(b) - time(a));
+};
 
 // Notes timeline redesign (Task dfae6177): collapse consecutive replies from
 // the same author into one run so the author/timestamp header only prints
@@ -149,6 +164,9 @@ const LeadDetailPage = () => {
     // Destructive action — gate on the delete permission, fail closed. The backend
     // already enforces leads.delete; this stops offering a control the user can't use.
     const canDeleteLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.delete') ?? false);
+    // A6 merge: the kept lead is updated and the other one removed, so require
+    // both update and delete rights. Fail closed.
+    const canMergeLead = (shell?.permissionsLoaded === true) && (shell?.hasPermission?.('leads.update') ?? false) && (shell?.hasPermission?.('leads.delete') ?? false);
     // Lead Detail activity toolbar — gated per-action so an Admin can grant each
     // independently via Settings > Roles & Permissions instead of the buttons
     // being visible to every role by default. Backend already enforces the same
@@ -167,6 +185,8 @@ const LeadDetailPage = () => {
     const backLabel = isCustomerDetailRoute ? 'Back to Customers' : 'Back to Leads';
     const backRoute = isCustomerDetailRoute ? '/crm/customers' : '/crm/leads';
     const [lead, setLead] = useState<Lead | null>(null);
+    const [isMergeOpen, setIsMergeOpen] = useState(false);
+    const [saveDuplicate, setSaveDuplicate] = useState<DuplicateLeadInfo | null>(null);
     const [associatedDeals, setAssociatedDeals] = useState<Deal[]>([]);
     const [associatedTasks, setAssociatedTasks] = useState<Task[]>([]);
     const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDefinition[]>([]);
@@ -182,6 +202,8 @@ const LeadDetailPage = () => {
     // Editing a lead ran the same fields through no validation at all, so a
     // name or phone rejected by Create Lead could still be saved from here.
     const [editErrors, setEditErrors] = useState<Record<string, string | null>>({});
+    // Guards the profile Save against double clicks firing overlapping PATCHes.
+    const [isSavingInfo, setIsSavingInfo] = useState(false);
     const [isChangingOwner, setIsChangingOwner] = useState(false);
     const [isChangingStatus, setIsChangingStatus] = useState(false);
     const [isChangingStage, setIsChangingStage] = useState(false);
@@ -285,7 +307,9 @@ const LeadDetailPage = () => {
 
     const INITIAL_ACTIVITY_LOAD = 7;
 
-    const fetchLeadData = useCallback(async () => {
+    // Resolves true when the lead was loaded, false when that load failed (the
+    // failure is still handled/logged here). Existing callers ignore the result.
+    const fetchLeadData = useCallback(async (): Promise<boolean> => {
         try {
             // Only the lead itself is critical. Everything else is supporting
             // detail and degrades to an empty value.
@@ -327,12 +351,14 @@ const LeadDetailPage = () => {
             setAllUsers(usersData);
             setPartners(partnersData);
             setSourceTypes(fetchedSourceTypes);
+            return true;
         } catch (error) {
             console.error('Failed to fetch lead data', error);
             // Report a permission failure as a permission failure. Reusing the
             // "not found" state for this sent users hunting for a deleted record
             // instead of asking an administrator for access.
             setAccessDenied((error as { status?: number })?.status === 403);
+            return false;
         } finally {
             setIsLoading(false);
         }
@@ -580,6 +606,14 @@ const LeadDetailPage = () => {
                         >
                             <Trash2 size={16} />
                         </button>}
+                        {canMergeLead && !isCustomerDetailRoute && <button
+                            onClick={() => setIsMergeOpen(true)}
+                            aria-label="Merge"
+                            title="Merge a duplicate lead into this one"
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all flex items-center justify-center border border-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                        >
+                            <GitMerge size={16} />
+                        </button>}
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
@@ -590,6 +624,33 @@ const LeadDetailPage = () => {
                     </div>
                 </div>
             </header>
+
+            {saveDuplicate && (
+                <div className="mb-6">
+                    <DuplicateLeadWarning
+                        duplicate={saveDuplicate}
+                        onCancel={() => {
+                            // Back out of the conflicting edit: drop the warning,
+                            // leave edit mode and reload the saved values.
+                            setSaveDuplicate(null);
+                            setIsEditingInfo(false);
+                            fetchLeadData();
+                        }}
+                    />
+                </div>
+            )}
+
+            {isMergeOpen && (
+                <MergeLeadPanel
+                    keepLead={lead}
+                    onClose={() => setIsMergeOpen(false)}
+                    onMerged={(mergedId) => {
+                        setIsMergeOpen(false);
+                        publishLeadsChanged('deleted', [mergedId]);
+                        fetchLeadData();
+                    }}
+                />
+            )}
 
             {/* Lead Journey Stepper — only for leads, not customers */}
             {!isCustomerDetailRoute && (
@@ -659,6 +720,7 @@ const LeadDetailPage = () => {
                             </button>
                             <div className="ml-auto flex items-center px-6">
                                 <button
+                                    disabled={isSavingInfo}
                                     onClick={async () => {
                                         if (isEditingInfo) {
                                             const nextErrors = {
@@ -675,14 +737,30 @@ const LeadDetailPage = () => {
                                                 return;
                                             }
                                             setEditErrors({});
+                                            setIsSavingInfo(true);
                                             try {
                                                 // Field-diff history is now captured server-side by the
                                                 // leads audit trigger (Task 7) — see the Audit History tab.
                                                 await crmService.updateLead(lead.id, lead);
+                                                setSaveDuplicate(null);
                                                 recordActivity({ eventType: 'lead.updated', eventCategory: 'crm', description: `Updated lead "${getLeadDisplayName(lead)}"`, resourceType: 'lead', resourceId: lead.id }).catch(() => {});
-                                                fetchLeadData();
+                                                // Leave edit mode only once the persisted lead is back on
+                                                // screen, so what the user sees is what the server stored.
+                                                const reloaded = await fetchLeadData();
+                                                if (!reloaded) {
+                                                    // Saved, but the persisted lead could not be re-read. Keep
+                                                    // the editor open with the user's values rather than showing
+                                                    // them as if they were the stored record.
+                                                    toast.error('Changes were saved, but the latest lead could not be reloaded. Your edits are still shown; please refresh to confirm.');
+                                                    return;
+                                                }
                                             } catch (error) {
                                                 console.error('Failed to save lead info', error);
+                                                const dup = parseDuplicateLead(error);
+                                                if (dup) {
+                                                    setSaveDuplicate(dup);
+                                                    return;
+                                                }
                                                 const status = (error as { status?: number })?.status;
                                                 const message = (error as Error)?.message;
                                                 toast.error(
@@ -691,14 +769,17 @@ const LeadDetailPage = () => {
                                                         : 'Failed to save changes.',
                                                 );
                                                 return;
+                                            } finally {
+                                                setIsSavingInfo(false);
                                             }
                                         }
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
-                                    className={`p-2 rounded-lg transition-all ${isEditingInfo ? 'bg-blue-600 text-slate-50 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
-                                    title={isEditingInfo ? "Save Changes" : "Edit Intelligence"}
+                                    className={`p-2 rounded-lg transition-all disabled:opacity-60 disabled:cursor-wait ${isEditingInfo ? 'bg-blue-600 text-slate-50 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                                    title={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
+                                    aria-busy={isSavingInfo}
                                 >
-                                    {isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
+                                    {isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : isEditingInfo ? <CheckCircle2 size={16} /> : <Edit2 size={16} />}
                                 </button>
                             </div>
                         </div>
@@ -1095,7 +1176,7 @@ const LeadDetailPage = () => {
                                             <p className="text-slate-400 italic text-sm">No notes captured for this {isCustomerDetailRoute ? 'customer' : 'lead'} yet.</p>
                                         ) : (
                                             <div className="space-y-4">
-                                                {lead.notes.map(note => (
+                                                {sortNotesNewestFirst(lead.notes).map(note => (
                                                     <div key={note.id} className="text-sm bg-slate-900/40 border border-slate-800 rounded-xl p-4 group/note relative">
                                                         {editingNoteId === note.id ? (
                                                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-2">
@@ -1224,7 +1305,7 @@ const LeadDetailPage = () => {
                                                         const freshNote = await crmService.createNote({ lead_id: lead.id, content: newNoteContent });
                                                         setLead({
                                                             ...lead,
-                                                            notes: [...(lead.notes || []), freshNote]
+                                                            notes: [freshNote, ...(lead.notes || [])]
                                                         });
                                                         setNewNoteContent('');
                                                         setNoteEditorKey((k) => k + 1);

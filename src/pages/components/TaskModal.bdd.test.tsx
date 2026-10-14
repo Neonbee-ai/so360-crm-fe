@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 
 // Mutable so individual tests can override (e.g. null user scenario).
@@ -13,7 +13,8 @@ const mockShowError = vi.hoisted(() => vi.fn());
 const mockEmitNotification = vi.fn();
 const mockGetLeads = vi.fn();
 const mockGetDeals = vi.fn();
-const mockGetProjects = vi.fn();
+const mockSearchProjects = vi.fn();
+const mockGetProjectById = vi.fn();
 const mockConnectTaskToProject = vi.fn();
 const mockGetProjectTeamUserIds = vi.fn();
 const mockShowWarning = vi.hoisted(() => vi.fn());
@@ -25,7 +26,8 @@ vi.mock('../../services/crmService', () => ({
     updateTask: (...a: any[]) => mockUpdateTask(...a),
     getLeads: (...a: any[]) => mockGetLeads(...a),
     getDeals: (...a: any[]) => mockGetDeals(...a),
-    getProjects: (...a: any[]) => mockGetProjects(...a),
+    searchProjects: (...a: any[]) => mockSearchProjects(...a),
+    getProjectById: (...a: any[]) => mockGetProjectById(...a),
     connectTaskToProject: (...a: any[]) => mockConnectTaskToProject(...a),
     getProjectTeamUserIds: (...a: any[]) => mockGetProjectTeamUserIds(...a),
   },
@@ -98,6 +100,13 @@ const prioritySelect = () =>
   Array.from(document.querySelectorAll('select')).find(
     isPrioritySelect,
   ) as HTMLSelectElement;
+// The Project field is a searchable picker, not a <select>: open it and click
+// the option by its visible name.
+const projectCombobox = () => within(screen.getByTestId('project-select')).getByRole('combobox');
+const pickProject = async (name: string) => {
+  fireEvent.click(projectCombobox());
+  fireEvent.click(await screen.findByRole('option', { name }));
+};
 // select indices in create/TODO mode: [0]=type, [1]=assignee
 // select indices in REMINDER mode:    [0]=type, [1]=reminderMinutes, [2]=assignee
 // select indices in edit/TODO mode:   [0]=type, [1]=assignee, [2]=status
@@ -127,7 +136,8 @@ beforeEach(() => {
   mockEmitNotification.mockResolvedValue(undefined);
   mockGetLeads.mockResolvedValue(MOCK_LEADS);
   mockGetDeals.mockResolvedValue(MOCK_DEALS);
-  mockGetProjects.mockResolvedValue(MOCK_PROJECTS);
+  mockSearchProjects.mockResolvedValue({ data: MOCK_PROJECTS, hasMore: false });
+  mockGetProjectById.mockImplementation(async (id: string) => MOCK_PROJECTS.find((p) => p.id === id) ?? null);
   mockConnectTaskToProject.mockResolvedValue({ id: 't-new', sync_status: 'connected' });
 });
 
@@ -1048,24 +1058,111 @@ describe('Given a Deal-context task with an auto-suggested Project', () => {
     render(
       <TaskModal dealId="deal-1" dealProjectId="proj-2" onClose={vi.fn()} onSuccess={vi.fn()} />
     );
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
-    const projectSelect = await screen.findByDisplayValue('Mobile App');
-    expect(projectSelect).toBeInTheDocument();
+    // Resolved by id, so it shows even though the picker has not been opened.
+    await waitFor(() => expect(projectCombobox()).toHaveTextContent('Mobile App'));
+    expect(mockGetProjectById).toHaveBeenCalledWith('proj-2');
   });
 
-  it('When rendered without a dealProjectId / Then the Project dropdown defaults to "No Project"', async () => {
+  it('When rendered without a dealProjectId / Then the Project field defaults to "No Project"', async () => {
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
-    expect(screen.getByDisplayValue('No Project')).toBeInTheDocument();
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
+    expect(projectCombobox()).toHaveTextContent('No Project');
+    // Nothing is fetched until the user opens the picker.
+    expect(mockSearchProjects).not.toHaveBeenCalled();
   });
 
   it('When a Project is selected / Then the user may still clear it back to "No Project"', async () => {
     render(
       <TaskModal dealId="deal-1" dealProjectId="proj-2" onClose={vi.fn()} onSuccess={vi.fn()} />
     );
-    await waitFor(() => expect(screen.getByDisplayValue('Mobile App')).toBeInTheDocument());
-    fireEvent.change(screen.getByDisplayValue('Mobile App'), { target: { value: '' } });
-    expect(screen.getByDisplayValue('No Project')).toBeInTheDocument();
+    await waitFor(() => expect(projectCombobox()).toHaveTextContent('Mobile App'));
+    fireEvent.click(screen.getByTestId('project-select-clear'));
+    expect(projectCombobox()).toHaveTextContent('No Project');
+  });
+});
+
+describe('Given the Project field is a searchable picker', () => {
+  it('When the user types / Then the Projects backend is searched with that text', async () => {
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.click(projectCombobox());
+    fireEvent.change(await screen.findByTestId('project-select-input'), { target: { value: 'mobile' } });
+
+    await waitFor(() =>
+      expect(mockSearchProjects).toHaveBeenCalledWith(expect.objectContaining({ search: 'mobile', page: 1 })),
+    );
+  });
+
+  it('When the tenant has a project beyond the first page / Then "Load more" reaches it and it can be selected', async () => {
+    mockSearchProjects
+      .mockResolvedValueOnce({ data: MOCK_PROJECTS, hasMore: true })
+      .mockResolvedValueOnce({ data: [{ id: 'proj-101', title: 'Project 101' }], hasMore: false });
+    mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    fireEvent.click(projectCombobox());
+    fireEvent.click(await screen.findByTestId('project-select-more'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Project 101' }));
+    expect(projectCombobox()).toHaveTextContent('Project 101');
+
+    fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
+    fireEvent.change(dueInput(), { target: { value: futureDate } });
+    fireEvent.submit(document.querySelector('form')!);
+    await waitFor(() => expect(mockConnectTaskToProject).toHaveBeenCalledWith('new-task-99', 'proj-101'));
+    expect(mockSearchProjects).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
+  });
+
+  it('When nothing matches / Then "No projects found" is shown', async () => {
+    mockSearchProjects.mockResolvedValue({ data: [], hasMore: false });
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.click(projectCombobox());
+    expect(await screen.findByTestId('project-select-empty')).toHaveTextContent('No projects found');
+  });
+
+  it('When the Projects API fails / Then an error with Retry is shown instead of an empty list, and Retry recovers', async () => {
+    mockSearchProjects.mockRejectedValueOnce(new Error('503'));
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.click(projectCombobox());
+    expect(await screen.findByTestId('project-select-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('project-select-empty')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('project-select-retry'));
+    expect(await screen.findByRole('option', { name: 'Website Revamp' })).toBeInTheDocument();
+  });
+
+  it('When projects are completed, cancelled or archived / Then they are not offered', async () => {
+    mockSearchProjects.mockResolvedValue({
+      data: [
+        { id: 'a', title: 'Active One', status: 'IN_PROGRESS' },
+        { id: 'b', title: 'Done One', status: 'COMPLETED' },
+        { id: 'c', title: 'Dropped One', status: 'CANCELLED' },
+        { id: 'd', title: 'Old One', status: 'ARCHIVED' },
+      ],
+      hasMore: false,
+    });
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.click(projectCombobox());
+    expect(await screen.findByRole('option', { name: 'Active One' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Done One' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Dropped One' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Old One' })).not.toBeInTheDocument();
+  });
+
+  it('When keyboard is used / Then arrows + Enter select and Enter never submits the form', async () => {
+    render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.click(projectCombobox());
+    const input = await screen.findByTestId('project-select-input');
+    await screen.findByRole('option', { name: 'Website Revamp' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // "No Project" row
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // first project
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(projectCombobox()).toHaveTextContent('Website Revamp');
+    expect(mockCreateTask).not.toHaveBeenCalled();
+  });
+
+  it('When a task already linked to a project outside the loaded page is edited / Then its name is still shown', async () => {
+    mockGetProjectById.mockResolvedValue({ id: 'proj-999', title: 'Far Away Project', status: 'COMPLETED' });
+    render(<TaskModal task={{ ...BASE_TASK, project_id: 'proj-999' } as any} onClose={vi.fn()} onSuccess={vi.fn()} />);
+    await waitFor(() => expect(projectCombobox()).toHaveTextContent('Far Away Project'));
   });
 });
 
@@ -1073,11 +1170,11 @@ describe('Given a user selects a Project and submits the task form', () => {
   it('When submission succeeds / Then connectTaskToProject is called with the new task id and selected project id', async () => {
     mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
-    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    await pickProject('Website Revamp');
 
     fireEvent.submit(document.querySelector('form')!);
 
@@ -1090,12 +1187,12 @@ describe('Given a user selects a Project and submits the task form', () => {
     mockGetProjectTeamUserIds.mockResolvedValue(['u2']); // u1 (the default assignee) is not on the team
     const onClose = vi.fn();
     render(<TaskModal dealId="deal-1" onClose={onClose} onSuccess={vi.fn()} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
     await waitFor(() => expect(selects()[1].value).toBe('u1'));
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
-    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    await pickProject('Website Revamp');
 
     fireEvent.submit(document.querySelector('form')!);
 
@@ -1114,12 +1211,12 @@ describe('Given a user selects a Project and submits the task form', () => {
     mockGetProjectTeamUserIds.mockResolvedValue(['u2']);
     mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
     fireEvent.change(selects()[1], { target: { value: 'u2' } });
-    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    await pickProject('Website Revamp');
 
     fireEvent.submit(document.querySelector('form')!);
 
@@ -1131,11 +1228,11 @@ describe('Given a user selects a Project and submits the task form', () => {
     mockGetProjectTeamUserIds.mockResolvedValue(null);
     mockCreateTask.mockResolvedValue({ id: 'new-task-99', title: 'Task', status: 'OPEN' });
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
-    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    await pickProject('Website Revamp');
 
     fireEvent.submit(document.querySelector('form')!);
 
@@ -1151,11 +1248,11 @@ describe('Given a user selects a Project and submits the task form', () => {
     });
     const onSuccess = vi.fn();
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={onSuccess} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
-    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    await pickProject('Website Revamp');
     fireEvent.submit(document.querySelector('form')!);
 
     await waitFor(() =>
@@ -1172,11 +1269,11 @@ describe('Given a user selects a Project and submits the task form', () => {
       project_task_id: 'ptask-1',
     });
     render(<TaskModal dealId="deal-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
-    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    await pickProject('Website Revamp');
 
     fireEvent.submit(document.querySelector('form')!);
 
@@ -1186,7 +1283,7 @@ describe('Given a user selects a Project and submits the task form', () => {
 
   it('When no Project is selected / Then connectTaskToProject is never called', async () => {
     render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
@@ -1205,11 +1302,11 @@ describe('Given the connect call fails after task creation succeeds', () => {
     const onClose = vi.fn();
 
     render(<TaskModal dealId="deal-1" onClose={onClose} onSuccess={onSuccess} />);
-    await waitFor(() => expect(mockGetProjects).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetUsers).toHaveBeenCalled());
 
     fireEvent.change(screen.getByPlaceholderText(/follow up/i), { target: { value: 'Task' } });
     fireEvent.change(dueInput(), { target: { value: futureDate } });
-    fireEvent.change(screen.getByDisplayValue('No Project'), { target: { value: 'proj-1' } });
+    await pickProject('Website Revamp');
     fireEvent.submit(document.querySelector('form')!);
 
     // The task creation flow completes normally — modal closes, onSuccess fires —

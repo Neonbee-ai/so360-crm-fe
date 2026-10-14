@@ -60,3 +60,15 @@ export const toastBus = {
   subscribe: () => () => {},
   getToasts: () => [],
 };
+
+// People Connect selectors — clicking the stub picks fixed ids so specs can
+// drive onChange without the real dropdown.
+export const DepartmentSelector = ({ value, onChange, placeholder }: any) =>
+  React.createElement('button', { type: 'button', 'data-testid': 'department-selector', 'data-value': value ?? '', onClick: () => onChange('dept-1') }, placeholder ?? 'Department');
+export const UserSelector = ({ value, onChange, multiSelect, placeholder }: any) =>
+  React.createElement('button', {
+    type: 'button',
+    'data-testid': 'user-selector',
+    'data-value': Array.isArray(value) ? value.join(',') : (value ?? ''),
+    onClick: () => onChange(multiSelect ? ['user-1', 'user-2'] : 'user-1'),
+  }, placeholder ?? 'User');

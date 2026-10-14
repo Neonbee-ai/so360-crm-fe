@@ -188,7 +188,7 @@ vi.mock('../utils/formatters', () => ({
   useCRMCurrencySymbol: () => '$',
 }));
 
-import LeadDetailPage from './LeadDetailPage';
+import LeadDetailPage, { sortNotesNewestFirst } from './LeadDetailPage';
 
 const owner = { id: 'u1', full_name: 'Test Owner', email: 'owner@test.com', avatar_url: null };
 
@@ -601,6 +601,94 @@ describe('LeadDetailPage', () => {
     });
   });
 
+  // Task 8a7f43ff: newest note first in the Notes tab.
+  describe('Given notes ordering on the Notes tab', () => {
+    const renderedNoteContents = () => screen.getAllByTestId('note-content').map((el) => el.textContent);
+
+    it('When the lead payload lists notes oldest-first / Then the Notes tab shows the newest note at the top', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [
+          { id: 'n1', content: 'Oldest note', author: owner, created_at: '2025-01-02T10:00:00Z' },
+          { id: 'n2', content: 'Middle note', author: owner, created_at: '2025-01-03T10:00:00Z' },
+          { id: 'n3', content: 'Newest note', author: owner, created_at: '2025-01-04T10:00:00Z' },
+        ],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Newest note')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Newest note', 'Middle note', 'Oldest note']);
+    });
+
+    it('When a new note is saved / Then it appears at the top of the Notes list above existing notes', async () => {
+      mockCreateNote.mockResolvedValueOnce({ id: 'nn1', content: 'Brand new note', author: owner, created_at: '2025-01-05T10:00:00Z' });
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Needs follow up')).toBeInTheDocument());
+      fireEvent.change(screen.getByPlaceholderText('Add a private note about this lead...'), { target: { value: 'Brand new note' } });
+      await user.click(screen.getByText('Save Note'));
+      await waitFor(() => expect(screen.getByText('Brand new note')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Brand new note', 'Needs follow up', 'Hot lead from conference']);
+    });
+
+    it('When a note has replies / Then the replies stay in chronological order under their note', async () => {
+      mockGetLeadById.mockResolvedValue(makeLead({
+        notes: [
+          {
+            id: 'n1', content: 'Older note', author: owner, created_at: '2025-01-02T10:00:00Z',
+            replies: [
+              { id: 'r1', content: 'First reply', author: owner, created_at: '2025-01-02T11:00:00Z' },
+              { id: 'r2', content: 'Second reply', author: owner, created_at: '2025-01-02T12:00:00Z' },
+            ],
+          },
+          { id: 'n2', content: 'Newer note', author: owner, created_at: '2025-01-03T10:00:00Z' },
+        ],
+      }));
+      const user = userEvent.setup();
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      await user.click(screen.getByText('Notes'));
+      await waitFor(() => expect(screen.getByText('Second reply')).toBeInTheDocument());
+      expect(renderedNoteContents()).toEqual(['Newer note', 'Older note', 'First reply', 'Second reply']);
+    });
+  });
+
+  describe('Given the sortNotesNewestFirst helper', () => {
+    it('When notes have different timestamps / Then they are ordered newest to oldest without mutating the input', () => {
+      const input = [
+        { id: 'a', created_at: '2025-01-01T00:00:00Z' },
+        { id: 'c', created_at: '2025-01-03T00:00:00Z' },
+        { id: 'b', created_at: '2025-01-02T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['c', 'b', 'a']);
+      expect(input.map((n) => n.id)).toEqual(['a', 'c', 'b']);
+    });
+
+    it('When two notes share a timestamp / Then the one later in the list (added later) comes first', () => {
+      const input = [
+        { id: 'first', created_at: '2025-01-01T00:00:00Z' },
+        { id: 'second', created_at: '2025-01-01T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['second', 'first']);
+    });
+
+    it('When a note has a missing or invalid timestamp / Then it sorts after dated notes', () => {
+      const input = [
+        { id: 'missing' },
+        { id: 'invalid', created_at: 'not-a-date' },
+        { id: 'dated', created_at: '2025-01-01T00:00:00Z' },
+      ];
+      expect(sortNotesNewestFirst(input).map((n) => n.id)).toEqual(['dated', 'invalid', 'missing']);
+    });
+
+    it('When the list is empty / Then it returns an empty list', () => {
+      expect(sortNotesNewestFirst([])).toEqual([]);
+    });
+  });
+
   describe('Given tasks tab interactions', () => {
     it('When switching to tasks tab / Then shows task list with count', async () => {
       const user = userEvent.setup();
@@ -912,6 +1000,172 @@ describe('LeadDetailPage', () => {
       fireEvent.change(sourceSelect, { target: { value: 'social_media' } });
       // PartnerSearchDropdown should still show the selected partner
       expect(screen.getByTestId('partner-search-dropdown')).toBeInTheDocument();
+    });
+  });
+
+  // Task 29299155: an edited lead must not look saved until the server has
+  // stored it and the persisted record is back on screen.
+  describe('Given the profile editor is saving', () => {
+    // The editor validates before saving; the shared fixture has no first name.
+    const editableLead = (overrides: any = {}) =>
+      makeLead({ first_name: 'John', last_name: 'Doe', phone: '+91 9876543210', ...overrides });
+
+    const deferred = <T,>() => {
+      let resolve!: (v: T) => void;
+      let reject!: (e: unknown) => void;
+      const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+      return { promise, resolve, reject };
+    };
+
+    const openEditor = async () => {
+      render(<LeadDetailPage />);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      fireEvent.click(document.querySelector('[title="Edit Intelligence"]') as HTMLElement);
+      await waitFor(() => expect(document.querySelector('[title="Save Changes"]')).not.toBeNull());
+    };
+
+    const clickSave = () =>
+      fireEvent.click(document.querySelector('[title="Save Changes"]') as HTMLElement);
+
+    const changeEmail = (from: string, to: string) =>
+      fireEvent.change(screen.getByDisplayValue(from), { target: { value: to } });
+
+    beforeEach(() => {
+      mockGetLeadById.mockResolvedValue(editableLead());
+    });
+
+    it('When Save is clicked / Then the button turns into a disabled, busy spinner until the save settles', async () => {
+      const update = deferred<any>();
+      mockUpdateLead.mockReturnValueOnce(update.promise);
+      await openEditor();
+
+      clickSave();
+
+      const savingBtn = await waitFor(() => {
+        const btn = document.querySelector('[title="Saving…"]') as HTMLButtonElement | null;
+        expect(btn).not.toBeNull();
+        return btn!;
+      });
+      expect(savingBtn).toBeDisabled();
+      expect(savingBtn).toHaveAttribute('aria-busy', 'true');
+      expect(savingBtn.querySelector('.animate-spin')).not.toBeNull();
+
+      update.resolve({});
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeDisabled();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toHaveAttribute('aria-busy', 'false');
+    });
+
+    it('When Save is clicked again while the first save is in flight / Then only one update is sent', async () => {
+      const update = deferred<any>();
+      mockUpdateLead.mockReturnValueOnce(update.promise);
+      await openEditor();
+
+      clickSave();
+      await waitFor(() => expect(document.querySelector('[title="Saving…"]')).not.toBeNull());
+      fireEvent.click(document.querySelector('[title="Saving…"]') as HTMLElement);
+      fireEvent.click(document.querySelector('[title="Saving…"]') as HTMLElement);
+
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+      update.resolve({});
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+    });
+
+    it('When the update succeeds / Then edit mode stays open until the persisted lead has been reloaded', async () => {
+      await openEditor();
+      const fetchesBeforeSave = mockGetLeadById.mock.calls.length;
+      const reload = deferred<any>();
+      mockGetLeadById.mockReturnValueOnce(reload.promise);
+
+      clickSave();
+
+      await waitFor(() => expect(mockUpdateLead).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(mockGetLeadById).toHaveBeenCalledTimes(fetchesBeforeSave + 1));
+      // Update is done but the reload is not: still saving, still editing.
+      expect(document.querySelector('[title="Saving…"]')).not.toBeNull();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toBeNull();
+
+      reload.resolve(editableLead());
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+    });
+
+    it('When the email is edited and saved / Then the value shown afterwards is the one the server returns on reload', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'new@acme.com');
+      mockGetLeadById.mockResolvedValue(editableLead({ contact_email: 'new@acme.com' }));
+
+      clickSave();
+
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockUpdateLead).toHaveBeenCalledWith('lead-1', expect.objectContaining({ contact_email: 'new@acme.com' }));
+      expect(screen.getByText('new@acme.com')).toBeInTheDocument();
+      expect(screen.queryByText('john@acme.com')).not.toBeInTheDocument();
+    });
+
+    it('When the server rejects the save with a 4xx message / Then that message is shown, the editor stays open with the entered email, and Save is usable again', async () => {
+      const err = Object.assign(new Error('Email is invalid for this org'), { status: 422 });
+      mockUpdateLead.mockRejectedValueOnce(err);
+      await openEditor();
+      changeEmail('john@acme.com', 'typed@acme.com');
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Email is invalid for this org'));
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+      expect(screen.getByDisplayValue('typed@acme.com')).toBeInTheDocument();
+    });
+
+    it('When the save fails without a client-error status / Then a generic failure toast is shown and the editor stays open', async () => {
+      mockUpdateLead.mockRejectedValueOnce(new Error('socket hang up'));
+      await openEditor();
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Failed to save changes.'));
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+    });
+
+    it('When the update succeeds but the reload fails / Then edit mode stays open with the typed edits and an error is shown', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'typed@acme.com');
+      mockGetLeadById.mockRejectedValueOnce(new Error('network down'));
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith(expect.stringContaining('could not be reloaded')));
+      expect(mockUpdateLead).toHaveBeenCalledTimes(1);
+      const btn = document.querySelector('[title="Save Changes"]') as HTMLButtonElement;
+      expect(btn).not.toBeNull();
+      expect(btn).not.toBeDisabled();
+      expect(document.querySelector('[title="Edit Intelligence"]')).toBeNull();
+      expect(screen.getByDisplayValue('typed@acme.com')).toBeInTheDocument();
+    });
+
+    it('When the update and the reload both succeed / Then edit mode closes and no reload error is shown', async () => {
+      await openEditor();
+      mockShowError.mockClear();
+
+      clickSave();
+
+      await waitFor(() => expect(document.querySelector('[title="Edit Intelligence"]')).not.toBeNull());
+      expect(mockShowError).not.toHaveBeenCalled();
+    });
+
+    it('When a field fails validation / Then no update is sent and the button never enters the saving state', async () => {
+      await openEditor();
+      changeEmail('john@acme.com', 'not-an-email');
+
+      clickSave();
+
+      await waitFor(() => expect(mockShowError).toHaveBeenCalledWith('Please correct the highlighted fields.'));
+      expect(mockUpdateLead).not.toHaveBeenCalled();
+      expect(document.querySelector('[title="Saving…"]')).toBeNull();
+      expect(document.querySelector('[title="Save Changes"]')).not.toBeDisabled();
     });
   });
 

@@ -38,7 +38,7 @@ export const Table = <T extends { id: string }>({
                 <thead className="bg-slate-900 text-slate-400 font-medium border-b border-slate-700/50">
                     <tr>
                         {columns.map((col, i) => (
-                            <th key={i} className={`px-6 py-4 ${col.className}`}>
+                            <th key={i} className={`px-6 py-4 ${col.className ?? ''}`}>
                                 {col.header}
                             </th>
                         ))}
@@ -52,7 +52,7 @@ export const Table = <T extends { id: string }>({
                             className={`hover:bg-blue-500/5 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                         >
                             {columns.map((col, i) => (
-                                <td key={i} className={`px-6 py-4 ${col.className}`}>
+                                <td key={i} className={`px-6 py-4 ${col.className ?? ''}`}>
                                     {typeof col.accessor === 'function' ? col.accessor(item) : (item[col.accessor] as React.ReactNode)}
                                 </td>
                             ))}

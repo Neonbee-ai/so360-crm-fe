@@ -154,6 +154,9 @@ const QuotesPage = () => {
     // Modals and action tracking
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedDealId, setSelectedDealId] = useState<string>('');
+    // Settings → Documents → Numbering: when Sales Quote auto-numbering is off the user types the number.
+    const [quoteAutoNumbering, setQuoteAutoNumbering] = useState(true);
+    const [manualQuoteNumber, setManualQuoteNumber] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -213,6 +216,16 @@ const QuotesPage = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    // Re-read on every open so a settings change made meanwhile is picked up.
+    useEffect(() => {
+        if (!isCreateModalOpen) return;
+        let cancelled = false;
+        crmService.isQuoteAutoNumbering().then(auto => {
+            if (!cancelled) setQuoteAutoNumbering(auto);
+        });
+        return () => { cancelled = true; };
+    }, [isCreateModalOpen]);
 
     useEffect(() => {
         if (!dealDropdownOpen) return;
@@ -426,11 +439,19 @@ const QuotesPage = () => {
 
     const handleCreateQuote = async () => {
         if (!selectedDealId) return;
+        const quoteNumber = manualQuoteNumber.trim();
+        if (!quoteAutoNumbering && !quoteNumber) return;
         try {
-            const newQuote = await crmService.createQuote({ deal_id: selectedDealId });
+            const newQuote = await crmService.createQuote({
+                deal_id: selectedDealId,
+                ...(quoteAutoNumbering ? {} : { quote_number: quoteNumber }),
+            });
             recordActivity({ eventType: 'quote.created', eventCategory: 'crm', description: `Created quote for deal`, resourceType: 'quote', resourceId: newQuote.id }).catch(() => {});
             navigate(`/crm/quotes/${newQuote.id}`);
         } catch (err: any) {
+            // The setting could not be read (or changed meanwhile): crm-be is the
+            // judge, so show the manual field when it says a number is required.
+            if (/quote number is required/i.test(err?.message || '')) setQuoteAutoNumbering(false);
             setError(err.message || 'Failed to create quote');
             toast.error(err.message || 'Failed to create quote');
         }
@@ -1543,6 +1564,25 @@ const QuotesPage = () => {
                                         )}
                                     </div>
                                 </div>
+                                {!quoteAutoNumbering && (
+                                    <div>
+                                        <label htmlFor="manual-quote-number" className="block text-sm font-medium text-slate-300 mb-2">
+                                            Quote Number (manual) *
+                                        </label>
+                                        <input
+                                            id="manual-quote-number"
+                                            type="text"
+                                            maxLength={50}
+                                            value={manualQuoteNumber}
+                                            onChange={e => setManualQuoteNumber(e.target.value)}
+                                            placeholder="e.g. QT-501"
+                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <p className="mt-1.5 text-xs text-slate-400">
+                                            Auto-numbering for quotes is turned off in Settings → Documents → Numbering. Use letters, digits and - / _ . only; the number must be unique.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="flex justify-end gap-3 px-6 py-4 bg-slate-800/50 border-t border-slate-700 rounded-b-lg">
@@ -1550,6 +1590,7 @@ const QuotesPage = () => {
                                 onClick={() => {
                                     setIsCreateModalOpen(false);
                                     setSelectedDealId('');
+                                    setManualQuoteNumber('');
                                     setDealDropdownOpen(false);
                                     setDealSearchTerm('');
                                 }}
@@ -1559,7 +1600,7 @@ const QuotesPage = () => {
                             </button>
                             <button
                                 onClick={handleCreateQuote}
-                                disabled={!selectedDealId}
+                                disabled={!selectedDealId || (!quoteAutoNumbering && !manualQuoteNumber.trim())}
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                             >
                                 Create Quote

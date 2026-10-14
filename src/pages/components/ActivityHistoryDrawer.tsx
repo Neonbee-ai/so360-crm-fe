@@ -18,6 +18,18 @@ const MODULE_FILTERS: { key: string; label: string }[] = [
     { key: 'documents', label: 'Documents' },
 ];
 
+/** G8 Client 360: per-interaction-type chips (multi-select). Keys match the backend's normalized `type`. */
+export const TYPE_FILTERS: { key: string; label: string }[] = [
+    { key: 'call', label: 'Calls' },
+    { key: 'whatsapp', label: 'WhatsApp' },
+    { key: 'email', label: 'Email' },
+    { key: 'meeting', label: 'Meetings' },
+    { key: 'task', label: 'Tasks' },
+    { key: 'note', label: 'Notes' },
+    { key: 'document', label: 'Documents' },
+    { key: 'booking', label: 'Bookings' },
+];
+
 /**
  * Task 4 (Customer Timeline): full-history view built on the SAME
  * useEntityTimeline hook + TimelineEventCard used by the inline Activity tab
@@ -90,6 +102,45 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                     </div>
                 </div>
 
+                {/* G8 Client 360: interaction-type chips */}
+                <div className="px-4 py-2.5 border-b border-slate-800 shrink-0 overflow-x-auto" role="group" aria-label="Filter by interaction type">
+                    <div className="flex gap-1.5 min-w-max">
+                        <button
+                            type="button"
+                            aria-pressed={timeline.typeFilter.length === 0}
+                            onClick={() => timeline.setTypeFilter([])}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
+                                timeline.typeFilter.length === 0
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                            }`}
+                        >
+                            All types
+                        </button>
+                        {TYPE_FILTERS.map(t => {
+                            const active = timeline.typeFilter.includes(t.key);
+                            const count = timeline.summary?.type_counts?.[t.key];
+                            return (
+                                <button
+                                    key={t.key}
+                                    type="button"
+                                    aria-pressed={active}
+                                    data-testid={`type-chip-${t.key}`}
+                                    onClick={() => timeline.toggleType(t.key)}
+                                    className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
+                                        active
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {t.label}
+                                    {count !== undefined && <span className="ml-1 opacity-70">({count})</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
                 {timeline.summary && (
                     <div className="px-4 py-3 border-b border-slate-800 shrink-0">
                         <TimelineSummaryBanner summary={timeline.summary} />
@@ -107,12 +158,12 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                         <div className="flex flex-col items-center justify-center py-16 text-slate-500 px-6 text-center">
                             <Search size={32} className="mb-3 text-slate-700" />
                             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                                {timeline.search || timeline.moduleFilter ? 'No matching activities' : 'No Activity Yet'}
+                                {timeline.search || timeline.moduleFilter || timeline.typeFilter.length > 0 ? 'No matching activities' : 'No Activity Yet'}
                             </p>
                             <p className="text-[11px] text-slate-600 mt-1">
-                                {timeline.search || timeline.moduleFilter
+                                {timeline.search || timeline.moduleFilter || timeline.typeFilter.length > 0
                                     ? 'Try adjusting your search or filter.'
-                                    : 'Activities will appear here automatically when users interact with this lead.'}
+                                    : 'Activities will appear here automatically when users interact with this record.'}
                             </p>
                         </div>
                     ) : (
