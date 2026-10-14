@@ -1468,6 +1468,7 @@ const LeadDetailPage = () => {
                                             </Button>
                                         </div>
                                     )}
+                                </div>
                                 </Card>
                             )}
                             {activeTab === 'notes' && (

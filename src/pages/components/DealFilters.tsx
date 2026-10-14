@@ -54,7 +54,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
     return (
         <div className="flex flex-wrap items-center gap-nb-2">
             <div className="relative">
-                <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size=14 />
+                <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
                 <select
                     aria-label="Date range"
                     value={filters.date_range || ''}
