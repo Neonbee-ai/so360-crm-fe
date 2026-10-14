@@ -194,6 +194,7 @@ describe('Given LeadDetailPage', () => {
   it('When action / Then shows activity timeline on activity tab', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
     expect(screen.getByText(/call logged/i)).toBeInTheDocument();
   });
 

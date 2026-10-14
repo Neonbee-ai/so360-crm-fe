@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { eventBus } from '@so360/event-bus';
 import { publishLeadsChanged } from '../utils/leadEvents';
 import { useShell, useActivity, useShellBridge, useCurrentEntity } from '@so360/shell-context';
@@ -9,8 +8,8 @@ import {
     Calendar, Tag, Clock, Plus,
     LayoutDashboard, Briefcase, CheckCircle2,
     Loader2, ExternalLink, MessageSquare, Users, FileText,
-    DollarSign, PieChart, Edit2, Trash2, X,
-    File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, Settings2, GitMerge
+    DollarSign, PieChart, Edit2,
+    Trash2, File, Download, UploadCloud, FileIcon, Eye, Package, ShieldCheck, Search, GitMerge
 } from 'lucide-react';
 import { crmService, activitiesApi, settingsApi } from '../services/crmService';
 import { PartnerSearchDropdown } from '../components/common/PartnerSearchDropdown';
@@ -21,12 +20,11 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { toast, useConfirm } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, Badge, ConfirmDialog, EmptyState } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
-import DetailBackLink from '../components/common/DetailBackLink';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
@@ -53,7 +51,7 @@ import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
 
-type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
+type TabType = 'overview' | 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
 interface TabCounts {
     tasks: number;
@@ -194,7 +192,7 @@ const LeadDetailPage = () => {
     const [scoringRules, setScoringRules] = useState<LeadScoringRule[]>([]);
     const [scoreCategories, setScoreCategories] = useState<import('../types/crm').ScoreCategory[]>([]);
     const [isRecalculatingScore, setIsRecalculatingScore] = useState(false);
-    const [activeTab, setActiveTab] = useState<TabType>('activity');
+    const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [infoTab, setInfoTab] = useState<'profile' | 'additional' | 'business'>('profile');
     const [isLoading, setIsLoading] = useState(true);
     /** True when the lead fetch returned 403 — distinct from the lead not existing. */
@@ -402,29 +400,26 @@ const LeadDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
-                <Loader2 className="animate-spin" />
-                <span>Loading lead workspace...</span>
-            </div>
+            <DetailPageTemplate title="Loading lead workspace..." loading />
         );
     }
 
     if (accessDenied) {
         return (
-            <div className="p-8 text-center text-fg-muted">
-                <p className="text-fg dark:text-fg font-medium">You don't have permission to view this lead.</p>
-                <p className="mt-1 text-sm">Ask an administrator to grant your role access to CRM leads.</p>
-                <button onClick={() => navigate(backRoute)} className="text-primary hover:underline mt-4 inline-block">{backLabel}</button>
-            </div>
+            <EmptyState
+                title="You don't have permission to view this lead."
+                description="Ask an administrator to grant your role access to CRM leads."
+                action={{ label: backLabel, onClick: () => navigate(backRoute) }}
+            />
         );
     }
 
     if (!lead) {
         return (
-            <div className="p-8 text-center text-fg-muted">
-                <p>Lead not found.</p>
-                <button onClick={() => navigate(backRoute)} className="text-primary hover:underline mt-4 inline-block">{backLabel}</button>
-            </div>
+            <EmptyState
+                title="Lead not found."
+                action={{ label: backLabel, onClick: () => navigate(backRoute) }}
+            />
         );
     }
 
@@ -535,98 +530,558 @@ const LeadDetailPage = () => {
         }
     };
 
-    const tabCls = (tab: TabType) =>
-        `flex shrink-0 items-center gap-2 px-4 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
-            activeTab === tab
-                ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5'
-                : 'text-fg-subtle hover:text-fg'
-        }`;
+    const statusTone = lead.status === 'Converted' ? 'success' : lead.status === 'Lost' ? 'danger' : 'primary';
+    const statusNode = isChangingStatus ? (
+                                    <select
+                                        value={leadStages.find(s => s.name === lead.status)?.id || (lead as any).backend_status || ''}
+                                        onChange={async (e) => {
+                                            const stageId = e.target.value;
+                                            const stage = leadStages.find(s => s.id === stageId);
+                                            const displayName = stage?.name || stageId;
+                                            // Field-diff history (old/new status, actor, timestamp) is now
+                                            // captured server-side by the leads audit trigger (Task 7) —
+                                            // see the Audit History tab, not a client-side logActivity call.
+                                            await crmService.updateLead(lead.id, { status: displayName as any });
+                                            fetchLeadData();
+                                            setIsChangingStatus(false);
+                                        }}
+                                        onBlur={() => setIsChangingStatus(false)}
+                                        autoFocus
+                                        className="bg-surface border border-line text-xs font-black uppercase text-fg rounded-nb px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                                    >
+                                        {leadStages.map(stage => (
+                                            <option key={stage.id} value={stage.id}>{stage.name}</option>
+                                        ))}
+                                    </select>
+    ) : (
+        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
+            <Badge tone={statusTone}>{lead.status}</Badge>
+            {lead.type === 'partner' && <Badge tone="primary">Partner</Badge>}
+            <Edit2 size={12} className="text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+    );
+
+    // Overview first, Activity last (Comb DetailPageTemplate tab order); the
+    // middle tabs keep the user's saved layout order/visibility.
+    const detailTabs = [
+        { id: 'overview', label: 'Overview' },
+        ...layoutPrefs.visibleSections
+            .filter((section) => section.key !== 'activity' && TAB_CONFIG[section.key])
+            .map((section) => ({ id: section.key, label: String(TAB_CONFIG[section.key].label(tabCounts)).trim() })),
+        ...(layoutPrefs.visibleSections.some((section) => section.key === 'activity') ? [{ id: 'activity', label: 'Activity' }] : []),
+    ];
+
+    const recentActivity = entityTimeline.events.slice(0, 3);
 
     return (
-        <div className="p-8">
+        <>
             {confirmDialog}
-            <header className="mb-8">
-                <DetailBackLink fallbackTo={backRoute} className="mb-4" />
-                <div className="flex justify-between items-start">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2 relative">
-                            {isChangingStatus ? (
-                                <select
-                                    value={leadStages.find(s => s.name === lead.status)?.id || (lead as any).backend_status || ''}
-                                    onChange={async (e) => {
-                                        const stageId = e.target.value;
-                                        const stage = leadStages.find(s => s.id === stageId);
-                                        const displayName = stage?.name || stageId;
-                                        // Field-diff history (old/new status, actor, timestamp) is now
-                                        // captured server-side by the leads audit trigger (Task 7) —
-                                        // see the Audit History tab, not a client-side logActivity call.
-                                        await crmService.updateLead(lead.id, { status: displayName as any });
-                                        fetchLeadData();
-                                        setIsChangingStatus(false);
-                                    }}
-                                    onBlur={() => setIsChangingStatus(false)}
-                                    autoFocus
-                                    className="bg-surface border border-line text-xs font-black uppercase text-fg rounded px-2 py-1 outline-none"
-                                >
-                                    {leadStages.map(stage => (
-                                        <option key={stage.id} value={stage.id}>{stage.name}</option>
-                                    ))}
-                                </select>
+            <DetailPageTemplate
+                title={getLeadDisplayName(lead)}
+                meta={
+                    <span className="flex items-center gap-2 text-fg-subtle">
+                        <Building2 size={16} className="text-fg-muted" />
+                        {lead.company_name}
+                    </span>
+                }
+                status={statusNode}
+                onBack={() => (window.history.length > 1 ? navigate(-1) : navigate(backRoute))}
+                backLabel={backLabel}
+                primaryAction={canCreateDeal ? (
+                    <Button onClick={() => setIsCreatingDeal(true)} leftIcon={<Plus size={16} />}>
+                        Create Deal
+                    </Button>
+                ) : undefined}
+                secondaryActions={canMergeLead && !isCustomerDetailRoute ? [
+                    <Button
+                        key="merge"
+                        variant="secondary"
+                        onClick={() => setIsMergeOpen(true)}
+                        aria-label="Merge"
+                        title="Merge a duplicate lead into this one"
+                        leftIcon={<GitMerge size={16} />}
+                    >
+                        Merge
+                    </Button>,
+                ] : undefined}
+                overflowActions={[
+                    { label: 'Layout settings', onSelect: () => setShowLayoutSettings(true) },
+                    ...(canDeleteLead ? [{ label: 'Delete', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []),
+                ]}
+                tabs={detailTabs}
+                activeTab={activeTab}
+                onTabChange={(tab) => setActiveTab(tab as TabType)}
+                sidePanel={
+                    <div className="space-y-6">
+                        <section className="bg-surface border border-line rounded-nb p-4" data-testid="recent-activity-rail">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wide">Recent Activity</h3>
+                                <button onClick={() => setActiveTab('activity')} className="text-xs text-primary hover:underline">View all</button>
+                            </div>
+                            {recentActivity.length === 0 ? (
+                                <p className="text-sm text-fg-muted">No activities logged yet.</p>
                             ) : (
-                                <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
-                                    <h1 className="text-4xl font-black text-fg tracking-tight">{getLeadDisplayName(lead)}</h1>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all group-hover:scale-110 ${lead.status === 'Converted' ? 'bg-emerald-500/10 text-success border-emerald-500/20' :
-                                        lead.status === 'Lost' ? 'bg-rose-500/10 text-danger border-rose-500/20' :
-                                            'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                        }`}>
-                                        {lead.status}
-                                    </span>
-                                    {lead.type === 'partner' && (
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-violet-500/10 text-violet-400 border-violet-500/20">
-                                            Partner
-                                        </span>
+                                <ul className="space-y-2">
+                                    {recentActivity.map((event) => (
+                                        <li key={event.id} className="text-sm text-fg">
+                                            <span className="block truncate">{event.title}</span>
+                                            <span className="text-xs text-fg-muted">{formatters.formatDate(event.date)}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </section>
+                    {canUseNeuraAi && (
+                        <NeuraAiSummaryCard
+                            leadId={lead.id}
+                            leadLabel={lead.company_name || getLeadDisplayName(lead)}
+                            isInboxEnabled={isInboxEnabled}
+                        />
+                    )}
+
+                    {/* Lead / Customer Potential Score Card */}
+                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
+                            <Trophy size={120} />
+                        </div>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
+                                {isCustomerDetailRoute ? 'Customer Potential' : 'Lead Potential'}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                {!isCustomerDetailRoute && (
+                                    <button
+                                        onClick={handleRecalculateScore}
+                                        disabled={isRecalculatingScore}
+                                        title="Recalculate score"
+                                        className="p-1.5 rounded-lg text-fg-muted hover:text-warning hover:bg-warning/10 transition-all disabled:opacity-40"
+                                    >
+                                        <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                    </button>
+                                )}
+                                <div className="bg-warning/10 text-warning p-1.5 rounded-lg">
+                                    <Zap size={14} className="fill-warning" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {isCustomerDetailRoute ? (() => {
+                            const sfOrders = [];
+                            const sfWishlist = [];
+                            const sfActivities = [];
+                            const sfReviews = [];
+                            const sfAbandonedCarts = [];
+                            const sfCoupons = [];
+                            const engagementScore = Math.min(100,
+                                sfOrders.length * 20 +
+                                sfWishlist.length * 5 +
+                                Math.min(sfActivities.length, 20) * 2 +
+                                sfReviews.length * 10 +
+                                sfAbandonedCarts.length * 8 +
+                                sfCoupons.length * 6
+                            );
+                            const engagementBreakdown = [
+                                { label: `Orders placed (${sfOrders.length})`, points: sfOrders.length * 20 },
+                                { label: `Wishlist items (${sfWishlist.length})`, points: sfWishlist.length * 5 },
+                                { label: `Browsing sessions (${Math.min(sfActivities.length, 20)})`, points: Math.min(sfActivities.length, 20) * 2 },
+                                { label: `Reviews submitted (${sfReviews.length})`, points: sfReviews.length * 10 },
+                                { label: `Abandoned carts (${sfAbandonedCarts.length})`, points: sfAbandonedCarts.length * 8 },
+                                { label: `Coupons used (${sfCoupons.length})`, points: sfCoupons.length * 6 },
+                            ].filter(item => item.points > 0);
+                            return (
+                                <>
+                                    <div className="flex items-end gap-3 mb-6">
+                                        <span className="text-6xl font-black text-fg tracking-tighter leading-none">{engagementScore}</span>
+                                        <div className="pb-1">
+                                            <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Engagement</span>
+                                            <div className="flex items-center gap-1 text-success font-bold text-[10px] uppercase tracking-tighter">
+                                                <TrendingUp size={12} />
+                                                <span>/ 100</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 pt-6 border-t border-line">
+                                        {engagementBreakdown.length === 0 ? (
+                                            <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest italic text-center py-2 underline decoration-line decoration-wavy underline-offset-4">No engagement data yet</p>
+                                        ) : (
+                                            engagementBreakdown.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="text-fg-subtle">{item.label}</span>
+                                                    <span className="text-success">+{item.points}</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    <div className="mt-6 pt-4">
+                                        <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-primary to-success transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
+                                                style={{ width: `${engagementScore}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            );
+                        })() : (
+                            <>
+                                <div className="flex items-end gap-3 mb-3">
+                                    <span className="text-6xl font-black text-fg tracking-tighter leading-none">{score}</span>
+                                    <div className="pb-1">
+                                        <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Score</span>
+                                        <div
+                                            className="flex items-center gap-1 font-black text-[10px] uppercase tracking-tighter px-2 py-0.5 rounded-md"
+                                            style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
+                                        >
+                                            <span>● {scoreCategory.label}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 pt-5 border-t border-line">
+                                    {breakdown.length === 0 ? (
+                                        <div className="text-center py-3">
+                                            {scoringRules.filter(r => r.is_active).length === 0 ? (
+                                                <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">No active scoring rules configured</p>
+                                            ) : (
+                                                <>
+                                                    <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
+                                                    <button
+                                                        onClick={handleRecalculateScore}
+                                                        disabled={isRecalculatingScore}
+                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-warning hover:text-warning transition-colors flex items-center gap-1 mx-auto disabled:opacity-40"
+                                                    >
+                                                        <RefreshCw size={9} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                                        Recalculate
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-[8px] font-black text-fg-muted uppercase tracking-[0.2em] mb-2">Matched Rules</p>
+                                            {breakdown.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="flex items-center gap-1.5 text-fg-subtle truncate mr-2">
+                                                        <span className="text-success shrink-0">✓</span>
+                                                        <span className="truncate">{item.label}</span>
+                                                    </span>
+                                                    <span className={item.points >= 0 ? 'text-success shrink-0' : 'text-danger shrink-0'}>
+                                                        {item.points >= 0 ? '+' : ''}{item.points}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </>
                                     )}
-                                    <Edit2 size={12} className="text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                                <div className="mt-6 pt-4">
+                                    <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full transition-all duration-1000 ease-out"
+                                            style={{
+                                                width: `${Math.min(100, (score / 150) * 100)}%`,
+                                                backgroundColor: scoreCategory.color,
+                                                boxShadow: `0 0 8px ${scoreCategory.color}80`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </section>
+                    {/* Assigned Owner & Engagement Suite Combined */}
+                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-visible relative">
+                        <div className="pb-6 border-b border-line">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Assigned Owner</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsChangingOwner(!isChangingOwner)}
+                                    className="text-[10px] text-primary font-black uppercase tracking-widest hover:text-primary transition-colors"
+                                >
+                                    {isChangingOwner ? 'CANCEL' : 'CHANGE'}
+                                </button>
+                            </div>
+                            {isChangingOwner ? (
+                                <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                                    {allUsers.map(user => (
+                                        <button
+                                            type="button"
+                                            key={user.id}
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                try {
+                                                    // Field-diff history (old/new owner, actor, timestamp)
+                                                    // is now captured server-side by the leads audit
+                                                    // trigger (Task 7) — see the Audit History tab.
+                                                    await crmService.updateLead(lead.id, { owner: user });
+                                                    await fetchLeadData();
+                                                    setIsChangingOwner(false);
+                                                } catch (error) {
+                                                    console.error('Failed to update owner:', error);
+                                                    toast.error('Failed to update owner.');
+                                                }
+                                            }}
+                                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-primary/10 border-primary/50' : 'bg-bg border-line hover:border-line'}`}
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-surface-raised overflow-hidden flex-shrink-0">
+                                                {user.avatar_url ? (
+                                                    <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center font-black text-xs">{user.full_name?.charAt(0)}</div>
+                                                )}
+                                            </div>
+                                            <div className="text-left overflow-hidden">
+                                                <p className="text-[10px] font-black text-fg uppercase tracking-tight truncate">{user.full_name}</p>
+                                                <p className="text-[8px] text-fg-muted truncate">{user.email}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : lead.owner ? (
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border-2 border-line shadow-lg">
+                                        {lead.owner.avatar_url ? (
+                                            <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="text-xl font-black">{lead.owner.full_name?.charAt(0)}</div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="font-black text-fg text-sm uppercase tracking-tight leading-none mb-1">{lead.owner.full_name}</p>
+                                        <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">{lead.owner.email}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3 bg-bg border border-line p-3 rounded-xl">
+                                    <div className="w-10 h-10 rounded-full bg-surface-raised border border-line flex items-center justify-center">
+                                        <Users size={18} className="text-fg-muted" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-fg-muted uppercase tracking-tight">Unassigned</p>
+                                        <p className="text-[9px] text-fg-subtle uppercase tracking-widest">Click CHANGE to assign</p>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                        <p className="text-xl text-fg-subtle flex items-center gap-2 font-medium">
-                            <Building2 size={20} className="text-fg-muted" />
-                            {lead.company_name}
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        {/* Icon-only: the trash glyph is unambiguous, and dropping the
-                            word keeps the destructive secondary action from competing
-                            with the primary CTA beside it. Name is carried by
-                            aria-label + title so it stays announced and hoverable. */}
-                        {canDeleteLead && <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            aria-label="Delete"
-                            title="Delete"
-                            className="bg-surface-raised hover:bg-red-600/20 text-fg-subtle hover:text-danger p-3 rounded-xl transition-all flex items-center justify-center border border-line hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
-                        >
-                            <Trash2 size={16} />
-                        </button>}
-                        {canMergeLead && !isCustomerDetailRoute && <button
-                            onClick={() => setIsMergeOpen(true)}
-                            aria-label="Merge"
-                            title="Merge a duplicate lead into this one"
-                            className="bg-surface-raised hover:bg-line text-fg-subtle p-3 rounded-xl transition-all flex items-center justify-center border border-line focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
-                        >
-                            <GitMerge size={16} />
-                        </button>}
-                        {canCreateDeal && <button
-                            onClick={() => setIsCreatingDeal(true)}
-                            className="bg-primary hover:bg-primary text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
-                        >
-                            <Plus size={16} />
-                            Create Deal
-                        </button>}
-                    </div>
-                </div>
-            </header>
 
+                        <div className="py-6 border-b border-line">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
+                                    {isCustomerDetailRoute ? 'CRM Stage' : 'Lead Stage'}
+                                </h3>
+                                {!isCustomerDetailRoute && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsChangingStage(!isChangingStage)}
+                                        className="text-[10px] font-black text-primary hover:text-primary transition-colors uppercase tracking-[0.2em]"
+                                    >
+                                        {isChangingStage ? 'CANCEL' : 'CHANGE'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {isCustomerDetailRoute ? (
+                                <>
+                                    <div className="flex items-center gap-3 bg-bg border border-line p-3 rounded-xl">
+                                        <div className="w-8 h-8 rounded-lg bg-success/10 border border-success/30 flex items-center justify-center">
+                                            <Users size={16} className="text-success" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block">Stage</span>
+                                            <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">Customer</p>
+                                        </div>
+                                        <span className="text-[8px] bg-surface-raised text-fg-muted px-2 py-1 rounded font-black uppercase tracking-widest">
+                                            Locked
+                                        </span>
+                                    </div>
+                                    <p className="text-[9px] text-fg-subtle mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
+                                </>
+                            ) : isChangingStage ? (
+                                <div className="space-y-1">
+                                    {leadStages.map(stage => (
+                                        <button
+                                            type="button"
+                                            key={stage.id}
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                try {
+                                                    // Field-diff history (old/new stage, duration in
+                                                    // previous stage, actor, timestamp) is now captured
+                                                    // server-side by the leads audit trigger (Task 7).
+                                                    await crmService.updateLead(lead.id, { status: stage.name as any });
+                                                    await fetchLeadData();
+                                                    setIsChangingStage(false);
+                                                } catch (error: any) {
+                                                    console.error('Failed to update stage:', error);
+                                                    toast.error(error.message || 'Failed to update stage. Please try again.');
+                                                }
+                                            }}
+                                            className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
+                                                ? 'bg-primary/10 border-primary/50 text-primary'
+                                                : 'bg-bg border-line text-fg-subtle hover:border-line hover:text-fg'
+                                                }`}
+                                        >
+                                            <span>{stage.name}</span>
+                                            {stage.name === lead.status && <CheckCircle2 size={12} />}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div
+                                    className="flex items-center gap-3 bg-bg border border-line p-3 rounded-xl group hover:border-primary/20 transition-all cursor-pointer"
+                                    onClick={() => setIsChangingStage(true)}
+                                >
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${lead.status === 'Converted' ? 'bg-success/10 border-success/30 text-success' :
+                                        lead.status === 'Lost' ? 'bg-danger/10 border-danger/40 text-danger' :
+                                            'bg-primary/10 border-primary/30 text-primary'
+                                        }`}>
+                                        <TrendingUp size={16} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block leading-none">Status</span>
+                                        <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">
+                                            {lead.status}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pt-6">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em] mb-6">Engagement Suite</h3>
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => setIsCreatingTask(true)}
+                                    className="w-full bg-surface-raised hover:bg-line text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-line shadow-sm"
+                                >
+                                    <Clock size={14} /> Schedule Follow-up
+                                </button>
+                                {/* <button
+                                    onClick={async () => {
+                                        try {
+                                            await crmService.logActivity({
+                                                lead_id: id,
+                                                type: 'EMAIL',
+                                                notes: 'Outbound email sent to lead contact',
+                                                date: new Date().toISOString()
+                                            });
+                                            fetchLeadData();
+                                            setActiveTab('activity');
+                                        } catch (error: any) {
+                                            console.error('Failed to log email:', error);
+                                            toast.error(error.message || 'Failed to log email.');
+                                        }
+                                    }}
+                                    className="w-full bg-surface-raised hover:bg-line text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-line shadow-sm"
+                                >
+                                    <Mail size={14} /> Send Email
+                                </button> */}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Revenue Intelligence Card */}
+                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-hidden relative">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Revenue Intelligence</h3>
+                            <div className="bg-success/10 text-success p-1.5 rounded-lg">
+                                <DollarSign size={14} />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6 mb-8">
+                            <div>
+                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Earned</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-black text-fg">{formatters.formatCurrency(earned)}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Pipeline</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-black text-fg-subtle">{formatters.formatCurrency(pipeline)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
+                                    <span className="text-fg-muted">Revenue Contribution</span>
+                                    <span className="text-success">{totalValue > 0 ? Math.round((earned / totalValue) * 100) : 0}%</span>
+                                </div>
+                                <div className="w-full h-3 bg-surface-raised rounded-full flex overflow-hidden border border-line">
+                                    <div
+                                        className="h-full bg-success shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-1000"
+                                        style={{ width: `${totalValue > 0 ? (earned / totalValue) * 100 : 0}%` }}
+                                    />
+                                    <div
+                                        className="h-full bg-primary/40 transition-all duration-1000"
+                                        style={{ width: `${totalValue > 0 ? (pipeline / totalValue) * 100 : 0}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 pt-4 border-t border-line">
+                                <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
+                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Active Deals</span>
+                                    <span className="text-sm font-black text-primary">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</span>
+                                </div>
+                                <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
+                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Total LTV</span>
+                                    <span className="text-sm font-black text-fg">{formatters.formatCurrency(totalValue)}</span>
+                                </div>
+                            </div>
+                            {productCount > 0 && (
+                                <div className="flex items-center gap-4 pt-4 border-t border-line">
+                                    <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
+                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Products Interested</span>
+                                        <span className="text-sm font-black text-primary">{productCount}</span>
+                                    </div>
+                                    <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
+                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Est. Revenue</span>
+                                        <span className="text-sm font-black text-success">{formatters.formatCurrency(productValue)}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* Associated Deals Section */}
+                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Deals ({associatedDeals.length})</h3>
+                        </div>
+                        {associatedDeals.length === 0 ? (
+                            <div className="text-center py-6 text-fg-muted border border-dashed border-line rounded-xl">
+                                <Briefcase size={24} className="mx-auto mb-2 opacity-20" />
+                                <p className="text-[10px] font-bold uppercase tracking-widest">No deals yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {associatedDeals.map(deal => (
+                                    <Link
+                                        key={deal.id}
+                                        to={`../deal/${deal.id}`}
+                                        className="block p-4 bg-bg border border-line rounded-xl hover:border-primary/50 transition-all group"
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="text-xs font-bold text-fg group-hover:text-primary transition-colors uppercase tracking-tight">{deal.name}</h4>
+                                            <ExternalLink size={12} className="text-fg-subtle group-hover:text-primary transition-all" />
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                                            <span className="text-success">{formatters.formatCurrency(deal.value)}</span>
+                                            <span className="text-fg-muted">{deal.stage}</span>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                    </div>
+                }
+            >
             {saveDuplicate && (
                 <div className="mb-6">
                     <DuplicateLeadWarning
@@ -654,14 +1109,16 @@ const LeadDetailPage = () => {
                 />
             )}
 
+
+                {activeTab === 'overview' && (
+                    <div className="space-y-6">
             {/* Lead Journey Stepper — only for leads, not customers */}
             {!isCustomerDetailRoute && (
-            <div className="mb-8 bg-surface border border-slate-800 rounded-2xl p-6">
+            <div className="mb-8 bg-surface border border-line rounded-2xl p-6">
                 <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4">Lead Journey</h3>
                 <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
             </div>
             )}
-
             <QuickActionBar
                 onAddNote={() => {
                     openWorkspaceTab('notes');
@@ -687,36 +1144,32 @@ const LeadDetailPage = () => {
                 canCreateTask={canCreateTask}
                 canUploadDocument={canUploadDocument}
             />
-
             {/* Executive Summary Dashboard */}
             <ExecutiveSummaryPanel
                 lead={lead}
                 deals={associatedDeals}
                 tasks={associatedTasks}
             />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
                     {/* Lead Information Tabs Card */}
-                    <section className="bg-surface border border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col h-fit">
-                        <div className="flex border-b border-slate-800 bg-slate-900/50">
+                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-sm flex flex-col h-fit">
+                        <div className="flex border-b border-line bg-surface">
                             <button
                                 onClick={() => setInfoTab('profile')}
-                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'profile' ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'profile' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 <Users size={14} /> Full Profile
                             </button>
                             {customFieldDefs.length > 0 && (
                                 <button
                                     onClick={() => setInfoTab('additional')}
-                                    className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'additional' ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                    className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'additional' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                                 >
                                     <Info size={14} /> Additional Info
                                 </button>
                             )}
                             <button
                                 onClick={() => setInfoTab('business')}
-                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'business' ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'business' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 <Building2 size={14} /> Business Profile
                             </button>
@@ -805,7 +1258,7 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, first_name: validateFirstNameRequired(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.first_name}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.first_name || '—'}</span>
@@ -830,7 +1283,7 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, last_name: validateLastName(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.last_name}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.last_name || '—'}</span>
@@ -841,7 +1294,7 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-blue-400 shadow-inner">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
                                                 <Mail size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -858,10 +1311,10 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, contact_email: validateEmailRequired(e.target.value, 'Email') }));
                                                         }}
                                                         aria-invalid={!!editErrors.contact_email}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
-                                                    <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.contact_email}</a>
+                                                    <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-tight">{lead.contact_email}</a>
                                                 )}
                                                 {isEditingInfo && editErrors.contact_email && (
                                                     <p className="text-xs text-danger mt-1">{editErrors.contact_email}</p>
@@ -869,7 +1322,7 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-purple-400 shadow-inner">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
                                                 <Phone size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -884,7 +1337,7 @@ const LeadDetailPage = () => {
                                                         }}
                                                         placeholder="Add phone..."
                                                         aria-invalid={!!editErrors.phone}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="flex items-center gap-2">
@@ -914,7 +1367,7 @@ const LeadDetailPage = () => {
                                                     <select
                                                         value={lead.source}
                                                         onChange={(e) => setLead({ ...lead, source: e.target.value })}
-                                                        className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
+                                                        className="bg-bg border border-line text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
                                                     >
                                                         <option value="">— Select source —</option>
                                                         {sourceTypes.map(opt => (
@@ -930,7 +1383,7 @@ const LeadDetailPage = () => {
                                         </div>
 
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-violet-400 shadow-inner">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -953,7 +1406,7 @@ const LeadDetailPage = () => {
 
                                         {isEditingInfo && (
                                             <div className="flex items-center gap-4 text-fg-subtle">
-                                                <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-violet-400 shadow-inner">
+                                                <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
                                                     <Users size={18} />
                                                 </div>
                                                 <div className="flex flex-col flex-1">
@@ -963,7 +1416,7 @@ const LeadDetailPage = () => {
                                                             type="checkbox"
                                                             checked={lead.type === 'partner'}
                                                             onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })}
-                                                            className="w-4 h-4 rounded accent-violet-500"
+                                                            className="w-4 h-4 rounded accent-primary"
                                                         />
                                                         <span className="text-sm font-bold">Mark as Partner</span>
                                                     </label>
@@ -1004,7 +1457,7 @@ const LeadDetailPage = () => {
                                                                 [field.id]: e.target.value
                                                             }
                                                         })}
-                                                        className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
+                                                        className="bg-bg border border-line text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">
@@ -1030,42 +1483,11 @@ const LeadDetailPage = () => {
                             )}
                         </div>
                     </section>
+                    </div>
+                )}
 
-                    {/* Workspace Tabs - Now below Profile Data */}
-                    <div ref={workspaceRef} className="bg-surface border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit scroll-mt-6">
-                        {/* The settings cog sits outside the scrolling strip: inside it, it
-                            consumed the width the last tab needed and clipped its label
-                            (the "Feedbac…" report). The strip scrolls on its own, with a
-                            fade on the right edge so it reads as scrollable rather than cut
-                            off — every label stays whole at any width or zoom level. */}
-                        <div className="flex items-stretch border-b border-slate-800 bg-slate-900/50">
-                            <div className="relative flex-1 min-w-0">
-                                <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="detail-tab-strip">
-                                    {layoutPrefs.visibleSections.map((section) => {
-                                        const tab = TAB_CONFIG[section.key];
-                                        if (!tab) return null;
-                                        return (
-                                            <button key={section.key} onClick={() => setActiveTab(section.key as TabType)} className={tabCls(section.key as TabType)}>
-                                                {tab.icon} {tab.label(tabCounts)}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div
-                                    aria-hidden="true"
-                                    className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 to-transparent"
-                                />
-                            </div>
-                            <button
-                                onClick={() => setShowLayoutSettings(true)}
-                                className="px-3 text-fg-subtle hover:text-fg transition-colors shrink-0 border-l border-slate-800"
-                                title="Layout Settings"
-                                aria-label="Layout Settings"
-                            >
-                                <Settings2 size={14} />
-                            </button>
-                        </div>
-
+                {activeTab !== 'overview' && (
+                    <div ref={workspaceRef} className="space-y-4 scroll-mt-6" data-testid="detail-workspace">
                         <div className="px-4 pt-3">
                             <div className="relative">
                                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
@@ -1073,11 +1495,11 @@ const LeadDetailPage = () => {
                                     value={commSearchQuery}
                                     onChange={(e) => setCommSearchQuery(e.target.value)}
                                     placeholder="Search notes, tasks, deals…"
-                                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-fg-subtle placeholder-fg-subtle outline-none focus:border-blue-500/40"
+                                    className="w-full bg-bg border border-line rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-fg-subtle placeholder-fg-subtle outline-none focus:border-primary/40"
                                 />
                             </div>
                             {commSearchQuery.trim() && (
-                                <div className="mt-2 max-h-64 overflow-y-auto border border-slate-800 rounded-lg divide-y divide-slate-800/70">
+                                <div className="mt-2 max-h-64 overflow-y-auto border border-line rounded-lg divide-y divide-line">
                                     {commSearchResults.length === 0 ? (
                                         <p className="text-[11px] text-fg-muted italic px-3 py-2">No matches.</p>
                                     ) : (
@@ -1098,8 +1520,7 @@ const LeadDetailPage = () => {
                                 </div>
                             )}
                         </div>
-
-                        <div className="p-6">
+                        <div className="bg-surface border border-line rounded-nb p-4">
                             {activeTab === 'activity' && (
                                 <div className="space-y-6">
                                     {/* Header */}
@@ -1112,7 +1533,7 @@ const LeadDetailPage = () => {
                                         </div>
                                         <button
                                             onClick={() => setShowActivityDrawer(true)}
-                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary transition-colors"
                                         >
                                             <ExternalLink size={11} />
                                             View All History
@@ -1163,7 +1584,7 @@ const LeadDetailPage = () => {
                                             <button
                                                 onClick={entityTimeline.loadMore}
                                                 disabled={entityTimeline.loadingMore}
-                                                className="text-[10px] text-fg-muted hover:text-blue-400 transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
+                                                className="text-[10px] text-fg-muted hover:text-primary transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
                                             >
                                                 {entityTimeline.loadingMore ? 'Loading…' : 'Load More →'}
                                             </button>
@@ -1179,9 +1600,9 @@ const LeadDetailPage = () => {
                                         ) : (
                                             <div className="space-y-4">
                                                 {sortNotesNewestFirst(lead.notes).map(note => (
-                                                    <div key={note.id} className="text-sm bg-slate-900/40 border border-slate-800 rounded-xl p-4 group/note relative">
+                                                    <div key={note.id} className="text-sm bg-surface border border-line rounded-xl p-4 group/note relative">
                                                         {editingNoteId === note.id ? (
-                                                            <div className="bg-bg border border-slate-800 rounded-xl p-4 mb-2">
+                                                            <div className="bg-bg border border-line rounded-xl p-4 mb-2">
                                                                 <NoteEditor value={editingNoteContent} onChange={setEditingNoteContent} autoFocus />
                                                                 <div className="flex justify-end gap-2 mt-3">
                                                                     <button
@@ -1201,7 +1622,7 @@ const LeadDetailPage = () => {
                                                                             setEditingNoteId(null);
                                                                         }}
                                                                         disabled={isNoteContentEmpty(editingNoteContent)}
-                                                                        className="bg-slate-700/60 hover:bg-slate-600/60 text-fg px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50"
+                                                                        className="bg-surface-raised hover:bg-line text-fg px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-line disabled:opacity-50"
                                                                     >
                                                                         Save
                                                                     </button>
@@ -1217,7 +1638,7 @@ const LeadDetailPage = () => {
                                                                             setEditingNoteId(note.id);
                                                                             setEditingNoteContent(note.content);
                                                                         }}
-                                                                        className="text-fg-muted hover:text-blue-400"
+                                                                        className="text-fg-muted hover:text-primary"
                                                                     >
                                                                         <Edit2 size={12} />
                                                                     </button>
@@ -1249,7 +1670,7 @@ const LeadDetailPage = () => {
                                                         </div>
 
                                                         {(note.replies || []).length > 0 && (
-                                                            <div className="mt-3 ml-3 space-y-3 border-l-2 border-slate-700/60 pl-4">
+                                                            <div className="mt-3 ml-3 space-y-3 border-l-2 border-line pl-4">
                                                                 {groupConsecutiveReplies(note.replies || []).map((run) => (
                                                                     <div key={run[0].id} className="space-y-1.5">
                                                                         <div className="flex items-center justify-between">
@@ -1283,7 +1704,7 @@ const LeadDetailPage = () => {
                                                                     type="button"
                                                                     data-testid={`open-reply-${note.id}`}
                                                                     onClick={() => setOpenReplyNoteId(note.id)}
-                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-fg-muted hover:text-blue-400 uppercase tracking-widest transition-colors"
+                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-fg-muted hover:text-primary uppercase tracking-widest transition-colors"
                                                                 >
                                                                     <MessageSquare size={11} /> Reply
                                                                 </button>
@@ -1293,7 +1714,7 @@ const LeadDetailPage = () => {
                                                 ))}
                                             </div>
                                         )}
-                                        <div ref={noteComposerRef} className="bg-bg border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
+                                        <div ref={noteComposerRef} className="bg-bg border border-line rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-focus">
                                             <NoteEditor
                                                 key={noteEditorKey}
                                                 value={newNoteContent}
@@ -1313,7 +1734,7 @@ const LeadDetailPage = () => {
                                                         setNoteEditorKey((k) => k + 1);
                                                     }}
                                                     disabled={isNoteContentEmpty(newNoteContent)}
-                                                    className="bg-slate-700/60 hover:bg-slate-600/60 text-fg px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50 shadow-sm"
+                                                    className="bg-surface-raised hover:bg-line text-fg px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-line disabled:opacity-50 shadow-sm"
                                                 >
                                                     Save Note
                                                 </button>
@@ -1329,14 +1750,14 @@ const LeadDetailPage = () => {
                                         <div className="flex items-center gap-2">
                                             <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Active Tasks</p>
                                             {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
-                                                <span className="bg-danger text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                                <span className="bg-danger text-primary-fg text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
                                                     Due Reminders
                                                 </span>
                                             )}
                                         </div>
                                         <button
                                             onClick={() => setIsCreatingTask(true)}
-                                            className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-3 py-2 rounded-lg hover:bg-blue-500/20 transition-all uppercase tracking-widest flex items-center gap-2"
+                                            className="text-[10px] font-black text-primary bg-primary/10 px-3 py-2 rounded-lg hover:bg-primary/20 transition-all uppercase tracking-widest flex items-center gap-2"
                                         >
                                             <Plus size={12} /> Add Task
                                         </button>
@@ -1356,7 +1777,7 @@ const LeadDetailPage = () => {
                                                     · alerts for tasks already listed below
                                                 </span>
                                             </div>
-                                            <div className="divide-y divide-amber-500/10 border-l-2 border-warning bg-amber-500/[0.06] rounded-r">
+                                            <div className="divide-y divide-warning/10 border-l-2 border-warning bg-warning/5 rounded-r">
                                                 {associatedTasks
                                                     .filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
                                                     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
@@ -1368,7 +1789,7 @@ const LeadDetailPage = () => {
                                                                 type="button"
                                                                 onClick={() => focusTaskInList(task.id)}
                                                                 data-testid={`task-reminder-${task.id}`}
-                                                                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
+                                                                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-warning/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-warning"
                                                             >
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-danger animate-pulse' : 'bg-warning'}`} />
                                                                 <span className="text-xs font-semibold text-fg-subtle truncate">{task.title}</span>
@@ -1385,7 +1806,7 @@ const LeadDetailPage = () => {
                                         </div>
                                     )}
                                     {associatedTasks.length === 0 ? (
-                                        <div className="text-center py-10 text-fg-muted border-2 border-dashed border-slate-800 rounded-xl">
+                                        <div className="text-center py-10 text-fg-muted border-2 border-dashed border-line rounded-xl">
                                             <CheckCircle2 size={32} className="mx-auto mb-3 opacity-20" />
                                             <p className="text-sm font-medium">No active tasks or follow-ups.</p>
                                         </div>
@@ -1394,22 +1815,22 @@ const LeadDetailPage = () => {
                                             {associatedTasks.map(task => {
                                                 const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
                                                 return (
-                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-4 p-4 bg-bg border rounded-xl group shadow-sm relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-amber-500/70' : ''} ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-4 p-4 bg-bg border rounded-xl group shadow-sm relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-warning' : ''} ${task.status === 'DONE' ? 'border-success/30 opacity-60' : overdue ? 'border-danger/40 hover:border-danger/40 bg-danger/10' : 'border-line hover:border-primary/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-success text-success' : 'border-line group-hover:border-primary'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-success/10 border-success text-success' : 'border-line group-hover:border-primary'}`}
                                                     >
                                                         <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'DONE' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-primary'}`} />
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h4 className={`text-sm font-bold text-fg leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
+                                                                <h4 className={`text-sm font-bold text-fg leading-tight truncate group-hover/link:text-primary transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
                                                                     {task.title || 'Untitled Task'}
                                                                 </h4>
                                                                 <div className="flex items-center gap-2">
                                                                     {overdue && (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-rose-500/10 text-danger border-rose-500/30" data-testid={`overdue-badge-${task.id}`}>
+                                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-danger/10 text-danger border-danger/40" data-testid={`overdue-badge-${task.id}`}>
                                                                             Overdue
                                                                         </span>
                                                                     )}
@@ -1420,7 +1841,7 @@ const LeadDetailPage = () => {
                                                                                 e.stopPropagation();
                                                                                 setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
                                                                             }}
-                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-success border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-surface-raised text-fg border-line hover:bg-line'}`}
+                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-success/10 text-success border-success/30 hover:bg-success/20' : 'bg-surface-raised text-fg border-line hover:bg-line'}`}
                                                                             data-testid={`status-button-${task.id}`}
                                                                         >
                                                                             {task.status}
@@ -1444,7 +1865,7 @@ const LeadDetailPage = () => {
                                                                                                     toast.error('Failed to update task status');
                                                                                                 });
                                                                                         }}
-                                                                                        className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-blue-500/20 text-blue-400 border-b border-blue-500/20' : 'hover:bg-surface-raised text-fg-subtle'}`}
+                                                                                        className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-primary/20 text-primary border-b border-primary/20' : 'hover:bg-surface-raised text-fg-subtle'}`}
                                                                                         data-testid={`status-option-${task.id}-${status}`}
                                                                                     >
                                                                                         {status}
@@ -1461,9 +1882,9 @@ const LeadDetailPage = () => {
                                                         </Link>
 
                                                         {/* Metadata row: readable in its own right, one weight below the
-                                                            title. The previous slate-500 / rose-400/70 pairing sat under
+                                                            title. The previous muted-grey / pale-red pairing sat under
                                                             3:1 on the light theme's white card. */}
-                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-fg-subtle uppercase tracking-wider border-t border-slate-800/50 pt-2">
+                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-fg-subtle uppercase tracking-wider border-t border-line pt-2">
                                                             <span className={`flex items-center gap-1 ${overdue ? 'text-danger' : 'text-fg-subtle'}`}>
                                                                 <Clock size={11} />
                                                                 Due {formatters.formatDate(task.due_date)}
@@ -1480,8 +1901,8 @@ const LeadDetailPage = () => {
 
                                                             {task.deal_name && (
                                                                 <>
-                                                                    <span className="w-1 h-1 bg-slate-400 rounded-full" />
-                                                                    <span className="text-blue-400 lowercase italic">{task.deal_name}</span>
+                                                                    <span className="w-1 h-1 bg-fg-subtle rounded-full" />
+                                                                    <span className="text-primary lowercase italic">{task.deal_name}</span>
                                                                 </>
                                                             )}
                                                         </div>
@@ -1492,7 +1913,7 @@ const LeadDetailPage = () => {
                                                             disabled={isTaskLocked(task.status)}
                                                             title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit Task'}
                                                             aria-label="Edit Task"
-                                                            className="p-1.5 bg-surface-raised rounded hover:text-blue-400 hover:bg-line transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-raised disabled:hover:text-current"
+                                                            className="p-1.5 bg-surface-raised rounded hover:text-primary hover:bg-line transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-raised disabled:hover:text-current"
                                                         >
                                                             <Edit2 size={12} />
                                                         </button>
@@ -1509,7 +1930,7 @@ const LeadDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Digital Assets & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary text-fg shadow-lg shadow-blue-500/20 active:scale-95'}`}>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary text-fg shadow-lg shadow-primary/30 active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload Document'}
                                             <input
@@ -1543,7 +1964,7 @@ const LeadDetailPage = () => {
                                     </div>
 
                                     {(!lead.documents || lead.documents.length === 0) ? (
-                                        <div className="text-center py-12 text-fg-muted border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+                                        <div className="text-center py-12 text-fg-muted border-2 border-dashed border-line rounded-2xl bg-bg">
                                             <FileIcon size={48} className="mx-auto mb-4 opacity-10" />
                                             <p className="text-sm font-bold uppercase tracking-widest mb-1">No documents attached</p>
                                             <p className="text-xs text-fg-subtle lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
@@ -1551,12 +1972,12 @@ const LeadDetailPage = () => {
                                     ) : (
                                         <div className="grid gap-3">
                                             {lead.documents.map(doc => (
-                                                <div key={doc.id} className="flex items-center gap-4 p-4 bg-bg border border-slate-800 rounded-2xl group hover:border-line transition-all shadow-sm">
-                                                    <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-primary border border-slate-800 group-hover:scale-105 transition-transform shadow-inner">
+                                                <div key={doc.id} className="flex items-center gap-4 p-4 bg-bg border border-line rounded-2xl group hover:border-line transition-all shadow-sm">
+                                                    <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-primary border border-line group-hover:scale-105 transition-transform shadow-inner">
                                                         <File size={20} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 className="text-sm font-bold text-fg truncate group-hover:text-blue-400 transition-colors">{doc.name}</h4>
+                                                        <h4 className="text-sm font-bold text-fg truncate group-hover:text-primary transition-colors">{doc.name}</h4>
                                                         <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-fg-subtle uppercase tracking-widest">
                                                             <span>{(doc.size / (1024 * 1024)).toFixed(2)} MB</span>
                                                             <span className="w-1 h-1 bg-surface-raised rounded-full" />
@@ -1569,7 +1990,7 @@ const LeadDetailPage = () => {
                                                         {doc.dmsDocumentId ? (
                                                             <button
                                                                 onClick={() => { void openLeadDocument(doc); }}
-                                                                className="p-2 text-fg-muted hover:text-blue-400 hover:bg-surface-raised rounded-lg transition-all"
+                                                                className="p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-lg transition-all"
                                                                 title="View"
                                                             >
                                                                 <Eye size={16} />
@@ -1579,7 +2000,7 @@ const LeadDetailPage = () => {
                                                                 href={doc.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="p-2 text-fg-muted hover:text-blue-400 hover:bg-surface-raised rounded-lg transition-all"
+                                                                className="p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-lg transition-all"
                                                                 title="View"
                                                             >
                                                                 <Eye size={16} />
@@ -1623,7 +2044,7 @@ const LeadDetailPage = () => {
                                                                     publishLeadDocumentsChanged(lead.id);
                                                                 }
                                                             }}
-                                                            className="p-2 text-fg-muted hover:text-danger hover:bg-rose-500/10 rounded-lg transition-all"
+                                                            className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
                                                             title="Delete document"
                                                             aria-label="Delete document"
                                                         >
@@ -1676,464 +2097,10 @@ const LeadDetailPage = () => {
                             {activeTab === 'meetings' && lead && (
                                 <MeetingsTab key={meetingsRefreshKey} leadId={lead.id} />
                             )}
-
                         </div>
                     </div>
-                </div>
-
-                {/* Sidebar Context */}
-                <div className="space-y-8">
-
-                    {canUseNeuraAi && (
-                        <NeuraAiSummaryCard
-                            leadId={lead.id}
-                            leadLabel={lead.company_name || getLeadDisplayName(lead)}
-                            isInboxEnabled={isInboxEnabled}
-                        />
-                    )}
-
-                    {/* Lead / Customer Potential Score Card */}
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
-                        <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
-                            <Trophy size={120} />
-                        </div>
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
-                                {isCustomerDetailRoute ? 'Customer Potential' : 'Lead Potential'}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                                {!isCustomerDetailRoute && (
-                                    <button
-                                        onClick={handleRecalculateScore}
-                                        disabled={isRecalculatingScore}
-                                        title="Recalculate score"
-                                        className="p-1.5 rounded-lg text-fg-muted hover:text-warning hover:bg-amber-500/10 transition-all disabled:opacity-40"
-                                    >
-                                        <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
-                                    </button>
-                                )}
-                                <div className="bg-amber-500/10 text-warning p-1.5 rounded-lg">
-                                    <Zap size={14} className="fill-amber-500" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {isCustomerDetailRoute ? (() => {
-                            const sfOrders = [];
-                            const sfWishlist = [];
-                            const sfActivities = [];
-                            const sfReviews = [];
-                            const sfAbandonedCarts = [];
-                            const sfCoupons = [];
-                            const engagementScore = Math.min(100,
-                                sfOrders.length * 20 +
-                                sfWishlist.length * 5 +
-                                Math.min(sfActivities.length, 20) * 2 +
-                                sfReviews.length * 10 +
-                                sfAbandonedCarts.length * 8 +
-                                sfCoupons.length * 6
-                            );
-                            const engagementBreakdown = [
-                                { label: `Orders placed (${sfOrders.length})`, points: sfOrders.length * 20 },
-                                { label: `Wishlist items (${sfWishlist.length})`, points: sfWishlist.length * 5 },
-                                { label: `Browsing sessions (${Math.min(sfActivities.length, 20)})`, points: Math.min(sfActivities.length, 20) * 2 },
-                                { label: `Reviews submitted (${sfReviews.length})`, points: sfReviews.length * 10 },
-                                { label: `Abandoned carts (${sfAbandonedCarts.length})`, points: sfAbandonedCarts.length * 8 },
-                                { label: `Coupons used (${sfCoupons.length})`, points: sfCoupons.length * 6 },
-                            ].filter(item => item.points > 0);
-                            return (
-                                <>
-                                    <div className="flex items-end gap-3 mb-6">
-                                        <span className="text-6xl font-black text-fg tracking-tighter leading-none">{engagementScore}</span>
-                                        <div className="pb-1">
-                                            <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Engagement</span>
-                                            <div className="flex items-center gap-1 text-success font-bold text-[10px] uppercase tracking-tighter">
-                                                <TrendingUp size={12} />
-                                                <span>/ 100</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3 pt-6 border-t border-slate-800/50">
-                                        {engagementBreakdown.length === 0 ? (
-                                            <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No engagement data yet</p>
-                                        ) : (
-                                            engagementBreakdown.map((item, idx) => (
-                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="text-fg-subtle">{item.label}</span>
-                                                    <span className="text-success">+{item.points}</span>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                    <div className="mt-6 pt-4">
-                                        <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
-                                                style={{ width: `${engagementScore}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            );
-                        })() : (
-                            <>
-                                <div className="flex items-end gap-3 mb-3">
-                                    <span className="text-6xl font-black text-fg tracking-tighter leading-none">{score}</span>
-                                    <div className="pb-1">
-                                        <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Score</span>
-                                        <div
-                                            className="flex items-center gap-1 font-black text-[10px] uppercase tracking-tighter px-2 py-0.5 rounded-md"
-                                            style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
-                                        >
-                                            <span>● {scoreCategory.label}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2 pt-5 border-t border-slate-800/50">
-                                    {breakdown.length === 0 ? (
-                                        <div className="text-center py-3">
-                                            {scoringRules.filter(r => r.is_active).length === 0 ? (
-                                                <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">No active scoring rules configured</p>
-                                            ) : (
-                                                <>
-                                                    <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
-                                                    <button
-                                                        onClick={handleRecalculateScore}
-                                                        disabled={isRecalculatingScore}
-                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-amber-500/70 hover:text-warning transition-colors flex items-center gap-1 mx-auto disabled:opacity-40"
-                                                    >
-                                                        <RefreshCw size={9} className={isRecalculatingScore ? 'animate-spin' : ''} />
-                                                        Recalculate
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <p className="text-[8px] font-black text-fg-muted uppercase tracking-[0.2em] mb-2">Matched Rules</p>
-                                            {breakdown.map((item, idx) => (
-                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1.5 text-fg-subtle truncate mr-2">
-                                                        <span className="text-success shrink-0">✓</span>
-                                                        <span className="truncate">{item.label}</span>
-                                                    </span>
-                                                    <span className={item.points >= 0 ? 'text-success shrink-0' : 'text-danger shrink-0'}>
-                                                        {item.points >= 0 ? '+' : ''}{item.points}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
-                                </div>
-                                <div className="mt-6 pt-4">
-                                    <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full transition-all duration-1000 ease-out"
-                                            style={{
-                                                width: `${Math.min(100, (score / 150) * 100)}%`,
-                                                backgroundColor: scoreCategory.color,
-                                                boxShadow: `0 0 8px ${scoreCategory.color}80`,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </section>
-                    {/* Assigned Owner & Engagement Suite Combined */}
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-visible relative">
-                        <div className="pb-6 border-b border-slate-800/50">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Assigned Owner</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsChangingOwner(!isChangingOwner)}
-                                    className="text-[10px] text-blue-400 font-black uppercase tracking-widest hover:text-blue-300 transition-colors"
-                                >
-                                    {isChangingOwner ? 'CANCEL' : 'CHANGE'}
-                                </button>
-                            </div>
-                            {isChangingOwner ? (
-                                <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                                    {allUsers.map(user => (
-                                        <button
-                                            type="button"
-                                            key={user.id}
-                                            onClick={async (e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                try {
-                                                    // Field-diff history (old/new owner, actor, timestamp)
-                                                    // is now captured server-side by the leads audit
-                                                    // trigger (Task 7) — see the Audit History tab.
-                                                    await crmService.updateLead(lead.id, { owner: user });
-                                                    await fetchLeadData();
-                                                    setIsChangingOwner(false);
-                                                } catch (error) {
-                                                    console.error('Failed to update owner:', error);
-                                                    toast.error('Failed to update owner.');
-                                                }
-                                            }}
-                                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-950/50 border-slate-800 hover:border-line'}`}
-                                        >
-                                            <div className="w-8 h-8 rounded-full bg-surface-raised overflow-hidden flex-shrink-0">
-                                                {user.avatar_url ? (
-                                                    <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center font-black text-xs">{user.full_name?.charAt(0)}</div>
-                                                )}
-                                            </div>
-                                            <div className="text-left overflow-hidden">
-                                                <p className="text-[10px] font-black text-fg uppercase tracking-tight truncate">{user.full_name}</p>
-                                                <p className="text-[8px] text-fg-muted truncate">{user.email}</p>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : lead.owner ? (
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border-2 border-slate-800 shadow-lg">
-                                        {lead.owner.avatar_url ? (
-                                            <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="text-xl font-black">{lead.owner.full_name?.charAt(0)}</div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <p className="font-black text-fg text-sm uppercase tracking-tight leading-none mb-1">{lead.owner.full_name}</p>
-                                        <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">{lead.owner.email}</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl">
-                                    <div className="w-10 h-10 rounded-full bg-surface-raised border border-line flex items-center justify-center">
-                                        <Users size={18} className="text-fg-muted" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-black text-fg-muted uppercase tracking-tight">Unassigned</p>
-                                        <p className="text-[9px] text-fg-subtle uppercase tracking-widest">Click CHANGE to assign</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="py-6 border-b border-slate-800/50">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
-                                    {isCustomerDetailRoute ? 'CRM Stage' : 'Lead Stage'}
-                                </h3>
-                                {!isCustomerDetailRoute && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsChangingStage(!isChangingStage)}
-                                        className="text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-[0.2em]"
-                                    >
-                                        {isChangingStage ? 'CANCEL' : 'CHANGE'}
-                                    </button>
-                                )}
-                            </div>
-
-                            {isCustomerDetailRoute ? (
-                                <>
-                                    <div className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl">
-                                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                                            <Users size={16} className="text-success" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block">Stage</span>
-                                            <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">Customer</p>
-                                        </div>
-                                        <span className="text-[8px] bg-surface-raised text-fg-muted px-2 py-1 rounded font-black uppercase tracking-widest">
-                                            Locked
-                                        </span>
-                                    </div>
-                                    <p className="text-[9px] text-fg-subtle mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
-                                </>
-                            ) : isChangingStage ? (
-                                <div className="space-y-1">
-                                    {leadStages.map(stage => (
-                                        <button
-                                            type="button"
-                                            key={stage.id}
-                                            onClick={async (e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                try {
-                                                    // Field-diff history (old/new stage, duration in
-                                                    // previous stage, actor, timestamp) is now captured
-                                                    // server-side by the leads audit trigger (Task 7).
-                                                    await crmService.updateLead(lead.id, { status: stage.name as any });
-                                                    await fetchLeadData();
-                                                    setIsChangingStage(false);
-                                                } catch (error: any) {
-                                                    console.error('Failed to update stage:', error);
-                                                    toast.error(error.message || 'Failed to update stage. Please try again.');
-                                                }
-                                            }}
-                                            className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
-                                                ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                                                : 'bg-slate-950/50 border-slate-800 text-fg-subtle hover:border-line hover:text-fg'
-                                                }`}
-                                        >
-                                            <span>{stage.name}</span>
-                                            {stage.name === lead.status && <CheckCircle2 size={12} />}
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div
-                                    className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl group hover:border-blue-500/20 transition-all cursor-pointer"
-                                    onClick={() => setIsChangingStage(true)}
-                                >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${lead.status === 'Converted' ? 'bg-emerald-500/10 border-emerald-500/30 text-success' :
-                                        lead.status === 'Lost' ? 'bg-rose-500/10 border-rose-500/30 text-danger' :
-                                            'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                                        }`}>
-                                        <TrendingUp size={16} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block leading-none">Status</span>
-                                        <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">
-                                            {lead.status}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="pt-6">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em] mb-6">Engagement Suite</h3>
-                            <div className="space-y-3">
-                                <button
-                                    onClick={() => setIsCreatingTask(true)}
-                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
-                                >
-                                    <Clock size={14} /> Schedule Follow-up
-                                </button>
-                                {/* <button
-                                    onClick={async () => {
-                                        try {
-                                            await crmService.logActivity({
-                                                lead_id: id,
-                                                type: 'EMAIL',
-                                                notes: 'Outbound email sent to lead contact',
-                                                date: new Date().toISOString()
-                                            });
-                                            fetchLeadData();
-                                            setActiveTab('activity');
-                                        } catch (error: any) {
-                                            console.error('Failed to log email:', error);
-                                            toast.error(error.message || 'Failed to log email.');
-                                        }
-                                    }}
-                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
-                                >
-                                    <Mail size={14} /> Send Email
-                                </button> */}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Revenue Intelligence Card */}
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Revenue Intelligence</h3>
-                            <div className="bg-emerald-500/10 text-success p-1.5 rounded-lg">
-                                <DollarSign size={14} />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6 mb-8">
-                            <div>
-                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Earned</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-fg">{formatters.formatCurrency(earned)}</span>
-                                </div>
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Pipeline</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-fg-subtle">{formatters.formatCurrency(pipeline)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                                    <span className="text-fg-muted">Revenue Contribution</span>
-                                    <span className="text-success">{totalValue > 0 ? Math.round((earned / totalValue) * 100) : 0}%</span>
-                                </div>
-                                <div className="w-full h-3 bg-slate-800/50 rounded-full flex overflow-hidden border border-slate-700/30">
-                                    <div
-                                        className="h-full bg-success shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-1000"
-                                        style={{ width: `${totalValue > 0 ? (earned / totalValue) * 100 : 0}%` }}
-                                    />
-                                    <div
-                                        className="h-full bg-blue-500/40 transition-all duration-1000"
-                                        style={{ width: `${totalValue > 0 ? (pipeline / totalValue) * 100 : 0}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
-                                <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Active Deals</span>
-                                    <span className="text-sm font-black text-blue-400">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</span>
-                                </div>
-                                <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Total LTV</span>
-                                    <span className="text-sm font-black text-fg">{formatters.formatCurrency(totalValue)}</span>
-                                </div>
-                            </div>
-                            {productCount > 0 && (
-                                <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
-                                    <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Products Interested</span>
-                                        <span className="text-sm font-black text-blue-400">{productCount}</span>
-                                    </div>
-                                    <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Est. Revenue</span>
-                                        <span className="text-sm font-black text-success">{formatters.formatCurrency(productValue)}</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-
-                    {/* Associated Deals Section */}
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Deals ({associatedDeals.length})</h3>
-                        </div>
-                        {associatedDeals.length === 0 ? (
-                            <div className="text-center py-6 text-fg-muted border border-dashed border-slate-800 rounded-xl">
-                                <Briefcase size={24} className="mx-auto mb-2 opacity-20" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest">No deals yet</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {associatedDeals.map(deal => (
-                                    <Link
-                                        key={deal.id}
-                                        to={`../deal/${deal.id}`}
-                                        className="block p-4 bg-bg border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group"
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-xs font-bold text-fg group-hover:text-blue-400 transition-colors uppercase tracking-tight">{deal.name}</h4>
-                                            <ExternalLink size={12} className="text-fg-subtle group-hover:text-blue-400 transition-all" />
-                                        </div>
-                                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                                            <span className="text-emerald-400/80">{formatters.formatCurrency(deal.value)}</span>
-                                            <span className="text-fg-muted">{deal.stage}</span>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-                </div>
-            </div >
+                )}
+            </DetailPageTemplate>
             {/* Task Edit Modal */}
             {
                 (editingTask || isCreatingTask) && (
@@ -2189,35 +2156,16 @@ const LeadDetailPage = () => {
                 )
             }
 
-            {/* Delete Lead Confirmation Modal */}
-            {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-surface border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                        <h2 className="text-xl font-bold text-fg mb-2">Delete Lead</h2>
-                        <p className="text-fg-subtle mb-6">
-                            Are you sure you want to delete this lead? This will remove all associated deals, notes, activities, tasks, and documents. This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDeleteLead}
-                                disabled={isDeleting}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                {isDeleting && <Loader2 size={16} className="animate-spin" />}
-                                Delete Lead
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            {/* Delete Lead Confirmation */}
+            <ConfirmDialog
+                open={showDeleteConfirm}
+                title="Delete Lead"
+                message="Are you sure you want to delete this lead? This will remove all associated deals, notes, activities, tasks, and documents."
+                confirmLabel="Delete Lead"
+                intent="danger"
+                onConfirm={handleDeleteLead}
+                onCancel={() => setShowDeleteConfirm(false)}
+            />
             <ActivityHistoryDrawer
                 isOpen={showActivityDrawer}
                 onClose={() => setShowActivityDrawer(false)}
@@ -2233,7 +2181,7 @@ const LeadDetailPage = () => {
                     onClose={() => setShowLayoutSettings(false)}
                 />
             )}
-        </div >
+        </>
     );
 };
 

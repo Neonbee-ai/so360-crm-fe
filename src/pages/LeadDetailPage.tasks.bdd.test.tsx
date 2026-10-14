@@ -780,13 +780,10 @@ describe('Lead Detail — readability and header layout', () => {
   });
 
   describe('Given the record header', () => {
-    it('When the Delete action renders / Then it is icon-only but still named for assistive tech and hover', async () => {
+    it('When the Delete action renders / Then it lives in the overflow menu and is named', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-
-      const del = screen.getByLabelText('Delete');
-      expect(del).toHaveAttribute('title', 'Delete');
-      expect(del.textContent).toBe('');
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     });
 
     it('When the Delete action is used / Then the confirmation step is still required', async () => {
@@ -794,46 +791,54 @@ describe('Lead Detail — readability and header layout', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
 
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() =>
         expect(screen.getByText(/Are you sure you want to delete this lead/i)).toBeInTheDocument(),
       );
       expect(mockDeleteLead).not.toHaveBeenCalled();
     });
 
-    it('When the primary CTA sits beside it / Then only the CTA carries a text label', async () => {
+    it('When the header renders / Then Create Deal is the single primary action', async () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('Create Deal')).toBeInTheDocument());
-      expect(screen.queryByRole('button', { name: /^Delete$/ })?.textContent).toBe('');
+      expect(document.querySelectorAll('[data-slot="primary"]').length).toBe(1);
     });
   });
 
   describe('Given the workspace tab bar', () => {
-    it('When the tabs render / Then the strip scrolls on its own so no label is clipped', async () => {
+    it('When the tabs render / Then Overview is first and Activity is last', async () => {
       render(<LeadDetailPage />);
-      const strip = await screen.findByTestId('detail-tab-strip');
-      expect(strip.className).toMatch(/overflow-x-auto/);
-      // Each tab refuses to shrink or wrap, so labels stay whole.
-      const tabs = Array.from(strip.querySelectorAll('button'));
-      expect(tabs.length).toBeGreaterThan(0);
-      tabs.forEach(tab => {
-        expect(tab.className).toMatch(/shrink-0/);
-        expect(tab.className).toMatch(/whitespace-nowrap/);
-      });
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      const tabs = screen.getAllByRole('tab').map(t => t.textContent?.trim());
+      expect(tabs[0]).toBe('Overview');
+      expect(tabs[tabs.length - 1]).toBe('Activity');
     });
 
-    it('When the layout settings control renders / Then it sits outside the scrolling strip so it cannot squeeze the last tab', async () => {
+    it('When every section is visible / Then the Feedback tab is still rendered', async () => {
       render(<LeadDetailPage />);
-      const strip = await screen.findByTestId('detail-tab-strip');
-      const settings = screen.getByLabelText('Layout Settings');
-      expect(strip.contains(settings)).toBe(false);
+      await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+      const labels = screen.getAllByRole('tab').map(t => t.textContent?.trim());
+      expect(labels.some(l => l?.startsWith('Feedback'))).toBe(true);
     });
+  });
+});
 
-    it('When every section is visible / Then the last tab is still rendered in full', async () => {
-      render(<LeadDetailPage />);
-      const strip = await screen.findByTestId('detail-tab-strip');
-      const labels = Array.from(strip.querySelectorAll('button')).map(b => b.textContent?.trim());
-      expect(labels.some(l => l === 'Feedback')).toBe(true);
-    });
+describe('Lead Detail - DetailPageTemplate slots', () => {
+  it('Given a loaded lead / When rendered / Then header, tabs and rail slots are populated', async () => {
+    render(<LeadDetailPage />);
+    await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+    expect(document.querySelector('[data-slot="primary"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create Deal' })).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-slot="secondary"] button').length).toBeLessThanOrEqual(2);
+    expect(screen.getAllByRole('tab')[0]).toHaveTextContent('Overview');
+    expect(screen.getByTestId('recent-activity-rail')).toBeInTheDocument();
+  });
+
+  it('Given the Overview tab is default / When Activity is chosen / Then it becomes selected', async () => {
+    render(<LeadDetailPage />);
+    await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(screen.getByRole('tab', { name: 'Activity' })).toHaveAttribute('aria-selected', 'true');
   });
 });

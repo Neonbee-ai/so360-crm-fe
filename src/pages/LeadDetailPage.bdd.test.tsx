@@ -402,12 +402,14 @@ describe('LeadDetailPage', () => {
         events: [sampleEvent('call:c1', { title: 'Outbound call logged', description: 'Intro call completed' })],
       }));
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('Outbound call logged')).toBeInTheDocument());
       expect(screen.getByText('Intro call completed')).toBeInTheDocument();
     });
 
     it('When the page loads / Then shows lead score based on scoring rules', async () => {
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => {
         const scoreElements = screen.getAllByText(/\d+/);
         expect(scoreElements.length).toBeGreaterThan(0);
@@ -820,6 +822,7 @@ describe('LeadDetailPage', () => {
       mockGetActivitiesByLeadIdPaginated.mockResolvedValue({ data: [], total: 0 });
       mockGetDocumentsByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
     });
   });
@@ -845,15 +848,15 @@ describe('LeadDetailPage', () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument();
+        expect(screen.getAllByLabelText('Back to Leads')[0]).toBeInTheDocument();
       });
     });
 
     it('When Back to Leads is clicked / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back to Leads')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back to Leads')[0]);
+      await waitFor(() => expect(screen.getAllByLabelText('Back to Leads')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByLabelText('Back to Leads')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
   });
@@ -881,7 +884,7 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() => {
         const deleteTexts = screen.getAllByText(/Delete/);
         expect(deleteTexts.length).toBeGreaterThan(0);
@@ -1199,12 +1202,14 @@ describe('LeadDetailPage', () => {
     it('When no events are loaded / Then shows the empty timeline message', async () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [] }));
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
     });
 
     it('When the timeline is loading / Then shows a spinner instead of the empty state', async () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ loading: true }));
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       expect(screen.queryByText('No activities logged yet.')).not.toBeInTheDocument();
     });
@@ -1212,6 +1217,7 @@ describe('LeadDetailPage', () => {
     it('When View All History is clicked / Then opens ActivityHistoryDrawer', async () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('View All History')).toBeInTheDocument());
       await user.click(screen.getByText('View All History'));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
@@ -1220,6 +1226,7 @@ describe('LeadDetailPage', () => {
     it('When drawer is open and Close Drawer is clicked / Then drawer is dismissed', async () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('View All History')).toBeInTheDocument());
       await user.click(screen.getByText('View All History'));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
@@ -1232,6 +1239,7 @@ describe('LeadDetailPage', () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [sampleEvent('e1')], hasMore: true, loadMore: mockLoadMore }));
       const user = userEvent.setup();
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('Load More →')).toBeInTheDocument());
       await user.click(screen.getByText('Load More →'));
       expect(mockLoadMore).toHaveBeenCalled();
