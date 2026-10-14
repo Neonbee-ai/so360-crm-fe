@@ -39,7 +39,7 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, toast } from '@so360/design-system';
+import { QuotaGate, toast, ListPageTemplate, Button, Badge, Select, EmptyState, Pagination, ConfirmDialog } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
 
@@ -712,196 +712,160 @@ const LeadsPage = () => {
   ].filter((a: any) => !a.options || a.options.length > 0),
   [users, leadStages, leadSources, canDeleteLead, handleBulkOwnerChange, handleBulkStatusChange, handleBulkSourceChange, handleBulkExport, handleBulkDelete]);
 
+  const hasLeads = leads.length > 0;
+  const isFilteredEmpty = !isLoading && !error && hasLeads && sandboxLeads.length === 0 && hasActiveFilters;
+  const isTrulyEmpty = !isLoading && !error && !hasLeads;
+
   return (
-    <div className="px-4 pt-3 pb-6 md:px-6" ref={listAnchorRef}>
-      {/* Compact header */}
-      <header className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-baseline gap-2.5 min-w-0">
-          <h1 className="text-lg font-bold text-fg tracking-tight truncate">Leads & Accounts</h1>
-          <span className="text-sm text-fg-muted shrink-0">
-            {leads.length} Lead{leads.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-        {canExportLeads && (
-          <ExportMenu label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />
-        )}
-        {canImportLeads && (
-          <button
-            onClick={() => setIsImportOpen(true)}
-            className="flex items-center gap-1.5 h-10 bg-surface-raised hover:bg-line border border-line text-fg px-4 rounded-lg font-semibold text-sm transition-all active:scale-95 shrink-0"
-          >
-            <UploadCloud size={16} />
-            Import
-          </button>
-        )}
-        {canCreateLead && (
-          <QuotaGate
-            quotaKey="max_contacts"
-            moduleCode="crm"
-            used={leads.length}
-            limit={quotaData?.limit ?? 0}
-            isUnlimited={quotaData?.is_unlimited}
-            disableOnExceeded
-          >
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 h-10 bg-primary hover:bg-primary text-white px-4 rounded-lg font-semibold text-sm transition-all shadow-lg shadow-blue-900/20 active:scale-95 shrink-0"
+    <div ref={listAnchorRef}>
+      <ListPageTemplate
+        title="Leads & Accounts"
+        count={leads.length}
+        primaryAction={
+          canCreateLead ? (
+            <QuotaGate
+              quotaKey="max_contacts"
+              moduleCode="crm"
+              used={leads.length}
+              limit={quotaData?.limit ?? 0}
+              isUnlimited={quotaData?.is_unlimited}
+              disableOnExceeded
             >
-              <Plus size={16} />
-              New Lead
-            </button>
-          </QuotaGate>
-        )}
-        </div>
-      </header>
-
-      {/* KPI chips */}
-      <SummaryMetricChips
-        className="mb-3"
-        chips={[
-          { key: 'total', label: 'Total', count: leads.length, active: filters.status === 'All', onClick: () => setFilter('status', 'All') },
-          ...kpiStages.map((stage) => ({
-            key: stage.id,
-            label: stage.name,
-            count: statusCounts[stage.name] ?? 0,
-            active: filters.status === stage.name,
-            onClick: () => toggleStatusChip(stage.name),
-          })),
+              <Button onClick={() => setIsModalOpen(true)}>
+                <Plus size={16} aria-hidden="true" />
+                New Lead
+              </Button>
+            </QuotaGate>
+          ) : undefined
+        }
+        headerSecondaryActions={[
+          ...(canExportLeads ? [<ExportMenu key="export" label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />] : []),
+          ...(canImportLeads ? [
+            <Button key="import" variant="secondary" onClick={() => setIsImportOpen(true)}>
+              <UploadCloud size={16} aria-hidden="true" />
+              Import
+            </Button>,
+          ] : []),
         ]}
-      />
-
-      {/* Sandbox notice */}
-      {isSandboxMode && isLimited(filteredLeads.length) && (
-        <div className="mb-3 flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/25 rounded-lg text-warning text-sm">
-          <span className="font-semibold">Sandbox:</span>
-          <span>Showing {sandboxEntryLimit} of {filteredLeads.length} leads. Switch to Production to view all records.</span>
-        </div>
-      )}
-
-      {/* Modal */}
-      <CreateLeadModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchInitialData}
-        existingLeads={leads.map((l) => l.company_name)}
-      />
-      {canImportLeads && (
-        <ImportHub
-          isOpen={isImportOpen}
-          onClose={() => setIsImportOpen(false)}
-          onImported={fetchInitialData}
-        />
-      )}
-
-      {/* Toolbar — single consolidated row wherever width permits */}
-      <div className="flex flex-wrap items-center gap-2 mb-3 bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/50">
-        {activeSegmentName && (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20 shrink-0">
-            <Tag size={12} />
-            Segment: {activeSegmentName}
-          </span>
-        )}
-
-        <div className="flex-1 min-w-[180px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-          <input
-            type="text"
-            placeholder="Search leads..."
-            value={filters.search}
-            onChange={(e) => setFilter('search', e.target.value)}
-            className="w-full bg-bg border border-slate-700/50 text-fg pl-10 pr-4 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+        kpis={
+          <SummaryMetricChips
+            chips={[
+              { key: 'total', label: 'Total', count: leads.length, active: filters.status === 'All', onClick: () => setFilter('status', 'All') },
+              ...kpiStages.map((stage) => ({
+                key: stage.id,
+                label: stage.name,
+                count: statusCounts[stage.name] ?? 0,
+                active: filters.status === stage.name,
+                onClick: () => toggleStatusChip(stage.name),
+              })),
+            ]}
           />
-          {filters.search && (
-            <button
-              onClick={() => setFilter('search', '')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-subtle"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        <select
-          value={filters.status}
-          onChange={(e) => setFilter('status', e.target.value)}
-          className="bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
-        >
-          <option value="All">All Statuses</option>
-          {leadStages.map((stage) => (
-            <option key={stage.id} value={stage.name}>{stage.name}</option>
-          ))}
-        </select>
-
-        <select
-          value={filters.owner}
-          onChange={(e) => setFilter('owner', e.target.value)}
-          className="bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
-        >
-          <option value="All">All Owners</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>{user.full_name}</option>
-          ))}
-        </select>
-
-        <select
-          value={filters.dateRange}
-          onChange={(e) => setFilter('dateRange', e.target.value)}
-          className="bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
-        >
-          <option value="All">All Time</option>
-          <option value="Today">Today</option>
-          <option value="Yesterday">Yesterday</option>
-          <option value="This Week">This Week</option>
-          <option value="Last Week">Last Week</option>
-          <option value="This Month">This Month</option>
-          <option value="Last Month">Last Month</option>
-          <option value="Custom">Custom Range</option>
-        </select>
-
-        {filters.dateRange === 'Custom' && (
-          <div className="flex items-center gap-2 bg-bg border border-slate-700/50 rounded-lg px-2 py-1 shrink-0">
+        }
+        search={
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
             <input
-              type="date"
-              value={filters.customDateStart}
-              onChange={(e) => setFilter('customDateStart', e.target.value)}
-              className="bg-transparent text-fg-subtle text-xs focus:outline-none"
+              type="text"
+              placeholder="Search leads..."
+              value={filters.search}
+              onChange={(e) => setFilter('search', e.target.value)}
+              className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-8 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             />
-            <span className="text-fg-muted">–</span>
-            <input
-              type="date"
-              value={filters.customDateEnd}
-              onChange={(e) => setFilter('customDateEnd', e.target.value)}
-              className="bg-transparent text-fg-subtle text-xs focus:outline-none"
-            />
+            {filters.search && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setFilter('search', '')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
-        )}
-
+        }
+        filters={
+          <>
+            {activeSegmentName && (
+              <Badge tone="primary">
+                <Tag size={12} aria-hidden="true" />
+                Segment: {activeSegmentName}
+              </Badge>
+            )}
+            <Select
+              name="lead-status-filter"
+              size="sm"
+              aria-label="Status"
+              value={filters.status}
+              onChange={(e) => setFilter('status', e.target.value)}
+              options={[{ value: 'All', label: 'All Statuses' }, ...leadStages.map((stage) => ({ value: stage.name, label: stage.name }))]}
+            />
+            <Select
+              name="lead-owner-filter"
+              size="sm"
+              aria-label="Owner"
+              value={filters.owner}
+              onChange={(e) => setFilter('owner', e.target.value)}
+              options={[{ value: 'All', label: 'All Owners' }, ...users.map((user) => ({ value: user.id, label: user.full_name }))]}
+            />
+            <Select
+              name="lead-date-filter"
+              size="sm"
+              aria-label="Date range"
+              value={filters.dateRange}
+              onChange={(e) => setFilter('dateRange', e.target.value)}
+              options={[
+                { value: 'All', label: 'All Time' },
+                { value: 'Today', label: 'Today' },
+                { value: 'Yesterday', label: 'Yesterday' },
+                { value: 'This Week', label: 'This Week' },
+                { value: 'Last Week', label: 'Last Week' },
+                { value: 'This Month', label: 'This Month' },
+                { value: 'Last Month', label: 'Last Month' },
+                { value: 'Custom', label: 'Custom Range' },
+              ]}
+            />
+            {filters.dateRange === 'Custom' && (
+              <div className="flex items-center gap-2 rounded-nb border border-line bg-surface px-2 py-1 shrink-0">
+                <input
+                  type="date"
+                  value={filters.customDateStart}
+                  onChange={(e) => setFilter('customDateStart', e.target.value)}
+                  className="bg-transparent text-fg text-xs focus:outline-none"
+                />
+                <span className="text-fg-muted">–</span>
+                <input
+                  type="date"
+                  value={filters.customDateEnd}
+                  onChange={(e) => setFilter('customDateEnd', e.target.value)}
+                  className="bg-transparent text-fg text-xs focus:outline-none"
+                />
+              </div>
+            )}
         {/* More filters — Created By */}
         <div ref={moreFiltersRef} className="relative shrink-0">
           <button
             onClick={() => setOpenDropdown((v) => (v === 'moreFilters' ? null : 'moreFilters'))}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
               filters.creator !== 'All'
-                ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
-                : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-slate-700/50'
+                ? 'text-primary bg-primary/10 border-primary/40'
+                : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
             }`}
           >
             <Filter size={13} />
             More Filters
             {filters.creator !== 'All' && (
-              <span className="text-[10px] bg-primary text-white rounded-full px-1.5 py-0.5">1</span>
+              <span className="text-[10px] bg-primary text-primary-fg rounded-full px-1.5 py-0.5">1</span>
             )}
             <ChevronDown size={13} />
           </button>
 
           {openDropdown === 'moreFilters' && (
-            <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl min-w-[220px] p-3">
+            <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl min-w-[220px] p-3">
               <label className="block text-[10px] font-bold text-fg-muted uppercase tracking-wider mb-1.5">Created By</label>
               <select
                 value={filters.creator}
                 onChange={(e) => setFilter('creator', e.target.value)}
-                className="w-full bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full bg-surface border border-line text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-focus"
               >
                 <option value="All">All</option>
                 {users.map((user) => (
@@ -923,12 +887,21 @@ const LeadsPage = () => {
         )}
 
         <div className="flex-1" />
-
+            {hasActiveFilters && !isFilteredEmpty && (
+              <Button variant="secondary" size="sm" onClick={clearFilters}>
+                <X size={12} aria-hidden="true" />
+                Clear filters
+              </Button>
+            )}
+          </>
+        }
+        toolbarEnd={
+          <>
         {/* Saved views */}
         <div ref={viewsDropdownRef} className="relative shrink-0">
             <button
               onClick={() => setOpenDropdown((v) => (v === 'views' ? null : 'views'))}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-surface-raised border border-slate-700/50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-surface-raised border border-line transition-colors"
             >
               <Bookmark size={14} />
               {activeViewId ? savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views' : 'Views'}
@@ -936,7 +909,7 @@ const LeadsPage = () => {
             </button>
 
             {openDropdown === 'views' && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl min-w-[300px] py-1.5">
+              <div className="absolute left-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl min-w-[300px] py-1.5">
                 {savedViews.length === 0 && (
                   <p className="px-4 py-2 text-xs text-fg-muted">No saved views yet</p>
                 )}
@@ -958,7 +931,7 @@ const LeadsPage = () => {
                         />
                         <button
                           onClick={() => { handleRenameView(view.id, renameValue); setRenamingViewId(null); }}
-                          className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
+                          className="text-primary hover:text-primary text-xs font-semibold"
                         >
                           Save
                         </button>
@@ -967,9 +940,9 @@ const LeadsPage = () => {
                       <div className="flex items-center">
                         <button
                           onClick={() => handleApplyView(view)}
-                          className={`flex-1 flex items-center gap-1.5 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-blue-400' : 'text-fg-subtle hover:bg-surface-raised'}`}
+                          className={`flex-1 flex items-center gap-1.5 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-primary' : 'text-fg-subtle hover:bg-surface-raised'}`}
                         >
-                          {view.is_default && <Star size={11} className="text-warning fill-amber-400 shrink-0" />}
+                          {view.is_default && <Star size={11} className="text-warning fill-warning shrink-0" />}
                           <span className="truncate">{view.name}</span>
                           {view.is_shared && (
                             <span title="Shared with your team">
@@ -995,14 +968,14 @@ const LeadsPage = () => {
                           <button
                             aria-label={view.is_default ? 'Default view' : 'Set as default'}
                             onClick={() => handleSetDefaultView(view.id)}
-                            className={`p-1 ${view.is_default ? 'text-warning' : 'text-fg-muted hover:text-amber-300'}`}
+                            className={`p-1 ${view.is_default ? 'text-warning' : 'text-fg-muted hover:text-warning'}`}
                           >
-                            <Star size={12} className={view.is_default ? 'fill-amber-400' : ''} />
+                            <Star size={12} className={view.is_default ? 'fill-warning' : ''} />
                           </button>
                           <button
                             aria-label={view.is_shared ? 'Unshare view' : 'Share view'}
                             onClick={() => handleToggleShareView(view.id)}
-                            className={`p-1 ${view.is_shared ? 'text-blue-400' : 'text-fg-muted hover:text-blue-300'}`}
+                            className={`p-1 ${view.is_shared ? 'text-primary' : 'text-fg-muted hover:text-primary'}`}
                           >
                             <Share2 size={12} />
                           </button>
@@ -1018,7 +991,7 @@ const LeadsPage = () => {
                     )}
                   </div>
                 ))}
-                <div className="border-t border-slate-700/50 mt-1 pt-1">
+                <div className="border-t border-line mt-1 pt-1">
                   {showSaveViewInput ? (
                     <div className="flex items-center gap-2 px-3 py-2">
                       <input
@@ -1030,7 +1003,7 @@ const LeadsPage = () => {
                         onKeyDown={(e) => { if (e.key === 'Enter') handleSaveView(); if (e.key === 'Escape') setShowSaveViewInput(false); }}
                         className="flex-1 bg-surface-raised border border-line text-fg px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-focus"
                       />
-                      <button onClick={handleSaveView} className="text-blue-400 hover:text-blue-300 text-xs font-semibold">Save</button>
+                      <button onClick={handleSaveView} className="text-primary hover:text-primary text-xs font-semibold">Save</button>
                     </div>
                   ) : (
                     <button
@@ -1052,14 +1025,14 @@ const LeadsPage = () => {
               onClick={() => setShowAdvancedFilters((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
                 advancedFilter
-                  ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
-                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-slate-700/50'
+                  ? 'text-primary bg-primary/10 border-primary/40'
+                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
               }`}
             >
               <SlidersHorizontal size={14} />
               Advanced
               {advancedFilter && (
-                <span className="text-[10px] bg-primary text-white rounded-full px-1.5 py-0.5">
+                <span className="text-[10px] bg-primary text-primary-fg rounded-full px-1.5 py-0.5">
                   {countActiveRules(advancedFilter)}
                 </span>
               )}
@@ -1076,106 +1049,87 @@ const LeadsPage = () => {
             )}
           </div>
       </div>
+          </>
+        }
+        loading={isLoading && !hasLeads}
+        isEmpty={isTrulyEmpty}
+        empty={
+          canCreateLead ? (
+            <EmptyState
+              title="No leads yet"
+              description="Create your first lead or import a list to get started."
+              action={{ label: 'New Lead', onClick: () => setIsModalOpen(true) }}
+            />
+          ) : (
+            <EmptyState title="No leads yet" />
+          )
+        }
+        isFilteredEmpty={isFilteredEmpty}
+        onClearFilters={clearFilters}
+        pagination={
+          sandboxLeads.length > 0 ? (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages || 1}
+              totalItems={sandboxLeads.length}
+              pageSize={pageSize}
+              pageSizeOptions={[25, 50, 100, 250]}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            />
+          ) : undefined
+        }
+      >
+        {/* Sandbox notice */}
+        {isSandboxMode && isLimited(filteredLeads.length) && (
+          <div className="mb-3 flex items-center gap-2 rounded-nb border border-warning/25 bg-warning/10 px-4 py-2 text-sm text-warning">
+            <span className="font-semibold">Sandbox:</span>
+            <span>Showing {sandboxEntryLimit} of {filteredLeads.length} leads. Switch to Production to view all records.</span>
+          </div>
+        )}
 
-      {/* Error state */}
-      {error && !isLoading && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-rose-500/10 border border-rose-500/25 rounded-lg text-danger text-sm">
-          {error}
-        </div>
+        {/* Error state */}
+        {error && !isLoading && (
+          <div className="mb-4 flex items-center gap-2 rounded-nb border border-danger/25 bg-danger/10 px-4 py-3 text-sm text-danger">
+            {error}
+          </div>
+        )}
+
+        {/* Data grid */}
+        <LeadsDataGrid
+          leads={paginatedLeads}
+          isLoading={isLoading}
+          context={gridContext}
+          onRowClick={(lead) => setDetailLead((prev) => (prev?.id === lead.id ? null : lead))}
+          bulkActions={bulkActions}
+          customFields={customFields}
+        />
+      </ListPageTemplate>
+
+      <CreateLeadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchInitialData}
+        existingLeads={leads.map((l) => l.company_name)}
+      />
+      {canImportLeads && (
+        <ImportHub
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          onImported={fetchInitialData}
+        />
       )}
 
-      {/* Data grid */}
-      <LeadsDataGrid
-        leads={paginatedLeads}
-        isLoading={isLoading}
-        context={gridContext}
-        onRowClick={(lead) => setDetailLead((prev) => (prev?.id === lead.id ? null : lead))}
-        bulkActions={bulkActions}
-        customFields={customFields}
+      <ConfirmDialog
+        open={!!showDeleteConfirm}
+        title="Delete Lead"
+        message="Are you sure you want to delete this lead? This will also remove all associated notes, activities, and documents. This action cannot be undone."
+        confirmLabel="Delete"
+        intent="danger"
+        onConfirm={() => (showDeleteConfirm ? handleDeleteLead(showDeleteConfirm) : undefined)}
+        onCancel={() => setShowDeleteConfirm(null)}
       />
 
-      {/* Pagination */}
-      {sandboxLeads.length > 0 && (
-        <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-fg-subtle">
-            <span>Show</span>
-            <select
-              value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-              className="bg-surface-raised border border-slate-600/50 rounded px-2 py-1 text-fg"
-            >
-              {[25, 50, 100, 250].map((size) => (
-                <option key={size} value={size}>{size}</option>
-              ))}
-            </select>
-            <span>of {sandboxLeads.length} leads</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
-            >
-              First
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
-            >
-              Prev
-            </button>
-            <span className="px-3 py-1 text-fg-subtle text-sm">
-              Page {currentPage} of {totalPages || 1}
-            </span>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
-            >
-              Next
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage >= totalPages}
-              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
-            >
-              Last
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Delete confirmation */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-surface border border-slate-700/50 rounded-lg shadow-2xl w-full max-w-md p-6">
-            <h2 className="text-xl font-semibold text-fg mb-2">Delete Lead</h2>
-            <p className="text-fg-subtle mb-6">
-              Are you sure you want to delete this lead? This will also remove all associated notes, activities, and documents. This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                disabled={isDeleting}
-                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteLead(showDeleteConfirm)}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                {isDeleting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Detail panel */}
       <LeadDetailPanel
         lead={detailLead}
         onClose={() => setDetailLead(null)}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -407,10 +407,7 @@ describe('LeadsPage', () => {
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
-      const confirmBtn = screen.getAllByText('Delete').find(
-        (el) => el.closest('button')?.className.includes('bg-danger'),
-      );
-      fireEvent.click(confirmBtn!);
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
       await waitFor(() => expect(screen.queryByTestId('lead-row-l1')).not.toBeInTheDocument());
     });
@@ -471,10 +468,7 @@ describe('LeadsPage', () => {
       expect(screen.getByText('3 Total')).toBeInTheDocument();
       fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
-      const confirmBtn = screen.getAllByText('Delete').find(
-        (el) => el.closest('button')?.className.includes('bg-danger'),
-      );
-      fireEvent.click(confirmBtn!);
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
       await waitFor(() => expect(screen.getByText('2 Total')).toBeInTheDocument());
     });
@@ -957,5 +951,25 @@ describe('LeadsPage — export (RE §48)', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Export leads as CSV' }));
       await waitFor(() => expect(mockExportLeads).toHaveBeenCalledWith({ status: 'All' }, 'csv'));
     });
+  });
+});
+
+describe('LeadsPage - ListPageTemplate slots', () => {
+  it('Given leads load / When rendered / Then header has one primary New Lead and a toolbar slot', async () => {
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
+    const primary = document.querySelector('[data-slot="primary"]') as HTMLElement;
+    expect(primary).toBeTruthy();
+    expect(within(primary).getByRole('button', { name: /new lead/i })).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-slot="secondary"] button').length).toBeLessThanOrEqual(2);
+    expect(document.querySelector('[data-slot="toolbar"]')).toBeTruthy();
+  });
+
+  it('Given no leads exist / When rendered / Then the empty slot shows a New Lead CTA', async () => {
+    mockGetLeads.mockResolvedValue([]);
+    mockGetLeadsPaged.mockResolvedValue({ data: [], total: 0 });
+    render(<LeadsPage />);
+    await waitFor(() => expect(screen.getByText('No leads yet')).toBeInTheDocument());
+    expect(within(document.querySelector('[data-slot="empty"]') as HTMLElement).getByRole('button', { name: /new lead/i })).toBeInTheDocument();
   });
 });
