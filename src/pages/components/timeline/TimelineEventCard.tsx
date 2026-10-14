@@ -76,10 +76,10 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
             <div className="absolute left-0 top-1.5 w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center z-10">
                 {getEventIcon(event)}
             </div>
-            <div className="bg-surface border border-slate-800/50 p-3 rounded-lg hover:border-line transition-colors">
+            <div className="bg-surface border border-line p-3 rounded-lg hover:border-line transition-colors">
                 {link ? <Link to={link} className="block">{body}</Link> : body}
                 {(onTogglePin || canManage) && (
-                    <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="mt-2 pt-2 border-t border-line flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {onTogglePin && (
                             <button
                                 onClick={() => onTogglePin(event.id)}

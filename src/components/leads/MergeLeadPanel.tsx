@@ -84,11 +84,11 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
 
     return (
         <aside
-            className="fixed inset-y-0 right-0 z-40 w-full max-w-xl bg-surface border-l border-slate-800 shadow-2xl flex flex-col"
+            className="fixed inset-y-0 right-0 z-40 w-full max-w-xl bg-surface border-l border-line shadow-2xl flex flex-col"
             aria-label="Merge leads"
             data-testid="merge-lead-panel"
         >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line">
                 <h2 className="text-sm font-bold text-fg flex items-center gap-2">
                     <GitMerge size={16} /> Merge another lead into this one
                 </h2>
@@ -111,7 +111,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 placeholder="Search by name, email or phone"
-                                className="w-full bg-bg border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm text-fg focus:outline-none focus:border-primary"
+                                className="w-full bg-bg border border-line rounded-lg pl-9 pr-3 py-2 text-sm text-fg focus:outline-none focus:border-primary"
                                 autoFocus
                             />
                         </div>
@@ -119,7 +119,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                         {!searching && query.trim().length >= 2 && results.length === 0 && (
                             <p className="text-xs text-fg-muted">No other leads match.</p>
                         )}
-                        <ul className="divide-y divide-slate-800" role="listbox" aria-label="Matching leads">
+                        <ul className="divide-y divide-line" role="listbox" aria-label="Matching leads">
                             {results.map(l => (
                                 <li key={l.id}>
                                     <button
@@ -158,7 +158,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                                 {MERGE_FIELDS.map(f => {
                                     const same = !differing.includes(f);
                                     return (
-                                        <tr key={f.key} className="border-t border-slate-800">
+                                        <tr key={f.key} className="border-t border-line">
                                             <td className="py-2 pr-2 text-fg-subtle">{f.label}</td>
                                             {[keepLead, other].map((src, i) => (
                                                 <td key={src.id} className="py-2 pr-2">
@@ -184,7 +184,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                 )}
             </div>
 
-            <div className="px-5 py-4 border-t border-slate-800 flex justify-end gap-2">
+            <div className="px-5 py-4 border-t border-line flex justify-end gap-2">
                 <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-fg-subtle hover:bg-surface-raised">
                     Cancel
                 </button>
@@ -192,7 +192,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                     type="button"
                     onClick={handleMerge}
                     disabled={!other || merging}
-                    className="px-4 py-2 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                 >
                     {merging && <Loader2 size={14} className="animate-spin" />}
                     Merge

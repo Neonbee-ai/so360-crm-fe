@@ -106,7 +106,7 @@ const formatAddress = (a?: AddressShape | null): string => {
 
 // ─── Shared input class ──────────────────────────────────────────────────────
 
-const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50';
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -389,7 +389,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-5">
+        <div className="bg-surface-sunken border border-line rounded-xl p-5 space-y-5">
             <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
                 <Building2 size={16} className="text-success" />
                 Customer Details
@@ -401,7 +401,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold border ${
                     lead.customer_category === 'b2b'
                         ? 'bg-emerald-500/10 text-success border-emerald-500/20'
-                        : 'bg-slate-500/10 text-fg-subtle border-slate-500/20'
+                        : 'bg-fg-muted/10 text-fg-subtle border-line'
                 }`}>
                     {(lead.customer_category || 'b2c').toUpperCase()}
                 </span>
@@ -443,7 +443,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             {lead.customer_category === 'b2b' && (
                 <>
                     {/* Tax ID */}
-                    <div className="border-t border-slate-800 pt-4">
+                    <div className="border-t border-line pt-4">
                         <label className="text-xs text-fg-muted mb-2 block flex items-center gap-1.5">
                             <Shield size={12} /> Tax ID (GST / VAT / TIN)
                         </label>
@@ -454,7 +454,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                                     value={taxIdInput}
                                     onChange={(e) => { setTaxIdInput(e.target.value.toUpperCase()); setTaxError(null); }}
                                     placeholder="e.g. 29ABCDE1234F1Z5"
-                                    className="w-full bg-bg border border-slate-800 text-fg px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-mono"
+                                    className="w-full bg-bg border border-line text-fg px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-mono"
                                 />
                                 {lead.tax_id_verified && (
                                     <CheckCircle2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-success" />
@@ -463,7 +463,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <button
                                 onClick={handleValidateTaxId}
                                 disabled={isValidatingTax || !taxIdInput.trim()}
-                                className="px-4 py-2 bg-success hover:bg-success disabled:bg-line disabled:text-fg-muted text-fg text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                                className="px-4 py-2 bg-success hover:bg-success/90 disabled:bg-line disabled:text-fg-muted text-fg text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
                             >
                                 {isValidatingTax ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
                                 Validate
@@ -482,7 +482,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     </div>
 
                     {/* Credit Limit */}
-                    <div className="border-t border-slate-800 pt-4">
+                    <div className="border-t border-line pt-4">
                         <label className="text-xs text-fg-muted mb-2 block flex items-center gap-1.5">
                             <CreditCard size={12} /> Credit Limit
                         </label>
@@ -493,12 +493,12 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                                 onChange={(e) => setCreditLimitInput(e.target.value)}
                                 min="0"
                                 step="1000"
-                                className="flex-1 bg-bg border border-slate-800 text-fg px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                className="flex-1 bg-bg border border-line text-fg px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                             />
                             <button
                                 onClick={handleSaveCreditLimit}
                                 disabled={isSavingCredit}
-                                className="px-4 py-2 bg-primary hover:bg-primary disabled:bg-line disabled:text-fg-muted text-fg text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:bg-line disabled:text-fg-muted text-fg text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
                             >
                                 {isSavingCredit ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
                                 Save
@@ -514,7 +514,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             )}
 
             {/* ─── Business Information ────────────────────────────────────────── */}
-            <div className="border-t border-slate-800 pt-4">
+            <div className="border-t border-line pt-4">
                 <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-fg-subtle flex items-center gap-1.5 uppercase tracking-wider">
                         <Building2 size={12} className="text-success" /> Business Information
@@ -539,7 +539,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <button
                                 onClick={handleSaveProfile}
                                 disabled={isSavingProfile}
-                                className="px-2.5 py-1 bg-success hover:bg-success disabled:bg-line text-fg text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                                className="px-2.5 py-1 bg-success hover:bg-success/90 disabled:bg-line text-fg text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
                             >
                                 {isSavingProfile ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
                             </button>
@@ -628,7 +628,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         )}
 
                         {/* Accounting Preferences */}
-                        <div className="border-t border-slate-800/60 pt-3">
+                        <div className="border-t border-line pt-3">
                             <div className="text-[11px] font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <DollarSign size={11} /> Accounting Preferences
                             </div>
@@ -652,7 +652,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         </div>
 
                         {/* Internal Notes */}
-                        <div className="border-t border-slate-800/60 pt-3">
+                        <div className="border-t border-line pt-3">
                             <div className="text-[11px] font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <FileText size={11} /> Internal Notes
                             </div>
@@ -670,7 +670,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
 
             {/* ─── Accounting Information (view mode) ─────────────────────────── */}
             {!isEditingProfile && (profile?.payment_terms || profile?.customer_currency || profile?.preferred_tax_group || profile?.internal_notes) && (
-                <div className="border-t border-slate-800 pt-4 space-y-2">
+                <div className="border-t border-line pt-4 space-y-2">
                     <span className="text-xs font-semibold text-fg-subtle flex items-center gap-1.5 uppercase tracking-wider mb-2">
                         <DollarSign size={12} className="text-blue-400" /> Accounting
                     </span>
@@ -694,7 +694,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
             )}
 
             {/* ─── Invoices (Accounting cross-module, read-only) ──────────────── */}
-            <div className="border-t border-slate-800 pt-4">
+            <div className="border-t border-line pt-4">
                 <span className="text-xs font-semibold text-fg-subtle flex items-center gap-1.5 uppercase tracking-wider mb-3">
                     <FileText size={12} className="text-warning" /> Invoices
                 </span>
@@ -708,11 +708,11 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 ) : (
                     <>
                         <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+                            <div className="bg-surface-sunken border border-line rounded-lg p-3">
                                 <div className="text-[11px] text-fg-muted">Invoice Count</div>
                                 <div className="text-lg font-semibold text-fg">{invoiceCount}</div>
                             </div>
-                            <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+                            <div className="bg-surface-sunken border border-line rounded-lg p-3">
                                 <div className="text-[11px] text-fg-muted">Total Purchase Value</div>
                                 <div className="text-lg font-semibold text-success">{formatters.formatCurrency(totalPurchaseValue)}</div>
                             </div>
@@ -720,7 +720,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         <div className="space-y-1.5">
                             <div className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wider">Recent Invoices</div>
                             {recentInvoices.map((inv) => (
-                                <div key={inv.id} className="flex items-center justify-between gap-2 bg-slate-950/40 border border-slate-800/60 rounded-lg px-3 py-2">
+                                <div key={inv.id} className="flex items-center justify-between gap-2 bg-surface-sunken border border-line rounded-lg px-3 py-2">
                                     <div className="min-w-0">
                                         <div className="text-xs text-fg font-mono truncate">{inv.invoice_number || inv.id?.substring(0, 8)}</div>
                                         <div className="text-[11px] text-fg-muted">

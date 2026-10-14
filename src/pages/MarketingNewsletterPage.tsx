@@ -88,12 +88,12 @@ const MarketingNewsletterPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
-          <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+          <section className="bg-surface border border-line rounded-2xl p-6">
             <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4">Context</h3>
             <MarketingStorePicker storeId={storeId} onChange={applyStore} />
           </section>
 
-          <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+          <section className="bg-surface border border-line rounded-2xl p-6">
             <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4">Add Subscriber</h3>
             <div className="space-y-4">
               <div>
@@ -104,7 +104,7 @@ const MarketingNewsletterPage: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-line rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                     placeholder="customer@example.com"
                   />
                 </div>
@@ -112,7 +112,7 @@ const MarketingNewsletterPage: React.FC = () => {
               {canCreateMarketing && <button
                 onClick={handleAdd}
                 disabled={!email || !storeId}
-                className="w-full bg-primary hover:bg-primary disabled:opacity-50 disabled:hover:bg-primary text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
+                className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
               >
                 <Plus size={14} /> Add Subscriber
               </button>}
@@ -121,8 +121,8 @@ const MarketingNewsletterPage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-2 space-y-6">
-          <section className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/50">
+          <section className="bg-surface border border-line rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-line flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-sunken">
               <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Subscriber List ({filtered.length})</h3>
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted" />
@@ -130,7 +130,7 @@ const MarketingNewsletterPage: React.FC = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-bg border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-xs text-fg focus:border-primary outline-none transition-all font-bold"
+                  className="w-full bg-bg border border-line rounded-xl py-2 pl-10 pr-4 text-xs text-fg focus:border-primary outline-none transition-all font-bold"
                   placeholder="Search email..."
                 />
               </div>
@@ -143,7 +143,7 @@ const MarketingNewsletterPage: React.FC = () => {
                   <span className="text-[10px] font-black uppercase tracking-widest">Fetching audience...</span>
                 </div>
               ) : filtered.length === 0 ? (
-                <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+                <div className="text-center py-20 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
                   <Mail className="mx-auto mb-4 text-fg w-12 h-12 opacity-20" />
                   <p className="text-sm font-bold uppercase text-fg-muted tracking-widest">No subscribers found</p>
                   <p className="text-[10px] text-fg-muted uppercase mt-1 italic font-bold">Try selecting a different store or adjust search</p>
@@ -151,9 +151,9 @@ const MarketingNewsletterPage: React.FC = () => {
               ) : (
                 <div className="grid gap-3">
                   {filtered.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between p-4 bg-bg border border-slate-800 rounded-xl group hover:border-line transition-all">
+                    <div key={s.id} className="flex items-center justify-between p-4 bg-bg border border-line rounded-xl group hover:border-line transition-all">
                       <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${s.unsubscribed_at ? 'bg-surface border-slate-800 text-fg-muted' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${s.unsubscribed_at ? 'bg-surface border-line text-fg-muted' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
                           <Mail size={18} />
                         </div>
                         <div>

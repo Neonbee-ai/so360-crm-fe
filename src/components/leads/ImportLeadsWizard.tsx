@@ -22,8 +22,8 @@ const STEPS: Array<{ key: Step; label: string }> = [
     { key: 'done', label: 'Import' },
 ];
 
-const SELECT_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
-const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
+const SELECT_CLS = 'w-full bg-bg border border-line text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
+const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
 const SECONDARY_BTN = 'px-4 py-2 rounded-lg text-sm font-semibold text-fg-subtle hover:text-fg';
 
 interface Props {
@@ -189,7 +189,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
                 {step === 'review' && preview && (
                     <div className="space-y-4">
-                        <div className="overflow-x-auto border border-slate-800 rounded-lg">
+                        <div className="overflow-x-auto border border-line rounded-lg">
                             <table className="w-full text-xs" aria-label="Import preview">
                                 <thead>
                                     <tr className="bg-bg text-fg-subtle">
@@ -198,7 +198,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                                 </thead>
                                 <tbody>
                                     {preview.sample_rows.map((row, i) => (
-                                        <tr key={i} className="border-t border-slate-800 text-fg">
+                                        <tr key={i} className="border-t border-line text-fg">
                                             {mappedHeaders.map((h) => <td key={h} className="px-3 py-2 whitespace-nowrap">{row[h] ?? ''}</td>)}
                                         </tr>
                                     ))}
@@ -243,7 +243,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         </p>
                         <dl className="grid grid-cols-3 gap-3 text-center">
                             {([['Created', result.created], ['Updated', result.updated], ['Skipped', result.skipped]] as const).map(([label, n]) => (
-                                <div key={label} className="bg-bg border border-slate-800 rounded-lg p-3">
+                                <div key={label} className="bg-bg border border-line rounded-lg p-3">
                                     <dt className="text-xs text-fg-muted">{label}</dt>
                                     <dd className="text-xl font-bold text-fg">{n ?? 0}</dd>
                                 </div>

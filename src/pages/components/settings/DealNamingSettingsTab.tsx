@@ -25,7 +25,7 @@ const RESET_MODES: { value: DealNamingResetMode; label: string }[] = [
     { value: 'continuous', label: 'Continuous' },
 ];
 
-const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
 
 const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialConfig, canWrite, onChange }) => {
     const [config, setConfig] = useState<DealNamingConfig>(initialConfig ?? DEFAULT_DEAL_NAMING_CONFIG);
@@ -95,8 +95,8 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
     };
 
     return (
-        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                 <div>
                     <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Naming Convention</h3>
                     <p className="text-[10px] text-fg-muted font-bold mt-1">CONTROL HOW NEW DEAL NAMES ARE GENERATED FROM LEADS</p>
@@ -163,7 +163,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </div>
                 </div>
 
-                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-3">Running Number</h4>
                     <div className="grid grid-cols-3 gap-4 items-end">
                         <div>
@@ -199,7 +199,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </div>
                 </div>
 
-                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2">Preview</h4>
                     <div className="text-sm font-black text-success flex items-center gap-2">
                         {isPreviewLoading ? <Loader2 size={14} className="animate-spin" /> : null}

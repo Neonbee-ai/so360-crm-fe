@@ -28,7 +28,7 @@ type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | '
 type SortDirection = 'asc' | 'desc' | null;
 
 const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
-    low:  { label: 'Low',  color: 'bg-slate-500/10 text-fg-subtle border-slate-500/20' },
+    low:  { label: 'Low',  color: 'bg-fg-muted/10 text-fg-subtle border-line' },
     mid:  { label: 'Mid',  color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
     high: { label: 'High', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
 };
@@ -144,7 +144,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         }
     };
 
-    const inputCls = 'w-full bg-bg border border-slate-800 rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+    const inputCls = 'w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50';
     const labelCls = 'text-xs text-fg-subtle mb-1 block';
 
     return createPortal(
@@ -152,7 +152,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
             <div className="bg-surface border border-line rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
                 {/* Sticky header — never scrolls */}
-                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-800 shrink-0">
+                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-line shrink-0">
                     <h2 className="text-lg font-semibold text-fg">Add Partner</h2>
                     <button type="button" onClick={onClose} className="text-fg-muted hover:text-fg transition-colors">
                         <X size={18} />
@@ -397,7 +397,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
                         {/* Custom Fields */}
                         {customFieldDefs.length > 0 && (
-                            <div className="pt-4 border-t border-slate-800 space-y-4">
+                            <div className="pt-4 border-t border-line space-y-4">
                                 <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Additional Details</p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {customFieldDefs.map(field => (
@@ -431,12 +431,12 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 </form>
 
                 {/* Sticky footer — never scrolls */}
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-800 shrink-0">
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-line shrink-0">
                     <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-fg-subtle hover:text-fg transition-colors">
                         Cancel
                     </button>
                     <button type="submit" form="create-partner-form" disabled={saving}
-                        className="px-4 py-2 text-sm bg-primary hover:bg-primary text-white rounded-lg font-medium disabled:opacity-50 transition-colors">
+                        className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-white rounded-lg font-medium disabled:opacity-50 transition-colors">
                         {saving ? 'Creating...' : 'Create Partner'}
                     </button>
                 </div>
@@ -632,7 +632,7 @@ const PartnersPage = () => {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary text-white rounded-xl font-medium text-sm transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium text-sm transition-colors"
                 >
                     <Plus size={16} />
                     Add Partner
@@ -643,7 +643,7 @@ const PartnersPage = () => {
             <PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+            <div className="flex flex-wrap items-center gap-3 mb-6 bg-surface-sunken p-4 rounded-xl border border-line">
                 <div className="flex-1 min-w-[200px] relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
@@ -651,13 +651,13 @@ const PartnersPage = () => {
                         placeholder="Search partners by name, email..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full bg-bg border border-slate-800 text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                 </div>
                 <select
                     value={typeFilter}
                     onChange={e => setTypeFilter(e.target.value)}
-                    className="bg-bg border border-slate-800 text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                     <option value="All">All Types</option>
                     {partnerTypes.map(pt => (
@@ -680,7 +680,7 @@ const PartnersPage = () => {
             />
 
             {filteredPartners.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
+                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg">
                     <span className="text-sm text-fg-subtle">{filteredPartners.length} partners</span>
                     <div className="flex items-center gap-2">
                         <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">First</button>

@@ -85,7 +85,7 @@ export function ElapsedBar({ fraction }: { fraction: number }) {
   return (
     <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
       <div
-        className="h-full rounded-full bg-slate-500"
+        className="h-full rounded-full bg-fg-subtle"
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -153,7 +153,7 @@ export function Sparkline({ points }: { points: TrendPoint[] }) {
               <div className="w-full border-t border-dashed border-line mt-auto" />
             ) : (
               <div
-                className={`w-full rounded-sm ${p.plan_changed ? 'bg-slate-500' : 'bg-slate-400'}`}
+                className={`w-full rounded-sm ${p.plan_changed ? 'bg-fg-subtle' : 'bg-fg-subtle'}`}
                 style={{ height: `${h}%` }}
               />
             )}
@@ -189,7 +189,7 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+    <div className="rounded-lg border border-line bg-surface-sunken p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium text-fg">{title}</h3>
         {action}
@@ -201,7 +201,7 @@ export function Panel({
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-800 p-8 text-center text-sm text-fg-subtle">
+    <div className="rounded-lg border border-dashed border-line p-8 text-center text-sm text-fg-subtle">
       {message}
     </div>
   );

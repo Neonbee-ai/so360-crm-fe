@@ -124,7 +124,7 @@ export default function TargetsOverviewPage() {
               </div>
             </div>
 
-            <div className="border-t border-slate-800 pt-3">
+            <div className="border-t border-line pt-3">
               <div className="flex items-baseline justify-between">
                 <span className="text-xs text-fg-subtle">Projected close</span>
                 {h.projection.projectable && (

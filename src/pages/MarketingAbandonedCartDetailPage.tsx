@@ -50,7 +50,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
 
       {cart && (
         <>
-          <div className="bg-surface border border-slate-800 rounded-xl p-4 mb-4">
+          <div className="bg-surface border border-line rounded-xl p-4 mb-4">
             <h1 className="text-2xl font-semibold text-fg">Abandoned Cart Detail</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-sm">
               <p className="text-fg-subtle"><span className="text-fg-muted">Customer:</span> {cart.customer_email || '-'}</p>
@@ -60,7 +60,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
             </div>
             <div className="mt-4 flex gap-2">
               <button
-                className="text-xs px-2 py-1 rounded bg-primary hover:bg-primary text-white"
+                className="text-xs px-2 py-1 rounded bg-primary hover:bg-primary/90 text-white"
                 onClick={async () => {
                   await crmService.sendAbandonedCartRecovery(storeId, cart.id);
                   await load();
@@ -89,9 +89,9 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-surface border border-slate-800 rounded-xl overflow-x-auto">
+          <div className="bg-surface border border-line rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-800/60 text-fg-subtle">
+              <thead className="bg-surface-high text-fg-subtle">
                 <tr>
                   <th className="text-left px-3 py-2">Item</th>
                   <th className="text-left px-3 py-2">Qty</th>
@@ -100,7 +100,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
               </thead>
               <tbody>
                 {items.map((item: any, idx: number) => (
-                  <tr key={`${item.item_id || idx}`} className="border-t border-slate-800">
+                  <tr key={`${item.item_id || idx}`} className="border-t border-line">
                     <td className="px-3 py-2 text-fg">{item.name || item.item_name || '-'}</td>
                     <td className="px-3 py-2 text-fg-subtle">{item.qty || item.quantity || 0}</td>
                     <td className="px-3 py-2 text-fg-subtle">{formatMoney(item.price || item.unit_price || 0, currencyCode, locale)}</td>

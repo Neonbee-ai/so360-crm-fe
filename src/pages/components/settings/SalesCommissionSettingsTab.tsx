@@ -15,9 +15,9 @@ import {
 import { useCrmFeatureFlag, RE_FLAGS } from '../../../hooks/useCrmFeatureFlag';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm disabled:opacity-60';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm disabled:opacity-60';
 const LABEL_CLS = 'block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-1.5';
-const CARD_CLS = 'bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-5';
+const CARD_CLS = 'bg-surface-sunken border border-line rounded-2xl p-6 space-y-5';
 
 interface Props {
     canWrite: boolean;
@@ -228,7 +228,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 </thead>
                                 <tbody>
                                     {draft.overrides.map((o, i) => (
-                                        <tr key={i} className="border-t border-slate-800">
+                                        <tr key={i} className="border-t border-line">
                                             <td className="py-2 pr-2">
                                                 <select
                                                     aria-label={`Override ${i + 1} applies to`}
@@ -312,7 +312,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
             {allocationOn && (
                 <section className={CARD_CLS} aria-label="Unit visibility">
                     <h3 className="text-sm font-black text-fg uppercase tracking-widest">Unit visibility</h3>
-                    <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 w-fit" role="radiogroup" aria-label="Agents can book">
+                    <div className="flex gap-1 bg-surface-sunken p-1 rounded-xl border border-line w-fit" role="radiogroup" aria-label="Agents can book">
                         {([['all', 'Any available unit'], ['assigned_only', 'Only units allocated to them']] as const).map(([v, label]) => (
                             <button
                                 key={v}
@@ -338,7 +338,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     type="button"
                     onClick={() => void save()}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
                 >
                     {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Save sales settings
                 </button>

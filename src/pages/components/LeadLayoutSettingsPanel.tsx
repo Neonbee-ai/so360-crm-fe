@@ -30,8 +30,8 @@ interface Props {
 const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, onMove, onReset, onClose, labels = SECTION_LABELS, title = 'Layout Settings' }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div role="dialog" aria-label={title} className="bg-bg border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+            <div role="dialog" aria-label={title} className="bg-bg border border-line rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-line">
                     <p className="text-xs font-black text-fg uppercase tracking-widest">{title}</p>
                     <button onClick={onClose} aria-label="Close" className="p-1.5 text-fg-muted hover:text-fg rounded-lg hover:bg-surface-raised"><X size={16} /></button>
                 </div>
@@ -55,7 +55,7 @@ const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, o
                         </div>
                     ))}
                 </div>
-                <div className="px-5 py-4 border-t border-slate-800">
+                <div className="px-5 py-4 border-t border-line">
                     <button
                         onClick={onReset}
                         className="w-full flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg py-2"

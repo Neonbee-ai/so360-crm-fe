@@ -62,7 +62,7 @@ const MarketingReviewsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+        <section className="bg-surface border border-line rounded-2xl p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
             <div className="md:col-span-3">
               <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Store Context</label>
@@ -76,14 +76,14 @@ const MarketingReviewsPage: React.FC = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-bg border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                  className="w-full bg-bg border border-line rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   placeholder="Filter by product, title, or content..."
                 />
               </div>
             </div>
             <div className="md:col-span-4">
               <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Status Filter</label>
-              <div className="flex bg-bg p-1 rounded-xl border border-slate-800">
+              <div className="flex bg-bg p-1 rounded-xl border border-line">
                 {(['all', 'pending', 'approved'] as const).map((s) => (
                   <button
                     key={s}
@@ -105,7 +105,7 @@ const MarketingReviewsPage: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-widest">Loading reviews...</span>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
+            <div className="text-center py-20 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
               <MessageSquare className="mx-auto mb-4 text-fg-subtle w-12 h-12 opacity-20" />
               <p className="text-sm font-bold uppercase text-fg-muted tracking-widest">No reviews found</p>
               <p className="text-[10px] text-fg-subtle uppercase mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
@@ -118,7 +118,7 @@ const MarketingReviewsPage: React.FC = () => {
                 const crmLeadId = customer?.crm_lead_id;
 
                 return (
-                  <div key={rev.id} className="bg-surface border border-slate-800 rounded-2xl p-6 group hover:border-line transition-all">
+                  <div key={rev.id} className="bg-surface border border-line rounded-2xl p-6 group hover:border-line transition-all">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
                         <div className="flex text-warning">
@@ -133,11 +133,11 @@ const MarketingReviewsPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <p className="text-sm text-fg-subtle italic mb-6 leading-relaxed bg-slate-950/50 p-4 rounded-xl border border-slate-800/50">
+                    <p className="text-sm text-fg-subtle italic mb-6 leading-relaxed bg-surface-sunken p-4 rounded-xl border border-line">
                       "{rev.content || 'No content provided'}"
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 border-t border-slate-800">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 border-t border-line">
                       <div className="flex items-center gap-2">
                         <User className="w-3 h-3 text-fg-muted" />
                         <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">By</span>
@@ -166,7 +166,7 @@ const MarketingReviewsPage: React.FC = () => {
                       <a 
                         href="/dailystore/reviews" 
                         target="_blank"
-                        className="bg-slate-700/60 hover:bg-slate-600/60 text-fg text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-600/50 flex items-center gap-2 shadow-sm"
+                        className="bg-surface-high hover:bg-surface-high text-fg text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-line flex items-center gap-2 shadow-sm"
                       >
                         <ShieldCheck size={12} /> Moderate in DailyStore
                       </a>

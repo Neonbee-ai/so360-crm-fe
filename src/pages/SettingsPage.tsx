@@ -510,7 +510,7 @@ const SettingsPage = () => {
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !isDirty}
-                            className="flex items-center gap-2 bg-primary hover:bg-primary text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
+                            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
                         >
                             <Save size={20} />
                             {isSaving ? 'Saving...' : 'Save Configuration'}
@@ -519,7 +519,7 @@ const SettingsPage = () => {
                 )}
             </header>
 
-            <div className="flex gap-1 mb-8 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 shadow-sm w-fit">
+            <div className="flex gap-1 mb-8 bg-surface-sunken p-1 rounded-xl border border-line shadow-sm w-fit">
                 <button
                     onClick={() => setActiveTab('pipeline')}
                     className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pipeline' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
@@ -576,15 +576,15 @@ const SettingsPage = () => {
 
             <div className="space-y-10">
                 {activeTab === 'pipeline' && (
-                    <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                             <div>
                                 <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Pipeline Stages</h3>
                                 <p className="text-[10px] text-fg-muted font-bold mt-1">THE ORDER DEFINES YOUR SALES FUNNEL</p>
                             </div>
                             <button
                                 onClick={addStage}
-                                className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95"
+                                className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95"
                             >
                                 <Plus size={12} /> ADD STAGE
                             </button>
@@ -592,7 +592,7 @@ const SettingsPage = () => {
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.deal_stages.map((stage, idx) => (
-                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl group hover:border-slate-600/60 transition-all shadow-sm">
+                                    <div key={stage.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-xl group hover:border-line transition-all shadow-sm">
                                         <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-fg-muted">
                                             {idx + 1}
                                         </div>
@@ -633,15 +633,15 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'lead-stages' && (
-                    <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
+                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-line bg-surface-sunken">
                             <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
                             <p className="text-[10px] text-fg-muted font-bold mt-1">MANAGED IN THE FLOW MODULE — EDIT THE CRM LEAD WORKFLOW TO CHANGE THESE STAGES</p>
                         </div>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
-                                    <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl shadow-sm">
+                                    <div key={stage.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-xl shadow-sm">
                                         <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-fg-muted">
                                             {idx + 1}
                                         </div>
@@ -658,8 +658,8 @@ const SettingsPage = () => {
                 {activeTab === 'custom-fields' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Lead Custom Fields */}
-                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
-                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl h-fit">
+                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
                                     <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Fields</h3>
                                 </div>
@@ -668,7 +668,7 @@ const SettingsPage = () => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, lead_custom_fields: [...settings.lead_custom_fields, newField] });
                                     }}
-                                    className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -676,7 +676,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.lead_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-line transition-all">
+                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-xl group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -718,7 +718,7 @@ const SettingsPage = () => {
                                                 </button>
                                             </div>
                                             {field.type === 'SELECT' && (
-                                                <div className="px-3 pb-3 border-t border-slate-800/60 pt-2">
+                                                <div className="px-3 pb-3 border-t border-line pt-2">
                                                     <div className="space-y-1.5">
                                                         {((field as any).options || []).map((opt: string, optIdx: number) => (
                                                             <div key={optIdx} className="flex items-center gap-2">
@@ -765,8 +765,8 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Deal Custom Fields */}
-                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
-                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl h-fit">
+                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
                                     <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Fields</h3>
                                 </div>
@@ -775,7 +775,7 @@ const SettingsPage = () => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, deal_custom_fields: [...settings.deal_custom_fields, newField] });
                                     }}
-                                    className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -783,7 +783,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.deal_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-line transition-all">
+                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-xl group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -825,7 +825,7 @@ const SettingsPage = () => {
                                                 </button>
                                             </div>
                                             {field.type === 'SELECT' && (
-                                                <div className="px-3 pb-3 border-t border-slate-800/60 pt-2">
+                                                <div className="px-3 pb-3 border-t border-line pt-2">
                                                     <div className="space-y-1.5">
                                                         {((field as any).options || []).map((opt: string, optIdx: number) => (
                                                             <div key={optIdx} className="flex items-center gap-2">
@@ -872,8 +872,8 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Partner Custom Fields */}
-                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
-                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl h-fit">
+                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
                                     <h3 className="font-black text-fg uppercase tracking-widest text-xs">Partner Fields</h3>
                                 </div>
@@ -882,7 +882,7 @@ const SettingsPage = () => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
                                     }}
-                                    className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -890,7 +890,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {(settings.partner_custom_fields || []).map((field, idx) => (
-                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-line transition-all">
+                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-xl group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -932,7 +932,7 @@ const SettingsPage = () => {
                                                 </button>
                                             </div>
                                             {field.type === 'SELECT' && (
-                                                <div className="px-3 pb-3 border-t border-slate-800/60 pt-2">
+                                                <div className="px-3 pb-3 border-t border-line pt-2">
                                                     <div className="space-y-1.5">
                                                         {(field.options || []).map((opt: string, optIdx: number) => (
                                                             <div key={optIdx} className="flex items-center gap-2">
@@ -984,15 +984,15 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'sources' && (
-                    <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
+                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-line bg-surface-sunken">
                             <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Source Types</h3>
                             <p className="text-[10px] text-fg-muted font-bold mt-1">WHERE DO YOUR LEADS COME FROM? SYSTEM TYPES CANNOT BE DELETED.</p>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="space-y-2">
                                 {sourceTypes.map(option => (
-                                    <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-xl transition-all ${!option.is_active ? 'opacity-50 border-slate-900 bg-slate-950/20' : 'border-slate-800 bg-slate-950/50 hover:border-line'}`}>
+                                    <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-xl transition-all ${!option.is_active ? 'opacity-50 border-line bg-surface-sunken' : 'border-line bg-surface-sunken hover:border-line'}`}>
                                         <div className="flex-1">
                                             <span className="text-sm font-bold text-fg">{option.label}</span>
                                             <span className="ml-2 text-[10px] font-black text-fg-muted uppercase">{option.value}</span>
@@ -1024,19 +1024,19 @@ const SettingsPage = () => {
                                 ))}
                             </div>
                             {canWriteSettings && (
-                                <div className="flex items-center gap-3 pt-2 border-t border-slate-800">
+                                <div className="flex items-center gap-3 pt-2 border-t border-line">
                                     <input
                                         type="text"
                                         value={newSourceLabel}
                                         onChange={(e) => setNewSourceLabel(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddSourceType()}
                                         placeholder="New source type label…"
-                                        className="flex-1 bg-bg border border-slate-800 px-3 py-2 rounded-lg text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        className="flex-1 bg-bg border border-line px-3 py-2 rounded-lg text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                     />
                                     <button
                                         onClick={handleAddSourceType}
                                         disabled={isAddingSource || !newSourceLabel.trim()}
-                                        className="text-[10px] bg-success hover:bg-success text-white px-3 py-2 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                        className="text-[10px] bg-success hover:bg-success/90 text-white px-3 py-2 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                                     >
                                         <Plus size={12} /> ADD
                                     </button>
@@ -1048,8 +1048,8 @@ const SettingsPage = () => {
                 {activeTab === 'scoring' && (
                     <div className="space-y-6">
                         {/* ── Rules Section ── */}
-                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
                                     <h3 className="font-black text-fg uppercase tracking-widest text-xs flex items-center gap-2">
                                         <Trophy size={14} className="text-warning" />
@@ -1071,7 +1071,7 @@ const SettingsPage = () => {
                                     {!isAddingRule && (
                                         <button
                                             onClick={handleStartAddRule}
-                                            className="text-[10px] bg-warning hover:bg-warning text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                            className="text-[10px] bg-warning hover:bg-warning/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                         >
                                             <Plus size={12} /> ADD RULE
                                         </button>
@@ -1113,7 +1113,7 @@ const SettingsPage = () => {
                                             getFieldType={getFieldType}
                                         />
                                     ) : (
-                                        <div key={rule.id} className="flex items-center gap-3 bg-slate-950/50 border border-slate-800 p-4 rounded-xl group hover:border-line transition-all">
+                                        <div key={rule.id} className="flex items-center gap-3 bg-surface-sunken border border-line p-4 rounded-xl group hover:border-line transition-all">
                                             {/* Priority */}
                                             <span className="text-[9px] font-black text-fg-muted w-4 text-center">{idx + 1}</span>
 
@@ -1174,8 +1174,8 @@ const SettingsPage = () => {
                         </section>
 
                         {/* ── Score Bands Section ── */}
-                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                            <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
+                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                            <div className="p-6 border-b border-line bg-surface-sunken">
                                 <h3 className="font-black text-fg uppercase tracking-widest text-xs flex items-center gap-2">
                                     <ShieldCheck size={14} className="text-success" />
                                     Score Bands
@@ -1184,7 +1184,7 @@ const SettingsPage = () => {
                             </div>
                             <div className="p-6 space-y-2">
                                 {scoreCategories.map(cat => (
-                                    <div key={cat.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-800 p-3 rounded-xl">
+                                    <div key={cat.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-xl">
                                         <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                                         <div className="flex-1 flex items-center gap-3">
                                             <input
@@ -1273,7 +1273,7 @@ function ScoringRuleForm({
     // Source rules compare against the selected Source option itself — no separate value needed
     const hideValue = ['is_empty', 'is_not_empty'].includes(draft.condition || '') || ruleType === 'source';
 
-    const inputCls = 'w-full bg-slate-950/60 border border-line text-fg text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-warning transition-colors';
+    const inputCls = 'w-full bg-surface-sunken border border-line text-fg text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-warning transition-colors';
     const labelCls = 'text-[8px] font-black text-fg-muted uppercase tracking-widest mb-1 block';
 
     const getTargetOptions = () => {
@@ -1388,7 +1388,7 @@ function ScoringRuleForm({
                     <button
                         onClick={onSave}
                         disabled={isSaving}
-                        className="text-[10px] font-black uppercase px-4 py-2 rounded-lg bg-warning hover:bg-warning text-white flex items-center gap-1.5 transition-all disabled:opacity-50"
+                        className="text-[10px] font-black uppercase px-4 py-2 rounded-lg bg-warning hover:bg-warning/90 text-white flex items-center gap-1.5 transition-all disabled:opacity-50"
                     >
                         {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                         SAVE RULE

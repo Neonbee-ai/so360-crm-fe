@@ -19,7 +19,7 @@ import { exportService } from '../services/exportService';
 export const SALES_PAGE_SIZE = 25;
 
 const PAYMENT_CHIP: Record<SalePaymentStatus, string> = {
-    none: 'bg-slate-500/10 text-fg-subtle border-slate-500/30',
+    none: 'bg-fg-muted/10 text-fg-subtle border-line',
     pending: 'bg-amber-500/10 text-warning border-amber-500/30',
     partial: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
     paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
@@ -112,14 +112,14 @@ const SalesPage: React.FC = () => {
                     </button>
                 </div>
             ) : rows.length === 0 ? (
-                <div data-testid="sales-empty" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
+                <div data-testid="sales-empty" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
                     No sales match these filters.
                 </div>
             ) : (
-                <div className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
+                <div className="bg-surface border border-line rounded-2xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <table aria-label="Sales" className="w-full">
-                            <thead className="border-b border-slate-800">
+                            <thead className="border-b border-line">
                                 <tr>
                                     <th className={TH}>Date</th>
                                     <th className={TH}>Project</th>
@@ -133,9 +133,9 @@ const SalesPage: React.FC = () => {
                                     <th className={`${TH} text-right`}>Company commission</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800">
+                            <tbody className="divide-y divide-line">
                                 {rows.map((r) => (
-                                    <tr key={r.deal_id} data-testid={`sale-${r.deal_id}`} className="hover:bg-slate-800/40">
+                                    <tr key={r.deal_id} data-testid={`sale-${r.deal_id}`} className="hover:bg-surface-high">
                                         <td className={TD}>{r.sale_date ? fmt.formatDate(r.sale_date) : '—'}</td>
                                         <td className={TD}>{r.project_name || '—'}</td>
                                         <td className={TD}>
@@ -159,7 +159,7 @@ const SalesPage: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-800">
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-line">
                         <span className="text-xs font-bold text-fg-subtle" data-testid="sales-paging">
                             Page {page} of {pages} · {total} {total === 1 ? 'sale' : 'sales'}
                         </span>

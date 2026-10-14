@@ -119,7 +119,7 @@ export default function MeasurementPage() {
                 label="Total pipeline"
                 value={formatValue(pipeline.total_pipeline, 'currency', currency)}
               />
-              <div className="flex items-center justify-between border-y border-slate-800 py-2">
+              <div className="flex items-center justify-between border-y border-line py-2">
                 <span className="text-fg-subtle">Coverage</span>
                 <span className="flex items-center gap-2">
                   <span className="text-fg">
@@ -171,13 +171,13 @@ export default function MeasurementPage() {
                   </div>
                   <div className="mt-1 h-1.5 bg-surface-raised rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-slate-400 rounded-full"
+                      className="h-full bg-fg-subtle rounded-full"
                       style={{ width: `${Math.min(l.share * 100, 100)}%` }}
                     />
                   </div>
                 </div>
               ))}
-              <div className="border-t border-slate-800 pt-2 text-xs text-fg-subtle">
+              <div className="border-t border-line pt-2 text-xs text-fg-subtle">
                 {mix.total_deals} won deal{mix.total_deals === 1 ? '' : 's'} ·{' '}
                 {formatValue(mix.total_value, 'currency', currency)}
               </div>
@@ -206,7 +206,7 @@ export default function MeasurementPage() {
               />
               <Row label="Win rate" value={formatPct(winLoss.win_rate)} />
               <Row label="Loss rate" value={formatPct(winLoss.loss_rate)} />
-              <div className="border-t border-slate-800 pt-2 space-y-1">
+              <div className="border-t border-line pt-2 space-y-1">
                 {winLoss.by_reason?.map((r: any) => (
                   <div
                     key={r.value}

@@ -32,8 +32,8 @@ export const isEmptyReport = (r: CommissionReport): boolean =>
     && TOTAL_CARDS.every((c) => r.totals[c.key] === 0);
 
 const BucketTable: React.FC<{ title: string; nameHeader: string; rows: CommissionBucket[]; money: (n: number) => string }> = ({ title, nameHeader, rows, money }) => (
-    <section className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
-        <h2 className="px-4 py-3 text-xs font-black uppercase tracking-widest text-fg-subtle border-b border-slate-800">{title}</h2>
+    <section className="bg-surface border border-line rounded-2xl overflow-hidden">
+        <h2 className="px-4 py-3 text-xs font-black uppercase tracking-widest text-fg-subtle border-b border-line">{title}</h2>
         {rows.length === 0 ? (
             <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
         ) : (
@@ -48,7 +48,7 @@ const BucketTable: React.FC<{ title: string; nameHeader: string; rows: Commissio
                             <th className={`${TH} text-right`}>Company</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-line">
                         {rows.map((b, i) => (
                             <tr key={b.key || `row-${i}`}>
                                 <td className={TD}>{b.label}</td>
@@ -111,7 +111,7 @@ const CommissionReportPage: React.FC = () => {
         body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading commission report…</div>;
     } else if (forbidden) {
         body = (
-            <div data-testid="commission-report-forbidden" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
+            <div data-testid="commission-report-forbidden" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
                 You don't have access to commission figures. Ask your manager if you need them.
             </div>
         );
@@ -126,7 +126,7 @@ const CommissionReportPage: React.FC = () => {
         );
     } else if (report && isEmptyReport(report)) {
         body = (
-            <div data-testid="commission-report-empty" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
+            <div data-testid="commission-report-empty" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
                 No commission recorded for these filters.
             </div>
         );
@@ -135,7 +135,7 @@ const CommissionReportPage: React.FC = () => {
             <>
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
                     {TOTAL_CARDS.map((c) => (
-                        <div key={c.key} className="bg-surface border border-slate-800 rounded-2xl p-4">
+                        <div key={c.key} className="bg-surface border border-line rounded-2xl p-4">
                             <p className="text-[10px] font-black uppercase tracking-widest text-fg-muted">{c.label}</p>
                             <p className="mt-1 text-lg font-black text-fg" data-testid={`cr-total-${c.key}`}>{money(report.totals[c.key])}</p>
                         </div>

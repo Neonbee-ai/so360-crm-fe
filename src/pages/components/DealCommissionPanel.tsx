@@ -17,8 +17,8 @@ import { salesSettingsService } from '../../services/salesSettingsService';
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
+const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
 const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg disabled:opacity-60';
 
 const STATUS_CHIP: Record<CommissionStatus, string> = {
@@ -26,7 +26,7 @@ const STATUS_CHIP: Record<CommissionStatus, string> = {
     approved: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
     payable: 'bg-violet-500/10 text-violet-400 border-violet-500/30',
     paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
-    cancelled: 'bg-slate-500/10 text-fg-subtle border-slate-500/30',
+    cancelled: 'bg-fg-muted/10 text-fg-subtle border-line',
 };
 
 const statusName = (s: string | null) =>
@@ -165,7 +165,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                         const moves = legalTransitions(l.status, approvalRequired);
                         const auditOpen = openAudit === l.id;
                         return (
-                            <li key={l.id} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 space-y-3" data-testid={`commission-${l.id}`}>
+                            <li key={l.id} className="bg-surface-sunken border border-line rounded-xl p-4 space-y-3" data-testid={`commission-${l.id}`}>
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
                                         <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{PARTICIPANT_LABELS[l.participant_type]}</p>
@@ -243,7 +243,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                 )}
 
                                 {auditOpen && (
-                                    <ol className="border-l border-slate-800 pl-3 space-y-1 text-[11px] text-fg-subtle" aria-label={`Audit trail for ${l.name}`}>
+                                    <ol className="border-l border-line pl-3 space-y-1 text-[11px] text-fg-subtle" aria-label={`Audit trail for ${l.name}`}>
                                         {l.audit.map((a, i) => (
                                             <li key={i}>
                                                 <span className="text-fg-muted">{a.at ? fmt.formatDateTime(a.at) : '—'}</span>

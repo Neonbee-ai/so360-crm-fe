@@ -281,7 +281,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                 e.dataTransfer.effectAllowed = 'copy';
               }}
               onClick={() => addBlock(bt.type)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 cursor-grab active:cursor-grabbing text-fg-subtle text-sm transition-colors border border-slate-700/50"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-high hover:bg-surface-high cursor-grab active:cursor-grabbing text-fg-subtle text-sm transition-colors border border-line"
             >
               <span className="w-5 text-center text-xs">{bt.icon}</span>
               <span>{bt.label}</span>
@@ -324,12 +324,12 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
 
         {showPreview ? (
           <div
-            className="flex-1 bg-bg rounded-xl border border-slate-800 p-6 overflow-auto"
+            className="flex-1 bg-bg rounded-xl border border-line p-6 overflow-auto"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         ) : (
           <div
-            className="flex-1 bg-slate-950/50 rounded-xl border border-slate-800 p-4 overflow-auto"
+            className="flex-1 bg-surface-sunken rounded-xl border border-line p-4 overflow-auto"
             onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
             onDrop={handleCanvasDrop}
           >
@@ -351,12 +351,12 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                 onClick={() => setSelectedId(selectedId === block.id ? null : block.id)}
                 className={`group relative mb-2 rounded-lg border transition-all cursor-pointer ${
                   selectedId === block.id
-                    ? 'border-primary bg-slate-900/80'
-                    : 'border-slate-800/50 bg-slate-900/30 hover:border-line'
+                    ? 'border-primary bg-surface-sunken'
+                    : 'border-line bg-surface-sunken hover:border-line'
                 } ${dragOverIdx === idx ? 'border-t-2 border-t-blue-400' : ''}`}
               >
                 {/* Block header */}
-                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-800/30">
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-line">
                   <span className="text-fg-muted cursor-grab active:cursor-grabbing">⠿</span>
                   <span className="text-xs text-fg-muted font-medium uppercase">{block.type}</span>
                   <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

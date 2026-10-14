@@ -37,7 +37,7 @@ export default function LeadCardList({
     return (
       <div
         data-testid="lead-card-list"
-        className="rounded-xl border border-slate-700/50 bg-bg py-16 text-center text-sm text-fg-muted"
+        className="rounded-xl border border-line bg-bg py-16 text-center text-sm text-fg-muted"
       >
         No leads found
       </div>
@@ -56,7 +56,7 @@ export default function LeadCardList({
             data-testid={`lead-card-${lead.id}`}
             onClick={() => onRowClick(lead)}
             className={`rounded-xl border p-3.5 transition-colors ${
-              isSelected ? 'border-blue-500/50 bg-blue-600/10' : 'border-slate-700/50 bg-slate-900/60 active:bg-slate-800/60'
+              isSelected ? 'border-blue-500/50 bg-blue-600/10' : 'border-line bg-surface-sunken active:bg-surface-high'
             }`}
           >
             <div className="flex items-start gap-3">

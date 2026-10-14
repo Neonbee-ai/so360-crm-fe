@@ -99,7 +99,7 @@ const MarketingOverviewPage: React.FC = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             {kpis.map((kpi) => (
-              <div key={kpi.label} className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
+              <div key={kpi.label} className="bg-surface-sunken border border-line rounded-xl p-5">
                 <p className="text-fg-subtle text-sm font-medium">{kpi.label}</p>
                 <p className="text-fg text-3xl font-bold mt-2 tracking-tight">{kpi.value}</p>
                 {kpi.hint && <p className="text-fg-muted text-xs mt-2 font-medium">{kpi.hint}</p>}
@@ -108,7 +108,7 @@ const MarketingOverviewPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Link to="/crm/marketing/reviews" className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all group">
+            <Link to="/crm/marketing/reviews" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-warning">
                   <MessageSquare size={16} />
@@ -121,7 +121,7 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/wishlist" className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all group">
+            <Link to="/crm/marketing/wishlist" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-danger">
                   <Heart size={16} />
@@ -134,7 +134,7 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/newsletter" className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all group">
+            <Link to="/crm/marketing/newsletter" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
                   <Mail size={16} />
@@ -147,7 +147,7 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/coupons" className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all group">
+            <Link to="/crm/marketing/coupons" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-success">
                   <Tag size={16} />
@@ -162,11 +162,11 @@ const MarketingOverviewPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="bg-surface-sunken border border-line rounded-xl p-6">
               <h3 className="text-fg font-bold mb-4">Top Selling Products</h3>
               <div className="space-y-1">
                 {bestSelling.map((row: any) => (
-                  <div key={row.itemId} className="flex items-center justify-between border-b border-slate-800/50 pb-3 pt-2">
+                  <div key={row.itemId} className="flex items-center justify-between border-b border-line pb-3 pt-2">
                     <span className="text-fg font-medium">{row.name}</span>
                     <span className="text-fg-subtle text-sm">{row.quantitySold} sold</span>
                   </div>
@@ -175,11 +175,11 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="bg-surface-sunken border border-line rounded-xl p-6">
               <h3 className="text-fg font-bold mb-4">Top Buyers</h3>
               <div className="space-y-1">
                 {topBuyers.map((row: any) => (
-                  <div key={row.customerId} className="flex items-center justify-between border-b border-slate-800/50 pb-3 pt-2">
+                  <div key={row.customerId} className="flex items-center justify-between border-b border-line pb-3 pt-2">
                     <span className="text-fg font-medium">{row.name || row.email || row.customerId || '-'}</span>
                     <span className="text-fg-subtle text-sm">{formatMoney(row.totalSpent, currencyCode, locale)}</span>
                   </div>
@@ -188,11 +188,11 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="bg-surface-sunken border border-line rounded-xl p-6">
               <h3 className="text-fg font-bold mb-4">Inactive Customers</h3>
               <div className="space-y-1">
                 {inactive.map((row: any) => (
-                  <div key={row.customerId} className="flex items-center justify-between border-b border-slate-800/50 pb-3 pt-2">
+                  <div key={row.customerId} className="flex items-center justify-between border-b border-line pb-3 pt-2">
                     <span className="text-fg font-medium">{row.name || row.email || row.customerId}</span>
                     <span className="text-fg-subtle text-xs">{row.daysSinceLastOrder || 0} days</span>
                   </div>
@@ -201,18 +201,18 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
+            <div className="bg-surface-sunken border border-line rounded-xl p-6">
               <h3 className="text-fg font-bold mb-4">Conversion Funnel</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
+                <div className="flex justify-between items-center py-2 border-b border-line">
                   <span className="text-fg-subtle">Product Views</span>
                   <span className="text-fg font-medium">{data.funnel?.funnel?.product_views || 0}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
+                <div className="flex justify-between items-center py-2 border-b border-line">
                   <span className="text-fg-subtle">Add to Cart</span>
                   <span className="text-fg font-medium">{data.funnel?.funnel?.add_to_cart || 0}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
+                <div className="flex justify-between items-center py-2 border-b border-line">
                   <span className="text-fg-subtle">Checkout Started</span>
                   <span className="text-fg font-medium">{data.funnel?.funnel?.checkout_started || 0}</span>
                 </div>
@@ -223,14 +223,14 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 lg:col-span-2">
+            <div className="bg-surface-sunken border border-line rounded-xl p-6 lg:col-span-2">
               <h3 className="text-fg font-bold mb-4">Recent Storefront Searches</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {data.searchLogs?.map((row: any) => {
                   const customer = row.storefront_customers;
                   const name = customer ? `${customer.first_name} ${customer.last_name || ''}`.trim() : 'Anonymous';
                   return (
-                    <div key={row.id} className="flex items-center justify-between p-3 bg-slate-950/50 border border-slate-800 rounded-lg">
+                    <div key={row.id} className="flex items-center justify-between p-3 bg-surface-sunken border border-line rounded-lg">
                       <div>
                         <p className="text-fg font-bold text-sm">"{row.search_query}"</p>
                         <p className="text-fg-muted text-[10px] uppercase font-black mt-1">

@@ -30,7 +30,7 @@ export const SummaryMetricChips: React.FC<SummaryMetricChipsProps> = ({ chips, c
                     className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                         chip.active
                             ? 'bg-blue-500/10 text-blue-300 border-blue-500/40'
-                            : 'bg-slate-900/60 text-fg-subtle border-slate-700/50 hover:text-fg'
+                            : 'bg-surface-sunken text-fg-subtle border-line hover:text-fg'
                     } ${!chip.onClick ? 'cursor-default' : ''}`}
                     data-testid={`summary-metric-chip-${chip.key}`}
                 >

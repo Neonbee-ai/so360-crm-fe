@@ -25,7 +25,7 @@ const PALETTE = [
     { bar: 'bg-pink-500', dot: 'bg-pink-500' },
     { bar: 'bg-teal-500', dot: 'bg-teal-500' },
 ];
-const FALLBACK_COLOR = { bar: 'bg-slate-500', dot: 'bg-slate-500' };
+const FALLBACK_COLOR = { bar: 'bg-fg-subtle', dot: 'bg-fg-subtle' };
 
 /**
  * Replaces the old 4-card Partner KPI grid (Total Partners / Total Deals /
@@ -61,7 +61,7 @@ export const PartnerStatusOverview: React.FC<PartnerStatusOverviewProps> = ({ pa
     const segments = orderedKeys.map(key => ({ key, count: counts[key] }));
 
     return (
-        <div className="bg-slate-900/50 rounded-xl border border-slate-800 p-4 mb-6">
+        <div className="bg-surface-sunken rounded-xl border border-line p-4 mb-6">
             <div className="flex items-center justify-between mb-2.5">
                 <span className="text-xs font-medium text-fg-subtle uppercase tracking-wide">Partner Type Distribution</span>
                 <span className="text-xs text-fg-muted">{total} partner{total === 1 ? '' : 's'}</span>

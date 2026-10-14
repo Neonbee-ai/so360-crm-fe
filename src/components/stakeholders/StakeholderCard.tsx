@@ -8,7 +8,7 @@ const STRENGTH_STYLE: Record<string, string> = {
     strong: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     moderate: 'bg-surface-raised text-fg-subtle border-line',
     weak: 'bg-amber-500/10 text-warning border-amber-500/20',
-    no_relationship: 'bg-surface text-fg-muted border-slate-800',
+    no_relationship: 'bg-surface text-fg-muted border-line',
 };
 
 const COMMITTEE_STYLE: Record<string, string> = {
@@ -16,7 +16,7 @@ const COMMITTEE_STYLE: Record<string, string> = {
     strong_supporter: 'bg-emerald-500/10 text-success border-emerald-500/20',
     neutral: 'bg-surface-raised text-fg-subtle border-line',
     opposed: 'bg-red-500/10 text-danger border-red-500/20',
-    unknown: 'bg-surface text-fg-muted border-slate-800',
+    unknown: 'bg-surface text-fg-muted border-line',
 };
 
 interface Props {
@@ -28,7 +28,7 @@ interface Props {
 
 const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpenQuickActions }) => {
     return (
-        <div className="bg-slate-950/50 border border-slate-800/60 rounded-xl p-4 hover:border-line transition-all group">
+        <div className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-line transition-all group">
             <div className="flex items-start justify-between gap-2">
                 <button className="flex items-center gap-2 text-left" onClick={() => onOpenQuickActions(stakeholder)}>
                     <div className="w-9 h-9 rounded-full bg-surface-raised flex items-center justify-center text-xs font-black text-fg-subtle shrink-0">

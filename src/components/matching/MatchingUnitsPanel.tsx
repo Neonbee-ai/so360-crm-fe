@@ -86,7 +86,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                         <li
                             key={u.item_id}
                             data-testid="matching-unit"
-                            className="flex items-start gap-3 p-3 bg-slate-900/60 border border-slate-800 rounded-xl"
+                            className="flex items-start gap-3 p-3 bg-surface-sunken border border-line rounded-xl"
                         >
                             <Building2 size={16} className="text-blue-400 mt-0.5 shrink-0" />
                             <div className="flex-1 min-w-0">
@@ -130,7 +130,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                     aria-label={added ? `${name} added` : `Attach ${name}`}
                                     disabled={added || busy}
                                     onClick={() => attach(u)}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-primary hover:bg-primary text-white disabled:bg-surface-raised disabled:text-fg-muted"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white disabled:bg-surface-raised disabled:text-fg-muted"
                                 >
                                     {busy ? <Loader2 size={12} className="animate-spin" /> : added ? <Check size={12} /> : <Plus size={12} />}
                                     {added ? 'Added' : 'Attach'}

@@ -203,7 +203,7 @@ export default function AllocateTeamPlanPanel({
               + person
             </button>
             <button
-              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
               onClick={submit}
               disabled={busy}
             >

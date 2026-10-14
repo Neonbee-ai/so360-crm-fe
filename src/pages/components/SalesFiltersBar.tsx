@@ -15,7 +15,7 @@ interface Props {
     developers: FilterOption[];
 }
 
-const FIELD_CLS = 'bg-bg border border-slate-800 text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
+const FIELD_CLS = 'bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
 const LABEL_CLS = 'flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-fg-muted';
 
 export const hasActiveFilters = (f: SalesFilters): boolean =>
@@ -46,7 +46,7 @@ const SalesFiltersBar: React.FC<Props> = ({ value, onChange, developers }) => {
     const rangeError = validateDateRange(value);
 
     return (
-        <div className="bg-surface border border-slate-800 rounded-2xl p-4 space-y-3" data-testid="sales-filters">
+        <div className="bg-surface border border-line rounded-2xl p-4 space-y-3" data-testid="sales-filters">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                 <label className={LABEL_CLS}>
                     Project

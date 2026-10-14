@@ -34,7 +34,7 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
             title={isSpecialStage ? `Close Deal: ${newStage}` : `Move to ${newStage}`}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="p-3 bg-bg border border-slate-800 rounded-lg">
+                <div className="p-3 bg-bg border border-line rounded-lg">
                     <p className="text-sm text-fg-subtle">
                         Moving <span className="text-fg font-bold">{deal.name}</span> to the <span className="text-blue-400 font-bold">{newStage}</span> stage.
                     </p>
@@ -51,7 +51,7 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder={`Please provide a brief reason for marking this deal as ${newStage}...`}
-                            className="w-full bg-bg border border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none h-24"
+                            className="w-full bg-bg border border-line rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none h-24"
                         />
                     </div>
                 )}
@@ -66,15 +66,15 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 px-4 py-2 rounded-lg border border-slate-800 text-fg-subtle hover:bg-surface-raised transition-colors font-medium text-sm"
+                        className="flex-1 px-4 py-2 rounded-lg border border-line text-fg-subtle hover:bg-surface-raised transition-colors font-medium text-sm"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
-                        className={`flex-1 px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-sm ${newStage === 'Won' ? 'bg-success hover:bg-success text-white' :
-                                newStage === 'Lost' ? 'bg-danger hover:bg-danger text-white' :
-                                    'bg-primary hover:bg-primary text-white'
+                        className={`flex-1 px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-sm ${newStage === 'Won' ? 'bg-success hover:bg-success/90 text-white' :
+                                newStage === 'Lost' ? 'bg-danger hover:bg-danger/90 text-white' :
+                                    'bg-primary hover:bg-primary/90 text-white'
                             }`}
                     >
                         Confirm Transition

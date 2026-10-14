@@ -186,7 +186,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                 const isExpanded = expandedActivityId === item.id;
                 return (
                     <div
-                        className="cursor-pointer hover:bg-slate-800/50 rounded-lg transition-colors p-2 -mx-2"
+                        className="cursor-pointer hover:bg-surface-high rounded-lg transition-colors p-2 -mx-2"
                         onClick={() => setExpandedActivityId(isExpanded ? null : item.id)}
                     >
                         <div className="flex items-start justify-between">
@@ -253,7 +253,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                 return (
                     <Link
                         to={`/crm/tasks/${task.id}`}
-                        className="block group/task hover:bg-slate-800/50 rounded-lg transition-colors p-2 -mx-2"
+                        className="block group/task hover:bg-surface-high rounded-lg transition-colors p-2 -mx-2"
                     >
                         <div className="flex items-center gap-3">
                             <button
@@ -308,7 +308,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                 const doc = item.data as Attachment;
                 return (
                     <div className="flex items-center gap-3 group/doc">
-                        <div className="w-8 h-8 rounded bg-surface flex items-center justify-center text-primary border border-slate-800 group-hover/doc:scale-105 transition-transform">
+                        <div className="w-8 h-8 rounded bg-surface flex items-center justify-center text-primary border border-line group-hover/doc:scale-105 transition-transform">
                             <FileIcon size={14} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -377,7 +377,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                 <div className="relative">
                     <button
                         onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-slate-800 rounded-lg text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-line rounded-lg text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-colors"
                     >
                         <span>Filter:</span>
                         <span className="text-blue-400">
@@ -389,7 +389,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         <ChevronDown size={10} />
                     </button>
                     {showFilterDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-surface border border-slate-800 rounded-lg shadow-lg z-10 min-w-max">
+                        <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-lg shadow-lg z-10 min-w-max">
                             {(['all', 'activity', 'note', 'task', 'document'] as const).map(
                                 (type) => (
                                     <button
@@ -418,7 +418,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                 <div className="relative">
                     <button
                         onClick={() => setShowSortDropdown(!showSortDropdown)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-slate-800 rounded-lg text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-line rounded-lg text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-colors"
                     >
                         <span>Sort:</span>
                         <span className="text-blue-400">
@@ -429,7 +429,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         <ChevronDown size={10} />
                     </button>
                     {showSortDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-surface border border-slate-800 rounded-lg shadow-lg z-10 min-w-max">
+                        <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-lg shadow-lg z-10 min-w-max">
                             {(['newest', 'oldest'] as const).map((order) => (
                                 <button
                                     key={order}
@@ -460,7 +460,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
 
             {/* Empty state */}
             {isEmpty ? (
-                <div className="text-center py-12 text-fg-muted border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+                <div className="text-center py-12 text-fg-muted border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
                     <Clock size={40} className="mx-auto mb-4 opacity-10" />
                     <p className="text-sm font-bold uppercase tracking-widest mb-1">
                         No timeline items yet
@@ -479,7 +479,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                 /* Timeline */
                 <div className="space-y-3 relative">
                     {/* Vertical line */}
-                    <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-slate-700 to-slate-800/30" />
+                    <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-surface-sunken to-surface-sunken" />
 
                     {sortedItems.map((item) => (
                         <div
@@ -488,13 +488,13 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                             data-testid={`timeline-item-${item.type}-${item.id}`}
                         >
                             {/* Dot */}
-                            <div className="w-12 h-12 rounded-full bg-surface border-2 border-slate-800 flex items-center justify-center shrink-0 mt-1 relative z-10">
+                            <div className="w-12 h-12 rounded-full bg-surface border-2 border-line flex items-center justify-center shrink-0 mt-1 relative z-10">
                                 {getItemIcon(item.type)}
                             </div>
 
                             {/* Content */}
                             <div className="flex-1 pt-2 pb-6">
-                                <div className="bg-bg border border-slate-800 rounded-xl p-4">
+                                <div className="bg-bg border border-line rounded-xl p-4">
                                     {/* Header */}
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
@@ -526,7 +526,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
 
                                     {/* Footer with actor info */}
                                     {item.actor && (
-                                        <div className="text-[9px] text-fg-muted mt-3 pt-3 border-t border-slate-800">
+                                        <div className="text-[9px] text-fg-muted mt-3 pt-3 border-t border-line">
                                             by {item.actor}
                                         </div>
                                     )}

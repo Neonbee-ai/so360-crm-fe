@@ -46,7 +46,7 @@ const StakeholderDealLinker: React.FC<Props> = ({ stakeholderId, availableDeals,
             <button
                 onClick={handleLink}
                 disabled={!dealId || saving}
-                className="bg-primary hover:bg-primary text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg disabled:opacity-50"
+                className="bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg disabled:opacity-50"
             >
                 Link
             </button>

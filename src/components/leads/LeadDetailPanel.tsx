@@ -63,7 +63,7 @@ const TASK_STATUS_OPTIONS: Array<{ value: Task['status']; label: string }> = [
 ];
 
 const TASK_STATUS_STYLES: Record<string, string> = {
-  OPEN: 'bg-slate-700/40 text-fg-subtle',
+  OPEN: 'bg-surface-high text-fg-subtle',
   IN_PROGRESS: 'bg-blue-500/15 text-blue-400',
   DONE: 'bg-emerald-500/15 text-success',
   ON_HOLD: 'bg-orange-500/15 text-warning',
@@ -129,7 +129,7 @@ interface InfoRowProps {
 
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-slate-800/60 last:border-0">
+    <div className="flex items-start gap-3 py-2.5 border-b border-line last:border-0">
       <div className="mt-0.5 text-fg-muted shrink-0">{icon}</div>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-fg-muted mb-0.5">
@@ -294,7 +294,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
 
   const score = lead?.auto_score ?? 0;
   const sc = scoreColor(score);
-  const statusColor = lead ? (STATUS_COLORS[lead.status] ?? 'bg-slate-500/10 text-fg-subtle border-slate-500/20') : '';
+  const statusColor = lead ? (STATUS_COLORS[lead.status] ?? 'bg-fg-muted/10 text-fg-subtle border-line') : '';
 
   // Resolve owner via the freshly-fetched users list first — lead.owner may
   // carry a stale "Unknown User" placeholder if it was mapped before the
@@ -328,14 +328,14 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 bottom-0 z-[500] w-[420px] max-w-[95vw] bg-bg border-l border-slate-700/50 shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-[500] w-[420px] max-w-[95vw] bg-bg border-l border-line shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
           lead ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {!lead ? null : (
           <>
             {/* Header */}
-            <div className="px-5 pt-5 pb-4 border-b border-slate-800/60">
+            <div className="px-5 pt-5 pb-4 border-b border-line">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">
@@ -384,7 +384,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
             </div>
 
             {/* Quick action buttons */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-800/60">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-line">
               {lead.contact_email && (
                 <a
                   href={`mailto:${lead.contact_email}`}
@@ -413,7 +413,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-800/60 overflow-x-auto scrollbar-none">
+            <div className="flex border-b border-line overflow-x-auto scrollbar-none">
               {PANEL_TABS.map((t) => (
                 <button
                   key={t.key}
@@ -616,7 +616,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                               <div className="absolute -left-6 w-5 h-5 rounded-full bg-surface border border-line flex items-center justify-center">
                                 <Activity size={10} className="text-fg-subtle" />
                               </div>
-                              <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3">
+                              <div className="bg-surface-sunken border border-line rounded-lg p-3">
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                   <span className="text-xs font-semibold text-fg-subtle">
                                     {event.title}
@@ -678,7 +678,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                         <button
                           key={deal.id}
                           onClick={() => onNavigateDeal(deal)}
-                          className="w-full text-left bg-slate-900/60 border border-slate-800 rounded-lg p-3 hover:border-line transition-colors"
+                          className="w-full text-left bg-surface-sunken border border-line rounded-lg p-3 hover:border-line transition-colors"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm font-semibold text-fg truncate">{deal.name}</span>
@@ -737,8 +737,8 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                 onNavigateTask(task);
                               }
                             }}
-                            className={`flex items-start gap-2.5 bg-slate-900/60 border rounded-lg p-3 transition-colors ${
-                              overdue ? 'border-rose-500/40' : 'border-slate-800'
+                            className={`flex items-start gap-2.5 bg-surface-sunken border rounded-lg p-3 transition-colors ${
+                              overdue ? 'border-rose-500/40' : 'border-line'
                             } ${onNavigateTask ? 'cursor-pointer hover:border-line' : ''}`}
                           >
                             <CheckSquare
@@ -874,7 +874,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                   ) : (
                     <div className="space-y-2">
                       {auditActivities.map((activity: ActivityType) => (
-                        <div key={activity.id} className="flex items-start gap-2.5 bg-slate-900/60 border border-slate-800 rounded-lg p-3">
+                        <div key={activity.id} className="flex items-start gap-2.5 bg-surface-sunken border border-line rounded-lg p-3">
                           <div className="mt-0.5 shrink-0">
                             {ACTIVITY_ICONS[activity.type] ?? <Activity size={12} className="text-fg-subtle" />}
                           </div>
@@ -904,7 +904,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
 
             {/* Footer */}
             {onDelete && (
-              <div className="px-5 py-3 border-t border-slate-800/60">
+              <div className="px-5 py-3 border-t border-line">
                 <button
                   onClick={() => onDelete(lead)}
                   className="w-full text-center text-xs text-danger hover:text-danger transition-colors py-1"

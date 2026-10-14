@@ -46,14 +46,14 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon, color }) =
   const trendBgClasses = {
     up: 'bg-emerald-500/10',
     down: 'bg-rose-500/10',
-    neutral: 'bg-slate-500/10',
+    neutral: 'bg-fg-muted/10',
   };
 
   return (
     <div className={`border rounded-2xl p-4 flex flex-col gap-3 ${colorClasses[color]}`}>
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-black uppercase tracking-widest text-fg-subtle">{label}</span>
-        <div className="p-2 bg-slate-900/50 rounded-lg">{icon}</div>
+        <div className="p-2 bg-surface-sunken rounded-lg">{icon}</div>
       </div>
       <div>
         <div className="text-2xl font-black text-fg leading-tight">{value}</div>
@@ -73,7 +73,7 @@ const RiskBadgeComponent: React.FC<{ badge: RiskBadge }> = ({ badge }) => {
   const colorMap = {
     overdue: 'bg-rose-500/10 border-rose-500/20 text-danger',
     stalled: 'bg-amber-500/10 border-amber-500/20 text-warning',
-    no_activity: 'bg-slate-500/10 border-slate-500/20 text-fg-subtle',
+    no_activity: 'bg-fg-muted/10 border-line text-fg-subtle',
   };
 
   return (
@@ -203,9 +203,9 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
   const dealCount = deals.length;
 
   return (
-    <div className="bg-gradient-to-br from-slate-900/80 to-slate-900/40 border border-slate-800 rounded-2xl p-6 mb-8 shadow-sm">
+    <div className="bg-gradient-to-br from-surface-sunken to-surface-sunken border border-line rounded-2xl p-6 mb-8 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-line">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-500/10 rounded-lg">
             <Activity size={16} className="text-blue-400" />
@@ -233,7 +233,7 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
 
       {/* Risk Badges */}
       {riskBadges.length > 0 && (
-        <div className="mb-6 pb-6 border-b border-slate-800">
+        <div className="mb-6 pb-6 border-b border-line">
           <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3">
             Active Risks
           </p>

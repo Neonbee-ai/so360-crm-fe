@@ -347,7 +347,7 @@ const TasksPage = () => {
                     <select
                         value={task.status}
                         onChange={(e) => handleStatusChange(task, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 ${task.status === 'DONE'
+                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface ${task.status === 'DONE'
                             ? 'bg-emerald-500/10 text-success border-emerald-500/20 focus:ring-success'
                             : task.status === 'IN_PROGRESS'
                             ? 'bg-amber-500/10 text-warning border-amber-500/20 focus:ring-warning'
@@ -355,7 +355,7 @@ const TasksPage = () => {
                             ? 'bg-orange-500/10 text-warning border-orange-500/20 focus:ring-warning'
                             : task.status === 'CANCELLED'
                             ? 'bg-rose-500/10 text-danger border-rose-500/20 focus:ring-danger'
-                            : 'bg-surface-raised text-fg-subtle border-line focus:ring-slate-500'
+                            : 'bg-surface-raised text-fg-subtle border-line focus:ring-line-strong'
                             }`}
                     >
                         <option value="OPEN" className="bg-surface text-fg-subtle">OPEN</option>
@@ -393,7 +393,7 @@ const TasksPage = () => {
                 {canCreateTask && (
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
                     >
                         <Plus size={16} />
                         Create Task
@@ -413,7 +413,7 @@ const TasksPage = () => {
                             onClick={() => setTaskScope(tab.key)}
                             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
                                 ? 'bg-line text-white border-line'
-                                : 'bg-surface text-fg-subtle border-slate-800 hover:text-fg hover:bg-surface-raised'
+                                : 'bg-surface text-fg-subtle border-line hover:text-fg hover:bg-surface-raised'
                                 }`}
                         >
                             {tab.label}
@@ -430,7 +430,7 @@ const TasksPage = () => {
                         placeholder="Search tasks..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-bg border border-slate-800 text-fg placeholder-fg-subtle text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-all"
+                        className="w-full bg-bg border border-line text-fg placeholder-fg-subtle text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-all"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -440,7 +440,7 @@ const TasksPage = () => {
                             onClick={() => setFilter(btn)}
                             className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all border ${filter === btn
                                 ? 'bg-primary text-white border-primary shadow-lg shadow-blue-900/20'
-                                : 'bg-surface text-fg-subtle border-slate-800 hover:text-fg hover:bg-surface-raised'
+                                : 'bg-surface text-fg-subtle border-line hover:text-fg hover:bg-surface-raised'
                                 }`}
                         >
                             {btn}
@@ -474,7 +474,7 @@ const TasksPage = () => {
 
             {/* Pagination Controls */}
             {sandboxLimitedTasks.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
+                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-fg-subtle">
                         <span>Show</span>
                         <select

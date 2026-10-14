@@ -18,12 +18,12 @@ import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
-    draft: { bg: 'bg-slate-500/20', text: 'text-fg-subtle', label: 'Draft' },
+    draft: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Draft' },
     pending_approval: { bg: 'bg-amber-500/20', text: 'text-amber-300', label: 'Pending Approval' },
     approved: { bg: 'bg-green-500/20', text: 'text-green-300', label: 'Approved' },
     rejected: { bg: 'bg-red-500/20', text: 'text-red-300', label: 'Rejected' },
     converted: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Converted' },
-    expired: { bg: 'bg-gray-500/20', text: 'text-fg-subtle', label: 'Expired' },
+    expired: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Expired' },
 };
 
 const QuoteDetailPage = () => {
@@ -623,7 +623,7 @@ const QuoteDetailPage = () => {
                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                                             : a.status === 'rejected'
                                             ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                                            : 'bg-slate-800/90 border-line text-fg-subtle'
+                                            : 'bg-surface-high border-line text-fg-subtle'
                                     }`}
                                 >
                                     <span className="font-medium text-fg">{a.approver_name || a.approver_email || 'Approver'}</span>
@@ -639,7 +639,7 @@ const QuoteDetailPage = () => {
             <div className="grid grid-cols-3 gap-6">
                 <div className="col-span-2 space-y-6">
                     {/* Basic Info */}
-                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
                         <h2 className="text-lg font-semibold text-fg mb-4">Quote Details</h2>
                         <div className="space-y-4">
                             <div>
@@ -675,7 +675,7 @@ const QuoteDetailPage = () => {
                     </div>
 
                     {/* Line Items */}
-                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-semibold text-fg">Line Items</h2>
                             {canCreateQuote && isEditing && (
@@ -709,7 +709,7 @@ const QuoteDetailPage = () => {
                                         const isLowStock = stock !== undefined && stock > 0 && stock < line.quantity;
                                         const isOOS = stock !== undefined && stock <= 0;
                                         return (
-                                        <tr key={line.id || `new-${index}`} className="border-b border-slate-700/50">
+                                        <tr key={line.id || `new-${index}`} className="border-b border-line">
                                             <td className="py-3 px-4">
                                                 {isEditing ? (
                                                     <div className="space-y-1.5">
@@ -728,7 +728,7 @@ const QuoteDetailPage = () => {
                                                                 <span className="flex-1 min-w-0">
                                                                     <span className="text-fg truncate block">{line.item_name}</span>
                                                                     <span className="flex items-center gap-1 mt-0.5">
-                                                                        <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-fg-subtle rounded">{line.sku}</span>
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
                                                                         {line.sub_sku && line.sub_sku !== 'NIL' && (
                                                                             <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded">{line.sub_sku}</span>
                                                                         )}
@@ -756,7 +756,7 @@ const QuoteDetailPage = () => {
                                                             <span className="text-fg block">{line.description}</span>
                                                             {line.sku && (
                                                                 <span className="flex items-center gap-1 mt-0.5">
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-fg-subtle rounded">{line.sku}</span>
+                                                                    <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
                                                                     {line.sub_sku && line.sub_sku !== 'NIL' && (
                                                                         <span className="text-xs px-1.5 py-0.5 bg-blue-900/40 text-blue-400 rounded">{line.sub_sku}</span>
                                                                     )}
@@ -891,7 +891,7 @@ const QuoteDetailPage = () => {
                     </div>
 
                     {/* Notes & Terms */}
-                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
                         <h2 className="text-lg font-semibold text-fg mb-4">Notes & Terms</h2>
                         <div className="space-y-4">
                             <div>
@@ -1005,7 +1005,7 @@ const QuoteDetailPage = () => {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
                         <h2 className="text-lg font-semibold text-fg mb-4">Summary</h2>
                         <div className="space-y-4">
                             <div>
@@ -1030,11 +1030,11 @@ const QuoteDetailPage = () => {
                         in Customers, and a quote must reference it rather than keep
                         its own divergent copy. */}
                     {customer && (
-                        <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                        <div className="bg-surface-sunken border border-line rounded-lg p-6">
                             <h2 className="text-lg font-semibold text-fg mb-4">Customer</h2>
                             <button
                                 onClick={() => navigate(`/crm/customers/${customer.id}`)}
-                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-surface-raised border border-line rounded-lg transition-colors"
+                                className="w-full text-left p-4 bg-surface-high hover:bg-surface-raised border border-line rounded-lg transition-colors"
                             >
                                 <p className="font-medium text-fg">
                                     {customer.company_name || customer.contact_name || '—'}
@@ -1067,11 +1067,11 @@ const QuoteDetailPage = () => {
                     )}
 
                     {quote.deal && (
-                        <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                        <div className="bg-surface-sunken border border-line rounded-lg p-6">
                             <h2 className="text-lg font-semibold text-fg mb-4">Related Deal</h2>
                             <button
                                 onClick={() => navigate(`/crm/deal/${quote.deal_id}`)}
-                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-surface-raised border border-line rounded-lg transition-colors"
+                                className="w-full text-left p-4 bg-surface-high hover:bg-surface-raised border border-line rounded-lg transition-colors"
                             >
                                 <p className="font-medium text-fg">{quote.deal.name}</p>
                                 <p className="text-sm text-fg-subtle">{quote.deal.company_name}</p>
@@ -1200,7 +1200,7 @@ const QuoteDetailPage = () => {
                         />
                     </div>
                 </div>
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-700/50">
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-line">
                     <button
                         type="button"
                         onClick={() => setShowSendModal(false)}

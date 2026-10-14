@@ -15,14 +15,14 @@ const CHANNEL_CONFIG: Record<string, { label: string; color: string; icon: any }
     storefront_web: { label: 'Web', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Globe },
     storefront_mobile: { label: 'Mobile', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', icon: Smartphone },
     pos: { label: 'POS', color: 'bg-amber-500/10 text-warning border-amber-500/20', icon: ShoppingCart },
-    manual: { label: 'Manual', color: 'bg-slate-500/10 text-fg-subtle border-slate-500/20', icon: UserPlus },
+    manual: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line', icon: UserPlus },
 };
 
 const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
     storefront_registration: { label: 'Registration', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
     guest_checkout: { label: 'Guest Checkout', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
     pos_inline: { label: 'POS', color: 'bg-amber-500/10 text-warning border-amber-500/20' },
-    manual_entry: { label: 'Manual', color: 'bg-slate-500/10 text-fg-subtle border-slate-500/20' },
+    manual_entry: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line' },
     lead_promotion: { label: 'Promoted', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
 };
 
@@ -224,14 +224,14 @@ const CustomersPage = () => {
             );
         }
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-500/10 text-fg-muted border border-slate-500/20">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-fg-muted/10 text-fg-muted border border-line">
                 B2C
             </span>
         );
     };
 
     const AcquisitionBadge = ({ source }: { source: string }) => {
-        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', color: 'bg-slate-500/10 text-fg-muted border-slate-500/20' };
+        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', color: 'bg-fg-muted/10 text-fg-muted border-line' };
         return (
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>
                 {config.label}
@@ -357,7 +357,7 @@ const CustomersPage = () => {
             />
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+            <div className="flex flex-wrap items-center gap-3 mb-6 bg-surface-sunken p-4 rounded-xl border border-line">
                 {activeSegmentName && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
                         <Tag size={12} />
@@ -371,13 +371,13 @@ const CustomersPage = () => {
                         placeholder="Search customers by name, email, phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-bg border border-slate-800 text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                 </div>
                 <select
                     value={channelFilter}
                     onChange={(e) => setChannelFilter(e.target.value)}
-                    className="bg-bg border border-slate-800 text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                     <option value="All">All Channels</option>
                     <option value="storefront_web">Web</option>
@@ -388,7 +388,7 @@ const CustomersPage = () => {
                 <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="bg-bg border border-slate-800 text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                     <option value="All">All Categories</option>
                     <option value="b2b">B2B</option>
@@ -428,7 +428,7 @@ const CustomersPage = () => {
 
             {/* Pagination */}
             {sandboxLimitedCustomers.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
+                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-fg-subtle">
                         <span>Show</span>
                         <select

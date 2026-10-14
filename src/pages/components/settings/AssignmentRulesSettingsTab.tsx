@@ -19,7 +19,7 @@ import {
 import { crmService } from '../../../services/crmService';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
 const LABEL_CLS = 'block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-1.5';
 
 interface Props {
@@ -213,7 +213,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
         setDraft((d) => ({ ...d, conditions: d.conditions.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) }));
 
     const editor = editingId && (
-        <div className="p-6 border-b border-slate-700/50 bg-slate-950/40 space-y-5" data-testid="assignment-rule-editor">
+        <div className="p-6 border-b border-line bg-surface-sunken space-y-5" data-testid="assignment-rule-editor">
             <div className="flex items-center justify-between">
                 <h4 className="font-black text-fg uppercase tracking-widest text-xs">
                     {editingId === 'new' ? 'New rule' : 'Edit rule'}
@@ -290,7 +290,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
             <div>
                 <span className={LABEL_CLS}>Assign to</span>
-                <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 w-fit mb-3" role="radiogroup" aria-label="Assign to">
+                <div className="flex gap-1 bg-surface-sunken p-1 rounded-xl border border-line w-fit mb-3" role="radiogroup" aria-label="Assign to">
                     {(['users', 'department'] as const).map((t) => {
                         const on = draft.pool_source !== 'project_assigned' && draft.target_type === t;
                         return (
@@ -403,7 +403,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     type="button"
                     onClick={saveDraft}
                     disabled={busy}
-                    className="flex items-center gap-2 bg-primary hover:bg-primary text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
                 >
                     {busy && <Loader2 size={14} className="animate-spin" />}
                     Save rule
@@ -415,8 +415,8 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
     return (
         <div className="space-y-10">
             {confirmDialog}
-            <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+            <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                     <div>
                         <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Assignment Rules</h3>
                         <p className="text-[10px] text-fg-muted font-bold mt-1">NEW LEADS GO TO THE FIRST MATCHING RULE, TOP TO BOTTOM</p>
@@ -425,7 +425,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         <button
                             type="button"
                             onClick={() => openEditor()}
-                            className="flex items-center gap-2 bg-primary hover:bg-primary text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
+                            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
                         >
                             <Plus size={14} /> Add rule
                         </button>
@@ -441,7 +441,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 ) : rules.length === 0 ? (
                     <p className="p-6 text-sm font-bold text-fg-muted">No rules yet. New leads keep the owner they are created with.</p>
                 ) : (
-                    <ol className="divide-y divide-slate-800" aria-label="Assignment rules">
+                    <ol className="divide-y divide-line" aria-label="Assignment rules">
                         {rules.map((rule, i) => (
                             <li key={rule.id} className="p-4 flex items-center gap-4" data-testid="assignment-rule-row">
                                 <span className="w-6 text-center text-xs font-black text-fg-muted">{i + 1}</span>
@@ -480,7 +480,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 )}
             </section>
 
-            <section className="bg-surface border border-slate-700/50 rounded-2xl p-6 shadow-2xl space-y-4" aria-label="Test assignment">
+            <section className="bg-surface border border-line rounded-2xl p-6 shadow-2xl space-y-4" aria-label="Test assignment">
                 <div>
                     <h3 className="font-black text-fg uppercase tracking-widest text-xs">Test a lead</h3>
                     <p className="text-[10px] text-fg-muted font-bold mt-1">SEE WHO A LEAD WOULD GO TO. NOTHING IS SAVED.</p>

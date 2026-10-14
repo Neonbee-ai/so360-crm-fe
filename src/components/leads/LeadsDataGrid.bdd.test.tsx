@@ -239,7 +239,7 @@ describe('LeadsDataGrid — row selection', () => {
       />,
     );
     // Select header checkbox (select all)
-    const headerSelectArea = document.querySelector('.sticky.z-30.bg-slate-900');
+    const headerSelectArea = document.querySelector('.sticky.z-30.bg-surface-sunken');
     if (headerSelectArea) {
       fireEvent.click(headerSelectArea);
       expect(screen.queryByText(/selected/i)).toBeDefined();

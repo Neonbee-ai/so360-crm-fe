@@ -115,7 +115,7 @@ export default function AdminTaskTypesPage() {
         <button
           type="button"
           onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded transition-colors"
+          className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded transition-colors"
         >
           + New Type
         </button>
@@ -146,7 +146,7 @@ export default function AdminTaskTypesPage() {
       {loading ? (
         <div className="text-fg-subtle text-sm">Loading…</div>
       ) : (
-        <div className="rounded-lg border border-slate-800 overflow-hidden">
+        <div className="rounded-lg border border-line overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-surface text-fg-subtle text-xs uppercase tracking-wider">
               <tr>
@@ -158,7 +158,7 @@ export default function AdminTaskTypesPage() {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-line">
               {visible.length === 0 && (
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-fg-muted">No task types yet</td></tr>
               )}
@@ -187,7 +187,7 @@ export default function AdminTaskTypesPage() {
                     <button
                       type="button"
                       onClick={() => handleToggleActive(tt)}
-                      className={`w-10 h-5 rounded-full transition-colors relative ${tt.active ? 'bg-success' : 'bg-slate-600'}`}
+                      className={`w-10 h-5 rounded-full transition-colors relative ${tt.active ? 'bg-success' : 'bg-surface-high'}`}
                     >
                       <span className={`absolute top-0.5 w-4 h-4 bg-surface-raised rounded-full shadow transition-transform ${tt.active ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </button>
@@ -324,7 +324,7 @@ export default function AdminTaskTypesPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !form.name}
-                className="px-4 py-2 bg-primary hover:bg-primary disabled:opacity-50 text-white text-sm font-medium rounded transition-colors"
+                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-sm font-medium rounded transition-colors"
               >
                 {saving ? 'Saving…' : 'Create'}
               </button>

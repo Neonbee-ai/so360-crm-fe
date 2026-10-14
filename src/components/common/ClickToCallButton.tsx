@@ -76,7 +76,7 @@ export const ClickToCallButton: React.FC<ClickToCallButtonProps> = ({
             onClick={handleClick}
             aria-label={`Call ${trimmedNumber}`}
             title={`Call ${trimmedNumber}`}
-            className={`inline-flex items-center justify-center w-7 h-7 rounded-lg bg-surface-raised text-success hover:text-emerald-300 hover:bg-line border border-slate-700/50 transition-colors ${className}`}
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-lg bg-surface-raised text-success hover:text-emerald-300 hover:bg-line border border-line transition-colors ${className}`}
         >
             <Phone size={size} />
         </button>

@@ -164,7 +164,7 @@ export default function TeamTargetsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
+              <tr className="text-left text-xs text-fg-subtle border-b border-line">
                 <th className="py-2 pr-4 font-medium">Person</th>
                 <th className="py-2 pr-4 font-medium">Metric</th>
                 <th className="py-2 pr-4 font-medium text-right">Target</th>
@@ -178,7 +178,7 @@ export default function TeamTargetsPage() {
               {rows.map((r) => (
                 <tr
                   key={r.person_id}
-                  className="border-b border-slate-800/60 hover:bg-slate-800/40 cursor-pointer"
+                  className="border-b border-line hover:bg-surface-high cursor-pointer"
                   onClick={() => openDetail(r.person_id)}
                 >
                   <td className="py-2 pr-4 text-fg">

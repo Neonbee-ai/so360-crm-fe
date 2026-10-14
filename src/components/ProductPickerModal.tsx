@@ -206,7 +206,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-raised transition-colors text-left group"
                                                     >
                                                         {/* Variant thumbnail */}
-                                                        <div className="w-8 h-8 rounded overflow-hidden bg-slate-700/80 flex-shrink-0 flex items-center justify-center">
+                                                        <div className="w-8 h-8 rounded overflow-hidden bg-surface-high flex-shrink-0 flex items-center justify-center">
                                                             {variant.image_url ? (
                                                                 <img src={variant.image_url} alt={variant.name} className="w-full h-full object-cover" />
                                                             ) : (

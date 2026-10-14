@@ -4,7 +4,7 @@ import { useCRMFormatters } from '../../utils/formatters';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
 import { reWidgetsService, REWidgetsData, isREWidgetsEmpty } from '../../services/reWidgetsService';
 
-const CARD = 'bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 shadow-sm min-w-0';
+const CARD = 'bg-surface-sunken border border-line rounded-2xl p-5 shadow-sm min-w-0';
 const TITLE = 'flex items-center gap-2 text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3';
 const EMPTY = 'text-xs text-fg-muted';
 /** Rows shown per card; the dashboard is a glance, not a report. */

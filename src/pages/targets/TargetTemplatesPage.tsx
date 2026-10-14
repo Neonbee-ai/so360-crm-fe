@@ -105,7 +105,7 @@ export default function TargetTemplatesPage() {
           {templates.map((t) => (
             <div
               key={t.id}
-              className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 grow basis-80 max-w-md"
+              className="rounded-lg border border-line bg-surface-sunken p-4 grow basis-80 max-w-md"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -198,7 +198,7 @@ export default function TargetTemplatesPage() {
               />
             </div>
             <button
-              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
               onClick={assign}
               disabled={busy || !ownerId || !startDate || !endDate}
             >

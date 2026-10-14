@@ -65,12 +65,12 @@ const MarketingAbandonedCartsPage: React.FC = () => {
       </div>
       <MarketingStorePicker storeId={storeId} onChange={applyStore} />
 
-      <div className="flex items-center gap-3 mb-6 bg-slate-900/50 p-3 rounded-xl border border-slate-800 w-fit">
+      <div className="flex items-center gap-3 mb-6 bg-surface-sunken p-3 rounded-xl border border-line w-fit">
         <label className="text-fg-subtle text-sm font-medium">Status Filter</label>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus transition-shadow appearance-none cursor-pointer pr-8"
+          className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus transition-shadow appearance-none cursor-pointer pr-8"
         >
           <option value="">All Carts</option>
           <option value="pending">Pending</option>
@@ -86,7 +86,7 @@ const MarketingAbandonedCartsPage: React.FC = () => {
       {cards.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
           {cards.map((card) => (
-            <div key={card.label} className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
+            <div key={card.label} className="bg-surface-sunken border border-line rounded-xl p-5">
               <p className="text-fg-subtle text-sm font-medium">{card.label}</p>
               <p className="text-fg text-3xl font-bold mt-2 tracking-tight">{card.value}</p>
             </div>
@@ -94,7 +94,7 @@ const MarketingAbandonedCartsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-surface-raised text-fg-subtle font-medium">
@@ -107,9 +107,9 @@ const MarketingAbandonedCartsPage: React.FC = () => {
                 <th className="px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50 border-t border-slate-800/50">
+            <tbody className="divide-y divide-line border-t border-line">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
+                <tr key={row.id} className="hover:bg-surface-high transition-colors">
                   <td className="px-4 py-3 text-fg font-medium">{row.customerEmail || '-'}</td>
                   <td className="px-4 py-3 text-fg-subtle">
                     {row.itemCount} <span className="text-fg-muted text-xs ml-1">items</span>

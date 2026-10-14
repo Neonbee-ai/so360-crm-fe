@@ -65,8 +65,8 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-bg border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 sticky top-0 bg-bg z-10">
+            <div className="bg-bg border border-line rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-line sticky top-0 bg-bg z-10">
                     <p className="text-xs font-black text-fg uppercase tracking-widest">
                         {isEditing ? 'Edit Stakeholder' : 'Add Stakeholder'}
                     </p>
@@ -124,12 +124,12 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-800 sticky bottom-0 bg-bg">
+                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line sticky bottom-0 bg-bg">
                     <button onClick={onClose} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg">Cancel</button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
                     >
                         {saving && <Loader2 size={12} className="animate-spin" />}
                         {isEditing ? 'Save Changes' : 'Add Stakeholder'}

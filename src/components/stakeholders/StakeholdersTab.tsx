@@ -82,7 +82,7 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
                 </div>
                 <button
                     onClick={() => setEditingStakeholder(null)}
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
                 >
                     <Plus size={14} /> Add Stakeholder
                 </button>

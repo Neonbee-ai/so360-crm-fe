@@ -144,7 +144,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
           <div className="flex items-center gap-2">
             <Send className="w-5 h-5 text-warning" />
             <h3 className="text-lg font-semibold text-fg">Submit Quote for Approval</h3>
@@ -167,7 +167,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
           )}
 
           {/* Quote summary card */}
-          <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg p-4 space-y-2">
+          <div className="bg-surface-high border border-line rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-fg-subtle">Quote:</span>
               <span className="font-semibold text-fg">
@@ -237,7 +237,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
             {/* Candidate Dropdown */}
             {dropdownOpen && (
-              <div className="bg-bg border border-line rounded-lg shadow-xl max-h-52 overflow-y-auto z-20 mt-1 divide-y divide-slate-800">
+              <div className="bg-bg border border-line rounded-lg shadow-xl max-h-52 overflow-y-auto z-20 mt-1 divide-y divide-line">
                 {isLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-fg-subtle text-sm">
                     <Loader2 className="w-4 h-4 animate-spin text-warning" />
@@ -260,8 +260,8 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                         }}
                         className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors ${
                           isSelf
-                            ? 'opacity-60 bg-slate-900/50 cursor-pointer'
-                            : 'hover:bg-slate-800/80 cursor-pointer'
+                            ? 'opacity-60 bg-surface-sunken cursor-pointer'
+                            : 'hover:bg-surface-high cursor-pointer'
                         }`}
                       >
                         <div className="w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center text-fg-subtle font-semibold text-xs flex-shrink-0">
@@ -306,7 +306,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-900/80 border-t border-slate-800">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-sunken border-t border-line">
           <button
             type="button"
             onClick={onClose}

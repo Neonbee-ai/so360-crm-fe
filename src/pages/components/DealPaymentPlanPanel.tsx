@@ -23,8 +23,8 @@ import {
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
+const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
 const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg';
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
@@ -38,7 +38,7 @@ const STATUS_CHIP: Record<ScheduleLineStatus, string> = {
     invoiced: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
     paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
     bounced: 'bg-rose-500/10 text-danger border-rose-500/30',
-    cancelled: 'bg-slate-500/10 text-fg-subtle border-slate-500/30',
+    cancelled: 'bg-fg-muted/10 text-fg-subtle border-line',
 };
 
 const MODE_VALUES: readonly string[] = PAYMENT_MODES.map((m) => m.value);
@@ -311,7 +311,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
 
             <div className="grid grid-cols-3 gap-3">
                 {([['Total', totals.total], ['Paid', totals.paid], ['Outstanding', totals.outstanding]] as const).map(([label, v]) => (
-                    <div key={label} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
+                    <div key={label} className="bg-surface-sunken border border-line rounded-xl p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
                         <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{label}</p>
                         <p className="text-lg font-black text-fg mt-1">{fmt.formatCurrency(v)}</p>
                     </div>
@@ -335,7 +335,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                         {lines.map((l) => {
                             const d: LineDraft | null = editing && editing.id === l.id ? editing.draft : null;
                             return (
-                                <tr key={l.id} className="border-t border-slate-800 align-top" data-testid={`pp-line-${l.id}`}>
+                                <tr key={l.id} className="border-t border-line align-top" data-testid={`pp-line-${l.id}`}>
                                     <td className="py-3 pr-3 text-fg-muted">{l.seq}</td>
                                     <td className="py-3 pr-3">
                                         <p className="font-bold text-fg">{l.label}</p>

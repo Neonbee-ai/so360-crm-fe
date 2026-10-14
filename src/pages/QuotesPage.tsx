@@ -18,12 +18,12 @@ import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
-    draft: { bg: 'bg-slate-500/10', text: 'text-fg-subtle', label: 'Draft', border: 'border-slate-500/30' },
+    draft: { bg: 'bg-fg-muted/10', text: 'text-fg-subtle', label: 'Draft', border: 'border-line' },
     pending_approval: { bg: 'bg-amber-500/10', text: 'text-amber-300', label: 'Pending Approval', border: 'border-amber-500/30' },
     approved: { bg: 'bg-emerald-500/10', text: 'text-emerald-300', label: 'Approved', border: 'border-emerald-500/30' },
     rejected: { bg: 'bg-rose-500/10', text: 'text-rose-300', label: 'Rejected', border: 'border-rose-500/30' },
     converted: { bg: 'bg-blue-500/10', text: 'text-blue-300', label: 'Converted', border: 'border-blue-500/30' },
-    expired: { bg: 'bg-zinc-500/10', text: 'text-fg-subtle', label: 'Expired', border: 'border-zinc-500/30' },
+    expired: { bg: 'bg-fg-muted/10', text: 'text-fg-subtle', label: 'Expired', border: 'border-line' },
 };
 
 // Allowed next transitions per status — empty means terminal (no dropdown)
@@ -82,7 +82,7 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${status.bg} ${status.text} ${status.border} ${transitions.length > 0 ? 'cursor-pointer hover:brightness-125' : 'cursor-default'} disabled:opacity-50`}
                 title={transitions.length > 0 ? 'Click to update status' : status.label}
             >
-                <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-emerald-400' : quote.status === 'pending_approval' ? 'bg-amber-400' : quote.status === 'rejected' ? 'bg-rose-400' : quote.status === 'converted' ? 'bg-blue-400' : 'bg-slate-400'}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-emerald-400' : quote.status === 'pending_approval' ? 'bg-amber-400' : quote.status === 'rejected' ? 'bg-rose-400' : quote.status === 'converted' ? 'bg-blue-400' : 'bg-fg-subtle'}`} />
                 <span>{status.label}</span>
                 {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />}
             </button>
@@ -579,7 +579,7 @@ const QuotesPage = () => {
                         type="checkbox"
                         checked={allOnPageSelected}
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-slate-900 cursor-pointer"
+                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-surface cursor-pointer"
                         title="Select all on this page"
                     />
                 </div>
@@ -590,7 +590,7 @@ const QuotesPage = () => {
                         type="checkbox"
                         checked={selectedQuoteIds.includes(quote.id)}
                         onChange={() => toggleSelectQuote(quote.id)}
-                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-slate-900 cursor-pointer"
+                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-surface cursor-pointer"
                     />
                 </div>
             ),
@@ -1035,7 +1035,7 @@ const QuotesPage = () => {
                             className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer select-none ${
                                 isActive
                                     ? 'bg-blue-600/10 border-blue-500/60 ring-1 ring-blue-500/40 shadow-sm'
-                                    : 'bg-slate-900/60 border-slate-800 hover:border-line hover:bg-slate-800/40'
+                                    : 'bg-surface-sunken border-line hover:border-line hover:bg-surface-high'
                             }`}
                         >
                             <div className="flex items-center justify-between gap-2">
@@ -1060,7 +1060,7 @@ const QuotesPage = () => {
             </div>
 
             {/* View Switcher Tabs: All Quotes | Approvals */}
-            <div className="flex items-center gap-4 border-b border-slate-800 mb-5">
+            <div className="flex items-center gap-4 border-b border-line mb-5">
                 <button
                     onClick={() => setActiveTab('all')}
                     className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 transition-colors ${
@@ -1149,7 +1149,7 @@ const QuotesPage = () => {
                                                 className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === 'All' ? 'text-blue-300 bg-blue-600/10' : 'text-fg-subtle'}`}
                                             >
                                                 <span className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
+                                                    <span className="w-2 h-2 rounded-full bg-fg-subtle flex-shrink-0" />
                                                     All Status
                                                 </span>
                                                 <span className="text-fg-muted font-mono">{quotes.length}</span>
@@ -1246,7 +1246,7 @@ const QuotesPage = () => {
 
                     {/* Table View */}
                     {paginatedQuotes.length === 0 ? (
-                        <div className="text-center py-16 bg-slate-900/50 border border-line rounded-lg">
+                        <div className="text-center py-16 bg-surface-sunken border border-line rounded-lg">
                             <FileText className="w-12 h-12 mx-auto text-fg-muted mb-4" />
                             <h3 className="text-lg font-medium text-fg-subtle mb-2">No quotes found</h3>
                             <p className="text-fg-subtle mb-4 text-sm">
@@ -1284,7 +1284,7 @@ const QuotesPage = () => {
 
                             {/* Pagination Controls */}
                             {effectiveQuotes.length > 0 && (
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-slate-900/70 border border-slate-800 rounded-lg text-xs text-fg-subtle">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg text-xs text-fg-subtle">
                                     <div className="flex items-center gap-2">
                                         <span>Show</span>
                                         <select
@@ -1347,7 +1347,7 @@ const QuotesPage = () => {
                 <div className="space-y-4">
                     {/* Approvals Filters & Search */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-slate-800">
+                        <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-line">
                             {[
                                 { id: 'pending', label: 'Pending', count: approvals.filter(a => a.approver_status === 'pending').length },
                                 { id: 'approved', label: 'Approved', count: approvals.filter(a => a.approver_status === 'approved').length },
@@ -1389,7 +1389,7 @@ const QuotesPage = () => {
 
                     {/* Approvals Table */}
                     {filteredApprovals.length === 0 ? (
-                        <div className="text-center py-16 bg-slate-900/50 border border-line rounded-lg">
+                        <div className="text-center py-16 bg-surface-sunken border border-line rounded-lg">
                             <CheckCircle className="w-12 h-12 mx-auto text-fg-muted mb-4" />
                             <h3 className="text-lg font-medium text-fg-subtle mb-2">No approval requests found</h3>
                             <p className="text-fg-subtle text-sm">
@@ -1415,7 +1415,7 @@ const QuotesPage = () => {
                     style={actionMenuStyle}
                     className="w-52 bg-surface border border-line rounded-lg shadow-2xl overflow-hidden py-1 text-xs animate-in fade-in duration-100"
                 >
-                    <div className="px-3 py-1.5 border-b border-slate-800 text-[11px] text-fg-subtle font-mono font-semibold">
+                    <div className="px-3 py-1.5 border-b border-line text-[11px] text-fg-subtle font-mono font-semibold">
                         {activeMenuQuote.quote_number}
                     </div>
                     <button
@@ -1474,7 +1474,7 @@ const QuotesPage = () => {
                     </button>
                     {canCreateQuote && activeMenuQuote.status === 'draft' && (
                         <>
-                            <div className="my-1 border-t border-slate-800" />
+                            <div className="my-1 border-t border-line" />
                             <button
                                 type="button"
                                 onClick={() => { setActiveActionMenuId(null); setShowDeleteConfirm(activeMenuQuote.id); }}
@@ -1585,7 +1585,7 @@ const QuotesPage = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="flex justify-end gap-3 px-6 py-4 bg-slate-800/50 border-t border-line rounded-b-lg">
+                        <div className="flex justify-end gap-3 px-6 py-4 bg-surface-high border-t border-line rounded-b-lg">
                             <button
                                 onClick={() => {
                                     setIsCreateModalOpen(false);

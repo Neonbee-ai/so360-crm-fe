@@ -78,7 +78,7 @@ export default function PerformanceHistoryPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
+              <tr className="text-left text-xs text-fg-subtle border-b border-line">
                 <th className="py-2 pr-4 font-medium">Period</th>
                 {metricNames.map((n) => (
                   <th key={n} className="py-2 pr-4 font-medium text-right">
@@ -93,7 +93,7 @@ export default function PerformanceHistoryPage() {
               {data.periods.map((p: any) => (
                 <tr
                   key={p.period_start}
-                  className="border-b border-slate-800/60"
+                  className="border-b border-line"
                 >
                   <td className="py-2 pr-4 text-fg">
                     {p.period_start}

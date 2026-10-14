@@ -153,14 +153,14 @@ const MarketingCouponsPage: React.FC = () => {
         </div>
         {canCreateMarketing && <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-primary hover:bg-primary text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
+          className="bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
         >
           <Plus size={16} /> Create Coupon
         </button>}
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-surface border border-slate-800 rounded-2xl p-4">
+        <section className="bg-surface border border-line rounded-2xl p-4">
           {/* `md:items-end` rather than a bare `items-end`: another remote's
               Tailwind sheet can flatten `md:flex-row` to a column (media
               queries add no specificity, so source order wins), and an
@@ -178,7 +178,7 @@ const MarketingCouponsPage: React.FC = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-bg border border-slate-800 text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 placeholder="Search by coupon code..."
               />
             </div>
@@ -187,7 +187,7 @@ const MarketingCouponsPage: React.FC = () => {
 
         {showForm && (
           <section className="bg-surface border border-blue-500/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-blue-500/5">
+            <div className="p-6 border-b border-line flex justify-between items-center bg-blue-500/5">
               <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
               <button onClick={() => setShowForm(false)} className="text-fg-muted hover:text-fg transition-colors">
                 <X size={20} />
@@ -201,7 +201,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="text" 
                     value={form.code} 
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold" 
+                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold" 
                     placeholder="WELCOME20"
                   />
                   {fieldErrors.code && (
@@ -213,7 +213,7 @@ const MarketingCouponsPage: React.FC = () => {
                   <select 
                     value={form.discount_type} 
                     onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })} 
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold appearance-none"
+                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold appearance-none"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed Amount</option>
@@ -230,7 +230,7 @@ const MarketingCouponsPage: React.FC = () => {
                       data-testid="coupon-discount-value"
                       value={form.discount_value}
                       onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-bg border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                      className="w-full bg-bg border border-line rounded-xl py-3 pl-8 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                     />
                   </div>
                   {fieldErrors.discount_value && (
@@ -243,7 +243,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="number"
                     value={form.min_order_amount}
                     onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                   {fieldErrors.min_order_amount && (
                     <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.min_order_amount}</p>
@@ -255,7 +255,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="number"
                     value={form.usage_limit}
                     onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                     placeholder="0 = Unlimited"
                   />
                   {fieldErrors.usage_limit && (
@@ -268,7 +268,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="date"
                     value={form.valid_from}
                     onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                 </div>
                 <div>
@@ -277,7 +277,7 @@ const MarketingCouponsPage: React.FC = () => {
                     type="date"
                     value={form.valid_until}
                     onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                   {fieldErrors.valid_until && (
                     <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.valid_until}</p>
@@ -288,12 +288,12 @@ const MarketingCouponsPage: React.FC = () => {
                   <textarea 
                     value={form.description} 
                     onChange={(e) => setForm({ ...form, description: e.target.value })} 
-                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold h-20 resize-none" 
+                    className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold h-20 resize-none" 
                     placeholder="Describe the offer..."
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-slate-800">
+              <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-line">
                 <button 
                   onClick={() => setShowForm(false)} 
                   className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-all"
@@ -303,7 +303,7 @@ const MarketingCouponsPage: React.FC = () => {
                 <button 
                   onClick={handleSave} 
                   disabled={saving} 
-                  className="bg-primary hover:bg-primary text-white font-black text-[10px] uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
+                  className="bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Coupon' : 'Create Coupon'}
@@ -313,14 +313,14 @@ const MarketingCouponsPage: React.FC = () => {
           </section>
         )}
 
-        <div className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+        <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-line bg-surface-sunken flex justify-between items-center">
             <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Active & Scheduled Coupons ({filtered.length})</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left border-b border-slate-800">
+                <tr className="text-left border-b border-line">
                   <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest">Code & Info</th>
                   <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Discount</th>
                   <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Usage</th>
@@ -328,7 +328,7 @@ const MarketingCouponsPage: React.FC = () => {
                   <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50">
+              <tbody className="divide-y divide-line">
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="py-20 text-center">
@@ -349,7 +349,7 @@ const MarketingCouponsPage: React.FC = () => {
                   </tr>
                 ) : (
                   filtered.map((coupon) => (
-                    <tr key={coupon.id} className="group hover:bg-slate-800/20 transition-all">
+                    <tr key={coupon.id} className="group hover:bg-surface-high transition-all">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${coupon.is_active ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-surface-raised border-line text-fg-muted'}`}>

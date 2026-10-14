@@ -97,7 +97,7 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
 
     if (submissions.length === 0) {
         return (
-            <div className="text-center py-16 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+            <div className="text-center py-16 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
                 <MessageSquare size={40} className="mx-auto mb-4 text-fg" />
                 <p className="text-sm font-bold text-fg-muted uppercase tracking-widest mb-1">No Feedback Yet</p>
                 <p className="text-xs text-fg-muted lowercase italic">
@@ -128,10 +128,10 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
                     return (
                         <div
                             key={sub.id}
-                            className="flex items-start gap-4 p-4 bg-bg border border-slate-800 rounded-2xl hover:border-line transition-all group"
+                            className="flex items-start gap-4 p-4 bg-bg border border-line rounded-2xl hover:border-line transition-all group"
                         >
                             {/* Icon */}
-                            <div className="w-10 h-10 rounded-xl bg-surface border border-slate-800 flex items-center justify-center text-blue-400 flex-shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-surface border border-line flex items-center justify-center text-blue-400 flex-shrink-0">
                                 <FileText size={18} />
                             </div>
 
@@ -209,13 +209,13 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     onClick={() => setSelected(null)}
                 >
-                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-surface-sunken backdrop-blur-sm" />
                     <div
-                        className="relative bg-surface border border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+                        className="relative bg-surface border border-line rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Modal header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
                             <div>
                                 <h3 className="text-sm font-black text-fg uppercase tracking-tight">
                                     {selected.forms?.name || 'Feedback Response'}
@@ -245,7 +245,7 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
                                         <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
                                             {key.replace(/_/g, ' ')}
                                         </p>
-                                        <p className="text-sm text-fg bg-bg border border-slate-800 rounded-xl px-4 py-3">
+                                        <p className="text-sm text-fg bg-bg border border-line rounded-xl px-4 py-3">
                                             {String(value) || '—'}
                                         </p>
                                     </div>

@@ -188,7 +188,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                         title={alreadyAdded ? 'Already added to this record' : undefined}
                                         className={`w-full text-left p-3 bg-surface-raised border rounded-xl transition-all group ${
                                             alreadyAdded
-                                                ? 'border-slate-800 opacity-50 cursor-not-allowed'
+                                                ? 'border-line opacity-50 cursor-not-allowed'
                                                 : 'border-line hover:border-blue-500/50'
                                         }`}
                                     >
@@ -247,7 +247,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                             </button>
                             <button
                                 onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)}
-                                className="flex-1 py-2.5 bg-primary hover:bg-primary rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all"
+                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all"
                             >
                                 Add Product
                             </button>
@@ -388,13 +388,13 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setShowCustomBuildModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800/90 hover:bg-line text-amber-300 border border-amber-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-surface-high hover:bg-line text-amber-300 border border-amber-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                     >
                         <Sparkles size={12} className="text-warning" /> Custom Build Request
                     </button>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                     >
                         <Plus size={12} /> Add Product
                     </button>
@@ -413,7 +413,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                     <Loader2 size={24} className="animate-spin text-blue-400" />
                 </div>
             ) : products.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl">
+                <div className="text-center py-12 border border-dashed border-line rounded-2xl">
                     <Package size={32} className="mx-auto mb-3 text-fg opacity-40" />
                     <p className="text-[10px] font-bold text-fg-muted uppercase tracking-widest">No products added yet</p>
                     <p className="text-xs text-fg-muted mt-1">Add products from inventory or create a custom build request</p>
@@ -423,7 +423,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                     {products.map(product => {
                         const lineTotal = product.quantity * product.unit_price;
                         return (
-                            <div key={product.id} className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 group hover:border-line transition-all">
+                            <div key={product.id} className="bg-surface-sunken border border-line rounded-xl p-4 group hover:border-line transition-all">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -445,13 +445,13 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                                 <p className="text-[9px] font-black text-fg-muted uppercase tracking-widest">SKU: {product.item_sku}</p>
                                             )}
                                             {product.category_name && (
-                                                <span className="text-[9px] font-medium text-fg-subtle bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 rounded">
+                                                <span className="text-[9px] font-medium text-fg-subtle bg-surface-high border border-line px-2 py-0.5 rounded">
                                                     {product.category_name}
                                                 </span>
                                             )}
                                         </div>
                                         {product.notes && (
-                                            <p className="text-[11px] text-fg-subtle mt-1.5 bg-slate-900/60 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+                                            <p className="text-[11px] text-fg-subtle mt-1.5 bg-surface-sunken px-2.5 py-1.5 rounded-lg border border-line">
                                                 {product.notes}
                                             </p>
                                         )}

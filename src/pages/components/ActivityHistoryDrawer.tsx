@@ -58,9 +58,9 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
             />
 
             {/* Drawer — starts below the shell's fixed 56px (h-14) glass-nav header so the title/close controls are never clipped */}
-            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-bg border-l border-slate-800 z-50 flex flex-col shadow-2xl">
+            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-bg border-l border-line z-50 flex flex-col shadow-2xl">
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
                     <div>
                         <p className="text-xs font-black text-fg uppercase tracking-widest">Activity History</p>
                         <p className="text-[10px] text-fg-muted mt-0.5">
@@ -73,7 +73,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 </div>
 
                 {/* Search */}
-                <div className="px-4 py-3 border-b border-slate-800 shrink-0">
+                <div className="px-4 py-3 border-b border-line shrink-0">
                     <div className="relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" />
                         <input
@@ -81,13 +81,13 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                             placeholder="Search activities…"
                             value={timeline.search}
                             onChange={e => timeline.setSearch(e.target.value)}
-                            className="w-full bg-surface border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-line transition-colors"
+                            className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-line transition-colors"
                         />
                     </div>
                 </div>
 
                 {/* Filters */}
-                <div className="px-4 py-2.5 border-b border-slate-800 shrink-0 overflow-x-auto">
+                <div className="px-4 py-2.5 border-b border-line shrink-0 overflow-x-auto">
                     <div className="flex gap-1.5 min-w-max">
                         {MODULE_FILTERS.map(f => (
                             <button
@@ -106,7 +106,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 </div>
 
                 {/* G8 Client 360: interaction-type chips */}
-                <div className="px-4 py-2.5 border-b border-slate-800 shrink-0 overflow-x-auto" role="group" aria-label="Filter by interaction type">
+                <div className="px-4 py-2.5 border-b border-line shrink-0 overflow-x-auto" role="group" aria-label="Filter by interaction type">
                     <div className="flex gap-1.5 min-w-max">
                         <button
                             type="button"
@@ -145,7 +145,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 </div>
 
                 {timeline.summary && (
-                    <div className="px-4 py-3 border-b border-slate-800 shrink-0">
+                    <div className="px-4 py-3 border-b border-line shrink-0">
                         <TimelineSummaryBanner summary={timeline.summary} />
                     </div>
                 )}

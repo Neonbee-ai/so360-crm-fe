@@ -16,7 +16,7 @@ import DetailBackLink from '../components/common/DetailBackLink';
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
 const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
-    low:  { label: 'Low',  color: 'bg-slate-500/10 text-fg-subtle border-slate-500/20' },
+    low:  { label: 'Low',  color: 'bg-fg-muted/10 text-fg-subtle border-line' },
     mid:  { label: 'Mid',  color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
     high: { label: 'High', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
 };
@@ -67,12 +67,12 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
                             value={paymentRef}
                             onChange={e => setPaymentRef(e.target.value)}
                             placeholder="e.g. NEFT-2026-001"
-                            className="w-full bg-bg border border-slate-800 rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                         />
                     </div>
                     <div className="flex justify-end gap-3">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-fg-subtle hover:text-fg">Cancel</button>
-                        <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-success hover:bg-success text-white rounded-lg font-medium disabled:opacity-50">
+                        <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-success hover:bg-success/90 text-white rounded-lg font-medium disabled:opacity-50">
                             {saving ? 'Saving...' : 'Mark Paid'}
                         </button>
                     </div>
@@ -260,7 +260,7 @@ const PartnerDetailPage = () => {
 
     const fieldLabelCls = 'text-[10px] font-bold text-fg-muted uppercase tracking-widest mb-1.5';
     const editLabelCls = 'text-xs text-fg-subtle mb-1 block';
-    const editInputCls = 'w-full bg-bg border border-slate-800 rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+    const editInputCls = 'w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50';
 
     return (
         <div className="p-8">
@@ -311,7 +311,7 @@ const PartnerDetailPage = () => {
             </header>
 
             {/* Tabs */}
-            <div className="border-b border-slate-800 mb-6 flex overflow-x-auto">
+            <div className="border-b border-line mb-6 flex overflow-x-auto">
                 <button className={tabCls('overview')} onClick={() => setActiveTab('overview')}>Overview</button>
                 <button className={tabCls('deals')} onClick={() => setActiveTab('deals')}>Referred Deals</button>
                 <button className={tabCls('commissions')} onClick={() => setActiveTab('commissions')}>Royalties</button>
@@ -320,13 +320,13 @@ const PartnerDetailPage = () => {
 
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8">
+                <div className="bg-surface-sunken border border-line rounded-xl p-8">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-sm font-semibold text-fg uppercase tracking-wider">Partner Information</h2>
                         {isEditing ? (
                             <div className="flex gap-2">
                                 <button onClick={() => { setIsEditing(false); }} className="p-1.5 rounded text-fg-subtle hover:text-fg"><X size={16} /></button>
-                                <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-primary hover:bg-primary text-white rounded text-xs font-medium disabled:opacity-50">
+                                <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded text-xs font-medium disabled:opacity-50">
                                     <Check size={14} />{saving ? 'Saving...' : 'Save'}
                                 </button>
                             </div>
@@ -379,7 +379,7 @@ const PartnerDetailPage = () => {
                                     <label className={editLabelCls}>Phone</label>
                                     <input type="tel" maxLength={20} value={editForm.phone}
                                         onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                        className={`w-full bg-bg border rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`} />
+                                        className={`w-full bg-bg border rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-line focus:ring-blue-500/50'}`} />
                                     {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
                                 </div>
                                 <div>
@@ -546,7 +546,7 @@ const PartnerDetailPage = () => {
                                     <span className="flex-1 h-px bg-surface-raised" />
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                                    <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                         <div className="flex items-center gap-2 text-fg-subtle text-[10px] font-bold uppercase tracking-widest mb-2">
                                             <Users size={12} />Customers Connected
                                         </div>
@@ -556,7 +556,7 @@ const PartnerDetailPage = () => {
                                                 : <span className="text-fg-muted text-base font-normal">—</span>}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                                    <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                         <div className="flex items-center gap-2 text-fg-subtle text-[10px] font-bold uppercase tracking-widest mb-2">
                                             <DollarSign size={12} />Value of Purchase
                                         </div>
@@ -566,7 +566,7 @@ const PartnerDetailPage = () => {
                                                 : <span className="text-fg-muted text-base font-normal">—</span>}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
+                                    <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                         <div className="flex items-center gap-2 text-fg-subtle text-[10px] font-bold uppercase tracking-widest mb-2">
                                             <BarChart2 size={12} />Total Purchase Till Date
                                         </div>
@@ -638,28 +638,28 @@ const PartnerDetailPage = () => {
                     {deals ? (
                         <>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-fg-subtle text-xs font-medium mb-1"><BarChart2 size={14} />Total Deals</div>
                                     <div className="text-2xl font-bold text-fg">{deals.summary.total_count}</div>
                                 </div>
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-fg-subtle text-xs font-medium mb-1"><DollarSign size={14} />Total Value</div>
                                     <div className="text-xl font-bold text-fg">{formatters.formatCurrency(deals.summary.total_value || 0)}</div>
                                 </div>
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-success text-xs font-medium mb-1"><Trophy size={14} />Won Deals</div>
                                     <div className="text-2xl font-bold text-fg">{deals.summary.won_count}</div>
                                 </div>
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-success text-xs font-medium mb-1"><DollarSign size={14} />Won Value</div>
                                     <div className="text-xl font-bold text-fg">{formatters.formatCurrency(deals.summary.won_value || 0)}</div>
                                 </div>
                             </div>
                             {deals.deals.length > 0 ? (
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+                                <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
                                     <table className="w-full text-sm">
                                         <thead>
-                                            <tr className="border-b border-slate-800">
+                                            <tr className="border-b border-line">
                                                 <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Deal Name</th>
                                                 <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Customer</th>
                                                 <th className="text-right px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Value</th>
@@ -671,14 +671,14 @@ const PartnerDetailPage = () => {
                                             {deals.deals.map((deal: any) => (
                                                 <tr
                                                     key={deal.id}
-                                                    className="border-b border-slate-800/50 hover:bg-slate-800/30 cursor-pointer"
+                                                    className="border-b border-line hover:bg-surface-high cursor-pointer"
                                                     onClick={() => navigate(`/crm/deal/${deal.id}`)}
                                                 >
                                                     <td className="px-4 py-3 text-fg font-medium">{deal.name}</td>
                                                     <td className="px-4 py-3 text-fg-subtle">{deal.company || '-'}</td>
                                                     <td className="px-4 py-3 text-fg-subtle text-right">{formatters.formatCurrency(deal.value || 0)}</td>
                                                     <td className="px-4 py-3">
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${deal.status === 'won' ? 'bg-emerald-500/10 text-success border-emerald-500/20' : deal.status === 'lost' ? 'bg-rose-500/10 text-danger border-rose-500/20' : 'bg-slate-500/10 text-fg-subtle border-slate-500/20'}`}>
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${deal.status === 'won' ? 'bg-emerald-500/10 text-success border-emerald-500/20' : deal.status === 'lost' ? 'bg-rose-500/10 text-danger border-rose-500/20' : 'bg-fg-muted/10 text-fg-subtle border-line'}`}>
                                                             {deal.stage?.name || deal.status || '-'}
                                                         </span>
                                                     </td>
@@ -689,7 +689,7 @@ const PartnerDetailPage = () => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-fg-muted">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-8 text-center text-fg-muted">
                                     No referred deals yet.
                                 </div>
                             )}
@@ -706,24 +706,24 @@ const PartnerDetailPage = () => {
                     {commissions ? (
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-fg-subtle text-xs font-medium mb-1"><DollarSign size={14} />Total Earned</div>
                                     <div className="text-xl font-bold text-fg">{formatters.formatCurrency(commissions.summary.total_earned || 0)}</div>
                                 </div>
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-warning text-xs font-medium mb-1"><DollarSign size={14} />Pending</div>
                                     <div className="text-xl font-bold text-fg">{formatters.formatCurrency(commissions.summary.pending || 0)}</div>
                                 </div>
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
                                     <div className="flex items-center gap-2 text-success text-xs font-medium mb-1"><DollarSign size={14} />Paid</div>
                                     <div className="text-xl font-bold text-fg">{formatters.formatCurrency(commissions.summary.paid || 0)}</div>
                                 </div>
                             </div>
                             {commissions.commissions.length > 0 ? (
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+                                <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
                                     <table className="w-full text-sm">
                                         <thead>
-                                            <tr className="border-b border-slate-800">
+                                            <tr className="border-b border-line">
                                                 <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Deal</th>
                                                 <th className="text-right px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Deal Amount</th>
                                                 <th className="text-right px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Rate</th>
@@ -736,7 +736,7 @@ const PartnerDetailPage = () => {
                                             {commissions.commissions.map((c: any) => {
                                                 const statusCfg = COMMISSION_STATUS_CONFIG[c.status] || COMMISSION_STATUS_CONFIG.pending;
                                                 return (
-                                                    <tr key={c.id} className="border-b border-slate-800/50">
+                                                    <tr key={c.id} className="border-b border-line">
                                                         <td className="px-4 py-3 text-fg">{c.deal?.name || c.deal_id.slice(0, 8)}</td>
                                                         <td className="px-4 py-3 text-fg-subtle text-right">{formatters.formatCurrency(c.deal_amount || 0)}</td>
                                                         <td className="px-4 py-3 text-fg-subtle text-right">{c.commission_rate}%</td>
@@ -751,7 +751,7 @@ const PartnerDetailPage = () => {
                                                                 <button
                                                                     onClick={() => handleApprove(c.id)}
                                                                     disabled={approvingId === c.id}
-                                                                    className="px-3 py-1 text-xs bg-primary hover:bg-primary text-white rounded font-medium disabled:opacity-50 transition-colors"
+                                                                    className="px-3 py-1 text-xs bg-primary hover:bg-primary/90 text-white rounded font-medium disabled:opacity-50 transition-colors"
                                                                 >
                                                                     {approvingId === c.id ? 'Approving...' : 'Approve'}
                                                                 </button>
@@ -759,7 +759,7 @@ const PartnerDetailPage = () => {
                                                             {c.status === 'approved' && (
                                                                 <button
                                                                     onClick={() => setMarkPaidId(c.id)}
-                                                                    className="px-3 py-1 text-xs bg-success hover:bg-success text-white rounded font-medium transition-colors"
+                                                                    className="px-3 py-1 text-xs bg-success hover:bg-success/90 text-white rounded font-medium transition-colors"
                                                                 >
                                                                     Mark Paid
                                                                 </button>
@@ -775,7 +775,7 @@ const PartnerDetailPage = () => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-fg-muted">
+                                <div className="bg-surface-sunken border border-line rounded-xl p-8 text-center text-fg-muted">
                                     No royalties yet. Royalties are created automatically when a referred deal is won.
                                 </div>
                             )}
@@ -790,12 +790,12 @@ const PartnerDetailPage = () => {
             {activeTab === 'activity' && (
                 <div className="space-y-3">
                     {activities.length === 0 ? (
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-fg-muted">
+                        <div className="bg-surface-sunken border border-line rounded-xl p-8 text-center text-fg-muted">
                             No activity recorded yet.
                         </div>
                     ) : (
                         activities.map((a: any) => (
-                            <div key={a.id} className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex items-start gap-4">
+                            <div key={a.id} className="bg-surface-sunken border border-line rounded-xl p-4 flex items-start gap-4">
                                 <div className="w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
                                     <Users size={14} className="text-blue-400" />
                                 </div>

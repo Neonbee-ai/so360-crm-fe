@@ -121,7 +121,7 @@ export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
     };
 
     return (
-        <div className="bg-bg border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div className="bg-bg border border-line rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-[10px] font-black text-fg uppercase tracking-widest">Upload Call Recording</h3>
                 <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">
@@ -218,7 +218,7 @@ export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
                 <button
                     onClick={handleSubmit}
                     disabled={!file || submitting}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-primary rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all disabled:opacity-50"
                 >
                     {submitting ? <><Loader2 size={12} className="animate-spin" /> Uploading...</> : 'Upload Recording'}
                 </button>
@@ -336,7 +336,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
                 </p>
                 <button
                     onClick={() => setShowUploadForm(v => !v)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                 >
                     <Plus size={12} /> Upload Call Recording
                 </button>
@@ -347,7 +347,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
             )}
 
             {calls.length === 0 ? (
-                <div className="text-center py-16 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+                <div className="text-center py-16 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
                     <Phone size={40} className="mx-auto mb-4 text-fg" />
                     <p className="text-sm font-bold text-fg-muted uppercase tracking-widest mb-1">No calls logged yet</p>
                     <p className="text-xs text-fg-muted lowercase italic">
@@ -362,9 +362,9 @@ export default function CallsTab({ leadId, dealId }: Props) {
                         return (
                             <div
                                 key={call.id}
-                                className="flex items-start gap-4 p-4 bg-bg border border-slate-800 rounded-2xl hover:border-line transition-all group"
+                                className="flex items-start gap-4 p-4 bg-bg border border-line rounded-2xl hover:border-line transition-all group"
                             >
-                                <div className="w-10 h-10 rounded-xl bg-surface border border-slate-800 flex items-center justify-center text-blue-400 flex-shrink-0">
+                                <div className="w-10 h-10 rounded-xl bg-surface border border-line flex items-center justify-center text-blue-400 flex-shrink-0">
                                     <DirectionIcon size={18} />
                                 </div>
 
@@ -447,12 +447,12 @@ export default function CallsTab({ leadId, dealId }: Props) {
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     onClick={() => setSelected(null)}
                 >
-                    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+                    <div className="absolute inset-0 bg-surface-sunken backdrop-blur-sm" />
                     <div
-                        className="relative bg-surface border border-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+                        className="relative bg-surface border border-line rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
                             <div>
                                 <h3 className="text-sm font-black text-fg uppercase tracking-tight">
                                     Call Transcript

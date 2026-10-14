@@ -269,7 +269,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         disabled={disabled}
                         onClick={() => { if (!disabled) setIsOpen(true); }}
                         onKeyDown={handleTriggerKeyDown}
-                        className={`flex items-center gap-2 w-full text-left bg-bg border rounded-xl px-4 py-3 cursor-pointer transition-all border-slate-700/50 hover:border-line focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-blue-500/20
+                        className={`flex items-center gap-2 w-full text-left bg-bg border rounded-xl px-4 py-3 cursor-pointer transition-all border-line hover:border-line focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-blue-500/20
                             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                             ${inputClassName}`}
                     >

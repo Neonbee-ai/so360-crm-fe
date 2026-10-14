@@ -198,7 +198,7 @@ export default function EditPlanPanel({
           </div>
 
           {periods.length > 0 && (
-            <div className="border-t border-slate-800 pt-3">
+            <div className="border-t border-line pt-3">
               <div className="mb-2 text-sm text-fg-subtle">Period targets</div>
               <div className="space-y-2">
                 {periods.map((pr) => (
@@ -232,7 +232,7 @@ export default function EditPlanPanel({
             </div>
           )}
 
-          <div className="flex flex-wrap items-end gap-3 border-t border-slate-800 pt-3">
+          <div className="flex flex-wrap items-end gap-3 border-t border-line pt-3">
             <div className="grow basis-64">
               <label className="block text-[11px] text-fg-subtle mb-1">
                 Reason for the change
@@ -248,7 +248,7 @@ export default function EditPlanPanel({
               />
             </div>
             <button
-              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
               onClick={save}
               disabled={busy}
             >

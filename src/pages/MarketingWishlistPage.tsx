@@ -54,7 +54,7 @@ const MarketingWishlistPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+        <section className="bg-surface border border-line rounded-2xl p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
             <div className="md:col-span-4">
               <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Store Context</label>
@@ -68,7 +68,7 @@ const MarketingWishlistPage: React.FC = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-bg border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
+                  className="w-full bg-bg border border-line rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   placeholder="Filter by product or customer name..."
                 />
               </div>
@@ -76,8 +76,8 @@ const MarketingWishlistPage: React.FC = () => {
           </div>
         </section>
 
-        <div className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-800 bg-slate-900/50">
+        <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-line bg-surface-sunken">
             <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Wishlist Activity Feed ({filtered.length})</h3>
           </div>
           <div className="p-6">
@@ -87,7 +87,7 @@ const MarketingWishlistPage: React.FC = () => {
                 <span className="text-[10px] font-black uppercase tracking-widest">Tracking intent...</span>
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+              <div className="text-center py-20 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
                 <Heart className="mx-auto mb-4 text-fg w-12 h-12 opacity-20" />
                 <p className="text-sm font-bold uppercase text-fg-muted tracking-widest">No wishlist items found</p>
                 <p className="text-[10px] text-fg-muted uppercase mt-1 italic font-bold">Insights will appear as customers add items to their wishlist</p>
@@ -100,8 +100,8 @@ const MarketingWishlistPage: React.FC = () => {
                   const crmLeadId = customer?.crm_lead_id;
 
                   return (
-                    <div key={item.id} className="bg-bg border border-slate-800 rounded-xl p-4 flex items-center gap-4 hover:border-line transition-all">
-                      <div className="w-16 h-16 rounded-xl bg-surface border border-slate-800 overflow-hidden flex-shrink-0">
+                    <div key={item.id} className="bg-bg border border-line rounded-xl p-4 flex items-center gap-4 hover:border-line transition-all">
+                      <div className="w-16 h-16 rounded-xl bg-surface border border-line overflow-hidden flex-shrink-0">
                         {item.items?.image_urls?.[0] ? (
                           <img src={item.items.image_urls[0]} alt={item.items.name} className="w-full h-full object-cover" />
                         ) : (

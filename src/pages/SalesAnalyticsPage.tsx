@@ -161,7 +161,7 @@ const SalesAnalyticsPage: React.FC = () => {
         body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales reports…</div>;
     } else if (forbidden) {
         body = (
-            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
+            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
                 You don't have access to sales reports. Ask your manager if you need them.
             </div>
         );
@@ -176,7 +176,7 @@ const SalesAnalyticsPage: React.FC = () => {
         );
     } else if (data && isEmptyAnalytics(data)) {
         body = (
-            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
+            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
                 No sales activity for these filters.
             </div>
         );
@@ -195,15 +195,15 @@ const SalesAnalyticsPage: React.FC = () => {
             <>
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
                     {cards.map((c) => (
-                        <div key={c.key} className="bg-surface border border-slate-800 rounded-2xl p-4">
+                        <div key={c.key} className="bg-surface border border-line rounded-2xl p-4">
                             <p className="text-[10px] font-black uppercase tracking-widest text-fg-muted">{c.label}</p>
                             <p className="mt-1 text-lg font-black text-fg" data-testid={`sa-total-${c.key}`}>{c.value}</p>
                         </div>
                     ))}
                 </div>
                 {sections.map((s) => (
-                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
-                        <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-surface border border-line rounded-2xl overflow-hidden">
+                        <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-3 flex-wrap">
                             <h2 className="text-xs font-black uppercase tracking-widest text-fg-subtle">{s.title}</h2>
                             {canExport ? (
                                 <ExportMenu
@@ -224,7 +224,7 @@ const SalesAnalyticsPage: React.FC = () => {
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-800">
+                                    <tbody className="divide-y divide-line">
                                         {s.rows.map((r) => (
                                             <tr key={r.key}>
                                                 {r.cells.map((c, i) => (
@@ -255,7 +255,7 @@ const SalesAnalyticsPage: React.FC = () => {
                         aria-label="Report period"
                         value={period}
                         onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-                        className="bg-bg border border-slate-800 text-fg rounded-xl px-3 py-2 outline-none focus:border-primary font-bold text-xs"
+                        className="bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary font-bold text-xs"
                     >
                         {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
                     </select>

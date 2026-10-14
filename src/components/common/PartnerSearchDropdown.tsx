@@ -76,7 +76,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                 aria-haspopup="listbox"
                 onClick={handleOpen}
                 className={`flex items-center gap-2 w-full bg-bg border rounded-lg px-3 py-2 cursor-pointer transition-all
-                    ${isOpen ? 'border-blue-500/50 ring-2 ring-blue-500/20' : 'border-slate-800 hover:border-line'}
+                    ${isOpen ? 'border-blue-500/50 ring-2 ring-blue-500/20' : 'border-line hover:border-line'}
                     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                     ${inputClassName}`}
             >

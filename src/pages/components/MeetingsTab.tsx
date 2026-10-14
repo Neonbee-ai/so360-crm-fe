@@ -68,7 +68,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
                 <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Meetings</p>
                 <button
                     onClick={() => { setEditingMeeting(null); setShowModal(true); }}
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
                 >
                     <Plus size={14} /> Schedule Meeting
                 </button>
@@ -84,7 +84,7 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
             ) : (
                 <div className="space-y-2">
                     {meetings.map((m) => (
-                        <div key={m.id} className="bg-slate-950/50 border border-slate-800/60 rounded-xl p-4">
+                        <div key={m.id} className="bg-surface-sunken border border-line rounded-xl p-4">
                             <div className="flex items-start justify-between gap-2">
                                 <div>
                                     <div className="flex items-center gap-2">

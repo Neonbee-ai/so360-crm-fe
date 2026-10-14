@@ -54,8 +54,8 @@ const MeetingModal: React.FC<Props> = ({ leadId, dealId, stakeholderId, meeting,
 
     return (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-bg border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+            <div className="bg-bg border border-line rounded-2xl w-full max-w-md shadow-2xl">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-line">
                     <p className="text-xs font-black text-fg uppercase tracking-widest">
                         {isEditing ? 'Edit Meeting' : 'Schedule Meeting'}
                     </p>
@@ -86,12 +86,12 @@ const MeetingModal: React.FC<Props> = ({ leadId, dealId, stakeholderId, meeting,
                         <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} rows={3} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                     </label>
                 </div>
-                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
                     <button onClick={onClose} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg">Cancel</button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
                     >
                         {saving && <Loader2 size={12} className="animate-spin" />}
                         {isEditing ? 'Save Changes' : 'Schedule'}

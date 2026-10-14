@@ -82,7 +82,7 @@ const UpgradeLocked = () => {
             <button
                 type="button"
                 onClick={() => navigate('/org/billing')}
-                className="px-4 py-2 rounded bg-primary hover:bg-primary text-white text-sm font-medium transition-colors"
+                className="px-4 py-2 rounded bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors"
             >
                 Upgrade plan
             </button>
@@ -135,8 +135,8 @@ const PermissionGuard = ({ permission, children }: { permission: string | string
     if (allowed) return <>{children}</>;
     return (
         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <h2 className="text-lg font-semibold text-fg dark:text-fg">You don&apos;t have access to this page</h2>
-            <p className="mt-2 max-w-md text-sm text-fg-muted dark:text-fg-subtle">
+            <h2 className="text-lg font-semibold text-fg">You don&apos;t have access to this page</h2>
+            <p className="mt-2 max-w-md text-sm text-fg-muted">
                 Your role doesn&apos;t include permission for this page. Ask an administrator if you need it.
             </p>
         </div>

@@ -55,7 +55,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
 
       {campaign && (
         <>
-          <div className="bg-surface border border-slate-800 rounded-xl p-4 mb-4">
+          <div className="bg-surface border border-line rounded-xl p-4 mb-4">
             <h1 className="text-2xl font-semibold text-fg">{campaign.name}</h1>
             <p className="text-fg-subtle mt-1">{campaign.campaign_type} • {campaign.status}</p>
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -76,7 +76,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
               { label: 'Clicks', value: String(campaign.clicks || 0) },
               ...(campaign.segment ? [{ label: 'Segment', value: campaign.segment }] : []),
             ].map(({ label, value }) => (
-              <div key={label} className="bg-surface border border-slate-800 rounded-xl p-4">
+              <div key={label} className="bg-surface border border-line rounded-xl p-4">
                 <p className="text-fg-subtle text-xs">{label}</p>
                 <p className="text-fg text-xl font-bold">{value}</p>
               </div>
@@ -84,7 +84,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div className="bg-surface border border-slate-800 rounded-xl p-4">
+            <div className="bg-surface border border-line rounded-xl p-4">
               <h3 className="text-fg font-semibold mb-2">Test Send</h3>
               <div className="flex gap-2">
                 <input
@@ -94,7 +94,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   className="flex-1 bg-bg border border-line rounded px-3 py-2 text-sm text-fg"
                 />
                 <button
-                  className="px-3 py-2 text-sm rounded bg-primary hover:bg-primary text-white"
+                  className="px-3 py-2 text-sm rounded bg-primary hover:bg-primary/90 text-white"
                   onClick={async () => {
                     await crmService.testSendCampaign(storeId, campaignId!, testEmail);
                   }}
@@ -104,7 +104,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface border border-slate-800 rounded-xl p-4">
+            <div className="bg-surface border border-line rounded-xl p-4">
               <h3 className="text-fg font-semibold mb-2">Schedule</h3>
               <div className="flex gap-2">
                 <input
@@ -128,9 +128,9 @@ const MarketingCampaignDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-surface border border-slate-800 rounded-xl overflow-x-auto">
+          <div className="bg-surface border border-line rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-800/60 text-fg-subtle">
+              <thead className="bg-surface-high text-fg-subtle">
                 <tr>
                   <th className="text-left px-3 py-2">Email</th>
                   <th className="text-left px-3 py-2">Status</th>
@@ -139,7 +139,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
               </thead>
               <tbody>
                 {recipients.map((row) => (
-                  <tr key={row.id} className="border-t border-slate-800">
+                  <tr key={row.id} className="border-t border-line">
                     <td className="px-3 py-2 text-fg">{row.email}</td>
                     <td className="px-3 py-2 text-fg-subtle">{row.status}</td>
                     <td className="px-3 py-2 text-fg-muted">{formatDateTime(row.sent_at)}</td>

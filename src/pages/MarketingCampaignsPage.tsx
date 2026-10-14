@@ -90,17 +90,17 @@ const MarketingCampaignsPage: React.FC = () => {
       </div>
 
       {showCreate && (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 mb-8">
+        <div className="bg-surface-sunken border border-line rounded-xl p-6 mb-8">
           <h3 className="text-fg font-bold mb-5">Create Campaign</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
-              className="bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+              className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
               placeholder="Campaign name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
             <select
-              className="bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer"
+              className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer"
               value={form.campaignType}
               onChange={(e) => setForm({ ...form, campaignType: e.target.value })}
             >
@@ -111,13 +111,13 @@ const MarketingCampaignsPage: React.FC = () => {
             </select>
           </div>
           <input
-            className="mt-4 w-full bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+            className="mt-4 w-full bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
             placeholder="Description"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
           <input
-            className="mt-4 w-full bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+            className="mt-4 w-full bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
             placeholder="Subject template"
             value={form.subjectTemplate}
             onChange={(e) => setForm({ ...form, subjectTemplate: e.target.value })}
@@ -129,7 +129,7 @@ const MarketingCampaignsPage: React.FC = () => {
           />
           <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 uppercase tracking-wider">Audience Filter (JSON)</label>
           <textarea
-            className="w-full bg-surface border border-slate-800 rounded-lg px-4 py-3 text-sm text-fg-subtle font-mono focus:outline-none focus:ring-2 focus:ring-focus resize-y"
+            className="w-full bg-surface border border-line rounded-lg px-4 py-3 text-sm text-fg-subtle font-mono focus:outline-none focus:ring-2 focus:ring-focus resize-y"
             rows={5}
             value={form.audienceFilterText}
             onChange={(e) => setForm({ ...form, audienceFilterText: e.target.value })}
@@ -149,7 +149,7 @@ const MarketingCampaignsPage: React.FC = () => {
       {loading && <p className="text-fg-subtle">Loading...</p>}
       {error && <p className="text-danger mb-3">{error}</p>}
 
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-surface-raised text-fg-subtle font-medium">
@@ -162,9 +162,9 @@ const MarketingCampaignsPage: React.FC = () => {
                 <th className="px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50 border-t border-slate-800/50">
+            <tbody className="divide-y divide-line border-t border-line">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
+                <tr key={row.id} className="hover:bg-surface-high transition-colors">
                   <td className="px-4 py-3 text-fg font-medium">{row.name}</td>
                   <td className="px-4 py-3 text-fg-subtle capitalize">{row.campaignType.replace('_', ' ')}</td>
                   <td className="px-4 py-3">

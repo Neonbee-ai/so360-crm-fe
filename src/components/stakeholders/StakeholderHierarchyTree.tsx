@@ -38,7 +38,7 @@ function buildTree(stakeholders: Stakeholder[]): TreeNode[] {
 const TreeRow: React.FC<{ node: TreeNode; depth: number; allStakeholders: Stakeholder[]; onSetManager: Props['onSetManager'] }> = ({ node, depth, allStakeholders, onSetManager }) => {
     return (
         <div style={{ marginLeft: depth * 20 }} className="mt-2">
-            <div className="flex items-center gap-2 bg-slate-950/50 border border-slate-800/60 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 bg-surface-sunken border border-line rounded-lg px-3 py-2">
                 <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-[10px] font-black text-fg-subtle">
                     {(node.stakeholder.full_name || '?').charAt(0).toUpperCase()}
                 </div>

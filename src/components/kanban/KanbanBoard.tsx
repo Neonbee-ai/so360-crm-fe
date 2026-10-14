@@ -161,7 +161,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                 style={{ color: accentColor }}
                             >
                                 {stage.name}
-                                <span className="text-[10px] bg-slate-400/20 text-fg-muted px-2 py-0.5 rounded-full font-black">
+                                <span className="text-[10px] bg-fg-muted/20 text-fg-muted px-2 py-0.5 rounded-full font-black">
                                     {stageDeals.length}
                                 </span>
                                 {stage.is_terminal && (
@@ -184,7 +184,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                             onDrop={(e) => handleDrop(e, stage.id)}
                             className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 rounded-2xl p-3 pipeline-scrollbar transition-all duration-200 ${isOver
                                 ? 'bg-blue-600/10 ring-2 ring-blue-500/50 ring-dashed border-transparent'
-                                : 'bg-slate-900/40 border border-slate-700/40 shadow-sm'
+                                : 'bg-surface-sunken border border-line shadow-sm'
                                 }`}
                             style={!isOver ? { borderTopColor: accentColor, borderTopWidth: '3px', borderTopStyle: 'solid' } : undefined}
                         >
@@ -197,7 +197,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                     onClick={() => onDealClick(deal)}
                                     className={`bg-surface-raised border-2 p-4 rounded-xl shadow-md transition-all cursor-grab active:cursor-grabbing group ${draggedDealId === deal.id
                                         ? 'border-blue-500/50 scale-95'
-                                        : 'border-slate-700/40 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-900/20'
+                                        : 'border-line hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-900/20'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
@@ -213,7 +213,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
 
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-slate-500/30 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-400/30">
+                                            <div className="w-5 h-5 rounded-full bg-fg-muted/30 flex items-center justify-center text-[8px] font-black overflow-hidden border border-line">
                                                 {deal.owner.avatar_url ? (
                                                     <img src={deal.owner.avatar_url} alt={deal.owner.full_name} />
                                                 ) : (
@@ -224,7 +224,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                                 <span className="text-[10px] font-black text-fg">{formatters.formatCurrency(deal.value)}</span>
                                             </div>
                                         </div>
-                                        <span className="text-[9px] text-fg-muted font-bold flex items-center gap-1 bg-slate-400/10 px-1.5 py-0.5 rounded">
+                                        <span className="text-[9px] text-fg-muted font-bold flex items-center gap-1 bg-fg-muted/10 px-1.5 py-0.5 rounded">
                                             <Calendar size={10} className="text-fg-muted" /> {deal.expected_close_date}
                                         </span>
                                     </div>
@@ -233,7 +233,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
 
                             {/* Empty state hint */}
                             {stageDeals.length === 0 && !isOver && (
-                                <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-400/30 rounded-xl">
+                                <div className="flex-1 flex items-center justify-center border-2 border-dashed border-line rounded-xl">
                                     <span className="text-[10px] font-black text-fg-subtle uppercase tracking-widest">Drop here</span>
                                 </div>
                             )}

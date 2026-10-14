@@ -233,7 +233,7 @@ export default function SalesReviewsPage() {
             )}
           </div>
           <button
-            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
             onClick={startReview}
             disabled={busy || !newPersonId || !bounds}
           >
@@ -256,7 +256,7 @@ export default function SalesReviewsPage() {
             not yet usable as appraisal evidence.
           </span>
           <button
-            className="rounded bg-line px-3 py-1.5 text-xs text-fg hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-xs text-fg hover:bg-surface-high disabled:opacity-50"
             onClick={retrySync}
             disabled={busy}
           >
@@ -272,7 +272,7 @@ export default function SalesReviewsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-line">
                   <th className="py-2 pr-4 font-medium">Period</th>
                   <th className="py-2 pr-4 font-medium">Type</th>
                   <th className="py-2 pr-4 font-medium">Person</th>
@@ -285,7 +285,7 @@ export default function SalesReviewsPage() {
                 {reviews.map((r) => (
                   <tr
                     key={r.id}
-                    className="border-b border-slate-800/60 hover:bg-slate-800/40 cursor-pointer"
+                    className="border-b border-line hover:bg-surface-high cursor-pointer"
                     onClick={() => setActive(r)}
                   >
                     <td className="py-2 pr-4 text-fg">
@@ -388,7 +388,7 @@ export default function SalesReviewsPage() {
               </Block>
             </div>
 
-            <div className="border-t border-slate-800 pt-3">
+            <div className="border-t border-line pt-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-fg-subtle">Action items</span>
                 {active.status !== 'finalized' && (
@@ -445,7 +445,7 @@ export default function SalesReviewsPage() {
                   Save draft
                 </button>
                 <button
-                  className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+                  className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
                   onClick={() => finalize(active.id)}
                   disabled={busy}
                 >

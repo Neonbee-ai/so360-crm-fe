@@ -27,10 +27,10 @@ const STEPS: Array<{ key: Step; label: string }> = [
     { key: 'done', label: 'Import' },
 ];
 
-const SELECT_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
-const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
+const SELECT_CLS = 'w-full bg-bg border border-line text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
+const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
 const SECONDARY_BTN = 'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-fg-subtle hover:text-fg disabled:opacity-50';
-const OPTION_BTN = 'w-full flex items-center gap-3 text-left bg-bg border border-slate-800 hover:border-primary rounded-xl px-4 py-3';
+const OPTION_BTN = 'w-full flex items-center gap-3 text-left bg-bg border border-line hover:border-primary rounded-xl px-4 py-3';
 
 /** What the Review step shows, and how to send it. */
 interface ImportPlan {
@@ -296,7 +296,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                     </p>
                     <dl className="grid grid-cols-3 gap-3 text-center">
                         {([['Created', result.created], ['Updated', result.updated], ['Already there', result.skipped]] as const).map(([label, n]) => (
-                            <div key={label} className="bg-bg border border-slate-800 rounded-lg p-3">
+                            <div key={label} className="bg-bg border border-line rounded-lg p-3">
                                 <dt className="text-xs text-fg-muted">{label}</dt>
                                 <dd className="text-xl font-bold text-fg">{n}</dd>
                             </div>

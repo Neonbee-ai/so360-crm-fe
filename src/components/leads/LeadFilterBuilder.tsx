@@ -189,7 +189,7 @@ function GroupBlock({
       className={
         depth === 0
           ? 'space-y-3'
-          : 'space-y-3 border-l-2 border-line pl-3 py-2 rounded bg-slate-800/40'
+          : 'space-y-3 border-l-2 border-line pl-3 py-2 rounded bg-surface-high'
       }
       data-testid={depth === 0 ? 'filter-root' : 'filter-group'}
     >
@@ -324,7 +324,7 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
           </button>
           <button
             type="button"
-            className="px-4 py-1.5 text-sm bg-primary hover:bg-primary text-white rounded-md font-medium transition-colors"
+            className="px-4 py-1.5 text-sm bg-primary hover:bg-primary/90 text-white rounded-md font-medium transition-colors"
             onClick={() => onApply(serializeFilter(tree))}
           >
             Apply{activeCount > 0 ? ` (${activeCount})` : ''}

@@ -225,8 +225,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-            <div className="bg-surface border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0">
+            <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0">
                     <h2 className="text-xl font-black text-fg uppercase tracking-tight flex items-center gap-2">
                         <CheckCircle2 className={isEditing ? "text-primary" : "text-success"} size={24} />
                         {isEditing ? 'Edit Task' : 'New Task'}
@@ -244,7 +244,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                 required
                                 placeholder="e.g. Follow up email..."
                             />
@@ -255,7 +255,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold resize-none h-20"
+                                className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold resize-none h-20"
                                 placeholder="Add details..."
                             />
                         </div>
@@ -266,7 +266,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 <select
                                     value={priority}
                                     onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                                    className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     {TASK_PRIORITY_OPTIONS.map(o => (
                                         <option key={o.value} value={o.value}>{o.label}</option>
@@ -287,7 +287,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         // sensible one rather than an empty field.
                                         if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
                                     }}
-                                    className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="TODO">To Do</option>
                                     <option value="CALL">Call</option>
@@ -307,7 +307,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                     />
                                 </div>
                             </div>
@@ -323,7 +323,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
                                         min={todayDate}
-                                        className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                         required
                                     />
                                 </div>
@@ -345,7 +345,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         type="time"
                                         value={dueTime}
                                         onChange={(e) => setDueTime(e.target.value)}
-                                        className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                         required={type === 'REMINDER'}
                                     />
                                 </div>
@@ -353,7 +353,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <button
                                         type="button"
                                         onClick={() => setDueTime('')}
-                                        className="px-3 py-3 rounded-xl border border-slate-700/50 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-colors"
+                                        className="px-3 py-3 rounded-xl border border-line text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-colors"
                                     >
                                         Clear
                                     </button>
@@ -367,7 +367,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 <select
                                     value={reminderMinutes}
                                     onChange={(e) => setReminderMinutes(e.target.value)}
-                                    className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="">No reminder notification</option>
                                     <option value="15">15 minutes before</option>
@@ -386,7 +386,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <select
                                         value={assignedToId}
                                         onChange={(e) => setAssignedToId(e.target.value)}
-                                        className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         <option value="">{isEditing ? 'Unassigned' : 'Select assignee…'}</option>
                                         {users.map(u => (
@@ -440,7 +440,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         <select
                                             value={associateType}
                                             onChange={(e) => { setAssociateType(e.target.value as any); setAssociateId(''); }}
-                                            className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                            className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                         >
                                             <option value="none">None</option>
                                             <option value="lead">Lead</option>
@@ -453,7 +453,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                             <select
                                                 value={associateId}
                                                 onChange={(e) => setAssociateId(e.target.value)}
-                                                className="w-full bg-bg border border-slate-700/50 text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                                className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                             >
                                                 <option value="">Select {associateType === 'lead' ? 'Lead' : 'Deal'}…</option>
                                                 {associateType === 'lead'
@@ -482,7 +482,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 <select
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value as Task['status'])}
-                                    className="w-full bg-bg border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-all appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line rounded-xl px-4 py-3 text-sm font-bold text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-all appearance-none cursor-pointer"
                                 >
                                     <option value="OPEN">Open</option>
                                     <option value="IN_PROGRESS">In Progress</option>
@@ -495,7 +495,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                     </div>
 
                 </div>
-                <div className="px-8 pb-6 pt-4 flex justify-end gap-3 border-t border-slate-800/50 flex-shrink-0">
+                <div className="px-8 pb-6 pt-4 flex justify-end gap-3 border-t border-line flex-shrink-0">
                         <button
                             type="button"
                             onClick={onClose}
@@ -506,7 +506,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`px-8 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary shadow-blue-500/20' : 'bg-success hover:bg-success shadow-emerald-500/20'}`}
+                            className={`px-8 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-blue-500/20' : 'bg-success hover:bg-success/90 shadow-emerald-500/20'}`}
                         >
                             {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                             {isEditing ? 'Save Changes' : 'Create Task'}

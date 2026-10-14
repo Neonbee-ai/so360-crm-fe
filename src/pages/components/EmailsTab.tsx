@@ -70,7 +70,7 @@ const EmailsTab: React.FC<Props> = ({ leadId }) => {
                     // — matches the existing convention (see DealDetailPage.tsx).
                     href={`/inbox/conversations/${c.id}`}
                     onClick={(e) => { e.preventDefault(); window.location.href = `/inbox/conversations/${c.id}`; }}
-                    className="flex items-center justify-between gap-3 bg-slate-950/50 border border-slate-800/60 rounded-xl px-4 py-3 hover:border-line transition-all group cursor-pointer"
+                    className="flex items-center justify-between gap-3 bg-surface-sunken border border-line rounded-xl px-4 py-3 hover:border-line transition-all group cursor-pointer"
                 >
                     <div className="flex items-center gap-3 min-w-0">
                         {PLATFORM_ICON[c.platform] || <Mail size={14} className="text-fg-subtle" />}

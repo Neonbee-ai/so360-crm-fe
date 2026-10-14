@@ -5,7 +5,7 @@ import { describeReservation } from './unitBooking';
 const TONE: Record<string, string> = {
     held: 'bg-amber-500/15 text-warning border-amber-500/30',
     sold: 'bg-emerald-500/15 text-success border-emerald-500/30',
-    muted: 'bg-slate-700/60 text-fg-subtle border-slate-600/60',
+    muted: 'bg-surface-high text-fg-subtle border-line',
 };
 
 interface Props {

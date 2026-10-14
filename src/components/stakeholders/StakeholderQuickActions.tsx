@@ -26,8 +26,8 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-bg border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+            <div className="bg-bg border border-line rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-line">
                     <p className="text-xs font-black text-fg uppercase tracking-widest">{stakeholder.full_name || 'Stakeholder'}</p>
                     <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-lg hover:bg-surface-raised"><X size={16} /></button>
                 </div>

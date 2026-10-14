@@ -248,7 +248,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-line">
                     <button
                         type="button"
                         onClick={onClose}
@@ -260,7 +260,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                     <button
                         type="submit"
                         disabled={submitting || !name.trim() || !categoryId}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-blue-600/20"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-blue-600/20"
                     >
                         {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         <span>Submit Build Request</span>

@@ -218,7 +218,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
 
       const approverName = await screen.findByText('Alice Director');
       const chip = approverName.parentElement as HTMLElement;
-      expect(chip.className).toContain('bg-slate-800/90');
+      expect(chip.className).toContain('bg-surface-high');
       expect(chip.className).toContain('text-fg-subtle');
     });
   });

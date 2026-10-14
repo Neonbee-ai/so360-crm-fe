@@ -467,8 +467,8 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
       await waitFor(() => expect(screen.getByText('Hot lead from conference')).toBeInTheDocument());
-      const noteOneCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40');
-      const noteTwoCard = screen.getByText('Needs follow up').closest('div.bg-slate-900\\/40');
+      const noteOneCard = screen.getByText('Hot lead from conference').closest('div.bg-surface-sunken');
+      const noteTwoCard = screen.getByText('Needs follow up').closest('div.bg-surface-sunken');
       expect(noteOneCard).not.toBeNull();
       expect(noteTwoCard).not.toBeNull();
       expect(noteOneCard).not.toBe(noteTwoCard);
@@ -494,7 +494,7 @@ describe('LeadDetailPage', () => {
       // Reply lives inside its own indented/nested container, distinct from the parent note card
       const replyContainer = screen.getByText('Following up now').closest('div.border-l-2');
       expect(replyContainer).not.toBeNull();
-      expect(replyContainer?.className).toContain('border-slate-700/60');
+      expect(replyContainer?.className).toContain('border-line');
       // Composer is collapsed by default — only the "Reply" trigger is present
       expect(screen.getByTestId('open-reply-n1')).toBeInTheDocument();
       expect(screen.queryByPlaceholderText(/Reply… use @ to mention someone/)).not.toBeInTheDocument();
@@ -536,7 +536,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument());
       expect(screen.getByText('Second reply')).toBeInTheDocument();
       // "Test Owner" appears once for the note itself, and once for the grouped reply run (not once per reply)
-      const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-slate-900\\/40') as HTMLElement;
+      const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-surface-sunken') as HTMLElement;
       expect(within(noteCard).getAllByText('Test Owner')).toHaveLength(2);
     });
 

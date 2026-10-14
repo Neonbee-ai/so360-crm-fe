@@ -108,7 +108,7 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
     }, [leadId]);
 
     return (
-        <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
+        <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-hidden relative">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <div className="bg-violet-500/10 text-violet-400 p-1.5 rounded-lg">

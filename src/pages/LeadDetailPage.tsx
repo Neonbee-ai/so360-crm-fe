@@ -1930,7 +1930,7 @@ const LeadDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-2">
                                         <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Digital Assets & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary text-fg shadow-lg shadow-primary/30 active:scale-95'}`}>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary/90 text-fg shadow-lg shadow-primary/30 active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload Document'}
                                             <input

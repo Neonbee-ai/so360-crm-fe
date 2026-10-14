@@ -98,7 +98,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
 
                 {/* Tabs */}
                 {leadId && (
-                    <div className="flex gap-1 mb-4 bg-slate-800/50 rounded-xl p-1">
+                    <div className="flex gap-1 mb-4 bg-surface-high rounded-xl p-1">
                         <button
                             onClick={() => setTab('from-lead')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${tab === 'from-lead' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
@@ -147,7 +147,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                             <button
                                 disabled={selectedLeadProducts.size === 0}
                                 onClick={() => onImportFromLead(leadProducts.filter(lp => selectedLeadProducts.has(lp.id)))}
-                                className="flex-1 py-2.5 bg-primary hover:bg-primary disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all"
+                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all"
                             >
                                 Add {selectedLeadProducts.size > 0 ? `(${selectedLeadProducts.size})` : ''}
                             </button>
@@ -215,7 +215,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={onClose} className="flex-1 py-2.5 border border-line rounded-xl text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-all">Cancel</button>
-                                    <button onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)} className="flex-1 py-2.5 bg-primary hover:bg-primary rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all">Add Product</button>
+                                    <button onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)} className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all">Add Product</button>
                                 </div>
                             </div>
                         )}
@@ -356,7 +356,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                 </div>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                 >
                     <Plus size={12} /> Add Product
                 </button>
@@ -371,7 +371,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
             {loading ? (
                 <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-blue-400" /></div>
             ) : products.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl">
+                <div className="text-center py-12 border border-dashed border-line rounded-2xl">
                     <Package size={32} className="mx-auto mb-3 text-fg opacity-40" />
                     <p className="text-[10px] font-bold text-fg-muted uppercase tracking-widest">No products in this deal</p>
                     <p className="text-xs text-fg-muted mt-1">
@@ -383,7 +383,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                     {products.map(product => {
                         const lineTotal = product.quantity * product.unit_price;
                         return (
-                            <div key={product.id} className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 group hover:border-line transition-all">
+                            <div key={product.id} className="bg-surface-sunken border border-line rounded-xl p-4 group hover:border-line transition-all">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 min-w-0">

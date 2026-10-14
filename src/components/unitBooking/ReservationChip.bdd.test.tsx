@@ -61,7 +61,7 @@ describe('Given the remaining ReservationChip tones', () => {
             render(<ReservationChip status="released" expiresAt={null} />);
             const chip = screen.getByTestId('reservation-chip');
             expect(chip).toHaveTextContent('Released');
-            expect(chip.className).toMatch(/slate/);
+            expect(chip.className).toMatch(/surface-high/);
         });
     });
 

@@ -159,7 +159,7 @@ export default function CompensationPage() {
             />
           </div>
           <button
-            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
             onClick={calculate}
             disabled={busy || !personId}
           >
@@ -173,7 +173,7 @@ export default function CompensationPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-line">
                   <th className="py-2 pr-4 font-medium">Component</th>
                   <th className="py-2 pr-4 font-medium">Basis</th>
                   <th className="py-2 font-medium text-right">Amount</th>
@@ -181,7 +181,7 @@ export default function CompensationPage() {
               </thead>
               <tbody>
                 {calc.components?.map((c: any) => (
-                  <tr key={c.rule_id} className="border-b border-slate-800/60">
+                  <tr key={c.rule_id} className="border-b border-line">
                     <td className="py-2 pr-4 text-fg">{c.rule_name}</td>
                     <td className="py-2 pr-4 text-fg-subtle text-xs">
                       {c.basis}
@@ -473,7 +473,7 @@ export default function CompensationPage() {
                 />
               </div>
               <button
-                className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+                className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
                 onClick={saveRule}
                 disabled={busy}
               >
@@ -493,7 +493,7 @@ export default function CompensationPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-line">
                   <th className="py-2 pr-4 font-medium">Name</th>
                   <th className="py-2 pr-4 font-medium">Type</th>
                   <th className="py-2 pr-4 font-medium">Trigger</th>
@@ -502,7 +502,7 @@ export default function CompensationPage() {
               </thead>
               <tbody>
                 {rules.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-800/60">
+                  <tr key={r.id} className="border-b border-line">
                     <td className="py-2 pr-4 text-fg">{r.name}</td>
                     <td className="py-2 pr-4 text-fg-subtle">{r.rule_type}</td>
                     <td className="py-2 pr-4 text-fg-subtle text-xs">

@@ -14,7 +14,7 @@ interface CreateDealModalProps {
     onSuccess: (deal: Deal) => void;
 }
 
-const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold';
 
 const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
     const { recordActivity } = useActivity();
@@ -281,9 +281,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     return (
         <>
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-                <div className="bg-surface border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+                <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
                     {/* Sticky header */}
-                    <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0 rounded-t-3xl">
+                    <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0 rounded-t-3xl">
                         <h2 className="text-xl font-black text-fg uppercase tracking-tight flex items-center gap-2">
                             <Briefcase className="text-primary" size={24} />
                             New Deal
@@ -317,7 +317,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                                 setCompanyError('');
                                             }}
                                             placeholder="Search customer or type company name…"
-                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                            className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                         />
                                         {customerDropdownOpen && customerResults.length > 0 && (
                                             <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-xl shadow-xl z-20 overflow-hidden">
@@ -335,7 +335,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                                             // Auto-generate effect re-fires from the effectiveCompany/
                                                             // effectiveLeadId change above — no manual fallback needed here.
                                                         }}
-                                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-raised transition-colors border-b border-slate-800 last:border-0"
+                                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-raised transition-colors border-b border-line last:border-0"
                                                     >
                                                         <div className="text-sm font-bold text-fg">{c.company_name || c.contact_name || c.name}</div>
                                                         {c.contact_email && <div className="text-[11px] text-fg-muted">{c.contact_email}</div>}
@@ -374,7 +374,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                             type="number"
                                             value={value}
                                             onChange={e => setValue(e.target.value)}
-                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                            className="w-full bg-bg border border-line text-fg rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                             required
                                             min="0"
                                         />
@@ -386,7 +386,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                         <select
                                             value={stage}
                                             onChange={e => setStage(e.target.value as DealStage)}
-                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-10 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                            className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-10 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                         >
                                             {settings.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                                         </select>
@@ -406,7 +406,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                             type="date"
                                             value={startDate}
                                             onChange={e => setStartDate(e.target.value)}
-                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                            className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
                                         />
                                     </div>
                                 </div>
@@ -418,7 +418,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                             type="date"
                                             value={expectedClose}
                                             onChange={e => setExpectedClose(e.target.value)}
-                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                            className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
                                         />
                                     </div>
                                 </div>
@@ -431,7 +431,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     <select
                                         value={ownerId}
                                         onChange={e => setOwnerId(e.target.value)}
-                                        className="w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                                     </select>
@@ -452,7 +452,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                             value={salesRepSearch}
                                             onChange={e => setSalesRepSearch(e.target.value)}
                                             placeholder="Search by name, email, designation or department…"
-                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-2 outline-none focus:border-primary transition-all text-xs"
+                                            className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-2 outline-none focus:border-primary transition-all text-xs"
                                         />
                                     </div>
                                 )}
@@ -460,7 +460,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     <select
                                         value={ownerPersonId}
                                         onChange={e => { hasUserPickedSalesRep.current = true; setOwnerPersonId(e.target.value); }}
-                                        className="w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         <option value="">Select sales rep...</option>
                                         {visibleSalesReps.map((p) => (
@@ -496,7 +496,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
                             {/* Custom fields */}
                             {customFieldDefs.length > 0 && (
-                                <div className="border-t border-slate-800 pt-5 space-y-5">
+                                <div className="border-t border-line pt-5 space-y-5">
                                     <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Additional Information</p>
                                     {customFieldDefs.map(f => renderCustomField(f))}
                                 </div>
@@ -504,7 +504,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                         </div>
 
                         {/* Sticky footer */}
-                        <div className="flex justify-end gap-3 border-t border-slate-800 px-8 py-5 flex-shrink-0 rounded-b-3xl">
+                        <div className="flex justify-end gap-3 border-t border-line px-8 py-5 flex-shrink-0 rounded-b-3xl">
                             <button
                                 type="button"
                                 onClick={onClose}
@@ -515,7 +515,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="px-8 py-3 bg-primary hover:bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+                                className="px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
                             >
                                 {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                                 Create Deal

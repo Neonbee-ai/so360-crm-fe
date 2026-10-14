@@ -87,7 +87,7 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
         );
       case 'withdrawn':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-fg-subtle border border-slate-500/20">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-fg-muted/10 text-fg-subtle border border-line">
             <RotateCcw className="w-3.5 h-3.5" />
             Withdrawn
           </span>
@@ -106,7 +106,7 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
   const totalCycles = history.length;
 
   return (
-    <div className="bg-slate-900/50 border border-line rounded-lg p-6 space-y-4">
+    <div className="bg-surface-sunken border border-line rounded-lg p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <History className="w-5 h-5 text-blue-400" />
@@ -131,14 +131,14 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
               key={cycle.id}
               className={`border rounded-lg transition-all ${
                 isCurrent
-                  ? 'border-blue-500/40 bg-slate-800/40'
-                  : 'border-slate-800 bg-slate-900/40'
+                  ? 'border-blue-500/40 bg-surface-high'
+                  : 'border-line bg-surface-sunken'
               }`}
             >
               {/* Header / Click to expand */}
               <div
                 onClick={() => toggleCycle(cycle.id)}
-                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-800/60 select-none transition-colors"
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-high select-none transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col">
@@ -176,9 +176,9 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
 
               {/* Collapsible details */}
               {isExpanded && (
-                <div className="px-4 pb-4 pt-1 border-t border-slate-800/60 space-y-3">
+                <div className="px-4 pb-4 pt-1 border-t border-line space-y-3">
                   {cycle.notes && (
-                    <div className="bg-slate-800/50 rounded p-3 text-xs text-fg-subtle border border-slate-700/50">
+                    <div className="bg-surface-high rounded p-3 text-xs text-fg-subtle border border-line">
                       <span className="font-semibold text-fg-subtle block mb-1">Submission Notes:</span>
                       {cycle.notes}
                     </div>
@@ -189,7 +189,7 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
                     <span className="text-xs font-semibold text-fg-subtle uppercase tracking-wider block">
                       Required Approvers
                     </span>
-                    <div className="divide-y divide-slate-800/60 rounded-lg border border-slate-800/80 bg-slate-900/60 overflow-hidden">
+                    <div className="divide-y divide-line rounded-lg border border-line bg-surface-sunken overflow-hidden">
                       {approvers.map((approver, aIdx) => (
                         <div
                           key={approver.id || `${approver.approver_user_id}-${aIdx}`}
@@ -209,7 +209,7 @@ export const QuoteApprovalHistory: React.FC<QuoteApprovalHistoryProps> = ({
                                 </div>
                               )}
                               {approver.notes && (
-                                <div className="mt-1 text-xs text-fg-subtle bg-slate-800/60 p-1.5 rounded border border-slate-700/40">
+                                <div className="mt-1 text-xs text-fg-subtle bg-surface-high p-1.5 rounded border border-line">
                                   <span className="font-medium text-fg-subtle">Comment: </span>
                                   {approver.notes}
                                 </div>

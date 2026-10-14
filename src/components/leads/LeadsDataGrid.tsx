@@ -114,7 +114,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function statusColor(status: string) {
-  return STATUS_COLORS[status] ?? 'bg-slate-500/10 text-fg-subtle border-slate-500/20';
+  return STATUS_COLORS[status] ?? 'bg-fg-muted/10 text-fg-subtle border-line';
 }
 
 function initials(name: string) {
@@ -606,8 +606,8 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
 
   return (
     <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface border border-slate-700/50 rounded-xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
+      <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-2">
             <Columns2 size={18} className="text-blue-400" />
             <h2 className="text-base font-semibold text-fg">Customize Columns</h2>
@@ -633,7 +633,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
             return (
               <div
                 key={col.key}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800/60 group cursor-default"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-high group cursor-default"
                 draggable
                 onDragStart={() => { dragging.current = col.key; }}
                 onDragOver={(e) => { e.preventDefault(); }}
@@ -660,10 +660,10 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
             );
           })}
         </div>
-        <div className="px-5 py-4 border-t border-slate-700/50 flex justify-end">
+        <div className="px-5 py-4 border-t border-line flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors"
           >
             Done
           </button>
@@ -741,7 +741,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
   return (
     <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-2xl shadow-black/40">
       <span className="text-sm text-fg font-semibold">{count} selected</span>
-      <div className="w-px h-5 bg-slate-600" />
+      <div className="w-px h-5 bg-surface-high" />
       {actions.map((action) => {
         const hasMenu = !!action.options?.length;
         return (
@@ -764,7 +764,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
             {hasMenu && openMenu === action.label && (
               <div
                 data-testid={`bulk-menu-${action.label}`}
-                className="absolute bottom-full mb-2 left-0 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[180px] max-h-64 overflow-y-auto"
+                className="absolute bottom-full mb-2 left-0 z-50 bg-surface border border-line rounded-xl shadow-xl py-1 min-w-[180px] max-h-64 overflow-y-auto"
               >
                 {action.options!.map((opt) => (
                   <button
@@ -780,7 +780,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
           </div>
         );
       })}
-      <div className="w-px h-5 bg-slate-600" />
+      <div className="w-px h-5 bg-surface-high" />
       <button
         onClick={onClear}
         className="p-1.5 text-fg-subtle hover:text-fg transition-colors rounded-lg hover:bg-line"
@@ -830,7 +830,7 @@ function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavig
   return (
     <div
       ref={ref}
-      className="fixed z-[800] bg-surface border border-slate-700/60 rounded-xl shadow-2xl py-1.5 min-w-[180px]"
+      className="fixed z-[800] bg-surface border border-line rounded-xl shadow-2xl py-1.5 min-w-[180px]"
       style={{ left: Math.min(x, window.innerWidth - 200), top: Math.min(y, window.innerHeight - 300) }}
     >
       {menuItems.map((item) => (
@@ -1190,10 +1190,10 @@ export function LeadsDataGrid({
     return (
       <div
         key={lead.id}
-        className={`flex border-b border-slate-800/60 cursor-pointer transition-colors group/row ${
+        className={`flex border-b border-line cursor-pointer transition-colors group/row ${
           virtualize && !grouped ? 'overflow-hidden' : ''
         } ${
-          isFocused ? 'ring-1 ring-inset ring-blue-500/70 bg-blue-600/10' : isSelected ? 'bg-blue-600/8' : isHovered ? 'bg-slate-800/50' : 'hover:bg-slate-800/30'
+          isFocused ? 'ring-1 ring-inset ring-blue-500/70 bg-blue-600/10' : isSelected ? 'bg-blue-600/8' : isHovered ? 'bg-surface-high' : 'hover:bg-surface-high'
         }`}
         style={{ minWidth: `${totalWidth}px`, ...(virtualize && !grouped ? { height: rowH } : {}) }}
         onClick={() => onRowClick(lead)}
@@ -1213,7 +1213,7 @@ export function LeadsDataGrid({
               <div
                 key="select"
                 className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
-                  isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-bg'
+                  isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-surface-high' : 'bg-bg'
                 }`}
                 style={{ width: col.width, left: colLeftOffsets['select'] }}
                 onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
@@ -1261,7 +1261,7 @@ export function LeadsDataGrid({
                 canEditCell ? 'cursor-text' : ''
               } ${
                 isSticky
-                  ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-bg'}`
+                  ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
                   : ''
               }`}
               style={{
@@ -1295,13 +1295,13 @@ export function LeadsDataGrid({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
-        <div className="flex items-center gap-4 px-4 py-3 border-b border-slate-700/50 bg-slate-900/80">
+      <div className="rounded-xl border border-line bg-surface-sunken overflow-hidden">
+        <div className="flex items-center gap-4 px-4 py-3 border-b border-line bg-surface-sunken">
           <div className="h-4 w-24 bg-line rounded animate-pulse" />
           <div className="h-4 w-32 bg-line rounded animate-pulse" />
         </div>
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex gap-4 px-4 py-3 border-b border-slate-700/30">
+          <div key={i} className="flex gap-4 px-4 py-3 border-b border-line">
             <div className="h-4 w-48 bg-surface-raised rounded animate-pulse" />
             <div className="h-4 w-36 bg-surface-raised rounded animate-pulse" />
             <div className="h-4 w-28 bg-surface-raised rounded animate-pulse" />
@@ -1334,7 +1334,7 @@ export function LeadsDataGrid({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${
                 grouped
                   ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
-                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-slate-700/50'
+                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
               }`}
               title="Group by"
             >
@@ -1344,7 +1344,7 @@ export function LeadsDataGrid({
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
-                className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[160px]"
+                className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl py-1 min-w-[160px]"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
                   <button
@@ -1366,14 +1366,14 @@ export function LeadsDataGrid({
           <div className="relative" ref={densityMenuRef}>
             <button
               onClick={() => setShowDensityMenu((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-slate-700/50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
               title="Row density"
             >
               <AlignJustify size={14} />
               <span className="capitalize">{density}</span>
             </button>
             {showDensityMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl py-1 min-w-[140px]">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
                   <button
                     key={d}
@@ -1393,7 +1393,7 @@ export function LeadsDataGrid({
           {/* Column manager */}
           <button
             onClick={() => setShowColumnManager(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-slate-700/50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
             title="Customize columns"
           >
             <Settings2 size={14} />
@@ -1413,7 +1413,7 @@ export function LeadsDataGrid({
       ) : (
       <div
         ref={containerRef}
-        className="rounded-xl border border-slate-700/50 overflow-auto bg-bg"
+        className="rounded-xl border border-line overflow-auto bg-bg"
         style={{ maxHeight: 'calc(100vh - 210px)' }}
         onContextMenu={(e) => e.preventDefault()}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
@@ -1425,7 +1425,7 @@ export function LeadsDataGrid({
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
           <div
-            className="flex sticky top-0 z-20 bg-surface border-b border-slate-700/50"
+            className="flex sticky top-0 z-20 bg-surface border-b border-line"
             style={{ minWidth: `${totalWidth}px` }}
           >
             {orderedCols.map((col) => {
@@ -1529,7 +1529,7 @@ export function LeadsDataGrid({
                     <button
                       type="button"
                       onClick={() => toggleGroup(g.key)}
-                      className="flex items-center gap-2 w-full sticky left-0 px-3 py-2 bg-slate-900/80 border-b border-slate-700/50 text-sm text-fg hover:bg-slate-800/60 transition-colors"
+                      className="flex items-center gap-2 w-full sticky left-0 px-3 py-2 bg-surface-sunken border-b border-line text-sm text-fg hover:bg-surface-high transition-colors"
                       style={{ minWidth: `${totalWidth}px` }}
                     >
                       {isCollapsed ? (

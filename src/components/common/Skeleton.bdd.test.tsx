@@ -14,7 +14,7 @@ describe('Skeleton', () => {
     it('When rendered without props / Then shows the muted background style', () => {
       const { container } = render(<Skeleton />);
       const el = container.firstChild as HTMLElement;
-      expect(el.className).toContain('bg-slate-400/30');
+      expect(el.className).toContain('bg-fg-muted/30');
     });
 
     it('When rendered without props / Then has rounded corners', () => {

@@ -52,7 +52,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
     const hasActiveFilters = Object.keys(filters).length > 0;
 
     return (
-        <div className="bg-surface border border-slate-800 p-4 rounded-xl mb-4 flex flex-wrap gap-4 items-end">
+        <div className="bg-surface border border-line p-4 rounded-xl mb-4 flex flex-wrap gap-4 items-end">
             {/* Date Range */}
             <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Date Range</label>
@@ -62,7 +62,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                         <select
                             value={filters.date_range || ''}
                             onChange={(e) => handleChange('date_range', e.target.value)}
-                            className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary appearance-none min-w-[160px]"
+                            className="bg-bg border border-line text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary appearance-none min-w-[160px]"
                         >
                             <option value="">All Time</option>
                             <option value="today">Today</option>
@@ -87,7 +87,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                             type="date"
                             value={filters.start_date || ''}
                             onChange={(e) => handleChange('start_date', e.target.value)}
-                            className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
+                            className="bg-bg border border-line text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
                         />
                     </div>
                     <div className="space-y-1">
@@ -96,7 +96,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                             type="date"
                             value={filters.end_date || ''}
                             onChange={(e) => handleChange('end_date', e.target.value)}
-                            className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
+                            className="bg-bg border border-line text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
                         />
                     </div>
                 </>
@@ -108,7 +108,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                 <select
                     value={filters.owner_id || ''}
                     onChange={(e) => handleChange('owner_id', e.target.value)}
-                    className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary min-w-[140px]"
+                    className="bg-bg border border-line text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary min-w-[140px]"
                 >
                     <option value="">All Owners</option>
                     {users.map(u => (
@@ -127,7 +127,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
                         placeholder="Search company..."
                         value={filters.company_name || ''}
                         onChange={(e) => handleChange('company_name', e.target.value)}
-                        className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary w-[180px]"
+                        className="bg-bg border border-line text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary w-[180px]"
                     />
                 </div>
             </div>

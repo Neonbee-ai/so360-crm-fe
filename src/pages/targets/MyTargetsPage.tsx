@@ -162,7 +162,7 @@ function MetricCard({
   currency?: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 grow basis-80 max-w-md">
+    <div className="rounded-lg border border-line bg-surface-sunken p-4 grow basis-80 max-w-md">
       <div className="text-xs uppercase tracking-wide text-fg-subtle">
         {metric.metric_name}
       </div>
@@ -201,7 +201,7 @@ function MetricCard({
       </div>
 
       {slices.length > 0 && (
-        <div className="mt-3 border-t border-slate-800 pt-3 space-y-2">
+        <div className="mt-3 border-t border-line pt-3 space-y-2">
           {slices.map((s) => (
             <div key={s.target_line_id}>
               <div className="flex items-center justify-between text-xs">

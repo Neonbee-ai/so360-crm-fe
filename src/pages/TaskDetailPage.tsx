@@ -258,8 +258,8 @@ const TaskDetailPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="md:col-span-2 space-y-8">
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-6 border-b border-slate-800 pb-2">Related Information</h3>
+                    <section className="bg-surface border border-line rounded-2xl p-6">
+                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-6 border-b border-line pb-2">Related Information</h3>
                         <div className="space-y-6">
                             {(task.deal_name || task.deal_id) && (
                                 <div className="flex items-center gap-4">
@@ -363,16 +363,16 @@ const TaskDetailPage = () => {
                         </div>
                     </section>
 
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-4 border-b border-slate-800 pb-2">Description</h3>
+                    <section className="bg-surface border border-line rounded-2xl p-6">
+                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-4 border-b border-line pb-2">Description</h3>
                         <p className={`text-fg-subtle leading-relaxed ${!task.description ? 'italic' : ''}`}>
                             {task.description || 'No additional description provided for this task.'}
                         </p>
                     </section>
 
                     {/* Notes & Comments Section */}
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6">
-                        <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
+                    <section className="bg-surface border border-line rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-4 border-b border-line pb-2">
                             <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest">Notes & Comments</h3>
                             {/* Only one Cancel exists in this section — inside the editor.
                                 The header keeps a single "open editor" affordance. */}
@@ -387,7 +387,7 @@ const TaskDetailPage = () => {
                         </div>
 
                         {notesError && (
-                            <div className="bg-slate-800/60 border border-line rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
+                            <div className="bg-surface-high border border-line rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
                                 <p className="text-xs text-fg-subtle">{notesError}</p>
                                 <button
                                     onClick={handleRetryNotes}
@@ -406,20 +406,20 @@ const TaskDetailPage = () => {
                                 type="button"
                                 onClick={() => setIsAddingNote(true)}
                                 data-testid="note-composer-trigger"
-                                className="w-full text-left bg-bg border border-slate-800 hover:border-blue-500/50 text-fg-muted rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
+                                className="w-full text-left bg-bg border border-line hover:border-blue-500/50 text-fg-muted rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
                             >
                                 Add a note or comment...
                             </button>
                         )}
 
                         {isAddingNote && (
-                            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 mb-4">
+                            <div className="bg-surface-sunken border border-line rounded-xl p-4 mb-4">
                                 <textarea
                                     autoFocus
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     placeholder="Add a note or comment..."
-                                    className="w-full bg-bg border border-slate-800 text-fg rounded-lg px-4 py-3 outline-none focus:border-primary resize-none h-24"
+                                    className="w-full bg-bg border border-line text-fg rounded-lg px-4 py-3 outline-none focus:border-primary resize-none h-24"
                                 />
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button
@@ -442,7 +442,7 @@ const TaskDetailPage = () => {
                                                 toast.error(getErrorMessage(error, 'Failed to add note. Please try again.'));
                                             }
                                         }}
-                                        className="px-6 py-2 bg-primary hover:bg-primary text-white rounded-lg font-bold text-sm"
+                                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm"
                                     >
                                         Add Note
                                     </button>
@@ -463,7 +463,7 @@ const TaskDetailPage = () => {
                                     const isEdited = !!note.updated_at && note.updated_at !== note.created_at;
 
                                     return (
-                                        <div key={note.id} className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 group">
+                                        <div key={note.id} className="bg-surface-sunken border border-line rounded-lg p-4 group">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden">
@@ -514,7 +514,7 @@ const TaskDetailPage = () => {
                 </div>
 
                 <div className="space-y-8">
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+                    <section className="bg-surface border border-line rounded-2xl p-6">
                         <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-6">Assignee</h3>
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border-2 border-line">
@@ -527,12 +527,12 @@ const TaskDetailPage = () => {
                         </div>
                     </section>
 
-                    <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+                    <section className="bg-surface border border-line rounded-2xl p-6">
                         <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-4">Task Actions</h3>
                         <div className="space-y-2">
                             <button
                                 onClick={handleTaskToggle}
-                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'DONE' ? 'bg-success hover:bg-success shadow-emerald-500/20' : 'bg-primary hover:bg-primary shadow-blue-500/20'}`}
+                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'DONE' ? 'bg-success hover:bg-success/90 shadow-emerald-500/20' : 'bg-primary hover:bg-primary/90 shadow-blue-500/20'}`}
                             >
                                 {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
                             </button>
@@ -540,7 +540,7 @@ const TaskDetailPage = () => {
                                 onClick={() => canReschedule && setIsRescheduling(true)}
                                 disabled={!canReschedule}
                                 title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
-                                className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-fg py-2 rounded-lg text-xs font-bold transition-all border border-slate-600/50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-700/60"
+                                className="w-full bg-surface-high hover:bg-surface-high text-fg py-2 rounded-lg text-xs font-bold transition-all border border-line disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-high"
                             >
                                 Reschedule
                             </button>
@@ -583,7 +583,7 @@ const TaskDetailPage = () => {
             {/* Edit Note Modal */}
             {editingNote && createPortal(
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
-                    <div className="bg-surface border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                    <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
                                 <Edit2 className="text-blue-400" size={20} />
@@ -598,13 +598,13 @@ const TaskDetailPage = () => {
                         <textarea
                             value={editingNote.content}
                             onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
-                            className="w-full bg-bg border border-slate-800 text-fg rounded-lg px-4 py-3 outline-none focus:border-primary resize-none h-32 mb-4"
+                            className="w-full bg-bg border border-line text-fg rounded-lg px-4 py-3 outline-none focus:border-primary resize-none h-32 mb-4"
                             placeholder="Note content..."
                         />
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setEditingNote(null)}
-                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-fg rounded-lg font-bold text-sm transition-all border border-slate-600/50"
+                                className="px-4 py-2 bg-surface-high hover:bg-surface-high text-fg rounded-lg font-bold text-sm transition-all border border-line"
                             >
                                 Cancel
                             </button>
@@ -624,7 +624,7 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to update note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-primary hover:bg-primary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                                className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-500/20 active:scale-95"
                             >
                                 Save Changes
                             </button>
@@ -637,7 +637,7 @@ const TaskDetailPage = () => {
             {/* Delete Note Confirmation Modal */}
             {deleteNoteId && createPortal(
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
-                    <div className="bg-surface border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                    <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
                                 <Trash2 className="text-danger" size={20} />
@@ -652,7 +652,7 @@ const TaskDetailPage = () => {
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setDeleteNoteId(null)}
-                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-fg rounded-lg font-bold text-sm transition-all border border-slate-600/50"
+                                className="px-4 py-2 bg-surface-high hover:bg-surface-high text-fg rounded-lg font-bold text-sm transition-all border border-line"
                             >
                                 Cancel
                             </button>
@@ -668,7 +668,7 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to delete note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-danger hover:bg-danger text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95"
+                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95"
                             >
                                 Delete Note
                             </button>
@@ -681,7 +681,7 @@ const TaskDetailPage = () => {
             {/* Disconnect from Project Confirmation Modal */}
             {showDisconnectConfirm && createPortal(
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
-                    <div className="bg-surface border border-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                    <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
                                 <Unlink className="text-danger" size={20} />
@@ -694,7 +694,7 @@ const TaskDetailPage = () => {
                             </div>
                         </div>
                         <div className="space-y-2 mb-4">
-                            <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 hover:border-line cursor-pointer">
+                            <label className="flex items-start gap-3 p-3 rounded-xl border border-line hover:border-line cursor-pointer">
                                 <input
                                     type="radio"
                                     name="disconnect-mode"
@@ -707,7 +707,7 @@ const TaskDetailPage = () => {
                                     <span className="block text-xs text-fg-muted">The Project task stays as-is; this CRM task stops syncing with it.</span>
                                 </span>
                             </label>
-                            <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 hover:border-line cursor-pointer">
+                            <label className="flex items-start gap-3 p-3 rounded-xl border border-line hover:border-line cursor-pointer">
                                 <input
                                     type="radio"
                                     name="disconnect-mode"
@@ -725,14 +725,14 @@ const TaskDetailPage = () => {
                             <button
                                 onClick={() => setShowDisconnectConfirm(false)}
                                 disabled={isDisconnecting}
-                                className="px-4 py-2 bg-slate-700/60 hover:bg-slate-600/60 text-fg rounded-lg font-bold text-sm transition-all border border-slate-600/50 disabled:opacity-50"
+                                className="px-4 py-2 bg-surface-high hover:bg-surface-high text-fg rounded-lg font-bold text-sm transition-all border border-line disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDisconnect}
                                 disabled={isDisconnecting}
-                                className="px-4 py-2 bg-danger hover:bg-danger text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isDisconnecting && <Loader2 size={12} className="animate-spin" />}
                                 Disconnect
@@ -746,7 +746,7 @@ const TaskDetailPage = () => {
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && createPortal(
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-                    <div className="bg-surface border border-slate-700/50 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                    <div className="bg-surface border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl">
                         <h3 className="text-lg font-bold text-fg mb-2">Delete Task</h3>
                         <p className="text-fg-subtle mb-6">
                             Are you sure you want to delete this task? This action cannot be undone.

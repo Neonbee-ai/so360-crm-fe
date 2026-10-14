@@ -90,7 +90,7 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
 
   return (
     <div data-testid="note-editor">
-      <div className="flex items-center gap-1 pb-2 mb-2 border-b border-slate-800">
+      <div className="flex items-center gap-1 pb-2 mb-2 border-b border-line">
         <ToolbarButton label="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold size={14} />
         </ToolbarButton>

@@ -129,7 +129,7 @@ export default function TouchpointChannelsPage() {
           Touchpoint Channels
         </h1>
         <button
-          className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+          className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
           onClick={importSources}
           disabled={busy}
         >
@@ -176,7 +176,7 @@ export default function TouchpointChannelsPage() {
             </select>
           </div>
           <button
-            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
             onClick={addChannel}
             disabled={busy || !label.trim() || !value.trim()}
           >
@@ -200,7 +200,7 @@ export default function TouchpointChannelsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-line">
                   <th className="py-2 pr-4 font-medium">Channel</th>
                   <th className="py-2 pr-4 font-medium">Source</th>
                   <th className="py-2 pr-4 font-medium">Bound to</th>
@@ -211,7 +211,7 @@ export default function TouchpointChannelsPage() {
               </thead>
               <tbody>
                 {channels.map((c) => (
-                  <tr key={c.id} className="border-b border-slate-800/60">
+                  <tr key={c.id} className="border-b border-line">
                     <td className="py-2 pr-4 text-fg">
                       {c.label}
                       {c.linked_source_value && (

@@ -38,7 +38,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
 
     if (forwardStages.length === 0) {
         return (
-            <div className="flex items-center gap-3 p-4 bg-slate-500/10 rounded-lg border border-slate-500/20">
+            <div className="flex items-center gap-3 p-4 bg-fg-muted/10 rounded-lg border border-line">
                 <span className="text-fg-subtle text-sm">No pipeline stages configured</span>
             </div>
         );
@@ -60,7 +60,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
                             <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
                                 isCompleted ? (isTerminalWon ? 'bg-success text-white' : 'bg-teal-500 text-white') :
                                 isCurrent ? (isWonType(stage) ? 'bg-emerald-500/20 border-2 border-success text-success' : 'bg-teal-500/20 border-2 border-teal-500 text-teal-400') :
-                                'bg-slate-500/10 border border-line-strong text-fg-subtle'
+                                'bg-fg-muted/10 border border-line-strong text-fg-subtle'
                             }`}>
                                 {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                             </div>
@@ -72,7 +72,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
                         </div>
                         {!isLast && (
                             <div className={`flex-1 h-0.5 min-w-4 ${
-                                isCompleted ? 'bg-teal-500' : 'bg-slate-400/40'
+                                isCompleted ? 'bg-teal-500' : 'bg-fg-muted/40'
                             }`} />
                         )}
                     </React.Fragment>

@@ -167,9 +167,9 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                     <p className="text-xs">No audit history matches these filters.</p>
                 </div>
             ) : (
-                <div className="border border-slate-800 rounded-xl overflow-hidden">
+                <div className="border border-line rounded-xl overflow-hidden">
                     <table className="w-full text-xs">
-                        <thead className="bg-slate-900/80 text-fg-muted uppercase text-[10px] tracking-widest">
+                        <thead className="bg-surface-sunken text-fg-muted uppercase text-[10px] tracking-widest">
                             <tr>
                                 <th className="text-left px-4 py-3 font-black">Field / Event</th>
                                 <th className="text-left px-4 py-3 font-black">Previous Value</th>
@@ -179,9 +179,9 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                                 <th className="text-left px-4 py-3 font-black">Source</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/70">
+                        <tbody className="divide-y divide-line">
                             {entries.map((entry) => (
-                                <tr key={entry.id} className="hover:bg-slate-900/40">
+                                <tr key={entry.id} className="hover:bg-surface-sunken">
                                     <td className="px-4 py-3 text-fg font-semibold">
                                         {entry.kind === 'field_change' ? fieldLabel(entry.field_name) : (entry.description || 'Event')}
                                         {entry.change_reason && (
