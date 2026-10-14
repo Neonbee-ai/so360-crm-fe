@@ -514,7 +514,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getAllByText('Back')[0]);
+      await user.click(screen.getAllByLabelText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/pipeline');
     });
   });
@@ -563,7 +563,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByText('Delete'));
       await waitFor(() => {
         const confirmTexts = screen.getAllByText(/Delete/);
         expect(confirmTexts.length).toBeGreaterThan(1);
@@ -574,7 +574,7 @@ describe('DealDetailPage', () => {
       const user = userEvent.setup();
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      await user.click(screen.getByLabelText('Delete'));
+      await user.click(screen.getByText('Delete'));
       await waitFor(() => {
         const panels = Array.from(document.querySelectorAll('div')).filter(
           el => el.className.includes('max-h-[90vh]'),
@@ -1004,30 +1004,18 @@ describe('DealDetailPage — header and card presentation', () => {
   const READABLE = /text-fg(-muted)?(\s|$)/;
 
   describe('Given the record header', () => {
-    it('When the Delete action renders / Then it carries no text label', async () => {
+    it('When the Delete action renders / Then it lives in the header overflow menu flagged as destructive', async () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      expect(screen.getByLabelText('Delete').textContent).toBe('');
-    });
-
-    it('When the Delete action renders / Then it is still named on hover and for screen readers', async () => {
-      render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      const del = screen.getByLabelText('Delete');
-      expect(del).toHaveAttribute('title', 'Delete');
-      expect(del).toHaveAttribute('aria-label', 'Delete');
-    });
-
-    it('When the Delete action renders / Then keyboard focus stays visible', async () => {
-      render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      expect(screen.getByLabelText('Delete').className).toMatch(/focus-visible:ring/);
+      const del = screen.getByText('Delete');
+      expect(del.closest('[data-slot="overflow"]')).not.toBeNull();
+      expect(del).toHaveAttribute('data-danger', 'true');
     });
 
     it('When the back control renders / Then it uses the same neutral wording as every other module', async () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      expect(screen.getAllByText('Back').length).toBeGreaterThan(0);
+      expect(screen.getAllByLabelText('Back').length).toBeGreaterThan(0);
       expect(screen.queryByRole('button', { name: 'Back to Pipeline' })).toBeNull();
     });
   });
@@ -1242,21 +1230,17 @@ describe('DealDetailPage — deal stage selector', () => {
   });
 
   describe('Given the header button group has multiple conditionally-rendered actions', () => {
-    it('When Delete, Sign, Estimate, Invoice and Project actions are all visible / Then all five render without breaking and the group is wrap-capable', async () => {
+    it('When Delete, Sign, Estimate, Invoice and Project actions are all visible / Then all five render without breaking', async () => {
       shellCtl.signEnabled = true;
       shellCtl.canEditDeal = true;
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
 
-      expect(screen.getByLabelText('Delete')).toBeInTheDocument();
+      expect(screen.getByText('Delete')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /request signature/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create estimate/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create invoice/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create project/i })).toBeInTheDocument();
-
-      // The button row must allow wrapping rather than squeezing the title at md widths.
-      const buttonGroup = screen.getByRole('button', { name: /request signature/i }).parentElement;
-      expect(buttonGroup?.className).toContain('flex-wrap');
     });
   });
 

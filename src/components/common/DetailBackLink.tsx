@@ -66,6 +66,14 @@ export function backTargetFromState(locationState: unknown): string | null {
     return typeof from === 'string' && from.startsWith('/') ? from : null;
 }
 
+/** Same destination rules as the DetailBackLink click, for pages whose header owns the Back control (DetailPageTemplate onBack). */
+export function goBackFrom(navigate: (to: string | number) => void, fallbackTo: string): void {
+    const explicit = typeof window !== 'undefined' ? backTargetFromState(window.history.state?.usr) : null;
+    if (explicit) navigate(explicit);
+    else if (typeof window !== 'undefined' && hasInAppHistory(window.history.state)) navigate(-1);
+    else navigate(fallbackTo);
+}
+
 export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, label = BACK_LABEL, className = '' }) => {
     const navigate = useNavigate();
     const [showFloating, setShowFloating] = useState(false);

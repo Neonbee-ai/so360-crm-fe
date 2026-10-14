@@ -15,7 +15,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast, useConfirm } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
@@ -23,7 +23,7 @@ import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
-import DetailBackLink from '../components/common/DetailBackLink';
+import { goBackFrom } from '../components/common/DetailBackLink';
 import { ProjectSelect } from '../components/common/ProjectSelect';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 
@@ -522,7 +522,7 @@ const DealDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="p-8" data-testid="deal-detail-skeleton">
+            <div data-testid="deal-detail-skeleton">
                 <div className="animate-pulse space-y-8">
                     {/* Header region: reserves the deal-name/stage row + button group row */}
                     <div data-testid="deal-detail-skeleton-header">
@@ -562,7 +562,7 @@ const DealDetailPage = () => {
 
     if (!deal) {
         return (
-            <div className="p-8 text-center text-fg-muted">
+            <div className="py-12 text-center text-fg-muted">
                 <p>Deal not found.</p>
                 <button onClick={() => navigate('/crm/pipeline')} className="text-primary hover:underline mt-4 inline-block">Back to Pipeline</button>
             </div>
@@ -570,24 +570,11 @@ const DealDetailPage = () => {
     }
 
     return (
-        <div className="p-8">
-            {confirmDialog}
-
-            <header className="mb-8">
-                <div className="flex justify-between items-start mb-4">
-                    <DetailBackLink fallbackTo="/crm/pipeline" />
-                    {isRefreshing && (
-                        <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest animate-pulse">
-                            <Loader2 size={10} className="animate-spin" /> Syncing...
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            {/* The deal name never changes shape — only the stage badge/trigger opens a popover. */}
-                            <h1 className="text-4xl font-black text-fg tracking-tight leading-tight">{deal.name}</h1>
+        <DetailPageTemplate
+            title={deal.name}
+            onBack={() => goBackFrom(navigate, '/crm/pipeline')}
+            backLabel="Back"
+            status={(
                             <div className="relative" ref={stageDropdownRef}>
                                 <button
                                     type="button"
@@ -632,7 +619,9 @@ const DealDetailPage = () => {
                                     </div>
                                 )}
                             </div>
-                        </div>
+            )}
+            meta={(
+                <>
                         <p className="text-fg-subtle flex items-center gap-2 mt-1">
                             <span className="font-semibold text-fg">{deal.company_name}</span>
                             {deal.expected_close_date && (
@@ -642,54 +631,29 @@ const DealDetailPage = () => {
                                 </>
                             )}
                         </p>
-                    </div>
+                    {isRefreshing && (
+                        <div className="flex items-center gap-1 text-[10px] font-black text-info uppercase tracking-widest animate-pulse">
+                            <Loader2 size={10} className="animate-spin" /> Syncing...
+                        </div>
+                    )}
+                </>
+            )}
+            primaryAction={FEATURES.DEAL_PROJECT_CREATION ? (
+                <Button onClick={handleOpenProjectModal} leftIcon={<Briefcase size={14} />}>
+                    {deal.project_id ? 'Manage Project' : 'Create Project'}
+                </Button>
+            ) : undefined}
+            secondaryActions={[
+                ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate} leftIcon={<FileText size={14} />}>Create Estimate</Button>] : []),
+                ...(FEATURES.DEAL_INVOICE_REQUEST ? [<Button key="invoice" variant="secondary" onClick={handleCreateInvoice} leftIcon={<Receipt size={14} />}>Create Invoice</Button>] : []),
+            ]}
+            overflowActions={[
+                ...(isSignEnabled ? [{ label: 'Request Signature', onSelect: () => setSignOpen(true) }] : []),
+                ...(canDeleteDeal ? [{ label: 'Delete', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []),
+            ]}
+        >
+            {confirmDialog}
 
-                    <div className="flex flex-wrap justify-end gap-3">
-                        {/* Icon-only — see LeadDetailPage for the rationale. */}
-                        {canDeleteDeal && <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            aria-label="Delete"
-                            title="Delete"
-                            className="bg-surface-raised hover:bg-red-600/20 text-fg-subtle hover:text-danger p-2.5 rounded-xl transition-all flex items-center justify-center border border-line hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
-                        >
-                            <Trash2 size={14} />
-                        </button>}
-                        {isSignEnabled && (
-                            <button
-                                type="button"
-                                onClick={() => setSignOpen(true)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg active:scale-95"
-                            >
-                                <FileSignature size={14} /> Request Signature
-                            </button>
-                        )}
-                        {FEATURES.DEAL_ESTIMATE_REQUEST && (
-                            <button
-                                onClick={handleCreateEstimate}
-                                className="bg-surface-raised hover:bg-line text-fg px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-line"
-                            >
-                                <FileText size={14} /> Create Estimate
-                            </button>
-                        )}
-                        {FEATURES.DEAL_INVOICE_REQUEST && (
-                            <button
-                                onClick={handleCreateInvoice}
-                                className="bg-surface-raised hover:bg-line text-fg px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-line"
-                            >
-                                <Receipt size={14} /> Create Invoice
-                            </button>
-                        )}
-                        {FEATURES.DEAL_PROJECT_CREATION && (
-                            <button
-                                onClick={handleOpenProjectModal}
-                                className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-black text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2 uppercase tracking-widest border border-blue-400/20"
-                            >
-                                <Briefcase size={14} /> {deal.project_id ? 'Manage Project' : 'Create Project'}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </header>
 
             {/* Deal Lifecycle Stepper */}
             <div className="mb-8 bg-surface border border-line rounded-2xl p-6">
@@ -1388,7 +1352,7 @@ const DealDetailPage = () => {
 
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
                     <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <div className="p-6 border-b border-line flex items-center justify-between bg-surface-sunken">
                             <h3 className="text-fg font-black uppercase tracking-widest text-xs flex items-center gap-2">
@@ -1521,7 +1485,7 @@ const DealDetailPage = () => {
 
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-sm">
                     <div className="bg-surface border border-line rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <h2 className="text-xl font-bold text-fg mb-2">Delete Deal</h2>
                         <p className="text-fg-subtle mb-6">
@@ -1557,7 +1521,7 @@ const DealDetailPage = () => {
                 />
             )}
 
-        </div>
+        </DetailPageTemplate>
     );
 };
 
