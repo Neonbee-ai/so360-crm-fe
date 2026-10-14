@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { DashboardPageTemplate } from '@so360/design-system';
 import SalesFiltersBar from './components/SalesFiltersBar';
 import {
     salesReportService,
@@ -117,8 +118,8 @@ const CommissionReportPage: React.FC = () => {
         );
     } else if (error) {
         body = (
-            <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
-                <span className="text-sm font-bold text-rose-300">{error}</span>
+            <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-2xl flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-danger">{error}</span>
                 <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
                     <RefreshCw size={12} /> Retry
                 </button>
@@ -149,20 +150,17 @@ const CommissionReportPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                    <h1 className="text-2xl font-black text-fg">Commission report</h1>
-                    <p className="text-sm text-fg-subtle">Commission earned across projects, agents and months.</p>
-                </div>
-                {canExport && !forbidden ? (
-                    <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
-                ) : null}
-            </div>
-            {/* The report carries no developer list, so the developer filter is not offered here. */}
-            <SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />
-            {body}
-        </div>
+        <DashboardPageTemplate
+            title="Commission report"
+            description="Commission earned across projects, agents and months."
+            primaryAction={canExport && !forbidden ? (
+                <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
+            ) : undefined}
+            /* The report carries no developer list, so the developer filter is not offered here. */
+            filters={<SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />}
+        >
+            <div className="space-y-6">{body}</div>
+        </DashboardPageTemplate>
     );
 };
 
