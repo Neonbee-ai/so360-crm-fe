@@ -10,6 +10,7 @@ import {
   formatValue,
   reviewPeriodBounds,
 } from './targetUi';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 /**
  * Monthly and quarterly sales reviews.
@@ -159,15 +160,15 @@ export default function SalesReviewsPage() {
   };
 
   if (loading) {
-    return <div className="p-6 text-sm text-fg-subtle">Loading reviews…</div>;
+    return <div className="text-sm text-fg-subtle">Loading reviews…</div>;
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-fg">Reviews</h1>
+    <DashboardPageTemplate title="Reviews">
+    <div className="space-y-5">
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
-      {notice && <div className="text-sm text-emerald-300">{notice}</div>}
+      {error && <div className="text-sm text-danger">{error}</div>}
+      {notice && <div className="text-sm text-success">{notice}</div>}
 
       <Panel title="Start a review">
         <div className="flex flex-wrap items-end gap-3">
@@ -250,8 +251,8 @@ export default function SalesReviewsPage() {
       {reviews.some(
         (r) => r.status === 'finalized' && !r.pc_synced_at,
       ) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-          <span className="text-xs text-amber-300">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded border border-warning/30 bg-warning/5 px-3 py-2">
+          <span className="text-xs text-warning">
             Some finalized reviews have not reached People Connect, so they are
             not yet usable as appraisal evidence.
           </span>
@@ -301,9 +302,9 @@ export default function SalesReviewsPage() {
                     <td className="py-2 pr-4 text-fg-subtle">{r.status}</td>
                     <td className="py-2 text-xs">
                       {r.pc_synced_at ? (
-                        <span className="text-emerald-300">sent</span>
+                        <span className="text-success">sent</span>
                       ) : r.status === 'finalized' ? (
-                        <span className="text-amber-300">
+                        <span className="text-warning">
                           {r.pc_sync_error ? 'failed' : 'pending'}
                         </span>
                       ) : (
@@ -457,7 +458,7 @@ export default function SalesReviewsPage() {
                 Finalized{active.finalized_at ? ` on ${active.finalized_at.slice(0, 10)}` : ''} —
                 this review is now appraisal evidence and cannot be edited.
                 {active.pc_sync_error && (
-                  <span className="text-amber-300">
+                  <span className="text-warning">
                     {' '}
                     People Connect push failed: {active.pc_sync_error}
                   </span>
@@ -468,6 +469,7 @@ export default function SalesReviewsPage() {
         </Panel>
       )}
     </div>
+    </DashboardPageTemplate>
   );
 }
 

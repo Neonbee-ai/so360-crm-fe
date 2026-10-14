@@ -97,13 +97,13 @@ export default function AllocateTeamPlanPanel({
         </button>
       }
     >
-      {error && <div className="mb-2 text-sm text-rose-300">{error}</div>}
-      {notice && <div className="mb-2 text-sm text-emerald-300">{notice}</div>}
+      {error && <div className="mb-2 text-sm text-danger">{error}</div>}
+      {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
         <div className="text-sm text-fg-subtle">Loading plan…</div>
       ) : !lines.length ? (
-        <div className="text-sm text-amber-300">
+        <div className="text-sm text-warning">
           This plan has no target lines, so there is nothing to allocate.
         </div>
       ) : (
@@ -136,7 +136,7 @@ export default function AllocateTeamPlanPanel({
                 {formatValue(summary.allocated, line && lineUnit(line), currency)}
               </span>
               {' · '}
-              <span className={summary.over ? 'text-amber-300' : 'text-fg'}>
+              <span className={summary.over ? 'text-warning' : 'text-fg'}>
                 {summary.over ? 'over by ' : 'remaining '}
                 {formatValue(
                   Math.abs(summary.remaining),

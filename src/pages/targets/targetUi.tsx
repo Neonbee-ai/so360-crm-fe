@@ -11,19 +11,19 @@ import type { TargetStatus, TrendPoint } from '../../services/targetPlanService'
  */
 
 export const STATUS_DOT: Record<TargetStatus, string> = {
-  on_track: 'bg-emerald-400',
-  at_risk: 'bg-amber-400',
-  behind: 'bg-rose-400',
-  achieved: 'bg-emerald-400',
-  exceeded: 'bg-sky-400',
+  on_track: 'bg-success',
+  at_risk: 'bg-warning',
+  behind: 'bg-danger',
+  achieved: 'bg-success',
+  exceeded: 'bg-info',
 };
 
 export const STATUS_TEXT: Record<TargetStatus, string> = {
-  on_track: 'text-emerald-300',
-  at_risk: 'text-amber-300',
-  behind: 'text-rose-300',
-  achieved: 'text-emerald-300',
-  exceeded: 'text-sky-300',
+  on_track: 'text-success',
+  at_risk: 'text-warning',
+  behind: 'text-danger',
+  achieved: 'text-success',
+  exceeded: 'text-info',
 };
 
 export const STATUS_BAR: Record<TargetStatus, string> = {
@@ -31,7 +31,7 @@ export const STATUS_BAR: Record<TargetStatus, string> = {
   at_risk: 'bg-warning',
   behind: 'bg-danger',
   achieved: 'bg-success',
-  exceeded: 'bg-sky-500',
+  exceeded: 'bg-info',
 };
 
 export function StatusChip({
@@ -171,8 +171,8 @@ export function TrendArrow({
 }) {
   if (!direction) return null;
   const map = {
-    up: { glyph: '▲', cls: 'text-emerald-300' },
-    down: { glyph: '▼', cls: 'text-rose-300' },
+    up: { glyph: '▲', cls: 'text-success' },
+    down: { glyph: '▼', cls: 'text-danger' },
     flat: { glyph: '▬', cls: 'text-fg-subtle' },
   } as const;
   const { glyph, cls } = map[direction];
@@ -528,7 +528,7 @@ export function PeriodPicker({
 export function AsOfBanner({ asOf }: { asOf: string }) {
   if (!asOf) return null;
   return (
-    <div className="rounded border border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-xs text-amber-300">
+    <div className="rounded border border-warning/30 bg-warning/5 px-3 py-1.5 text-xs text-warning">
       Showing the period containing {asOf}, not today.
     </div>
   );

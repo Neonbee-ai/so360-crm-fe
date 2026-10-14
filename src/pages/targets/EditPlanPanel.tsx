@@ -128,8 +128,8 @@ export default function EditPlanPanel({
         </button>
       }
     >
-      {error && <div className="mb-2 text-sm text-rose-300">{error}</div>}
-      {notice && <div className="mb-2 text-sm text-emerald-300">{notice}</div>}
+      {error && <div className="mb-2 text-sm text-danger">{error}</div>}
+      {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
       {!plan ? (
         <div className="text-sm text-fg-subtle">Loading plan…</div>
