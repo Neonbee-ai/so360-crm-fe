@@ -1048,7 +1048,6 @@ const LeadsPage = () => {
               </div>
             )}
           </div>
-      </div>
           </>
         }
         loading={isLoading && !hasLeads}
