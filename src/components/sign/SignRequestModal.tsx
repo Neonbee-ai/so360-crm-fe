@@ -97,23 +97,23 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
     return (
         <div className="fixed inset-0 bg-black/50 z-[600] flex items-center justify-center p-4"
             onClick={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
-            <div className="bg-white rounded-lg w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="bg-surface-raised rounded-lg w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
                 <header className="flex items-center justify-between px-5 py-4 border-b">
                     <div className="flex items-center gap-2">
-                        <FileSignature className="w-4 h-4 text-blue-600" />
-                        <h2 className="text-base font-semibold text-gray-900">Request Signature</h2>
+                        <FileSignature className="w-4 h-4 text-primary" />
+                        <h2 className="text-base font-semibold text-fg">Request Signature</h2>
                     </div>
-                    <button type="button" onClick={onClose} disabled={busy} className="text-gray-400 hover:text-gray-700">
+                    <button type="button" onClick={onClose} disabled={busy} className="text-fg-subtle hover:text-fg">
                         <X className="w-4 h-4" />
                     </button>
                 </header>
 
                 <div className="px-5 py-5 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Template</label>
+                        <label className="block text-sm font-medium text-fg mb-1">Template</label>
                         <select value={templateId} onChange={e => setTemplateId(e.target.value)}
                             disabled={busy || templates.length === 0}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            className="w-full border border-line-strong rounded-md px-3 py-2 text-sm">
                             {phase === 'loading' && <option>Loading…</option>}
                             {phase !== 'loading' && templates.length === 0 && <option>No templates available</option>}
                             {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -121,23 +121,23 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Signer name</label>
+                        <label className="block text-sm font-medium text-fg mb-1">Signer name</label>
                         <input type="text" value={signerName} onChange={e => setSignerName(e.target.value)}
                             disabled={busy} placeholder="Full name"
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+                            className="w-full border border-line-strong rounded-md px-3 py-2 text-sm" />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Signer email</label>
+                        <label className="block text-sm font-medium text-fg mb-1">Signer email</label>
                         <input type="email" value={signerEmail} onChange={e => setSignerEmail(e.target.value)}
                             disabled={busy} placeholder="email@example.com"
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" />
+                            className="w-full border border-line-strong rounded-md px-3 py-2 text-sm" />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Expires in</label>
+                        <label className="block text-sm font-medium text-fg mb-1">Expires in</label>
                         <select value={expiresInDays} onChange={e => setExpiresInDays(e.target.value)}
-                            disabled={busy} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            disabled={busy} className="w-full border border-line-strong rounded-md px-3 py-2 text-sm">
                             <option value="3">3 days</option>
                             <option value="7">7 days</option>
                             <option value="14">14 days</option>
@@ -147,7 +147,7 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
                     </div>
 
                     {error && (
-                        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-xs text-red-700">
+                        <div className="flex items-start gap-2 bg-danger-container border border-danger-container rounded-md px-3 py-2 text-xs text-danger-on-container">
                             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /><span>{error}</span>
                         </div>
                     )}
@@ -155,9 +155,9 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
 
                 <footer className="flex items-center justify-end gap-2 px-5 py-3 border-t">
                     <button type="button" onClick={onClose} disabled={busy}
-                        className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
+                        className="px-3 py-2 text-sm text-fg-muted hover:text-fg">Cancel</button>
                     <button type="button" onClick={handleSend} disabled={busy || !valid}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-md px-4 py-2 text-sm font-medium">
+                        className="flex items-center gap-2 bg-primary hover:bg-primary-hover disabled:bg-line-strong text-white rounded-md px-4 py-2 text-sm font-medium">
                         {phase === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
                         {phase === 'done' ? 'Sent ✓' : phase === 'sending' ? 'Sending…' : 'Send for signature'}
                     </button>

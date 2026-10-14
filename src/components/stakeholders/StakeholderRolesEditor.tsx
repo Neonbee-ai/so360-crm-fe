@@ -41,8 +41,8 @@ const StakeholderRolesEditor: React.FC<Props> = ({ value, onChange, readOnly }) 
                         disabled={readOnly}
                         className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
                             active
-                                ? 'bg-blue-600 border-blue-500 text-white'
-                                : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                                ? 'bg-primary border-primary text-white'
+                                : 'bg-surface border-line text-fg-subtle hover:border-line'
                         } ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
                     >
                         {ROLE_LABELS[role]}

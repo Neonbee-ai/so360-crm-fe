@@ -1001,7 +1001,7 @@ describe('DealDetailPage — deal context passed to Accounting document flows', 
  */
 describe('DealDetailPage — header and card presentation', () => {
   /** Lowest slate step still legible on the light theme's white card. */
-  const READABLE = /text-slate-(50|100|200|300)\b/;
+  const READABLE = /text-fg(-muted)?(\s|$)/;
 
   describe('Given the record header', () => {
     it('When the Delete action renders / Then it carries no text label', async () => {
@@ -1141,7 +1141,7 @@ describe('DealDetailPage — deal stage selector', () => {
 
       const currentOption = screen.getByTestId('deal-stage-option-qualified');
       expect(currentOption).toHaveAttribute('aria-selected', 'true');
-      expect(currentOption.className).toContain('bg-blue-600');
+      expect(currentOption.className).toContain('bg-primary');
       const otherOption = screen.getByTestId('deal-stage-option-new');
       expect(otherOption).toHaveAttribute('aria-selected', 'false');
     });

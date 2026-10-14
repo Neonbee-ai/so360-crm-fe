@@ -66,8 +66,7 @@ vi.mock('./marketing/marketingMappers', () => ({
   formatMoney: (v: number) => `$${v.toFixed(2)}`,
 }));
 
-// Mock window.confirm
-const originalConfirm = window.confirm;
+import { mockConfirm } from '../test/__mocks__/design-system';
 
 import MarketingCouponsPage from './MarketingCouponsPage';
 
@@ -120,16 +119,14 @@ describe('MarketingCouponsPage BDD', () => {
     vi.clearAllMocks();
     const shell = await import('@so360/shell-context');
     vi.mocked(shell.useShellBridge).mockImplementation(() => ({ effectiveFlagsLoaded: true, isFeatureEnabled: () => true, isFeatureHidden: () => false }));
-    window.confirm = vi.fn(() => true);
+    mockConfirm.mockReset();
+    mockConfirm.mockResolvedValue(true);
     mockGetCoupons.mockResolvedValue(coupons);
     mockCreateCoupon.mockResolvedValue({ id: 'coupon-new' });
     mockUpdateCoupon.mockResolvedValue({});
     mockDeleteCoupon.mockResolvedValue({});
   });
 
-  afterEach(() => {
-    window.confirm = originalConfirm;
-  });
 
   describe('Given coupons load successfully', () => {
     it('When rendered / Then shows Discount Coupons heading', async () => {
@@ -354,12 +351,26 @@ describe('MarketingCouponsPage BDD', () => {
       if (deleteBtns.length > 0) {
         fireEvent.click(deleteBtns[0].closest('button')!);
         await waitFor(() => {
+          expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ intent: 'danger' }));
           expect(mockDeleteCoupon).toHaveBeenCalled();
         });
       } else {
         // Fallback: confirm that confirm dialog was not triggered unexpectedly
         expect(mockGetCoupons).toHaveBeenCalledWith('store-1');
       }
+    });
+  });
+
+  describe('Given delete coupon is cancelled in the confirm dialog', () => {
+    it('When delete clicked and cancelled / Then deleteCoupon is not called', async () => {
+      mockConfirm.mockResolvedValue(false);
+      renderPage();
+      await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
+      const deleteBtns = document.querySelectorAll('button.hover\\:text-danger');
+      expect(deleteBtns.length).toBeGreaterThan(0);
+      fireEvent.click(deleteBtns[0]);
+      await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
+      expect(mockDeleteCoupon).not.toHaveBeenCalled();
     });
   });
 

@@ -13,8 +13,8 @@ import {
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 
-const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap';
-const TD = 'px-4 py-3 text-xs font-bold text-slate-300 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-fg-muted whitespace-nowrap';
+const TD = 'px-4 py-3 text-xs font-bold text-fg-subtle whitespace-nowrap';
 
 const PERIOD_LABELS: Record<ReportPeriod, string> = { month: 'Monthly', quarter: 'Quarterly', year: 'Yearly' };
 
@@ -158,10 +158,10 @@ const SalesAnalyticsPage: React.FC = () => {
     if (rangeInvalid) {
         body = null;
     } else if (loading) {
-        body = <div role="status" className="p-8 text-sm text-slate-400">Loading sales reports…</div>;
+        body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales reports…</div>;
     } else if (forbidden) {
         body = (
-            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
                 You don't have access to sales reports. Ask your manager if you need them.
             </div>
         );
@@ -169,14 +169,14 @@ const SalesAnalyticsPage: React.FC = () => {
         body = (
             <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
                 <span className="text-sm font-bold text-rose-300">{error}</span>
-                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-200 bg-slate-800 hover:bg-slate-700">
+                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
                     <RefreshCw size={12} /> Retry
                 </button>
             </div>
         );
     } else if (data && isEmptyAnalytics(data)) {
         body = (
-            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
                 No sales activity for these filters.
             </div>
         );
@@ -195,16 +195,16 @@ const SalesAnalyticsPage: React.FC = () => {
             <>
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
                     {cards.map((c) => (
-                        <div key={c.key} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{c.label}</p>
-                            <p className="mt-1 text-lg font-black text-slate-50" data-testid={`sa-total-${c.key}`}>{c.value}</p>
+                        <div key={c.key} className="bg-surface border border-slate-800 rounded-2xl p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-fg-muted">{c.label}</p>
+                            <p className="mt-1 text-lg font-black text-fg" data-testid={`sa-total-${c.key}`}>{c.value}</p>
                         </div>
                     ))}
                 </div>
                 {sections.map((s) => (
-                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
                         <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between gap-3 flex-wrap">
-                            <h2 className="text-xs font-black uppercase tracking-widest text-slate-300">{s.title}</h2>
+                            <h2 className="text-xs font-black uppercase tracking-widest text-fg-subtle">{s.title}</h2>
                             {canExport ? (
                                 <ExportMenu
                                     label={`Export ${s.title}`}
@@ -213,7 +213,7 @@ const SalesAnalyticsPage: React.FC = () => {
                             ) : null}
                         </div>
                         {s.rows.length === 0 ? (
-                            <p className="px-4 py-6 text-xs text-slate-500">Nothing to show.</p>
+                            <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table aria-label={s.title} className="w-full">
@@ -246,16 +246,16 @@ const SalesAnalyticsPage: React.FC = () => {
         <div className="p-6 space-y-6">
             <div className="flex items-end justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-50">Sales reports</h1>
-                    <p className="text-sm text-slate-400">Bookings, lead sources, lost reasons, reservations and agent performance.</p>
+                    <h1 className="text-2xl font-black text-fg">Sales reports</h1>
+                    <p className="text-sm text-fg-subtle">Bookings, lead sources, lost reasons, reservations and agent performance.</p>
                 </div>
-                <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-fg-muted">
                     Period
                     <select
                         aria-label="Report period"
                         value={period}
                         onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-                        className="bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-3 py-2 outline-none focus:border-blue-500 font-bold text-xs"
+                        className="bg-bg border border-slate-800 text-fg rounded-xl px-3 py-2 outline-none focus:border-primary font-bold text-xs"
                     >
                         {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
                     </select>

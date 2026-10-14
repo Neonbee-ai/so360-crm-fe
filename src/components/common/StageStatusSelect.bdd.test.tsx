@@ -23,9 +23,9 @@ describe('StageStatusSelect', () => {
     it('When opened with value WON / Then only the WON option carries the shared blue selection highlight', () => {
       render(<StageStatusSelect value="WON" onChange={vi.fn()} />);
       fireEvent.click(screen.getByTestId('stage-status-trigger'));
-      expect(screen.getByTestId('stage-status-option-WON').className).toContain('bg-blue-600');
-      expect(screen.getByTestId('stage-status-option-OPEN').className).not.toContain('bg-blue-600');
-      expect(screen.getByTestId('stage-status-option-LOST').className).not.toContain('bg-blue-600');
+      expect(screen.getByTestId('stage-status-option-WON').className).toContain('bg-primary');
+      expect(screen.getByTestId('stage-status-option-OPEN').className).not.toContain('bg-primary');
+      expect(screen.getByTestId('stage-status-option-LOST').className).not.toContain('bg-primary');
     });
   });
 

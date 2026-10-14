@@ -24,18 +24,18 @@ export const TOTAL_CARDS: Array<{ key: keyof CommissionTotals; label: string }> 
     { key: 'paid', label: 'Paid' },
 ];
 
-const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap';
-const TD = 'px-4 py-3 text-xs font-bold text-slate-300 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-fg-muted whitespace-nowrap';
+const TD = 'px-4 py-3 text-xs font-bold text-fg-subtle whitespace-nowrap';
 
 export const isEmptyReport = (r: CommissionReport): boolean =>
     r.by_project.length === 0 && r.by_agent.length === 0 && r.by_month.length === 0
     && TOTAL_CARDS.every((c) => r.totals[c.key] === 0);
 
 const BucketTable: React.FC<{ title: string; nameHeader: string; rows: CommissionBucket[]; money: (n: number) => string }> = ({ title, nameHeader, rows, money }) => (
-    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-        <h2 className="px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-300 border-b border-slate-800">{title}</h2>
+    <section className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
+        <h2 className="px-4 py-3 text-xs font-black uppercase tracking-widest text-fg-subtle border-b border-slate-800">{title}</h2>
         {rows.length === 0 ? (
-            <p className="px-4 py-6 text-xs text-slate-500">Nothing to show.</p>
+            <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
         ) : (
             <div className="overflow-x-auto">
                 <table aria-label={title} className="w-full">
@@ -108,10 +108,10 @@ const CommissionReportPage: React.FC = () => {
     if (rangeInvalid) {
         body = null;
     } else if (loading) {
-        body = <div role="status" className="p-8 text-sm text-slate-400">Loading commission report…</div>;
+        body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading commission report…</div>;
     } else if (forbidden) {
         body = (
-            <div data-testid="commission-report-forbidden" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="commission-report-forbidden" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
                 You don't have access to commission figures. Ask your manager if you need them.
             </div>
         );
@@ -119,14 +119,14 @@ const CommissionReportPage: React.FC = () => {
         body = (
             <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
                 <span className="text-sm font-bold text-rose-300">{error}</span>
-                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-200 bg-slate-800 hover:bg-slate-700">
+                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
                     <RefreshCw size={12} /> Retry
                 </button>
             </div>
         );
     } else if (report && isEmptyReport(report)) {
         body = (
-            <div data-testid="commission-report-empty" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+            <div data-testid="commission-report-empty" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
                 No commission recorded for these filters.
             </div>
         );
@@ -135,9 +135,9 @@ const CommissionReportPage: React.FC = () => {
             <>
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
                     {TOTAL_CARDS.map((c) => (
-                        <div key={c.key} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{c.label}</p>
-                            <p className="mt-1 text-lg font-black text-slate-50" data-testid={`cr-total-${c.key}`}>{money(report.totals[c.key])}</p>
+                        <div key={c.key} className="bg-surface border border-slate-800 rounded-2xl p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-fg-muted">{c.label}</p>
+                            <p className="mt-1 text-lg font-black text-fg" data-testid={`cr-total-${c.key}`}>{money(report.totals[c.key])}</p>
                         </div>
                     ))}
                 </div>
@@ -152,8 +152,8 @@ const CommissionReportPage: React.FC = () => {
         <div className="p-6 space-y-6">
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-50">Commission report</h1>
-                    <p className="text-sm text-slate-400">Commission earned across projects, agents and months.</p>
+                    <h1 className="text-2xl font-black text-fg">Commission report</h1>
+                    <p className="text-sm text-fg-subtle">Commission earned across projects, agents and months.</p>
                 </div>
                 {canExport && !forbidden ? (
                     <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />

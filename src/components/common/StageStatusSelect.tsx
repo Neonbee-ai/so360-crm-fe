@@ -11,9 +11,9 @@ interface StatusOption {
 }
 
 const STATUS_OPTIONS: StatusOption[] = [
-    { value: 'OPEN', label: 'OPEN', dotClassName: 'bg-slate-400', collapsedTextClassName: 'text-slate-300 border-slate-700' },
-    { value: 'WON', label: 'WON', dotClassName: 'bg-emerald-400', collapsedTextClassName: 'text-emerald-400 border-emerald-500/30' },
-    { value: 'LOST', label: 'LOST', dotClassName: 'bg-rose-400', collapsedTextClassName: 'text-rose-400 border-rose-500/30' },
+    { value: 'OPEN', label: 'OPEN', dotClassName: 'bg-slate-400', collapsedTextClassName: 'text-fg-subtle border-line' },
+    { value: 'WON', label: 'WON', dotClassName: 'bg-emerald-400', collapsedTextClassName: 'text-success border-emerald-500/30' },
+    { value: 'LOST', label: 'LOST', dotClassName: 'bg-rose-400', collapsedTextClassName: 'text-danger border-rose-500/30' },
 ];
 
 interface StageStatusSelectProps {
@@ -62,7 +62,7 @@ export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onC
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
                 onClick={() => setIsOpen(o => !o)}
-                className={`flex items-center gap-1 bg-slate-900 border text-[10px] font-black uppercase rounded-lg px-2 py-1 outline-none focus:border-blue-500 transition-colors ${selected.collapsedTextClassName}`}
+                className={`flex items-center gap-1 bg-surface border text-[10px] font-black uppercase rounded-lg px-2 py-1 outline-none focus:border-primary transition-colors ${selected.collapsedTextClassName}`}
                 data-testid="stage-status-trigger"
             >
                 {selected.label}
@@ -72,7 +72,7 @@ export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onC
             {isOpen && (
                 <div
                     role="listbox"
-                    className="absolute z-50 top-full right-0 mt-1 min-w-[100px] bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden"
+                    className="absolute z-50 top-full right-0 mt-1 min-w-[100px] bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
                     data-testid="stage-status-list"
                 >
                     {STATUS_OPTIONS.map(opt => (
@@ -84,8 +84,8 @@ export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onC
                             onClick={() => handleSelect(opt.value)}
                             className={`w-full flex items-center gap-2 text-left px-2.5 py-1.5 text-[10px] font-black uppercase transition-colors ${
                                 opt.value === value
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-slate-300 hover:bg-slate-800'
+                                    ? 'bg-primary text-white'
+                                    : 'text-fg-subtle hover:bg-surface-raised'
                             }`}
                             data-testid={`stage-status-option-${opt.value}`}
                         >

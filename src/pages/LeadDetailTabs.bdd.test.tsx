@@ -118,7 +118,7 @@ describe('Lead Detail activity tab navigation — overflow contract', () => {
 
   describe('Given the active-tab styling', () => {
     it('Then the active indicator classes remain intact while scrolling', () => {
-      expect(pageSource).toContain('border-b-2 border-blue-500 bg-blue-500/5');
+      expect(pageSource).toContain('border-b-2 border-primary bg-blue-500/5');
       expect(pageSource).toContain('text-blue-400');
     });
   });

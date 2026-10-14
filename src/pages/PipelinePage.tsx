@@ -130,7 +130,7 @@ const PipelinePage = () => {
 
     if (isInitialLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-slate-500 gap-3">
+            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
                 <Loader2 className="animate-spin" />
                 <span>Loading pipeline...</span>
             </div>
@@ -141,8 +141,8 @@ const PipelinePage = () => {
         <div className="p-8 flex flex-col">
             <header className="mb-4 flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Deals Pipeline</h1>
-                    <p className="text-slate-400 mt-1">Visualize deal movement and sales progress</p>
+                    <h1 className="text-3xl font-bold text-fg tracking-tight">Deals Pipeline</h1>
+                    <p className="text-fg-subtle mt-1">Visualize deal movement and sales progress</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {isFiltering && (
@@ -157,7 +157,7 @@ const PipelinePage = () => {
                     {canCreateDeal && (
                         <button
                             onClick={() => setIsCreateDealOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white rounded-xl text-sm font-bold transition-colors"
                         >
                             <Plus size={16} />
                             New Deal

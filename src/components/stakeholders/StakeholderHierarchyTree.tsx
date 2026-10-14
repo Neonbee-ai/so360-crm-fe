@@ -39,15 +39,15 @@ const TreeRow: React.FC<{ node: TreeNode; depth: number; allStakeholders: Stakeh
     return (
         <div style={{ marginLeft: depth * 20 }} className="mt-2">
             <div className="flex items-center gap-2 bg-slate-950/50 border border-slate-800/60 rounded-lg px-3 py-2">
-                <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-300">
+                <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-[10px] font-black text-fg-subtle">
                     {(node.stakeholder.full_name || '?').charAt(0).toUpperCase()}
                 </div>
-                <span className="text-xs font-bold text-slate-200">{node.stakeholder.full_name || 'Unnamed'}</span>
-                {node.stakeholder.job_title && <span className="text-[10px] text-slate-500">{node.stakeholder.job_title}</span>}
+                <span className="text-xs font-bold text-fg">{node.stakeholder.full_name || 'Unnamed'}</span>
+                {node.stakeholder.job_title && <span className="text-[10px] text-fg-muted">{node.stakeholder.job_title}</span>}
                 <select
                     value={node.stakeholder.reports_to_stakeholder_id || ''}
                     onChange={(e) => onSetManager(node.stakeholder.id, e.target.value || null)}
-                    className="ml-auto bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-400 outline-none"
+                    className="ml-auto bg-surface border border-line rounded px-2 py-1 text-[10px] text-fg-subtle outline-none"
                 >
                     <option value="">No manager (top level)</option>
                     {allStakeholders.filter((s) => s.id !== node.stakeholder.id).map((s) => (
@@ -66,7 +66,7 @@ const StakeholderHierarchyTree: React.FC<Props> = ({ stakeholders, onSetManager 
     const tree = buildTree(stakeholders);
 
     if (stakeholders.length === 0) {
-        return <p className="text-xs text-slate-500 italic">No stakeholders to display.</p>;
+        return <p className="text-xs text-fg-muted italic">No stakeholders to display.</p>;
     }
 
     return (

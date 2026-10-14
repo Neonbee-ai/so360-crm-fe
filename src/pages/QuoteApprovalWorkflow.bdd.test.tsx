@@ -76,6 +76,7 @@ vi.mock('@so360/formatters', () => ({
 }));
 
 vi.mock('@so360/design-system', () => ({
+  useConfirm: () => [vi.fn(async () => true), null],
   toast: {
     success: vi.fn(),
     error: vi.fn(),

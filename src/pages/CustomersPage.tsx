@@ -14,16 +14,16 @@ type SortDirection = 'asc' | 'desc' | null;
 const CHANNEL_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
     storefront_web: { label: 'Web', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Globe },
     storefront_mobile: { label: 'Mobile', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', icon: Smartphone },
-    pos: { label: 'POS', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: ShoppingCart },
-    manual: { label: 'Manual', color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', icon: UserPlus },
+    pos: { label: 'POS', color: 'bg-amber-500/10 text-warning border-amber-500/20', icon: ShoppingCart },
+    manual: { label: 'Manual', color: 'bg-slate-500/10 text-fg-subtle border-slate-500/20', icon: UserPlus },
 };
 
 const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
     storefront_registration: { label: 'Registration', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
     guest_checkout: { label: 'Guest Checkout', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
-    pos_inline: { label: 'POS', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-    manual_entry: { label: 'Manual', color: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
-    lead_promotion: { label: 'Promoted', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    pos_inline: { label: 'POS', color: 'bg-amber-500/10 text-warning border-amber-500/20' },
+    manual_entry: { label: 'Manual', color: 'bg-slate-500/10 text-fg-subtle border-slate-500/20' },
+    lead_promotion: { label: 'Promoted', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
 };
 
 const CustomersPage = () => {
@@ -140,16 +140,16 @@ const CustomersPage = () => {
     };
 
     const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-600" />;
+        if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
         if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
         if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
-        return <ChevronsUpDown size={14} className="text-slate-600" />;
+        return <ChevronsUpDown size={14} className="text-fg-muted" />;
     };
 
     const SortableHeader = ({ label, field }: { label: string; field: SortField }) => (
         <button
             onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
+            className="flex items-center gap-1 hover:text-fg transition-colors cursor-pointer"
         >
             {label}
             <SortIcon field={field} />
@@ -218,20 +218,20 @@ const CustomersPage = () => {
     const CategoryBadge = ({ category }: { category: string }) => {
         if (category === 'b2b') {
             return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-success border border-emerald-500/20">
                     <Building2 size={11} /> B2B
                 </span>
             );
         }
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-500/10 text-slate-500 border border-slate-500/20">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-slate-500/10 text-fg-muted border border-slate-500/20">
                 B2C
             </span>
         );
     };
 
     const AcquisitionBadge = ({ source }: { source: string }) => {
-        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' };
+        const config = ACQUISITION_SOURCE_CONFIG[source] || { label: source || '-', color: 'bg-slate-500/10 text-fg-muted border-slate-500/20' };
         return (
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${config.color}`}>
                 {config.label}
@@ -246,11 +246,11 @@ const CustomersPage = () => {
                 <div className="flex items-center gap-2">
                     <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-50">{c.contact_name}</span>
+                            <span className="font-semibold text-fg">{c.contact_name}</span>
                             <CategoryBadge category={c.customer_category || 'b2c'} />
                         </div>
                         {c.company_name && c.company_name !== c.contact_name && (
-                            <span className="text-xs text-slate-500">{c.company_name}</span>
+                            <span className="text-xs text-fg-muted">{c.company_name}</span>
                         )}
                     </div>
                 </div>
@@ -259,7 +259,7 @@ const CustomersPage = () => {
         {
             header: <SortableHeader label="Email" field="email" />,
             accessor: (c: any) => (
-                <div className="flex flex-col gap-1 text-slate-400">
+                <div className="flex flex-col gap-1 text-fg-subtle">
                     <span className="flex items-center gap-1.5"><Mail size={14} /> {c.email}</span>
                     {c.phone && <span className="flex items-center gap-1.5"><Phone size={14} /> {c.phone}</span>}
                 </div>
@@ -272,11 +272,11 @@ const CustomersPage = () => {
                     c.customer_category === 'b2c' ? null :
                     c.tax_id ? (
                         <div className="flex items-center gap-1.5 text-sm">
-                            <span className="text-slate-300 font-mono text-xs">{c.tax_id}</span>
-                            {c.tax_id_verified && <CheckCircle2 size={14} className="text-emerald-400" />}
+                            <span className="text-fg-subtle font-mono text-xs">{c.tax_id}</span>
+                            {c.tax_id_verified && <CheckCircle2 size={14} className="text-success" />}
                         </div>
                     ) : (
-                        <span className="text-slate-600 text-sm">-</span>
+                        <span className="text-fg-muted text-sm">-</span>
                     ),
             },
             {
@@ -285,12 +285,12 @@ const CustomersPage = () => {
                     if (c.customer_category === 'b2c') return null;
                     const limit = parseFloat(c.credit_limit);
                     return limit > 0 ? (
-                        <span className="flex items-center gap-1.5 text-slate-300 text-sm">
+                        <span className="flex items-center gap-1.5 text-fg-subtle text-sm">
                             <CreditCard size={14} />
                             {limit.toLocaleString()}
                         </span>
                     ) : (
-                        <span className="text-slate-600 text-sm">-</span>
+                        <span className="text-fg-muted text-sm">-</span>
                     );
                 },
             },
@@ -306,7 +306,7 @@ const CustomersPage = () => {
         {
             header: 'Referred By',
             accessor: (c: any) => {
-                if (!c.referred_by) return <span className="text-slate-600 text-sm">—</span>;
+                if (!c.referred_by) return <span className="text-fg-muted text-sm">—</span>;
                 const partner = partners.find((p: any) => p.id === c.referred_by);
                 return (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
@@ -319,7 +319,7 @@ const CustomersPage = () => {
         {
             header: <SortableHeader label="Joined" field="created_at" />,
             accessor: (c: any) => (
-                <span className="text-slate-400 text-sm flex items-center gap-1.5">
+                <span className="text-fg-subtle text-sm flex items-center gap-1.5">
                     <Calendar size={14} />
                     {formatters.formatDate(c.created_at)}
                 </span>
@@ -330,8 +330,8 @@ const CustomersPage = () => {
     return (
         <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Customers</h1>
-                <p className="text-slate-300 mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
+                <h1 className="text-3xl font-bold text-fg tracking-tight">Customers</h1>
+                <p className="text-fg-subtle mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
             </header>
 
             {/* Summary chips — gated by feature flags; standardized with Leads & Accounts */}
@@ -365,19 +365,19 @@ const CustomersPage = () => {
                     </span>
                 )}
                 <div className="flex-1 min-w-[200px] relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
                         placeholder="Search customers by name, email, phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="w-full bg-bg border border-slate-800 text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                 </div>
                 <select
                     value={channelFilter}
                     onChange={(e) => setChannelFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-slate-800 text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                     <option value="All">All Channels</option>
                     <option value="storefront_web">Web</option>
@@ -388,7 +388,7 @@ const CustomersPage = () => {
                 <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-slate-800 text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                     <option value="All">All Categories</option>
                     <option value="b2b">B2B</option>
@@ -402,7 +402,7 @@ const CustomersPage = () => {
                             setCategoryFilter('All');
                             navigate('/crm/customers');
                         }}
-                        className="text-xs text-rose-400 hover:text-rose-300 underline"
+                        className="text-xs text-danger hover:text-danger-300 underline"
                     >
                         Clear Filters
                     </button>
@@ -411,7 +411,7 @@ const CustomersPage = () => {
 
             {/* Sandbox limit notice */}
             {isSandboxMode && isLimited(filteredCustomers.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-warning text-sm flex items-center gap-2">
                     <span className="font-semibold">Sandbox mode:</span>
                     showing {sandboxEntryLimit} of {filteredCustomers.length} customers — full list visible in production.
                 </div>
@@ -429,12 +429,12 @@ const CustomersPage = () => {
             {/* Pagination */}
             {sandboxLimitedCustomers.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <div className="flex items-center gap-2 text-sm text-fg-subtle">
                         <span>Show</span>
                         <select
                             value={pageSize}
                             onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200"
+                            className="bg-surface-raised border border-line rounded px-2 py-1 text-fg"
                         >
                             {[10, 25, 50, 100].map((size) => (
                                 <option key={size} value={size}>{size}</option>
@@ -443,11 +443,11 @@ const CustomersPage = () => {
                         <span>of {sandboxLimitedCustomers.length} customers</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">First</button>
-                        <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
-                        <span className="px-3 py-1 text-slate-300">Page {currentPage} of {totalPages}</span>
-                        <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
-                        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">Last</button>
+                        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">First</button>
+                        <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
+                        <span className="px-3 py-1 text-fg-subtle">Page {currentPage} of {totalPages}</span>
+                        <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">Last</button>
                     </div>
                 </div>
             )}

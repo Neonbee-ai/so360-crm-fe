@@ -32,15 +32,15 @@ interface RiskBadge {
 const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon, color }) => {
   const colorClasses = {
     blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    emerald: 'bg-emerald-500/10 text-success border-emerald-500/20',
+    amber: 'bg-amber-500/10 text-warning border-amber-500/20',
     purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
   };
 
   const trendColorClasses = {
-    up: 'text-emerald-400',
-    down: 'text-rose-400',
-    neutral: 'text-slate-400',
+    up: 'text-success',
+    down: 'text-danger',
+    neutral: 'text-fg-subtle',
   };
 
   const trendBgClasses = {
@@ -52,11 +52,11 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon, color }) =
   return (
     <div className={`border rounded-2xl p-4 flex flex-col gap-3 ${colorClasses[color]}`}>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-fg-subtle">{label}</span>
         <div className="p-2 bg-slate-900/50 rounded-lg">{icon}</div>
       </div>
       <div>
-        <div className="text-2xl font-black text-slate-50 leading-tight">{value}</div>
+        <div className="text-2xl font-black text-fg leading-tight">{value}</div>
         {trend && (
           <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${trendColorClasses[trend.direction]}`}>
             {trend.direction === 'up' && <TrendingUp size={12} />}
@@ -71,9 +71,9 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, trend, icon, color }) =
 
 const RiskBadgeComponent: React.FC<{ badge: RiskBadge }> = ({ badge }) => {
   const colorMap = {
-    overdue: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-    stalled: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-    no_activity: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
+    overdue: 'bg-rose-500/10 border-rose-500/20 text-danger',
+    stalled: 'bg-amber-500/10 border-amber-500/20 text-warning',
+    no_activity: 'bg-slate-500/10 border-slate-500/20 text-fg-subtle',
   };
 
   return (
@@ -211,20 +211,20 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
             <Activity size={16} className="text-blue-400" />
           </div>
           <div>
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            <h2 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
               Executive Summary
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-fg-muted mt-1">
               {dealCount} {dealCount === 1 ? 'deal' : 'deals'} • {kpis.recentActivitiesCount} activities (30d)
             </p>
           </div>
         </div>
         {kpis.lastActivityDate && (
           <div className="text-right">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">
+            <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block">
               Last Activity
             </span>
-            <span className="text-xs text-slate-400 font-bold mt-1 block">
+            <span className="text-xs text-fg-subtle font-bold mt-1 block">
               {formatters.formatDate(kpis.lastActivityDate.toISOString())}
             </span>
           </div>
@@ -234,7 +234,7 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
       {/* Risk Badges */}
       {riskBadges.length > 0 && (
         <div className="mb-6 pb-6 border-b border-slate-800">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3">
             Active Risks
           </p>
           <div className="flex flex-wrap gap-2">
@@ -262,7 +262,7 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
             </span>
           }
           color="emerald"
-          icon={<CheckCircle2 size={16} className="text-emerald-400" />}
+          icon={<CheckCircle2 size={16} className="text-success" />}
         />
 
         <KPICard
@@ -270,7 +270,7 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
           value={`${kpis.engagementScore}/100`}
           trend={kpis.engagementTrend}
           color="amber"
-          icon={<Zap size={16} className="text-amber-400 fill-amber-400" />}
+          icon={<Zap size={16} className="text-warning fill-amber-400" />}
         />
 
         <KPICard
@@ -282,7 +282,7 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
                   ? `${Math.floor((Date.now() - kpis.lastActivityDate.getTime()) / (1000 * 60 * 60 * 24))}d ago`
                   : 'Never'}
               </span>
-              <span className="text-[10px] text-slate-400">Last touch</span>
+              <span className="text-[10px] text-fg-subtle">Last touch</span>
             </div>
           }
           color="purple"

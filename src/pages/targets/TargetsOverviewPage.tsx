@@ -58,7 +58,7 @@ export default function TargetsOverviewPage() {
   }, [load]);
 
   if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading overview…</div>;
+    return <div className="p-6 text-sm text-fg-subtle">Loading overview…</div>;
   }
   if (error) {
     return <div className="p-6 text-sm text-rose-300">{error}</div>;
@@ -77,8 +77,8 @@ export default function TargetsOverviewPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100">Overview</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+        <h1 className="text-lg font-semibold text-fg">Overview</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
           <span>{plan?.name}</span>
           {h && <span>{h.days_remaining} days left</span>}
           {plan?.linked_goal_id && (
@@ -87,7 +87,7 @@ export default function TargetsOverviewPage() {
         </div>
         {h && (
           <div className="mt-3 max-w-md">
-            <div className="flex justify-between text-[11px] text-slate-500 mb-1">
+            <div className="flex justify-between text-[11px] text-fg-muted mb-1">
               <span>Period elapsed</span>
               <span>{formatPct(h.elapsed_fraction)}</span>
             </div>
@@ -101,16 +101,16 @@ export default function TargetsOverviewPage() {
           <div className="space-y-4">
             <div>
               <div className="flex items-baseline justify-between">
-                <span className="text-xs text-slate-400">Achieved</span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-fg-subtle">Achieved</span>
+                <span className="text-xs text-fg-subtle">
                   {formatPct(h.attainment)}
                 </span>
               </div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold text-slate-100">
+                <span className="text-2xl font-semibold text-fg">
                   {formatValue(h.actual, h.unit, currency)}
                 </span>
-                <span className="text-sm text-slate-500">
+                <span className="text-sm text-fg-muted">
                   of {formatValue(h.target, h.unit, currency)}
                 </span>
               </div>
@@ -126,9 +126,9 @@ export default function TargetsOverviewPage() {
 
             <div className="border-t border-slate-800 pt-3">
               <div className="flex items-baseline justify-between">
-                <span className="text-xs text-slate-400">Projected close</span>
+                <span className="text-xs text-fg-subtle">Projected close</span>
                 {h.projection.projectable && (
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-fg-subtle">
                     {formatPct(h.projection.projectedAttainment)}
                   </span>
                 )}
@@ -136,7 +136,7 @@ export default function TargetsOverviewPage() {
               {h.projection.projectable ? (
                 <>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-lg font-medium text-slate-200">
+                    <span className="text-lg font-medium text-fg">
                       {formatValue(h.projection.projected, h.unit, currency)}
                     </span>
                     {h.projection.projectedGap !== null && (
@@ -165,7 +165,7 @@ export default function TargetsOverviewPage() {
               ) : (
                 // Deliberately explicit rather than a hidden field: a run-rate
                 // this early swings on a single deal and would read as fact.
-                <div className="mt-1 text-sm text-slate-500">
+                <div className="mt-1 text-sm text-fg-muted">
                   — too early to project
                 </div>
               )}
@@ -178,14 +178,14 @@ export default function TargetsOverviewPage() {
         <Panel
           title="Trend"
           action={
-            <span className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="flex items-center gap-2 text-xs text-fg-subtle">
               average {formatPct(data.trend.average)}
               <TrendArrow direction={data.trend.direction} />
             </span>
           }
         >
           <Sparkline points={data.trend.points} />
-          <div className="mt-2 flex gap-2 text-[11px] text-slate-500">
+          <div className="mt-2 flex gap-2 text-[11px] text-fg-muted">
             {data.trend.points.map((p) => (
               <div key={p.period_start} className="flex-1 text-center">
                 {formatPct(p.attainment)}
@@ -193,7 +193,7 @@ export default function TargetsOverviewPage() {
             ))}
           </div>
           {data.trend.planChanges > 0 && (
-            <div className="mt-3 text-[11px] text-slate-500">
+            <div className="mt-3 text-[11px] text-fg-muted">
               {data.trend.planChanges} period
               {data.trend.planChanges === 1 ? '' : 's'} had the target edited
               mid-flight
@@ -212,12 +212,12 @@ export default function TargetsOverviewPage() {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <StatusChip status={n.status.status} label="" />
-                  <span className="text-slate-200 truncate">
+                  <span className="text-fg truncate">
                     {n.metric_name}
                     {n.dimension_value ? ` · ${n.dimension_value}` : ''}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 shrink-0 text-xs text-slate-400">
+                <div className="flex items-center gap-4 shrink-0 text-xs text-fg-subtle">
                   <span>
                     {formatValue(n.actual)} of {formatValue(n.target)}
                   </span>
@@ -235,8 +235,8 @@ export default function TargetsOverviewPage() {
             .filter((m) => !m.dimension_key)
             .map((m) => (
               <div key={m.target_line_id} className="flex items-center gap-2">
-                <span className="text-slate-300">{m.metric_name}</span>
-                <span className="text-slate-400">
+                <span className="text-fg-subtle">{m.metric_name}</span>
+                <span className="text-fg-subtle">
                   {formatPct(m.attainment)}
                 </span>
                 <StatusChip status={m.status} label="" />

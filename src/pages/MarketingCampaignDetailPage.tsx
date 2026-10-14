@@ -43,25 +43,25 @@ const MarketingCampaignDetailPage: React.FC = () => {
   }, [storeId, campaignId]);
 
   if (!storeId) {
-    return <div className="p-8 text-amber-400">Select a store from Campaigns page first.</div>;
+    return <div className="p-8 text-warning">Select a store from Campaigns page first.</div>;
   }
 
   return (
     <div className="p-8">
       <DetailBackLink fallbackTo="/crm/marketing/campaigns" className="mb-4 text-sm" />
 
-      {loading && <p className="text-slate-400">Loading...</p>}
-      {error && <p className="text-rose-400">{error}</p>}
+      {loading && <p className="text-fg-subtle">Loading...</p>}
+      {error && <p className="text-danger">{error}</p>}
 
       {campaign && (
         <>
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mb-4">
-            <h1 className="text-2xl font-semibold text-slate-50">{campaign.name}</h1>
-            <p className="text-slate-400 mt-1">{campaign.campaign_type} • {campaign.status}</p>
+          <div className="bg-surface border border-slate-800 rounded-xl p-4 mb-4">
+            <h1 className="text-2xl font-semibold text-fg">{campaign.name}</h1>
+            <p className="text-fg-subtle mt-1">{campaign.campaign_type} • {campaign.status}</p>
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <p className="text-slate-300"><span className="text-slate-500">Subject:</span> {campaign.subject_template || '-'}</p>
-              <p className="text-slate-300"><span className="text-slate-500">Sent At:</span> {formatDateTime(campaign.sent_at)}</p>
-              <p className="text-slate-300"><span className="text-slate-500">Recipients:</span> {campaign.total_recipients || 0}</p>
+              <p className="text-fg-subtle"><span className="text-fg-muted">Subject:</span> {campaign.subject_template || '-'}</p>
+              <p className="text-fg-subtle"><span className="text-fg-muted">Sent At:</span> {formatDateTime(campaign.sent_at)}</p>
+              <p className="text-fg-subtle"><span className="text-fg-muted">Recipients:</span> {campaign.total_recipients || 0}</p>
             </div>
           </div>
 
@@ -76,25 +76,25 @@ const MarketingCampaignDetailPage: React.FC = () => {
               { label: 'Clicks', value: String(campaign.clicks || 0) },
               ...(campaign.segment ? [{ label: 'Segment', value: campaign.segment }] : []),
             ].map(({ label, value }) => (
-              <div key={label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                <p className="text-slate-400 text-xs">{label}</p>
-                <p className="text-slate-100 text-xl font-bold">{value}</p>
+              <div key={label} className="bg-surface border border-slate-800 rounded-xl p-4">
+                <p className="text-fg-subtle text-xs">{label}</p>
+                <p className="text-fg text-xl font-bold">{value}</p>
               </div>
             ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <h3 className="text-slate-200 font-semibold mb-2">Test Send</h3>
+            <div className="bg-surface border border-slate-800 rounded-xl p-4">
+              <h3 className="text-fg font-semibold mb-2">Test Send</h3>
               <div className="flex gap-2">
                 <input
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
                   placeholder="test@example.com"
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200"
+                  className="flex-1 bg-bg border border-line rounded px-3 py-2 text-sm text-fg"
                 />
                 <button
-                  className="px-3 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 text-white"
+                  className="px-3 py-2 text-sm rounded bg-primary hover:bg-primary text-white"
                   onClick={async () => {
                     await crmService.testSendCampaign(storeId, campaignId!, testEmail);
                   }}
@@ -104,17 +104,17 @@ const MarketingCampaignDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <h3 className="text-slate-200 font-semibold mb-2">Schedule</h3>
+            <div className="bg-surface border border-slate-800 rounded-xl p-4">
+              <h3 className="text-fg font-semibold mb-2">Schedule</h3>
               <div className="flex gap-2">
                 <input
                   type="datetime-local"
                   value={scheduleAt}
                   onChange={(e) => setScheduleAt(e.target.value)}
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200"
+                  className="flex-1 bg-bg border border-line rounded px-3 py-2 text-sm text-fg"
                 />
                 <button
-                  className="px-3 py-2 text-sm rounded bg-emerald-700 hover:bg-emerald-600 text-white"
+                  className="px-3 py-2 text-sm rounded bg-emerald-700 hover:bg-success text-white"
                   onClick={async () => {
                     if (!scheduleAt) return;
                     await crmService.scheduleCampaign(storeId, campaignId!, new Date(scheduleAt).toISOString());
@@ -128,9 +128,9 @@ const MarketingCampaignDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
+          <div className="bg-surface border border-slate-800 rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-800/60 text-slate-300">
+              <thead className="bg-slate-800/60 text-fg-subtle">
                 <tr>
                   <th className="text-left px-3 py-2">Email</th>
                   <th className="text-left px-3 py-2">Status</th>
@@ -140,13 +140,13 @@ const MarketingCampaignDetailPage: React.FC = () => {
               <tbody>
                 {recipients.map((row) => (
                   <tr key={row.id} className="border-t border-slate-800">
-                    <td className="px-3 py-2 text-slate-200">{row.email}</td>
-                    <td className="px-3 py-2 text-slate-300">{row.status}</td>
-                    <td className="px-3 py-2 text-slate-500">{formatDateTime(row.sent_at)}</td>
+                    <td className="px-3 py-2 text-fg">{row.email}</td>
+                    <td className="px-3 py-2 text-fg-subtle">{row.status}</td>
+                    <td className="px-3 py-2 text-fg-muted">{formatDateTime(row.sent_at)}</td>
                   </tr>
                 ))}
                 {recipients.length === 0 && (
-                  <tr><td colSpan={3} className="px-3 py-6 text-center text-slate-500">No recipients yet.</td></tr>
+                  <tr><td colSpan={3} className="px-3 py-6 text-center text-fg-muted">No recipients yet.</td></tr>
                 )}
               </tbody>
             </table>

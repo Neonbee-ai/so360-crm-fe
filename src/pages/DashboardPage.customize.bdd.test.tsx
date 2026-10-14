@@ -160,7 +160,7 @@ describe('Given the dashboard header period switcher', () => {
             await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'monthly' })));
             fireEvent.click(screen.getByRole('button', { name: 'Yearly' }));
             await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'yearly' })));
-            expect(screen.getByRole('button', { name: 'Yearly' }).className).toContain('bg-slate-700');
+            expect(screen.getByRole('button', { name: 'Yearly' }).className).toContain('bg-line');
         });
     });
 });

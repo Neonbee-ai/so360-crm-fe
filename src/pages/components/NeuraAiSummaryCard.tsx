@@ -108,36 +108,36 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
     }, [leadId]);
 
     return (
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
+        <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <div className="bg-violet-500/10 text-violet-400 p-1.5 rounded-lg">
                         <Sparkles size={14} />
                     </div>
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Neura AI Summary</h3>
+                    <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Neura AI Summary</h3>
                 </div>
                 <button
                     onClick={() => fetchSummary(true)}
                     disabled={isLoading}
                     title="Refresh summary"
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-violet-400 hover:bg-violet-500/10 transition-all disabled:opacity-40"
+                    className="p-1.5 rounded-lg text-fg-muted hover:text-violet-400 hover:bg-violet-500/10 transition-all disabled:opacity-40"
                 >
                     <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
                 </button>
             </div>
 
             {isLoading && !summary ? (
-                <div className="flex items-center gap-2 text-slate-500 py-4">
+                <div className="flex items-center gap-2 text-fg-muted py-4">
                     <Loader2 size={14} className="animate-spin" />
                     <span className="text-xs">Neura AI is reviewing this lead…</span>
                 </div>
             ) : error && !summary ? (
-                <div className="flex items-center gap-2 text-rose-400 py-2">
+                <div className="flex items-center gap-2 text-danger py-2">
                     <AlertCircle size={12} />
                     <span className="text-[11px]">{error}</span>
                 </div>
             ) : summary ? (
-                <p className="text-[12px] text-slate-300 leading-relaxed whitespace-pre-wrap">{summary}</p>
+                <p className="text-[12px] text-fg-subtle leading-relaxed whitespace-pre-wrap">{summary}</p>
             ) : null}
         </section>
     );

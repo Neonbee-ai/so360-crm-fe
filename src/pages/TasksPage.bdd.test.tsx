@@ -233,11 +233,11 @@ describe('TasksPage', () => {
       expect(input.className).not.toContain('py-2.5');
     });
 
-    it('When Tasks page loads / Then search input has placeholder-slate-400 matching other CRM modules', async () => {
+    it('When Tasks page loads / Then search input has placeholder-fg-subtle matching other CRM modules', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       const input = screen.getByPlaceholderText('Search tasks...');
-      expect(input.className).toContain('placeholder-slate-400');
+      expect(input.className).toContain('placeholder-fg-subtle');
     });
 
     it('When Tasks page loads / Then outer search+filter container has md:items-center for proper icon alignment', async () => {
@@ -521,7 +521,7 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
 
       await remount();
       const chip = screen.getByText('Overdue');
-      expect(chip.className).toMatch(/bg-blue-600/);
+      expect(chip.className).toMatch(/bg-primary(\s|$)/);
     });
   });
 

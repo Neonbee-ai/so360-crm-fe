@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import UnifiedTimelinePanel from './UnifiedTimelinePanel';
+import { mockConfirm } from '../test/__mocks__/design-system';
 import { Activity, Note, Task, Attachment } from '../types/crm';
 
 // Mock the formatters
@@ -476,7 +477,7 @@ describe('UnifiedTimelinePanel', () => {
         describe('Scenario: Note delete handler', () => {
             it('When note delete button clicked and confirmed, Then calls onNoteDelete', async () => {
                 const onNoteDelete = vi.fn();
-                global.confirm = vi.fn(() => true);
+                mockConfirm.mockResolvedValueOnce(true);
 
                 const { container } = render(
                     <Wrapper>
@@ -494,6 +495,34 @@ describe('UnifiedTimelinePanel', () => {
                 const deleteButtons = item?.querySelectorAll('button[title*="Delete"]');
 
                 expect(deleteButtons && deleteButtons.length > 0).toBe(true);
+            });
+        });
+
+        describe('Scenario: Note delete confirmation (useConfirm)', () => {
+            const renderWithNote = (onNoteDelete: () => void) => {
+                const { container } = render(
+                    <Wrapper>
+                        <UnifiedTimelinePanel activities={[]} notes={[mockNote]} tasks={[]} documents={[]} onNoteDelete={onNoteDelete} />
+                    </Wrapper>
+                );
+                const item = container.querySelector('[data-testid*="note-note-1"]');
+                return item?.querySelector('button[title*="Delete"]') as HTMLButtonElement;
+            };
+
+            it('Given confirm accepted, When delete clicked, Then onNoteDelete runs', async () => {
+                const onNoteDelete = vi.fn();
+                mockConfirm.mockResolvedValueOnce(true);
+                fireEvent.click(renderWithNote(onNoteDelete));
+                await waitFor(() => expect(onNoteDelete).toHaveBeenCalledWith(mockNote.id));
+            });
+
+            it('Given confirm cancelled, When delete clicked, Then onNoteDelete does not run', async () => {
+                const onNoteDelete = vi.fn();
+                mockConfirm.mockReset();
+                mockConfirm.mockResolvedValueOnce(false);
+                fireEvent.click(renderWithNote(onNoteDelete));
+                await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
+                expect(onNoteDelete).not.toHaveBeenCalled();
             });
         });
 
@@ -595,7 +624,7 @@ describe('UnifiedTimelinePanel', () => {
 
             it('When document delete button clicked and confirmed, Then calls onDocumentDelete', async () => {
                 const onDocumentDelete = vi.fn();
-                global.confirm = vi.fn(() => true);
+                mockConfirm.mockResolvedValueOnce(true);
 
                 render(
                     <Wrapper>

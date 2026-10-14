@@ -124,7 +124,7 @@ export default function CompensationPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100">Compensation</h1>
+        <h1 className="text-lg font-semibold text-fg">Compensation</h1>
         <div className="mt-1 text-xs text-amber-300">
           ⚠ For manager review only. No payroll or payment action is taken.
         </div>
@@ -135,31 +135,31 @@ export default function CompensationPage() {
       <Panel title="Calculate">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-64">
-            <label className="block text-[11px] text-slate-400 mb-1">
+            <label className="block text-[11px] text-fg-subtle mb-1">
               Person
             </label>
             <PersonPicker value={personId} onChange={setPersonId} />
           </div>
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">From</label>
+            <label className="block text-[11px] text-fg-subtle mb-1">From</label>
             <input
               type="date"
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
               value={periodStart}
               onChange={(e) => setPeriodStart(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">To</label>
+            <label className="block text-[11px] text-fg-subtle mb-1">To</label>
             <input
               type="date"
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
               value={periodEnd}
               onChange={(e) => setPeriodEnd(e.target.value)}
             />
           </div>
           <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
             onClick={calculate}
             disabled={busy || !personId}
           >
@@ -173,7 +173,7 @@ export default function CompensationPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
                   <th className="py-2 pr-4 font-medium">Component</th>
                   <th className="py-2 pr-4 font-medium">Basis</th>
                   <th className="py-2 font-medium text-right">Amount</th>
@@ -182,24 +182,24 @@ export default function CompensationPage() {
               <tbody>
                 {calc.components?.map((c: any) => (
                   <tr key={c.rule_id} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">{c.rule_name}</td>
-                    <td className="py-2 pr-4 text-slate-400 text-xs">
+                    <td className="py-2 pr-4 text-fg">{c.rule_name}</td>
+                    <td className="py-2 pr-4 text-fg-subtle text-xs">
                       {c.basis}
                       {!c.eligible && (
-                        <span className="text-slate-500"> — not eligible</span>
+                        <span className="text-fg-muted"> — not eligible</span>
                       )}
                     </td>
-                    <td className="py-2 text-right text-slate-200">
+                    <td className="py-2 text-right text-fg">
                       {formatValue(c.amount, 'currency', currency)}
                     </td>
                   </tr>
                 ))}
                 <tr>
-                  <td className="py-2 pr-4 font-medium text-slate-100">
+                  <td className="py-2 pr-4 font-medium text-fg">
                     Total calculated
                   </td>
                   <td />
-                  <td className="py-2 text-right font-medium text-slate-100">
+                  <td className="py-2 text-right font-medium text-fg">
                     {formatValue(calc.total_amount, 'currency', currency)}
                   </td>
                 </tr>
@@ -216,7 +216,7 @@ export default function CompensationPage() {
         title="New rule"
         action={
           <button
-            className="text-xs text-slate-400 hover:text-slate-200"
+            className="text-xs text-fg-subtle hover:text-fg"
             onClick={() => setShowRuleForm((v) => !v)}
           >
             {showRuleForm ? 'Cancel' : 'Add rule'}
@@ -224,7 +224,7 @@ export default function CompensationPage() {
         }
       >
         {!showRuleForm ? (
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-fg-muted">
             Rules are read during calculation only. Adding one never pays
             anyone.
           </div>
@@ -232,24 +232,24 @@ export default function CompensationPage() {
           <div className="space-y-3">
             <div className="flex flex-wrap items-end gap-3">
               <div className="grow basis-64">
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-[11px] text-fg-subtle mb-1">
                   Name
                 </label>
                 <input
                   aria-label="Rule name"
-                  className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                  className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Q3 new-business bonus"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-[11px] text-fg-subtle mb-1">
                   Type
                 </label>
                 <select
                   aria-label="Rule type"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={form.rule_type}
                   onChange={(e) =>
                     setForm({
@@ -269,12 +269,12 @@ export default function CompensationPage() {
               {form.rule_type !== 'deal_commission' && (
                 <>
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
+                    <label className="block text-[11px] text-fg-subtle mb-1">
                       Metric
                     </label>
                     <select
                       aria-label="Metric"
-                      className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                      className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                       value={form.task_type_id}
                       onChange={(e) =>
                         setForm({ ...form, task_type_id: e.target.value })
@@ -289,12 +289,12 @@ export default function CompensationPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
+                    <label className="block text-[11px] text-fg-subtle mb-1">
                       Amount
                     </label>
                     <input
                       aria-label="Amount"
-                      className="w-32 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                      className="w-32 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                       value={form.amount}
                       onChange={(e) =>
                         setForm({ ...form, amount: e.target.value })
@@ -306,12 +306,12 @@ export default function CompensationPage() {
 
               {form.rule_type === 'attainment_bonus' && (
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">
+                  <label className="block text-[11px] text-fg-subtle mb-1">
                     At attainment (%)
                   </label>
                   <input
                     aria-label="Attainment threshold"
-                    className="w-24 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                    className="w-24 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                     value={form.attainment_threshold_pct}
                     onChange={(e) =>
                       setForm({
@@ -326,7 +326,7 @@ export default function CompensationPage() {
 
             {form.rule_type === 'deal_commission' && (
               <div className="space-y-2">
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-fg-subtle">
                   Bands by deal value. Leave the top band&apos;s maximum empty
                   so the largest deals still earn commission.
                 </div>
@@ -334,7 +334,7 @@ export default function CompensationPage() {
                   <div key={i} className="flex items-center gap-2">
                     <input
                       aria-label={`Band ${i + 1} minimum`}
-                      className="w-28 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                      className="w-28 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                       placeholder="min"
                       value={b.min}
                       onChange={(e) => {
@@ -345,7 +345,7 @@ export default function CompensationPage() {
                     />
                     <input
                       aria-label={`Band ${i + 1} maximum`}
-                      className="w-28 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                      className="w-28 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                       placeholder="max (open)"
                       value={b.max}
                       onChange={(e) => {
@@ -356,7 +356,7 @@ export default function CompensationPage() {
                     />
                     <input
                       aria-label={`Band ${i + 1} percent`}
-                      className="w-24 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                      className="w-24 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                       placeholder="%"
                       value={b.percent}
                       onChange={(e) => {
@@ -367,7 +367,7 @@ export default function CompensationPage() {
                     />
                     {form.bands.length > 1 && (
                       <button
-                        className="text-xs text-slate-500 hover:text-slate-300"
+                        className="text-xs text-fg-muted hover:text-fg-subtle"
                         aria-label={`Remove band ${i + 1}`}
                         onClick={() =>
                           setForm({
@@ -382,7 +382,7 @@ export default function CompensationPage() {
                   </div>
                 ))}
                 <button
-                  className="text-xs text-slate-400 hover:text-slate-200"
+                  className="text-xs text-fg-subtle hover:text-fg"
                   onClick={() =>
                     setForm({
                       ...form,
@@ -397,12 +397,12 @@ export default function CompensationPage() {
 
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-[11px] text-fg-subtle mb-1">
                   Applies to
                 </label>
                 <select
                   aria-label="Scope"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={form.scope}
                   onChange={(e) =>
                     setForm({
@@ -418,12 +418,12 @@ export default function CompensationPage() {
               </div>
               {form.scope === 'role' && (
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">
+                  <label className="block text-[11px] text-fg-subtle mb-1">
                     Role
                   </label>
                   <input
                     aria-label="Role"
-                    className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                    className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                     value={form.applies_to_role}
                     onChange={(e) =>
                       setForm({ ...form, applies_to_role: e.target.value })
@@ -433,7 +433,7 @@ export default function CompensationPage() {
               )}
               {form.scope === 'person' && (
                 <div className="min-w-64">
-                  <label className="block text-[11px] text-slate-400 mb-1">
+                  <label className="block text-[11px] text-fg-subtle mb-1">
                     Person
                   </label>
                   <PersonPicker
@@ -445,13 +445,13 @@ export default function CompensationPage() {
                 </div>
               )}
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-[11px] text-fg-subtle mb-1">
                   From
                 </label>
                 <input
                   type="date"
                   aria-label="Effective from"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={form.effective_from}
                   onChange={(e) =>
                     setForm({ ...form, effective_from: e.target.value })
@@ -459,13 +459,13 @@ export default function CompensationPage() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
+                <label className="block text-[11px] text-fg-subtle mb-1">
                   To
                 </label>
                 <input
                   type="date"
                   aria-label="Effective to"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={form.effective_to}
                   onChange={(e) =>
                     setForm({ ...form, effective_to: e.target.value })
@@ -473,7 +473,7 @@ export default function CompensationPage() {
                 />
               </div>
               <button
-                className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+                className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
                 onClick={saveRule}
                 disabled={busy}
               >
@@ -485,7 +485,7 @@ export default function CompensationPage() {
       </Panel>
 
       {loading ? (
-        <div className="text-sm text-slate-400">Loading rules…</div>
+        <div className="text-sm text-fg-subtle">Loading rules…</div>
       ) : !rules.length ? (
         <EmptyState message="No incentive rules configured." />
       ) : (
@@ -493,7 +493,7 @@ export default function CompensationPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
                   <th className="py-2 pr-4 font-medium">Name</th>
                   <th className="py-2 pr-4 font-medium">Type</th>
                   <th className="py-2 pr-4 font-medium">Trigger</th>
@@ -503,9 +503,9 @@ export default function CompensationPage() {
               <tbody>
                 {rules.map((r) => (
                   <tr key={r.id} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">{r.name}</td>
-                    <td className="py-2 pr-4 text-slate-400">{r.rule_type}</td>
-                    <td className="py-2 pr-4 text-slate-400 text-xs">
+                    <td className="py-2 pr-4 text-fg">{r.name}</td>
+                    <td className="py-2 pr-4 text-fg-subtle">{r.rule_type}</td>
+                    <td className="py-2 pr-4 text-fg-subtle text-xs">
                       {r.rule_type === 'attainment_bonus' &&
                         `at ${Math.round(Number(r.attainment_threshold ?? 1) * 100)}% attainment`}
                       {r.rule_type === 'per_unit' &&
@@ -513,7 +513,7 @@ export default function CompensationPage() {
                       {r.rule_type === 'deal_commission' &&
                         `${(r.bands ?? []).length} band${(r.bands ?? []).length === 1 ? '' : 's'}`}
                     </td>
-                    <td className="py-2 text-slate-400 text-xs">
+                    <td className="py-2 text-fg-subtle text-xs">
                       {r.applies_to_person_id ? (
                         <PersonName id={r.applies_to_person_id} />
                       ) : r.applies_to_role ? (

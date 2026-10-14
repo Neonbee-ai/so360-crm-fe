@@ -54,44 +54,44 @@ const MeetingModal: React.FC<Props> = ({ leadId, dealId, stakeholderId, meeting,
 
     return (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="bg-bg border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-                    <p className="text-xs font-black text-slate-50 uppercase tracking-widest">
+                    <p className="text-xs font-black text-fg uppercase tracking-widest">
                         {isEditing ? 'Edit Meeting' : 'Schedule Meeting'}
                     </p>
-                    <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-200 rounded-lg hover:bg-slate-800"><X size={16} /></button>
+                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-lg hover:bg-surface-raised"><X size={16} /></button>
                 </div>
                 <div className="p-5 space-y-3">
-                    {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg px-3 py-2">{error}</div>}
+                    {error && <div className="bg-red-500/10 border border-red-500/20 text-danger text-xs rounded-lg px-3 py-2">{error}</div>}
                     <label className="block">
-                        <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Title</span>
-                        <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none" />
+                        <span className="block text-[9px] font-black uppercase tracking-widest text-fg-muted mb-1">Title</span>
+                        <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                         <label className="block">
-                            <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Date &amp; Time</span>
-                            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none" />
+                            <span className="block text-[9px] font-black uppercase tracking-widest text-fg-muted mb-1">Date &amp; Time</span>
+                            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                         </label>
                         <label className="block">
-                            <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Duration (min)</span>
-                            <input type="number" min={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none" />
+                            <span className="block text-[9px] font-black uppercase tracking-widest text-fg-muted mb-1">Duration (min)</span>
+                            <input type="number" min={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                         </label>
                     </div>
                     <label className="block">
-                        <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Location / Link</span>
-                        <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none" />
+                        <span className="block text-[9px] font-black uppercase tracking-widest text-fg-muted mb-1">Location / Link</span>
+                        <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                     </label>
                     <label className="block">
-                        <span className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Agenda</span>
-                        <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} rows={3} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none" />
+                        <span className="block text-[9px] font-black uppercase tracking-widest text-fg-muted mb-1">Agenda</span>
+                        <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} rows={3} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                     </label>
                 </div>
                 <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-800">
-                    <button onClick={onClose} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200">Cancel</button>
+                    <button onClick={onClose} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg">Cancel</button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                        className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
                     >
                         {saving && <Loader2 size={12} className="animate-spin" />}
                         {isEditing ? 'Save Changes' : 'Schedule'}

@@ -70,7 +70,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
   const c = block.content;
   const update = (key: string, value: any) => onUpdate(block.id, { ...c, [key]: value });
 
-  const inputClass = 'w-full bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500';
+  const inputClass = 'w-full bg-surface border border-line rounded px-3 py-1.5 text-sm text-fg focus:outline-none focus:ring-1 focus:ring-focus';
 
   switch (block.type) {
     case 'header':
@@ -129,14 +129,14 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
         <div className="flex gap-2 items-center">
           <input type="color" value={c.color || '#334155'} onChange={e => update('color', e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
           <input type="number" className={`${inputClass} w-20`} min={1} max={4} value={c.thickness} onChange={e => update('thickness', Number(e.target.value))} />
-          <span className="text-xs text-slate-500">px</span>
+          <span className="text-xs text-fg-muted">px</span>
         </div>
       );
     case 'spacer':
       return (
         <div className="flex gap-2 items-center">
           <input type="range" min={8} max={64} value={c.height} onChange={e => update('height', Number(e.target.value))} className="flex-1" />
-          <span className="text-xs text-slate-400 w-10">{c.height}px</span>
+          <span className="text-xs text-fg-subtle w-10">{c.height}px</span>
         </div>
       );
     case 'columns':
@@ -270,7 +270,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
     <div className="flex gap-4 min-h-[400px]">
       {/* Sidebar — block palette */}
       <div className="w-36 flex-shrink-0">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Blocks</p>
+        <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wider mb-3">Blocks</p>
         <div className="space-y-1.5">
           {BLOCK_TYPES.map(bt => (
             <div
@@ -281,7 +281,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                 e.dataTransfer.effectAllowed = 'copy';
               }}
               onClick={() => addBlock(bt.type)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 cursor-grab active:cursor-grabbing text-slate-300 text-sm transition-colors border border-slate-700/50"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 cursor-grab active:cursor-grabbing text-fg-subtle text-sm transition-colors border border-slate-700/50"
             >
               <span className="w-5 text-center text-xs">{bt.icon}</span>
               <span>{bt.label}</span>
@@ -290,12 +290,12 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
         </div>
 
         <div className="mt-6 space-y-2">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Variables</p>
+          <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wider mb-2">Variables</p>
           {['customer_name', 'email', 'first_name'].map(v => (
             <button
               key={v}
               onClick={() => navigator.clipboard.writeText(`{{${v}}}`)}
-              className="block w-full text-left px-2 py-1 rounded text-xs text-blue-400 hover:bg-slate-800 transition-colors"
+              className="block w-full text-left px-2 py-1 rounded text-xs text-blue-400 hover:bg-surface-raised transition-colors"
               title={`Copy {{${v}}} to clipboard`}
             >
               {`{{${v}}}`}
@@ -309,22 +309,22 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
         <div className="flex items-center gap-2 mb-3">
           <button
             onClick={() => setShowPreview(false)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${!showPreview ? 'bg-blue-600 text-slate-50' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${!showPreview ? 'bg-primary text-fg' : 'bg-surface-raised text-fg-subtle hover:text-fg'}`}
           >
             Editor
           </button>
           <button
             onClick={() => setShowPreview(true)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${showPreview ? 'bg-blue-600 text-slate-50' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${showPreview ? 'bg-primary text-fg' : 'bg-surface-raised text-fg-subtle hover:text-fg'}`}
           >
             Preview
           </button>
-          <span className="ml-auto text-xs text-slate-500">{blocks.length} block{blocks.length !== 1 ? 's' : ''}</span>
+          <span className="ml-auto text-xs text-fg-muted">{blocks.length} block{blocks.length !== 1 ? 's' : ''}</span>
         </div>
 
         {showPreview ? (
           <div
-            className="flex-1 bg-slate-950 rounded-xl border border-slate-800 p-6 overflow-auto"
+            className="flex-1 bg-bg rounded-xl border border-slate-800 p-6 overflow-auto"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         ) : (
@@ -334,7 +334,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
             onDrop={handleCanvasDrop}
           >
             {blocks.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-slate-500">
+              <div className="flex flex-col items-center justify-center h-full text-fg-muted">
                 <p className="text-sm mb-1">Drag blocks here or click to add</p>
                 <p className="text-xs">Build your email template visually</p>
               </div>
@@ -351,33 +351,33 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                 onClick={() => setSelectedId(selectedId === block.id ? null : block.id)}
                 className={`group relative mb-2 rounded-lg border transition-all cursor-pointer ${
                   selectedId === block.id
-                    ? 'border-blue-500 bg-slate-900/80'
-                    : 'border-slate-800/50 bg-slate-900/30 hover:border-slate-700'
+                    ? 'border-primary bg-slate-900/80'
+                    : 'border-slate-800/50 bg-slate-900/30 hover:border-line'
                 } ${dragOverIdx === idx ? 'border-t-2 border-t-blue-400' : ''}`}
               >
                 {/* Block header */}
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-800/30">
-                  <span className="text-slate-600 cursor-grab active:cursor-grabbing">⠿</span>
-                  <span className="text-xs text-slate-500 font-medium uppercase">{block.type}</span>
+                  <span className="text-fg-muted cursor-grab active:cursor-grabbing">⠿</span>
+                  <span className="text-xs text-fg-muted font-medium uppercase">{block.type}</span>
                   <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={e => { e.stopPropagation(); moveBlock(idx, Math.max(0, idx - 1)); }}
-                      className="p-1 text-slate-500 hover:text-slate-300 text-xs"
+                      className="p-1 text-fg-muted hover:text-fg-subtle text-xs"
                       title="Move up"
                     >↑</button>
                     <button
                       onClick={e => { e.stopPropagation(); moveBlock(idx, Math.min(blocks.length - 1, idx + 1)); }}
-                      className="p-1 text-slate-500 hover:text-slate-300 text-xs"
+                      className="p-1 text-fg-muted hover:text-fg-subtle text-xs"
                       title="Move down"
                     >↓</button>
                     <button
                       onClick={e => { e.stopPropagation(); duplicateBlock(block.id); }}
-                      className="p-1 text-slate-500 hover:text-slate-300 text-xs"
+                      className="p-1 text-fg-muted hover:text-fg-subtle text-xs"
                       title="Duplicate"
                     >⧉</button>
                     <button
                       onClick={e => { e.stopPropagation(); removeBlock(block.id); }}
-                      className="p-1 text-rose-500/70 hover:text-rose-400 text-xs"
+                      className="p-1 text-rose-500/70 hover:text-danger text-xs"
                       title="Delete"
                     >✕</button>
                   </div>
@@ -389,7 +389,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                     <BlockEditor block={block} onUpdate={updateBlock} />
                   ) : (
                     <div
-                      className="text-sm text-slate-400 pointer-events-none"
+                      className="text-sm text-fg-subtle pointer-events-none"
                       dangerouslySetInnerHTML={{ __html: blockToHtml(block) }}
                     />
                   )}

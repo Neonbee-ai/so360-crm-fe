@@ -15,7 +15,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
@@ -52,6 +52,7 @@ export async function openDealDocument(doc: Attachment) {
 }
 
 const DealDetailPage = () => {
+    const [confirm, confirmDialog] = useConfirm();
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -429,7 +430,7 @@ const DealDetailPage = () => {
     };
 
     const handleUnlinkProject = async () => {
-        if (!deal || !window.confirm('Are you sure you want to unlink this project?')) return;
+        if (!deal || !await confirm({ title: 'Unlink project?', message: 'Are you sure you want to unlink this project?', intent: 'default', confirmLabel: 'Unlink' })) return;
 
         try {
             await crmService.unlinkProject(id);
@@ -526,32 +527,32 @@ const DealDetailPage = () => {
                     {/* Header region: reserves the deal-name/stage row + button group row */}
                     <div data-testid="deal-detail-skeleton-header">
                         <div className="flex justify-between items-start mb-4">
-                            <div className="h-4 bg-slate-800 rounded w-24" />
+                            <div className="h-4 bg-surface-raised rounded w-24" />
                         </div>
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div className="space-y-2">
-                                <div className="h-9 bg-slate-800 rounded w-64" />
-                                <div className="h-4 bg-slate-800 rounded w-40" />
+                                <div className="h-9 bg-surface-raised rounded w-64" />
+                                <div className="h-4 bg-surface-raised rounded w-40" />
                             </div>
                             <div className="flex flex-wrap gap-3">
-                                <div className="h-10 w-10 bg-slate-800 rounded-xl" />
-                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
-                                <div className="h-10 w-36 bg-slate-800 rounded-xl" />
+                                <div className="h-10 w-10 bg-surface-raised rounded-xl" />
+                                <div className="h-10 w-36 bg-surface-raised rounded-xl" />
+                                <div className="h-10 w-36 bg-surface-raised rounded-xl" />
                             </div>
                         </div>
                     </div>
 
                     {/* Lifecycle stepper region */}
-                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-28" />
+                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-surface border border-slate-800 rounded-2xl p-6 h-28" />
 
                     {/* Two-column grid region */}
                     <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-8">
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-40" />
-                            <div data-testid="deal-detail-skeleton-tabs" className="bg-slate-900 border border-slate-800 rounded-2xl h-96" />
+                            <div className="bg-surface border border-slate-800 rounded-2xl h-40" />
+                            <div data-testid="deal-detail-skeleton-tabs" className="bg-surface border border-slate-800 rounded-2xl h-96" />
                         </div>
                         <div className="space-y-8">
-                            <div className="bg-slate-900 border border-slate-800 rounded-2xl h-64" />
+                            <div className="bg-surface border border-slate-800 rounded-2xl h-64" />
                         </div>
                     </div>
                 </div>
@@ -561,15 +562,16 @@ const DealDetailPage = () => {
 
     if (!deal) {
         return (
-            <div className="p-8 text-center text-slate-500">
+            <div className="p-8 text-center text-fg-muted">
                 <p>Deal not found.</p>
-                <button onClick={() => navigate('/crm/pipeline')} className="text-blue-500 hover:underline mt-4 inline-block">Back to Pipeline</button>
+                <button onClick={() => navigate('/crm/pipeline')} className="text-primary hover:underline mt-4 inline-block">Back to Pipeline</button>
             </div>
         );
     }
 
     return (
         <div className="p-8">
+            {confirmDialog}
 
             <header className="mb-8">
                 <div className="flex justify-between items-start mb-4">
@@ -585,7 +587,7 @@ const DealDetailPage = () => {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             {/* The deal name never changes shape — only the stage badge/trigger opens a popover. */}
-                            <h1 className="text-4xl font-black text-slate-50 tracking-tight leading-tight">{deal.name}</h1>
+                            <h1 className="text-4xl font-black text-fg tracking-tight leading-tight">{deal.name}</h1>
                             <div className="relative" ref={stageDropdownRef}>
                                 <button
                                     type="button"
@@ -606,7 +608,7 @@ const DealDetailPage = () => {
                                     <div
                                         role="listbox"
                                         data-testid="deal-stage-list"
-                                        className="absolute z-50 top-full left-0 mt-1 min-w-[160px] bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden"
+                                        className="absolute z-50 top-full left-0 mt-1 min-w-[160px] bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
                                     >
                                         {dealStages.map(s => {
                                             const isCurrent = s.id === (deal.stage_id || deal.stage);
@@ -618,7 +620,7 @@ const DealDetailPage = () => {
                                                     aria-selected={isCurrent}
                                                     onClick={() => handleSelectStage(s.id)}
                                                     className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-colors ${
-                                                        isCurrent ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+                                                        isCurrent ? 'bg-primary text-white' : 'text-fg-subtle hover:bg-surface-raised'
                                                     }`}
                                                     data-testid={`deal-stage-option-${s.id}`}
                                                 >
@@ -631,11 +633,11 @@ const DealDetailPage = () => {
                                 )}
                             </div>
                         </div>
-                        <p className="text-slate-400 flex items-center gap-2 mt-1">
-                            <span className="font-semibold text-slate-50">{deal.company_name}</span>
+                        <p className="text-fg-subtle flex items-center gap-2 mt-1">
+                            <span className="font-semibold text-fg">{deal.company_name}</span>
                             {deal.expected_close_date && (
                                 <>
-                                    <span className="w-1 h-1 bg-slate-700 rounded-full" />
+                                    <span className="w-1 h-1 bg-line rounded-full" />
                                     <span className="text-xs">Closing: {formatters.formatDate(deal.expected_close_date)}</span>
                                 </>
                             )}
@@ -648,7 +650,7 @@ const DealDetailPage = () => {
                             onClick={() => setShowDeleteConfirm(true)}
                             aria-label="Delete"
                             title="Delete"
-                            className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-2.5 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
+                            className="bg-surface-raised hover:bg-red-600/20 text-fg-subtle hover:text-danger p-2.5 rounded-xl transition-all flex items-center justify-center border border-line hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
                             <Trash2 size={14} />
                         </button>}
@@ -664,7 +666,7 @@ const DealDetailPage = () => {
                         {FEATURES.DEAL_ESTIMATE_REQUEST && (
                             <button
                                 onClick={handleCreateEstimate}
-                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
+                                className="bg-surface-raised hover:bg-line text-fg px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-line"
                             >
                                 <FileText size={14} /> Create Estimate
                             </button>
@@ -672,7 +674,7 @@ const DealDetailPage = () => {
                         {FEATURES.DEAL_INVOICE_REQUEST && (
                             <button
                                 onClick={handleCreateInvoice}
-                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700"
+                                className="bg-surface-raised hover:bg-line text-fg px-4 py-2.5 rounded-xl font-black text-[10px] transition-all flex items-center gap-2 uppercase tracking-widest border border-line"
                             >
                                 <Receipt size={14} /> Create Invoice
                             </button>
@@ -680,7 +682,7 @@ const DealDetailPage = () => {
                         {FEATURES.DEAL_PROJECT_CREATION && (
                             <button
                                 onClick={handleOpenProjectModal}
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-black text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2 uppercase tracking-widest border border-blue-400/20"
+                                className="bg-primary hover:bg-primary text-white px-6 py-2.5 rounded-xl font-black text-[10px] transition-all shadow-lg active:scale-95 flex items-center gap-2 uppercase tracking-widest border border-blue-400/20"
                             >
                                 <Briefcase size={14} /> {deal.project_id ? 'Manage Project' : 'Create Project'}
                             </button>
@@ -690,8 +692,8 @@ const DealDetailPage = () => {
             </header>
 
             {/* Deal Lifecycle Stepper */}
-            <div className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Deal Lifecycle</h3>
+            <div className="mb-8 bg-surface border border-slate-800 rounded-2xl p-6">
+                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4">Deal Lifecycle</h3>
                 <DealLifecycleStepper
                     stages={dealStages}
                     currentStageId={deal.stage_id}
@@ -704,9 +706,9 @@ const DealDetailPage = () => {
                 <div className="lg:col-span-2 space-y-8">
 
                     {/* Summary & Identity Dual-Tab */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                    <section className="bg-surface border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                         <div className="flex border-b border-slate-800 bg-slate-900/50">
-                            <button className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-blue-400 border-b-2 border-blue-500 flex items-center gap-2">
+                            <button className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-blue-400 border-b-2 border-primary flex items-center gap-2">
                                 <Plus size={14} /> Deal Profile
                             </button>
                             <div className="ml-auto flex items-center gap-2 px-6">
@@ -714,7 +716,7 @@ const DealDetailPage = () => {
                                     <>
                                         <button
                                             onClick={handleCancelEdit}
-                                            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all"
+                                            className="p-2 rounded-lg text-fg-subtle hover:text-fg hover:bg-surface-raised transition-all"
                                             title="Cancel"
                                         >
                                             <X size={16} />
@@ -722,7 +724,7 @@ const DealDetailPage = () => {
                                         <button
                                             onClick={handleSaveProfile}
                                             disabled={isSavingProfile}
-                                            className="p-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-all disabled:opacity-50 flex items-center gap-1"
+                                            className="p-2 rounded-lg bg-success text-white hover:bg-success transition-all disabled:opacity-50 flex items-center gap-1"
                                             title="Save Changes"
                                         >
                                             {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
@@ -731,7 +733,7 @@ const DealDetailPage = () => {
                                 ) : (
                                     <button
                                         onClick={handleStartEditing}
-                                        className="p-2 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+                                        className="p-2 rounded-lg text-fg-muted hover:text-fg-subtle hover:bg-surface-raised transition-all"
                                         title="Edit Profile"
                                     >
                                         <Edit2 size={16} />
@@ -742,42 +744,42 @@ const DealDetailPage = () => {
                         <div className="p-8">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                                 <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Financial Value</span>
+                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Financial Value</span>
                                     {isEditingSummary ? (
                                         <input
                                             type="number"
                                             value={editedValue ?? deal.value}
                                             onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                                            className="bg-slate-950 border border-slate-800 text-emerald-400 font-black rounded px-2 py-1 w-full outline-none focus:border-emerald-500"
+                                            className="bg-bg border border-slate-800 text-success font-black rounded px-2 py-1 w-full outline-none focus:border-success"
                                         />
                                     ) : (
-                                        <p className="text-xl font-black text-emerald-400 flex items-center gap-1.5">
+                                        <p className="text-xl font-black text-success flex items-center gap-1.5">
                                             {formatters.formatCurrency(deal.value)}
                                         </p>
                                     )}
                                 </div>
                                 <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Expected Close</span>
+                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Expected Close</span>
                                     {isEditingSummary ? (
                                         <input
                                             type="date"
                                             value={editedCloseDate ?? deal.expected_close_date ?? ''}
                                             onChange={(e) => setEditedCloseDate(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
+                                            className="bg-bg border border-slate-800 text-fg font-bold rounded px-2 py-1 w-full outline-none focus:border-primary"
                                         />
                                     ) : (
-                                        <p className="text-sm font-bold text-slate-50 flex items-center gap-1.5">
+                                        <p className="text-sm font-bold text-fg flex items-center gap-1.5">
                                             <Calendar size={16} />{deal.expected_close_date || '—'}
                                         </p>
                                     )}
                                 </div>
                                 <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Deal Owner</span>
+                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Deal Owner</span>
                                     {isEditingSummary ? (
                                         <select
                                             value={editedOwnerId ?? deal.owner.id}
                                             onChange={(e) => setEditedOwnerId(e.target.value)}
-                                            className="bg-slate-950 border border-slate-800 text-slate-50 font-bold rounded px-2 py-1 w-full outline-none focus:border-blue-500"
+                                            className="bg-bg border border-slate-800 text-fg font-bold rounded px-2 py-1 w-full outline-none focus:border-primary"
                                         >
                                             {allUsers.map(u => (
                                                 <option key={u.id} value={u.id}>{u.full_name}</option>
@@ -785,10 +787,10 @@ const DealDetailPage = () => {
                                         </select>
                                     ) : (
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold overflow-hidden border border-slate-700">
+                                            <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-[10px] font-bold overflow-hidden border border-line">
                                                 {deal.owner.avatar_url ? <img src={deal.owner.avatar_url} alt={deal.owner.full_name} /> : deal.owner.full_name.charAt(0)}
                                             </div>
-                                            <span className="text-sm font-bold text-slate-200">{deal.owner.full_name}</span>
+                                            <span className="text-sm font-bold text-fg">{deal.owner.full_name}</span>
                                         </div>
                                     )}
                                 </div>
@@ -798,38 +800,38 @@ const DealDetailPage = () => {
                                     silently dropped. */}
                                 {deal.owner_person_id && (
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sales Rep</span>
+                                        <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Sales Rep</span>
                                         {deal.owner_person ? (
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold overflow-hidden border border-slate-700">
+                                                <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-[10px] font-bold overflow-hidden border border-line">
                                                     {deal.owner_person.avatar_url
                                                         ? <img src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
                                                         : (deal.owner_person.full_name || '?').charAt(0)}
                                                 </div>
-                                                <span className="text-sm font-bold text-slate-200">{deal.owner_person.full_name}</span>
+                                                <span className="text-sm font-bold text-fg">{deal.owner_person.full_name}</span>
                                                 {deal.owner_person.job_title && (
-                                                    <span className="text-xs font-bold text-slate-500">{deal.owner_person.job_title}</span>
+                                                    <span className="text-xs font-bold text-fg-muted">{deal.owner_person.job_title}</span>
                                                 )}
                                                 {deal.owner_person.department_name && (
-                                                    <span className="text-xs font-bold text-slate-500">· {deal.owner_person.department_name}</span>
+                                                    <span className="text-xs font-bold text-fg-muted">· {deal.owner_person.department_name}</span>
                                                 )}
                                                 {deal.owner_person.status !== 'active' && (
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 border border-amber-500/40 rounded px-1.5 py-0.5">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-warning border border-amber-500/40 rounded px-1.5 py-0.5">
                                                         Inactive
                                                     </span>
                                                 )}
                                             </div>
                                         ) : (
-                                            <p className="text-sm font-bold text-slate-500">
+                                            <p className="text-sm font-bold text-fg-muted">
                                                 Sales rep unavailable from People Connect
                                             </p>
                                         )}
                                     </div>
                                 )}
                                 <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Activity</span>
-                                    <p className="text-sm font-bold text-slate-300 flex items-center gap-1.5">
-                                        <Clock size={16} className="text-slate-500" />
+                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Last Activity</span>
+                                    <p className="text-sm font-bold text-fg-subtle flex items-center gap-1.5">
+                                        <Clock size={16} className="text-fg-muted" />
                                         {deal.last_activity_at ? formatters.formatDate(deal.last_activity_at) : 'None'}
                                     </p>
                                 </div>
@@ -838,7 +840,7 @@ const DealDetailPage = () => {
                     </section>
 
                     {/* Navigation Tabs */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
+                    <div className="bg-surface border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
                         <div className="relative flex border-b border-slate-800 bg-slate-900/50 min-w-0">
                             <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="deal-detail-tab-strip">
                                 {[
@@ -856,7 +858,7 @@ const DealDetailPage = () => {
                                         key={tab.id}
                                         ref={activeTab === tab.id ? activeDealTabRef : undefined}
                                         onClick={() => setActiveTab(tab.id as TabType)}
-                                        className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                                     >
                                         <tab.icon size={14} /> {tab.name}
                                     </button>
@@ -882,30 +884,30 @@ const DealDetailPage = () => {
                                 </div>
                             )}
                             {activeTab === 'activity' && (
-                                <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-slate-800">
+                                <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-surface-raised">
                                     {getAggregatedTimeline().length === 0 ? (
                                         <div className="text-center py-12 ml-6">
-                                            <MessageSquare size={48} className="mx-auto mb-4 text-slate-700 opacity-30" />
-                                            <p className="text-slate-400 font-semibold mb-2">No activity history yet</p>
-                                            <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                                            <MessageSquare size={48} className="mx-auto mb-4 text-fg opacity-30" />
+                                            <p className="text-fg-subtle font-semibold mb-2">No activity history yet</p>
+                                            <p className="text-xs text-fg-muted max-w-sm mx-auto leading-relaxed">
                                                 Activities like calls, meetings, and emails will appear here as you interact with this deal.
                                             </p>
                                         </div>
                                     ) : (
                                         getAggregatedTimeline().map((ev) => (
                                             <div key={ev.id} className="relative pl-10">
-                                                <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center z-10">
+                                                <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-surface-raised border-2 border-slate-900 flex items-center justify-center z-10">
                                                     {(ev.type === 'Activity' && ev.subType === 'CALL') && <Phone size={14} className="text-blue-400" />}
                                                     {(ev.type === 'Activity' && ev.subType === 'MEETING') && <Users size={14} className="text-purple-400" />}
-                                                    {(ev.type === 'Activity' && ev.subType === 'EMAIL') && <AtSign size={14} className="text-emerald-400" />}
-                                                    {ev.type === 'NOTE' && <FileText size={14} className="text-amber-400" />}
+                                                    {(ev.type === 'Activity' && ev.subType === 'EMAIL') && <AtSign size={14} className="text-success" />}
+                                                    {ev.type === 'NOTE' && <FileText size={14} className="text-warning" />}
                                                     {ev.type === 'TASK' && <CheckCircle2 size={14} className="text-indigo-400" />}
                                                     {ev.type === 'DOCUMENT' && <UploadCloud size={14} className="text-sky-400" />}
-                                                    {['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(ev.type) && <Zap size={14} className="text-yellow-400" />}
+                                                    {['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(ev.type) && <Zap size={14} className="text-warning" />}
                                                 </div>
-                                                <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-slate-700 transition-all">
+                                                <div className="bg-slate-950/50 border border-slate-800/40 p-4 rounded-xl group hover:border-line transition-all">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-black text-slate-50 text-[10px] uppercase tracking-widest">
+                                                        <span className="font-black text-fg text-[10px] uppercase tracking-widest">
                                                             {ev.title}
                                                         </span>
                                                         <div className="flex items-center gap-2">
@@ -919,37 +921,37 @@ const DealDetailPage = () => {
                                                                                 fetchData();
                                                                             }
                                                                         }}
-                                                                        className="p-1 text-slate-500 hover:text-blue-400 transition-colors"
+                                                                        className="p-1 text-fg-muted hover:text-blue-400 transition-colors"
                                                                         title="Edit activity"
                                                                     >
                                                                         <Edit2 size={12} />
                                                                     </button>
                                                                     <button
                                                                         onClick={async () => {
-                                                                            if (confirm('Delete this activity?')) {
+                                                                            if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                                 await activitiesApi.delete(ev.id);
                                                                                 fetchData();
                                                                             }
                                                                         }}
-                                                                        className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
+                                                                        className="p-1 text-fg-muted hover:text-danger transition-colors"
                                                                         title="Delete activity"
                                                                     >
                                                                         <Trash2 size={12} />
                                                                     </button>
                                                                 </div>
                                                             )}
-                                                            <span className="text-[9px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest uppercase">
+                                                            <span className="text-[9px] bg-surface-raised text-fg-muted px-2 py-0.5 rounded font-black tracking-widest uppercase">
                                                                 {formatters.formatDateTime(ev.date)}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <p className="text-slate-400 text-sm leading-relaxed">{ev.description}</p>
+                                                    <p className="text-fg-subtle text-sm leading-relaxed">{ev.description}</p>
                                                     {ev.author && (
                                                         <div className="mt-4 flex items-center gap-2">
-                                                            <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-black overflow-hidden border border-slate-700">
+                                                            <div className="w-5 h-5 rounded-full bg-surface-raised flex items-center justify-center text-[8px] font-black overflow-hidden border border-line">
                                                                 {ev.author.avatar_url ? <img src={ev.author.avatar_url} /> : ev.author.full_name?.charAt(0)}
                                                             </div>
-                                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{ev.author.full_name}</span>
+                                                            <span className="text-[9px] font-bold text-fg-muted uppercase tracking-widest">{ev.author.full_name}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -974,32 +976,32 @@ const DealDetailPage = () => {
                                                                 fetchData();
                                                             }
                                                         }}
-                                                        className="text-slate-500 hover:text-blue-400"
+                                                        className="text-fg-muted hover:text-blue-400"
                                                     ><Edit2 size={12} /></button>
                                                     <button
                                                         onClick={async () => {
-                                                            if (confirm('Delete note?')) {
+                                                            if (await confirm({ title: 'Delete?', message: 'Delete note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteNote(note.id);
                                                                 fetchData();
                                                             }
                                                         }}
-                                                        className="text-slate-500 hover:text-rose-400"
+                                                        className="text-fg-muted hover:text-danger"
                                                     ><Trash2 size={12} /></button>
                                                 </div>
-                                                <p className="text-slate-300 leading-relaxed mb-2 pr-12">{note.content}</p>
+                                                <p className="text-fg-subtle leading-relaxed mb-2 pr-12">{note.content}</p>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                    <span className="text-[10px] text-slate-600 font-bold">{formatters.formatDate(note.created_at)}</span>
+                                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{note.author.full_name}</span>
+                                                    <span className="text-[10px] text-fg-muted font-bold">{formatters.formatDate(note.created_at)}</span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                                    <div className="bg-bg border border-slate-800 rounded-xl p-4">
                                         <textarea
                                             placeholder="Capture commercial context..."
                                             value={newNoteContent}
                                             onChange={(e) => setNewNoteContent(e.target.value)}
-                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-slate-50 focus:ring-0 resize-none h-24 mb-3"
+                                            className="w-full bg-transparent border-none p-0 text-sm font-medium text-fg focus:ring-0 resize-none h-24 mb-3"
                                         />
                                         <div className="flex justify-end">
                                             <button
@@ -1008,7 +1010,7 @@ const DealDetailPage = () => {
                                                     setNewNoteContent('');
                                                     fetchData();
                                                 }}
-                                                className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                                                className="bg-warning hover:bg-warning text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
                                             >Save Note</button>
                                         </div>
                                     </div>
@@ -1019,34 +1021,34 @@ const DealDetailPage = () => {
                             {activeTab === 'tasks' && (
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Planned actions</h4>
+                                        <h4 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Planned actions</h4>
                                         <button onClick={() => setIsCreatingTask(true)} className="text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest flex items-center gap-1.5">
                                             <Plus size={12} /> Add Task
                                         </button>
                                     </div>
                                     <div className="grid gap-3">
                                         {tasks.length === 0 ? (
-                                            <div className="text-center py-10 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
+                                            <div className="text-center py-10 text-fg-muted border-2 border-dashed border-slate-800 rounded-xl">
                                                 <CheckCircle2 size={32} className="mx-auto mb-3 opacity-20" />
                                                 <p className="text-sm font-medium uppercase tracking-tight">Zero pending actions</p>
                                             </div>
                                         ) : (
                                             tasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/10 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-bg border rounded-xl group relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/10 opacity-60' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-success text-success' : 'border-line'}`}
                                                     >
                                                         {task.status === 'DONE' && <CheckCircle2 size={12} />}
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
-                                                            <h4 className={`text-sm font-bold text-slate-50 truncate ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
+                                                            <h4 className={`text-sm font-bold text-fg truncate ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
                                                                 {task.title}
                                                             </h4>
                                                         </div>
-                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-slate-300 uppercase tracking-wider pt-2 border-t border-slate-800/50">
-                                                            <span className="flex items-center gap-1 text-slate-300">
+                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-fg-subtle uppercase tracking-wider pt-2 border-t border-slate-800/50">
+                                                            <span className="flex items-center gap-1 text-fg-subtle">
                                                                 <Clock size={11} /> Due {formatters.formatDate(task.due_date)}
                                                             </span>
                                                         </div>
@@ -1055,12 +1057,12 @@ const DealDetailPage = () => {
                                                         <button onClick={() => setEditingTask(task)} className="p-1 hover:text-blue-400"><Edit2 size={14} /></button>
                                                         <button
                                                             onClick={async () => {
-                                                                if (confirm('Delete task?')) {
+                                                                if (await confirm({ title: 'Delete?', message: 'Delete task?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                     await tasksApi.delete(task.id);
                                                                     fetchData();
                                                                 }
                                                             }}
-                                                            className="p-1 hover:text-rose-400"
+                                                            className="p-1 hover:text-danger"
                                                         ><Trash2 size={14} /></button>
                                                     </div>
                                                 </div>
@@ -1074,8 +1076,8 @@ const DealDetailPage = () => {
                             {activeTab === 'documents' && (
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Attachments & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-slate-50 shadow-lg active:scale-95'}`}>
+                                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Attachments & Contracts</p>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary text-fg shadow-lg active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload File'}
                                             <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => {
@@ -1093,33 +1095,33 @@ const DealDetailPage = () => {
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {(deal.documents || []).map(doc => (
-                                            <div key={doc.id} className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl group hover:border-slate-700">
+                                            <div key={doc.id} className="flex items-center justify-between p-4 bg-bg border border-slate-800 rounded-xl group hover:border-line">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="bg-slate-800 p-2 rounded-lg text-blue-400"><FileIcon size={20} /></div>
+                                                    <div className="bg-surface-raised p-2 rounded-lg text-blue-400"><FileIcon size={20} /></div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-50 truncate max-w-[150px]">{doc.name}</p>
-                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{(doc.size / 1024).toFixed(1)} KB</p>
+                                                        <p className="text-sm font-bold text-fg truncate max-w-[150px]">{doc.name}</p>
+                                                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{(doc.size / 1024).toFixed(1)} KB</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
                                                     {doc.dmsDocumentId ? (
                                                         <button
                                                             onClick={() => { void openDealDocument(doc); }}
-                                                            className="p-2 text-slate-500 hover:text-slate-50 transition-colors"
+                                                            className="p-2 text-fg-muted hover:text-fg transition-colors"
                                                             title="Download"
                                                         ><Download size={16} /></button>
                                                     ) : (
-                                                        <a href={doc.url} download title="Download" className="p-2 text-slate-500 hover:text-slate-50 transition-colors"><Download size={16} /></a>
+                                                        <a href={doc.url} download title="Download" className="p-2 text-fg-muted hover:text-fg transition-colors"><Download size={16} /></a>
                                                     )}
                                                     <button
                                                         onClick={async () => {
-                                                            if (confirm('Delete file?')) {
+                                                            if (await confirm({ title: 'Delete?', message: 'Delete file?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                 await crmService.deleteDocument(id, doc.id);
                                                                 publishDealDocumentsChanged(id);
                                                                 fetchData();
                                                             }
                                                         }}
-                                                        className="p-2 text-slate-500 hover:text-rose-400 transition-colors"
+                                                        className="p-2 text-fg-muted hover:text-danger transition-colors"
                                                     ><Trash2 size={16} /></button>
                                                 </div>
                                             </div>
@@ -1132,12 +1134,12 @@ const DealDetailPage = () => {
                             {activeTab === 'custom' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
                                     {customFieldDefs.length === 0 ? (
-                                        <p className="text-slate-500 italic text-sm col-span-2">No additional fields configured in Deals settings.</p>
+                                        <p className="text-fg-muted italic text-sm col-span-2">No additional fields configured in Deals settings.</p>
                                     ) : (
                                         customFieldDefs.map(field => (
                                             <div key={field.id} className="flex flex-col gap-1.5">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</span>
-                                                <p className="text-sm font-bold text-slate-50 border-l-2 border-slate-800 pl-3 py-1">
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{field.label}</span>
+                                                <p className="text-sm font-bold text-fg border-l-2 border-slate-800 pl-3 py-1">
                                                     {field.type === 'boolean'
                                                         ? (deal.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                         : field.type === 'date' && deal.custom_fields?.[field.id]
@@ -1176,8 +1178,8 @@ const DealDetailPage = () => {
                 <div className="space-y-8">
                     {/* Cross-module linked records */}
                     {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <ExternalLink size={14} className="text-blue-400" /> Linked Records
                             </h3>
                             <div className="flex flex-wrap gap-2">
@@ -1192,27 +1194,27 @@ const DealDetailPage = () => {
 
                     {/* Contact Details Card */}
                     {associatedLead && (
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
+                        <section className="bg-surface border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors" />
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-6 flex items-center gap-2">
                                 <Users size={14} className="text-blue-400" /> Primary Contact
                             </h3>
                             <div className="space-y-6">
                                 <Link to={`/crm/leads/${associatedLead.id}`} className="group/link block">
-                                    <h4 className="text-lg font-black text-slate-50 group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
-                                    <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
+                                    <h4 className="text-lg font-black text-fg group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
+                                    <p className="text-xs font-bold text-fg-subtle flex items-center gap-1">
                                         <Building2 size={12} /> {associatedLead.company_name}
                                     </p>
                                 </Link>
                                 <div className="space-y-3 pt-4 border-t border-slate-800/50">
-                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Mail size={14} /></div>
+                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
+                                        <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Mail size={14} /></div>
                                         {associatedLead.contact_email}
                                     </a>
                                     {associatedLead.phone && (
                                         <div className="flex items-center gap-2">
-                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-slate-300 hover:text-slate-50 transition-colors">
-                                                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><Phone size={14} /></div>
+                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
+                                                <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Phone size={14} /></div>
                                                 {associatedLead.phone}
                                             </a>
                                             <ClickToCallButton
@@ -1230,28 +1232,28 @@ const DealDetailPage = () => {
 
                     {/* Linked Invoice Card */}
                     {invoiceStatus?.has_invoice && (
-                        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
+                        <section className="bg-surface border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/10 transition-colors" />
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Receipt size={14} className="text-emerald-400" /> Linked Invoice
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <Receipt size={14} className="text-success" /> Linked Invoice
                             </h3>
                             <div className="space-y-4">
                                 {invoiceStatus.invoice_number && (
                                     <div>
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Invoice Number</span>
-                                        <p className="text-sm font-bold text-slate-50">{invoiceStatus.invoice_number}</p>
+                                        <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Invoice Number</span>
+                                        <p className="text-sm font-bold text-fg">{invoiceStatus.invoice_number}</p>
                                     </div>
                                 )}
 
                                 <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase">Status</span>
+                                    <span className="text-[10px] font-black text-fg-muted uppercase">Status</span>
                                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
-                                        invoiceStatus.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                                        invoiceStatus.status === 'paid' ? 'bg-emerald-500/10 text-success border border-emerald-500/20' :
                                         invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                        invoiceStatus.status === 'overdue' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                                        invoiceStatus.status === 'draft' ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' :
-                                        invoiceStatus.status === 'partially_paid' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                        'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                                        invoiceStatus.status === 'overdue' ? 'bg-red-500/10 text-danger border border-red-500/20' :
+                                        invoiceStatus.status === 'draft' ? 'bg-slate-500/10 text-fg-subtle border border-slate-500/20' :
+                                        invoiceStatus.status === 'partially_paid' ? 'bg-amber-500/10 text-warning border border-amber-500/20' :
+                                        'bg-slate-500/10 text-fg-subtle border border-slate-500/20'
                                     }`}>
                                         {invoiceStatus.status === 'partially_paid' ? 'Partial' : invoiceStatus.status || 'Unknown'}
                                     </span>
@@ -1259,8 +1261,8 @@ const DealDetailPage = () => {
 
                                 {invoiceStatus.total != null && (
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Total</span>
-                                        <span className="text-sm font-bold text-emerald-400">
+                                        <span className="text-[10px] font-black text-fg-muted uppercase">Total</span>
+                                        <span className="text-sm font-bold text-success">
                                             {formatters.formatCurrency(Number(invoiceStatus.total))}
                                         </span>
                                     </div>
@@ -1268,8 +1270,8 @@ const DealDetailPage = () => {
 
                                 {invoiceStatus.amount_paid != null && invoiceStatus.amount_paid > 0 && (
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Paid</span>
-                                        <span className="text-sm font-bold text-emerald-400">
+                                        <span className="text-[10px] font-black text-fg-muted uppercase">Paid</span>
+                                        <span className="text-sm font-bold text-success">
                                             {formatters.formatCurrency(Number(invoiceStatus.amount_paid))}
                                         </span>
                                     </div>
@@ -1277,8 +1279,8 @@ const DealDetailPage = () => {
 
                                 {invoiceStatus.balance_due != null && invoiceStatus.balance_due > 0 && (
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Balance Due</span>
-                                        <span className="text-sm font-bold text-amber-400">
+                                        <span className="text-[10px] font-black text-fg-muted uppercase">Balance Due</span>
+                                        <span className="text-sm font-bold text-warning">
                                             {formatters.formatCurrency(Number(invoiceStatus.balance_due))}
                                         </span>
                                     </div>
@@ -1286,8 +1288,8 @@ const DealDetailPage = () => {
 
                                 {invoiceStatus.due_date && (
                                     <div className="flex justify-between items-center py-2 border-t border-slate-800/50">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Due Date</span>
-                                        <span className="text-[10px] font-bold text-slate-300">
+                                        <span className="text-[10px] font-black text-fg-muted uppercase">Due Date</span>
+                                        <span className="text-[10px] font-bold text-fg-subtle">
                                             {formatters.formatDate(invoiceStatus.due_date)}
                                         </span>
                                     </div>
@@ -1295,7 +1297,7 @@ const DealDetailPage = () => {
 
                                 <a
                                     href="/accounting/invoices"
-                                    className="mt-2 flex items-center justify-center gap-2 w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
+                                    className="mt-2 flex items-center justify-center gap-2 w-full py-2.5 bg-surface-raised hover:bg-line text-fg rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-line"
                                 >
                                     <ExternalLink size={12} /> View in Accounting
                                 </a>
@@ -1310,43 +1312,43 @@ const DealDetailPage = () => {
                         const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
                         const statusColor =
                             fo.status === 'delivered' ? 'text-teal-400 bg-teal-500/10 border-teal-500/20' :
-                            fo.status === 'out_for_delivery' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' :
+                            fo.status === 'out_for_delivery' ? 'text-success bg-emerald-500/10 border-emerald-500/20' :
                             fo.status === 'in_transit' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
-                            fo.status === 'delivery_failed' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
-                            'text-slate-400 bg-slate-500/10 border-slate-500/20';
+                            fo.status === 'delivery_failed' ? 'text-danger bg-red-500/10 border-red-500/20' :
+                            'text-fg-subtle bg-slate-500/10 border-slate-500/20';
                         return (
                             <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-teal-500/10 transition-colors" />
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-5 flex items-center gap-2">
+                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-5 flex items-center gap-2">
                                     <Zap size={14} className="text-teal-400" /> Fulfillment Tracking
                                 </h3>
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Status</span>
+                                        <span className="text-[10px] font-black text-fg-muted uppercase">Status</span>
                                         <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${statusColor}`}>
                                             {fo.status?.replace(/_/g, ' ') || 'pending'}
                                         </span>
                                     </div>
                                     {lastShipment?.tracking_number && (
                                         <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase">Tracking #</span>
-                                            <span className="text-xs font-mono text-slate-300">{lastShipment.tracking_number}</span>
+                                            <span className="text-[10px] font-black text-fg-muted uppercase">Tracking #</span>
+                                            <span className="text-xs font-mono text-fg-subtle">{lastShipment.tracking_number}</span>
                                         </div>
                                     )}
                                     {lastEvent && (
                                         <div className="py-2 border-t border-slate-800/50">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase block mb-1">Last Event</span>
-                                            <p className="text-xs text-slate-300 leading-relaxed">{lastEvent.description}</p>
+                                            <span className="text-[10px] font-black text-fg-muted uppercase block mb-1">Last Event</span>
+                                            <p className="text-xs text-fg-subtle leading-relaxed">{lastEvent.description}</p>
                                             {lastEvent.location && (
-                                                <p className="text-[10px] text-slate-500 mt-0.5">{lastEvent.location}</p>
+                                                <p className="text-[10px] text-fg-muted mt-0.5">{lastEvent.location}</p>
                                             )}
-                                            <p className="text-[9px] text-slate-600 mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
+                                            <p className="text-[9px] text-fg-muted mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
                                         </div>
                                     )}
                                     {fo.estimated_delivery_at && (
                                         <div className="flex items-center justify-between py-2 border-t border-slate-800/50">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase">ETA</span>
-                                            <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(fo.estimated_delivery_at)}</span>
+                                            <span className="text-[10px] font-black text-fg-muted uppercase">ETA</span>
+                                            <span className="text-[10px] font-bold text-fg-subtle">{formatters.formatDate(fo.estimated_delivery_at)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -1355,18 +1357,18 @@ const DealDetailPage = () => {
                     })()}
 
                     {/* Stats & Metadata */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <section className="bg-surface border border-slate-800 rounded-2xl p-6">
+                        <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-6 flex items-center gap-2">
                             System Intelligence
                         </h3>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
-                                <span className="text-[10px] font-black text-slate-500 uppercase">Created On</span>
-                                <span className="text-[10px] font-bold text-slate-300">{formatters.formatDate(deal.created_at)}</span>
+                                <span className="text-[10px] font-black text-fg-muted uppercase">Created On</span>
+                                <span className="text-[10px] font-bold text-fg-subtle">{formatters.formatDate(deal.created_at)}</span>
                             </div>
                             <div className="flex justify-between items-center py-2">
-                                <span className="text-[10px] font-black text-slate-500 uppercase">Last Sync</span>
-                                <span className="text-[10px] font-bold text-slate-300">Just now</span>
+                                <span className="text-[10px] font-black text-fg-muted uppercase">Last Sync</span>
+                                <span className="text-[10px] font-bold text-fg-subtle">Just now</span>
                             </div>
                         </div>
                     </section>
@@ -1387,13 +1389,13 @@ const DealDetailPage = () => {
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
+                    <div className="bg-surface border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-                            <h3 className="text-slate-50 font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                            <h3 className="text-fg font-black uppercase tracking-widest text-xs flex items-center gap-2">
                                 <Briefcase size={16} className="text-blue-400" />
                                 Project Management
                             </h3>
-                            <button onClick={() => setIsProjectModalOpen(false)} className="text-slate-500 hover:text-slate-50 transition-colors">
+                            <button onClick={() => setIsProjectModalOpen(false)} className="text-fg-muted hover:text-fg transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -1403,28 +1405,28 @@ const DealDetailPage = () => {
                             <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-blue-500/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <h4 className="text-slate-200 font-bold text-sm mb-1 group-hover:text-blue-400 transition-colors">Create New Project</h4>
-                                        <p className="text-slate-500 text-[10px] leading-relaxed max-w-[200px]">
+                                        <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-blue-400 transition-colors">Create New Project</h4>
+                                        <p className="text-fg-muted text-[10px] leading-relaxed max-w-[200px]">
                                             Open the Projects module with deal info pre-filled to create and configure a new project.
                                         </p>
                                     </div>
-                                    <div className="bg-blue-600 group-hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-1">
+                                    <div className="bg-primary group-hover:bg-primary text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-1">
                                         Open <ExternalLink size={10} />
                                     </div>
                                 </div>
                             </div>
 
                             <div className="relative flex items-center gap-4">
-                                <div className="flex-1 h-px bg-slate-800"></div>
-                                <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">OR</span>
-                                <div className="flex-1 h-px bg-slate-800"></div>
+                                <div className="flex-1 h-px bg-surface-raised"></div>
+                                <span className="text-[9px] font-black text-fg uppercase tracking-widest">OR</span>
+                                <div className="flex-1 h-px bg-surface-raised"></div>
                             </div>
 
                             {/* LINK OPTION */}
                             <div className="space-y-4">
                                 <div>
-                                    <h4 className="text-slate-200 font-bold text-sm mb-1">Link Existing Project</h4>
-                                    <p className="text-slate-500 text-[10px]">Reference a project already existing in the system.</p>
+                                    <h4 className="text-fg font-bold text-sm mb-1">Link Existing Project</h4>
+                                    <p className="text-fg-muted text-[10px]">Reference a project already existing in the system.</p>
                                 </div>
 
                                 <div className="space-y-3">
@@ -1436,7 +1438,7 @@ const DealDetailPage = () => {
                                     <button
                                         onClick={handleLinkExistingProject}
                                         disabled={!selectedProjectId}
-                                        className="w-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-700"
+                                        className="w-full bg-surface-raised hover:bg-line disabled:opacity-50 text-fg px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-line"
                                     >
                                         Confirm Link
                                     </button>
@@ -1447,24 +1449,24 @@ const DealDetailPage = () => {
                         {projectDetails && (
                             <div className="p-4 bg-blue-500/5 border-t border-slate-800">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                                    <span className="text-xs font-black text-fg-muted uppercase tracking-widest">
                                         Linked Project
                                     </span>
                                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
                                         projectDetails.status === 'COMPLETED'
-                                            ? 'bg-emerald-500/10 text-emerald-400'
+                                            ? 'bg-emerald-500/10 text-success'
                                             : 'bg-blue-500/10 text-blue-400'
                                     }`}>
                                         {projectDetails.status}
                                     </span>
                                 </div>
-                                <h4 className="text-sm font-bold text-slate-50 mb-2">{projectDetails.title}</h4>
+                                <h4 className="text-sm font-bold text-fg mb-2">{projectDetails.title}</h4>
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-slate-400">
+                                    <span className="text-fg-subtle">
                                         Budget: {formatters.formatCurrency(projectDetails.budget_total || 0)}
                                     </span>
                                     {projectDetails.completion_percentage > 0 && (
-                                        <span className="text-slate-400">
+                                        <span className="text-fg-subtle">
                                             {projectDetails.completion_percentage}% Complete
                                         </span>
                                     )}
@@ -1472,13 +1474,13 @@ const DealDetailPage = () => {
                                 <div className="mt-3 flex gap-2">
                                     <a
                                         href={`/projects/${projectDetails.id}`}
-                                        className="flex-1 text-center py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all"
+                                        className="flex-1 text-center py-2 bg-primary hover:bg-primary text-white rounded-lg text-xs font-bold transition-all"
                                     >
                                         View Project Details →
                                     </a>
                                     <button
                                         onClick={handleUnlinkProject}
-                                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-rose-400 rounded-lg font-bold text-xs border border-slate-700"
+                                        className="px-4 py-2 bg-surface-raised hover:bg-line text-danger rounded-lg font-bold text-xs border border-line"
                                     >
                                         Unlink
                                     </button>
@@ -1488,7 +1490,7 @@ const DealDetailPage = () => {
 
                         {!projectDetails && deal.project_id && (
                             <div className="p-4 bg-slate-800/50 border-t border-slate-800 text-center">
-                                <span className="text-slate-500 text-xs">
+                                <span className="text-fg-muted text-xs">
                                     Project ID: {deal.project_id}
                                 </span>
                             </div>
@@ -1520,23 +1522,23 @@ const DealDetailPage = () => {
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
-                        <h2 className="text-xl font-bold text-slate-100 mb-2">Delete Deal</h2>
-                        <p className="text-slate-400 mb-6">
+                    <div className="bg-surface border border-line rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
+                        <h2 className="text-xl font-bold text-fg mb-2">Delete Deal</h2>
+                        <p className="text-fg-subtle mb-6">
                             Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDeleteDeal}
                                 disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white rounded-lg transition-colors flex items-center gap-2"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
                             >
                                 {isDeleting && <Loader2 size={16} className="animate-spin" />}
                                 Delete Deal

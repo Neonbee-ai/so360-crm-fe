@@ -23,9 +23,9 @@ import {
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-3 py-2 outline-none focus:border-blue-500 transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
-const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200';
+const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
+const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
+const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg';
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
     full_invoice: 'One invoice for the full price',
@@ -34,11 +34,11 @@ export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
 };
 
 const STATUS_CHIP: Record<ScheduleLineStatus, string> = {
-    due: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    due: 'bg-amber-500/10 text-warning border-amber-500/30',
     invoiced: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    paid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    bounced: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-    cancelled: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
+    paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
+    bounced: 'bg-rose-500/10 text-danger border-rose-500/30',
+    cancelled: 'bg-slate-500/10 text-fg-subtle border-slate-500/30',
 };
 
 const MODE_VALUES: readonly string[] = PAYMENT_MODES.map((m) => m.value);
@@ -146,7 +146,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
 
     if (loading) {
         return (
-            <div className="p-8 flex items-center gap-2 text-slate-400 text-sm" role="status">
+            <div className="p-8 flex items-center gap-2 text-fg-subtle text-sm" role="status">
                 <Loader2 className="animate-spin" size={16} /> Loading payment plan…
             </div>
         );
@@ -154,7 +154,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
     if (loadError || !data) {
         return (
             <div className="p-8 space-y-3">
-                <p role="alert" className="text-sm text-rose-400">{loadError ?? 'Could not load the payment plan.'}</p>
+                <p role="alert" className="text-sm text-danger">{loadError ?? 'Could not load the payment plan.'}</p>
                 <button type="button" className={BTN_GHOST} onClick={() => void load()}>Retry</button>
             </div>
         );
@@ -210,7 +210,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         toast.success(`Invoice raised for ${line.label}`);
     }, 'Could not raise the invoice.');
 
-    const errorLine = error && <p role="alert" className="text-sm text-rose-400">{error}</p>;
+    const errorLine = error && <p role="alert" className="text-sm text-danger">{error}</p>;
 
     // ── Empty state ────────────────────────────────────────────────────────
     if (!data.schedule) {
@@ -221,15 +221,15 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         return (
             <div className="p-8 space-y-6" data-testid="payment-plan-empty">
                 <div>
-                    <h3 className="text-sm font-black text-slate-200 uppercase tracking-widest">No payment plan yet</h3>
-                    <p className="text-xs text-slate-500 mt-1">Start from one of the project's plans, or enter the instalments yourself.</p>
+                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">No payment plan yet</h3>
+                    <p className="text-xs text-fg-muted mt-1">Start from one of the project's plans, or enter the instalments yourself.</p>
                 </div>
                 {manual === null && (
                     <div className="flex flex-wrap items-end gap-3">
                         {templates.length > 0 ? (
                             <>
                                 <div className="min-w-[16rem]">
-                                    <label htmlFor="pp-template" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Project plan</label>
+                                    <label htmlFor="pp-template" className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-1.5">Project plan</label>
                                     <select id="pp-template" className={FIELD_CLS} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
                                         {templates.map((t) => (
                                             <option key={t.id} value={t.id}>{t.name}{t.is_default ? ' (default)' : ''}</option>
@@ -241,7 +241,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                 </button>
                             </>
                         ) : (
-                            <p className="text-xs text-slate-500">This deal's project has no payment plans set up.</p>
+                            <p className="text-xs text-fg-muted">This deal's project has no payment plans set up.</p>
                         )}
                         <button type="button" className={BTN_GHOST} onClick={() => { setError(null); setManual([blankRow()]); }}>
                             <Edit2 size={14} /> Enter instalments manually
@@ -267,7 +267,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                 <button
                                     type="button"
                                     aria-label={`Remove instalment ${i + 1}`}
-                                    className="p-2 text-slate-500 hover:text-rose-400"
+                                    className="p-2 text-fg-muted hover:text-danger"
                                     onClick={() => setManual((rows) => (rows ?? []).filter((_, j) => j !== i))}
                                 >
                                     <Trash2 size={14} />
@@ -304,16 +304,16 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         <div className="p-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <h3 className="text-sm font-black text-slate-200 uppercase tracking-widest">{schedule.template_name ?? 'Payment plan'}</h3>
-                    <p className="text-xs text-slate-500 mt-1">{BILLING_MODE_LABELS[schedule.billing_mode]}</p>
+                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">{schedule.template_name ?? 'Payment plan'}</h3>
+                    <p className="text-xs text-fg-muted mt-1">{BILLING_MODE_LABELS[schedule.billing_mode]}</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
                 {([['Total', totals.total], ['Paid', totals.paid], ['Outstanding', totals.outstanding]] as const).map(([label, v]) => (
                     <div key={label} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
-                        <p className="text-lg font-black text-slate-50 mt-1">{fmt.formatCurrency(v)}</p>
+                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{label}</p>
+                        <p className="text-lg font-black text-fg mt-1">{fmt.formatCurrency(v)}</p>
                     </div>
                 ))}
             </div>
@@ -321,7 +321,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
             <div className="overflow-x-auto">
                 <table className="w-full text-xs" aria-label="Instalments">
                     <thead>
-                        <tr className="text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        <tr className="text-left text-[10px] font-black text-fg-muted uppercase tracking-widest">
                             <th className="py-2 pr-3">#</th>
                             <th className="py-2 pr-3">Instalment</th>
                             <th className="py-2 pr-3">Amount</th>
@@ -336,20 +336,20 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                             const d: LineDraft | null = editing && editing.id === l.id ? editing.draft : null;
                             return (
                                 <tr key={l.id} className="border-t border-slate-800 align-top" data-testid={`pp-line-${l.id}`}>
-                                    <td className="py-3 pr-3 text-slate-500">{l.seq}</td>
+                                    <td className="py-3 pr-3 text-fg-muted">{l.seq}</td>
                                     <td className="py-3 pr-3">
-                                        <p className="font-bold text-slate-200">{l.label}</p>
-                                        {l.trigger && <p className="text-[10px] text-slate-500">{TRIGGER_LABELS[l.trigger]}</p>}
+                                        <p className="font-bold text-fg">{l.label}</p>
+                                        {l.trigger && <p className="text-[10px] text-fg-muted">{TRIGGER_LABELS[l.trigger]}</p>}
                                     </td>
                                     <td className="py-3 pr-3">
                                         {d ? (
                                             <input aria-label={`${l.label} amount`} type="number" min={0} className={FIELD_CLS} value={d.amount} onChange={(e) => setDraft({ amount: e.target.value })} />
-                                        ) : <span className="font-bold text-slate-200">{fmt.formatCurrency(l.amount)}</span>}
+                                        ) : <span className="font-bold text-fg">{fmt.formatCurrency(l.amount)}</span>}
                                     </td>
                                     <td className="py-3 pr-3">
                                         {d ? (
                                             <input aria-label={`${l.label} due date`} type="date" className={FIELD_CLS} value={d.due_date} onChange={(e) => setDraft({ due_date: e.target.value })} />
-                                        ) : <span className="text-slate-300">{l.due_date ? fmt.formatDate(l.due_date) : '—'}</span>}
+                                        ) : <span className="text-fg-subtle">{l.due_date ? fmt.formatDate(l.due_date) : '—'}</span>}
                                     </td>
                                     <td className="py-3 pr-3 space-y-2">
                                         {d ? (
@@ -373,9 +373,9 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                             </>
                                         ) : (
                                             <>
-                                                <span className="text-slate-300">{modeLabel(l.payment_mode)}</span>
+                                                <span className="text-fg-subtle">{modeLabel(l.payment_mode)}</span>
                                                 {isChequeMode(l.payment_mode) && (l.cheque_number || l.cheque_bank) && (
-                                                    <p className="text-[10px] text-slate-500">
+                                                    <p className="text-[10px] text-fg-muted">
                                                         {[l.cheque_number && `#${l.cheque_number}`, l.cheque_bank, l.cheque_date && fmt.formatDate(l.cheque_date)].filter(Boolean).join(' · ')}
                                                     </p>
                                                 )}
@@ -402,7 +402,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                                 {statusLabel(l.status)}
                                             </span>
                                         )}
-                                        {l.invoice_id && !d && <p className="text-[10px] text-slate-500 mt-1">Invoice raised</p>}
+                                        {l.invoice_id && !d && <p className="text-[10px] text-fg-muted mt-1">Invoice raised</p>}
                                     </td>
                                     <td className="py-3 text-right whitespace-nowrap">
                                         {d ? (

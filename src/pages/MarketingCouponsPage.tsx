@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Percent, Clock } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast } from '@so360/design-system';
+import { toast, useConfirm } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
@@ -11,6 +11,7 @@ import { validateCouponForm, CouponFormErrors } from '../utils/couponValidation'
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCouponsPage: React.FC = () => {
+  const [confirm, confirmDialog] = useConfirm();
   const formatters = useCRMFormatters();
   const { settings } = useBusinessSettings();
   const { recordActivity } = useActivity();
@@ -127,7 +128,7 @@ const MarketingCouponsPage: React.FC = () => {
   };
 
   const handleDelete = async (coupon: any) => {
-    if (!confirm(`Delete coupon "${coupon.code}"?`)) return;
+    if (!await confirm({ title: 'Delete?', message: `Delete coupon "${coupon.code}"?`, intent: 'danger', confirmLabel: 'Delete' })) return;
     try {
       await crmService.deleteCoupon(storeId, coupon.id);
       toast.success(`Coupon "${coupon.code}" deleted`);
@@ -144,21 +145,22 @@ const MarketingCouponsPage: React.FC = () => {
 
   return (
     <div className="p-8">
+      {confirmDialog}
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Discount Coupons</h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage promotional codes and offers</p>
+          <h1 className="text-3xl font-black text-fg tracking-tight uppercase">Discount Coupons</h1>
+          <p className="text-fg-muted font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage promotional codes and offers</p>
         </div>
         {canCreateMarketing && <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
+          className="bg-primary hover:bg-primary text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
         >
           <Plus size={16} /> Create Coupon
         </button>}
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <section className="bg-surface border border-slate-800 rounded-2xl p-4">
           {/* `md:items-end` rather than a bare `items-end`: another remote's
               Tailwind sheet can flatten `md:flex-row` to a column (media
               queries add no specificity, so source order wins), and an
@@ -171,12 +173,12 @@ const MarketingCouponsPage: React.FC = () => {
               <MarketingStorePicker storeId={storeId} onChange={applyStore} />
             </div>
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full bg-bg border border-slate-800 text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 placeholder="Search by coupon code..."
               />
             </div>
@@ -184,43 +186,43 @@ const MarketingCouponsPage: React.FC = () => {
         </section>
 
         {showForm && (
-          <section className="bg-slate-900 border border-blue-500/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
+          <section className="bg-surface border border-blue-500/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-blue-500/5">
               <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
-              <button onClick={() => setShowForm(false)} className="text-slate-500 hover:text-slate-50 transition-colors">
+              <button onClick={() => setShowForm(false)} className="text-fg-muted hover:text-fg transition-colors">
                 <X size={20} />
               </button>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Coupon Code *</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Coupon Code *</label>
                   <input 
                     type="text" 
                     value={form.code} 
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold" 
                     placeholder="WELCOME20"
                   />
                   {fieldErrors.code && (
-                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.code}</p>
+                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.code}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Type</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Type</label>
                   <select 
                     value={form.discount_type} 
                     onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold appearance-none"
+                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold appearance-none"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed Amount</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Value</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Value</label>
                   <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted">
                       {form.discount_type === 'percentage' ? <Percent size={14} /> : <DollarSign size={14} />}
                     </div>
                     <input
@@ -228,65 +230,65 @@ const MarketingCouponsPage: React.FC = () => {
                       data-testid="coupon-discount-value"
                       value={form.discount_value}
                       onChange={(e) => setForm({ ...form, discount_value: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
+                      className="w-full bg-bg border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                     />
                   </div>
                   {fieldErrors.discount_value && (
-                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.discount_value}</p>
+                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.discount_value}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Min Order</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Min Order</label>
                   <input
                     type="number"
                     value={form.min_order_amount}
                     onChange={(e) => setForm({ ...form, min_order_amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                   {fieldErrors.min_order_amount && (
-                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.min_order_amount}</p>
+                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.min_order_amount}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Usage Limit</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Usage Limit</label>
                   <input
                     type="number"
                     value={form.usage_limit}
                     onChange={(e) => setForm({ ...form, usage_limit: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                     placeholder="0 = Unlimited"
                   />
                   {fieldErrors.usage_limit && (
-                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.usage_limit}</p>
+                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.usage_limit}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Valid From</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Valid From</label>
                   <input
                     type="date"
                     value={form.valid_from}
                     onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Valid Until</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Valid Until</label>
                   <input
                     type="date"
                     value={form.valid_until}
                     onChange={(e) => setForm({ ...form, valid_until: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
+                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                   {fieldErrors.valid_until && (
-                    <p className="text-[10px] font-bold text-rose-400 mt-1 ml-1">{fieldErrors.valid_until}</p>
+                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.valid_until}</p>
                   )}
                 </div>
                 <div className="lg:col-span-4">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 ml-1">Description</label>
+                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Description</label>
                   <textarea 
                     value={form.description} 
                     onChange={(e) => setForm({ ...form, description: e.target.value })} 
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold h-20 resize-none" 
+                    className="w-full bg-bg border border-slate-800 rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold h-20 resize-none" 
                     placeholder="Describe the offer..."
                   />
                 </div>
@@ -294,14 +296,14 @@ const MarketingCouponsPage: React.FC = () => {
               <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-slate-800">
                 <button 
                   onClick={() => setShowForm(false)} 
-                  className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-all"
+                  className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-all"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSave} 
                   disabled={saving} 
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
+                  className="bg-primary hover:bg-primary text-white font-black text-[10px] uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Coupon' : 'Create Coupon'}
@@ -311,26 +313,26 @@ const MarketingCouponsPage: React.FC = () => {
           </section>
         )}
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active & Scheduled Coupons ({filtered.length})</h3>
+            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Active & Scheduled Coupons ({filtered.length})</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="text-left border-b border-slate-800">
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Code & Info</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Discount</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Usage</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Validity</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest">Code & Info</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Discount</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Usage</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Validity</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="py-20 text-center">
-                      <div className="flex flex-col items-center gap-3 text-slate-500">
+                      <div className="flex flex-col items-center gap-3 text-fg-muted">
                         <Loader2 className="w-8 h-8 animate-spin" />
                         <span className="text-[10px] font-black uppercase tracking-widest">Loading coupons...</span>
                       </div>
@@ -340,7 +342,7 @@ const MarketingCouponsPage: React.FC = () => {
                   <tr>
                     <td colSpan={5} className="py-20 text-center">
                       <div className="flex flex-col items-center gap-4 opacity-20">
-                        <Tag size={48} className="text-slate-500" />
+                        <Tag size={48} className="text-fg-muted" />
                         <p className="text-sm font-bold uppercase tracking-widest">No coupons found</p>
                       </div>
                     </td>
@@ -350,29 +352,29 @@ const MarketingCouponsPage: React.FC = () => {
                     <tr key={coupon.id} className="group hover:bg-slate-800/20 transition-all">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${coupon.is_active ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-600'}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${coupon.is_active ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-surface-raised border-line text-fg-muted'}`}>
                             <Tag size={18} />
                           </div>
                           <div>
-                            <p className="text-sm font-black text-slate-50 tracking-tight uppercase">{coupon.code}</p>
-                            <p className="text-[10px] text-slate-500 font-bold truncate max-w-xs">{coupon.description || 'No description'}</p>
+                            <p className="text-sm font-black text-fg tracking-tight uppercase">{coupon.code}</p>
+                            <p className="text-[10px] text-fg-muted font-bold truncate max-w-xs">{coupon.description || 'No description'}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5 text-center">
-                        <span className="text-sm font-black text-emerald-400">
+                        <span className="text-sm font-black text-success">
                           {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : formatMoney(coupon.discount_value, currencyCode, locale)}
                         </span>
                         {coupon.min_order_amount > 0 && (
-                          <p className="text-[8px] text-slate-600 font-black uppercase mt-1">Min: {formatMoney(coupon.min_order_amount, currencyCode, locale)}</p>
+                          <p className="text-[8px] text-fg-muted font-black uppercase mt-1">Min: {formatMoney(coupon.min_order_amount, currencyCode, locale)}</p>
                         )}
                       </td>
                       <td className="px-6 py-5 text-center">
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs font-bold text-slate-300">{coupon.usage_count || 0} / {coupon.usage_limit || '∞'}</span>
-                          <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
+                          <span className="text-xs font-bold text-fg-subtle">{coupon.usage_count || 0} / {coupon.usage_limit || '∞'}</span>
+                          <div className="w-16 h-1 bg-surface-raised rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-blue-500" 
+                              className="h-full bg-primary" 
                               style={{ width: coupon.usage_limit ? `${(coupon.usage_count / coupon.usage_limit) * 100}%` : '0%' }}
                             />
                           </div>
@@ -380,11 +382,11 @@ const MarketingCouponsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-5 text-center">
                         <div className="flex flex-col items-center gap-1 text-[10px] font-bold">
-                          <div className="flex items-center gap-1 text-slate-400">
+                          <div className="flex items-center gap-1 text-fg-subtle">
                             <Calendar size={10} />
                             {coupon.valid_from ? formatters.formatDate(coupon.valid_from) : 'Start'}
                           </div>
-                          <div className="flex items-center gap-1 text-slate-500">
+                          <div className="flex items-center gap-1 text-fg-muted">
                             <Clock size={10} />
                             {coupon.valid_until ? formatters.formatDate(coupon.valid_until) : 'Never Expires'}
                           </div>
@@ -394,13 +396,13 @@ const MarketingCouponsPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           {canCreateMarketing && <button
                             onClick={() => handleEdit(coupon)}
-                            className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                            className="p-2 text-fg-muted hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
                           >
                             <Pencil size={16} />
                           </button>}
                           {canCreateMarketing && <button
                             onClick={() => handleDelete(coupon)}
-                            className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"
+                            className="p-2 text-fg-muted hover:text-danger hover:bg-rose-400/10 rounded-lg transition-all"
                           >
                             <Trash2 size={16} />
                           </button>}

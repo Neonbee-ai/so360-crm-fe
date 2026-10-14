@@ -51,11 +51,11 @@ export const MarketingStorePicker: React.FC<MarketingStorePickerProps> = ({ stor
 
   return (
     <div className={className || 'mb-4'}>
-      <label className="block text-sm text-slate-400 mb-1">Store</label>
+      <label className="block text-sm text-fg-subtle mb-1">Store</label>
       <select
         value={value}
         onChange={(e) => applyValue(e.target.value)}
-        className="w-full md:max-w-[460px] bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200"
+        className="w-full md:max-w-[460px] bg-surface border border-line rounded px-3 py-2 text-sm text-fg"
         disabled={loading || stores.length === 0}
       >
         {loading && <option value="">Loading stores...</option>}
@@ -69,7 +69,7 @@ export const MarketingStorePicker: React.FC<MarketingStorePickerProps> = ({ stor
             </option>
           ))}
       </select>
-      {error && <p className="text-xs text-rose-400 mt-1">{error}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 };

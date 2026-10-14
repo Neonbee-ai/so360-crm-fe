@@ -2,11 +2,11 @@ import React from 'react';
 import { EntityTimelineSummary } from '../../../services/crmService';
 
 const HEALTH_STYLE: Record<EntityTimelineSummary['health_status'], { label: string; className: string }> = {
-    very_active: { label: 'Very Active', className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    very_active: { label: 'Very Active', className: 'bg-emerald-500/10 text-success border-emerald-500/20' },
     healthy: { label: 'Healthy', className: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-    neutral: { label: 'Neutral', className: 'bg-slate-800 text-slate-400 border-slate-700' },
-    at_risk: { label: 'At Risk', className: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-    dormant: { label: 'Dormant', className: 'bg-red-500/10 text-red-400 border-red-500/20' },
+    neutral: { label: 'Neutral', className: 'bg-surface-raised text-fg-subtle border-line' },
+    at_risk: { label: 'At Risk', className: 'bg-amber-500/10 text-warning border-amber-500/20' },
+    dormant: { label: 'Dormant', className: 'bg-red-500/10 text-danger border-red-500/20' },
 };
 
 interface Props {

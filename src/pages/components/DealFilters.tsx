@@ -52,17 +52,17 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
     const hasActiveFilters = Object.keys(filters).length > 0;
 
     return (
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl mb-4 flex flex-wrap gap-4 items-end">
+        <div className="bg-surface border border-slate-800 p-4 rounded-xl mb-4 flex flex-wrap gap-4 items-end">
             {/* Date Range */}
             <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Date Range</label>
+                <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Date Range</label>
                 <div className="flex items-center gap-2">
                     <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
                         <select
                             value={filters.date_range || ''}
                             onChange={(e) => handleChange('date_range', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg pl-9 pr-4 py-2 outline-none focus:border-blue-500 appearance-none min-w-[160px]"
+                            className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary appearance-none min-w-[160px]"
                         >
                             <option value="">All Time</option>
                             <option value="today">Today</option>
@@ -82,21 +82,21 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
             {showCustomDate && (
                 <>
                     <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Start Date</label>
+                        <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Start Date</label>
                         <input
                             type="date"
                             value={filters.start_date || ''}
                             onChange={(e) => handleChange('start_date', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                            className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
                         />
                     </div>
                     <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block">End Date</label>
+                        <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">End Date</label>
                         <input
                             type="date"
                             value={filters.end_date || ''}
                             onChange={(e) => handleChange('end_date', e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
+                            className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
                         />
                     </div>
                 </>
@@ -104,11 +104,11 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
 
             {/* Owner */}
             <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Owner</label>
+                <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Owner</label>
                 <select
                     value={filters.owner_id || ''}
                     onChange={(e) => handleChange('owner_id', e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg px-3 py-2 outline-none focus:border-blue-500 min-w-[140px]"
+                    className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary min-w-[140px]"
                 >
                     <option value="">All Owners</option>
                     {users.map(u => (
@@ -119,15 +119,15 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
 
             {/* Company Name */}
             <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Company</label>
+                <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Company</label>
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
                     <input
                         type="text"
                         placeholder="Search company..."
                         value={filters.company_name || ''}
                         onChange={(e) => handleChange('company_name', e.target.value)}
-                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded-lg pl-9 pr-4 py-2 outline-none focus:border-blue-500 w-[180px]"
+                        className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary w-[180px]"
                     />
                 </div>
             </div>
@@ -136,7 +136,7 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
             {hasActiveFilters && (
                 <button
                     onClick={clearFilters}
-                    className="flex items-center gap-1.5 text-slate-400 hover:text-slate-50 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-xs font-bold"
+                    className="flex items-center gap-1.5 text-fg-subtle hover:text-fg px-3 py-2 rounded-lg hover:bg-surface-raised transition-colors text-xs font-bold"
                 >
                     <X size={14} />
                     Clear

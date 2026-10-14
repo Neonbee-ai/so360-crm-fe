@@ -11,7 +11,7 @@ import {
  * Source-level contract for "editable Quote fields look disabled".
  *
  * Title, Valid Until, every line-item cell and the whole Notes & Terms block
- * were filled with `bg-slate-800` — lighter than the `bg-slate-900` card behind
+ * were filled with `bg-surface-raised` — lighter than the `bg-surface` card behind
  * them, which is this app's treatment for *disabled* controls. Users read the
  * form as read-only and stopped trying to edit it.
  *
@@ -24,26 +24,26 @@ const source = readFileSync(path.join(__dirname, 'QuoteDetailPage.tsx'), 'utf8')
 describe('Given the editable-field style tokens', () => {
     it('When applied / Then they sit darker than the card, so the field reads as a well to type into', () => {
         for (const token of [EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS]) {
-            expect(token).toContain('bg-slate-950');
-            // `disabled:bg-slate-800` is fine and wanted; an *unqualified* one is
+            expect(token).toContain('bg-bg');
+            // `disabled:bg-surface-raised` is fine and wanted; an *unqualified* one is
             // the disabled-looking fill this fix removed.
-            expect(token).not.toMatch(/(^|\s)bg-slate-800\b/);
+            expect(token).not.toMatch(/(^|\s)bg-surface-raised\b/);
         }
     });
 
     it('When applied / Then they carry a visible border with hover and focus feedback', () => {
         for (const token of [EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS]) {
-            expect(token).toContain('border-slate-700');
-            expect(token).toContain('hover:border-slate-600');
+            expect(token).toContain('border-line');
+            expect(token).toContain('hover:border-line');
             expect(token).toContain('focus:ring-blue-500/50');
-            expect(token).toContain('focus:border-blue-500');
+            expect(token).toContain('focus:border-primary');
         }
     });
 
     it('When a control is disabled / Then it keeps the greyed, non-interactive treatment', () => {
         for (const token of [EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS]) {
-            expect(token).toContain('disabled:bg-slate-800');
-            expect(token).toContain('disabled:text-slate-400');
+            expect(token).toContain('disabled:bg-surface-raised');
+            expect(token).toContain('disabled:text-fg-subtle');
             expect(token).toContain('disabled:cursor-not-allowed');
         }
     });
@@ -62,7 +62,7 @@ describe('Given the Quote page', () => {
     });
 
     it('Then no control is left with the old disabled-looking fill', () => {
-        expect(source).not.toMatch(/bg-slate-800 border border-slate-600/);
+        expect(source).not.toMatch(/bg-surface-raised border border-slate-600/);
     });
 
     it('Then the whole form — details, line items and notes & terms — is restyled, not just one section', () => {

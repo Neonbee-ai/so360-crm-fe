@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { toast, DepartmentSelector, UserSelector } from '@so360/design-system';
+import { toast, DepartmentSelector, UserSelector, useConfirm } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     assignmentRulesService,
@@ -19,8 +19,8 @@ import {
 import { crmService } from '../../../services/crmService';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 transition-all font-bold text-sm';
-const LABEL_CLS = 'block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5';
+const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
+const LABEL_CLS = 'block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-1.5';
 
 interface Props {
     canWrite: boolean;
@@ -73,6 +73,7 @@ function targetSummary(rule: AssignmentRule): string {
  * lead against the rules.
  */
 const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
+    const [confirm, confirmDialog] = useConfirm();
     const shell = useShellBridge() as any;
     const orgId: string = shell?.currentOrg?.id ?? '';
     const tenantId: string | undefined = shell?.currentTenant?.id ?? undefined;
@@ -151,7 +152,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
     };
 
     const removeRule = async (rule: AssignmentRule) => {
-        if (!window.confirm(`Delete the rule "${rule.name}"?`)) return;
+        if (!await confirm({ title: 'Delete?', message: `Delete the rule "${rule.name}"?`, intent: 'danger', confirmLabel: 'Delete' })) return;
         setBusy(true);
         try {
             await assignmentRulesService.remove(rule.id);
@@ -214,10 +215,10 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
     const editor = editingId && (
         <div className="p-6 border-b border-slate-700/50 bg-slate-950/40 space-y-5" data-testid="assignment-rule-editor">
             <div className="flex items-center justify-between">
-                <h4 className="font-black text-slate-50 uppercase tracking-widest text-xs">
+                <h4 className="font-black text-fg uppercase tracking-widest text-xs">
                     {editingId === 'new' ? 'New rule' : 'Edit rule'}
                 </h4>
-                <button type="button" onClick={closeEditor} aria-label="Close rule editor" className="text-slate-500 hover:text-slate-300">
+                <button type="button" onClick={closeEditor} aria-label="Close rule editor" className="text-fg-muted hover:text-fg-subtle">
                     <X size={16} />
                 </button>
             </div>
@@ -237,7 +238,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             <div>
                 <span className={LABEL_CLS}>When a new lead matches all of</span>
                 {draft.conditions.length === 0 && (
-                    <p className="text-xs text-slate-500 font-bold mb-2">No conditions — this rule catches every lead that reaches it.</p>
+                    <p className="text-xs text-fg-muted font-bold mb-2">No conditions — this rule catches every lead that reaches it.</p>
                 )}
                 <div className="space-y-2">
                     {draft.conditions.map((c, i) => (
@@ -268,7 +269,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                             <button
                                 type="button"
                                 aria-label={`Remove condition ${i + 1}`}
-                                className="p-2 text-slate-500 hover:text-red-400"
+                                className="p-2 text-fg-muted hover:text-danger"
                                 onClick={() => setDraft((d) => ({ ...d, conditions: d.conditions.filter((_, idx) => idx !== i) }))}
                             >
                                 <Trash2 size={14} />
@@ -304,7 +305,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                     target_type: t,
                                     ...(d.pool_source === 'project_assigned' ? { pool_source: null } : {}),
                                 }))}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${on ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${on ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 {t === 'users' ? 'People' : 'Department'}
                             </button>
@@ -315,13 +316,13 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         role="radio"
                         aria-checked={draft.pool_source === 'project_assigned'}
                         onClick={() => setDraft((d) => ({ ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }))}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${draft.pool_source === 'project_assigned' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${draft.pool_source === 'project_assigned' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
                     >
                         Project agents
                     </button>
                 </div>
                 {draft.pool_source === 'project_assigned' ? (
-                    <p className="text-xs text-slate-400">The pool is the agents (and team members) allocated to the lead's project.</p>
+                    <p className="text-xs text-fg-subtle">The pool is the agents (and team members) allocated to the lead's project.</p>
                 ) : draft.target_type === 'department' ? (
                     <DepartmentSelector
                         value={draft.target_department_id ?? undefined}
@@ -356,7 +357,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         {ASSIGNMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                 </div>
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-300 pb-2.5">
+                <label className="flex items-center gap-2 text-sm font-bold text-fg-subtle pb-2.5">
                     <input
                         type="checkbox"
                         checked={draft.skip_inactive}
@@ -382,7 +383,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         onChange={(e) => setDraft((d) => ({ ...d, reassign_after_minutes: parseReassignMinutes(e.target.value) }))}
                     />
                 </div>
-                <label className="flex items-center gap-2 text-sm font-bold text-slate-300 pb-2.5">
+                <label className="flex items-center gap-2 text-sm font-bold text-fg-subtle pb-2.5">
                     <input
                         type="checkbox"
                         checked={draft.skip_on_leave !== false}
@@ -392,17 +393,17 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 </label>
             </div>
 
-            {draftError && <p role="alert" className="text-xs font-bold text-red-400">{draftError}</p>}
+            {draftError && <p role="alert" className="text-xs font-bold text-danger">{draftError}</p>}
 
             <div className="flex justify-end gap-2">
-                <button type="button" onClick={closeEditor} className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-200">
+                <button type="button" onClick={closeEditor} className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-fg-subtle hover:text-fg">
                     Cancel
                 </button>
                 <button
                     type="button"
                     onClick={saveDraft}
                     disabled={busy}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
                 >
                     {busy && <Loader2 size={14} className="animate-spin" />}
                     Save rule
@@ -413,17 +414,18 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
     return (
         <div className="space-y-10">
-            <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+            {confirmDialog}
+            <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                     <div>
-                        <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Assignment Rules</h3>
-                        <p className="text-[10px] text-slate-500 font-bold mt-1">NEW LEADS GO TO THE FIRST MATCHING RULE, TOP TO BOTTOM</p>
+                        <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Assignment Rules</h3>
+                        <p className="text-[10px] text-fg-muted font-bold mt-1">NEW LEADS GO TO THE FIRST MATCHING RULE, TOP TO BOTTOM</p>
                     </div>
                     {canWrite && !editingId && (
                         <button
                             type="button"
                             onClick={() => openEditor()}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
+                            className="flex items-center gap-2 bg-primary hover:bg-primary text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest"
                         >
                             <Plus size={14} /> Add rule
                         </button>
@@ -433,26 +435,26 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 {editor}
 
                 {loading ? (
-                    <div className="p-10 flex justify-center text-slate-500"><Loader2 size={20} className="animate-spin" /></div>
+                    <div className="p-10 flex justify-center text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>
                 ) : loadError ? (
-                    <p role="alert" className="p-6 text-sm font-bold text-red-400">{loadError}</p>
+                    <p role="alert" className="p-6 text-sm font-bold text-danger">{loadError}</p>
                 ) : rules.length === 0 ? (
-                    <p className="p-6 text-sm font-bold text-slate-500">No rules yet. New leads keep the owner they are created with.</p>
+                    <p className="p-6 text-sm font-bold text-fg-muted">No rules yet. New leads keep the owner they are created with.</p>
                 ) : (
                     <ol className="divide-y divide-slate-800" aria-label="Assignment rules">
                         {rules.map((rule, i) => (
                             <li key={rule.id} className="p-4 flex items-center gap-4" data-testid="assignment-rule-row">
-                                <span className="w-6 text-center text-xs font-black text-slate-500">{i + 1}</span>
+                                <span className="w-6 text-center text-xs font-black text-fg-muted">{i + 1}</span>
                                 <div className="flex-1 min-w-0">
-                                    <p className={`font-bold text-sm truncate ${rule.is_active ? 'text-slate-50' : 'text-slate-500 line-through'}`}>{rule.name}</p>
-                                    <p className="text-xs text-slate-500 truncate">{conditionSummary(rule)} → {targetSummary(rule)}</p>
+                                    <p className={`font-bold text-sm truncate ${rule.is_active ? 'text-fg' : 'text-fg-muted line-through'}`}>{rule.name}</p>
+                                    <p className="text-xs text-fg-muted truncate">{conditionSummary(rule)} → {targetSummary(rule)}</p>
                                 </div>
                                 {canWrite && (
                                     <div className="flex items-center gap-1">
-                                        <button type="button" aria-label={`Move ${rule.name} up`} disabled={busy || i === 0} onClick={() => move(i, -1)} className="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30">
+                                        <button type="button" aria-label={`Move ${rule.name} up`} disabled={busy || i === 0} onClick={() => move(i, -1)} className="p-1.5 text-fg-muted hover:text-fg disabled:opacity-30">
                                             <ChevronUp size={16} />
                                         </button>
-                                        <button type="button" aria-label={`Move ${rule.name} down`} disabled={busy || i === rules.length - 1} onClick={() => move(i, 1)} className="p-1.5 text-slate-500 hover:text-slate-200 disabled:opacity-30">
+                                        <button type="button" aria-label={`Move ${rule.name} down`} disabled={busy || i === rules.length - 1} onClick={() => move(i, 1)} className="p-1.5 text-fg-muted hover:text-fg disabled:opacity-30">
                                             <ChevronDown size={16} />
                                         </button>
                                         <button
@@ -460,14 +462,14 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                             aria-label={rule.is_active ? `Turn off ${rule.name}` : `Turn on ${rule.name}`}
                                             disabled={busy}
                                             onClick={() => toggleActive(rule)}
-                                            className="p-1.5 text-slate-500 hover:text-slate-200"
+                                            className="p-1.5 text-fg-muted hover:text-fg"
                                         >
-                                            {rule.is_active ? <ToggleRight size={18} className="text-emerald-400" /> : <ToggleLeft size={18} />}
+                                            {rule.is_active ? <ToggleRight size={18} className="text-success" /> : <ToggleLeft size={18} />}
                                         </button>
-                                        <button type="button" aria-label={`Edit ${rule.name}`} disabled={busy} onClick={() => openEditor(rule)} className="p-1.5 text-slate-500 hover:text-slate-200">
+                                        <button type="button" aria-label={`Edit ${rule.name}`} disabled={busy} onClick={() => openEditor(rule)} className="p-1.5 text-fg-muted hover:text-fg">
                                             <Edit2 size={14} />
                                         </button>
-                                        <button type="button" aria-label={`Delete ${rule.name}`} disabled={busy} onClick={() => removeRule(rule)} className="p-1.5 text-slate-500 hover:text-red-400">
+                                        <button type="button" aria-label={`Delete ${rule.name}`} disabled={busy} onClick={() => removeRule(rule)} className="p-1.5 text-fg-muted hover:text-danger">
                                             <Trash2 size={14} />
                                         </button>
                                     </div>
@@ -478,10 +480,10 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 )}
             </section>
 
-            <section className="bg-slate-900 border border-slate-700/50 rounded-2xl p-6 shadow-2xl space-y-4" aria-label="Test assignment">
+            <section className="bg-surface border border-slate-700/50 rounded-2xl p-6 shadow-2xl space-y-4" aria-label="Test assignment">
                 <div>
-                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Test a lead</h3>
-                    <p className="text-[10px] text-slate-500 font-bold mt-1">SEE WHO A LEAD WOULD GO TO. NOTHING IS SAVED.</p>
+                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Test a lead</h3>
+                    <p className="text-[10px] text-fg-muted font-bold mt-1">SEE WHO A LEAD WOULD GO TO. NOTHING IS SAVED.</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {CONDITION_FIELDS.map((f) => (
@@ -501,13 +503,13 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         type="button"
                         onClick={runTest}
                         disabled={testing}
-                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                        className="flex items-center gap-2 bg-surface-raised hover:bg-line text-fg px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
                     >
                         {testing && <Loader2 size={14} className="animate-spin" />}
                         Run test
                     </button>
                     {testResult && (
-                        <p className="text-sm font-bold text-slate-300" data-testid="assignment-test-result">
+                        <p className="text-sm font-bold text-fg-subtle" data-testid="assignment-test-result">
                             {testResult.assigned
                                 ? `Goes to ${assigneeName ?? testResult.user_id} via "${testResult.rule_name}".`
                                 : `No rule would assign this lead${testResult.reason ? ` (${testResult.reason})` : ''}.`}

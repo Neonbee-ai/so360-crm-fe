@@ -8,11 +8,11 @@ interface Props {
 }
 
 const SOURCE_STYLE: Record<string, string> = {
-    manual: 'bg-slate-800 text-slate-400 border-slate-700',
+    manual: 'bg-surface-raised text-fg-subtle border-line',
     api: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     workflow: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    import: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    ai: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    import: 'bg-amber-500/10 text-warning border-amber-500/20',
+    ai: 'bg-emerald-500/10 text-success border-emerald-500/20',
     scheduled_job: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
 };
 
@@ -95,26 +95,26 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-2 text-slate-500">
+            <div className="flex items-center gap-2 text-fg-muted">
                 <ShieldCheck size={14} />
                 <p className="text-[10px] font-black uppercase tracking-[0.2em]">System-generated, read-only audit history</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
                 <div className="relative flex-1 min-w-[200px]">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search field, value, or description..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-blue-500/50"
+                        className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none focus:border-blue-500/50"
                     />
                 </div>
                 <select
                     value={sourceFilter}
                     onChange={(e) => setSourceFilter(e.target.value)}
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none"
+                    className="bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg-subtle outline-none"
                 >
                     <option value="">All Sources</option>
                     <option value="manual">Manual</option>
@@ -128,13 +128,13 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none"
+                    className="bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg-subtle outline-none"
                 />
                 <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 outline-none"
+                    className="bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg-subtle outline-none"
                 />
                 <div className="flex items-center gap-1 ml-auto">
                     {(['csv', 'xlsx', 'pdf'] as const).map((format) => (
@@ -142,7 +142,7 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                             key={format}
                             onClick={() => handleExport(format)}
                             disabled={exporting !== null}
-                            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                            className="flex items-center gap-1.5 bg-surface-raised hover:bg-line text-fg-subtle px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
                         >
                             {exporting === format ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
                             {format.toUpperCase()}
@@ -152,24 +152,24 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
             </div>
 
             {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg px-4 py-3">
+                <div className="bg-red-500/10 border border-red-500/20 text-danger text-xs rounded-lg px-4 py-3">
                     {error}
                 </div>
             )}
 
             {loading ? (
-                <div className="flex items-center justify-center py-12 text-slate-500">
+                <div className="flex items-center justify-center py-12 text-fg-muted">
                     <Loader2 size={20} className="animate-spin" />
                 </div>
             ) : entries.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-600">
+                <div className="flex flex-col items-center justify-center py-12 text-fg-muted">
                     <Filter size={24} className="mb-2" />
                     <p className="text-xs">No audit history matches these filters.</p>
                 </div>
             ) : (
                 <div className="border border-slate-800 rounded-xl overflow-hidden">
                     <table className="w-full text-xs">
-                        <thead className="bg-slate-900/80 text-slate-500 uppercase text-[10px] tracking-widest">
+                        <thead className="bg-slate-900/80 text-fg-muted uppercase text-[10px] tracking-widest">
                             <tr>
                                 <th className="text-left px-4 py-3 font-black">Field / Event</th>
                                 <th className="text-left px-4 py-3 font-black">Previous Value</th>
@@ -182,16 +182,16 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                         <tbody className="divide-y divide-slate-800/70">
                             {entries.map((entry) => (
                                 <tr key={entry.id} className="hover:bg-slate-900/40">
-                                    <td className="px-4 py-3 text-slate-200 font-semibold">
+                                    <td className="px-4 py-3 text-fg font-semibold">
                                         {entry.kind === 'field_change' ? fieldLabel(entry.field_name) : (entry.description || 'Event')}
                                         {entry.change_reason && (
-                                            <div className="text-slate-500 text-[11px] font-normal mt-0.5">{entry.change_reason}</div>
+                                            <div className="text-fg-muted text-[11px] font-normal mt-0.5">{entry.change_reason}</div>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3 text-slate-400">{entry.old_value ?? '—'}</td>
-                                    <td className="px-4 py-3 text-slate-200">{entry.new_value ?? '—'}</td>
-                                    <td className="px-4 py-3 text-slate-400">{entry.changed_by_name || 'System'}</td>
-                                    <td className="px-4 py-3 text-slate-400">{formatDateTime(entry.created_at)}</td>
+                                    <td className="px-4 py-3 text-fg-subtle">{entry.old_value ?? '—'}</td>
+                                    <td className="px-4 py-3 text-fg">{entry.new_value ?? '—'}</td>
+                                    <td className="px-4 py-3 text-fg-subtle">{entry.changed_by_name || 'System'}</td>
+                                    <td className="px-4 py-3 text-fg-subtle">{formatDateTime(entry.created_at)}</td>
                                     <td className="px-4 py-3">
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${SOURCE_STYLE[entry.source || 'manual']}`}>
                                             {entry.source || 'manual'}
@@ -205,20 +205,20 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
             )}
 
             {total > PAGE_SIZE && (
-                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-fg-muted">
                     <span>{offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}</span>
                     <div className="flex gap-2">
                         <button
                             onClick={() => load(Math.max(0, offset - PAGE_SIZE))}
                             disabled={offset === 0 || loading}
-                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40"
+                            className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line disabled:opacity-40"
                         >
                             Previous
                         </button>
                         <button
                             onClick={() => load(offset + PAGE_SIZE)}
                             disabled={offset + PAGE_SIZE >= total || loading}
-                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40"
+                            className="px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line disabled:opacity-40"
                         >
                             Next
                         </button>

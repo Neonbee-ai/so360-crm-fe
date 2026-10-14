@@ -3,9 +3,9 @@ import { Lock, Clock } from 'lucide-react';
 import { describeReservation } from './unitBooking';
 
 const TONE: Record<string, string> = {
-    held: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    sold: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    muted: 'bg-slate-700/60 text-slate-400 border-slate-600/60',
+    held: 'bg-amber-500/15 text-warning border-amber-500/30',
+    sold: 'bg-emerald-500/15 text-success border-emerald-500/30',
+    muted: 'bg-slate-700/60 text-fg-subtle border-slate-600/60',
 };
 
 interface Props {

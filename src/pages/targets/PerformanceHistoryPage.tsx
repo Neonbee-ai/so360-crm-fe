@@ -45,7 +45,7 @@ export default function PerformanceHistoryPage() {
   }, [load]);
 
   if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading history…</div>;
+    return <div className="p-6 text-sm text-fg-subtle">Loading history…</div>;
   }
   if (error) {
     return <div className="p-6 text-sm text-rose-300">{error}</div>;
@@ -70,7 +70,7 @@ export default function PerformanceHistoryPage() {
 
   return (
     <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-slate-100">
+      <h1 className="text-lg font-semibold text-fg">
         Performance History
       </h1>
 
@@ -78,7 +78,7 @@ export default function PerformanceHistoryPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+              <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
                 <th className="py-2 pr-4 font-medium">Period</th>
                 {metricNames.map((n) => (
                   <th key={n} className="py-2 pr-4 font-medium text-right">
@@ -95,7 +95,7 @@ export default function PerformanceHistoryPage() {
                   key={p.period_start}
                   className="border-b border-slate-800/60"
                 >
-                  <td className="py-2 pr-4 text-slate-200">
+                  <td className="py-2 pr-4 text-fg">
                     {p.period_start}
                   </td>
                   {metricNames.map((n) => {
@@ -105,7 +105,7 @@ export default function PerformanceHistoryPage() {
                     return (
                       <td
                         key={n}
-                        className="py-2 pr-4 text-right text-slate-300"
+                        className="py-2 pr-4 text-right text-fg-subtle"
                         title={
                           m
                             ? `${formatValue(m.actual, m.unit, currency)} of ${formatValue(m.target, m.unit, currency)}`
@@ -116,10 +116,10 @@ export default function PerformanceHistoryPage() {
                       </td>
                     );
                   })}
-                  <td className="py-2 pr-4 text-right text-slate-100">
+                  <td className="py-2 pr-4 text-right text-fg">
                     {formatPct(p.overall_attainment)}
                   </td>
-                  <td className="py-2 text-xs text-slate-500">
+                  <td className="py-2 text-xs text-fg-muted">
                     {p.plan_changed ? 'target changed' : ''}
                   </td>
                 </tr>
@@ -128,7 +128,7 @@ export default function PerformanceHistoryPage() {
           </table>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400">
+        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-subtle">
           <span>Average {formatPct(data.average)}</span>
           {data.best && (
             <span>

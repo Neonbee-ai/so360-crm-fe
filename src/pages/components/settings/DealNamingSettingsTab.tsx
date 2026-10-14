@@ -25,7 +25,7 @@ const RESET_MODES: { value: DealNamingResetMode; label: string }[] = [
     { value: 'continuous', label: 'Continuous' },
 ];
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 transition-all font-bold text-sm';
+const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm';
 
 const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialConfig, canWrite, onChange }) => {
     const [config, setConfig] = useState<DealNamingConfig>(initialConfig ?? DEFAULT_DEAL_NAMING_CONFIG);
@@ -95,40 +95,40 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
     };
 
     return (
-        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                 <div>
-                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Deal Naming Convention</h3>
-                    <p className="text-[10px] text-slate-500 font-bold mt-1">CONTROL HOW NEW DEAL NAMES ARE GENERATED FROM LEADS</p>
+                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Naming Convention</h3>
+                    <p className="text-[10px] text-fg-muted font-bold mt-1">CONTROL HOW NEW DEAL NAMES ARE GENERATED FROM LEADS</p>
                 </div>
                 <button
                     onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
                     disabled={!canWrite}
-                    className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-300 disabled:opacity-50"
+                    className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-fg-subtle disabled:opacity-50"
                 >
-                    {config.enabled ? <ToggleRight size={22} className="text-emerald-500" /> : <ToggleLeft size={22} className="text-slate-600" />}
+                    {config.enabled ? <ToggleRight size={22} className="text-success" /> : <ToggleLeft size={22} className="text-fg-muted" />}
                     Auto-Generate Deal Names
                 </button>
             </div>
 
             <div className={`p-6 space-y-6 ${!config.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
                 {!config.enabled && (
-                    <p className="text-xs text-slate-500 font-bold -mt-2">
+                    <p className="text-xs text-fg-muted font-bold -mt-2">
                         Auto-generation is off — deals use manual entry only, same as before.
                     </p>
                 )}
 
                 <div className="grid grid-cols-3 gap-4">
                     <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Prefix</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2 block">Prefix</label>
                         <input className={FIELD_CLS} value={config.prefix} onChange={e => setConfig(prev => ({ ...prev, prefix: e.target.value }))} placeholder="DEAL" />
                     </div>
                     <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Suffix</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2 block">Suffix</label>
                         <input className={FIELD_CLS} value={config.suffix} onChange={e => setConfig(prev => ({ ...prev, suffix: e.target.value }))} placeholder="2026" />
                     </div>
                     <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Separator</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2 block">Separator</label>
                         <select className={FIELD_CLS} value={config.separator} onChange={e => setConfig(prev => ({ ...prev, separator: e.target.value }))}>
                             <option value=" - ">-</option>
                             <option value="_">_</option>
@@ -140,7 +140,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                 </div>
 
                 <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Naming Template</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2 block">Naming Template</label>
                     <input
                         ref={templateInputRef}
                         className={FIELD_CLS}
@@ -154,7 +154,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                                 key={t.token}
                                 type="button"
                                 onClick={() => insertToken(t.token)}
-                                className="text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                                className="text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full bg-surface-raised hover:bg-line text-fg-subtle transition-all"
                                 title={t.sample}
                             >
                                 {t.label}
@@ -164,10 +164,10 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                 </div>
 
                 <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Running Number</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-3">Running Number</h4>
                     <div className="grid grid-cols-3 gap-4 items-end">
                         <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Reset Mode</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2 block">Reset Mode</label>
                             <select
                                 className={FIELD_CLS}
                                 value={config.sequence.reset_mode}
@@ -180,7 +180,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                             </select>
                         </div>
                         <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block">Padding</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2 block">Padding</label>
                             <input
                                 type="number"
                                 min={1}
@@ -192,7 +192,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                         </div>
                         <button
                             onClick={() => insertToken('{seq}')}
-                            className="text-[10px] font-black uppercase tracking-wide px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"
+                            className="text-[10px] font-black uppercase tracking-wide px-3 py-2.5 rounded-xl bg-surface-raised hover:bg-line text-fg-subtle"
                         >
                             Insert {'{seq}'} Token
                         </button>
@@ -200,15 +200,15 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                 </div>
 
                 <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Preview</h4>
-                    <div className="text-sm font-black text-emerald-400 flex items-center gap-2">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-fg-muted mb-2">Preview</h4>
+                    <div className="text-sm font-black text-success flex items-center gap-2">
                         {isPreviewLoading ? <Loader2 size={14} className="animate-spin" /> : null}
-                        {preview || <span className="text-slate-600 italic">Enter a template to preview</span>}
+                        {preview || <span className="text-fg-muted italic">Enter a template to preview</span>}
                     </div>
                 </div>
 
                 {canWrite && (
-                    <p className="text-[10px] text-slate-500 font-bold">
+                    <p className="text-[10px] text-fg-muted font-bold">
                         Changes here are saved with the "Save Configuration" button at the top of the page, same as every other Settings tab.
                     </p>
                 )}

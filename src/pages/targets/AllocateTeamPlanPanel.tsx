@@ -90,7 +90,7 @@ export default function AllocateTeamPlanPanel({
       title={plan ? `Allocate · ${plan.name}` : 'Allocate'}
       action={
         <button
-          className="text-xs text-slate-400 hover:text-slate-200"
+          className="text-xs text-fg-subtle hover:text-fg"
           onClick={onClose}
         >
           Close
@@ -101,7 +101,7 @@ export default function AllocateTeamPlanPanel({
       {notice && <div className="mb-2 text-sm text-emerald-300">{notice}</div>}
 
       {!plan ? (
-        <div className="text-sm text-slate-400">Loading plan…</div>
+        <div className="text-sm text-fg-subtle">Loading plan…</div>
       ) : !lines.length ? (
         <div className="text-sm text-amber-300">
           This plan has no target lines, so there is nothing to allocate.
@@ -110,12 +110,12 @@ export default function AllocateTeamPlanPanel({
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Metric
               </label>
               <select
                 aria-label="Metric to allocate"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                 value={taskTypeId}
                 onChange={(e) => setTaskTypeId(e.target.value)}
               >
@@ -126,17 +126,17 @@ export default function AllocateTeamPlanPanel({
                 ))}
               </select>
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-fg-subtle">
               Team target{' '}
-              <span className="text-slate-200">
+              <span className="text-fg">
                 {formatValue(summary.teamTarget, line && lineUnit(line), currency)}
               </span>
               {' · '}allocated{' '}
-              <span className="text-slate-200">
+              <span className="text-fg">
                 {formatValue(summary.allocated, line && lineUnit(line), currency)}
               </span>
               {' · '}
-              <span className={summary.over ? 'text-amber-300' : 'text-slate-200'}>
+              <span className={summary.over ? 'text-amber-300' : 'text-fg'}>
                 {summary.over ? 'over by ' : 'remaining '}
                 {formatValue(
                   Math.abs(summary.remaining),
@@ -164,7 +164,7 @@ export default function AllocateTeamPlanPanel({
                 </div>
                 <input
                   aria-label={`Target for row ${i + 1}`}
-                  className="w-32 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                  className="w-32 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                   placeholder="target"
                   value={r.value}
                   onChange={(e) =>
@@ -178,7 +178,7 @@ export default function AllocateTeamPlanPanel({
                 {rows.length > 1 && (
                   <button
                     aria-label={`Remove row ${i + 1}`}
-                    className="text-xs text-slate-500 hover:text-slate-300"
+                    className="text-xs text-fg-muted hover:text-fg-subtle"
                     onClick={() =>
                       setRows((cur) => cur.filter((x) => x.key !== r.key))
                     }
@@ -192,7 +192,7 @@ export default function AllocateTeamPlanPanel({
 
           <div className="flex items-center gap-3">
             <button
-              className="text-xs text-slate-400 hover:text-slate-200"
+              className="text-xs text-fg-subtle hover:text-fg"
               onClick={() =>
                 setRows((cur) => [
                   ...cur,
@@ -203,13 +203,13 @@ export default function AllocateTeamPlanPanel({
               + person
             </button>
             <button
-              className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
               onClick={submit}
               disabled={busy}
             >
               Allocate
             </button>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-fg-muted">
               Each person gets their own plan. Nothing is split automatically.
             </span>
           </div>

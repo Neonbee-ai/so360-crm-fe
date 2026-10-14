@@ -22,9 +22,9 @@ const STEPS: Array<{ key: Step; label: string }> = [
     { key: 'done', label: 'Import' },
 ];
 
-const SELECT_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500';
-const PRIMARY_BTN = 'flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
-const SECONDARY_BTN = 'px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200';
+const SELECT_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
+const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
+const SECONDARY_BTN = 'px-4 py-2 rounded-lg text-sm font-semibold text-fg-subtle hover:text-fg';
 
 interface Props {
     isOpen: boolean;
@@ -119,7 +119,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         <li
                             key={s.key}
                             aria-current={i === stepIndex ? 'step' : undefined}
-                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-blue-600 text-white border-blue-600' : i < stepIndex ? 'text-blue-400 border-blue-500/30' : 'text-slate-500 border-slate-700'}`}
+                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-primary text-white border-primary' : i < stepIndex ? 'text-blue-400 border-blue-500/30' : 'text-fg-muted border-line'}`}
                         >
                             {i + 1}. {s.label}
                         </li>
@@ -127,7 +127,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                 </ol>
 
                 {error && (
-                    <p role="alert" className="flex items-center gap-2 text-sm text-red-400">
+                    <p role="alert" className="flex items-center gap-2 text-sm text-danger">
                         <AlertCircle size={14} /> {error}
                     </p>
                 )}
@@ -136,11 +136,11 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                     <div className="space-y-3">
                         <label
                             htmlFor="lead-import-file"
-                            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-700 rounded-xl p-8 text-slate-400 hover:border-blue-500 cursor-pointer"
+                            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-xl p-8 text-fg-subtle hover:border-primary cursor-pointer"
                         >
                             {busy ? <Loader2 size={24} className="animate-spin" /> : <UploadCloud size={24} />}
                             <span className="text-sm font-semibold">{busy ? 'Reading file…' : 'Choose a .csv or .xlsx file'}</span>
-                            <span className="text-xs text-slate-500">First row = column headers · up to 5,000 rows · 10 MB</span>
+                            <span className="text-xs text-fg-muted">First row = column headers · up to 5,000 rows · 10 MB</span>
                         </label>
                         <input
                             id="lead-import-file"
@@ -156,15 +156,15 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
                 {step === 'map' && preview && (
                     <div className="space-y-4">
-                        <p className="text-sm text-slate-400">
-                            {preview.total_rows} row{preview.total_rows === 1 ? '' : 's'} in <span className="text-slate-200">{file?.name}</span>. Match each column to a lead field.
+                        <p className="text-sm text-fg-subtle">
+                            {preview.total_rows} row{preview.total_rows === 1 ? '' : 's'} in <span className="text-fg">{file?.name}</span>. Match each column to a lead field.
                         </p>
                         <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
                             {preview.headers.map((header) => (
                                 <div key={header} className="grid grid-cols-2 gap-3 items-center" data-testid="import-mapping-row">
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-slate-200 truncate">{header}</p>
-                                        <p className="text-xs text-slate-500 truncate">{preview.sample_rows[0]?.[header] ?? ''}</p>
+                                        <p className="text-sm font-semibold text-fg truncate">{header}</p>
+                                        <p className="text-xs text-fg-muted truncate">{preview.sample_rows[0]?.[header] ?? ''}</p>
                                     </div>
                                     <select
                                         aria-label={`Field for ${header}`}
@@ -192,27 +192,27 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         <div className="overflow-x-auto border border-slate-800 rounded-lg">
                             <table className="w-full text-xs" aria-label="Import preview">
                                 <thead>
-                                    <tr className="bg-slate-950 text-slate-400">
+                                    <tr className="bg-bg text-fg-subtle">
                                         {mappedHeaders.map((h) => <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap">{fieldLabel(mapping[h])}</th>)}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {preview.sample_rows.map((row, i) => (
-                                        <tr key={i} className="border-t border-slate-800 text-slate-200">
+                                        <tr key={i} className="border-t border-slate-800 text-fg">
                                             {mappedHeaders.map((h) => <td key={h} className="px-3 py-2 whitespace-nowrap">{row[h] ?? ''}</td>)}
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-fg-muted">
                             Showing {preview.sample_rows.length} of {preview.total_rows} rows. Leads with no owner column go through your assignment rules.
                         </p>
                         <fieldset>
-                            <legend className="text-sm font-semibold text-slate-200 mb-2">When a lead with the same email or phone exists</legend>
+                            <legend className="text-sm font-semibold text-fg mb-2">When a lead with the same email or phone exists</legend>
                             <div className="space-y-1.5">
                                 {DUPLICATE_POLICIES.map((p) => (
-                                    <label key={p.value} className="flex items-start gap-2 text-sm text-slate-300">
+                                    <label key={p.value} className="flex items-start gap-2 text-sm text-fg-subtle">
                                         <input
                                             type="radio"
                                             name="import-duplicate-policy"
@@ -221,7 +221,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                                             onChange={() => setPolicy(p.value)}
                                             className="mt-1"
                                         />
-                                        <span><span className="font-semibold">{p.label}</span> <span className="text-slate-500">— {p.hint}</span></span>
+                                        <span><span className="font-semibold">{p.label}</span> <span className="text-fg-muted">— {p.hint}</span></span>
                                     </label>
                                 ))}
                             </div>
@@ -238,21 +238,21 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
                 {step === 'done' && result && (
                     <div className="space-y-4" data-testid="import-result">
-                        <p className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                        <p className="flex items-center gap-2 text-sm font-semibold text-success">
                             <CheckCircle2 size={16} /> Import finished
                         </p>
                         <dl className="grid grid-cols-3 gap-3 text-center">
                             {([['Created', result.created], ['Updated', result.updated], ['Skipped', result.skipped]] as const).map(([label, n]) => (
-                                <div key={label} className="bg-slate-950 border border-slate-800 rounded-lg p-3">
-                                    <dt className="text-xs text-slate-500">{label}</dt>
-                                    <dd className="text-xl font-bold text-slate-100">{n ?? 0}</dd>
+                                <div key={label} className="bg-bg border border-slate-800 rounded-lg p-3">
+                                    <dt className="text-xs text-fg-muted">{label}</dt>
+                                    <dd className="text-xl font-bold text-fg">{n ?? 0}</dd>
                                 </div>
                             ))}
                         </dl>
                         {result.errors?.length > 0 && (
                             <div>
-                                <p className="text-sm font-semibold text-amber-400 mb-1.5">{result.errors.length} row{result.errors.length === 1 ? '' : 's'} not imported</p>
-                                <ul className="max-h-40 overflow-y-auto text-xs text-slate-400 space-y-1" aria-label="Import errors">
+                                <p className="text-sm font-semibold text-warning mb-1.5">{result.errors.length} row{result.errors.length === 1 ? '' : 's'} not imported</p>
+                                <ul className="max-h-40 overflow-y-auto text-xs text-fg-subtle space-y-1" aria-label="Import errors">
                                     {result.errors.map((e, i) => <li key={i}>Row {e.row}: {e.message}</li>)}
                                 </ul>
                             </div>

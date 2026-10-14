@@ -485,7 +485,7 @@ const SettingsPage = () => {
 
     if (isLoading || !settings) {
         return (
-            <div className="h-full flex items-center justify-center text-slate-500 gap-3">
+            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
                 <Loader2 className="animate-spin" />
                 <span>Loading settings...</span>
             </div>
@@ -496,13 +496,13 @@ const SettingsPage = () => {
         <div className="p-8">
             <header className="mb-10 flex justify-between items-center">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-50 tracking-tight">CRM Settings</h1>
-                    <p className="text-slate-400 mt-1 font-medium">Configure your workspace and custom data points</p>
+                    <h1 className="text-4xl font-black text-fg tracking-tight">CRM Settings</h1>
+                    <p className="text-fg-subtle mt-1 font-medium">Configure your workspace and custom data points</p>
                 </div>
                 {canWriteSettings && (
                     <div className="flex items-center gap-3">
                         {isDirty && !isSaving && (
-                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-warning uppercase tracking-wider">
                                 <AlertCircle size={14} />
                                 Unsaved changes
                             </span>
@@ -510,7 +510,7 @@ const SettingsPage = () => {
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !isDirty}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
+                            className="flex items-center gap-2 bg-primary hover:bg-primary text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
                         >
                             <Save size={20} />
                             {isSaving ? 'Saving...' : 'Save Configuration'}
@@ -522,44 +522,44 @@ const SettingsPage = () => {
             <div className="flex gap-1 mb-8 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 shadow-sm w-fit">
                 <button
                     onClick={() => setActiveTab('pipeline')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pipeline' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pipeline' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                     Pipeline
                 </button>
                 <button
                     onClick={() => setActiveTab('lead-stages')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'lead-stages' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'lead-stages' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                     Lead Stages
                 </button>
                 <button
                     onClick={() => setActiveTab('custom-fields')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'custom-fields' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'custom-fields' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                     Custom Fields
                 </button>
                 <button
                     onClick={() => setActiveTab('sources')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'sources' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'sources' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                     Lead Sources
                 </button>
                 <button
                     onClick={() => setActiveTab('scoring')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'scoring' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'scoring' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                     Lead Scoring
                 </button>
                 <button
                     onClick={() => setActiveTab('deal-naming')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'deal-naming' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'deal-naming' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                     Deal Naming
                 </button>
                 {assignmentEnabled && (
                     <button
                         onClick={() => setActiveTab('assignment')}
-                        className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'assignment' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'assignment' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                     >
                         Assignment
                     </button>
@@ -567,7 +567,7 @@ const SettingsPage = () => {
                 {salesSettingsEnabled && (
                     <button
                         onClick={() => setActiveTab('sales-commission')}
-                        className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'sales-commission' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'sales-commission' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                     >
                         Sales &amp; commission
                     </button>
@@ -576,15 +576,15 @@ const SettingsPage = () => {
 
             <div className="space-y-10">
                 {activeTab === 'pipeline' && (
-                    <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                    <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                             <div>
-                                <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Deal Pipeline Stages</h3>
-                                <p className="text-[10px] text-slate-500 font-bold mt-1">THE ORDER DEFINES YOUR SALES FUNNEL</p>
+                                <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Pipeline Stages</h3>
+                                <p className="text-[10px] text-fg-muted font-bold mt-1">THE ORDER DEFINES YOUR SALES FUNNEL</p>
                             </div>
                             <button
                                 onClick={addStage}
-                                className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95"
+                                className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95"
                             >
                                 <Plus size={12} /> ADD STAGE
                             </button>
@@ -593,7 +593,7 @@ const SettingsPage = () => {
                             <div className="space-y-3">
                                 {settings.deal_stages.map((stage, idx) => (
                                     <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl group hover:border-slate-600/60 transition-all shadow-sm">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">
+                                        <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-fg-muted">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
@@ -605,7 +605,7 @@ const SettingsPage = () => {
                                                 onKeyDown={(e) => handleStageNameKeyDown(e, idx)}
                                                 onBlur={() => handleStageNameBlur(idx)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300 placeholder:text-slate-500"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300 placeholder:text-fg-muted"
                                             />
                                         </div>
                                         <StageStatusSelect
@@ -619,7 +619,7 @@ const SettingsPage = () => {
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => removeStage(stage.id)}
-                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-400 transition-all"
+                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
                                                 title="Remove Stage"
                                             >
                                                 <Trash2 size={16} />
@@ -633,20 +633,20 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'lead-stages' && (
-                    <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                    <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
-                            <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
-                            <p className="text-[10px] text-slate-500 font-bold mt-1">MANAGED IN THE FLOW MODULE — EDIT THE CRM LEAD WORKFLOW TO CHANGE THESE STAGES</p>
+                            <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
+                            <p className="text-[10px] text-fg-muted font-bold mt-1">MANAGED IN THE FLOW MODULE — EDIT THE CRM LEAD WORKFLOW TO CHANGE THESE STAGES</p>
                         </div>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
                                     <div key={stage.id} className="flex items-center gap-4 bg-slate-950/50 border border-slate-700/40 p-3 rounded-xl shadow-sm">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">
+                                        <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-fg-muted">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
-                                            <span className="text-sm font-bold text-slate-50">{stage.name}</span>
+                                            <span className="text-sm font-bold text-fg">{stage.name}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -658,17 +658,17 @@ const SettingsPage = () => {
                 {activeTab === 'custom-fields' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Lead Custom Fields */}
-                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
+                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
                             <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Fields</h3>
+                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, lead_custom_fields: [...settings.lead_custom_fields, newField] });
                                     }}
-                                    className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -676,7 +676,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.lead_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -687,7 +687,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, lead_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
                                                     />
                                                 </div>
                                                 <select
@@ -697,7 +697,7 @@ const SettingsPage = () => {
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                     }}
-                                                    className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
+                                                    className="bg-surface border border-line text-[10px] font-black uppercase text-fg-subtle rounded-lg px-2 py-1 outline-none"
                                                 >
                                                     <option value="text">TEXT</option>
                                                     <option value="number">NUM</option>
@@ -712,7 +712,7 @@ const SettingsPage = () => {
                                                             lead_custom_fields: settings.lead_custom_fields.filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -732,7 +732,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: newOpts } as any;
                                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                                     }}
-                                                                    className="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-200 px-2 py-1 rounded-lg outline-none focus:border-blue-500"
+                                                                    className="flex-1 bg-surface border border-line text-xs text-fg px-2 py-1 rounded-lg outline-none focus:border-primary"
                                                                     placeholder={`Option ${optIdx + 1}`}
                                                                 />
                                                                 <button
@@ -742,7 +742,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
                                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-rose-500/10 rounded text-slate-600 hover:text-rose-400 transition-all"
+                                                                    className="p-1 hover:bg-rose-500/10 rounded text-fg-muted hover:text-danger transition-all"
                                                                 ><X size={12} /></button>
                                                             </div>
                                                         ))}
@@ -765,17 +765,17 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Deal Custom Fields */}
-                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
+                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
                             <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Deal Fields</h3>
+                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, deal_custom_fields: [...settings.deal_custom_fields, newField] });
                                     }}
-                                    className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -783,7 +783,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.deal_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -794,7 +794,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, deal_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
                                                     />
                                                 </div>
                                                 <select
@@ -804,7 +804,7 @@ const SettingsPage = () => {
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? ((newFields[idx] as any).options || []) : (newFields[idx] as any).options };
                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                     }}
-                                                    className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
+                                                    className="bg-surface border border-line text-[10px] font-black uppercase text-fg-subtle rounded-lg px-2 py-1 outline-none"
                                                 >
                                                     <option value="text">TEXT</option>
                                                     <option value="number">NUM</option>
@@ -819,7 +819,7 @@ const SettingsPage = () => {
                                                             deal_custom_fields: settings.deal_custom_fields.filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -839,7 +839,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: newOpts } as any;
                                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                                     }}
-                                                                    className="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-200 px-2 py-1 rounded-lg outline-none focus:border-blue-500"
+                                                                    className="flex-1 bg-surface border border-line text-xs text-fg px-2 py-1 rounded-lg outline-none focus:border-primary"
                                                                     placeholder={`Option ${optIdx + 1}`}
                                                                 />
                                                                 <button
@@ -849,7 +849,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
                                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-rose-500/10 rounded text-slate-600 hover:text-rose-400 transition-all"
+                                                                    className="p-1 hover:bg-rose-500/10 rounded text-fg-muted hover:text-danger transition-all"
                                                                 ><X size={12} /></button>
                                                             </div>
                                                         ))}
@@ -872,17 +872,17 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Partner Custom Fields */}
-                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
+                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl h-fit">
                             <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Partner Fields</h3>
+                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Partner Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
                                     }}
-                                    className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-[10px] bg-primary hover:bg-primary text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -890,7 +890,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {(settings.partner_custom_fields || []).map((field, idx) => (
-                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                                        <div key={field.id} className="bg-slate-950/50 border border-slate-800 rounded-xl group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -901,7 +901,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, partner_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-50 outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
                                                     />
                                                 </div>
                                                 <select
@@ -911,7 +911,7 @@ const SettingsPage = () => {
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                     }}
-                                                    className="bg-slate-900 border border-slate-700 text-[10px] font-black uppercase text-slate-300 rounded-lg px-2 py-1 outline-none"
+                                                    className="bg-surface border border-line text-[10px] font-black uppercase text-fg-subtle rounded-lg px-2 py-1 outline-none"
                                                 >
                                                     <option value="text">TEXT</option>
                                                     <option value="number">NUM</option>
@@ -926,7 +926,7 @@ const SettingsPage = () => {
                                                             partner_custom_fields: (settings.partner_custom_fields || []).filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-600 hover:text-rose-400 transition-all opacity-0 group-hover:opacity-100"
+                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -946,7 +946,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: newOpts };
                                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                                     }}
-                                                                    className="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-200 px-2 py-1 rounded-lg outline-none focus:border-blue-500"
+                                                                    className="flex-1 bg-surface border border-line text-xs text-fg px-2 py-1 rounded-lg outline-none focus:border-primary"
                                                                     placeholder={`Option ${optIdx + 1}`}
                                                                 />
                                                                 <button
@@ -956,7 +956,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: (newFields[idx].options || []).filter((_: any, i: number) => i !== optIdx) };
                                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-rose-500/10 rounded text-slate-600 hover:text-rose-400 transition-all"
+                                                                    className="p-1 hover:bg-rose-500/10 rounded text-fg-muted hover:text-danger transition-all"
                                                                 ><X size={12} /></button>
                                                             </div>
                                                         ))}
@@ -975,7 +975,7 @@ const SettingsPage = () => {
                                         </div>
                                     ))}
                                     {(settings.partner_custom_fields || []).length === 0 && (
-                                        <p className="text-[11px] text-slate-600 font-bold text-center py-4">No partner fields yet. Click ADD to create one.</p>
+                                        <p className="text-[11px] text-fg-muted font-bold text-center py-4">No partner fields yet. Click ADD to create one.</p>
                                     )}
                                 </div>
                             </div>
@@ -984,18 +984,18 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'sources' && (
-                    <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                    <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
-                            <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs">Lead Source Types</h3>
-                            <p className="text-[10px] text-slate-500 font-bold mt-1">WHERE DO YOUR LEADS COME FROM? SYSTEM TYPES CANNOT BE DELETED.</p>
+                            <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Source Types</h3>
+                            <p className="text-[10px] text-fg-muted font-bold mt-1">WHERE DO YOUR LEADS COME FROM? SYSTEM TYPES CANNOT BE DELETED.</p>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="space-y-2">
                                 {sourceTypes.map(option => (
-                                    <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-xl transition-all ${!option.is_active ? 'opacity-50 border-slate-900 bg-slate-950/20' : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'}`}>
+                                    <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-xl transition-all ${!option.is_active ? 'opacity-50 border-slate-900 bg-slate-950/20' : 'border-slate-800 bg-slate-950/50 hover:border-line'}`}>
                                         <div className="flex-1">
-                                            <span className="text-sm font-bold text-slate-50">{option.label}</span>
-                                            <span className="ml-2 text-[10px] font-black text-slate-600 uppercase">{option.value}</span>
+                                            <span className="text-sm font-bold text-fg">{option.label}</span>
+                                            <span className="ml-2 text-[10px] font-black text-fg-muted uppercase">{option.value}</span>
                                         </div>
                                         {option.is_system && (
                                             <span className="text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">System</span>
@@ -1004,15 +1004,15 @@ const SettingsPage = () => {
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => handleToggleSourceActive(option)}
-                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-50 hover:bg-slate-700 transition-all"
+                                                    className="p-1.5 rounded-lg text-fg-muted hover:text-fg hover:bg-line transition-all"
                                                     title={option.is_active ? 'Deactivate' : 'Activate'}
                                                 >
-                                                    {option.is_active ? <ToggleRight size={18} className="text-emerald-400" /> : <ToggleLeft size={18} />}
+                                                    {option.is_active ? <ToggleRight size={18} className="text-success" /> : <ToggleLeft size={18} />}
                                                 </button>
                                                 {!option.is_system && (
                                                     <button
                                                         onClick={() => handleDeleteSourceType(option.id)}
-                                                        className="p-1.5 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                                                        className="p-1.5 rounded-lg text-fg-muted hover:text-danger hover:bg-rose-500/10 transition-all"
                                                         title="Delete"
                                                     >
                                                         <Trash2 size={16} />
@@ -1031,12 +1031,12 @@ const SettingsPage = () => {
                                         onChange={(e) => setNewSourceLabel(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddSourceType()}
                                         placeholder="New source type label…"
-                                        className="flex-1 bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg text-sm text-slate-50 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        className="flex-1 bg-bg border border-slate-800 px-3 py-2 rounded-lg text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                     />
                                     <button
                                         onClick={handleAddSourceType}
                                         disabled={isAddingSource || !newSourceLabel.trim()}
-                                        className="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                        className="text-[10px] bg-success hover:bg-success text-white px-3 py-2 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                                     >
                                         <Plus size={12} /> ADD
                                     </button>
@@ -1048,20 +1048,20 @@ const SettingsPage = () => {
                 {activeTab === 'scoring' && (
                     <div className="space-y-6">
                         {/* ── Rules Section ── */}
-                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
                             <div className="p-6 border-b border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs flex items-center gap-2">
-                                        <Trophy size={14} className="text-amber-400" />
+                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs flex items-center gap-2">
+                                        <Trophy size={14} className="text-warning" />
                                         Lead Scoring Rules
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tight">RULE-BASED AUTO-SCORING ENGINE</p>
+                                    <p className="text-[10px] text-fg-muted font-bold mt-1 uppercase tracking-tight">RULE-BASED AUTO-SCORING ENGINE</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={handleRecalculateScores}
                                         disabled={isRecalculating}
-                                        className="text-[10px] border border-slate-700 hover:border-amber-500 text-slate-300 hover:text-amber-400 px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+                                        className="text-[10px] border border-line hover:border-warning text-fg-subtle hover:text-warning px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {isRecalculating
                                             ? <Loader2 size={12} className="animate-spin" />
@@ -1071,7 +1071,7 @@ const SettingsPage = () => {
                                     {!isAddingRule && (
                                         <button
                                             onClick={handleStartAddRule}
-                                            className="text-[10px] bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                            className="text-[10px] bg-warning hover:bg-warning text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
                                         >
                                             <Plus size={12} /> ADD RULE
                                         </button>
@@ -1094,7 +1094,7 @@ const SettingsPage = () => {
                                 )}
 
                                 {scoringRules.length === 0 && !isAddingRule && (
-                                    <p className="text-center text-[11px] text-slate-500 font-bold uppercase tracking-widest py-8">
+                                    <p className="text-center text-[11px] text-fg-muted font-bold uppercase tracking-widest py-8">
                                         No scoring rules yet. Click ADD RULE to get started.
                                     </p>
                                 )}
@@ -1113,30 +1113,30 @@ const SettingsPage = () => {
                                             getFieldType={getFieldType}
                                         />
                                     ) : (
-                                        <div key={rule.id} className="flex items-center gap-3 bg-slate-950/50 border border-slate-800 p-4 rounded-xl group hover:border-slate-700 transition-all">
+                                        <div key={rule.id} className="flex items-center gap-3 bg-slate-950/50 border border-slate-800 p-4 rounded-xl group hover:border-line transition-all">
                                             {/* Priority */}
-                                            <span className="text-[9px] font-black text-slate-600 w-4 text-center">{idx + 1}</span>
+                                            <span className="text-[9px] font-black text-fg-muted w-4 text-center">{idx + 1}</span>
 
                                             {/* Icon */}
-                                            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-amber-500 shrink-0">
+                                            <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-warning shrink-0">
                                                 <Zap size={14} />
                                             </div>
 
                                             {/* Content */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
-                                                    <span className="text-sm font-bold text-slate-100 truncate">{rule.name}</span>
+                                                    <span className="text-sm font-bold text-fg truncate">{rule.name}</span>
                                                     <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0 ${rule.rule_type === 'source' ? 'bg-blue-500/20 text-blue-400' : rule.rule_type === 'activity' ? 'bg-purple-500/20 text-purple-400' : 'bg-teal-500/20 text-teal-400'}`}>
                                                         {rule.rule_type === 'source' ? 'Source' : rule.rule_type === 'activity' ? 'Activity' : 'Field'}
                                                     </span>
                                                 </div>
-                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider truncate">
+                                                <p className="text-[10px] text-fg-muted font-bold uppercase tracking-wider truncate">
                                                     {getTargetLabel(rule)} — {getRuleConditionLabel(rule)}
                                                 </p>
                                             </div>
 
                                             {/* Score badge */}
-                                            <div className={`text-sm font-black px-2 py-1 rounded-lg shrink-0 ${rule.score_points >= 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>
+                                            <div className={`text-sm font-black px-2 py-1 rounded-lg shrink-0 ${rule.score_points >= 0 ? 'text-success bg-emerald-500/10' : 'text-danger bg-rose-500/10'}`}>
                                                 {rule.score_points >= 0 ? '+' : ''}{rule.score_points}
                                             </div>
 
@@ -1147,8 +1147,8 @@ const SettingsPage = () => {
                                                 title={rule.is_active ? 'Deactivate' : 'Activate'}
                                             >
                                                 {rule.is_active
-                                                    ? <ToggleRight size={22} className="text-emerald-500" />
-                                                    : <ToggleLeft size={22} className="text-slate-600" />
+                                                    ? <ToggleRight size={22} className="text-success" />
+                                                    : <ToggleLeft size={22} className="text-fg-muted" />
                                                 }
                                             </button>
 
@@ -1156,13 +1156,13 @@ const SettingsPage = () => {
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                                 <button
                                                     onClick={() => handleStartEditRule(rule)}
-                                                    className="p-1.5 hover:bg-blue-500/10 rounded-lg text-slate-400 hover:text-blue-400 transition-all"
+                                                    className="p-1.5 hover:bg-blue-500/10 rounded-lg text-fg-subtle hover:text-blue-400 transition-all"
                                                 >
                                                     <Edit2 size={14} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteRule(rule.id)}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-400 transition-all"
+                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -1174,13 +1174,13 @@ const SettingsPage = () => {
                         </section>
 
                         {/* ── Score Bands Section ── */}
-                        <section className="bg-slate-900 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
+                        <section className="bg-surface border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
                             <div className="p-6 border-b border-slate-700/50 bg-slate-900/50">
-                                <h3 className="font-black text-slate-50 uppercase tracking-widest text-xs flex items-center gap-2">
-                                    <ShieldCheck size={14} className="text-emerald-400" />
+                                <h3 className="font-black text-fg uppercase tracking-widest text-xs flex items-center gap-2">
+                                    <ShieldCheck size={14} className="text-success" />
                                     Score Bands
                                 </h3>
-                                <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tight">DEFINE WHAT EACH SCORE RANGE MEANS</p>
+                                <p className="text-[10px] text-fg-muted font-bold mt-1 uppercase tracking-tight">DEFINE WHAT EACH SCORE RANGE MEANS</p>
                             </div>
                             <div className="p-6 space-y-2">
                                 {scoreCategories.map(cat => (
@@ -1192,15 +1192,15 @@ const SettingsPage = () => {
                                                 value={cat.label}
                                                 onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, label: e.target.value } : c))}
                                                 onBlur={e => handleUpdateCategory(cat, { label: e.target.value })}
-                                                className="bg-transparent text-sm font-bold text-slate-100 border-none outline-none w-24"
+                                                className="bg-transparent text-sm font-bold text-fg border-none outline-none w-24"
                                             />
-                                            <div className="flex items-center gap-1 text-[10px] font-black text-slate-500">
+                                            <div className="flex items-center gap-1 text-[10px] font-black text-fg-muted">
                                                 <input
                                                     type="number"
                                                     value={cat.min_score}
                                                     onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, min_score: parseInt(e.target.value) || 0 } : c))}
                                                     onBlur={e => handleUpdateCategory(cat, { min_score: parseInt(e.target.value) || 0 })}
-                                                    className="bg-slate-800 text-slate-300 rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-[10px] font-black"
+                                                    className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-[10px] font-black"
                                                 />
                                                 <span>→</span>
                                                 {cat.max_score !== null ? (
@@ -1209,10 +1209,10 @@ const SettingsPage = () => {
                                                         value={cat.max_score ?? ''}
                                                         onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, max_score: parseInt(e.target.value) || 0 } : c))}
                                                         onBlur={e => handleUpdateCategory(cat, { max_score: parseInt(e.target.value) || 0 })}
-                                                        className="bg-slate-800 text-slate-300 rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-[10px] font-black"
+                                                        className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-[10px] font-black"
                                                     />
                                                 ) : (
-                                                    <span className="text-slate-500 italic">∞</span>
+                                                    <span className="text-fg-muted italic">∞</span>
                                                 )}
                                             </div>
                                         </div>
@@ -1273,8 +1273,8 @@ function ScoringRuleForm({
     // Source rules compare against the selected Source option itself — no separate value needed
     const hideValue = ['is_empty', 'is_not_empty'].includes(draft.condition || '') || ruleType === 'source';
 
-    const inputCls = 'w-full bg-slate-950/60 border border-slate-700 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-amber-500 transition-colors';
-    const labelCls = 'text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 block';
+    const inputCls = 'w-full bg-slate-950/60 border border-line text-fg text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-warning transition-colors';
+    const labelCls = 'text-[8px] font-black text-fg-muted uppercase tracking-widest mb-1 block';
 
     const getTargetOptions = () => {
         if (ruleType === 'source') return sourceTypes.map(s => ({ value: s.value, label: s.label }));
@@ -1285,7 +1285,7 @@ function ScoringRuleForm({
     };
 
     return (
-        <div className="bg-slate-950 border border-amber-600/40 rounded-xl p-5 space-y-4">
+        <div className="bg-bg border border-amber-600/40 rounded-xl p-5 space-y-4">
             {/* Row 1: Name */}
             <div>
                 <label className={labelCls}>Rule Name</label>
@@ -1361,7 +1361,7 @@ function ScoringRuleForm({
                         type="number"
                         value={draft.score_points ?? 10}
                         onChange={e => onChange({ ...draft, score_points: parseInt(e.target.value) || 0 })}
-                        className={`${inputCls} text-amber-400`}
+                        className={`${inputCls} text-warning`}
                     />
                 </div>
 
@@ -1372,8 +1372,8 @@ function ScoringRuleForm({
                         onClick={() => onChange({ ...draft, is_active: !draft.is_active })}
                     >
                         {draft.is_active !== false
-                            ? <ToggleRight size={22} className="text-emerald-500" />
-                            : <ToggleLeft size={22} className="text-slate-600" />
+                            ? <ToggleRight size={22} className="text-success" />
+                            : <ToggleLeft size={22} className="text-fg-muted" />
                         }
                     </button>
                 </div>
@@ -1381,14 +1381,14 @@ function ScoringRuleForm({
                 <div className="flex gap-2 ml-auto">
                     <button
                         onClick={onCancel}
-                        className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 transition-all"
+                        className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-line text-fg-subtle hover:text-fg transition-all"
                     >
                         <X size={12} />
                     </button>
                     <button
                         onClick={onSave}
                         disabled={isSaving}
-                        className="text-[10px] font-black uppercase px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 transition-all disabled:opacity-50"
+                        className="text-[10px] font-black uppercase px-4 py-2 rounded-lg bg-warning hover:bg-warning text-white flex items-center gap-1.5 transition-all disabled:opacity-50"
                     >
                         {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                         SAVE RULE

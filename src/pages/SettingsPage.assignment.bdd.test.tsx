@@ -86,13 +86,13 @@ describe('Given CRM Settings', () => {
             render(<SettingsPage />);
             await waitFor(() => screen.getByText('CRM Settings'));
             const tab = screen.getByRole('button', { name: /^assignment$/i });
-            expect(tab.className).toMatch(/text-slate-500/);
+            expect(tab.className).toMatch(/text-fg-subtle/);
             fireEvent.click(tab);
             await screen.findByTestId('assignment-tab');
-            expect(tab.className).toMatch(/bg-blue-600/);
+            expect(tab.className).toMatch(/bg-primary(\s|$)/);
             fireEvent.click(screen.getByRole('button', { name: /^pipeline$/i }));
             await waitFor(() => expect(screen.queryByTestId('assignment-tab')).not.toBeInTheDocument());
-            expect(tab.className).not.toMatch(/bg-blue-600/);
+            expect(tab.className).not.toMatch(/bg-primary(\s|$)/);
         });
     });
 

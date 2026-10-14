@@ -101,7 +101,7 @@ export default function TeamTargetsPage() {
   const header = (
     <div className="space-y-2">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-100">Team Targets</h1>
+        <h1 className="text-lg font-semibold text-fg">Team Targets</h1>
         <PeriodPicker value={asOf} onChange={setAsOf} />
       </div>
       <AsOfBanner asOf={asOf} />
@@ -112,7 +112,7 @@ export default function TeamTargetsPage() {
     return (
       <div className="p-6 space-y-4">
         {header}
-        <div className="text-sm text-slate-400">Loading team…</div>
+        <div className="text-sm text-fg-subtle">Loading team…</div>
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function TeamTargetsPage() {
         {header}
         {totals && (
           <div className="mt-2 max-w-md">
-            <div className="flex items-baseline justify-between text-xs text-slate-400">
+            <div className="flex items-baseline justify-between text-xs text-fg-subtle">
               <span>
                 {formatValue(totals.actual, 'currency', currency)} of{' '}
                 {formatValue(totals.target, 'currency', currency)}
@@ -164,7 +164,7 @@ export default function TeamTargetsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+              <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
                 <th className="py-2 pr-4 font-medium">Person</th>
                 <th className="py-2 pr-4 font-medium">Metric</th>
                 <th className="py-2 pr-4 font-medium text-right">Target</th>
@@ -181,16 +181,16 @@ export default function TeamTargetsPage() {
                   className="border-b border-slate-800/60 hover:bg-slate-800/40 cursor-pointer"
                   onClick={() => openDetail(r.person_id)}
                 >
-                  <td className="py-2 pr-4 text-slate-200">
+                  <td className="py-2 pr-4 text-fg">
                     <PersonName id={r.person_id} />
                   </td>
-                  <td className="py-2 pr-4 text-slate-400">
+                  <td className="py-2 pr-4 text-fg-subtle">
                     {r.metric_name ?? '—'}
                   </td>
-                  <td className="py-2 pr-4 text-right text-slate-300">
+                  <td className="py-2 pr-4 text-right text-fg-subtle">
                     {formatValue(r.target, 'currency', currency)}
                   </td>
-                  <td className="py-2 pr-4 text-right text-slate-300">
+                  <td className="py-2 pr-4 text-right text-fg-subtle">
                     {formatValue(r.actual, 'currency', currency)}
                   </td>
                   <td className="py-2 pr-4">
@@ -203,12 +203,12 @@ export default function TeamTargetsPage() {
                           compact
                         />
                       </div>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-fg-subtle">
                         {formatPct(r.attainment)}
                       </span>
                     </div>
                   </td>
-                  <td className="py-2 pr-4 text-xs text-slate-400">
+                  <td className="py-2 pr-4 text-xs text-fg-subtle">
                     {r.projection?.projectable
                       ? formatPct(r.projection.projectedAttainment)
                       : '—'}
@@ -217,7 +217,7 @@ export default function TeamTargetsPage() {
                     {r.status ? (
                       <StatusChip status={r.status} label={r.status_label} />
                     ) : (
-                      <span className="text-xs text-slate-500">—</span>
+                      <span className="text-xs text-fg-muted">—</span>
                     )}
                   </td>
                 </tr>
@@ -232,7 +232,7 @@ export default function TeamTargetsPage() {
           title="Detail"
           action={
             <button
-              className="text-xs text-slate-400 hover:text-slate-200"
+              className="text-xs text-fg-subtle hover:text-fg"
               onClick={() => {
                 setSelected(null);
                 setDetail(null);
@@ -243,7 +243,7 @@ export default function TeamTargetsPage() {
           }
         >
           {!detail ? (
-            <div className="text-sm text-slate-400">Loading…</div>
+            <div className="text-sm text-fg-subtle">Loading…</div>
           ) : (
             <div className="space-y-3">
               {detail.metrics
@@ -251,8 +251,8 @@ export default function TeamTargetsPage() {
                 .map((m: any) => (
                   <div key={m.target_line_id}>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-200">{m.metric_name}</span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-fg">{m.metric_name}</span>
+                      <span className="text-xs text-fg-subtle">
                         {formatValue(m.actual, m.unit, currency)} /{' '}
                         {formatValue(m.target, m.unit, currency)} ·{' '}
                         {formatPct(m.attainment)}

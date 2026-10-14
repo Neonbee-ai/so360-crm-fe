@@ -18,12 +18,12 @@ import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
-    draft: { bg: 'bg-slate-500/10', text: 'text-slate-300', label: 'Draft', border: 'border-slate-500/30' },
+    draft: { bg: 'bg-slate-500/10', text: 'text-fg-subtle', label: 'Draft', border: 'border-slate-500/30' },
     pending_approval: { bg: 'bg-amber-500/10', text: 'text-amber-300', label: 'Pending Approval', border: 'border-amber-500/30' },
     approved: { bg: 'bg-emerald-500/10', text: 'text-emerald-300', label: 'Approved', border: 'border-emerald-500/30' },
     rejected: { bg: 'bg-rose-500/10', text: 'text-rose-300', label: 'Rejected', border: 'border-rose-500/30' },
     converted: { bg: 'bg-blue-500/10', text: 'text-blue-300', label: 'Converted', border: 'border-blue-500/30' },
-    expired: { bg: 'bg-zinc-500/10', text: 'text-zinc-400', label: 'Expired', border: 'border-zinc-500/30' },
+    expired: { bg: 'bg-zinc-500/10', text: 'text-fg-subtle', label: 'Expired', border: 'border-zinc-500/30' },
 };
 
 // Allowed next transitions per status — empty means terminal (no dropdown)
@@ -87,7 +87,7 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
                 {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />}
             </button>
             {isOpen && transitions.length > 0 && createPortal(
-                <div style={dropdownStyle} className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden w-48">
+                <div style={dropdownStyle} className="bg-surface border border-line rounded-lg shadow-xl overflow-hidden w-48">
                     <div className="py-1">
                         {transitions.map(t => (
                             <button
@@ -422,7 +422,7 @@ const QuotesPage = () => {
         <button
             type="button"
             onClick={(e) => { e.stopPropagation(); handleSort(field); }}
-            className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200 transition-colors ${align === 'right' ? 'justify-end w-full' : ''}`}
+            className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-fg-subtle hover:text-fg transition-colors ${align === 'right' ? 'justify-end w-full' : ''}`}
         >
             <span>{label}</span>
             {sortField === field ? (
@@ -432,7 +432,7 @@ const QuotesPage = () => {
                     <ChevronDown className="w-3.5 h-3.5 text-blue-400" />
                 )
             ) : (
-                <ChevronsUpDown className="w-3.5 h-3.5 text-slate-600 opacity-60" />
+                <ChevronsUpDown className="w-3.5 h-3.5 text-fg-muted opacity-60" />
             )}
         </button>
     );
@@ -579,7 +579,7 @@ const QuotesPage = () => {
                         type="checkbox"
                         checked={allOnPageSelected}
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 cursor-pointer"
+                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-slate-900 cursor-pointer"
                         title="Select all on this page"
                     />
                 </div>
@@ -590,7 +590,7 @@ const QuotesPage = () => {
                         type="checkbox"
                         checked={selectedQuoteIds.includes(quote.id)}
                         onChange={() => toggleSelectQuote(quote.id)}
-                        className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 cursor-pointer"
+                        className="w-4 h-4 rounded border-line bg-surface text-primary focus:ring-focus focus:ring-offset-slate-900 cursor-pointer"
                     />
                 </div>
             ),
@@ -616,13 +616,13 @@ const QuotesPage = () => {
             accessor: (quote: Quote) => (
                 <div className="flex flex-col min-w-0 max-w-xs">
                     <span
-                        className="text-slate-200 font-medium truncate block"
+                        className="text-fg font-medium truncate block"
                         title={quote.title || 'Untitled Quote'}
                     >
                         {quote.title || 'Untitled Quote'}
                     </span>
                     {quote.customer_reference && (
-                        <span className="text-[11px] text-slate-500 truncate" title={`Buyer Reference: ${quote.customer_reference}`}>
+                        <span className="text-[11px] text-fg-muted truncate" title={`Buyer Reference: ${quote.customer_reference}`}>
                             Ref: {quote.customer_reference}
                         </span>
                     )}
@@ -634,14 +634,14 @@ const QuotesPage = () => {
             header: <SortableHeader label="Customer" field="customer" />,
             accessor: (quote: Quote) => {
                 const customer = resolveCustomer(quote);
-                if (!customer) return <span className="text-slate-500 text-xs">—</span>;
+                if (!customer) return <span className="text-fg-muted text-xs">—</span>;
                 return (
                     <div className="flex items-center gap-1.5 min-w-0 max-w-[180px]">
-                        <span className="text-slate-300 font-normal truncate" title={customer.name}>
+                        <span className="text-fg-subtle font-normal truncate" title={customer.name}>
                             {customer.name}
                         </span>
                         {customer.isLead && (
-                            <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/10 text-success border border-emerald-500/20">
                                 Lead
                             </span>
                         )}
@@ -654,7 +654,7 @@ const QuotesPage = () => {
             header: <SortableHeader label="Deal" field="deal" />,
             accessor: (quote: Quote) => {
                 const deal = resolveDeal(quote);
-                if (!deal || !deal.id) return <span className="text-slate-500 text-xs">—</span>;
+                if (!deal || !deal.id) return <span className="text-fg-muted text-xs">—</span>;
                 return (
                     <div className="min-w-0 max-w-[160px] truncate" title={deal.name}>
                         <CrossLinkChip type="crm.deal" id={deal.id} label={deal.name} compact />
@@ -667,7 +667,7 @@ const QuotesPage = () => {
             header: <SortableHeader label="Total" field="total" align="right" />,
             accessor: (quote: Quote) => (
                 <div className="text-right">
-                    <span className="text-slate-100 font-medium font-mono">
+                    <span className="text-fg font-medium font-mono">
                         {formatCurrency(quote.total_amount ?? quote.grand_total ?? 0)}
                     </span>
                 </div>
@@ -689,7 +689,7 @@ const QuotesPage = () => {
             key: 'valid_until',
             header: <SortableHeader label="Valid Until" field="valid_until" />,
             accessor: (quote: Quote) => {
-                if (!quote.valid_until) return <span className="text-slate-500 text-xs">-</span>;
+                if (!quote.valid_until) return <span className="text-fg-muted text-xs">-</span>;
                 const date = new Date(quote.valid_until);
                 const now = new Date();
                 const isExpired = date < now;
@@ -700,7 +700,7 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-rose-400/80 line-through text-xs">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-danger border border-rose-500/20">
                                 Expired
                             </span>
                         </div>
@@ -710,13 +710,13 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-amber-300 text-xs font-medium">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-warning border border-amber-500/20">
                                 Soon
                             </span>
                         </div>
                     );
                 }
-                return <span className="text-slate-400 text-xs whitespace-nowrap">{formatDate(quote.valid_until)}</span>;
+                return <span className="text-fg-subtle text-xs whitespace-nowrap">{formatDate(quote.valid_until)}</span>;
             },
             className: 'whitespace-nowrap',
         },
@@ -724,7 +724,7 @@ const QuotesPage = () => {
             key: 'created_at',
             header: <SortableHeader label="Created" field="created_at" />,
             accessor: (quote: Quote) => (
-                <span className="text-slate-400 text-xs whitespace-nowrap">{formatDate(quote.created_at)}</span>
+                <span className="text-fg-subtle text-xs whitespace-nowrap">{formatDate(quote.created_at)}</span>
             ),
             className: 'whitespace-nowrap',
         },
@@ -736,7 +736,7 @@ const QuotesPage = () => {
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openQuote(quote.id); }}
-                        className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+                        className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded transition-colors"
                         title="View"
                     >
                         <FileText className="w-4 h-4" />
@@ -745,7 +745,7 @@ const QuotesPage = () => {
                         <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(quote.id); }}
-                            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
+                            className="p-1.5 text-fg-subtle hover:text-danger hover:bg-surface-raised rounded transition-colors"
                             title="Delete"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -754,7 +754,7 @@ const QuotesPage = () => {
                     <button
                         type="button"
                         onClick={(e) => handleOpenActionMenu(e, quote.id)}
-                        className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+                        className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded transition-colors"
                         title="More actions"
                     >
                         <MoreVertical className="w-4 h-4" />
@@ -815,35 +815,35 @@ const QuotesPage = () => {
             key: 'title',
             header: 'Title',
             accessor: (item: any) => (
-                <span className="text-slate-200 font-medium truncate max-w-xs block">{item.title || 'Untitled Quote'}</span>
+                <span className="text-fg font-medium truncate max-w-xs block">{item.title || 'Untitled Quote'}</span>
             ),
         },
         {
             key: 'customer',
             header: 'Customer',
             accessor: (item: any) => (
-                <span className="text-slate-300 text-sm">{item.customer_name || '—'}</span>
+                <span className="text-fg-subtle text-sm">{item.customer_name || '—'}</span>
             ),
         },
         {
             key: 'amount',
             header: 'Amount',
             accessor: (item: any) => (
-                <span className="text-slate-200 font-medium font-mono">{formatCurrency(Number(item.total_amount || 0))}</span>
+                <span className="text-fg font-medium font-mono">{formatCurrency(Number(item.total_amount || 0))}</span>
             ),
         },
         {
             key: 'requested_by',
             header: 'Submitted By',
             accessor: (item: any) => (
-                <span className="text-slate-300 text-xs">{item.requested_by || 'Unknown'}</span>
+                <span className="text-fg-subtle text-xs">{item.requested_by || 'Unknown'}</span>
             ),
         },
         {
             key: 'requested_at',
             header: 'Submitted At',
             accessor: (item: any) => (
-                <span className="text-slate-400 text-xs">{item.requested_at ? formatDate(item.requested_at) : '—'}</span>
+                <span className="text-fg-subtle text-xs">{item.requested_at ? formatDate(item.requested_at) : '—'}</span>
             ),
         },
         {
@@ -851,16 +851,16 @@ const QuotesPage = () => {
             header: 'Reviewers',
             accessor: (item: any) => {
                 const others = item.all_approvers || [];
-                if (others.length === 0) return <span className="text-slate-500 text-xs">—</span>;
+                if (others.length === 0) return <span className="text-fg-muted text-xs">—</span>;
                 return (
                     <div className="flex flex-wrap gap-1 max-w-xs">
                         {others.map((o: any, idx: number) => {
                             const badgeColor =
                                 o.status === 'approved'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                    ? 'bg-emerald-500/10 text-success border-emerald-500/30'
                                     : o.status === 'rejected'
-                                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                    : 'bg-slate-800 text-slate-400 border-slate-700';
+                                    ? 'bg-rose-500/10 text-danger border-rose-500/30'
+                                    : 'bg-surface-raised text-fg-subtle border-line';
                             return (
                                 <span
                                     key={o.id || idx}
@@ -881,7 +881,7 @@ const QuotesPage = () => {
             accessor: (item: any) => {
                 if (item.approver_status === 'approved') {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-success border border-emerald-500/30">
                             <Check className="w-3 h-3" />
                             Approved
                         </span>
@@ -889,14 +889,14 @@ const QuotesPage = () => {
                 }
                 if (item.approver_status === 'rejected') {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-danger border border-rose-500/30">
                             <X className="w-3 h-3" />
                             Rejected
                         </span>
                     );
                 }
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-warning border border-amber-500/30">
                         <Clock className="w-3 h-3" />
                         Pending
                     </span>
@@ -927,7 +927,7 @@ const QuotesPage = () => {
                     )}
                     <button
                         onClick={() => openQuote(item.quote_id)}
-                        className="p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+                        className="p-1 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded transition-colors"
                         title="View Details"
                     >
                         <Eye className="w-4 h-4" />
@@ -956,14 +956,14 @@ const QuotesPage = () => {
             {/* Header: Clean & Compact with action */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Quotes</h1>
-                    <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Manage sales quotes and proposals</p>
+                    <h1 className="text-2xl font-bold text-fg tracking-tight">Quotes</h1>
+                    <p className="text-xs sm:text-sm text-fg-subtle mt-0.5">Manage sales quotes and proposals</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         type="button"
                         onClick={handleExportSelected}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-slate-100 rounded-lg text-sm font-medium transition-colors"
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-surface hover:bg-surface-raised border border-line text-fg-subtle hover:text-fg rounded-lg text-sm font-medium transition-colors"
                         title="Export quotes to CSV"
                     >
                         <Download className="w-4 h-4" />
@@ -980,7 +980,7 @@ const QuotesPage = () => {
                         >
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
                             >
                                 <Plus className="w-4 h-4" />
                                 New Quote
@@ -994,7 +994,7 @@ const QuotesPage = () => {
             {error && (
                 <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                        <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
                         <span>{error}</span>
                     </div>
                     <button
@@ -1011,10 +1011,10 @@ const QuotesPage = () => {
             {/* Status Summary: Compact Interactive KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                 {[
-                    { id: 'All', label: 'Total Quotes', count: quoteStats.total, icon: FileText, color: 'text-blue-400', border: 'border-slate-700' },
-                    { id: 'draft', label: 'Draft', count: quoteStats.draft, icon: Clock, color: 'text-slate-400', border: 'border-slate-700' },
-                    { id: 'pending_approval', label: 'Pending Approval', count: quoteStats.pending, icon: Send, color: 'text-amber-400', border: 'border-amber-500/30' },
-                    { id: 'approved', label: 'Approved', count: quoteStats.approved, icon: CheckCircle, color: 'text-emerald-400', border: 'border-emerald-500/30' },
+                    { id: 'All', label: 'Total Quotes', count: quoteStats.total, icon: FileText, color: 'text-blue-400', border: 'border-line' },
+                    { id: 'draft', label: 'Draft', count: quoteStats.draft, icon: Clock, color: 'text-fg-subtle', border: 'border-line' },
+                    { id: 'pending_approval', label: 'Pending Approval', count: quoteStats.pending, icon: Send, color: 'text-warning', border: 'border-amber-500/30' },
+                    { id: 'approved', label: 'Approved', count: quoteStats.approved, icon: CheckCircle, color: 'text-success', border: 'border-emerald-500/30' },
                     { id: 'converted', label: 'Converted', count: quoteStats.converted, icon: Check, color: 'text-blue-400', border: 'border-blue-500/30' },
                 ].map((stat) => {
                     const isActive = statusFilter === stat.id;
@@ -1035,17 +1035,17 @@ const QuotesPage = () => {
                             className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer select-none ${
                                 isActive
                                     ? 'bg-blue-600/10 border-blue-500/60 ring-1 ring-blue-500/40 shadow-sm'
-                                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
+                                    : 'bg-slate-900/60 border-slate-800 hover:border-line hover:bg-slate-800/40'
                             }`}
                         >
                             <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider truncate">
+                                <span className="text-xs font-medium text-fg-subtle uppercase tracking-wider truncate">
                                     {stat.label}
                                 </span>
                                 <Icon className={`w-4 h-4 ${stat.color} shrink-0 opacity-80`} />
                             </div>
                             <div className="mt-2 flex items-baseline justify-between">
-                                <span className="text-2xl font-bold text-slate-100 font-mono tracking-tight">
+                                <span className="text-2xl font-bold text-fg font-mono tracking-tight">
                                     {stat.count}
                                 </span>
                                 {isActive && (
@@ -1065,8 +1065,8 @@ const QuotesPage = () => {
                     onClick={() => setActiveTab('all')}
                     className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                         activeTab === 'all'
-                            ? 'border-blue-500 text-blue-400'
-                            : 'border-transparent text-slate-400 hover:text-slate-200'
+                            ? 'border-primary text-blue-400'
+                            : 'border-transparent text-fg-subtle hover:text-fg'
                     }`}
                 >
                     <FileText className="w-4 h-4" />
@@ -1076,8 +1076,8 @@ const QuotesPage = () => {
                     onClick={() => setActiveTab('approvals')}
                     className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                         activeTab === 'approvals'
-                            ? 'border-blue-500 text-blue-400'
-                            : 'border-transparent text-slate-400 hover:text-slate-200'
+                            ? 'border-primary text-blue-400'
+                            : 'border-transparent text-fg-subtle hover:text-fg'
                     }`}
                 >
                     <Inbox className="w-4 h-4" />
@@ -1100,19 +1100,19 @@ const QuotesPage = () => {
                         <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[300px]">
                             {/* Search bar */}
                             <div className="relative flex-1 min-w-[220px] max-w-sm">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
                                 <input
                                     type="text"
                                     placeholder="Search quotes..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                    className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                 />
                                 {searchTerm && (
                                     <button
                                         type="button"
                                         onClick={() => setSearchTerm('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs"
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg text-xs"
                                     >
                                         ×
                                     </button>
@@ -1124,9 +1124,9 @@ const QuotesPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStatusDropdownOpen(o => !o)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 bg-slate-900 border rounded-lg text-xs font-medium transition-colors hover:border-slate-600 ${statusFilter !== 'All' ? 'border-blue-500/60 text-blue-300 bg-blue-500/5' : 'border-slate-700 text-slate-300'}`}
+                                    className={`flex items-center gap-2 px-3 py-1.5 bg-surface border rounded-lg text-xs font-medium transition-colors hover:border-line ${statusFilter !== 'All' ? 'border-blue-500/60 text-blue-300 bg-blue-500/5' : 'border-line text-fg-subtle'}`}
                                 >
-                                    <Filter className={`w-3.5 h-3.5 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-slate-400'}`} />
+                                    <Filter className={`w-3.5 h-3.5 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-fg-subtle'}`} />
                                     <span>
                                         {statusFilter === 'All' ? 'All Status' : (statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter)}
                                     </span>
@@ -1135,36 +1135,36 @@ const QuotesPage = () => {
                                             role="button"
                                             aria-label="Clear status filter"
                                             onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                            className="ml-0.5 text-blue-400 hover:text-slate-50 leading-none cursor-pointer"
+                                            className="ml-0.5 text-blue-400 hover:text-fg leading-none cursor-pointer"
                                         >×</span>
                                     )}
-                                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <ChevronDown className={`w-3.5 h-3.5 text-fg-subtle transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {statusDropdownOpen && (
-                                    <div className="absolute left-0 top-full mt-1 z-30 w-52 bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
+                                    <div className="absolute left-0 top-full mt-1 z-30 w-52 bg-surface border border-line rounded-lg shadow-xl overflow-hidden">
                                         <div className="py-1">
                                             <button
                                                 type="button"
                                                 onClick={() => { setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-slate-800 transition-colors ${statusFilter === 'All' ? 'text-blue-300 bg-blue-600/10' : 'text-slate-300'}`}
+                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === 'All' ? 'text-blue-300 bg-blue-600/10' : 'text-fg-subtle'}`}
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
                                                     All Status
                                                 </span>
-                                                <span className="text-slate-500 font-mono">{quotes.length}</span>
+                                                <span className="text-fg-muted font-mono">{quotes.length}</span>
                                             </button>
                                             {(Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => (
                                                 <button
                                                     key={value}
                                                     type="button"
                                                     onClick={() => { setStatusFilter(value); setStatusDropdownOpen(false); }}
-                                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-slate-800 transition-colors ${statusFilter === value ? 'bg-blue-600/10' : ''}`}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === value ? 'bg-blue-600/10' : ''}`}
                                                 >
                                                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
                                                         {cfg.label}
                                                     </span>
-                                                    <span className="text-xs text-slate-500 font-mono">
+                                                    <span className="text-xs text-fg-muted font-mono">
                                                         {quotes.filter(q => q.status === value).length}
                                                     </span>
                                                 </button>
@@ -1179,7 +1179,7 @@ const QuotesPage = () => {
                                 <select
                                     value={dealFilter}
                                     onChange={(e) => setDealFilter(e.target.value)}
-                                    className={`bg-slate-900 border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 ${dealFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-slate-700 text-slate-300'}`}
+                                    className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${dealFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-line text-fg-subtle'}`}
                                 >
                                     <option value="All">All Deals</option>
                                     {deals.map(d => (
@@ -1192,7 +1192,7 @@ const QuotesPage = () => {
                             <select
                                 value={validityFilter}
                                 onChange={(e) => setValidityFilter(e.target.value)}
-                                className={`bg-slate-900 border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 ${validityFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-slate-700 text-slate-300'}`}
+                                className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${validityFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-line text-fg-subtle'}`}
                             >
                                 <option value="All">All Dates</option>
                                 <option value="valid">Valid Proposals</option>
@@ -1204,7 +1204,7 @@ const QuotesPage = () => {
                                 <button
                                     type="button"
                                     onClick={resetFilters}
-                                    className="text-xs text-rose-400 hover:text-rose-300 underline font-medium px-1"
+                                    className="text-xs text-danger hover:text-danger-300 underline font-medium px-1"
                                 >
                                     Clear Filters
                                 </button>
@@ -1217,18 +1217,18 @@ const QuotesPage = () => {
                                 <span className="font-semibold text-blue-300">
                                     {selectedQuoteIds.length} selected
                                 </span>
-                                <span className="text-slate-600">|</span>
+                                <span className="text-fg-muted">|</span>
                                 <button
                                     type="button"
                                     onClick={handleExportSelected}
-                                    className="text-slate-200 hover:text-white font-medium underline"
+                                    className="text-fg hover:text-white font-medium underline"
                                 >
                                     Export CSV
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setSelectedQuoteIds([])}
-                                    className="text-slate-400 hover:text-slate-200 ml-1"
+                                    className="text-fg-subtle hover:text-fg ml-1"
                                 >
                                     Deselect
                                 </button>
@@ -1238,7 +1238,7 @@ const QuotesPage = () => {
 
                     {/* Sandbox limit notice */}
                     {isSandboxMode && isLimited(filteredQuotes.length) && (
-                        <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                        <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-warning text-sm flex items-center gap-2">
                             <span className="font-semibold">Sandbox mode:</span>
                             showing {sandboxEntryLimit} of {filteredQuotes.length} quotes — full list visible in production.
                         </div>
@@ -1246,10 +1246,10 @@ const QuotesPage = () => {
 
                     {/* Table View */}
                     {paginatedQuotes.length === 0 ? (
-                        <div className="text-center py-16 bg-slate-900/50 border border-slate-700 rounded-lg">
-                            <FileText className="w-12 h-12 mx-auto text-slate-600 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-300 mb-2">No quotes found</h3>
-                            <p className="text-slate-400 mb-4 text-sm">
+                        <div className="text-center py-16 bg-slate-900/50 border border-line rounded-lg">
+                            <FileText className="w-12 h-12 mx-auto text-fg-muted mb-4" />
+                            <h3 className="text-lg font-medium text-fg-subtle mb-2">No quotes found</h3>
+                            <p className="text-fg-subtle mb-4 text-sm">
                                 {hasActiveFilters
                                     ? 'Try adjusting your filters'
                                     : 'Create your first quote to get started'}
@@ -1257,7 +1257,7 @@ const QuotesPage = () => {
                             {hasActiveFilters ? (
                                 <button
                                     onClick={resetFilters}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 rounded-lg text-sm font-medium transition-colors"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-surface-raised hover:bg-line border border-line text-fg rounded-lg text-sm font-medium transition-colors"
                                 >
                                     Clear Filters
                                 </button>
@@ -1265,7 +1265,7 @@ const QuotesPage = () => {
                                 canCreateQuote && (
                                     <button
                                         onClick={() => setIsCreateModalOpen(true)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors"
                                     >
                                         <Plus className="w-4 h-4" />
                                         Create Quote
@@ -1284,13 +1284,13 @@ const QuotesPage = () => {
 
                             {/* Pagination Controls */}
                             {effectiveQuotes.length > 0 && (
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-slate-900/70 border border-slate-800 rounded-lg text-xs text-slate-400">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-slate-900/70 border border-slate-800 rounded-lg text-xs text-fg-subtle">
                                     <div className="flex items-center gap-2">
                                         <span>Show</span>
                                         <select
                                             value={pageSize}
                                             onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            className="bg-surface-raised border border-line rounded px-2 py-1 text-fg text-xs focus:outline-none focus:ring-1 focus:ring-focus"
                                         >
                                             {[10, 25, 50, 100].map((size) => (
                                                 <option key={size} value={size}>{size}</option>
@@ -1307,31 +1307,31 @@ const QuotesPage = () => {
                                         <button
                                             onClick={() => setCurrentPage(1)}
                                             disabled={currentPage === 1}
-                                            className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
                                             First
                                         </button>
                                         <button
                                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                                             disabled={currentPage === 1}
-                                            className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
                                             Prev
                                         </button>
-                                        <span className="px-3 py-1 text-slate-300 font-medium">
+                                        <span className="px-3 py-1 text-fg-subtle font-medium">
                                             Page {currentPage} of {totalPages}
                                         </span>
                                         <button
                                             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                                             disabled={currentPage === totalPages}
-                                            className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
                                             Next
                                         </button>
                                         <button
                                             onClick={() => setCurrentPage(totalPages)}
                                             disabled={currentPage === totalPages}
-                                            className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                         >
                                             Last
                                         </button>
@@ -1347,7 +1347,7 @@ const QuotesPage = () => {
                 <div className="space-y-4">
                     {/* Approvals Filters & Search */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                        <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-slate-800">
                             {[
                                 { id: 'pending', label: 'Pending', count: approvals.filter(a => a.approver_status === 'pending').length },
                                 { id: 'approved', label: 'Approved', count: approvals.filter(a => a.approver_status === 'approved').length },
@@ -1359,15 +1359,15 @@ const QuotesPage = () => {
                                     onClick={() => setApprovalsStatusFilter(subtab.id as any)}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                                         approvalsStatusFilter === subtab.id
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                            ? 'bg-primary text-white shadow-sm'
+                                            : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
                                     }`}
                                 >
                                     <span>{subtab.label}</span>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                                         approvalsStatusFilter === subtab.id
-                                            ? 'bg-blue-700 text-blue-100'
-                                            : 'bg-slate-800 text-slate-400'
+                                            ? 'bg-primary-hover text-blue-100'
+                                            : 'bg-surface-raised text-fg-subtle'
                                     }`}>
                                         {subtab.count}
                                     </span>
@@ -1376,23 +1376,23 @@ const QuotesPage = () => {
                         </div>
 
                         <div className="relative w-full sm:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
                             <input
                                 type="text"
                                 placeholder="Search approvals..."
                                 value={approvalsSearchTerm}
                                 onChange={(e) => setApprovalsSearchTerm(e.target.value)}
-                                className="w-full pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-xs"
+                                className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-xs"
                             />
                         </div>
                     </div>
 
                     {/* Approvals Table */}
                     {filteredApprovals.length === 0 ? (
-                        <div className="text-center py-16 bg-slate-900/50 border border-slate-700 rounded-lg">
-                            <CheckCircle className="w-12 h-12 mx-auto text-slate-600 mb-4" />
-                            <h3 className="text-lg font-medium text-slate-300 mb-2">No approval requests found</h3>
-                            <p className="text-slate-400 text-sm">
+                        <div className="text-center py-16 bg-slate-900/50 border border-line rounded-lg">
+                            <CheckCircle className="w-12 h-12 mx-auto text-fg-muted mb-4" />
+                            <h3 className="text-lg font-medium text-fg-subtle mb-2">No approval requests found</h3>
+                            <p className="text-fg-subtle text-sm">
                                 {approvalsStatusFilter === 'pending'
                                     ? "You're all caught up! There are no quotes awaiting your approval."
                                     : 'No quotes match the selected filter.'}
@@ -1413,26 +1413,26 @@ const QuotesPage = () => {
                 <div
                     ref={actionMenuRef}
                     style={actionMenuStyle}
-                    className="w-52 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl overflow-hidden py-1 text-xs animate-in fade-in duration-100"
+                    className="w-52 bg-surface border border-line rounded-lg shadow-2xl overflow-hidden py-1 text-xs animate-in fade-in duration-100"
                 >
-                    <div className="px-3 py-1.5 border-b border-slate-800 text-[11px] text-slate-400 font-mono font-semibold">
+                    <div className="px-3 py-1.5 border-b border-slate-800 text-[11px] text-fg-subtle font-mono font-semibold">
                         {activeMenuQuote.quote_number}
                     </div>
                     <button
                         type="button"
                         onClick={() => { setActiveActionMenuId(null); openQuote(activeMenuQuote.id); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
                     >
-                        <Eye className="w-3.5 h-3.5 text-slate-400" />
+                        <Eye className="w-3.5 h-3.5 text-fg-subtle" />
                         View Quote Details
                     </button>
                     {activeMenuQuote.status === 'draft' && (
                         <button
                             type="button"
                             onClick={() => { setActiveActionMenuId(null); navigate(`/crm/quotes/${activeMenuQuote.id}?edit=true`); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white transition-colors text-left"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
                         >
-                            <FileText className="w-3.5 h-3.5 text-slate-400" />
+                            <FileText className="w-3.5 h-3.5 text-fg-subtle" />
                             Edit Quote
                         </button>
                     )}
@@ -1442,7 +1442,7 @@ const QuotesPage = () => {
                             onClick={() => { setActiveActionMenuId(null); handleStatusAction(activeMenuQuote, 'submit'); }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-amber-300 hover:bg-amber-500/10 transition-colors text-left"
                         >
-                            <Send className="w-3.5 h-3.5 text-amber-400" />
+                            <Send className="w-3.5 h-3.5 text-warning" />
                             Submit for Approval
                         </button>
                     )}
@@ -1459,17 +1459,17 @@ const QuotesPage = () => {
                     <button
                         type="button"
                         onClick={() => { setActiveActionMenuId(null); handlePrintQuote(activeMenuQuote); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
                     >
-                        <Printer className="w-3.5 h-3.5 text-slate-400" />
+                        <Printer className="w-3.5 h-3.5 text-fg-subtle" />
                         Print Quote
                     </button>
                     <button
                         type="button"
                         onClick={() => { setActiveActionMenuId(null); openQuote(activeMenuQuote.id); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
                     >
-                        <Send className="w-3.5 h-3.5 text-slate-400" />
+                        <Send className="w-3.5 h-3.5 text-fg-subtle" />
                         Email to Customer
                     </button>
                     {canCreateQuote && activeMenuQuote.status === 'draft' && (
@@ -1478,9 +1478,9 @@ const QuotesPage = () => {
                             <button
                                 type="button"
                                 onClick={() => { setActiveActionMenuId(null); setShowDeleteConfirm(activeMenuQuote.id); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-rose-400 hover:bg-rose-500/10 transition-colors text-left"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-danger hover:bg-rose-500/10 transition-colors text-left"
                             >
-                                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                                <Trash2 className="w-3.5 h-3.5 text-danger" />
                                 Delete Quote
                             </button>
                         </>
@@ -1492,43 +1492,43 @@ const QuotesPage = () => {
             {/* Create Quote Modal */}
             {isCreateModalOpen && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md">
+                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md">
                         <div className="px-6 pt-6 pb-2">
-                            <h2 className="text-xl font-semibold text-slate-100 mb-4">Create New Quote</h2>
+                            <h2 className="text-xl font-semibold text-fg mb-4">Create New Quote</h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    <label className="block text-sm font-medium text-fg-subtle mb-2">
                                         Select Deal *
                                     </label>
                                     <div ref={dealDropdownRef} className="relative">
                                         <button
                                             type="button"
                                             onClick={() => { setDealDropdownOpen(o => !o); setDealSearchTerm(''); }}
-                                            className="w-full flex items-center justify-between px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors hover:border-slate-600"
+                                            className="w-full flex items-center justify-between px-4 py-2 bg-surface-raised border border-line rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-focus transition-colors hover:border-line"
                                         >
                                             {selectedDealId ? (() => {
                                                 const d = deals.find(d => d.id === selectedDealId);
                                                 return d ? (
                                                     <span className="flex flex-col min-w-0">
-                                                        <span className="text-slate-100 text-sm font-medium truncate">{d.name}</span>
-                                                        {d.company_name && <span className="text-slate-400 text-xs truncate">{d.company_name}</span>}
+                                                        <span className="text-fg text-sm font-medium truncate">{d.name}</span>
+                                                        {d.company_name && <span className="text-fg-subtle text-xs truncate">{d.company_name}</span>}
                                                     </span>
-                                                ) : <span className="text-slate-400 text-sm">Select a deal...</span>;
-                                            })() : <span className="text-slate-400 text-sm">Select a deal...</span>}
-                                            <ChevronDown className={`ml-2 h-4 w-4 text-slate-400 shrink-0 transition-transform ${dealDropdownOpen ? 'rotate-180' : ''}`} />
+                                                ) : <span className="text-fg-subtle text-sm">Select a deal...</span>;
+                                            })() : <span className="text-fg-subtle text-sm">Select a deal...</span>}
+                                            <ChevronDown className={`ml-2 h-4 w-4 text-fg-subtle shrink-0 transition-transform ${dealDropdownOpen ? 'rotate-180' : ''}`} />
                                         </button>
                                         {dealDropdownOpen && (
-                                            <div className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
-                                                <div className="p-2 border-b border-slate-700">
+                                            <div className="absolute z-10 mt-1 w-full bg-surface-raised border border-line rounded-lg shadow-xl overflow-hidden">
+                                                <div className="p-2 border-b border-line">
                                                     <div className="relative">
-                                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-fg-muted" />
                                                         <input
                                                             autoFocus
                                                             type="text"
                                                             placeholder="Search deals..."
                                                             value={dealSearchTerm}
                                                             onChange={e => setDealSearchTerm(e.target.value)}
-                                                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-900 border border-slate-700 rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface border border-line rounded text-fg placeholder-fg-subtle focus:outline-none focus:ring-1 focus:ring-focus"
                                                         />
                                                     </div>
                                                 </div>
@@ -1544,10 +1544,10 @@ const QuotesPage = () => {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => { setSelectedDealId(deal.id); setDealDropdownOpen(false); }}
-                                                                    className={`w-full flex flex-col items-start px-4 py-2.5 text-left hover:bg-slate-700 transition-colors ${selectedDealId === deal.id ? 'bg-blue-600/20' : ''}`}
+                                                                    className={`w-full flex flex-col items-start px-4 py-2.5 text-left hover:bg-line transition-colors ${selectedDealId === deal.id ? 'bg-blue-600/20' : ''}`}
                                                                 >
-                                                                    <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-blue-300' : 'text-slate-100'}`}>{deal.name}</span>
-                                                                    {deal.company_name && <span className="text-xs text-slate-400 truncate w-full mt-0.5">{deal.company_name}</span>}
+                                                                    <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-blue-300' : 'text-fg'}`}>{deal.name}</span>
+                                                                    {deal.company_name && <span className="text-xs text-fg-subtle truncate w-full mt-0.5">{deal.company_name}</span>}
                                                                 </button>
                                                             </li>
                                                         ))
@@ -1557,7 +1557,7 @@ const QuotesPage = () => {
                                                         d.name.toLowerCase().includes(dealSearchTerm.toLowerCase()) ||
                                                         (d.company_name || '').toLowerCase().includes(dealSearchTerm.toLowerCase())
                                                     ).length === 0 && (
-                                                        <li className="px-4 py-3 text-sm text-slate-500 text-center">No deals found</li>
+                                                        <li className="px-4 py-3 text-sm text-fg-muted text-center">No deals found</li>
                                                     )}
                                                 </ul>
                                             </div>
@@ -1566,7 +1566,7 @@ const QuotesPage = () => {
                                 </div>
                                 {!quoteAutoNumbering && (
                                     <div>
-                                        <label htmlFor="manual-quote-number" className="block text-sm font-medium text-slate-300 mb-2">
+                                        <label htmlFor="manual-quote-number" className="block text-sm font-medium text-fg-subtle mb-2">
                                             Quote Number (manual) *
                                         </label>
                                         <input
@@ -1576,16 +1576,16 @@ const QuotesPage = () => {
                                             value={manualQuoteNumber}
                                             onChange={e => setManualQuoteNumber(e.target.value)}
                                             placeholder="e.g. QT-501"
-                                            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-4 py-2 bg-surface-raised border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-focus"
                                         />
-                                        <p className="mt-1.5 text-xs text-slate-400">
+                                        <p className="mt-1.5 text-xs text-fg-subtle">
                                             Auto-numbering for quotes is turned off in Settings → Documents → Numbering. Use letters, digits and - / _ . only; the number must be unique.
                                         </p>
                                     </div>
                                 )}
                             </div>
                         </div>
-                        <div className="flex justify-end gap-3 px-6 py-4 bg-slate-800/50 border-t border-slate-700 rounded-b-lg">
+                        <div className="flex justify-end gap-3 px-6 py-4 bg-slate-800/50 border-t border-line rounded-b-lg">
                             <button
                                 onClick={() => {
                                     setIsCreateModalOpen(false);
@@ -1594,14 +1594,14 @@ const QuotesPage = () => {
                                     setDealDropdownOpen(false);
                                     setDealSearchTerm('');
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleCreateQuote}
                                 disabled={!selectedDealId || (!quoteAutoNumbering && !manualQuoteNumber.trim())}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
                             >
                                 Create Quote
                             </button>
@@ -1614,9 +1614,9 @@ const QuotesPage = () => {
             {/* Reject Reason Modal */}
             {rejectTarget && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-lg font-semibold text-slate-100 mb-2">Reject Quote</h2>
-                        <p className="text-xs text-slate-400 mb-3">
+                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
+                        <h2 className="text-lg font-semibold text-fg mb-2">Reject Quote</h2>
+                        <p className="text-xs text-fg-subtle mb-3">
                             Please provide a reason for rejecting this quote. Rejection reasons are mandatory.
                         </p>
                         <textarea
@@ -1624,12 +1624,12 @@ const QuotesPage = () => {
                             onChange={(e) => setRejectReason(e.target.value)}
                             placeholder="Reason for rejection (mandatory) *"
                             rows={3}
-                            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none mb-4"
+                            className="w-full px-3 py-2 bg-surface-raised border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-danger resize-none mb-4"
                         />
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => { setRejectTarget(null); setRejectReason(''); }}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
                             >
                                 Cancel
                             </button>
@@ -1653,7 +1653,7 @@ const QuotesPage = () => {
                                     }
                                 }}
                                 disabled={!rejectReason.trim()}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
                             >
                                 Confirm Reject
                             </button>
@@ -1666,11 +1666,11 @@ const QuotesPage = () => {
             {/* Delete Confirm Dialog */}
             {showDeleteConfirm && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Quote?</h2>
-                        <p className="text-slate-400 mb-6">
+                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
+                        <h2 className="text-xl font-semibold text-fg mb-2">Delete Quote?</h2>
+                        <p className="text-fg-subtle mb-6">
                             Are you sure you want to delete{' '}
-                            <span className="text-slate-200 font-medium">
+                            <span className="text-fg font-medium">
                                 {(() => {
                                     const target = quotes.find(q => q.id === showDeleteConfirm);
                                     return target ? `${target.quote_number}${target.title ? ` – ${target.title}` : ''}` : 'this quote';
@@ -1682,14 +1682,14 @@ const QuotesPage = () => {
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => handleDeleteQuote(showDeleteConfirm)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-60"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover text-white rounded-lg transition-colors disabled:opacity-60"
                             >
                                 {isDeleting ? 'Deleting…' : 'Delete Quote'}
                             </button>

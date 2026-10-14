@@ -240,21 +240,21 @@ const MarketingSegmentsPage: React.FC = () => {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-100 mb-2">Customer Segments</h1>
-        <p className="text-slate-400">Create CRM segments for leads/customers. Storefront segments are read-only.</p>
+        <h1 className="text-3xl font-bold text-fg mb-2">Customer Segments</h1>
+        <p className="text-fg-subtle">Create CRM segments for leads/customers. Storefront segments are read-only.</p>
       </div>
 
       <div className="mb-6">
         {dailystoreEnabled && <MarketingStorePicker storeId={storeId} onChange={applyStore} />}
       </div>
-      {loading && <p className="text-slate-400 text-sm mb-4">Loading Storefront insights...</p>}
-      {manualLoading && <p className="text-slate-400 text-sm mb-4">Loading CRM segments...</p>}
-      {error && <p className="text-rose-400 mb-4 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-sm">{error}</p>}
+      {loading && <p className="text-fg-subtle text-sm mb-4">Loading Storefront insights...</p>}
+      {manualLoading && <p className="text-fg-subtle text-sm mb-4">Loading CRM segments...</p>}
+      {error && <p className="text-danger mb-4 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-sm">{error}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 lg:col-span-3">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-slate-100 font-bold text-lg">Segments</h3>
+            <h3 className="text-fg font-bold text-lg">Segments</h3>
             {canCreateMarketing && <Button
               variant="primary"
               onClick={() => setShowCreate((v) => !v)}
@@ -267,25 +267,25 @@ const MarketingSegmentsPage: React.FC = () => {
             <div className="mb-6 border border-slate-700/50 rounded-xl p-5 bg-slate-900/80">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-surface border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
                   placeholder="Segment name"
                   value={segmentForm.name}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, name: e.target.value }))}
                 />
                 <input
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-surface border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
                   placeholder="Description (optional)"
                   value={segmentForm.description}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, description: e.target.value }))}
                 />
                 <input
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 md:col-span-2"
+                  className="bg-surface border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus md:col-span-2"
                   placeholder="Search query (name/email/phone/company)"
                   value={segmentForm.q}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, q: e.target.value }))}
                 />
                 <select
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer w-full"
+                  className="bg-surface border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full"
                   value={segmentForm.channel}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, channel: e.target.value }))}
                 >
@@ -296,7 +296,7 @@ const MarketingSegmentsPage: React.FC = () => {
                   <option value="manual">Manual</option>
                 </select>
                 <select
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer w-full"
+                  className="bg-surface border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full"
                   value={segmentForm.category}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, category: e.target.value }))}
                 >
@@ -305,7 +305,7 @@ const MarketingSegmentsPage: React.FC = () => {
                   <option value="b2c">B2C</option>
                 </select>
                 <select
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer w-full md:col-span-2"
+                  className="bg-surface border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full md:col-span-2"
                   value={segmentForm.preset}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, preset: e.target.value }))}
                   disabled={!dailystoreEnabled}
@@ -327,10 +327,10 @@ const MarketingSegmentsPage: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden mt-2">
+          <div className="bg-surface rounded-xl border border-slate-800 overflow-hidden mt-2">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-800 text-slate-400 font-medium">
+                <thead className="bg-surface-raised text-fg-subtle font-medium">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Name</th>
                     <th className="px-4 py-3 font-semibold">Description</th>
@@ -341,10 +341,10 @@ const MarketingSegmentsPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-800/50 border-t border-slate-800/50">
                   {manualSegments.map((row) => (
                     <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="px-4 py-3 text-slate-200 font-medium">{row.name}</td>
-                      <td className="px-4 py-3 text-slate-400">{row.description || '-'}</td>
+                      <td className="px-4 py-3 text-fg font-medium">{row.name}</td>
+                      <td className="px-4 py-3 text-fg-subtle">{row.description || '-'}</td>
                       <td className="px-4 py-3">
-                        <span className="text-slate-400 text-xs font-mono bg-slate-900 border border-slate-800 rounded px-2.5 py-1 whitespace-nowrap">
+                        <span className="text-fg-subtle text-xs font-mono bg-surface border border-slate-800 rounded px-2.5 py-1 whitespace-nowrap">
                           {getRulesPreview(row.rules)}
                         </span>
                       </td>
@@ -391,7 +391,7 @@ const MarketingSegmentsPage: React.FC = () => {
                     </tr>
                   ))}
                   {manualSegments.length === 0 && (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-500 text-sm">No segments yet.</td></tr>
+                    <tr><td colSpan={4} className="px-4 py-8 text-center text-fg-muted text-sm">No segments yet.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -402,8 +402,8 @@ const MarketingSegmentsPage: React.FC = () => {
         {activeSegment && (
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 lg:col-span-3">
             <div className="flex items-center justify-between mb-5 gap-2 flex-wrap pb-4 border-b border-slate-800/50">
-              <h3 className="text-slate-100 font-bold text-lg">
-                Manage Members: <span className="text-slate-300 font-normal">{activeSegment.name}</span>
+              <h3 className="text-fg font-bold text-lg">
+                Manage Members: <span className="text-fg-subtle font-normal">{activeSegment.name}</span>
               </h3>
               <Button
                 variant="secondary"
@@ -418,15 +418,15 @@ const MarketingSegmentsPage: React.FC = () => {
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900 border border-slate-800 p-2 rounded-xl">
+            <div className="flex flex-wrap items-center gap-3 mb-6 bg-surface border border-slate-800 p-2 rounded-xl">
               <button
-                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'customer' ? 'bg-blue-600 text-slate-50' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'customer' ? 'bg-primary text-fg' : 'hover:bg-surface-raised text-fg-subtle hover:text-fg'}`}
                 onClick={() => setMemberType('customer')}
               >
                 Customers
               </button>
               <button
-                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'lead' ? 'bg-blue-600 text-slate-50' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                className={`text-sm px-4 py-2.5 rounded-lg font-medium transition-all ${memberType === 'lead' ? 'bg-primary text-fg' : 'hover:bg-surface-raised text-fg-subtle hover:text-fg'}`}
                 onClick={() => setMemberType('lead')}
               >
                 Leads
@@ -435,23 +435,23 @@ const MarketingSegmentsPage: React.FC = () => {
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
                 placeholder={`Search ${memberType}s...`}
-                className="ml-auto bg-slate-800 border border-slate-700/50 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow w-full md:w-72"
+                className="ml-auto bg-surface-raised border border-slate-700/50 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus transition-shadow w-full md:w-72"
               />
             </div>
 
             {membersLoading && <div className="flex items-center justify-center p-4"><div className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div></div>}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl">
-                <h4 className="text-slate-100 font-bold mb-4">Current Members</h4>
+              <div className="bg-surface p-5 border border-slate-800 rounded-xl">
+                <h4 className="text-fg font-bold mb-4">Current Members</h4>
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                   {segmentMembers.map((member: any) => {
                     const row = member.lead_record;
                     return (
                       <div key={`${member.type}-${row?.id || member.id}`} className="flex items-center justify-between border-b border-slate-800/50 pb-2 mb-2">
                         <div className="overflow-hidden">
-                          <p className="text-slate-200 text-sm font-medium truncate">{row?.contact_name || row?.company_name || row?.email || row?.id}</p>
-                          <p className="text-slate-500 text-xs truncate mt-0.5">{row?.email || row?.phone || '-'}</p>
+                          <p className="text-fg text-sm font-medium truncate">{row?.contact_name || row?.company_name || row?.email || row?.id}</p>
+                          <p className="text-fg-muted text-xs truncate mt-0.5">{row?.email || row?.phone || '-'}</p>
                         </div>
                         <Button
                           variant="danger"
@@ -464,12 +464,12 @@ const MarketingSegmentsPage: React.FC = () => {
                       </div>
                     );
                   })}
-                  {segmentMembers.length === 0 && <p className="text-slate-500 text-sm py-4 text-center">No current members found.</p>}
+                  {segmentMembers.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No current members found.</p>}
                 </div>
               </div>
 
-              <div className="bg-slate-900 p-5 border border-slate-800 rounded-xl">
-                <h4 className="text-slate-100 font-bold mb-4">Add {memberType === 'customer' ? 'Customers' : 'Leads'}</h4>
+              <div className="bg-surface p-5 border border-slate-800 rounded-xl">
+                <h4 className="text-fg font-bold mb-4">Add {memberType === 'customer' ? 'Customers' : 'Leads'}</h4>
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                   {memberCandidates.map((candidate: any) => {
                     const id = candidate.id;
@@ -477,8 +477,8 @@ const MarketingSegmentsPage: React.FC = () => {
                     return (
                       <div key={id} className="flex items-center justify-between border-b border-slate-800/50 pb-2 mb-2">
                         <div className="overflow-hidden">
-                          <p className="text-slate-200 text-sm font-medium truncate">{candidate.contact_name || candidate.company_name || candidate.email || id}</p>
-                          <p className="text-slate-500 text-xs truncate mt-0.5">{candidate.email || candidate.phone || '-'}</p>
+                          <p className="text-fg text-sm font-medium truncate">{candidate.contact_name || candidate.company_name || candidate.email || id}</p>
+                          <p className="text-fg-muted text-xs truncate mt-0.5">{candidate.email || candidate.phone || '-'}</p>
                         </div>
                         <Button
                           variant={exists ? "secondary" : "primary"}
@@ -492,7 +492,7 @@ const MarketingSegmentsPage: React.FC = () => {
                       </div>
                     );
                   })}
-                  {memberCandidates.length === 0 && <p className="text-slate-500 text-sm py-4 text-center">No records available to add.</p>}
+                  {memberCandidates.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No records available to add.</p>}
                 </div>
               </div>
             </div>
@@ -502,7 +502,7 @@ const MarketingSegmentsPage: React.FC = () => {
         {dailystoreEnabled && (
           <>
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 h-fit">
-              <h3 className="text-slate-100 font-bold mb-4">Storefront Summary</h3>
+              <h3 className="text-fg font-bold mb-4">Storefront Summary</h3>
               <div className="space-y-2">
                 {mappedSummarySegments.map((entry) => (
                   <button
@@ -512,23 +512,23 @@ const MarketingSegmentsPage: React.FC = () => {
                       category: (entry.rule as any).category,
                     })}
                     disabled={!entry.rule}
-                    className={`w-full flex justify-between items-center bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-lg p-3 text-left transition-colors ${entry.rule ? 'group' : 'opacity-60 cursor-not-allowed'}`}
+                    className={`w-full flex justify-between items-center bg-surface border border-slate-800 hover:bg-surface-raised rounded-lg p-3 text-left transition-colors ${entry.rule ? 'group' : 'opacity-60 cursor-not-allowed'}`}
                     title={entry.rule ? 'Open matching customers' : 'No filter mapping for this segment'}
                   >
-                    <span className="text-slate-300 font-medium capitalize">{entry.label}</span>
-                    <span className="text-slate-200 font-bold bg-slate-800 px-2 py-0.5 rounded border border-slate-700">{String(entry.value)}</span>
+                    <span className="text-fg-subtle font-medium capitalize">{entry.label}</span>
+                    <span className="text-fg font-bold bg-surface-raised px-2 py-0.5 rounded border border-line">{String(entry.value)}</span>
                   </button>
                 ))}
-                {mappedSummarySegments.length === 0 && <p className="text-slate-500 text-sm py-4 text-center">No segment data.</p>}
+                {mappedSummarySegments.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No segment data.</p>}
               </div>
             </div>
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 lg:col-span-2">
-              <h3 className="text-slate-100 font-bold mb-4">Top Buyers</h3>
-              <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+              <h3 className="text-fg font-bold mb-4">Top Buyers</h3>
+              <div className="bg-surface rounded-xl border border-slate-800 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-800 text-slate-400 font-medium">
+                    <thead className="bg-surface-raised text-fg-subtle font-medium">
                       <tr>
                         <th className="px-4 py-3 font-semibold">Customer</th>
                         <th className="px-4 py-3 font-semibold">Orders</th>
@@ -548,14 +548,14 @@ const MarketingSegmentsPage: React.FC = () => {
                           })}
                           title="Open in Customers"
                         >
-                          <td className="px-4 py-4 text-slate-200 font-medium">{row.name || row.email || row.customerId || '-'}</td>
-                          <td className="px-4 py-4 text-slate-300">{row.orderCount || 0}</td>
-                          <td className="px-4 py-4 text-emerald-400 font-semibold">{formatMoney(row.totalSpent, currencyCode, locale)}</td>
-                          <td className="px-4 py-4 text-slate-500 text-xs font-medium">{formatDateTime(row.lastOrderAt)}</td>
+                          <td className="px-4 py-4 text-fg font-medium">{row.name || row.email || row.customerId || '-'}</td>
+                          <td className="px-4 py-4 text-fg-subtle">{row.orderCount || 0}</td>
+                          <td className="px-4 py-4 text-success font-semibold">{formatMoney(row.totalSpent, currencyCode, locale)}</td>
+                          <td className="px-4 py-4 text-fg-muted text-xs font-medium">{formatDateTime(row.lastOrderAt)}</td>
                         </tr>
                       ))}
                       {topBuyers.length === 0 && (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-500 text-sm">No buyer data.</td></tr>
+                        <tr><td colSpan={4} className="px-4 py-8 text-center text-fg-muted text-sm">No buyer data.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -564,11 +564,11 @@ const MarketingSegmentsPage: React.FC = () => {
             </div>
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 lg:col-span-3">
-              <h3 className="text-slate-100 font-bold mb-4">Inactive Customers</h3>
-              <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+              <h3 className="text-fg font-bold mb-4">Inactive Customers</h3>
+              <div className="bg-surface rounded-xl border border-slate-800 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-800 text-slate-400 font-medium">
+                    <thead className="bg-surface-raised text-fg-subtle font-medium">
                       <tr>
                         <th className="px-4 py-3 font-semibold">Customer</th>
                         <th className="px-4 py-3 font-semibold">Email</th>
@@ -588,16 +588,16 @@ const MarketingSegmentsPage: React.FC = () => {
                           })}
                           title="Open in Customers"
                         >
-                          <td className="px-4 py-4 text-slate-200 font-medium">{row.name || row.customerId || '-'}</td>
-                          <td className="px-4 py-4 text-slate-300">{row.email || '-'}</td>
-                          <td className="px-4 py-4 text-slate-300 font-medium">{formatMoney(row.totalSpent, currencyCode, locale)}</td>
+                          <td className="px-4 py-4 text-fg font-medium">{row.name || row.customerId || '-'}</td>
+                          <td className="px-4 py-4 text-fg-subtle">{row.email || '-'}</td>
+                          <td className="px-4 py-4 text-fg-subtle font-medium">{formatMoney(row.totalSpent, currencyCode, locale)}</td>
                           <td className="px-4 py-4">
-                            <span className="text-slate-400 text-xs font-semibold">{row.daysSinceLastOrder || 0} days</span>
+                            <span className="text-fg-subtle text-xs font-semibold">{row.daysSinceLastOrder || 0} days</span>
                           </td>
                         </tr>
                       ))}
                       {inactive.length === 0 && (
-                        <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-500 text-sm">No inactive customers identified.</td></tr>
+                        <tr><td colSpan={4} className="px-4 py-8 text-center text-fg-muted text-sm">No inactive customers identified.</td></tr>
                       )}
                     </tbody>
                   </table>

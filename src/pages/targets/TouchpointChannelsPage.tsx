@@ -125,11 +125,11 @@ export default function TouchpointChannelsPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-100">
+        <h1 className="text-lg font-semibold text-fg">
           Touchpoint Channels
         </h1>
         <button
-          className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+          className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
           onClick={importSources}
           disabled={busy}
         >
@@ -143,31 +143,31 @@ export default function TouchpointChannelsPage() {
       <Panel title="Add a channel">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
+            <label className="block text-[11px] text-fg-subtle mb-1">
               Label
             </label>
             <input
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Site Visit"
             />
           </div>
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">Key</label>
+            <label className="block text-[11px] text-fg-subtle mb-1">Key</label>
             <input
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder="site_visit"
             />
           </div>
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
+            <label className="block text-[11px] text-fg-subtle mb-1">
               Actuals
             </label>
             <select
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
               value={actualsSource}
               onChange={(e) => setActualsSource(e.target.value as any)}
             >
@@ -176,7 +176,7 @@ export default function TouchpointChannelsPage() {
             </select>
           </div>
           <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
             onClick={addChannel}
             disabled={busy || !label.trim() || !value.trim()}
           >
@@ -192,7 +192,7 @@ export default function TouchpointChannelsPage() {
       </Panel>
 
       {loading ? (
-        <div className="text-sm text-slate-400">Loading channels…</div>
+        <div className="text-sm text-fg-subtle">Loading channels…</div>
       ) : !channels.length ? (
         <EmptyState message="No channels configured. Import from lead sources or add one above." />
       ) : (
@@ -200,7 +200,7 @@ export default function TouchpointChannelsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
                   <th className="py-2 pr-4 font-medium">Channel</th>
                   <th className="py-2 pr-4 font-medium">Source</th>
                   <th className="py-2 pr-4 font-medium">Bound to</th>
@@ -212,21 +212,21 @@ export default function TouchpointChannelsPage() {
               <tbody>
                 {channels.map((c) => (
                   <tr key={c.id} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">
+                    <td className="py-2 pr-4 text-fg">
                       {c.label}
                       {c.linked_source_value && (
                         <span
-                          className="ml-2 text-[11px] text-slate-500"
+                          className="ml-2 text-[11px] text-fg-muted"
                           title="Linked to an existing CRM lead source"
                         >
                           ↔ lead source
                         </span>
                       )}
                     </td>
-                    <td className="py-2 pr-4 text-slate-400">
+                    <td className="py-2 pr-4 text-fg-subtle">
                       {c.actuals_source === 'auto' ? 'Auto' : 'Manual'}
                     </td>
-                    <td className="py-2 pr-4 text-slate-500 text-xs">
+                    <td className="py-2 pr-4 text-fg-muted text-xs">
                       {c.emitter_binding
                         ? `${c.emitter_binding.module} · ${c.emitter_binding.platform ?? c.emitter_binding.entity}`
                         : '—'}
@@ -271,7 +271,7 @@ export default function TouchpointChannelsPage() {
             </table>
           </div>
 
-          <div className="mt-3 space-y-1 text-[11px] text-slate-500">
+          <div className="mt-3 space-y-1 text-[11px] text-fg-muted">
             <div>
               ↔ linked to an existing CRM lead source — configured once,
               reconcilable in reporting

@@ -384,7 +384,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       const overdueBadge = screen.getByTestId('overdue-badge-task-1');
       expect(overdueBadge).toHaveTextContent('Overdue');
-      expect(overdueBadge).toHaveClass('bg-rose-500/10', 'text-rose-400', 'border-rose-500/30');
+      expect(overdueBadge).toHaveClass('bg-rose-500/10', 'text-danger', 'border-rose-500/30');
     });
 
     it('When task status is DONE / Then does not show Overdue badge (even if due_date passed)', async () => {
@@ -431,7 +431,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       // Due date should be in red for overdue tasks
       const dueDateText = screen.getByText(/^Due/);
-      expect(dueDateText).toHaveClass('text-rose-400');
+      expect(dueDateText).toHaveClass('text-danger');
     });
 
     it('When task due_date is today / Then does not show Overdue badge', async () => {
@@ -519,7 +519,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       // Edit button should exist (it's conditionally visible on hover via CSS)
       const allButtons = screen.getAllByRole('button');
-      const editButtons = allButtons.filter(btn => btn.className.includes('hover:text-blue-400') && btn.className.includes('hover:bg-slate-700'));
+      const editButtons = allButtons.filter(btn => btn.className.includes('hover:text-blue-400') && btn.className.includes('hover:bg-line'));
       expect(editButtons.length).toBeGreaterThan(0);
     });
   });
@@ -742,14 +742,13 @@ describe('Lead Detail — readability and header layout', () => {
   };
 
   /** Lowest slate step still legible on the light theme's white card. */
-  const READABLE = /text-slate-(50|100|200|300)\b/;
+  const READABLE = /text-fg(-muted|-subtle)?(\s|$)/;
 
   describe('Given a task card with description, due date and assignee', () => {
     it('When the description renders / Then it uses a readable secondary tone, not the old slate-400', async () => {
       await openTasks();
       const description = screen.getByText('Call them about the proposal');
       expect(description.className).toMatch(READABLE);
-      expect(description.className).not.toMatch(/text-slate-[456]00\b/);
     });
 
     it('When the due date renders on a task that is not overdue / Then it is legible rather than a faded rose tint', async () => {
@@ -776,7 +775,7 @@ describe('Lead Detail — readability and header layout', () => {
       const title = screen.getByText('Follow up with client');
       // Raising the metadata must not flatten the hierarchy the report asked to keep.
       expect(title.className).toMatch(/font-bold/);
-      expect(title.className).toMatch(/text-slate-50\b/);
+      expect(title.className).toMatch(/text-fg\b/);
     });
   });
 

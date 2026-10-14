@@ -75,7 +75,7 @@ export default function MyTargetsPage() {
   const header = (
     <div className="space-y-2">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-100">My Targets</h1>
+        <h1 className="text-lg font-semibold text-fg">My Targets</h1>
         <PeriodPicker value={asOf} onChange={setAsOf} />
       </div>
       <AsOfBanner asOf={asOf} />
@@ -86,7 +86,7 @@ export default function MyTargetsPage() {
     return (
       <div className="p-6 space-y-4">
         {header}
-        <div className="text-sm text-slate-400">Loading targets…</div>
+        <div className="text-sm text-fg-subtle">Loading targets…</div>
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function MyTargetsPage() {
     <div className="p-6 space-y-5">
       <div>
         {header}
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
           <span>{plan?.name}</span>
           {anyMetric && (
             <span>
@@ -141,7 +141,7 @@ export default function MyTargetsPage() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-500">
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-fg-muted">
         <span>● On Track</span>
         <span>◐ At Risk</span>
         <span>○ Behind</span>
@@ -163,15 +163,15 @@ function MetricCard({
 }) {
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 grow basis-80 max-w-md">
-      <div className="text-xs uppercase tracking-wide text-slate-400">
+      <div className="text-xs uppercase tracking-wide text-fg-subtle">
         {metric.metric_name}
       </div>
 
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold text-slate-100">
+        <span className="text-2xl font-semibold text-fg">
           {formatValue(metric.actual, metric.unit, currency)}
         </span>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-fg-muted">
           of {formatValue(metric.target, metric.unit, currency)}
         </span>
       </div>
@@ -184,14 +184,14 @@ function MetricCard({
 
       <div className="mt-2 flex items-center justify-between">
         <StatusChip status={metric.status} label={metric.status_label} />
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-fg-subtle">
           {metric.remaining > 0
             ? `${formatValue(metric.remaining, metric.unit, currency)} to go`
             : 'target met'}
         </span>
       </div>
 
-      <div className="mt-1 text-[11px] text-slate-500">
+      <div className="mt-1 text-[11px] text-fg-muted">
         {formatPct(metric.attainment)} achieved
         {metric.projection.projectable &&
           metric.projection.projectedAttainment !== null && (
@@ -205,8 +205,8 @@ function MetricCard({
           {slices.map((s) => (
             <div key={s.target_line_id}>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">{s.dimension_value}</span>
-                <span className="text-slate-400">
+                <span className="text-fg-subtle">{s.dimension_value}</span>
+                <span className="text-fg-subtle">
                   {s.target > 0
                     ? `${formatValue(s.actual)} / ${formatValue(s.target)}`
                     : `${formatValue(s.actual)} · tracked`}

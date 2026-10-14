@@ -30,26 +30,26 @@ interface Props {
 const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, onMove, onReset, onClose, labels = SECTION_LABELS, title = 'Layout Settings' }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div role="dialog" aria-label={title} className="bg-slate-950 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div role="dialog" aria-label={title} className="bg-bg border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-                    <p className="text-xs font-black text-slate-50 uppercase tracking-widest">{title}</p>
-                    <button onClick={onClose} aria-label="Close" className="p-1.5 text-slate-500 hover:text-slate-200 rounded-lg hover:bg-slate-800"><X size={16} /></button>
+                    <p className="text-xs font-black text-fg uppercase tracking-widest">{title}</p>
+                    <button onClick={onClose} aria-label="Close" className="p-1.5 text-fg-muted hover:text-fg rounded-lg hover:bg-surface-raised"><X size={16} /></button>
                 </div>
                 <div className="p-3 space-y-1 max-h-96 overflow-y-auto">
                     {sections.map((s, i) => (
-                        <div key={s.key} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-900">
+                        <div key={s.key} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-surface">
                             <div className="flex flex-col">
-                                <button onClick={() => onMove(s.key, 'up')} aria-label={`Move ${labels[s.key] || s.key} up`} disabled={i === 0} className="text-slate-500 hover:text-slate-200 disabled:opacity-20">
+                                <button onClick={() => onMove(s.key, 'up')} aria-label={`Move ${labels[s.key] || s.key} up`} disabled={i === 0} className="text-fg-muted hover:text-fg disabled:opacity-20">
                                     <ChevronUp size={12} />
                                 </button>
-                                <button onClick={() => onMove(s.key, 'down')} aria-label={`Move ${labels[s.key] || s.key} down`} disabled={i === sections.length - 1} className="text-slate-500 hover:text-slate-200 disabled:opacity-20">
+                                <button onClick={() => onMove(s.key, 'down')} aria-label={`Move ${labels[s.key] || s.key} down`} disabled={i === sections.length - 1} className="text-fg-muted hover:text-fg disabled:opacity-20">
                                     <ChevronDown size={12} />
                                 </button>
                             </div>
-                            <span className={`flex-1 text-xs ${s.visible ? 'text-slate-200' : 'text-slate-600'}`}>
+                            <span className={`flex-1 text-xs ${s.visible ? 'text-fg' : 'text-fg-muted'}`}>
                                 {labels[s.key] || s.key}
                             </span>
-                            <button onClick={() => onToggleVisible(s.key)} aria-label={`${s.visible ? 'Hide' : 'Show'} ${labels[s.key] || s.key}`} aria-pressed={s.visible} className={s.visible ? 'text-blue-400' : 'text-slate-600'}>
+                            <button onClick={() => onToggleVisible(s.key)} aria-label={`${s.visible ? 'Hide' : 'Show'} ${labels[s.key] || s.key}`} aria-pressed={s.visible} className={s.visible ? 'text-blue-400' : 'text-fg-muted'}>
                                 <Eye size={14} />
                             </button>
                         </div>
@@ -58,7 +58,7 @@ const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, o
                 <div className="px-5 py-4 border-t border-slate-800">
                     <button
                         onClick={onReset}
-                        className="w-full flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200 py-2"
+                        className="w-full flex items-center justify-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg py-2"
                     >
                         <RefreshCw size={12} /> Reset to Default
                     </button>

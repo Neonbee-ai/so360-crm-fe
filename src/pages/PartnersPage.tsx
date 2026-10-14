@@ -28,9 +28,9 @@ type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | '
 type SortDirection = 'asc' | 'desc' | null;
 
 const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
-    low:  { label: 'Low',  color: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
+    low:  { label: 'Low',  color: 'bg-slate-500/10 text-fg-subtle border-slate-500/20' },
     mid:  { label: 'Mid',  color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-    high: { label: 'High', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    high: { label: 'High', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
 };
 
 const AREA_OPTIONS = ['South India', 'North India', 'Central India', 'East India', 'West India'];
@@ -144,24 +144,24 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         }
     };
 
-    const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50';
-    const labelCls = 'text-xs text-slate-400 mb-1 block';
+    const inputCls = 'w-full bg-bg border border-slate-800 rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+    const labelCls = 'text-xs text-fg-subtle mb-1 block';
 
     return createPortal(
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="bg-surface border border-line rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
                 {/* Sticky header — never scrolls */}
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-800 shrink-0">
-                    <h2 className="text-lg font-semibold text-slate-50">Add Partner</h2>
-                    <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-50 transition-colors">
+                    <h2 className="text-lg font-semibold text-fg">Add Partner</h2>
+                    <button type="button" onClick={onClose} className="text-fg-muted hover:text-fg transition-colors">
                         <X size={18} />
                     </button>
                 </div>
 
                 {/* Scrollable form body */}
                 <form id="create-partner-form" onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-6 py-4">
-                    {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
+                    {error && <p className="text-danger text-sm mb-3">{error}</p>}
                     <div className="space-y-4">
 
                         {/* First Name + Last Name */}
@@ -173,7 +173,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                     onBlur={e => setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) }))}
                                     aria-invalid={!!fieldErrors.first_name}
                                     className={inputCls} placeholder="Dhanooj" />
-                                {fieldErrors.first_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.first_name}</p>}
+                                {fieldErrors.first_name && <p className="text-danger text-xs mt-1">{fieldErrors.first_name}</p>}
                             </div>
                             <div>
                                 <label className={labelCls}>Last Name *</label>
@@ -182,7 +182,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                     onBlur={e => setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) }))}
                                     aria-invalid={!!fieldErrors.last_name}
                                     className={inputCls} placeholder="B S" />
-                                {fieldErrors.last_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.last_name}</p>}
+                                {fieldErrors.last_name && <p className="text-danger text-xs mt-1">{fieldErrors.last_name}</p>}
                             </div>
                         </div>
 
@@ -194,7 +194,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 onBlur={e => setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) }))}
                                 aria-invalid={!!fieldErrors.company_name}
                                 className={inputCls} placeholder="Moonhive Pvt Ltd" />
-                            {fieldErrors.company_name && <p className="text-rose-400 text-xs mt-1">{fieldErrors.company_name}</p>}
+                            {fieldErrors.company_name && <p className="text-danger text-xs mt-1">{fieldErrors.company_name}</p>}
                         </div>
 
                         {/* Partner Type */}
@@ -251,7 +251,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                             className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                                                 selected
                                                     ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                                                    : 'bg-surface-raised text-fg-subtle border-line hover:border-line'
                                             }`}
                                         >
                                             {area}
@@ -274,7 +274,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 <input type="tel" value={form.phone} maxLength={20}
                                     onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
                                     className={`${inputCls}${phoneError ? ' border-rose-500/60 focus:ring-rose-500/50' : ''}`} placeholder="+91 98765 43210" />
-                                {phoneError && <p className="text-rose-400 text-xs mt-1">{phoneError}</p>}
+                                {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
                             </div>
                         </div>
 
@@ -284,7 +284,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             <input type="tel" value={form.alt_phone} maxLength={20}
                                 onChange={e => { setForm(f => ({ ...f, alt_phone: e.target.value })); setAltPhoneError(validatePhone(e.target.value)); }}
                                 className={`${inputCls}${altPhoneError ? ' border-rose-500/60 focus:ring-rose-500/50' : ''}`} placeholder="+91 98765 43211" />
-                            {altPhoneError && <p className="text-rose-400 text-xs mt-1">{altPhoneError}</p>}
+                            {altPhoneError && <p className="text-danger text-xs mt-1">{altPhoneError}</p>}
                         </div>
 
                         {/* Address */}
@@ -295,7 +295,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 onBlur={e => setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) }))}
                                 aria-invalid={!!fieldErrors.address}
                                 className={inputCls} placeholder="Street / area" />
-                            {fieldErrors.address && <p className="text-rose-400 text-xs mt-1">{fieldErrors.address}</p>}
+                            {fieldErrors.address && <p className="text-danger text-xs mt-1">{fieldErrors.address}</p>}
                         </div>
 
                         {/* Country */}
@@ -319,18 +319,18 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                     onBlur={e => setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) }))}
                                     aria-invalid={!!fieldErrors.city}
                                     className={inputCls} placeholder="Bangalore" />
-                                {fieldErrors.city && <p className="text-rose-400 text-xs mt-1">{fieldErrors.city}</p>}
+                                {fieldErrors.city && <p className="text-danger text-xs mt-1">{fieldErrors.city}</p>}
                             </div>
                             <div>
                                 <label className={labelCls}>
                                     {postalRule.label}
                                     {postalRule.digits && (
-                                        <span className="ml-2 text-xs font-normal text-slate-500 normal-case">
+                                        <span className="ml-2 text-xs font-normal text-fg-muted normal-case">
                                             {form.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
                                         </span>
                                     )}
                                     {!postalRule.pattern && (
-                                        <span className="ml-2 text-xs font-normal text-slate-500 normal-case">not used in {postalRule.name}</span>
+                                        <span className="ml-2 text-xs font-normal text-fg-muted normal-case">not used in {postalRule.name}</span>
                                     )}
                                 </label>
                                 <input type="text" inputMode={postalRule.numericOnly ? 'numeric' : 'text'} maxLength={postalRule.maxLength} value={form.pin_code}
@@ -338,7 +338,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                     onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(e.target.value, form.country) }))}
                                     aria-invalid={!!fieldErrors.pin_code}
                                     className={inputCls} placeholder={postalRule.example} />
-                                {fieldErrors.pin_code && <p className="text-rose-400 text-xs mt-1">{fieldErrors.pin_code}</p>}
+                                {fieldErrors.pin_code && <p className="text-danger text-xs mt-1">{fieldErrors.pin_code}</p>}
                             </div>
                         </div>
 
@@ -398,7 +398,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         {/* Custom Fields */}
                         {customFieldDefs.length > 0 && (
                             <div className="pt-4 border-t border-slate-800 space-y-4">
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Additional Details</p>
+                                <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Additional Details</p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {customFieldDefs.map(field => (
                                         <div key={field.id} className="space-y-1">
@@ -432,11 +432,11 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
                 {/* Sticky footer — never scrolls */}
                 <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-800 shrink-0">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-50 transition-colors">
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-fg-subtle hover:text-fg transition-colors">
                         Cancel
                     </button>
                     <button type="submit" form="create-partner-form" disabled={saving}
-                        className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50 transition-colors">
+                        className="px-4 py-2 text-sm bg-primary hover:bg-primary text-white rounded-lg font-medium disabled:opacity-50 transition-colors">
                         {saving ? 'Creating...' : 'Create Partner'}
                     </button>
                 </div>
@@ -502,16 +502,16 @@ const PartnersPage = () => {
     };
 
     const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-600" />;
+        if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
         if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
         if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
-        return <ChevronsUpDown size={14} className="text-slate-600" />;
+        return <ChevronsUpDown size={14} className="text-fg-muted" />;
     };
 
     const SortableHeader = ({ label, field, align }: { label: string; field: SortField; align?: 'left' | 'right' }) => (
         <button
             onClick={() => toggleSort(field)}
-            className={`flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer ${align === 'right' ? 'ml-auto' : ''}`}
+            className={`flex items-center gap-1 hover:text-fg transition-colors cursor-pointer ${align === 'right' ? 'ml-auto' : ''}`}
         >
             {label}
             <SortIcon field={field} />
@@ -553,7 +553,7 @@ const PartnersPage = () => {
     }, [filteredPartners, currentPage, pageSize]);
 
     const GradingBadge = ({ grading }: { grading?: string }) => {
-        if (!grading) return <span className="text-slate-600 text-sm">-</span>;
+        if (!grading) return <span className="text-fg-muted text-sm">-</span>;
         const config = GRADING_CONFIG[grading] || GRADING_CONFIG.low;
         return (
             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
@@ -572,8 +572,8 @@ const PartnersPage = () => {
             header: <SortableHeader label="Name" field="contact_name" />,
             accessor: (p: any) => (
                 <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-slate-50">{p.contact_name}</span>
-                    {p.email && <span className="text-xs text-slate-500">{p.email}</span>}
+                    <span className="font-semibold text-fg">{p.contact_name}</span>
+                    {p.email && <span className="text-xs text-fg-muted">{p.email}</span>}
                 </div>
             ),
         },
@@ -592,14 +592,14 @@ const PartnersPage = () => {
         {
             header: <SortableHeader label="Deals" field="total_deals" align="right" />,
             accessor: (p: any) => (
-                <span className="text-slate-300 text-sm font-medium">{p.total_deals || 0}</span>
+                <span className="text-fg-subtle text-sm font-medium">{p.total_deals || 0}</span>
             ),
             className: 'text-right',
         },
         {
             header: <SortableHeader label="Deal Value" field="total_deal_value" align="right" />,
             accessor: (p: any) => (
-                <span className="text-slate-300 text-sm font-mono">
+                <span className="text-fg-subtle text-sm font-mono">
                     {formatters.formatCurrency(p.total_deal_value || 0)}
                 </span>
             ),
@@ -608,7 +608,7 @@ const PartnersPage = () => {
         {
             header: 'Royalty Pending',
             accessor: (p: any) => (
-                <span className={`text-sm font-medium font-mono ${(p.pending_commission || 0) > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                <span className={`text-sm font-medium font-mono ${(p.pending_commission || 0) > 0 ? 'text-warning' : 'text-fg-muted'}`}>
                     {formatters.formatCurrency(p.pending_commission || 0)}
                 </span>
             ),
@@ -617,7 +617,7 @@ const PartnersPage = () => {
         {
             header: 'Royalty Rate',
             accessor: (p: any) => (
-                <span className="text-slate-400 text-sm font-mono">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
+                <span className="text-fg-subtle text-sm font-mono">{p.commission_rate ? `${p.commission_rate}%` : '-'}</span>
             ),
             className: 'text-right',
         },
@@ -627,12 +627,12 @@ const PartnersPage = () => {
         <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8 flex items-start justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight">Partners</h1>
-                    <p className="text-slate-300 mt-1">Referral agents, resellers, and dealers who bring in deals</p>
+                    <h1 className="text-3xl font-bold text-fg tracking-tight">Partners</h1>
+                    <p className="text-fg-subtle mt-1">Referral agents, resellers, and dealers who bring in deals</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium text-sm transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary text-white rounded-xl font-medium text-sm transition-colors"
                 >
                     <Plus size={16} />
                     Add Partner
@@ -645,19 +645,19 @@ const PartnersPage = () => {
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
                 <div className="flex-1 min-w-[200px] relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
                         placeholder="Search partners by name, email..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="w-full bg-bg border border-slate-800 text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     />
                 </div>
                 <select
                     value={typeFilter}
                     onChange={e => setTypeFilter(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-slate-800 text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 >
                     <option value="All">All Types</option>
                     {partnerTypes.map(pt => (
@@ -665,7 +665,7 @@ const PartnersPage = () => {
                     ))}
                 </select>
                 {(searchTerm || typeFilter !== 'All') && (
-                    <button onClick={() => { setSearchTerm(''); setTypeFilter('All'); }} className="text-xs text-rose-400 hover:text-rose-300 underline">
+                    <button onClick={() => { setSearchTerm(''); setTypeFilter('All'); }} className="text-xs text-danger hover:text-danger-300 underline">
                         Clear Filters
                     </button>
                 )}
@@ -681,13 +681,13 @@ const PartnersPage = () => {
 
             {filteredPartners.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-                    <span className="text-sm text-slate-400">{filteredPartners.length} partners</span>
+                    <span className="text-sm text-fg-subtle">{filteredPartners.length} partners</span>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50">First</button>
-                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50">Prev</button>
-                        <span className="px-3 py-1 text-slate-300 text-sm">Page {currentPage} of {Math.max(1, totalPages)}</span>
-                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50">Next</button>
-                        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50">Last</button>
+                        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">First</button>
+                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">Prev</button>
+                        <span className="px-3 py-1 text-fg-subtle text-sm">Page {currentPage} of {Math.max(1, totalPages)}</span>
+                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">Next</button>
+                        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">Last</button>
                     </div>
                 </div>
             )}

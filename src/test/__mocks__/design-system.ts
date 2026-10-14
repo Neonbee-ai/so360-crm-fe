@@ -72,3 +72,8 @@ export const UserSelector = ({ value, onChange, multiSelect, placeholder }: any)
     'data-value': Array.isArray(value) ? value.join(',') : (value ?? ''),
     onClick: () => onChange(multiSelect ? ['user-1', 'user-2'] : 'user-1'),
   }, placeholder ?? 'User');
+
+// useConfirm — specs control the answer via mockConfirm.mockResolvedValueOnce(false)
+import { vi } from 'vitest';
+export const mockConfirm = vi.fn(async (_opts?: any) => true);
+export const useConfirm = () => [mockConfirm, null] as const;

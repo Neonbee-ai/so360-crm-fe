@@ -156,16 +156,16 @@ const TasksPage = () => {
     };
 
     const SortIcon = ({ field }: { field: SortField }) => {
-        if (sortField !== field) return <ChevronsUpDown size={14} className="text-slate-600" />;
+        if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
         if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
         if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
-        return <ChevronsUpDown size={14} className="text-slate-600" />;
+        return <ChevronsUpDown size={14} className="text-fg-muted" />;
     };
 
     const SortableHeader = ({ label, field }: { label: string, field: SortField }) => (
         <button
             onClick={() => toggleSort(field)}
-            className="flex items-center gap-1 hover:text-slate-50 transition-colors cursor-pointer"
+            className="flex items-center gap-1 hover:text-fg transition-colors cursor-pointer"
         >
             {label}
             <SortIcon field={field} />
@@ -246,12 +246,12 @@ const TasksPage = () => {
                             e.stopPropagation();
                             handleStatusChange(task, task.status === 'DONE' ? 'OPEN' : 'DONE');
                         }}
-                        className="mt-0.5 text-slate-500 hover:text-blue-400 transition-colors"
+                        className="mt-0.5 text-fg-muted hover:text-blue-400 transition-colors"
                     >
-                        {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Circle size={18} />}
+                        {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} />}
                     </button>
                     <div className="flex flex-col gap-0.5">
-                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-slate-500 line-through' : 'text-slate-50'}`}>
+                        <span className={`font-semibold ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
                             {task.title}
                         </span>
                     </div>
@@ -263,12 +263,12 @@ const TasksPage = () => {
             accessor: (task: Task) => {
                 const isOverdue = isTaskOverdue(task);
                 return (
-                    <div className={`flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                    <div className={`flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isOverdue ? 'text-danger' : 'text-fg-subtle'}`}>
                         {isOverdue ? <AlertCircle size={14} className="shrink-0" /> : <Calendar size={14} className="shrink-0" />}
                         <span>{formatters.formatDate(dueDateCalendarDay(task.due_date))}</span>
                         {/* Only a task the user gave a time to shows one. */}
                         {hasTimeComponent(task.due_date) && (
-                            <span className="text-slate-400">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                            <span className="text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
                         )}
                         {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter">Overdue</span>}
                     </div>
@@ -285,16 +285,16 @@ const TasksPage = () => {
                     : null;
 
                 if (!entity) {
-                    return <span className="text-slate-600 text-xs">—</span>;
+                    return <span className="text-fg-muted text-xs">—</span>;
                 }
 
                 return (
                     <div className="flex items-center gap-2">
                         <Building2 size={13} className={entity.type === 'deal' ? 'text-violet-400 shrink-0' : 'text-blue-400 shrink-0'} />
                         <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-sm text-slate-200 truncate">{entity.label}</span>
-                            {entity.sub && <span className="text-[11px] text-slate-400 truncate">{entity.sub}</span>}
-                            <span className={`text-[9px] font-black uppercase tracking-widest ${entity.type === 'deal' ? 'text-violet-500' : 'text-blue-500'}`}>
+                            <span className="text-sm text-fg truncate">{entity.label}</span>
+                            {entity.sub && <span className="text-[11px] text-fg-subtle truncate">{entity.sub}</span>}
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${entity.type === 'deal' ? 'text-violet-500' : 'text-primary'}`}>
                                 {entity.type}
                             </span>
                         </div>
@@ -311,10 +311,10 @@ const TasksPage = () => {
                         onChange={(e) => handleAssigneeChange(task, e.target.value)}
                         disabled={isTaskLocked(task.status)}
                         title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : undefined}
-                        className="flex-1 bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors py-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex-1 bg-transparent text-fg-subtle text-sm focus:outline-none cursor-pointer hover:text-fg transition-colors py-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {users.map(user => (
-                            <option key={user.id} value={user.id} className="bg-slate-900 text-slate-300">
+                            <option key={user.id} value={user.id} className="bg-surface text-fg-subtle">
                                 {user.full_name}
                                 {user.id === currentUserId ? ' (You)' : ''}
                             </option>
@@ -325,7 +325,7 @@ const TasksPage = () => {
                         <button
                             onClick={() => handleQuickAssignToMe(task)}
                             disabled={!canCurrentUserBeAssigned(currentUser, users) || isTaskLocked(task.status)}
-                            className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-600/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1 text-fg-subtle hover:text-blue-400 hover:bg-blue-600/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title={
                                 isTaskLocked(task.status)
                                     ? TASK_LOCKED_HINT
@@ -348,21 +348,21 @@ const TasksPage = () => {
                         value={task.status}
                         onChange={(e) => handleStatusChange(task, e.target.value)}
                         className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-slate-950 ${task.status === 'DONE'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 focus:ring-emerald-500'
+                            ? 'bg-emerald-500/10 text-success border-emerald-500/20 focus:ring-success'
                             : task.status === 'IN_PROGRESS'
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 focus:ring-amber-500'
+                            ? 'bg-amber-500/10 text-warning border-amber-500/20 focus:ring-warning'
                             : task.status === 'ON_HOLD'
-                            ? 'bg-orange-500/10 text-orange-400 border-orange-500/20 focus:ring-orange-500'
+                            ? 'bg-orange-500/10 text-warning border-orange-500/20 focus:ring-warning'
                             : task.status === 'CANCELLED'
-                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 focus:ring-rose-500'
-                            : 'bg-slate-800 text-slate-400 border-slate-700 focus:ring-slate-500'
+                            ? 'bg-rose-500/10 text-danger border-rose-500/20 focus:ring-danger'
+                            : 'bg-surface-raised text-fg-subtle border-line focus:ring-slate-500'
                             }`}
                     >
-                        <option value="OPEN" className="bg-slate-900 text-slate-300">OPEN</option>
-                        <option value="IN_PROGRESS" className="bg-slate-900 text-slate-300">IN PROGRESS</option>
-                        <option value="DONE" className="bg-slate-900 text-slate-300">DONE</option>
-                        <option value="ON_HOLD" className="bg-slate-900 text-slate-300">ON HOLD</option>
-                        <option value="CANCELLED" className="bg-slate-900 text-slate-300">CANCELLED</option>
+                        <option value="OPEN" className="bg-surface text-fg-subtle">OPEN</option>
+                        <option value="IN_PROGRESS" className="bg-surface text-fg-subtle">IN PROGRESS</option>
+                        <option value="DONE" className="bg-surface text-fg-subtle">DONE</option>
+                        <option value="ON_HOLD" className="bg-surface text-fg-subtle">ON HOLD</option>
+                        <option value="CANCELLED" className="bg-surface text-fg-subtle">CANCELLED</option>
                     </select>
                 </div>
             )
@@ -373,7 +373,7 @@ const TasksPage = () => {
                 <div onClick={(e) => e.stopPropagation()}>
                     {canCreateTask && <button
                         onClick={() => setShowDeleteConfirm(task.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
+                        className="p-1.5 text-fg-subtle hover:text-danger hover:bg-surface-raised rounded transition-colors"
                         title="Delete task"
                     >
                         <Trash2 size={16} />
@@ -387,13 +387,13 @@ const TasksPage = () => {
         <div className="p-8" ref={listAnchorRef}>
             <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-50 tracking-tight leading-none">Tasks & Follow-ups</h1>
-                    <p className="text-slate-300 mt-2">Personal execution discipline and daily tasks</p>
+                    <h1 className="text-3xl font-bold text-fg tracking-tight leading-none">Tasks & Follow-ups</h1>
+                    <p className="text-fg-subtle mt-2">Personal execution discipline and daily tasks</p>
                 </div>
                 {canCreateTask && (
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
                     >
                         <Plus size={16} />
                         Create Task
@@ -412,8 +412,8 @@ const TasksPage = () => {
                             key={tab.key}
                             onClick={() => setTaskScope(tab.key)}
                             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
-                                ? 'bg-slate-700 text-white border-slate-600'
-                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
+                                ? 'bg-line text-white border-line'
+                                : 'bg-surface text-fg-subtle border-slate-800 hover:text-fg hover:bg-surface-raised'
                                 }`}
                         >
                             {tab.label}
@@ -424,13 +424,13 @@ const TasksPage = () => {
 
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
                         placeholder="Search tasks..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-400 text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                        className="w-full bg-bg border border-slate-800 text-fg placeholder-fg-subtle text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-all"
                     />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -439,8 +439,8 @@ const TasksPage = () => {
                             key={btn}
                             onClick={() => setFilter(btn)}
                             className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all border ${filter === btn
-                                ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20'
-                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100 hover:bg-slate-800'
+                                ? 'bg-primary text-white border-primary shadow-lg shadow-blue-900/20'
+                                : 'bg-surface text-fg-subtle border-slate-800 hover:text-fg hover:bg-surface-raised'
                                 }`}
                         >
                             {btn}
@@ -452,13 +452,13 @@ const TasksPage = () => {
             {error && (
                 <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
                     {error}
-                    <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-300">×</button>
+                    <button onClick={() => setError(null)} className="ml-2 text-danger hover:text-red-300">×</button>
                 </div>
             )}
 
             {/* Sandbox limit notice */}
             {isSandboxMode && isLimited(sortedAndFilteredTasks.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-warning text-sm flex items-center gap-2">
                     <span className="font-semibold">Sandbox mode:</span>
                     showing {sandboxEntryLimit} of {sortedAndFilteredTasks.length} tasks — full list visible in production.
                 </div>
@@ -475,12 +475,12 @@ const TasksPage = () => {
             {/* Pagination Controls */}
             {sandboxLimitedTasks.length > 0 && (
                 <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <div className="flex items-center gap-2 text-sm text-fg-subtle">
                         <span>Show</span>
                         <select
                             value={pageSize}
                             onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200"
+                            className="bg-surface-raised border border-line rounded px-2 py-1 text-fg"
                         >
                             {[10, 25, 50, 100].map(size => (
                                 <option key={size} value={size}>{size}</option>
@@ -492,31 +492,31 @@ const TasksPage = () => {
                         <button
                             onClick={() => setCurrentPage(1)}
                             disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             First
                         </button>
                         <button
                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Prev
                         </button>
-                        <span className="px-3 py-1 text-slate-300">
+                        <span className="px-3 py-1 text-fg-subtle">
                             Page {currentPage} of {totalPages || 1}
                         </span>
                         <button
                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Next
                         </button>
                         <button
                             onClick={() => setCurrentPage(totalPages)}
                             disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Last
                         </button>
@@ -539,23 +539,23 @@ const TasksPage = () => {
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Task</h2>
-                        <p className="text-slate-400 mb-6">
+                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
+                        <h2 className="text-xl font-semibold text-fg mb-2">Delete Task</h2>
+                        <p className="text-fg-subtle mb-6">
                             Are you sure you want to delete this task? This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => handleDeleteTask(showDeleteConfirm)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white rounded-lg transition-colors flex items-center gap-2"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
                             >
                                 {isDeleting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
                                 Delete

@@ -58,7 +58,7 @@ export default function MeasurementPage() {
   const header = (
     <div className="space-y-2">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-slate-100">Measurement</h1>
+        <h1 className="text-lg font-semibold text-fg">Measurement</h1>
         <PeriodPicker value={asOf} onChange={setAsOf} />
       </div>
       <AsOfBanner asOf={asOf} />
@@ -69,7 +69,7 @@ export default function MeasurementPage() {
     return (
       <div className="p-6 space-y-4">
         {header}
-        <div className="text-sm text-slate-400">Loading…</div>
+        <div className="text-sm text-fg-subtle">Loading…</div>
       </div>
     );
   }
@@ -98,7 +98,7 @@ export default function MeasurementPage() {
     <div className="p-6 space-y-5">
       <div>
         {header}
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-fg-subtle">
           {data.period_start} → {data.period_end}
         </div>
       </div>
@@ -120,9 +120,9 @@ export default function MeasurementPage() {
                 value={formatValue(pipeline.total_pipeline, 'currency', currency)}
               />
               <div className="flex items-center justify-between border-y border-slate-800 py-2">
-                <span className="text-slate-400">Coverage</span>
+                <span className="text-fg-subtle">Coverage</span>
                 <span className="flex items-center gap-2">
-                  <span className="text-slate-100">
+                  <span className="text-fg">
                     {pipeline.coverage === null
                       ? '—'
                       : `${pipeline.coverage.toFixed(1)}×`}
@@ -138,7 +138,7 @@ export default function MeasurementPage() {
                   )}
                 </span>
               </div>
-              <div className="text-[11px] text-slate-500">
+              <div className="text-[11px] text-fg-muted">
                 Healthy band {pipeline.coverage_min}× – {pipeline.coverage_max}×
                 (org configurable)
               </div>
@@ -163,13 +163,13 @@ export default function MeasurementPage() {
               {mix.lines.map((l: any) => (
                 <div key={l.key}>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-300">{l.label}</span>
-                    <span className="text-slate-400 text-xs">
+                    <span className="text-fg-subtle">{l.label}</span>
+                    <span className="text-fg-subtle text-xs">
                       {formatValue(l.value, 'currency', currency)} ·{' '}
                       {formatPct(l.share)}
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="mt-1 h-1.5 bg-surface-raised rounded-full overflow-hidden">
                     <div
                       className="h-full bg-slate-400 rounded-full"
                       style={{ width: `${Math.min(l.share * 100, 100)}%` }}
@@ -177,7 +177,7 @@ export default function MeasurementPage() {
                   </div>
                 </div>
               ))}
-              <div className="border-t border-slate-800 pt-2 text-xs text-slate-400">
+              <div className="border-t border-slate-800 pt-2 text-xs text-fg-subtle">
                 {mix.total_deals} won deal{mix.total_deals === 1 ? '' : 's'} ·{' '}
                 {formatValue(mix.total_value, 'currency', currency)}
               </div>
@@ -212,8 +212,8 @@ export default function MeasurementPage() {
                     key={r.value}
                     className="flex items-center justify-between text-xs"
                   >
-                    <span className="text-slate-300">{r.label}</span>
-                    <span className="text-slate-400">
+                    <span className="text-fg-subtle">{r.label}</span>
+                    <span className="text-fg-subtle">
                       {r.count} ·{' '}
                       {formatValue(r.lost_value, 'currency', currency)}
                     </span>
@@ -246,8 +246,8 @@ export default function MeasurementPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-slate-200">{value}</span>
+      <span className="text-fg-subtle">{label}</span>
+      <span className="text-fg">{value}</span>
     </div>
   );
 }

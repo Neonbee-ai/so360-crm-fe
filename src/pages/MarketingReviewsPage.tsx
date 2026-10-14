@@ -57,38 +57,38 @@ const MarketingReviewsPage: React.FC = () => {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-50 tracking-tight uppercase">Customer Reviews</h1>
-        <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Monitor and moderate storefront product feedback</p>
+        <h1 className="text-3xl font-black text-fg tracking-tight uppercase">Customer Reviews</h1>
+        <p className="text-fg-muted font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Monitor and moderate storefront product feedback</p>
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <section className="bg-surface border border-slate-800 rounded-2xl p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
             <div className="md:col-span-3">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Store Context</label>
+              <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Store Context</label>
               <MarketingStorePicker storeId={storeId} onChange={applyStore} />
             </div>
             <div className="md:col-span-5">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Search Feed</label>
+              <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Search Feed</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
+                  className="w-full bg-bg border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   placeholder="Filter by product, title, or content..."
                 />
               </div>
             </div>
             <div className="md:col-span-4">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Status Filter</label>
-              <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Status Filter</label>
+              <div className="flex bg-bg p-1 rounded-xl border border-slate-800">
                 {(['all', 'pending', 'approved'] as const).map((s) => (
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === s ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === s ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                   >
                     {s}
                   </button>
@@ -100,15 +100,15 @@ const MarketingReviewsPage: React.FC = () => {
 
         <div className="space-y-4">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-3">
+            <div className="flex flex-col items-center justify-center py-20 text-fg-muted gap-3">
               <Loader2 className="animate-spin" />
               <span className="text-[10px] font-black uppercase tracking-widest">Loading reviews...</span>
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
-              <MessageSquare className="mx-auto mb-4 text-slate-400 w-12 h-12 opacity-20" />
-              <p className="text-sm font-bold uppercase text-slate-500 tracking-widest">No reviews found</p>
-              <p className="text-[10px] text-slate-400 uppercase mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
+              <MessageSquare className="mx-auto mb-4 text-fg-subtle w-12 h-12 opacity-20" />
+              <p className="text-sm font-bold uppercase text-fg-muted tracking-widest">No reviews found</p>
+              <p className="text-[10px] text-fg-subtle uppercase mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -118,47 +118,47 @@ const MarketingReviewsPage: React.FC = () => {
                 const crmLeadId = customer?.crm_lead_id;
 
                 return (
-                  <div key={rev.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 group hover:border-slate-700 transition-all">
+                  <div key={rev.id} className="bg-surface border border-slate-800 rounded-2xl p-6 group hover:border-line transition-all">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex text-yellow-500">
+                        <div className="flex text-warning">
                           {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-slate-400'} />
+                            <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-fg-subtle'} />
                           ))}
                         </div>
-                        <h3 className="text-sm font-black text-slate-50 uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
+                        <h3 className="text-sm font-black text-fg uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
                       </div>
-                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded border ${rev.is_approved ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded border ${rev.is_approved ? 'bg-emerald-500/10 text-success border-emerald-500/20' : 'bg-amber-500/10 text-warning border-amber-500/20'}`}>
                         {rev.is_approved ? 'Approved' : 'Pending Approval'}
                       </span>
                     </div>
 
-                    <p className="text-sm text-slate-300 italic mb-6 leading-relaxed bg-slate-950/50 p-4 rounded-xl border border-slate-800/50">
+                    <p className="text-sm text-fg-subtle italic mb-6 leading-relaxed bg-slate-950/50 p-4 rounded-xl border border-slate-800/50">
                       "{rev.content || 'No content provided'}"
                     </p>
 
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 border-t border-slate-800">
                       <div className="flex items-center gap-2">
-                        <User className="w-3 h-3 text-slate-500" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">By</span>
+                        <User className="w-3 h-3 text-fg-muted" />
+                        <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">By</span>
                         {crmLeadId ? (
                           <Link to={`/crm/leads/${crmLeadId}`} className="text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1">
                             {customerName} <ExternalLink size={10} />
                           </Link>
                         ) : (
-                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{customerName}</span>
+                          <span className="text-[10px] font-black text-fg-subtle uppercase tracking-widest">{customerName}</span>
                         )}
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Package className="w-3 h-3 text-slate-500" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Product</span>
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{rev.items?.name || 'Unknown Item'}</span>
+                        <Package className="w-3 h-3 text-fg-muted" />
+                        <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Product</span>
+                        <span className="text-[10px] font-black text-fg-subtle uppercase tracking-widest">{rev.items?.name || 'Unknown Item'}</span>
                       </div>
 
                       <div className="flex items-center gap-2 ml-auto">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatters.formatDate(rev.created_at)}</span>
+                        <Clock className="w-3 h-3 text-fg-subtle" />
+                        <span className="text-[10px] font-black text-fg-subtle uppercase tracking-widest">{formatters.formatDate(rev.created_at)}</span>
                       </div>
                     </div>
 
@@ -166,7 +166,7 @@ const MarketingReviewsPage: React.FC = () => {
                       <a 
                         href="/dailystore/reviews" 
                         target="_blank"
-                        className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-600/50 flex items-center gap-2 shadow-sm"
+                        className="bg-slate-700/60 hover:bg-slate-600/60 text-fg text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all border border-slate-600/50 flex items-center gap-2 shadow-sm"
                       >
                         <ShieldCheck size={12} /> Moderate in DailyStore
                       </a>

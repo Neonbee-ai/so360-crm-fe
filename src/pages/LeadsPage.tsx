@@ -717,8 +717,8 @@ const LeadsPage = () => {
       {/* Compact header */}
       <header className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-baseline gap-2.5 min-w-0">
-          <h1 className="text-lg font-bold text-slate-50 tracking-tight truncate">Leads & Accounts</h1>
-          <span className="text-sm text-slate-500 shrink-0">
+          <h1 className="text-lg font-bold text-fg tracking-tight truncate">Leads & Accounts</h1>
+          <span className="text-sm text-fg-muted shrink-0">
             {leads.length} Lead{leads.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -729,7 +729,7 @@ const LeadsPage = () => {
         {canImportLeads && (
           <button
             onClick={() => setIsImportOpen(true)}
-            className="flex items-center gap-1.5 h-10 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 rounded-lg font-semibold text-sm transition-all active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 h-10 bg-surface-raised hover:bg-line border border-line text-fg px-4 rounded-lg font-semibold text-sm transition-all active:scale-95 shrink-0"
           >
             <UploadCloud size={16} />
             Import
@@ -746,7 +746,7 @@ const LeadsPage = () => {
           >
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 h-10 bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg font-semibold text-sm transition-all shadow-lg shadow-blue-900/20 active:scale-95 shrink-0"
+              className="flex items-center gap-1.5 h-10 bg-primary hover:bg-primary text-white px-4 rounded-lg font-semibold text-sm transition-all shadow-lg shadow-blue-900/20 active:scale-95 shrink-0"
             >
               <Plus size={16} />
               New Lead
@@ -773,7 +773,7 @@ const LeadsPage = () => {
 
       {/* Sandbox notice */}
       {isSandboxMode && isLimited(filteredLeads.length) && (
-        <div className="mb-3 flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/25 rounded-lg text-amber-400 text-sm">
+        <div className="mb-3 flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/25 rounded-lg text-warning text-sm">
           <span className="font-semibold">Sandbox:</span>
           <span>Showing {sandboxEntryLimit} of {filteredLeads.length} leads. Switch to Production to view all records.</span>
         </div>
@@ -804,18 +804,18 @@ const LeadsPage = () => {
         )}
 
         <div className="flex-1 min-w-[180px] relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
           <input
             type="text"
             placeholder="Search leads..."
             value={filters.search}
             onChange={(e) => setFilter('search', e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700/50 text-slate-200 pl-10 pr-4 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="w-full bg-bg border border-slate-700/50 text-fg pl-10 pr-4 py-1.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
           />
           {filters.search && (
             <button
               onClick={() => setFilter('search', '')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-subtle"
             >
               <X size={14} />
             </button>
@@ -825,7 +825,7 @@ const LeadsPage = () => {
         <select
           value={filters.status}
           onChange={(e) => setFilter('status', e.target.value)}
-          className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
+          className="bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
         >
           <option value="All">All Statuses</option>
           {leadStages.map((stage) => (
@@ -836,7 +836,7 @@ const LeadsPage = () => {
         <select
           value={filters.owner}
           onChange={(e) => setFilter('owner', e.target.value)}
-          className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
+          className="bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
         >
           <option value="All">All Owners</option>
           {users.map((user) => (
@@ -847,7 +847,7 @@ const LeadsPage = () => {
         <select
           value={filters.dateRange}
           onChange={(e) => setFilter('dateRange', e.target.value)}
-          className="bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
+          className="bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 shrink-0"
         >
           <option value="All">All Time</option>
           <option value="Today">Today</option>
@@ -860,19 +860,19 @@ const LeadsPage = () => {
         </select>
 
         {filters.dateRange === 'Custom' && (
-          <div className="flex items-center gap-2 bg-slate-950 border border-slate-700/50 rounded-lg px-2 py-1 shrink-0">
+          <div className="flex items-center gap-2 bg-bg border border-slate-700/50 rounded-lg px-2 py-1 shrink-0">
             <input
               type="date"
               value={filters.customDateStart}
               onChange={(e) => setFilter('customDateStart', e.target.value)}
-              className="bg-transparent text-slate-300 text-xs focus:outline-none"
+              className="bg-transparent text-fg-subtle text-xs focus:outline-none"
             />
-            <span className="text-slate-500">–</span>
+            <span className="text-fg-muted">–</span>
             <input
               type="date"
               value={filters.customDateEnd}
               onChange={(e) => setFilter('customDateEnd', e.target.value)}
-              className="bg-transparent text-slate-300 text-xs focus:outline-none"
+              className="bg-transparent text-fg-subtle text-xs focus:outline-none"
             />
           </div>
         )}
@@ -884,24 +884,24 @@ const LeadsPage = () => {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
               filters.creator !== 'All'
                 ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+                : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-slate-700/50'
             }`}
           >
             <Filter size={13} />
             More Filters
             {filters.creator !== 'All' && (
-              <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5">1</span>
+              <span className="text-[10px] bg-primary text-white rounded-full px-1.5 py-0.5">1</span>
             )}
             <ChevronDown size={13} />
           </button>
 
           {openDropdown === 'moreFilters' && (
-            <div className="absolute right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[220px] p-3">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Created By</label>
+            <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl min-w-[220px] p-3">
+              <label className="block text-[10px] font-bold text-fg-muted uppercase tracking-wider mb-1.5">Created By</label>
               <select
                 value={filters.creator}
                 onChange={(e) => setFilter('creator', e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700/50 text-slate-300 px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full bg-bg border border-slate-700/50 text-fg-subtle px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               >
                 <option value="All">All</option>
                 {users.map((user) => (
@@ -915,7 +915,7 @@ const LeadsPage = () => {
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-xs text-rose-400 hover:text-rose-300 underline flex items-center gap-1 shrink-0"
+            className="text-xs text-danger hover:text-danger-300 underline flex items-center gap-1 shrink-0"
           >
             <X size={12} />
             Clear filters
@@ -928,7 +928,7 @@ const LeadsPage = () => {
         <div ref={viewsDropdownRef} className="relative shrink-0">
             <button
               onClick={() => setOpenDropdown((v) => (v === 'views' ? null : 'views'))}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-700/50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-surface-raised border border-slate-700/50 transition-colors"
             >
               <Bookmark size={14} />
               {activeViewId ? savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views' : 'Views'}
@@ -936,9 +936,9 @@ const LeadsPage = () => {
             </button>
 
             {openDropdown === 'views' && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl min-w-[300px] py-1.5">
+              <div className="absolute left-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl min-w-[300px] py-1.5">
                 {savedViews.length === 0 && (
-                  <p className="px-4 py-2 text-xs text-slate-500">No saved views yet</p>
+                  <p className="px-4 py-2 text-xs text-fg-muted">No saved views yet</p>
                 )}
                 {savedViews.map((view) => (
                   <div key={view.id} className="group" data-testid={`saved-view-${view.id}`}>
@@ -954,7 +954,7 @@ const LeadsPage = () => {
                             if (e.key === 'Enter') { handleRenameView(view.id, renameValue); setRenamingViewId(null); }
                             if (e.key === 'Escape') setRenamingViewId(null);
                           }}
-                          className="flex-1 bg-slate-800 border border-slate-600 text-slate-200 px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="flex-1 bg-surface-raised border border-line text-fg px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-focus"
                         />
                         <button
                           onClick={() => { handleRenameView(view.id, renameValue); setRenamingViewId(null); }}
@@ -967,13 +967,13 @@ const LeadsPage = () => {
                       <div className="flex items-center">
                         <button
                           onClick={() => handleApplyView(view)}
-                          className={`flex-1 flex items-center gap-1.5 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}
+                          className={`flex-1 flex items-center gap-1.5 text-left px-4 py-2 text-sm transition-colors ${activeViewId === view.id ? 'text-blue-400' : 'text-fg-subtle hover:bg-surface-raised'}`}
                         >
-                          {view.is_default && <Star size={11} className="text-amber-400 fill-amber-400 shrink-0" />}
+                          {view.is_default && <Star size={11} className="text-warning fill-amber-400 shrink-0" />}
                           <span className="truncate">{view.name}</span>
                           {view.is_shared && (
                             <span title="Shared with your team">
-                              <Share2 size={10} className="text-slate-500 shrink-0" />
+                              <Share2 size={10} className="text-fg-muted shrink-0" />
                             </span>
                           )}
                         </button>
@@ -981,35 +981,35 @@ const LeadsPage = () => {
                           <button
                             aria-label="Rename view"
                             onClick={() => { setRenamingViewId(view.id); setRenameValue(view.name); }}
-                            className="p-1 text-slate-500 hover:text-slate-200"
+                            className="p-1 text-fg-muted hover:text-fg"
                           >
                             <Pencil size={12} />
                           </button>
                           <button
                             aria-label="Duplicate view"
                             onClick={() => handleDuplicateView(view.id)}
-                            className="p-1 text-slate-500 hover:text-slate-200"
+                            className="p-1 text-fg-muted hover:text-fg"
                           >
                             <Copy size={12} />
                           </button>
                           <button
                             aria-label={view.is_default ? 'Default view' : 'Set as default'}
                             onClick={() => handleSetDefaultView(view.id)}
-                            className={`p-1 ${view.is_default ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'}`}
+                            className={`p-1 ${view.is_default ? 'text-warning' : 'text-fg-muted hover:text-amber-300'}`}
                           >
                             <Star size={12} className={view.is_default ? 'fill-amber-400' : ''} />
                           </button>
                           <button
                             aria-label={view.is_shared ? 'Unshare view' : 'Share view'}
                             onClick={() => handleToggleShareView(view.id)}
-                            className={`p-1 ${view.is_shared ? 'text-blue-400' : 'text-slate-500 hover:text-blue-300'}`}
+                            className={`p-1 ${view.is_shared ? 'text-blue-400' : 'text-fg-muted hover:text-blue-300'}`}
                           >
                             <Share2 size={12} />
                           </button>
                           <button
                             aria-label="Delete view"
                             onClick={() => handleDeleteView(view.id)}
-                            className="p-1 text-slate-500 hover:text-rose-400"
+                            className="p-1 text-fg-muted hover:text-danger"
                           >
                             <X size={12} />
                           </button>
@@ -1028,14 +1028,14 @@ const LeadsPage = () => {
                         value={saveViewName}
                         onChange={(e) => setSaveViewName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleSaveView(); if (e.key === 'Escape') setShowSaveViewInput(false); }}
-                        className="flex-1 bg-slate-800 border border-slate-600 text-slate-200 px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="flex-1 bg-surface-raised border border-line text-fg px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-focus"
                       />
                       <button onClick={handleSaveView} className="text-blue-400 hover:text-blue-300 text-xs font-semibold">Save</button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setShowSaveViewInput(true)}
-                      className="flex items-center gap-1.5 w-full px-4 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                      className="flex items-center gap-1.5 w-full px-4 py-2 text-sm text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors"
                     >
                       <BookmarkPlus size={13} />
                       Save current view
@@ -1053,13 +1053,13 @@ const LeadsPage = () => {
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
                 advancedFilter
                   ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-slate-700/50'
               }`}
             >
               <SlidersHorizontal size={14} />
               Advanced
               {advancedFilter && (
-                <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5">
+                <span className="text-[10px] bg-primary text-white rounded-full px-1.5 py-0.5">
                   {countActiveRules(advancedFilter)}
                 </span>
               )}
@@ -1079,7 +1079,7 @@ const LeadsPage = () => {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-rose-500/10 border border-rose-500/25 rounded-lg text-rose-400 text-sm">
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-rose-500/10 border border-rose-500/25 rounded-lg text-danger text-sm">
           {error}
         </div>
       )}
@@ -1097,12 +1097,12 @@ const LeadsPage = () => {
       {/* Pagination */}
       {sandboxLeads.length > 0 && (
         <div className="flex items-center justify-between mt-4 px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-fg-subtle">
             <span>Show</span>
             <select
               value={pageSize}
               onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-              className="bg-slate-800 border border-slate-600/50 rounded px-2 py-1 text-slate-200"
+              className="bg-surface-raised border border-slate-600/50 rounded px-2 py-1 text-fg"
             >
               {[25, 50, 100, 250].map((size) => (
                 <option key={size} value={size}>{size}</option>
@@ -1114,31 +1114,31 @@ const LeadsPage = () => {
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
             >
               First
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
             >
               Prev
             </button>
-            <span className="px-3 py-1 text-slate-300 text-sm">
+            <span className="px-3 py-1 text-fg-subtle text-sm">
               Page {currentPage} of {totalPages || 1}
             </span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
-              className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
             >
               Next
             </button>
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage >= totalPages}
-              className="px-3 py-1 bg-slate-800 border border-slate-600/50 rounded text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+              className="px-3 py-1 bg-surface-raised border border-slate-600/50 rounded text-fg-subtle hover:bg-line disabled:opacity-50"
             >
               Last
             </button>
@@ -1149,23 +1149,23 @@ const LeadsPage = () => {
       {/* Delete confirmation */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700/50 rounded-lg shadow-2xl w-full max-w-md p-6">
-            <h2 className="text-xl font-semibold text-slate-100 mb-2">Delete Lead</h2>
-            <p className="text-slate-400 mb-6">
+          <div className="bg-surface border border-slate-700/50 rounded-lg shadow-2xl w-full max-w-md p-6">
+            <h2 className="text-xl font-semibold text-fg mb-2">Delete Lead</h2>
+            <p className="text-fg-subtle mb-6">
               Are you sure you want to delete this lead? This will also remove all associated notes, activities, and documents. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteLead(showDeleteConfirm)}
                 disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 {isDeleting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
                 Delete

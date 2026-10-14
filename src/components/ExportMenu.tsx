@@ -45,7 +45,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({ label, onExport, className }) =
     return (
         <div className={`flex flex-col items-end gap-1 ${className ?? ''}`}>
             <div role="group" aria-label={label} className="flex items-center gap-1">
-                <Download size={14} className="text-slate-500" aria-hidden="true" />
+                <Download size={14} className="text-fg-muted" aria-hidden="true" />
                 {EXPORT_FORMATS.map((f) => (
                     <button
                         key={f}
@@ -53,7 +53,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({ label, onExport, className }) =
                         onClick={() => { void run(f); }}
                         disabled={busy !== null}
                         aria-label={`${label} as ${EXPORT_FORMAT_LABELS[f]}`}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-200 bg-slate-800 hover:bg-slate-700 disabled:opacity-50"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line disabled:opacity-50"
                     >
                         {busy === f ? <Loader2 size={12} className="animate-spin" /> : null}
                         {EXPORT_FORMAT_LABELS[f]}

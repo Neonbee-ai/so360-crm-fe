@@ -86,23 +86,23 @@ const MarketingOverviewPage: React.FC = () => {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-100 mb-2">CRM Marketing Overview</h1>
-        <p className="text-slate-400">DailyStore marketing and customer intelligence in CRM.</p>
+        <h1 className="text-3xl font-bold text-fg mb-2">CRM Marketing Overview</h1>
+        <p className="text-fg-subtle">DailyStore marketing and customer intelligence in CRM.</p>
       </div>
       <MarketingStorePicker storeId={storeId} onChange={applyStore} />
 
-      {!storeId && <p className="text-amber-400 text-sm">Select a store to load insights.</p>}
-      {loading && <p className="text-slate-400">Loading...</p>}
-      {error && <p className="text-rose-400">{error}</p>}
+      {!storeId && <p className="text-warning text-sm">Select a store to load insights.</p>}
+      {loading && <p className="text-fg-subtle">Loading...</p>}
+      {error && <p className="text-danger">{error}</p>}
 
       {data && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             {kpis.map((kpi) => (
               <div key={kpi.label} className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
-                <p className="text-slate-400 text-sm font-medium">{kpi.label}</p>
-                <p className="text-slate-100 text-3xl font-bold mt-2 tracking-tight">{kpi.value}</p>
-                {kpi.hint && <p className="text-slate-500 text-xs mt-2 font-medium">{kpi.hint}</p>}
+                <p className="text-fg-subtle text-sm font-medium">{kpi.label}</p>
+                <p className="text-fg text-3xl font-bold mt-2 tracking-tight">{kpi.value}</p>
+                {kpi.hint && <p className="text-fg-muted text-xs mt-2 font-medium">{kpi.hint}</p>}
               </div>
             ))}
           </div>
@@ -110,27 +110,27 @@ const MarketingOverviewPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Link to="/crm/marketing/reviews" className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all group">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-warning">
                   <MessageSquare size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Customer Reviews</span>
+                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Customer Reviews</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-200">Moderate Feedback</span>
-                <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
+                <span className="text-sm font-bold text-fg">Moderate Feedback</span>
+                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
 
             <Link to="/crm/marketing/wishlist" className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all group">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-danger">
                   <Heart size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Wishlist Feed</span>
+                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Wishlist Feed</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-200">Track Customer Intent</span>
-                <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
+                <span className="text-sm font-bold text-fg">Track Customer Intent</span>
+                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
 
@@ -139,92 +139,92 @@ const MarketingOverviewPage: React.FC = () => {
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
                   <Mail size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Newsletter Audience</span>
+                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Newsletter Audience</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-200">Manage Subscribers</span>
-                <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
+                <span className="text-sm font-bold text-fg">Manage Subscribers</span>
+                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
 
             <Link to="/crm/marketing/coupons" className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all group">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-success">
                   <Tag size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Discount Coupons</span>
+                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Discount Coupons</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-200">Configure Offers</span>
-                <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
+                <span className="text-sm font-bold text-fg">Configure Offers</span>
+                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-              <h3 className="text-slate-100 font-bold mb-4">Top Selling Products</h3>
+              <h3 className="text-fg font-bold mb-4">Top Selling Products</h3>
               <div className="space-y-1">
                 {bestSelling.map((row: any) => (
                   <div key={row.itemId} className="flex items-center justify-between border-b border-slate-800/50 pb-3 pt-2">
-                    <span className="text-slate-200 font-medium">{row.name}</span>
-                    <span className="text-slate-400 text-sm">{row.quantitySold} sold</span>
+                    <span className="text-fg font-medium">{row.name}</span>
+                    <span className="text-fg-subtle text-sm">{row.quantitySold} sold</span>
                   </div>
                 ))}
-                {bestSelling.length === 0 && <p className="text-slate-500 text-sm py-4 text-center">No sales data directly available.</p>}
+                {bestSelling.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No sales data directly available.</p>}
               </div>
             </div>
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-              <h3 className="text-slate-100 font-bold mb-4">Top Buyers</h3>
+              <h3 className="text-fg font-bold mb-4">Top Buyers</h3>
               <div className="space-y-1">
                 {topBuyers.map((row: any) => (
                   <div key={row.customerId} className="flex items-center justify-between border-b border-slate-800/50 pb-3 pt-2">
-                    <span className="text-slate-200 font-medium">{row.name || row.email || row.customerId || '-'}</span>
-                    <span className="text-slate-300 text-sm">{formatMoney(row.totalSpent, currencyCode, locale)}</span>
+                    <span className="text-fg font-medium">{row.name || row.email || row.customerId || '-'}</span>
+                    <span className="text-fg-subtle text-sm">{formatMoney(row.totalSpent, currencyCode, locale)}</span>
                   </div>
                 ))}
-                {topBuyers.length === 0 && <p className="text-slate-500 text-sm py-4 text-center">No buyer data available.</p>}
+                {topBuyers.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No buyer data available.</p>}
               </div>
             </div>
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-              <h3 className="text-slate-100 font-bold mb-4">Inactive Customers</h3>
+              <h3 className="text-fg font-bold mb-4">Inactive Customers</h3>
               <div className="space-y-1">
                 {inactive.map((row: any) => (
                   <div key={row.customerId} className="flex items-center justify-between border-b border-slate-800/50 pb-3 pt-2">
-                    <span className="text-slate-200 font-medium">{row.name || row.email || row.customerId}</span>
-                    <span className="text-slate-400 text-xs">{row.daysSinceLastOrder || 0} days</span>
+                    <span className="text-fg font-medium">{row.name || row.email || row.customerId}</span>
+                    <span className="text-fg-subtle text-xs">{row.daysSinceLastOrder || 0} days</span>
                   </div>
                 ))}
-                {inactive.length === 0 && <p className="text-slate-500 text-sm py-4 text-center">No inactive customers identified.</p>}
+                {inactive.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No inactive customers identified.</p>}
               </div>
             </div>
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-              <h3 className="text-slate-100 font-bold mb-4">Conversion Funnel</h3>
+              <h3 className="text-fg font-bold mb-4">Conversion Funnel</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
-                  <span className="text-slate-400">Product Views</span>
-                  <span className="text-slate-200 font-medium">{data.funnel?.funnel?.product_views || 0}</span>
+                  <span className="text-fg-subtle">Product Views</span>
+                  <span className="text-fg font-medium">{data.funnel?.funnel?.product_views || 0}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
-                  <span className="text-slate-400">Add to Cart</span>
-                  <span className="text-slate-200 font-medium">{data.funnel?.funnel?.add_to_cart || 0}</span>
+                  <span className="text-fg-subtle">Add to Cart</span>
+                  <span className="text-fg font-medium">{data.funnel?.funnel?.add_to_cart || 0}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-slate-800/50">
-                  <span className="text-slate-400">Checkout Started</span>
-                  <span className="text-slate-200 font-medium">{data.funnel?.funnel?.checkout_started || 0}</span>
+                  <span className="text-fg-subtle">Checkout Started</span>
+                  <span className="text-fg font-medium">{data.funnel?.funnel?.checkout_started || 0}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-slate-300 font-medium">Purchases</span>
+                  <span className="text-fg-subtle font-medium">Purchases</span>
                   <span className="text-blue-400 font-bold">{data.funnel?.funnel?.purchases || 0}</span>
                 </div>
               </div>
             </div>
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 lg:col-span-2">
-              <h3 className="text-slate-100 font-bold mb-4">Recent Storefront Searches</h3>
+              <h3 className="text-fg font-bold mb-4">Recent Storefront Searches</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {data.searchLogs?.map((row: any) => {
                   const customer = row.storefront_customers;
@@ -232,8 +232,8 @@ const MarketingOverviewPage: React.FC = () => {
                   return (
                     <div key={row.id} className="flex items-center justify-between p-3 bg-slate-950/50 border border-slate-800 rounded-lg">
                       <div>
-                        <p className="text-slate-200 font-bold text-sm">"{row.search_query}"</p>
-                        <p className="text-slate-500 text-[10px] uppercase font-black mt-1">
+                        <p className="text-fg font-bold text-sm">"{row.search_query}"</p>
+                        <p className="text-fg-muted text-[10px] uppercase font-black mt-1">
                           {name} • {formatters.formatDate(row.created_at)}
                         </p>
                       </div>
@@ -244,7 +244,7 @@ const MarketingOverviewPage: React.FC = () => {
                   );
                 })}
                 {(!data.searchLogs || data.searchLogs.length === 0) && (
-                  <p className="text-slate-500 text-sm py-4 text-center col-span-2">No recent search activity found.</p>
+                  <p className="text-fg-muted text-sm py-4 text-center col-span-2">No recent search activity found.</p>
                 )}
               </div>
             </div>

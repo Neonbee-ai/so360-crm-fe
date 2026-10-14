@@ -51,3 +51,4 @@ export const toastBus: {
     subscribe: () => () => {},
     getToasts: () => [],
 };
+export const useConfirm: () => readonly [(opts: { title?: string; message?: string; intent?: 'default' | 'danger'; confirmLabel?: string }) => Promise<boolean>, any] = () => [async () => false, null] as const;

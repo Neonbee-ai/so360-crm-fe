@@ -8,10 +8,10 @@ interface Props {
 
 const PLATFORM_ICON: Record<string, React.ReactNode> = {
     email: <Mail size={14} className="text-blue-400" />,
-    whatsapp: <MessageSquare size={14} className="text-emerald-400" />,
+    whatsapp: <MessageSquare size={14} className="text-success" />,
     instagram: <Smartphone size={14} className="text-pink-400" />,
-    facebook: <Smartphone size={14} className="text-blue-500" />,
-    web_chat: <MessageSquare size={14} className="text-slate-400" />,
+    facebook: <Smartphone size={14} className="text-primary" />,
+    web_chat: <MessageSquare size={14} className="text-fg-subtle" />,
 };
 
 function formatDateTime(iso: string): string {
@@ -42,19 +42,19 @@ const EmailsTab: React.FC<Props> = ({ leadId }) => {
     }, [leadId]);
 
     if (loading) {
-        return <div className="flex justify-center py-10 text-slate-500"><Loader2 size={20} className="animate-spin" /></div>;
+        return <div className="flex justify-center py-10 text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>;
     }
 
     if (error) {
-        return <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg px-4 py-3">{error}</div>;
+        return <div className="bg-red-500/10 border border-red-500/20 text-danger text-xs rounded-lg px-4 py-3">{error}</div>;
     }
 
     if (conversations.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 text-slate-600">
+            <div className="flex flex-col items-center justify-center py-10 text-fg-muted">
                 <Mail size={24} className="mb-2" />
                 <p className="text-xs">No email or messaging conversations linked to this lead yet.</p>
-                <p className="text-[10px] text-slate-700 mt-1">Conversations from Inbox will appear here automatically once linked.</p>
+                <p className="text-[10px] text-fg mt-1">Conversations from Inbox will appear here automatically once linked.</p>
             </div>
         );
     }
@@ -70,18 +70,18 @@ const EmailsTab: React.FC<Props> = ({ leadId }) => {
                     // — matches the existing convention (see DealDetailPage.tsx).
                     href={`/inbox/conversations/${c.id}`}
                     onClick={(e) => { e.preventDefault(); window.location.href = `/inbox/conversations/${c.id}`; }}
-                    className="flex items-center justify-between gap-3 bg-slate-950/50 border border-slate-800/60 rounded-xl px-4 py-3 hover:border-slate-700 transition-all group cursor-pointer"
+                    className="flex items-center justify-between gap-3 bg-slate-950/50 border border-slate-800/60 rounded-xl px-4 py-3 hover:border-line transition-all group cursor-pointer"
                 >
                     <div className="flex items-center gap-3 min-w-0">
-                        {PLATFORM_ICON[c.platform] || <Mail size={14} className="text-slate-400" />}
+                        {PLATFORM_ICON[c.platform] || <Mail size={14} className="text-fg-subtle" />}
                         <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-200 truncate">{c.customer_name || c.topic || 'Conversation'}</p>
-                            <p className="text-[10px] text-slate-500">{c.message_count} messages · {formatDateTime(c.last_message_at)}</p>
+                            <p className="text-xs font-bold text-fg truncate">{c.customer_name || c.topic || 'Conversation'}</p>
+                            <p className="text-[10px] text-fg-muted">{c.message_count} messages · {formatDateTime(c.last_message_at)}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{c.status}</span>
-                        <ExternalLink size={12} className="text-slate-600 group-hover:text-blue-400 transition-colors" />
+                        <span className="text-[9px] bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{c.status}</span>
+                        <ExternalLink size={12} className="text-fg-muted group-hover:text-blue-400 transition-colors" />
                     </div>
                 </a>
             ))}

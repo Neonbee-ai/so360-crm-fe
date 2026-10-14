@@ -19,9 +19,9 @@ interface Props {
 }
 
 const scoreTone = (score: number) =>
-    score >= 75 ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
-        : score >= 50 ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
-            : 'text-slate-300 bg-slate-800 border-slate-700';
+    score >= 75 ? 'text-success bg-success-container border-success/30'
+        : score >= 50 ? 'text-warning bg-warning-container border-warning/30'
+            : 'text-fg-subtle bg-surface-raised border-line';
 
 /**
  * Property matching (A9): units that fit the lead's budget / bedrooms /
@@ -74,7 +74,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
 
     return (
         <section aria-label="Matching units" data-testid="matching-units-panel" className="space-y-2">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
                 Matching units ({units.length})
             </p>
             <ul className="space-y-2">
@@ -91,9 +91,9 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                             <Building2 size={16} className="text-blue-400 mt-0.5 shrink-0" />
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-bold text-slate-100">{name}</span>
+                                    <span className="text-sm font-bold text-fg">{name}</span>
                                     {(u.project || u.tower) && (
-                                        <span className="text-xs text-slate-400 truncate">
+                                        <span className="text-xs text-fg-subtle truncate">
                                             {[u.project, u.tower ? `Tower ${u.tower}` : null].filter(Boolean).join(' · ')}
                                         </span>
                                     )}
@@ -104,7 +104,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                         {Math.round(u.score)}% match
                                     </span>
                                 </div>
-                                <p className="text-xs text-slate-400 mt-0.5">
+                                <p className="text-xs text-fg-subtle mt-0.5">
                                     {[
                                         u.bedrooms != null ? `${u.bedrooms} BR` : null,
                                         u.area_sqft != null ? `${u.area_sqft} sq ft` : null,
@@ -112,7 +112,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                     ].filter(Boolean).join(' · ')}
                                 </p>
                                 {u.reasons?.length > 0 && (
-                                    <p className="text-[11px] text-slate-500 mt-0.5">{u.reasons.join(' · ')}</p>
+                                    <p className="text-[11px] text-fg-muted mt-0.5">{u.reasons.join(' · ')}</p>
                                 )}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
@@ -121,7 +121,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                     aria-label={`Share ${name}`}
                                     title="Copy unit details"
                                     onClick={() => share(u)}
-                                    className="p-1.5 text-slate-400 hover:text-blue-300 rounded-lg"
+                                    className="p-1.5 text-fg-subtle hover:text-blue-300 rounded-lg"
                                 >
                                     <Share2 size={14} />
                                 </button>
@@ -130,7 +130,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                     aria-label={added ? `${name} added` : `Attach ${name}`}
                                     disabled={added || busy}
                                     onClick={() => attach(u)}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white disabled:bg-slate-800 disabled:text-slate-500"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-primary hover:bg-primary text-white disabled:bg-surface-raised disabled:text-fg-muted"
                                 >
                                     {busy ? <Loader2 size={12} className="animate-spin" /> : added ? <Check size={12} /> : <Plus size={12} />}
                                     {added ? 'Added' : 'Attach'}

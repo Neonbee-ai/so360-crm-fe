@@ -408,7 +408,7 @@ describe('LeadsPage', () => {
       fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
       const confirmBtn = screen.getAllByText('Delete').find(
-        (el) => el.closest('button')?.className.includes('bg-red'),
+        (el) => el.closest('button')?.className.includes('bg-danger'),
       );
       fireEvent.click(confirmBtn!);
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));
@@ -472,7 +472,7 @@ describe('LeadsPage', () => {
       fireEvent.click(screen.getByTestId('delete-btn-l1'));
       await waitFor(() => expect(screen.getByText('Delete Lead')).toBeInTheDocument());
       const confirmBtn = screen.getAllByText('Delete').find(
-        (el) => el.closest('button')?.className.includes('bg-red'),
+        (el) => el.closest('button')?.className.includes('bg-danger'),
       );
       fireEvent.click(confirmBtn!);
       await waitFor(() => expect(mockDeleteLead).toHaveBeenCalledWith('l1'));

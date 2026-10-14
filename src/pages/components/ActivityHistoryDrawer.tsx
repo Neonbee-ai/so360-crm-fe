@@ -4,6 +4,7 @@ import { useEntityTimeline } from './timeline/useEntityTimeline';
 import TimelineEventCard from './timeline/TimelineEventCard';
 import TimelineSummaryBanner from './timeline/TimelineSummaryBanner';
 import { activitiesApi } from '../../services/crmService';
+import { useConfirm } from '@so360/design-system';
 
 interface Props {
     isOpen: boolean;
@@ -37,6 +38,7 @@ export const TYPE_FILTERS: { key: string; label: string }[] = [
  * aggregation logic (formerly a second copy of getAggregatedTimeline()).
  */
 const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, entityId }) => {
+    const [confirm, confirmDialog] = useConfirm();
     const timeline = useEntityTimeline({ entityType, entityId, pageSize: 50 });
 
     useEffect(() => {
@@ -48,6 +50,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
 
     return (
         <>
+            {confirmDialog}
             {/* Overlay */}
             <div
                 className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
@@ -55,16 +58,16 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
             />
 
             {/* Drawer — starts below the shell's fixed 56px (h-14) glass-nav header so the title/close controls are never clipped */}
-            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-slate-950 border-l border-slate-800 z-50 flex flex-col shadow-2xl">
+            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-bg border-l border-slate-800 z-50 flex flex-col shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
                     <div>
-                        <p className="text-xs font-black text-slate-50 uppercase tracking-widest">Activity History</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
+                        <p className="text-xs font-black text-fg uppercase tracking-widest">Activity History</p>
+                        <p className="text-[10px] text-fg-muted mt-0.5">
                             {timeline.events.length > 0 ? `${timeline.events.length} loaded` : 'Loading…'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-slate-200 transition-colors rounded-lg hover:bg-slate-800">
+                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg transition-colors rounded-lg hover:bg-surface-raised">
                         <X size={16} />
                     </button>
                 </div>
@@ -72,13 +75,13 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 {/* Search */}
                 <div className="px-4 py-3 border-b border-slate-800 shrink-0">
                     <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Search activities…"
                             value={timeline.search}
                             onChange={e => timeline.setSearch(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-slate-600 transition-colors"
+                            className="w-full bg-surface border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-line transition-colors"
                         />
                     </div>
                 </div>
@@ -92,8 +95,8 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                                 onClick={() => timeline.setModuleFilter(f.key)}
                                 className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
                                     timeline.moduleFilter === f.key
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                                        ? 'bg-primary text-white'
+                                        : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
                                 }`}
                             >
                                 {f.label}
@@ -111,8 +114,8 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                             onClick={() => timeline.setTypeFilter([])}
                             className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
                                 timeline.typeFilter.length === 0
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                                    ? 'bg-primary text-white'
+                                    : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
                             }`}
                         >
                             All types
@@ -129,8 +132,8 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                                     onClick={() => timeline.toggleType(t.key)}
                                     className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
                                         active
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                                            ? 'bg-primary text-white'
+                                            : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
                                     }`}
                                 >
                                     {t.label}
@@ -150,17 +153,17 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 {/* Timeline */}
                 <div className="flex-1 overflow-y-auto">
                     {timeline.loading ? (
-                        <div className="flex items-center justify-center gap-2 py-16 text-slate-500">
+                        <div className="flex items-center justify-center gap-2 py-16 text-fg-muted">
                             <Loader2 size={16} className="animate-spin" />
                             <span className="text-xs">Loading history…</span>
                         </div>
                     ) : timeline.events.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-slate-500 px-6 text-center">
-                            <Search size={32} className="mb-3 text-slate-700" />
-                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                        <div className="flex flex-col items-center justify-center py-16 text-fg-muted px-6 text-center">
+                            <Search size={32} className="mb-3 text-fg" />
+                            <p className="text-xs font-bold uppercase tracking-widest text-fg-subtle">
                                 {timeline.search || timeline.moduleFilter || timeline.typeFilter.length > 0 ? 'No matching activities' : 'No Activity Yet'}
                             </p>
-                            <p className="text-[11px] text-slate-600 mt-1">
+                            <p className="text-[11px] text-fg-muted mt-1">
                                 {timeline.search || timeline.moduleFilter || timeline.typeFilter.length > 0
                                     ? 'Try adjusting your search or filter.'
                                     : 'Activities will appear here automatically when users interact with this record.'}
@@ -182,7 +185,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                                         }
                                     }}
                                     onDelete={async (e) => {
-                                        if (confirm('Delete this activity?') && e.related_id) {
+                                        if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' }) && e.related_id) {
                                             await activitiesApi.delete(e.related_id);
                                             timeline.removeEvent(e.id);
                                         }
@@ -196,7 +199,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                                     <button
                                         onClick={timeline.loadMore}
                                         disabled={timeline.loadingMore}
-                                        className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                                        className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg bg-surface-raised hover:bg-line rounded-lg transition-colors disabled:opacity-50"
                                     >
                                         {timeline.loadingMore ? <Loader2 size={12} className="animate-spin" /> : <ChevronDown size={12} />}
                                         {timeline.loadingMore ? 'Loading…' : 'Load More'}

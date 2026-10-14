@@ -312,10 +312,10 @@ export default function TargetPlansPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-100">Target Plans</h1>
+        <h1 className="text-lg font-semibold text-fg">Target Plans</h1>
         {canCreatePlan(shell) && (
           <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600"
+            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600"
             onClick={() => setShowForm((s) => !s)}
           >
             {showForm ? 'Cancel' : 'New plan'}
@@ -329,14 +329,14 @@ export default function TargetPlansPage() {
       {!loading && !taskTypes.length && (
         <Panel title="Set up your metrics first">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-fg-subtle">
               This organisation has no metrics yet, so a plan cannot be built
               and every Targets screen will be empty. Load the starter set for
               your industry — metrics, touchpoint channels and loss reasons.
               Nothing existing is overwritten.
             </div>
             <button
-              className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
               onClick={provision}
               disabled={saving}
             >
@@ -369,7 +369,7 @@ export default function TargetPlansPage() {
             <div className="flex flex-wrap gap-4">
               <Field label="Plan name" grow>
                 <input
-                  className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                  className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Sales Intern — Sep–Dec 2026"
@@ -377,7 +377,7 @@ export default function TargetPlansPage() {
               </Field>
               <Field label="Assign to">
                 <select
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={ownerType}
                   onChange={(e) => setOwnerType(e.target.value as any)}
                 >
@@ -397,7 +397,7 @@ export default function TargetPlansPage() {
                 </Field>
               ) : (
                 <Field label="Owner" grow>
-                  <div className="px-2 py-1.5 text-sm text-slate-400">
+                  <div className="px-2 py-1.5 text-sm text-fg-subtle">
                     {ownerType === 'team'
                       ? 'The team as a whole. Allocate it to people after saving.'
                       : 'The whole organisation.'}
@@ -409,14 +409,14 @@ export default function TargetPlansPage() {
             <div className="flex flex-wrap gap-4">
               <Field label="Role">
                 <input
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                 />
               </Field>
               <Field label="Period">
                 <select
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={period}
                   onChange={(e) => setPeriod(e.target.value as Period)}
                 >
@@ -428,7 +428,7 @@ export default function TargetPlansPage() {
               </Field>
               <Field label="Priority">
                 <select
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as any)}
                 >
@@ -440,7 +440,7 @@ export default function TargetPlansPage() {
               <Field label="Start">
                 <input
                   type="date"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                 />
@@ -448,7 +448,7 @@ export default function TargetPlansPage() {
               <Field label="End">
                 <input
                   type="date"
-                  className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                  className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                 />
@@ -458,8 +458,8 @@ export default function TargetPlansPage() {
             <div className="border-t border-slate-800 pt-3 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <span className="text-sm font-medium text-slate-200">Target Metrics & Weights</span>
-                  <p className="text-[11px] text-slate-400">
+                  <span className="text-sm font-medium text-fg">Target Metrics & Weights</span>
+                  <p className="text-[11px] text-fg-subtle">
                     Define measurable target lines with period quotas and weight distributions. Weights must sum to 100%.
                   </p>
                 </div>
@@ -467,7 +467,7 @@ export default function TargetPlansPage() {
                   {catalog && (
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 text-xs font-medium transition-all disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-purple-300 border border-purple-500/30 text-xs font-medium transition-all disabled:opacity-40"
                       onClick={() => setShowLeadStageModal(true)}
                       disabled={!unlinkedLeadStages.length}
                       title={
@@ -481,14 +481,14 @@ export default function TargetPlansPage() {
                   )}
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-amber-300 border border-amber-500/30 text-xs font-medium transition-all"
                     onClick={() => setShowCustomMetricModal(true)}
                   >
-                    <Sparkles size={12} className="text-amber-400" /> + Custom Metric
+                    <Sparkles size={12} className="text-warning" /> + Custom Metric
                   </button>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary text-white text-xs font-medium transition-all shadow-sm"
                     onClick={addLine}
                     disabled={!taskTypes.length}
                   >
@@ -505,14 +505,14 @@ export default function TargetPlansPage() {
 
               {lines.length === 0 ? (
                 <div className="text-center py-8 border border-dashed border-slate-800 rounded-xl">
-                  <p className="text-xs text-slate-400">No target lines added yet.</p>
-                  <p className="text-[11px] text-slate-500 mt-1">Click "Add Metric Row" to configure quotas for this plan.</p>
+                  <p className="text-xs text-fg-subtle">No target lines added yet.</p>
+                  <p className="text-[11px] text-fg-muted mt-1">Click "Add Metric Row" to configure quotas for this plan.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-sm">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-slate-800 bg-slate-800/60 text-slate-400 uppercase tracking-wider font-semibold text-[10px]">
+                      <tr className="border-b border-slate-800 bg-slate-800/60 text-fg-subtle uppercase tracking-wider font-semibold text-[10px]">
                         <th className="py-2.5 px-3 w-10 text-center">#</th>
                         <th className="py-2.5 px-3 min-w-[200px]">Metric</th>
                         <th className="py-2.5 px-3 w-28">Unit</th>
@@ -530,10 +530,10 @@ export default function TargetPlansPage() {
                         return (
                           <React.Fragment key={l.key}>
                             <tr className="hover:bg-slate-800/30 transition-colors">
-                              <td className="py-2.5 px-3 text-center text-slate-500 font-mono">{idx + 1}</td>
+                              <td className="py-2.5 px-3 text-center text-fg-muted font-mono">{idx + 1}</td>
                               <td className="py-2 px-3">
                                 <select
-                                  className="w-full rounded bg-slate-800 border border-slate-700/80 px-2 py-1.5 text-xs text-slate-100 focus:border-blue-500 focus:outline-none"
+                                  className="w-full rounded bg-surface-raised border border-slate-700/80 px-2 py-1.5 text-xs text-fg focus:border-primary focus:outline-none"
                                   value={l.task_type_id}
                                   onChange={(e) =>
                                     updateLine(l.key, { task_type_id: e.target.value })
@@ -579,7 +579,7 @@ export default function TargetPlansPage() {
                                 </select>
                               </td>
                               <td className="py-2 px-3">
-                                <span className="inline-block px-2 py-0.5 rounded bg-slate-800 border border-slate-700/70 text-[11px] text-slate-300 font-mono truncate max-w-[110px]">
+                                <span className="inline-block px-2 py-0.5 rounded bg-surface-raised border border-slate-700/70 text-[11px] text-fg-subtle font-mono truncate max-w-[110px]">
                                   {metric?.unit || metric?.kind || 'count'}
                                 </span>
                               </td>
@@ -588,7 +588,7 @@ export default function TargetPlansPage() {
                                   type="number"
                                   min={0}
                                   step="any"
-                                  className="w-full rounded bg-slate-800 border border-slate-700/80 px-2 py-1.5 text-xs text-slate-100 text-right font-mono focus:border-blue-500 focus:outline-none"
+                                  className="w-full rounded bg-surface-raised border border-slate-700/80 px-2 py-1.5 text-xs text-fg text-right font-mono focus:border-primary focus:outline-none"
                                   value={l.value}
                                   onChange={(e) =>
                                     updateLine(l.key, { value: Number(e.target.value) })
@@ -602,19 +602,19 @@ export default function TargetPlansPage() {
                                     min={0}
                                     max={100}
                                     step="any"
-                                    className="w-full rounded bg-slate-800 border border-slate-700/80 pl-2 pr-5 py-1.5 text-xs text-slate-100 text-right font-mono focus:border-blue-500 focus:outline-none"
+                                    className="w-full rounded bg-surface-raised border border-slate-700/80 pl-2 pr-5 py-1.5 text-xs text-fg text-right font-mono focus:border-primary focus:outline-none"
                                     value={l.weight ?? 0}
                                     onChange={(e) =>
                                       updateLine(l.key, { weight: Number(e.target.value) })
                                     }
                                   />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] pointer-events-none">%</span>
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted text-[10px] pointer-events-none">%</span>
                                 </div>
                               </td>
                               <td className="py-2 px-3">
                                 {isTouchpoint ? (
                                   <select
-                                    className="w-full rounded bg-slate-800 border border-slate-700/80 px-2 py-1.5 text-xs text-slate-100 focus:border-blue-500 focus:outline-none"
+                                    className="w-full rounded bg-surface-raised border border-slate-700/80 px-2 py-1.5 text-xs text-fg focus:border-primary focus:outline-none"
                                     value={l.dimension_value ?? ''}
                                     onChange={(e) =>
                                       updateLine(l.key, {
@@ -631,13 +631,13 @@ export default function TargetPlansPage() {
                                     ))}
                                   </select>
                                 ) : (
-                                  <span className="text-[11px] text-slate-500 italic px-1">All Channels / N/A</span>
+                                  <span className="text-[11px] text-fg-muted italic px-1">All Channels / N/A</span>
                                 )}
                               </td>
                               <td className="py-2 px-3 text-center">
                                 <input
                                   type="checkbox"
-                                  className="rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-0 cursor-pointer"
+                                  className="rounded border-line bg-surface-raised text-primary focus:ring-0 cursor-pointer"
                                   checked={l.useRamp}
                                   onChange={(e) =>
                                     updateLine(l.key, { useRamp: e.target.checked })
@@ -650,7 +650,7 @@ export default function TargetPlansPage() {
                                   <button
                                     type="button"
                                     onClick={() => duplicateLine(l)}
-                                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+                                    className="p-1 rounded hover:bg-surface-raised text-fg-subtle hover:text-fg transition-colors"
                                     title="Duplicate row"
                                   >
                                     <Copy size={13} />
@@ -658,7 +658,7 @@ export default function TargetPlansPage() {
                                   <button
                                     type="button"
                                     onClick={() => removeLine(l.key)}
-                                    className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-rose-400 transition-colors"
+                                    className="p-1 rounded hover:bg-surface-raised text-fg-muted hover:text-danger transition-colors"
                                     title="Remove line"
                                   >
                                     <Trash2 size={13} />
@@ -670,9 +670,9 @@ export default function TargetPlansPage() {
                               <tr className="bg-slate-900/90 border-b border-slate-800/80">
                                 <td colSpan={8} className="px-4 py-2 text-xs">
                                   <div className="flex items-center gap-3">
-                                    <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">Ramp Curve:</span>
+                                    <span className="text-[11px] text-fg-subtle font-medium whitespace-nowrap">Ramp Curve:</span>
                                     <input
-                                      className="flex-1 rounded bg-slate-800 border border-slate-700/80 px-2.5 py-1 text-xs text-slate-100 font-mono focus:border-blue-500 focus:outline-none"
+                                      className="flex-1 rounded bg-surface-raised border border-slate-700/80 px-2.5 py-1 text-xs text-fg font-mono focus:border-primary focus:outline-none"
                                       placeholder="e.g. 20, 35, 50, 75 (comma-separated values per period)"
                                       value={l.ramp.join(', ')}
                                       onChange={(e) =>
@@ -694,24 +694,24 @@ export default function TargetPlansPage() {
                     </tbody>
                     <tfoot>
                       <tr className="border-t border-slate-800 bg-slate-800/40 text-xs font-semibold">
-                        <td colSpan={3} className="py-2.5 px-3 text-slate-400">
-                          Total Lines: <span className="text-slate-200">{lines.length}</span>
+                        <td colSpan={3} className="py-2.5 px-3 text-fg-subtle">
+                          Total Lines: <span className="text-fg">{lines.length}</span>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono text-slate-200">
+                        <td className="py-2.5 px-3 text-right font-mono text-fg">
                           {lines.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0)}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono">
                           <span
                             className={`px-2 py-0.5 rounded text-[11px] ${
                               isWeightValid
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                ? 'bg-emerald-500/15 text-success border border-emerald-500/30'
+                                : 'bg-amber-500/15 text-warning border border-amber-500/30'
                             }`}
                           >
                             {totalWeight.toFixed(1)}% {isWeightValid ? '✓ 100% Valid' : '⚠ Sum to 100%'}
                           </span>
                         </td>
-                        <td colSpan={3} className="py-2.5 px-3 text-slate-500 text-right text-[11px]">
+                        <td colSpan={3} className="py-2.5 px-3 text-fg-muted text-right text-[11px]">
                           {!isWeightValid && 'Total line weights must equal 100% to save'}
                         </td>
                       </tr>
@@ -723,7 +723,7 @@ export default function TargetPlansPage() {
 
             <div className="flex justify-end">
               <button
-                className="rounded bg-slate-700 px-4 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+                className="rounded bg-line px-4 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
                 disabled={!canSubmit || saving}
                 onClick={submit}
               >
@@ -735,7 +735,7 @@ export default function TargetPlansPage() {
       )}
 
       {loading ? (
-        <div className="text-sm text-slate-400">Loading plans…</div>
+        <div className="text-sm text-fg-subtle">Loading plans…</div>
       ) : !plans.length ? (
         <EmptyState message="No target plans yet." />
       ) : (
@@ -743,7 +743,7 @@ export default function TargetPlansPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
                   <th className="py-2 pr-4 font-medium">Name</th>
                   <th className="py-2 pr-4 font-medium">Owner</th>
                   <th className="py-2 pr-4 font-medium">Period</th>
@@ -755,8 +755,8 @@ export default function TargetPlansPage() {
               <tbody>
                 {plans.map((p) => (
                   <tr key={p.id} className="border-b border-slate-800/60">
-                    <td className="py-2 pr-4 text-slate-200">{p.name}</td>
-                    <td className="py-2 pr-4 text-slate-400">
+                    <td className="py-2 pr-4 text-fg">{p.name}</td>
+                    <td className="py-2 pr-4 text-fg-subtle">
                       {p.owner_type}
                       {p.owner_id ? (
                         <>
@@ -765,16 +765,16 @@ export default function TargetPlansPage() {
                         </>
                       ) : null}
                     </td>
-                    <td className="py-2 pr-4 text-slate-400">{p.period}</td>
-                    <td className="py-2 pr-4 text-slate-400">
+                    <td className="py-2 pr-4 text-fg-subtle">{p.period}</td>
+                    <td className="py-2 pr-4 text-fg-subtle">
                       {p.start_date} → {p.end_date}
                     </td>
-                    <td className="py-2 pr-4 text-slate-300">{p.status}</td>
+                    <td className="py-2 pr-4 text-fg-subtle">{p.status}</td>
                     <td className="py-2 text-right">
                       <div className="flex justify-end gap-3">
                         {canEditPlan(shell) && (
                           <button
-                            className="text-xs text-slate-400 hover:text-slate-200"
+                            className="text-xs text-fg-subtle hover:text-fg"
                             onClick={() => setEditing(p.id)}
                           >
                             Edit
@@ -782,7 +782,7 @@ export default function TargetPlansPage() {
                         )}
                         {canAllocatePlan(shell, p.owner_type) && (
                           <button
-                            className="text-xs text-slate-400 hover:text-slate-200"
+                            className="text-xs text-fg-subtle hover:text-fg"
                             onClick={() => setAllocating(p.id)}
                           >
                             Allocate
@@ -807,13 +807,13 @@ export default function TargetPlansPage() {
         >
           <form onSubmit={handleCreateCustomMetric} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Metric Name <span className="text-rose-400">*</span>
+              <label className="block text-xs font-medium text-fg-subtle mb-1">
+                Metric Name <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
                 required
-                className="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded bg-surface-raised border border-line px-3 py-2 text-sm text-fg placeholder-fg-subtle focus:border-primary focus:outline-none"
                 placeholder="e.g. Enterprise Demos Held, Referral Introductions"
                 value={customMetricName}
                 onChange={(e) => setCustomMetricName(e.target.value)}
@@ -821,7 +821,7 @@ export default function TargetPlansPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-fg-subtle mb-1">
                 Metric Type / Kind
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -841,24 +841,24 @@ export default function TargetPlansPage() {
                     }}
                     className={`flex flex-col p-2.5 rounded-lg border text-left text-xs transition-colors ${
                       customMetricKind === k.value
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-200'
-                        : 'border-slate-800 bg-slate-800/60 text-slate-400 hover:border-slate-700'
+                        ? 'border-primary bg-blue-500/10 text-blue-200'
+                        : 'border-slate-800 bg-slate-800/60 text-fg-subtle hover:border-line'
                     }`}
                   >
-                    <span className="font-semibold text-slate-200">{k.label}</span>
-                    <span className="text-[10px] mt-0.5 text-slate-400">{k.desc}</span>
+                    <span className="font-semibold text-fg">{k.label}</span>
+                    <span className="text-[10px] mt-0.5 text-fg-subtle">{k.desc}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-fg-subtle mb-1">
                 Measurement Unit
               </label>
               <input
                 type="text"
-                className="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none font-mono"
+                className="w-full rounded bg-surface-raised border border-line px-3 py-2 text-sm text-fg placeholder-fg-subtle focus:border-primary focus:outline-none font-mono"
                 placeholder="count, currency, hours, calls, etc."
                 value={customMetricUnit}
                 onChange={(e) => setCustomMetricUnit(e.target.value)}
@@ -869,14 +869,14 @@ export default function TargetPlansPage() {
               <button
                 type="button"
                 onClick={() => setShowCustomMetricModal(false)}
-                className="rounded px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                className="rounded px-3 py-1.5 text-xs text-fg-subtle hover:text-fg"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!customMetricName.trim() || customMetricSaving}
-                className="rounded bg-blue-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-1.5"
+                className="rounded bg-primary px-4 py-1.5 text-xs font-medium text-white hover:bg-primary disabled:opacity-50 flex items-center gap-1.5"
               >
                 {customMetricSaving && <Loader2 size={12} className="animate-spin" />}
                 Create & Add to Plan
@@ -894,13 +894,13 @@ export default function TargetPlansPage() {
           size="md"
         >
           <div className="space-y-3">
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-fg-subtle">
               Sourced live from CRM Lead Stage configuration. Selecting a stage
               measures leads entering it during the target period — moving a
               lead onward later does not remove the earlier achievement.
             </p>
             {unlinkedLeadStages.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">
+              <p className="text-xs text-fg-muted italic">
                 Every configured Lead Stage already has a metric.
               </p>
             ) : (
@@ -916,7 +916,7 @@ export default function TargetPlansPage() {
                         await handleAddLeadStageMetric(stage);
                         setShowLeadStageModal(false);
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-slate-800 bg-slate-800/60 hover:border-purple-500/40 text-left text-xs text-slate-200 disabled:opacity-50"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-slate-800 bg-slate-800/60 hover:border-purple-500/40 text-left text-xs text-fg disabled:opacity-50"
                     >
                       <span className="flex items-center gap-2">
                         <span
@@ -926,7 +926,7 @@ export default function TargetPlansPage() {
                         {stage.name}
                       </span>
                       {leadStageSavingId === stage.stage_id && (
-                        <Loader2 size={12} className="animate-spin text-slate-400" />
+                        <Loader2 size={12} className="animate-spin text-fg-subtle" />
                       )}
                     </button>
                   ))}
@@ -936,7 +936,7 @@ export default function TargetPlansPage() {
               <button
                 type="button"
                 onClick={() => setShowLeadStageModal(false)}
-                className="rounded px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                className="rounded px-3 py-1.5 text-xs text-fg-subtle hover:text-fg"
               >
                 Close
               </button>
@@ -959,7 +959,7 @@ function Field({
 }) {
   return (
     <div className={grow ? 'grow basis-64' : ''}>
-      <label className="block text-[11px] text-slate-400 mb-1">{label}</label>
+      <label className="block text-[11px] text-fg-subtle mb-1">{label}</label>
       {children}
     </div>
   );

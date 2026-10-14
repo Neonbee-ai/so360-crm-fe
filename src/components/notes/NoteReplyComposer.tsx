@@ -70,12 +70,12 @@ const NoteReplyComposer: React.FC<Props> = ({ people, onSubmit, placeholder }) =
                     }}
                     placeholder={placeholder || 'Reply… use @ to mention someone'}
                     rows={1}
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-600 outline-none resize-none"
+                    className="flex-1 bg-surface border border-slate-800 rounded-lg px-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none resize-none"
                 />
                 <button
                     onClick={handleSubmit}
                     disabled={!text.trim() || submitting}
-                    className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg disabled:opacity-50"
+                    className="p-2 bg-primary hover:bg-primary text-white rounded-lg disabled:opacity-50"
                 >
                     {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 </button>

@@ -71,9 +71,9 @@ const phoneCountLabel = (value: string): string => {
 };
 
 const INPUT_BASE =
-    'w-full bg-slate-950 border px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-slate-50 placeholder:text-slate-500';
+    'w-full bg-bg border px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-fg placeholder:text-fg-muted';
 const inputCls = (hasError: boolean) =>
-    `${INPUT_BASE} ${hasError ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`;
+    `${INPUT_BASE} ${hasError ? 'border-danger focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`;
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -271,7 +271,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         <Modal isOpen={isOpen} onClose={onClose} title="Create New Lead" size="xl">
             <form onSubmit={handleSubmit} className="space-y-4">
                 {isDuplicate && (
-                    <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-sm">
+                    <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-warning text-sm">
                         <AlertCircle size={18} className="shrink-0" />
                         <p>Potential duplicate detected. A lead with this company name already exists.</p>
                     </div>
@@ -282,7 +282,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 )}
 
                 {error && (
-                    <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm" role="alert">
+                    <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-danger text-sm" role="alert">
                         <AlertCircle size={18} className="shrink-0" />
                         <div>
                             <p>{error}</p>
@@ -300,7 +300,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 )}
 
                 <div className="space-y-1.5">
-                    <label htmlFor="lead-company-name" className="text-sm font-medium text-slate-400">Company Name</label>
+                    <label htmlFor="lead-company-name" className="text-sm font-medium text-fg-subtle">Company Name</label>
                     <input
                         id="lead-company-name"
                         ref={(el) => { fieldRefs.current.company_name = el; }}
@@ -314,13 +314,13 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         aria-describedby={errors.company_name ? 'lead-company-name-error' : undefined}
                     />
                     {errors.company_name && (
-                        <p id="lead-company-name-error" className="text-xs text-red-400 mt-1">{errors.company_name}</p>
+                        <p id="lead-company-name-error" className="text-xs text-danger mt-1">{errors.company_name}</p>
                     )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-first-name" className="text-sm font-medium text-slate-400">First Name <RequiredMark /></label>
+                        <label htmlFor="lead-first-name" className="text-sm font-medium text-fg-subtle">First Name <RequiredMark /></label>
                         <input
                             id="lead-first-name"
                             ref={(el) => { fieldRefs.current.first_name = el; }}
@@ -335,11 +335,11 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             aria-describedby={errors.first_name ? 'lead-first-name-error' : undefined}
                         />
                         {errors.first_name && (
-                            <p id="lead-first-name-error" className="text-xs text-red-400 mt-1">{errors.first_name}</p>
+                            <p id="lead-first-name-error" className="text-xs text-danger mt-1">{errors.first_name}</p>
                         )}
                     </div>
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-last-name" className="text-sm font-medium text-slate-400">Last Name</label>
+                        <label htmlFor="lead-last-name" className="text-sm font-medium text-fg-subtle">Last Name</label>
                         <input
                             id="lead-last-name"
                             ref={(el) => { fieldRefs.current.last_name = el; }}
@@ -353,14 +353,14 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             aria-describedby={errors.last_name ? 'lead-last-name-error' : undefined}
                         />
                         {errors.last_name && (
-                            <p id="lead-last-name-error" className="text-xs text-red-400 mt-1">{errors.last_name}</p>
+                            <p id="lead-last-name-error" className="text-xs text-danger mt-1">{errors.last_name}</p>
                         )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-contact-email" className="text-sm font-medium text-slate-400">Contact Email <RequiredMark /></label>
+                        <label htmlFor="lead-contact-email" className="text-sm font-medium text-fg-subtle">Contact Email <RequiredMark /></label>
                         <input
                             id="lead-contact-email"
                             ref={(el) => { fieldRefs.current.contact_email = el; }}
@@ -384,13 +384,13 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             aria-describedby={emailError ? 'lead-contact-email-error' : undefined}
                         />
                         {emailError && (
-                            <p id="lead-contact-email-error" className="text-xs text-red-400 mt-1">{emailError}</p>
+                            <p id="lead-contact-email-error" className="text-xs text-danger mt-1">{emailError}</p>
                         )}
                     </div>
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-phone" className="text-sm font-medium text-slate-400">
+                        <label htmlFor="lead-phone" className="text-sm font-medium text-fg-subtle">
                             Phone <RequiredMark />
-                            <span className="ml-2 text-xs font-normal text-slate-500">{phoneCountLabel(formData.phone)}</span>
+                            <span className="ml-2 text-xs font-normal text-fg-muted">{phoneCountLabel(formData.phone)}</span>
                         </label>
                         <input
                             id="lead-phone"
@@ -410,16 +410,16 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             aria-describedby={phoneError ? 'lead-phone-error' : undefined}
                         />
                         {phoneError && (
-                            <p id="lead-phone-error" className="text-xs text-red-400 mt-1">{phoneError}</p>
+                            <p id="lead-phone-error" className="text-xs text-danger mt-1">{phoneError}</p>
                         )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-alt-phone" className="text-sm font-medium text-slate-400">
+                        <label htmlFor="lead-alt-phone" className="text-sm font-medium text-fg-subtle">
                             Alt. Phone
-                            <span className="ml-2 text-xs font-normal text-slate-500">{phoneCountLabel(formData.alt_phone)}</span>
+                            <span className="ml-2 text-xs font-normal text-fg-muted">{phoneCountLabel(formData.alt_phone)}</span>
                         </label>
                         <input
                             id="lead-alt-phone"
@@ -434,13 +434,13 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             aria-describedby={errors.alt_phone ? 'lead-alt-phone-error' : undefined}
                         />
                         {errors.alt_phone && (
-                            <p id="lead-alt-phone-error" className="text-xs text-red-400 mt-1">{errors.alt_phone}</p>
+                            <p id="lead-alt-phone-error" className="text-xs text-danger mt-1">{errors.alt_phone}</p>
                         )}
                     </div>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label htmlFor="lead-address" className="text-sm font-medium text-slate-400">Address</label>
+                    <label htmlFor="lead-address" className="text-sm font-medium text-fg-subtle">Address</label>
                     <input
                         id="lead-address"
                         ref={(el) => { fieldRefs.current.address = el; }}
@@ -454,12 +454,12 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         aria-describedby={errors.address ? 'lead-address-error' : undefined}
                     />
                     {errors.address && (
-                        <p id="lead-address-error" className="text-xs text-red-400 mt-1">{errors.address}</p>
+                        <p id="lead-address-error" className="text-xs text-danger mt-1">{errors.address}</p>
                     )}
                 </div>
 
                 <div className="space-y-1.5">
-                    <label htmlFor="lead-country" className="text-sm font-medium text-slate-400">Country</label>
+                    <label htmlFor="lead-country" className="text-sm font-medium text-fg-subtle">Country</label>
                     <select
                         id="lead-country"
                         value={formData.country}
@@ -471,7 +471,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             setFormData(prev => ({ ...prev, country }));
                             setErrors(prev => ({ ...prev, pin_code: validatePostalCode(formData.pin_code, country) }));
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
+                        className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
                     >
                         {countryOptions().map(c => (
                             <option key={c.code} value={c.code}>{c.name}</option>
@@ -481,7 +481,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-city" className="text-sm font-medium text-slate-400">City</label>
+                        <label htmlFor="lead-city" className="text-sm font-medium text-fg-subtle">City</label>
                         <input
                             id="lead-city"
                             ref={(el) => { fieldRefs.current.city = el; }}
@@ -495,19 +495,19 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             aria-describedby={errors.city ? 'lead-city-error' : undefined}
                         />
                         {errors.city && (
-                            <p id="lead-city-error" className="text-xs text-red-400 mt-1">{errors.city}</p>
+                            <p id="lead-city-error" className="text-xs text-danger mt-1">{errors.city}</p>
                         )}
                     </div>
                     <div className="space-y-1.5">
-                        <label htmlFor="lead-pin-code" className="text-sm font-medium text-slate-400">
+                        <label htmlFor="lead-pin-code" className="text-sm font-medium text-fg-subtle">
                             {postalRule.label}
                             {postalRule.digits && (
-                                <span className="ml-2 text-xs font-normal text-slate-500">
+                                <span className="ml-2 text-xs font-normal text-fg-muted">
                                     {formData.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
                                 </span>
                             )}
                             {!postalRule.pattern && (
-                                <span className="ml-2 text-xs font-normal text-slate-500">not used in {postalRule.name}</span>
+                                <span className="ml-2 text-xs font-normal text-fg-muted">not used in {postalRule.name}</span>
                             )}
                         </label>
                         <input
@@ -534,18 +534,18 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             aria-describedby={errors.pin_code ? 'lead-pin-code-error' : undefined}
                         />
                         {errors.pin_code && (
-                            <p id="lead-pin-code-error" className="text-xs text-red-400 mt-1">{errors.pin_code}</p>
+                            <p id="lead-pin-code-error" className="text-xs text-danger mt-1">{errors.pin_code}</p>
                         )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Lead Source</label>
+                        <label className="text-sm font-medium text-fg-subtle">Lead Source</label>
                         <select
                             value={formData.source}
                             onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
+                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
                         >
                             <option value="">— Select source —</option>
                             {sourceTypes.map(opt => (
@@ -555,11 +555,11 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-400">Lead Stage</label>
+                        <label className="text-sm font-medium text-fg-subtle">Lead Stage</label>
                         <select
                             value={formData.status}
                             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
+                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
                         >
                             {leadStages.map(stage => (
                                 <option key={stage.id} value={stage.name}>{stage.name}</option>
@@ -569,7 +569,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-400">Referred By</label>
+                    <label className="text-sm font-medium text-fg-subtle">Referred By</label>
                     <PartnerSearchDropdown
                         partners={partners}
                         value={formData.referred_by}
@@ -579,11 +579,11 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-slate-400">Owner</label>
+                    <label className="text-sm font-medium text-fg-subtle">Owner</label>
                     <select
                         value={formData.owner_id}
                         onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
+                        className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
                     >
                         {users.length === 0 && (
                             <option value="">Loading...</option>
@@ -596,11 +596,11 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
                 {customFieldDefs.length > 0 && (
                     <div className="pt-4 border-t border-slate-800 space-y-4">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Additional Details</p>
+                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Additional Details</p>
                         <div className="grid grid-cols-2 gap-4">
                             {customFieldDefs.map(field => (
                                 <div key={field.id} className="space-y-1.5">
-                                    <label className="text-sm font-medium text-slate-400">{field.label} {field.required && <RequiredMark />}</label>
+                                    <label className="text-sm font-medium text-fg-subtle">{field.label} {field.required && <RequiredMark />}</label>
                                     {field.type === 'boolean' ? (
                                         <div className="flex items-center h-10">
                                             <input
@@ -610,7 +610,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                     ...formData,
                                                     custom_fields: { ...formData.custom_fields, [field.id]: e.target.checked }
                                                 })}
-                                                className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-blue-500/50"
+                                                className="w-4 h-4 rounded bg-bg border-slate-800 text-primary focus:ring-blue-500/50"
                                             />
                                         </div>
                                     ) : field.type === 'SELECT' || field.field_type === 'SELECT' ? (
@@ -621,7 +621,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                 ...formData,
                                                 custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
                                             })}
-                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50"
+                                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
                                         >
                                             <option value="">— Select —</option>
                                             {(field.options || []).map((opt: string) => (
@@ -637,7 +637,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                 ...formData,
                                                 custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
                                             })}
-                                            className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-50 placeholder:text-slate-500"
+                                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg placeholder:text-fg-muted"
                                         />
                                     )}
                                 </div>
@@ -650,7 +650,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800 transition-colors"
+                        className="px-4 py-2 rounded-lg border border-slate-800 text-fg-subtle hover:bg-surface-raised transition-colors"
                     >
                         Cancel
                     </button>
@@ -662,7 +662,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                         disabled={isSubmitting || !isFormValid}
                         aria-disabled={isSubmitting || !isFormValid}
                         title={!isFormValid ? 'Complete all required fields with valid values to create the lead' : undefined}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+                        className="px-6 py-2 bg-primary hover:bg-primary text-white rounded-lg font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
                     >
                         {isSubmitting ? 'Creating...' : 'Create Lead'}
                     </button>

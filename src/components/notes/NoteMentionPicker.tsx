@@ -46,7 +46,7 @@ const NoteMentionPicker: React.FC<Props> = ({ query, people, onPick, onClose }) 
     if (candidates.length === 0) return null;
 
     return (
-        <div role="listbox" className="absolute bottom-full mb-2 left-0 z-20 w-64 max-h-56 overflow-y-auto bg-slate-900 border border-slate-700 rounded-lg shadow-xl">
+        <div role="listbox" className="absolute bottom-full mb-2 left-0 z-20 w-64 max-h-56 overflow-y-auto bg-surface border border-line rounded-lg shadow-xl">
             {candidates.map((p, i) => (
                 <button
                     key={p.id}
@@ -55,10 +55,10 @@ const NoteMentionPicker: React.FC<Props> = ({ query, people, onPick, onClose }) 
                     onClick={() => onPick(p.id, p.full_name || p.email)}
                     onMouseEnter={() => setHighlight(i)}
                     className={`w-full text-left px-3 py-2 flex items-center gap-2 text-sm transition-colors ${
-                        i === highlight ? 'bg-blue-500/15 text-blue-200' : 'text-slate-200 hover:bg-slate-800'
+                        i === highlight ? 'bg-blue-500/15 text-blue-200' : 'text-fg hover:bg-surface-raised'
                     }`}
                 >
-                    <span className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                    <span className="w-6 h-6 rounded-full bg-line flex items-center justify-center text-xs font-semibold flex-shrink-0">
                         {(p.full_name || p.email || '?').charAt(0).toUpperCase()}
                     </span>
                     <span className="truncate">{p.full_name || p.email}</span>

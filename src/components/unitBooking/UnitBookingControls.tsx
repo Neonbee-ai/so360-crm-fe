@@ -35,7 +35,7 @@ export function UnitBookingControls({
         return () => { alive = false; };
     }, []);
 
-    const selectCls = 'bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500';
+    const selectCls = 'bg-surface-raised border border-line rounded-lg px-2 py-1.5 text-xs text-fg focus:outline-none focus:border-primary';
 
     return (
         <div className="flex items-center gap-2 flex-wrap mb-3" data-testid="unit-booking-controls">
@@ -48,7 +48,7 @@ export function UnitBookingControls({
                 <option value="">All projects</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer">
+            <label className="flex items-center gap-1.5 text-[10px] font-bold text-fg-subtle uppercase tracking-widest cursor-pointer">
                 <input
                     type="checkbox"
                     checked={onlyAvailable}

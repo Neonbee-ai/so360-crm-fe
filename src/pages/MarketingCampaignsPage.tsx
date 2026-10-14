@@ -75,8 +75,8 @@ const MarketingCampaignsPage: React.FC = () => {
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100 mb-2">Campaigns</h1>
-          <p className="text-slate-400">Create, send, and manage marketing campaigns from CRM.</p>
+          <h1 className="text-3xl font-bold text-fg mb-2">Campaigns</h1>
+          <p className="text-fg-subtle">Create, send, and manage marketing campaigns from CRM.</p>
         </div>
         <div className="flex items-center gap-4">
           <MarketingStorePicker storeId={storeId} onChange={applyStore} />
@@ -91,16 +91,16 @@ const MarketingCampaignsPage: React.FC = () => {
 
       {showCreate && (
         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 mb-8">
-          <h3 className="text-slate-100 font-bold mb-5">Create Campaign</h3>
+          <h3 className="text-fg font-bold mb-5">Create Campaign</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
-              className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
               placeholder="Campaign name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
             <select
-              className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+              className="bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer"
               value={form.campaignType}
               onChange={(e) => setForm({ ...form, campaignType: e.target.value })}
             >
@@ -111,25 +111,25 @@ const MarketingCampaignsPage: React.FC = () => {
             </select>
           </div>
           <input
-            className="mt-4 w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-4 w-full bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
             placeholder="Description"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
           <input
-            className="mt-4 w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-4 w-full bg-surface border border-slate-800 rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
             placeholder="Subject template"
             value={form.subjectTemplate}
             onChange={(e) => setForm({ ...form, subjectTemplate: e.target.value })}
           />
-          <label className="block text-xs font-semibold text-slate-400 mt-5 mb-2 uppercase tracking-wider">Email Body</label>
+          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 uppercase tracking-wider">Email Body</label>
           <CampaignTemplateEditor
             value={form.bodyTemplate}
             onChange={(html) => setForm({ ...form, bodyTemplate: html })}
           />
-          <label className="block text-xs font-semibold text-slate-400 mt-5 mb-2 uppercase tracking-wider">Audience Filter (JSON)</label>
+          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 uppercase tracking-wider">Audience Filter (JSON)</label>
           <textarea
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-sm text-slate-300 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            className="w-full bg-surface border border-slate-800 rounded-lg px-4 py-3 text-sm text-fg-subtle font-mono focus:outline-none focus:ring-2 focus:ring-focus resize-y"
             rows={5}
             value={form.audienceFilterText}
             onChange={(e) => setForm({ ...form, audienceFilterText: e.target.value })}
@@ -146,13 +146,13 @@ const MarketingCampaignsPage: React.FC = () => {
         </div>
       )}
 
-      {loading && <p className="text-slate-400">Loading...</p>}
-      {error && <p className="text-rose-400 mb-3">{error}</p>}
+      {loading && <p className="text-fg-subtle">Loading...</p>}
+      {error && <p className="text-danger mb-3">{error}</p>}
 
       <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-slate-800 text-slate-400 font-medium">
+            <thead className="bg-surface-raised text-fg-subtle font-medium">
               <tr>
                 <th className="px-4 py-3 font-semibold">Name</th>
                 <th className="px-4 py-3 font-semibold">Type</th>
@@ -165,24 +165,24 @@ const MarketingCampaignsPage: React.FC = () => {
             <tbody className="divide-y divide-slate-800/50 border-t border-slate-800/50">
               {rows.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-4 py-3 text-slate-200 font-medium">{row.name}</td>
-                  <td className="px-4 py-3 text-slate-400 capitalize">{row.campaignType.replace('_', ' ')}</td>
+                  <td className="px-4 py-3 text-fg font-medium">{row.name}</td>
+                  <td className="px-4 py-3 text-fg-subtle capitalize">{row.campaignType.replace('_', ' ')}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-medium ${row.status === 'sent'
-                        ? 'bg-emerald-500/10 text-emerald-400'
+                        ? 'bg-emerald-500/10 text-success'
                         : row.status === 'paused'
-                          ? 'bg-amber-500/10 text-amber-400'
+                          ? 'bg-amber-500/10 text-warning'
                           : row.status === 'sending'
                             ? 'bg-blue-500/10 text-blue-400'
-                            : 'bg-slate-800 text-slate-400'
+                            : 'bg-surface-raised text-fg-subtle'
                         }`}
                     >
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-300 font-medium">{row.totalRecipients || 0}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{formatDateTime(row.sentAt)}</td>
+                  <td className="px-4 py-3 text-fg-subtle font-medium">{row.totalRecipients || 0}</td>
+                  <td className="px-4 py-3 text-fg-subtle text-xs">{formatDateTime(row.sentAt)}</td>
                   <td className="px-4 py-3 flex items-center gap-2">
                     <Button
                       variant="secondary"
@@ -230,7 +230,7 @@ const MarketingCampaignsPage: React.FC = () => {
               ))}
               {rows.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">No campaigns found.</td>
+                  <td colSpan={6} className="px-4 py-8 text-center text-fg-muted text-sm">No campaigns found.</td>
                 </tr>
               )}
             </tbody>

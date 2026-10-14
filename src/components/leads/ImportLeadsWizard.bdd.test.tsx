@@ -235,7 +235,7 @@ describe('Given the upload step', () => {
             const steps = () => within(screen.getByRole('list', { name: 'Import steps' })).getAllByRole('listitem');
             expect(steps()[0]).toHaveAttribute('aria-current', 'step');
             expect(steps()[1]).not.toHaveAttribute('aria-current');
-            expect(steps()[1].className).toMatch(/text-slate-500/);
+            expect(steps()[1].className).toMatch(/text-fg-muted/);
             await toMapStep();
             expect(steps()[1]).toHaveAttribute('aria-current', 'step');
             expect(steps()[0].className).toMatch(/text-blue-400/);

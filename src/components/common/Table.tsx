@@ -26,7 +26,7 @@ export const Table = <T extends { id: string }>({
 
     if (data.length === 0) {
         return (
-            <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-12 text-center text-slate-400 shadow-sm">
+            <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-12 text-center text-fg-subtle shadow-sm">
                 {emptyMessage}
             </div>
         );
@@ -35,7 +35,7 @@ export const Table = <T extends { id: string }>({
     return (
         <div className="overflow-x-auto rounded-xl border border-slate-700/50 shadow-sm">
             <table className="w-full text-left text-sm">
-                <thead className="bg-slate-900 text-slate-400 font-medium border-b border-slate-700/50">
+                <thead className="bg-surface text-fg-subtle font-medium border-b border-slate-700/50">
                     <tr>
                         {columns.map((col, i) => (
                             <th key={i} className={`px-6 py-4 ${col.className ?? ''}`}>
@@ -44,7 +44,7 @@ export const Table = <T extends { id: string }>({
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/30 bg-slate-950">
+                <tbody className="divide-y divide-slate-700/30 bg-bg">
                     {data.map((item) => (
                         <tr
                             key={item.id}

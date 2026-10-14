@@ -6,7 +6,7 @@ import DetailBackLink from '../components/common/DetailBackLink';
 import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -18,15 +18,16 @@ import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
-    draft: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Draft' },
+    draft: { bg: 'bg-slate-500/20', text: 'text-fg-subtle', label: 'Draft' },
     pending_approval: { bg: 'bg-amber-500/20', text: 'text-amber-300', label: 'Pending Approval' },
     approved: { bg: 'bg-green-500/20', text: 'text-green-300', label: 'Approved' },
     rejected: { bg: 'bg-red-500/20', text: 'text-red-300', label: 'Rejected' },
     converted: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Converted' },
-    expired: { bg: 'bg-gray-500/20', text: 'text-gray-300', label: 'Expired' },
+    expired: { bg: 'bg-gray-500/20', text: 'text-fg-subtle', label: 'Expired' },
 };
 
 const QuoteDetailPage = () => {
+    const [confirm, confirmDialog] = useConfirm();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { recordActivity } = useActivity();
@@ -223,13 +224,13 @@ const QuoteDetailPage = () => {
         }
     };
 
-    const handleOpenApprovalModal = () => {
+    const handleOpenApprovalModal = async () => {
         if (!quote) return;
         // Warn if any line exceeds available stock
         const oosLines = lines.filter(l => l.item_id && stockMap.has(l.item_id) && (stockMap.get(l.item_id) ?? 0) < l.quantity);
         if (oosLines.length > 0) {
             const names = oosLines.map(l => l.description || l.item_id).join(', ');
-            if (!window.confirm(`Warning: ${oosLines.length} line item(s) may have insufficient stock (${names}). Submit anyway?`)) return;
+            if (!await confirm({ title: 'Please confirm', message: `Warning: ${oosLines.length} line item(s) may have insufficient stock (${names}). Submit anyway?`, intent: 'default', confirmLabel: 'Continue' })) return;
         }
         setShowApprovalModal(true);
     };
@@ -387,8 +388,8 @@ const QuoteDetailPage = () => {
         return (
             <div className="p-8">
                 <div className="animate-pulse space-y-4">
-                    <div className="h-8 bg-slate-800 rounded w-64" />
-                    <div className="h-96 bg-slate-800 rounded" />
+                    <div className="h-8 bg-surface-raised rounded w-64" />
+                    <div className="h-96 bg-surface-raised rounded" />
                 </div>
             </div>
         );
@@ -398,8 +399,8 @@ const QuoteDetailPage = () => {
         return (
             <div className="p-8">
                 <div className="text-center py-16">
-                    <FileText className="w-16 h-16 mx-auto text-slate-400 mb-4" />
-                    <h2 className="text-xl font-semibold text-slate-300 mb-2">Quote not found</h2>
+                    <FileText className="w-16 h-16 mx-auto text-fg-subtle mb-4" />
+                    <h2 className="text-xl font-semibold text-fg-subtle mb-2">Quote not found</h2>
                     <button
                         onClick={() => navigate('/crm/quotes')}
                         className="text-blue-400 hover:text-blue-300"
@@ -436,20 +437,21 @@ const QuoteDetailPage = () => {
 
     return (
         <div className="p-8">
+            {confirmDialog}
             {/* Header */}
             <DetailBackLink fallbackTo="/crm/quotes" className="mb-4" />
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold text-slate-100">
+                            <h1 className="text-2xl font-bold text-fg">
                                 {quote.quote_number || `Quote #${quote.id.slice(0, 8)}`}
                             </h1>
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
                                 {status.label}
                             </span>
                         </div>
-                        <p className="text-slate-400 mt-1">
+                        <p className="text-fg-subtle mt-1">
                             Created {formatDate(quote.created_at)}
                             {quote.valid_until && ` • Valid until ${formatDate(quote.valid_until)}`}
                         </p>
@@ -460,7 +462,7 @@ const QuoteDetailPage = () => {
                     {canCreateQuote && canEdit && !isEditing && (
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 text-fg-subtle hover:text-fg border border-line hover:border-line rounded-lg transition-colors"
                         >
                             <Edit2 className="w-4 h-4" />
                             Edit
@@ -474,14 +476,14 @@ const QuoteDetailPage = () => {
                                     setDraftValues({});
                                     fetchQuote();
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors disabled:opacity-50"
                             >
                                 <Save className="w-4 h-4" />
                                 {isSaving ? 'Saving...' : 'Save'}
@@ -491,7 +493,7 @@ const QuoteDetailPage = () => {
                     {canSubmit && !isEditing && (
                         <button
                             onClick={handleOpenApprovalModal}
-                            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-amber-700 text-white rounded-lg transition-colors"
                         >
                             <Send className="w-4 h-4" />
                             Submit for Approval
@@ -510,14 +512,14 @@ const QuoteDetailPage = () => {
                         <>
                             <button
                                 onClick={() => setShowRejectModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 text-red-400 hover:text-white border border-red-500/50 hover:bg-red-600 rounded-lg transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 text-danger hover:text-white border border-red-500/50 hover:bg-danger rounded-lg transition-colors"
                             >
                                 <XCircle className="w-4 h-4" />
                                 Reject
                             </button>
                             <button
                                 onClick={handleApprove}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-success hover:bg-green-700 text-white rounded-lg transition-colors"
                             >
                                 <CheckCircle className="w-4 h-4" />
                                 Approve
@@ -527,7 +529,7 @@ const QuoteDetailPage = () => {
                     {canConvertQuote && canConvert && (
                         <button
                             onClick={() => setShowConvertModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
                         >
                             <FileText className="w-4 h-4" />
                             Convert to Order
@@ -555,7 +557,7 @@ const QuoteDetailPage = () => {
                                 sellerState: (currentOrg as any)?.billing_address?.state,
                                 sellerCountry: (currentOrg as any)?.billing_address?.country,
                             }))}
-                            className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-50 border border-slate-600 hover:border-slate-500 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 text-fg-subtle hover:text-fg border border-line hover:border-line rounded-lg transition-colors"
                         >
                             <Printer className="w-4 h-4" />
                             Print Quote
@@ -564,7 +566,7 @@ const QuoteDetailPage = () => {
                     {!isEditing && (
                         <button
                             onClick={openSendModal}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
                         >
                             <Send className="w-4 h-4" />
                             Email to Customer
@@ -584,10 +586,10 @@ const QuoteDetailPage = () => {
                 <div className="mb-6 p-5 rounded-xl border border-amber-500/30 bg-amber-500/10 space-y-3">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2.5">
-                            <Clock className="w-5 h-5 text-amber-400" />
+                            <Clock className="w-5 h-5 text-warning" />
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-slate-100 text-base">
+                                    <span className="font-semibold text-fg text-base">
                                         Approval in Progress
                                     </span>
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold border border-amber-400/30">
@@ -597,7 +599,7 @@ const QuoteDetailPage = () => {
                             </div>
                         </div>
                     </div>
-                    <p className="text-sm text-slate-400 leading-relaxed">
+                    <p className="text-sm text-fg-subtle leading-relaxed">
                         This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.
                         {isSubmitter && !isAuthorizedApprover && (
                             <span className="block mt-1 text-xs text-amber-300 font-medium">
@@ -605,14 +607,14 @@ const QuoteDetailPage = () => {
                             </span>
                         )}
                         {isAuthorizedApprover && (
-                            <span className="block mt-1 text-xs text-emerald-400 font-medium">
+                            <span className="block mt-1 text-xs text-success font-medium">
                                 You are an assigned reviewer for this quote. Please examine the commercial terms using the action buttons above.
                             </span>
                         )}
                     </p>
                     {currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0 && (
                         <div className="pt-3 border-t border-amber-500/20 flex flex-wrap gap-2 items-center">
-                            <span className="text-xs font-semibold text-slate-400">Required Approvers:</span>
+                            <span className="text-xs font-semibold text-fg-subtle">Required Approvers:</span>
                             {currentApprovalRequest.approvers.map((a: any, idx: number) => (
                                 <span
                                     key={a.id || idx}
@@ -621,10 +623,10 @@ const QuoteDetailPage = () => {
                                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                                             : a.status === 'rejected'
                                             ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                                            : 'bg-slate-800/90 border-slate-700 text-slate-300'
+                                            : 'bg-slate-800/90 border-line text-fg-subtle'
                                     }`}
                                 >
-                                    <span className="font-medium text-slate-200">{a.approver_name || a.approver_email || 'Approver'}</span>
+                                    <span className="font-medium text-fg">{a.approver_name || a.approver_email || 'Approver'}</span>
                                     <span className="text-[10px] uppercase font-bold opacity-80">({a.status})</span>
                                 </span>
                             ))}
@@ -637,11 +639,11 @@ const QuoteDetailPage = () => {
             <div className="grid grid-cols-3 gap-6">
                 <div className="col-span-2 space-y-6">
                     {/* Basic Info */}
-                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-slate-100 mb-4">Quote Details</h2>
+                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                        <h2 className="text-lg font-semibold text-fg mb-4">Quote Details</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Title</label>
+                                <label className="block text-sm font-medium text-fg-subtle mb-1">Title</label>
                                 {isEditing ? (
                                     <input
                                         type="text"
@@ -651,11 +653,11 @@ const QuoteDetailPage = () => {
                                         placeholder="Enter quote title..."
                                     />
                                 ) : (
-                                    <p className="text-slate-200">{quote.title || 'Untitled Quote'}</p>
+                                    <p className="text-fg">{quote.title || 'Untitled Quote'}</p>
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Valid Until</label>
+                                <label className="block text-sm font-medium text-fg-subtle mb-1">Valid Until</label>
                                 {isEditing ? (
                                     <input
                                         type="date"
@@ -664,7 +666,7 @@ const QuoteDetailPage = () => {
                                         className={EDITABLE_FIELD_CLASS}
                                     />
                                 ) : (
-                                    <p className="text-slate-200">
+                                    <p className="text-fg">
                                         {quote.valid_until ? formatDate(quote.valid_until) : 'Not set'}
                                     </p>
                                 )}
@@ -673,13 +675,13 @@ const QuoteDetailPage = () => {
                     </div>
 
                     {/* Line Items */}
-                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
+                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-slate-100">Line Items</h2>
+                            <h2 className="text-lg font-semibold text-fg">Line Items</h2>
                             {canCreateQuote && isEditing && (
                                 <button
                                     onClick={addLine}
-                                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-400 hover:text-blue-300 border border-blue-500/50 hover:border-blue-400 rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-400 hover:text-blue-300 border border-blue-500/50 hover:border-primary rounded-lg transition-colors"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Add Line
@@ -690,14 +692,14 @@ const QuoteDetailPage = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="border-b border-slate-700">
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase">Description</th>
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-slate-400 uppercase w-28">Stock</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-24">Qty</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-32">Unit Price</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-24">Disc %</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-24">Tax %</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-32">Amount</th>
+                                    <tr className="border-b border-line">
+                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle uppercase">Description</th>
+                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-28">Stock</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-24">Qty</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-32">Unit Price</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-24">Disc %</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-24">Tax %</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-32">Amount</th>
                                         {isEditing && <th className="w-12"></th>}
                                     </tr>
                                 </thead>
@@ -715,25 +717,25 @@ const QuoteDetailPage = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => setPickerLineIndex(index)}
-                                                            className="w-full flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-700 hover:border-blue-500/50 rounded text-sm transition-colors text-left"
+                                                            className="w-full flex items-center gap-2 px-3 py-1.5 bg-surface border border-line hover:border-blue-500/50 rounded text-sm transition-colors text-left"
                                                         >
                                                             {line.item_image_url ? (
                                                                 <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
                                                             ) : (
-                                                                <Package className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                                                                <Package className="w-4 h-4 text-fg-muted flex-shrink-0" />
                                                             )}
                                                             {line.item_name ? (
                                                                 <span className="flex-1 min-w-0">
-                                                                    <span className="text-slate-200 truncate block">{line.item_name}</span>
+                                                                    <span className="text-fg truncate block">{line.item_name}</span>
                                                                     <span className="flex items-center gap-1 mt-0.5">
-                                                                        <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-slate-400 rounded">{line.sku}</span>
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-fg-subtle rounded">{line.sku}</span>
                                                                         {line.sub_sku && line.sub_sku !== 'NIL' && (
                                                                             <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded">{line.sub_sku}</span>
                                                                         )}
                                                                     </span>
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-slate-500">Select product...</span>
+                                                                <span className="text-fg-muted">Select product...</span>
                                                             )}
                                                         </button>
                                                         {/* Free-text description */}
@@ -751,10 +753,10 @@ const QuoteDetailPage = () => {
                                                             <img src={line.item_image_url} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 mt-0.5" />
                                                         )}
                                                         <div className="min-w-0">
-                                                            <span className="text-slate-200 block">{line.description}</span>
+                                                            <span className="text-fg block">{line.description}</span>
                                                             {line.sku && (
                                                                 <span className="flex items-center gap-1 mt-0.5">
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-slate-400 rounded">{line.sku}</span>
+                                                                    <span className="text-xs px-1.5 py-0.5 bg-slate-400/20 text-fg-subtle rounded">{line.sku}</span>
                                                                     {line.sub_sku && line.sub_sku !== 'NIL' && (
                                                                         <span className="text-xs px-1.5 py-0.5 bg-blue-900/40 text-blue-400 rounded">{line.sub_sku}</span>
                                                                     )}
@@ -767,16 +769,16 @@ const QuoteDetailPage = () => {
                                             <td className="py-3 px-4">
                                                 {line.item_id ? (
                                                     stock === undefined ? (
-                                                        <span className="text-xs text-slate-500">—</span>
+                                                        <span className="text-xs text-fg-muted">—</span>
                                                     ) : isOOS ? (
-                                                        <span className="text-xs font-medium text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">OOS</span>
+                                                        <span className="text-xs font-medium text-danger bg-rose-500/10 px-2 py-0.5 rounded">OOS</span>
                                                     ) : isLowStock ? (
-                                                        <span className="text-xs font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                        <span className="text-xs font-medium text-warning bg-amber-500/10 px-2 py-0.5 rounded">{stock} avail</span>
                                                     ) : (
-                                                        <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                        <span className="text-xs font-medium text-success bg-emerald-500/10 px-2 py-0.5 rounded">{stock} avail</span>
                                                     )
                                                 ) : (
-                                                    <span className="text-xs text-slate-400">—</span>
+                                                    <span className="text-xs text-fg-subtle">—</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right">
@@ -790,7 +792,7 @@ const QuoteDetailPage = () => {
                                                         className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
-                                                    <span className="text-slate-200">{line.quantity}</span>
+                                                    <span className="text-fg">{line.quantity}</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right">
@@ -804,7 +806,7 @@ const QuoteDetailPage = () => {
                                                         className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
-                                                    <span className="text-slate-200">{formatCurrency(line.unit_price)}</span>
+                                                    <span className="text-fg">{formatCurrency(line.unit_price)}</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right">
@@ -818,7 +820,7 @@ const QuoteDetailPage = () => {
                                                         className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
-                                                    <span className="text-slate-300">{line.discount_percent || 0}%</span>
+                                                    <span className="text-fg-subtle">{line.discount_percent || 0}%</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right">
@@ -832,11 +834,11 @@ const QuoteDetailPage = () => {
                                                         className={EDITABLE_FIELD_SM_NUMERIC_CLASS}
                                                     />
                                                 ) : (
-                                                    <span className="text-slate-300">{line.tax_rate || 0}%</span>
+                                                    <span className="text-fg-subtle">{line.tax_rate || 0}%</span>
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-right" data-testid="quote-line-amount">
-                                                <span className="text-slate-200 font-medium">
+                                                <span className="text-fg font-medium">
                                                     {formatCurrency(quoteLinePreTaxAmount(line))}
                                                 </span>
                                             </td>
@@ -844,7 +846,7 @@ const QuoteDetailPage = () => {
                                                 <td className="py-3 px-4">
                                                     <button
                                                         onClick={() => removeLine(index)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"
+                                                        className="p-1.5 text-fg-subtle hover:text-danger hover:bg-line rounded transition-colors"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -854,7 +856,7 @@ const QuoteDetailPage = () => {
                                     ); })}
                                     {lines.length === 0 && (
                                         <tr>
-                                            <td colSpan={isEditing ? 8 : 7} className="py-8 text-center text-slate-400">
+                                            <td colSpan={isEditing ? 8 : 7} className="py-8 text-center text-fg-subtle">
                                                 No line items added yet
                                             </td>
                                         </tr>
@@ -864,22 +866,22 @@ const QuoteDetailPage = () => {
                         </div>
 
                         {/* Totals */}
-                        <div className="mt-6 pt-4 border-t border-slate-700">
+                        <div className="mt-6 pt-4 border-t border-line">
                             <div className="flex justify-end">
                                 <div className="w-64 space-y-2">
-                                    <div className="flex justify-between text-slate-400">
+                                    <div className="flex justify-between text-fg-subtle">
                                         <span>Subtotal</span>
                                         <span>{formatCurrency(totals.subtotal)}</span>
                                     </div>
-                                    <div className="flex justify-between text-slate-400">
+                                    <div className="flex justify-between text-fg-subtle">
                                         <span>Discount</span>
                                         <span>-{formatCurrency(totals.discountTotal)}</span>
                                     </div>
-                                    <div className="flex justify-between text-slate-400">
+                                    <div className="flex justify-between text-fg-subtle">
                                         <span>Tax</span>
                                         <span>{formatCurrency(totals.taxTotal)}</span>
                                     </div>
-                                    <div className="flex justify-between text-lg font-semibold text-slate-100 pt-2 border-t border-slate-700">
+                                    <div className="flex justify-between text-lg font-semibold text-fg pt-2 border-t border-line">
                                         <span>Total</span>
                                         <span>{formatCurrency(totals.grandTotal)}</span>
                                     </div>
@@ -889,11 +891,11 @@ const QuoteDetailPage = () => {
                     </div>
 
                     {/* Notes & Terms */}
-                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-slate-100 mb-4">Notes & Terms</h2>
+                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                        <h2 className="text-lg font-semibold text-fg mb-4">Notes & Terms</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Notes</label>
+                                <label className="block text-sm font-medium text-fg-subtle mb-1">Notes</label>
                                 {isEditing ? (
                                     <textarea
                                         value={notes}
@@ -903,12 +905,12 @@ const QuoteDetailPage = () => {
                                         placeholder="Add any notes..."
                                     />
                                 ) : (
-                                    <p className="text-slate-300">{quote.notes || 'No notes'}</p>
+                                    <p className="text-fg-subtle">{quote.notes || 'No notes'}</p>
                                 )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-400 mb-1">Payment Terms</label>
+                                    <label className="block text-sm font-medium text-fg-subtle mb-1">Payment Terms</label>
                                     {isEditing ? (
                                         <input
                                             type="text"
@@ -918,11 +920,11 @@ const QuoteDetailPage = () => {
                                             placeholder="e.g. Net 30"
                                         />
                                     ) : (
-                                        <p className="text-slate-300">{quote.payment_terms || '—'}</p>
+                                        <p className="text-fg-subtle">{quote.payment_terms || '—'}</p>
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-400 mb-1">Customer Reference</label>
+                                    <label className="block text-sm font-medium text-fg-subtle mb-1">Customer Reference</label>
                                     {isEditing ? (
                                         <input
                                             type="text"
@@ -932,11 +934,11 @@ const QuoteDetailPage = () => {
                                             placeholder="Buyer's RFQ / PO number"
                                         />
                                     ) : (
-                                        <p className="text-slate-300">{quote.customer_reference || '—'}</p>
+                                        <p className="text-fg-subtle">{quote.customer_reference || '—'}</p>
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-400 mb-1">Delivery Terms</label>
+                                    <label className="block text-sm font-medium text-fg-subtle mb-1">Delivery Terms</label>
                                     {isEditing ? (
                                         <input
                                             type="text"
@@ -946,12 +948,12 @@ const QuoteDetailPage = () => {
                                             placeholder="e.g. Ex-stock, 2-3 weeks from PO"
                                         />
                                     ) : (
-                                        <p className="text-slate-300">{quote.delivery_terms || '—'}</p>
+                                        <p className="text-fg-subtle">{quote.delivery_terms || '—'}</p>
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-400 mb-1">
-                                        Incoterm <span className="text-slate-500 font-normal">(Incoterms&reg; 2020)</span>
+                                    <label className="block text-sm font-medium text-fg-subtle mb-1">
+                                        Incoterm <span className="text-fg-muted font-normal">(Incoterms&reg; 2020)</span>
                                     </label>
                                     {isEditing ? (
                                         <select
@@ -965,7 +967,7 @@ const QuoteDetailPage = () => {
                                             ))}
                                         </select>
                                     ) : (
-                                        <p className="text-slate-300">
+                                        <p className="text-fg-subtle">
                                             {quote.incoterm
                                                 ? `${quote.incoterm} — ${INCOTERM_LABELS[quote.incoterm] ?? ''}`.trim()
                                                 : '—'}
@@ -974,7 +976,7 @@ const QuoteDetailPage = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Terms & Conditions</label>
+                                <label className="block text-sm font-medium text-fg-subtle mb-1">Terms & Conditions</label>
                                 {isEditing ? (
                                     <textarea
                                         value={termsAndConditions}
@@ -984,7 +986,7 @@ const QuoteDetailPage = () => {
                                         placeholder="Add terms and conditions..."
                                     />
                                 ) : (
-                                    <p className="text-slate-300 whitespace-pre-wrap">
+                                    <p className="text-fg-subtle whitespace-pre-wrap">
                                         {quote.terms_and_conditions || 'No terms specified'}
                                     </p>
                                 )}
@@ -1003,20 +1005,20 @@ const QuoteDetailPage = () => {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-slate-100 mb-4">Summary</h2>
+                    <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                        <h2 className="text-lg font-semibold text-fg mb-4">Summary</h2>
                         <div className="space-y-4">
                             <div>
-                                <span className="text-sm text-slate-400">Grand Total</span>
-                                <p className="text-2xl font-bold text-slate-100">{formatCurrency(totals.grandTotal)}</p>
+                                <span className="text-sm text-fg-subtle">Grand Total</span>
+                                <p className="text-2xl font-bold text-fg">{formatCurrency(totals.grandTotal)}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700">
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-line">
                                 <div>
-                                    <span className="text-sm text-slate-400">Items</span>
-                                    <p className="text-lg font-semibold text-slate-200">{lines.length}</p>
+                                    <span className="text-sm text-fg-subtle">Items</span>
+                                    <p className="text-lg font-semibold text-fg">{lines.length}</p>
                                 </div>
                                 <div>
-                                    <span className="text-sm text-slate-400">Status</span>
+                                    <span className="text-sm text-fg-subtle">Status</span>
                                     <p className={`text-lg font-semibold ${status.text}`}>{status.label}</p>
                                 </div>
                             </div>
@@ -1028,36 +1030,36 @@ const QuoteDetailPage = () => {
                         in Customers, and a quote must reference it rather than keep
                         its own divergent copy. */}
                     {customer && (
-                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
-                            <h2 className="text-lg font-semibold text-slate-100 mb-4">Customer</h2>
+                        <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                            <h2 className="text-lg font-semibold text-fg mb-4">Customer</h2>
                             <button
                                 onClick={() => navigate(`/crm/customers/${customer.id}`)}
-                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors"
+                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-surface-raised border border-line rounded-lg transition-colors"
                             >
-                                <p className="font-medium text-slate-200">
+                                <p className="font-medium text-fg">
                                     {customer.company_name || customer.contact_name || '—'}
                                 </p>
                                 {customer.company_name && customer.contact_name && (
-                                    <p className="text-sm text-slate-400">{customer.contact_name}</p>
+                                    <p className="text-sm text-fg-subtle">{customer.contact_name}</p>
                                 )}
                             </button>
                             <div className="mt-4 space-y-2 text-sm">
                                 {customer.contact_email && (
                                     <div className="flex justify-between gap-3">
-                                        <span className="text-slate-400">Email</span>
-                                        <span className="text-slate-300 truncate">{customer.contact_email}</span>
+                                        <span className="text-fg-subtle">Email</span>
+                                        <span className="text-fg-subtle truncate">{customer.contact_email}</span>
                                     </div>
                                 )}
                                 {customer.phone && (
                                     <div className="flex justify-between gap-3">
-                                        <span className="text-slate-400">Phone</span>
-                                        <span className="text-slate-300">{customer.phone}</span>
+                                        <span className="text-fg-subtle">Phone</span>
+                                        <span className="text-fg-subtle">{customer.phone}</span>
                                     </div>
                                 )}
                                 {customer.tax_id && (
                                     <div className="flex justify-between gap-3">
-                                        <span className="text-slate-400">Tax ID</span>
-                                        <span className="text-slate-300 truncate">{customer.tax_id}</span>
+                                        <span className="text-fg-subtle">Tax ID</span>
+                                        <span className="text-fg-subtle truncate">{customer.tax_id}</span>
                                     </div>
                                 )}
                             </div>
@@ -1065,14 +1067,14 @@ const QuoteDetailPage = () => {
                     )}
 
                     {quote.deal && (
-                        <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
-                            <h2 className="text-lg font-semibold text-slate-100 mb-4">Related Deal</h2>
+                        <div className="bg-slate-900/50 border border-line rounded-lg p-6">
+                            <h2 className="text-lg font-semibold text-fg mb-4">Related Deal</h2>
                             <button
                                 onClick={() => navigate(`/crm/deal/${quote.deal_id}`)}
-                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors"
+                                className="w-full text-left p-4 bg-slate-800/50 hover:bg-surface-raised border border-line rounded-lg transition-colors"
                             >
-                                <p className="font-medium text-slate-200">{quote.deal.name}</p>
-                                <p className="text-sm text-slate-400">{quote.deal.company_name}</p>
+                                <p className="font-medium text-fg">{quote.deal.name}</p>
+                                <p className="text-sm text-fg-subtle">{quote.deal.company_name}</p>
                             </button>
                         </div>
                     )}
@@ -1096,10 +1098,10 @@ const QuoteDetailPage = () => {
             {/* Reject Modal */}
             {showRejectModal && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-slate-100 mb-4">Reject Quote</h2>
+                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
+                        <h2 className="text-xl font-semibold text-fg mb-4">Reject Quote</h2>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-fg-subtle mb-2">
                                 Reason for rejection *
                             </label>
                             <textarea
@@ -1116,14 +1118,14 @@ const QuoteDetailPage = () => {
                                     setShowRejectModal(false);
                                     setRejectReason('');
                                 }}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleReject}
                                 disabled={!rejectReason}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-white rounded-lg transition-colors"
                             >
                                 Reject Quote
                             </button>
@@ -1136,21 +1138,21 @@ const QuoteDetailPage = () => {
             {/* Convert Modal */}
             {showConvertModal && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
-                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-slate-100 mb-4">Convert to Sales Order</h2>
-                        <p className="text-slate-400 mb-6">
+                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
+                        <h2 className="text-xl font-semibold text-fg mb-4">Convert to Sales Order</h2>
+                        <p className="text-fg-subtle mb-6">
                             This will convert the approved quote to a sales order. This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowConvertModal(false)}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleConvert}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
                             >
                                 Convert to Order
                             </button>
@@ -1167,11 +1169,11 @@ const QuoteDetailPage = () => {
                 size="lg"
             >
                 <div className="px-6 py-5 space-y-4">
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-fg-subtle">
                         The quotation PDF is generated and attached automatically.
                     </p>
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-1">Send to</label>
+                        <label className="block text-sm font-medium text-fg-subtle mb-1">Send to</label>
                         <input
                             type="email"
                             value={sendTo}
@@ -1180,14 +1182,14 @@ const QuoteDetailPage = () => {
                             className={EDITABLE_FIELD_CLASS}
                         />
                         {!customer?.contact_email && (
-                            <p className="mt-1 text-xs text-amber-400">
+                            <p className="mt-1 text-xs text-warning">
                                 This quote has no linked customer email — enter an address to send it.
                             </p>
                         )}
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-1">
-                            Message <span className="text-slate-500 font-normal">(optional)</span>
+                        <label className="block text-sm font-medium text-fg-subtle mb-1">
+                            Message <span className="text-fg-muted font-normal">(optional)</span>
                         </label>
                         <textarea
                             value={sendMessage}
@@ -1203,7 +1205,7 @@ const QuoteDetailPage = () => {
                         type="button"
                         onClick={() => setShowSendModal(false)}
                         disabled={isSending}
-                        className="px-4 py-2 text-slate-400 hover:text-slate-50 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -1211,7 +1213,7 @@ const QuoteDetailPage = () => {
                         type="button"
                         onClick={handleSendQuote}
                         disabled={isSending || !sendTo.trim()}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Send className="w-4 h-4" />
                         {isSending ? 'Sending…' : 'Send quotation'}
@@ -1222,17 +1224,17 @@ const QuoteDetailPage = () => {
             {/* Withdraw Modal */}
             {showWithdrawModal && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md p-6">
-                        <div className="flex items-center gap-2 mb-2 text-amber-400">
+                    <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex items-center gap-2 mb-2 text-warning">
                             <RotateCcw className="w-5 h-5" />
-                            <h2 className="text-xl font-semibold text-slate-100">Withdraw Approval Request</h2>
+                            <h2 className="text-xl font-semibold text-fg">Withdraw Approval Request</h2>
                         </div>
-                        <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+                        <p className="text-sm text-fg-subtle mb-4 leading-relaxed">
                             This will cancel the active approval cycle and return this quote to <strong>Draft</strong> status, unlocking it for edits and resubmission.
                         </p>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                                Reason for withdrawal <span className="text-slate-500 font-normal">(optional)</span>
+                            <label className="block text-sm font-medium text-fg-subtle mb-1.5">
+                                Reason for withdrawal <span className="text-fg-muted font-normal">(optional)</span>
                             </label>
                             <textarea
                                 value={withdrawReason}
@@ -1249,14 +1251,14 @@ const QuoteDetailPage = () => {
                                     setWithdrawReason('');
                                 }}
                                 disabled={isWithdrawing}
-                                className="px-4 py-2 text-slate-400 hover:text-slate-100 transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleWithdraw}
                                 disabled={isWithdrawing}
-                                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2 font-medium"
+                                className="px-4 py-2 bg-warning hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2 font-medium"
                             >
                                 <RotateCcw className="w-4 h-4" />
                                 {isWithdrawing ? 'Withdrawing...' : 'Confirm Withdrawal'}

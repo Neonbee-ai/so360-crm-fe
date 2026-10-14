@@ -14,7 +14,7 @@ interface CreateDealModalProps {
     onSuccess: (deal: Deal) => void;
 }
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all font-bold';
+const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold';
 
 const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, companyName = '', onClose, onSuccess }) => {
     const { recordActivity } = useActivity();
@@ -238,9 +238,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                         type="checkbox"
                         checked={!!val}
                         onChange={e => setVal(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-blue-500 focus:ring-blue-500"
+                        className="w-4 h-4 rounded border-line bg-bg text-primary focus:ring-focus"
                     />
-                    <span className="text-sm font-bold text-slate-300">{field.label}</span>
+                    <span className="text-sm font-bold text-fg-subtle">{field.label}</span>
                 </label>
             );
         }
@@ -249,7 +249,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
             const opts: string[] = field.options || [];
             return (
                 <div key={fieldId} className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</label>
+                    <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{field.label}</label>
                     <div className="relative">
                         <select
                             value={val || ''}
@@ -259,7 +259,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             <option value="">Select…</option>
                             {opts.map(o => <option key={o} value={o}>{o}</option>)}
                         </select>
-                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" />
                     </div>
                 </div>
             );
@@ -267,7 +267,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
         return (
             <div key={fieldId} className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{field.label}</label>
+                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{field.label}</label>
                 <input
                     type={type === 'number' ? 'number' : type === 'date' ? 'date' : 'text'}
                     value={val || ''}
@@ -281,14 +281,14 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     return (
         <>
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-                <div className="bg-slate-900 border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+                <div className="bg-surface border border-slate-700/50 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
                     {/* Sticky header */}
                     <div className="px-8 py-6 border-b border-slate-700/50 bg-slate-800/20 flex items-center justify-between flex-shrink-0 rounded-t-3xl">
-                        <h2 className="text-xl font-black text-slate-50 uppercase tracking-tight flex items-center gap-2">
-                            <Briefcase className="text-blue-500" size={24} />
+                        <h2 className="text-xl font-black text-fg uppercase tracking-tight flex items-center gap-2">
+                            <Briefcase className="text-primary" size={24} />
                             New Deal
                         </h2>
-                        <button onClick={onClose} className="text-slate-500 hover:text-slate-50 transition-colors">
+                        <button onClick={onClose} className="text-fg-muted hover:text-fg transition-colors">
                             <X size={20} />
                         </button>
                     </div>
@@ -297,16 +297,16 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
                         <div className="flex-1 overflow-y-auto p-8 space-y-5">
                             {leadId && companyError && (
-                                <p className="text-[11px] text-rose-400 font-bold">{companyError}</p>
+                                <p className="text-[11px] text-danger font-bold">{companyError}</p>
                             )}
                             {/* Customer / Company (Pipeline mode only) */}
                             {!leadId && (
                                 <div className="space-y-2" ref={searchRef}>
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                        <UserIcon size={11} /> Customer / Company <span className="text-rose-500">*</span>
+                                    <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest flex items-center gap-1.5">
+                                        <UserIcon size={11} /> Customer / Company <span className="text-danger">*</span>
                                     </label>
                                     <div className="relative">
-                                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
                                         <input
                                             type="text"
                                             value={selectedCompanyName || customerSearch}
@@ -317,10 +317,10 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                                 setCompanyError('');
                                             }}
                                             placeholder="Search customer or type company name…"
-                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                         />
                                         {customerDropdownOpen && customerResults.length > 0 && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden">
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-xl shadow-xl z-20 overflow-hidden">
                                                 {customerResults.map(c => (
                                                     <button
                                                         key={c.id}
@@ -335,22 +335,22 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                                             // Auto-generate effect re-fires from the effectiveCompany/
                                                             // effectiveLeadId change above — no manual fallback needed here.
                                                         }}
-                                                        className="w-full text-left px-4 py-2.5 hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-0"
+                                                        className="w-full text-left px-4 py-2.5 hover:bg-surface-raised transition-colors border-b border-slate-800 last:border-0"
                                                     >
-                                                        <div className="text-sm font-bold text-slate-100">{c.company_name || c.contact_name || c.name}</div>
-                                                        {c.contact_email && <div className="text-[11px] text-slate-500">{c.contact_email}</div>}
+                                                        <div className="text-sm font-bold text-fg">{c.company_name || c.contact_name || c.name}</div>
+                                                        {c.contact_email && <div className="text-[11px] text-fg-muted">{c.contact_email}</div>}
                                                     </button>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
-                                    {companyError && <p className="text-[11px] text-rose-400 font-bold">{companyError}</p>}
+                                    {companyError && <p className="text-[11px] text-danger font-bold">{companyError}</p>}
                                 </div>
                             )}
 
                             {/* Deal Name */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Deal Name</label>
+                                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Deal Name</label>
                                 <input
                                     type="text"
                                     value={name}
@@ -367,31 +367,31 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             {/* Value + Stage */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Value</label>
+                                    <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Value</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold select-none pointer-events-none">{currencySymbol}</span>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted text-xs font-bold select-none pointer-events-none">{currencySymbol}</span>
                                         <input
                                             type="number"
                                             value={value}
                                             onChange={e => setValue(e.target.value)}
-                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold"
+                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                             required
                                             min="0"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stage</label>
+                                    <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Stage</label>
                                     <div className="relative">
                                         <select
                                             value={stage}
                                             onChange={e => setStage(e.target.value as DealStage)}
-                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-10 py-3 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-10 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                         >
                                             {settings.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                                         </select>
-                                        <ChevronDown size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
-                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+                                        <ChevronDown size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none z-10" />
                                     </div>
                                 </div>
                             </div>
@@ -399,26 +399,26 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             {/* Dates */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Start Date</label>
+                                    <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Start Date</label>
                                     <div className="relative">
-                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
                                         <input
                                             type="date"
                                             value={startDate}
                                             onChange={e => setStartDate(e.target.value)}
-                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Close Date</label>
+                                    <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Close Date</label>
                                     <div className="relative">
-                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10" />
+                                        <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none z-10" />
                                         <input
                                             type="date"
                                             value={expectedClose}
                                             onChange={e => setExpectedClose(e.target.value)}
-                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-3 outline-none focus:border-blue-500 transition-all font-bold cursor-pointer [color-scheme:dark]"
+                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold cursor-pointer [color-scheme:dark]"
                                         />
                                     </div>
                                 </div>
@@ -426,33 +426,33 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
                             {/* Owner */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Owner (User)</label>
+                                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Owner (User)</label>
                                 <div className="relative">
                                     <select
                                         value={ownerId}
                                         onChange={e => setOwnerId(e.target.value)}
-                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
                                     </select>
-                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
+                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none z-10" />
                                 </div>
                             </div>
 
                             {/* Sales Rep */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                    Sales Rep <span className="text-slate-700 normal-case font-bold tracking-normal">(optional)</span>
+                                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
+                                    Sales Rep <span className="text-fg normal-case font-bold tracking-normal">(optional)</span>
                                 </label>
                                 {salesReps.length > 8 && (
                                     <div className="relative">
-                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" />
                                         <input
                                             type="text"
                                             value={salesRepSearch}
                                             onChange={e => setSalesRepSearch(e.target.value)}
                                             placeholder="Search by name, email, designation or department…"
-                                            className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl pl-9 pr-4 py-2 outline-none focus:border-blue-500 transition-all text-xs"
+                                            className="w-full bg-bg border border-slate-800 text-fg rounded-xl pl-9 pr-4 py-2 outline-none focus:border-primary transition-all text-xs"
                                         />
                                     </div>
                                 )}
@@ -460,7 +460,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     <select
                                         value={ownerPersonId}
                                         onChange={e => { hasUserPickedSalesRep.current = true; setOwnerPersonId(e.target.value); }}
-                                        className="w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-3 pr-10 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         <option value="">Select sales rep...</option>
                                         {visibleSalesReps.map((p) => (
@@ -471,24 +471,24 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                             </option>
                                         ))}
                                     </select>
-                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" />
                                 </div>
                                 {/* Never fail silently: an empty registry and a failed
                                     fetch look identical in a bare <select>. */}
                                 {salesRepsLoading ? (
-                                    <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5">
+                                    <p className="text-[10px] font-bold text-fg-muted flex items-center gap-1.5">
                                         <Loader2 size={10} className="animate-spin" />
                                         Loading employees...
                                     </p>
                                 ) : salesRepsError ? (
-                                    <p className="text-[10px] font-bold text-rose-400">
+                                    <p className="text-[10px] font-bold text-danger">
                                         Could not load employees from People Connect.{' '}
-                                        <button type="button" onClick={loadSalesReps} className="underline hover:text-rose-300">
+                                        <button type="button" onClick={loadSalesReps} className="underline hover:text-danger-300">
                                             Retry
                                         </button>
                                     </p>
                                 ) : salesReps.length === 0 ? (
-                                    <p className="text-[10px] font-bold text-slate-500">
+                                    <p className="text-[10px] font-bold text-fg-muted">
                                         No active employees found in People Connect → People Registry.
                                     </p>
                                 ) : null}
@@ -497,7 +497,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             {/* Custom fields */}
                             {customFieldDefs.length > 0 && (
                                 <div className="border-t border-slate-800 pt-5 space-y-5">
-                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Additional Information</p>
+                                    <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Additional Information</p>
                                     {customFieldDefs.map(f => renderCustomField(f))}
                                 </div>
                             )}
@@ -508,14 +508,14 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-50 transition-colors"
+                                className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+                                className="px-8 py-3 bg-primary hover:bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
                             >
                                 {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                                 Create Deal

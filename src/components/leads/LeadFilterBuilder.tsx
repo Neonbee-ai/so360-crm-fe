@@ -60,7 +60,7 @@ function RuleRow({
     <div className="flex items-center gap-2 flex-wrap" data-testid="filter-rule">
       <select
         aria-label="Field"
-        className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
         value={rule.field}
         onChange={(e) => onChange(path, { field: e.target.value })}
       >
@@ -73,7 +73,7 @@ function RuleRow({
 
       <select
         aria-label="Operator"
-        className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
         value={rule.op}
         onChange={(e) => onChange(path, { op: e.target.value as FilterRule['op'] })}
       >
@@ -90,7 +90,7 @@ function RuleRow({
           <input
             aria-label="From"
             type={inputType}
-            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg w-24 focus:outline-none focus:ring-2 focus:ring-focus"
             value={Array.isArray(rule.value) ? (rule.value[0] ?? '') : ''}
             onChange={(e) =>
               onChange(path, {
@@ -98,11 +98,11 @@ function RuleRow({
               })
             }
           />
-          <span className="text-slate-500 text-xs">and</span>
+          <span className="text-fg-muted text-xs">and</span>
           <input
             aria-label="To"
             type={inputType}
-            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg w-24 focus:outline-none focus:ring-2 focus:ring-focus"
             value={Array.isArray(rule.value) ? (rule.value[1] ?? '') : ''}
             onChange={(e) =>
               onChange(path, {
@@ -115,7 +115,7 @@ function RuleRow({
         <select
           aria-label="Values"
           multiple
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 min-w-[10rem] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg min-w-[10rem] focus:outline-none focus:ring-2 focus:ring-focus"
           value={Array.isArray(rule.value) ? rule.value : []}
           onChange={(e) =>
             onChange(path, {
@@ -132,7 +132,7 @@ function RuleRow({
       ) : field?.type === 'enum' && field.options ? (
         <select
           aria-label="Value"
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
           value={typeof rule.value === 'string' ? rule.value : ''}
           onChange={(e) => onChange(path, { value: e.target.value })}
         >
@@ -147,7 +147,7 @@ function RuleRow({
         <input
           aria-label="Value"
           type={inputType}
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
           value={typeof rule.value === 'string' || typeof rule.value === 'number' ? rule.value : ''}
           onChange={(e) => onChange(path, { value: e.target.value })}
         />
@@ -156,7 +156,7 @@ function RuleRow({
       <button
         type="button"
         aria-label="Remove rule"
-        className="text-slate-500 hover:text-rose-400 transition-colors ml-auto"
+        className="text-fg-muted hover:text-danger transition-colors ml-auto"
         onClick={() => onRemove(path)}
       >
         <Trash2 size={15} />
@@ -189,20 +189,20 @@ function GroupBlock({
       className={
         depth === 0
           ? 'space-y-3'
-          : 'space-y-3 border-l-2 border-slate-700 pl-3 py-2 rounded bg-slate-800/40'
+          : 'space-y-3 border-l-2 border-line pl-3 py-2 rounded bg-slate-800/40'
       }
       data-testid={depth === 0 ? 'filter-root' : 'filter-group'}
     >
       <div className="flex items-center gap-2">
-        <div className="inline-flex rounded-md overflow-hidden border border-slate-700 text-xs">
+        <div className="inline-flex rounded-md overflow-hidden border border-line text-xs">
           {(['and', 'or'] as const).map((c) => (
             <button
               key={c}
               type="button"
               className={`px-2.5 py-1 uppercase tracking-wide font-medium transition-colors ${
                 group.combinator === c
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-primary text-white'
+                  : 'bg-surface-raised text-fg-subtle hover:text-fg'
               }`}
               onClick={() => onSetCombinator(path, c)}
             >
@@ -210,14 +210,14 @@ function GroupBlock({
             </button>
           ))}
         </div>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-fg-muted">
           {group.combinator === 'and' ? 'Match all of' : 'Match any of'}
         </span>
         {depth > 0 && (
           <button
             type="button"
             aria-label="Remove group"
-            className="text-slate-500 hover:text-rose-400 transition-colors ml-auto"
+            className="text-fg-muted hover:text-danger transition-colors ml-auto"
             onClick={() => onRemove(path)}
           >
             <X size={15} />
@@ -254,7 +254,7 @@ function GroupBlock({
         {depth < 3 && (
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-1 text-fg-subtle hover:text-fg transition-colors"
             onClick={() => onAddGroup(path)}
           >
             <FolderPlus size={13} /> Add group
@@ -271,19 +271,19 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
   const activeCount = countActiveRules(tree);
 
   return (
-    <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-        <div className="flex items-center gap-2 text-slate-100 font-semibold">
+    <div className="w-full max-w-2xl bg-surface border border-line rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+        <div className="flex items-center gap-2 text-fg font-semibold">
           <FilterIcon size={16} className="text-blue-400" />
           Advanced Filters
           {activeCount > 0 && (
-            <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5">{activeCount}</span>
+            <span className="text-xs bg-primary text-white rounded-full px-2 py-0.5">{activeCount}</span>
           )}
         </div>
         <button
           type="button"
           aria-label="Close"
-          className="text-slate-400 hover:text-slate-200 transition-colors"
+          className="text-fg-subtle hover:text-fg transition-colors"
           onClick={onClose}
         >
           <X size={18} />
@@ -292,7 +292,7 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
 
       <div className="px-4 py-4 overflow-y-auto flex-1">
         {tree.rules.length === 0 ? (
-          <div className="text-sm text-slate-500 mb-3">No conditions yet — add one to start filtering.</div>
+          <div className="text-sm text-fg-muted mb-3">No conditions yet — add one to start filtering.</div>
         ) : null}
         <GroupBlock
           group={tree}
@@ -306,10 +306,10 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
         />
       </div>
 
-      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-700">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-line">
         <button
           type="button"
-          className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+          className="text-sm text-fg-subtle hover:text-fg transition-colors"
           onClick={() => setTree(emptyFilter())}
         >
           Clear all
@@ -317,14 +317,14 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 text-sm text-slate-300 hover:text-white transition-colors"
+            className="px-3 py-1.5 text-sm text-fg-subtle hover:text-white transition-colors"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium transition-colors"
+            className="px-4 py-1.5 text-sm bg-primary hover:bg-primary text-white rounded-md font-medium transition-colors"
             onClick={() => onApply(serializeFilter(tree))}
           >
             Apply{activeCount > 0 ? ` (${activeCount})` : ''}

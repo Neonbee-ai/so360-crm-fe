@@ -195,10 +195,10 @@ describe('TaskDetailPage', () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
       const allBtns = screen.getAllByRole('button');
-      const trashBtn = allBtns.find(b => b.className.includes('hover:text-rose'));
+      const trashBtn = allBtns.find(b => b.className.includes('hover:text-danger'));
       fireEvent.click(trashBtn!);
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
-      const deleteConfirmBtn = screen.getAllByText('Delete').find(el => el.closest('button')?.className.includes('bg-red'));
+      const deleteConfirmBtn = screen.getAllByText('Delete').find(el => el.closest('button')?.className.includes('bg-danger'));
       fireEvent.click(deleteConfirmBtn!);
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('task-1'));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');

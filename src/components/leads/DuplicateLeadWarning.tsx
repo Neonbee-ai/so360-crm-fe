@@ -13,7 +13,7 @@ interface Props {
  */
 export const DuplicateLeadWarning: React.FC<Props> = ({ duplicate, onCancel }) => (
     <div
-        className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-sm"
+        className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-warning text-sm"
         role="alert"
         data-testid="duplicate-lead-warning"
     >
@@ -34,7 +34,7 @@ export const DuplicateLeadWarning: React.FC<Props> = ({ duplicate, onCancel }) =
                 <button
                     type="button"
                     onClick={onCancel}
-                    className="px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 font-medium"
+                    className="px-3 py-1.5 rounded-lg text-fg-subtle hover:bg-surface-raised font-medium"
                 >
                     Cancel
                 </button>

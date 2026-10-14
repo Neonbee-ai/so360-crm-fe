@@ -27,10 +27,10 @@ export const STATUS_TEXT: Record<TargetStatus, string> = {
 };
 
 export const STATUS_BAR: Record<TargetStatus, string> = {
-  on_track: 'bg-emerald-500',
-  at_risk: 'bg-amber-500',
-  behind: 'bg-rose-500',
-  achieved: 'bg-emerald-500',
+  on_track: 'bg-success',
+  at_risk: 'bg-warning',
+  behind: 'bg-danger',
+  achieved: 'bg-success',
   exceeded: 'bg-sky-500',
 };
 
@@ -69,7 +69,7 @@ export function ProgressBar({
   const pct = Math.min(raw, 100);
   return (
     <div className={compact ? '' : 'mt-2'}>
-      <div className={`${compact ? 'h-1.5' : 'h-2'} bg-slate-800 rounded-full overflow-hidden`}>
+      <div className={`${compact ? 'h-1.5' : 'h-2'} bg-surface-raised rounded-full overflow-hidden`}>
         <div
           className={`h-full rounded-full transition-all duration-500 ${STATUS_BAR[status]}`}
           style={{ width: `${pct}%` }}
@@ -83,7 +83,7 @@ export function ProgressBar({
 export function ElapsedBar({ fraction }: { fraction: number }) {
   const pct = Math.min(Math.max(fraction, 0), 1) * 100;
   return (
-    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+    <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
       <div
         className="h-full rounded-full bg-slate-500"
         style={{ width: `${pct}%` }}
@@ -132,7 +132,7 @@ export function formatValue(
  */
 export function Sparkline({ points }: { points: TrendPoint[] }) {
   if (!points.length) {
-    return <div className="text-xs text-slate-500">No history yet</div>;
+    return <div className="text-xs text-fg-muted">No history yet</div>;
   }
   const max = Math.max(
     1,
@@ -150,7 +150,7 @@ export function Sparkline({ points }: { points: TrendPoint[] }) {
             title={`${p.period_start} — ${formatPct(a)}${p.plan_changed ? ' (target changed)' : ''}`}
           >
             {a === null ? (
-              <div className="w-full border-t border-dashed border-slate-700 mt-auto" />
+              <div className="w-full border-t border-dashed border-line mt-auto" />
             ) : (
               <div
                 className={`w-full rounded-sm ${p.plan_changed ? 'bg-slate-500' : 'bg-slate-400'}`}
@@ -173,7 +173,7 @@ export function TrendArrow({
   const map = {
     up: { glyph: '▲', cls: 'text-emerald-300' },
     down: { glyph: '▼', cls: 'text-rose-300' },
-    flat: { glyph: '▬', cls: 'text-slate-400' },
+    flat: { glyph: '▬', cls: 'text-fg-subtle' },
   } as const;
   const { glyph, cls } = map[direction];
   return <span className={`text-xs ${cls}`}>{glyph}</span>;
@@ -191,7 +191,7 @@ export function Panel({
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-slate-200">{title}</h3>
+        <h3 className="text-sm font-medium text-fg">{title}</h3>
         {action}
       </div>
       {children}
@@ -201,7 +201,7 @@ export function Panel({
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-800 p-8 text-center text-sm text-slate-400">
+    <div className="rounded-lg border border-dashed border-slate-800 p-8 text-center text-sm text-fg-subtle">
       {message}
     </div>
   );
@@ -289,11 +289,11 @@ export function usePeopleDirectory() {
  */
 export function PersonName({ id }: { id?: string | null }) {
   const { byId, loading } = usePeopleDirectory();
-  if (!id) return <span className="text-slate-500">—</span>;
+  if (!id) return <span className="text-fg-muted">—</span>;
   const person = byId.get(id);
   if (person) return <span>{person.full_name}</span>;
   return (
-    <span className="text-slate-400" title={id}>
+    <span className="text-fg-subtle" title={id}>
       {loading ? '…' : String(id).slice(0, 8)}
     </span>
   );
@@ -355,11 +355,11 @@ export function PersonPicker({
             setQuery('');
             setOpen(true);
           }}
-          className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 text-left"
+          className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg text-left"
         >
           {selected.full_name}
           {selected.job_title ? (
-            <span className="text-slate-400"> · {selected.job_title}</span>
+            <span className="text-fg-subtle"> · {selected.job_title}</span>
           ) : null}
         </button>
         {allowClear ? (
@@ -370,7 +370,7 @@ export function PersonPicker({
               onChange('');
               setQuery('');
             }}
-            className="text-xs text-slate-400 hover:text-slate-200"
+            className="text-xs text-fg-subtle hover:text-fg"
           >
             clear
           </button>
@@ -382,7 +382,7 @@ export function PersonPicker({
   return (
     <div className="relative" ref={boxRef}>
       <input
-        className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+        className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
         value={query}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
@@ -397,15 +397,15 @@ export function PersonPicker({
         aria-label="Person"
       />
       {open && !loading && !failed ? (
-        <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-slate-700 bg-slate-900 py-1 text-sm shadow-lg">
+        <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-line bg-surface py-1 text-sm shadow-lg">
           {matches.length === 0 ? (
-            <li className="px-2 py-1.5 text-slate-500">No matching people</li>
+            <li className="px-2 py-1.5 text-fg-muted">No matching people</li>
           ) : (
             matches.map((p) => (
               <li key={p.id}>
                 <button
                   type="button"
-                  className="block w-full px-2 py-1.5 text-left text-slate-100 hover:bg-slate-800"
+                  className="block w-full px-2 py-1.5 text-left text-fg hover:bg-surface-raised"
                   onClick={() => {
                     onChange(p.id);
                     setQuery('');
@@ -414,7 +414,7 @@ export function PersonPicker({
                 >
                   {p.full_name}
                   {p.job_title || p.department_name ? (
-                    <span className="text-slate-400">
+                    <span className="text-fg-subtle">
                       {' · '}
                       {[p.job_title, p.department_name].filter(Boolean).join(' · ')}
                     </span>
@@ -497,18 +497,18 @@ export function PeriodPicker({
   return (
     <div className="flex items-end gap-2">
       <div>
-        <label className="block text-[11px] text-slate-400 mb-1">{label}</label>
+        <label className="block text-[11px] text-fg-subtle mb-1">{label}</label>
         <input
           type="date"
           aria-label={label}
-          className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+          className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
       </div>
       {value ? (
         <button
-          className="pb-1.5 text-xs text-slate-400 hover:text-slate-200"
+          className="pb-1.5 text-xs text-fg-subtle hover:text-fg"
           onClick={() => onChange('')}
         >
           today

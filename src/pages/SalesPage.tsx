@@ -19,15 +19,15 @@ import { exportService } from '../services/exportService';
 export const SALES_PAGE_SIZE = 25;
 
 const PAYMENT_CHIP: Record<SalePaymentStatus, string> = {
-    none: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
-    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    none: 'bg-slate-500/10 text-fg-subtle border-slate-500/30',
+    pending: 'bg-amber-500/10 text-warning border-amber-500/30',
     partial: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    paid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    overdue: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+    paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
+    overdue: 'bg-rose-500/10 text-danger border-rose-500/30',
 };
 
-const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap';
-const TD = 'px-4 py-3 text-xs font-bold text-slate-300 whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-fg-muted whitespace-nowrap';
+const TD = 'px-4 py-3 text-xs font-bold text-fg-subtle whitespace-nowrap';
 
 /**
  * Sales register (RE Phase C §27, `submodule:crm:commissions`). One row per
@@ -92,8 +92,8 @@ const SalesPage: React.FC = () => {
         <div className="p-6 space-y-6">
             <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-50">Sales</h1>
-                    <p className="text-sm text-slate-400">Every unit sale with its payment progress and commission.</p>
+                    <h1 className="text-2xl font-black text-fg">Sales</h1>
+                    <p className="text-sm text-fg-subtle">Every unit sale with its payment progress and commission.</p>
                 </div>
                 {canExport ? (
                     <ExportMenu label="Export sales" onExport={(format) => exportService.sales(filters, format)} />
@@ -103,20 +103,20 @@ const SalesPage: React.FC = () => {
             <SalesFiltersBar value={filters} onChange={onFilters} developers={developers} />
 
             {rangeInvalid ? null : loading ? (
-                <div role="status" className="p-8 text-sm text-slate-400">Loading sales…</div>
+                <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales…</div>
             ) : error ? (
                 <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
                     <span className="text-sm font-bold text-rose-300">{error}</span>
-                    <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-200 bg-slate-800 hover:bg-slate-700">
+                    <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
                         <RefreshCw size={12} /> Retry
                     </button>
                 </div>
             ) : rows.length === 0 ? (
-                <div data-testid="sales-empty" className="p-10 text-center bg-slate-900 border border-slate-800 rounded-2xl text-sm text-slate-400">
+                <div data-testid="sales-empty" className="p-10 text-center bg-surface border border-slate-800 rounded-2xl text-sm text-fg-subtle">
                     No sales match these filters.
                 </div>
             ) : (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                <div className="bg-surface border border-slate-800 rounded-2xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <table aria-label="Sales" className="w-full">
                             <thead className="border-b border-slate-800">
@@ -160,14 +160,14 @@ const SalesPage: React.FC = () => {
                         </table>
                     </div>
                     <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-800">
-                        <span className="text-xs font-bold text-slate-400" data-testid="sales-paging">
+                        <span className="text-xs font-bold text-fg-subtle" data-testid="sales-paging">
                             Page {page} of {pages} · {total} {total === 1 ? 'sale' : 'sales'}
                         </span>
                         <div className="flex items-center gap-2">
-                            <button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="p-2 rounded-xl bg-slate-800 text-slate-300 disabled:opacity-40">
+                            <button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="p-2 rounded-xl bg-surface-raised text-fg-subtle disabled:opacity-40">
                                 <ChevronLeft size={14} />
                             </button>
-                            <button type="button" aria-label="Next page" disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="p-2 rounded-xl bg-slate-800 text-slate-300 disabled:opacity-40">
+                            <button type="button" aria-label="Next page" disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="p-2 rounded-xl bg-surface-raised text-fg-subtle disabled:opacity-40">
                                 <ChevronRight size={14} />
                             </button>
                         </div>

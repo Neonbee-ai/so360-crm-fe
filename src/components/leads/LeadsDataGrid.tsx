@@ -107,14 +107,14 @@ const STATUS_COLORS: Record<string, string> = {
   New: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   Contacted: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
   Qualified: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  'Proposal Sent': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  Negotiation: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  Converted: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  Lost: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  'Proposal Sent': 'bg-amber-500/10 text-warning border-amber-500/20',
+  Negotiation: 'bg-orange-500/10 text-warning border-orange-500/20',
+  Converted: 'bg-emerald-500/10 text-success border-emerald-500/20',
+  Lost: 'bg-rose-500/10 text-danger border-rose-500/20',
 };
 
 function statusColor(status: string) {
-  return STATUS_COLORS[status] ?? 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+  return STATUS_COLORS[status] ?? 'bg-slate-500/10 text-fg-subtle border-slate-500/20';
 }
 
 function initials(name: string) {
@@ -127,15 +127,15 @@ function initials(name: string) {
 }
 
 function scoreColor(score: number) {
-  if (score >= 70) return 'text-emerald-400';
-  if (score >= 40) return 'text-amber-400';
-  return 'text-rose-400';
+  if (score >= 70) return 'text-success';
+  if (score >= 40) return 'text-warning';
+  return 'text-danger';
 }
 
 function scoreBg(score: number) {
-  if (score >= 70) return 'bg-emerald-500';
-  if (score >= 40) return 'bg-amber-500';
-  return 'bg-rose-500';
+  if (score >= 70) return 'bg-success';
+  if (score >= 40) return 'bg-warning';
+  return 'bg-danger';
 }
 
 // ─── Column definitions ───────────────────────────────────────────────────────
@@ -158,11 +158,11 @@ const COL_DEFS: ColDef[] = [
     sortKey: 'company_name',
     render: (lead) => (
       <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="font-semibold text-slate-50 truncate leading-tight">
+        <span className="font-semibold text-fg truncate leading-tight">
           {lead.company_name}
         </span>
         {lead.type && (
-          <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+          <span className="text-[10px] uppercase tracking-wider text-fg-muted font-medium">
             {lead.type}
           </span>
         )}
@@ -182,12 +182,12 @@ const COL_DEFS: ColDef[] = [
       return (
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0"
+            className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0"
             title={name}
           >
             {name !== '—' ? initials(name) : '?'}
           </div>
-          <span className="text-slate-300 text-sm truncate">{name}</span>
+          <span className="text-fg-subtle text-sm truncate">{name}</span>
         </div>
       );
     },
@@ -202,14 +202,14 @@ const COL_DEFS: ColDef[] = [
         <a
           href={`mailto:${lead.contact_email}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-blue-400 transition-colors text-sm truncate"
+          className="flex items-center gap-1.5 text-fg-subtle hover:text-blue-400 transition-colors text-sm truncate"
           title={lead.contact_email}
         >
           <Mail size={13} className="shrink-0" />
           <span className="truncate">{lead.contact_email}</span>
         </a>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       ),
   },
   {
@@ -222,13 +222,13 @@ const COL_DEFS: ColDef[] = [
         <a
           href={`tel:${lead.phone}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-emerald-400 transition-colors text-sm"
+          className="flex items-center gap-1.5 text-fg-subtle hover:text-success transition-colors text-sm"
         >
           <Phone size={13} className="shrink-0" />
           {lead.phone}
         </a>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       ),
   },
   {
@@ -249,10 +249,10 @@ const COL_DEFS: ColDef[] = [
             <select
               value={currentStageId}
               onChange={(e) => ctx.onStatusChange(lead, e.target.value)}
-              className={`px-2 py-1 rounded-full text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${color}`}
+              className={`px-2 py-1 rounded-full text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-focus ${color}`}
             >
               {ctx.leadStages.map((stage) => (
-                <option key={stage.id} value={stage.id} className="bg-slate-900 text-slate-300">
+                <option key={stage.id} value={stage.id} className="bg-surface text-fg-subtle">
                   {stage.name}
                 </option>
               ))}
@@ -283,7 +283,7 @@ const COL_DEFS: ColDef[] = [
               className="w-6 h-6 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+            <div className="w-6 h-6 rounded-full bg-line text-fg-subtle flex items-center justify-center text-[10px] font-bold shrink-0">
               {ownerName !== '—' ? initials(ownerName) : '?'}
             </div>
           )}
@@ -291,16 +291,16 @@ const COL_DEFS: ColDef[] = [
             <select
               value={lead.owner?.id || ''}
               onChange={(e) => ctx.onOwnerChange(lead, e.target.value)}
-              className="bg-transparent text-slate-300 text-sm focus:outline-none cursor-pointer hover:text-slate-50 transition-colors truncate max-w-[100px]"
+              className="bg-transparent text-fg-subtle text-sm focus:outline-none cursor-pointer hover:text-fg transition-colors truncate max-w-[100px]"
             >
               {ctx.users.map((u) => (
-                <option key={u.id} value={u.id} className="bg-slate-900 text-slate-300">
+                <option key={u.id} value={u.id} className="bg-surface text-fg-subtle">
                   {u.full_name}
                 </option>
               ))}
             </select>
           ) : (
-            <span className="text-slate-300 text-sm truncate">{ownerName}</span>
+            <span className="text-fg-subtle text-sm truncate">{ownerName}</span>
           )}
         </div>
       );
@@ -313,9 +313,9 @@ const COL_DEFS: ColDef[] = [
     minWidth: 90,
     render: (lead) =>
       lead.source ? (
-        <span className="text-slate-300 text-sm truncate">{lead.source}</span>
+        <span className="text-fg-subtle text-sm truncate">{lead.source}</span>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       ),
   },
   {
@@ -328,7 +328,7 @@ const COL_DEFS: ColDef[] = [
       const score = lead.auto_score ?? 0;
       return (
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-line rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${scoreBg(score)} transition-all`}
               style={{ width: `${Math.min(100, score)}%` }}
@@ -349,9 +349,9 @@ const COL_DEFS: ColDef[] = [
     sortKey: 'created_at',
     render: (lead, _ctx, fmt) => (
       <div className="flex flex-col gap-0.5">
-        <span className="text-slate-300 text-xs">{fmt(lead.created_at)}</span>
+        <span className="text-fg-subtle text-xs">{fmt(lead.created_at)}</span>
         {lead.creator && (
-          <span className="text-slate-500 text-[10px] truncate">{lead.creator.full_name}</span>
+          <span className="text-fg-muted text-[10px] truncate">{lead.creator.full_name}</span>
         )}
       </div>
     ),
@@ -364,9 +364,9 @@ const COL_DEFS: ColDef[] = [
     sortKey: 'updated_at',
     render: (lead, _ctx, fmt) =>
       lead.updated_at ? (
-        <span className="text-slate-300 text-xs">{fmt(lead.updated_at)}</span>
+        <span className="text-fg-subtle text-xs">{fmt(lead.updated_at)}</span>
       ) : (
-        <span className="text-slate-600 text-xs">—</span>
+        <span className="text-fg-muted text-xs">—</span>
       ),
   },
   {
@@ -378,9 +378,9 @@ const COL_DEFS: ColDef[] = [
       const cf = lead.custom_fields ?? {};
       const city = cf.city ?? cf.City;
       return city ? (
-        <span className="text-slate-300 text-sm">{city}</span>
+        <span className="text-fg-subtle text-sm">{city}</span>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       );
     },
   },
@@ -393,9 +393,9 @@ const COL_DEFS: ColDef[] = [
       const cf = lead.custom_fields ?? {};
       const state = cf.state ?? cf.State;
       return state ? (
-        <span className="text-slate-300 text-sm">{state}</span>
+        <span className="text-fg-subtle text-sm">{state}</span>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       );
     },
   },
@@ -408,9 +408,9 @@ const COL_DEFS: ColDef[] = [
       const cf = lead.custom_fields ?? {};
       const country = cf.country ?? cf.Country;
       return country ? (
-        <span className="text-slate-300 text-sm">{country}</span>
+        <span className="text-fg-subtle text-sm">{country}</span>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       );
     },
   },
@@ -423,9 +423,9 @@ const COL_DEFS: ColDef[] = [
       const cf = lead.custom_fields ?? {};
       const industry = cf.industry ?? cf.Industry;
       return industry ? (
-        <span className="text-slate-300 text-sm">{industry}</span>
+        <span className="text-fg-subtle text-sm">{industry}</span>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       );
     },
   },
@@ -443,13 +443,13 @@ const COL_DEFS: ColDef[] = [
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-blue-400 transition-colors text-sm truncate"
+          className="flex items-center gap-1.5 text-fg-subtle hover:text-blue-400 transition-colors text-sm truncate"
         >
           <Globe size={13} className="shrink-0" />
           <span className="truncate">{site}</span>
         </a>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       );
     },
   },
@@ -461,16 +461,16 @@ const COL_DEFS: ColDef[] = [
     render: (lead) => {
       const cf = lead.custom_fields ?? {};
       const priority = cf.priority ?? cf.Priority;
-      if (!priority) return <span className="text-slate-600 text-sm">—</span>;
+      if (!priority) return <span className="text-fg-muted text-sm">—</span>;
       const colors: Record<string, string> = {
-        High: 'text-rose-400',
-        Medium: 'text-amber-400',
-        Low: 'text-slate-400',
+        High: 'text-danger',
+        Medium: 'text-warning',
+        Low: 'text-fg-subtle',
       };
       return (
         <div className="flex items-center gap-1">
-          <Star size={12} className={colors[priority] ?? 'text-slate-400'} />
-          <span className={`text-sm font-medium ${colors[priority] ?? 'text-slate-300'}`}>
+          <Star size={12} className={colors[priority] ?? 'text-fg-subtle'} />
+          <span className={`text-sm font-medium ${colors[priority] ?? 'text-fg-subtle'}`}>
             {priority}
           </span>
         </div>
@@ -486,11 +486,11 @@ const COL_DEFS: ColDef[] = [
       const cf = lead.custom_fields ?? {};
       const val = cf.deal_value ?? cf['Deal Value'];
       return val != null ? (
-        <span className="text-slate-300 text-sm font-medium">
+        <span className="text-fg-subtle text-sm font-medium">
           {Number(val).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
         </span>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       );
     },
   },
@@ -514,19 +514,19 @@ const COL_DEFS: ColDef[] = [
           {tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300"
+              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-line text-fg-subtle"
             >
               {tag}
             </span>
           ))}
           {tags.length > 3 && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-raised text-fg-subtle">
               +{tags.length - 3}
             </span>
           )}
         </div>
       ) : (
-        <span className="text-slate-600 text-sm">—</span>
+        <span className="text-fg-muted text-sm">—</span>
       );
     },
   },
@@ -538,9 +538,9 @@ const COL_DEFS: ColDef[] = [
     render: (lead) => {
       const h = computeLeadHealth(lead);
       const pill: Record<string, string> = {
-        hot: 'bg-emerald-500/15 text-emerald-400',
-        warm: 'bg-amber-500/15 text-amber-400',
-        cold: 'bg-rose-500/15 text-rose-400',
+        hot: 'bg-emerald-500/15 text-success',
+        warm: 'bg-amber-500/15 text-warning',
+        cold: 'bg-rose-500/15 text-danger',
       };
       const dot: Record<string, string> = {
         hot: 'bg-emerald-400', warm: 'bg-amber-400', cold: 'bg-rose-400',
@@ -561,12 +561,12 @@ const COL_DEFS: ColDef[] = [
     sortKey: 'next_follow_up',
     render: (lead) => {
       const f = describeNextFollowUp(lead);
-      if (f.tone === 'none') return <span className="text-slate-600 text-sm">—</span>;
+      if (f.tone === 'none') return <span className="text-fg-muted text-sm">—</span>;
       const tone: Record<string, string> = {
-        overdue: 'text-rose-400',
-        today: 'text-amber-400',
+        overdue: 'text-danger',
+        today: 'text-warning',
         tomorrow: 'text-blue-400',
-        upcoming: 'text-slate-300',
+        upcoming: 'text-fg-subtle',
       };
       return <span className={`text-xs font-medium ${tone[f.tone]}`}>{f.label}</span>;
     },
@@ -579,7 +579,7 @@ const COL_DEFS: ColDef[] = [
     sortKey: 'last_activity_at',
     render: (lead) => {
       const a = describeLastActivity(lead);
-      return <span className={`text-xs ${a.stale ? 'text-rose-400/80' : 'text-slate-300'}`}>{a.label}</span>;
+      return <span className={`text-xs ${a.stale ? 'text-rose-400/80' : 'text-fg-subtle'}`}>{a.label}</span>;
     },
   },
 ];
@@ -606,22 +606,22 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
 
   return (
     <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700/50 rounded-xl shadow-2xl w-full max-w-md">
+      <div className="bg-surface border border-slate-700/50 rounded-xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
           <div className="flex items-center gap-2">
             <Columns2 size={18} className="text-blue-400" />
-            <h2 className="text-base font-semibold text-slate-100">Customize Columns</h2>
+            <h2 className="text-base font-semibold text-fg">Customize Columns</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={onReset}
-              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs text-fg-subtle hover:text-fg transition-colors"
             >
               Reset defaults
             </button>
             <button
               onClick={onClose}
-              className="p-1 text-slate-400 hover:text-slate-100 transition-colors rounded"
+              className="p-1 text-fg-subtle hover:text-fg transition-colors rounded"
             >
               <X size={16} />
             </button>
@@ -639,20 +639,20 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
                 onDragOver={(e) => { e.preventDefault(); }}
                 onDrop={() => { if (dragging.current && dragging.current !== col.key) onReorder(dragging.current, col.key); dragging.current = null; }}
               >
-                <GripVertical size={14} className="text-slate-600 group-hover:text-slate-400 cursor-grab" />
+                <GripVertical size={14} className="text-fg-muted group-hover:text-fg-subtle cursor-grab" />
                 <button
                   onClick={() => onToggle(col.key, !col.visible)}
-                  className={`w-4 h-4 rounded border transition-colors shrink-0 flex items-center justify-center ${col.visible ? 'bg-blue-600 border-blue-600' : 'border-slate-600 hover:border-slate-400'}`}
+                  className={`w-4 h-4 rounded border transition-colors shrink-0 flex items-center justify-center ${col.visible ? 'bg-primary border-primary' : 'border-line hover:border-line-strong'}`}
                 >
                   {col.visible && <Check size={10} className="text-white" />}
                 </button>
-                <span className="text-sm text-slate-300 flex-1 select-none">
+                <span className="text-sm text-fg-subtle flex-1 select-none">
                   {def?.label ?? col.key}
                 </span>
                 <button
                   onClick={() => onPin(col.key, !col.pinned)}
                   title={col.pinned ? 'Unpin column' : 'Pin column to left'}
-                  className={`text-xs px-2 py-0.5 rounded transition-colors ${col.pinned ? 'text-blue-400 bg-blue-500/10' : 'text-slate-600 hover:text-slate-400'}`}
+                  className={`text-xs px-2 py-0.5 rounded transition-colors ${col.pinned ? 'text-blue-400 bg-blue-500/10' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                   {col.pinned ? 'Pinned' : 'Pin'}
                 </button>
@@ -663,7 +663,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
         <div className="px-5 py-4 border-t border-slate-700/50 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition-colors"
           >
             Done
           </button>
@@ -720,7 +720,7 @@ function InlineCellEditor({ initial, type, onCommit, onCancel }: InlineCellEdito
         if (e.key === 'Enter') { e.preventDefault(); commit(); }
         else if (e.key === 'Escape') { committed.current = true; onCancel(); }
       }}
-      className="w-full bg-slate-800 border border-blue-500 rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      className="w-full bg-surface-raised border border-primary rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-1 focus:ring-focus"
     />
   );
 }
@@ -739,8 +739,8 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
   }, [openMenu]);
 
   return (
-    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl shadow-black/40">
-      <span className="text-sm text-slate-200 font-semibold">{count} selected</span>
+    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-2xl shadow-black/40">
+      <span className="text-sm text-fg font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-slate-600" />
       {actions.map((action) => {
         const hasMenu = !!action.options?.length;
@@ -753,8 +753,8 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 action.variant === 'danger'
-                  ? 'text-rose-400 hover:bg-rose-500/10'
-                  : 'text-slate-300 hover:bg-slate-700'
+                  ? 'text-danger hover:bg-rose-500/10'
+                  : 'text-fg-subtle hover:bg-line'
               }`}
             >
               {action.icon}
@@ -764,13 +764,13 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
             {hasMenu && openMenu === action.label && (
               <div
                 data-testid={`bulk-menu-${action.label}`}
-                className="absolute bottom-full mb-2 left-0 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[180px] max-h-64 overflow-y-auto"
+                className="absolute bottom-full mb-2 left-0 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[180px] max-h-64 overflow-y-auto"
               >
                 {action.options!.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => { action.onSelect?.(selectedIds, opt.value); setOpenMenu(null); }}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 transition-colors"
+                    className="w-full text-left px-4 py-2 text-sm text-fg-subtle hover:bg-surface-raised transition-colors"
                   >
                     {opt.label}
                   </button>
@@ -783,7 +783,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
       <div className="w-px h-5 bg-slate-600" />
       <button
         onClick={onClear}
-        className="p-1.5 text-slate-400 hover:text-slate-100 transition-colors rounded-lg hover:bg-slate-700"
+        className="p-1.5 text-fg-subtle hover:text-fg transition-colors rounded-lg hover:bg-line"
       >
         <X size={14} />
       </button>
@@ -830,15 +830,15 @@ function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavig
   return (
     <div
       ref={ref}
-      className="fixed z-[800] bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl py-1.5 min-w-[180px]"
+      className="fixed z-[800] bg-surface border border-slate-700/60 rounded-xl shadow-2xl py-1.5 min-w-[180px]"
       style={{ left: Math.min(x, window.innerWidth - 200), top: Math.min(y, window.innerHeight - 300) }}
     >
       {menuItems.map((item) => (
         <button
           key={item.label}
           onClick={item.onClick}
-          className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-slate-800 ${
-            'danger' in item && item.danger ? 'text-rose-400' : 'text-slate-300'
+          className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-surface-raised ${
+            'danger' in item && item.danger ? 'text-danger' : 'text-fg-subtle'
           }`}
         >
           {item.icon}
@@ -965,9 +965,9 @@ export function LeadsDataGrid({
         render: (lead: Lead) => {
           const val = lead.custom_fields?.[cf.id] ?? lead.custom_fields?.[cf.label];
           return val != null ? (
-            <span className="text-slate-300 text-sm truncate">{String(val)}</span>
+            <span className="text-fg-subtle text-sm truncate">{String(val)}</span>
           ) : (
-            <span className="text-slate-600 text-sm">—</span>
+            <span className="text-fg-muted text-sm">—</span>
           );
         },
       }));
@@ -1213,14 +1213,14 @@ export function LeadsDataGrid({
               <div
                 key="select"
                 className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
-                  isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'
+                  isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-bg'
                 }`}
                 style={{ width: col.width, left: colLeftOffsets['select'] }}
                 onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
               >
                 <div
                   className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${
-                    isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-600 hover:border-slate-400'
+                    isSelected ? 'bg-primary border-primary' : 'border-line hover:border-line-strong'
                   }`}
                 >
                   {isSelected && <Check size={10} className="text-white" />}
@@ -1242,7 +1242,7 @@ export function LeadsDataGrid({
                     e.stopPropagation();
                     setContextMenu({ lead, x: e.clientX, y: e.clientY });
                   }}
-                  className="p-1.5 text-slate-600 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover/row:opacity-100"
+                  className="p-1.5 text-fg-muted hover:text-fg-subtle hover:bg-line rounded-lg transition-colors opacity-0 group-hover/row:opacity-100"
                 >
                   <MoreHorizontal size={16} />
                 </button>
@@ -1261,7 +1261,7 @@ export function LeadsDataGrid({
                 canEditCell ? 'cursor-text' : ''
               } ${
                 isSticky
-                  ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-slate-950'}`
+                  ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-slate-800/50' : 'bg-bg'}`
                   : ''
               }`}
               style={{
@@ -1297,14 +1297,14 @@ export function LeadsDataGrid({
     return (
       <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 overflow-hidden">
         <div className="flex items-center gap-4 px-4 py-3 border-b border-slate-700/50 bg-slate-900/80">
-          <div className="h-4 w-24 bg-slate-700 rounded animate-pulse" />
-          <div className="h-4 w-32 bg-slate-700 rounded animate-pulse" />
+          <div className="h-4 w-24 bg-line rounded animate-pulse" />
+          <div className="h-4 w-32 bg-line rounded animate-pulse" />
         </div>
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="flex gap-4 px-4 py-3 border-b border-slate-700/30">
-            <div className="h-4 w-48 bg-slate-800 rounded animate-pulse" />
-            <div className="h-4 w-36 bg-slate-800 rounded animate-pulse" />
-            <div className="h-4 w-28 bg-slate-800 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-surface-raised rounded animate-pulse" />
+            <div className="h-4 w-36 bg-surface-raised rounded animate-pulse" />
+            <div className="h-4 w-28 bg-surface-raised rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -1315,7 +1315,7 @@ export function LeadsDataGrid({
     <>
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-fg-subtle">
           {sortedLeads.length} lead{sortedLeads.length !== 1 ? 's' : ''}
           {sorts.length > 0 && (
             <button
@@ -1334,7 +1334,7 @@ export function LeadsDataGrid({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${
                 grouped
                   ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 border-slate-700/50'
+                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-slate-700/50'
               }`}
               title="Group by"
             >
@@ -1344,14 +1344,14 @@ export function LeadsDataGrid({
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
-                className="absolute right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[160px]"
+                className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[160px]"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
                   <button
                     key={o.key}
                     onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}
                     className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                      groupBy === o.key ? 'text-blue-400 bg-blue-500/10' : 'text-slate-300 hover:bg-slate-800'
+                      groupBy === o.key ? 'text-blue-400 bg-blue-500/10' : 'text-fg-subtle hover:bg-surface-raised'
                     }`}
                   >
                     {groupBy === o.key && <Check size={12} />}
@@ -1366,20 +1366,20 @@ export function LeadsDataGrid({
           <div className="relative" ref={densityMenuRef}>
             <button
               onClick={() => setShowDensityMenu((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors border border-slate-700/50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-slate-700/50"
               title="Row density"
             >
               <AlignJustify size={14} />
               <span className="capitalize">{density}</span>
             </button>
             {showDensityMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-slate-700/60 rounded-xl shadow-xl py-1 min-w-[140px]">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
                   <button
                     key={d}
                     onClick={() => { setDensity(d); setShowDensityMenu(false); }}
                     className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors capitalize ${
-                      density === d ? 'text-blue-400 bg-blue-500/10' : 'text-slate-300 hover:bg-slate-800'
+                      density === d ? 'text-blue-400 bg-blue-500/10' : 'text-fg-subtle hover:bg-surface-raised'
                     }`}
                   >
                     {density === d && <Check size={12} />}
@@ -1393,7 +1393,7 @@ export function LeadsDataGrid({
           {/* Column manager */}
           <button
             onClick={() => setShowColumnManager(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors border border-slate-700/50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-slate-700/50"
             title="Customize columns"
           >
             <Settings2 size={14} />
@@ -1413,7 +1413,7 @@ export function LeadsDataGrid({
       ) : (
       <div
         ref={containerRef}
-        className="rounded-xl border border-slate-700/50 overflow-auto bg-slate-950"
+        className="rounded-xl border border-slate-700/50 overflow-auto bg-bg"
         style={{ maxHeight: 'calc(100vh - 210px)' }}
         onContextMenu={(e) => e.preventDefault()}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
@@ -1425,7 +1425,7 @@ export function LeadsDataGrid({
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
           <div
-            className="flex sticky top-0 z-20 bg-slate-900 border-b border-slate-700/50"
+            className="flex sticky top-0 z-20 bg-surface border-b border-slate-700/50"
             style={{ minWidth: `${totalWidth}px` }}
           >
             {orderedCols.map((col) => {
@@ -1437,13 +1437,13 @@ export function LeadsDataGrid({
                 return (
                   <div
                     key="select"
-                    className="flex items-center justify-center shrink-0 sticky bg-slate-900 z-30"
+                    className="flex items-center justify-center shrink-0 sticky bg-surface z-30"
                     style={{ width: col.width, left: colLeftOffsets['select'] }}
                   >
                     <button
                       data-testid="bulk-select-all"
                       onClick={toggleSelectAll}
-                      className="text-slate-400 hover:text-slate-100 transition-colors"
+                      className="text-fg-subtle hover:text-fg transition-colors"
                     >
                       {allSelected ? (
                         <CheckSquare2 size={16} className="text-blue-400" />
@@ -1466,8 +1466,8 @@ export function LeadsDataGrid({
               return (
                 <div
                   key={col.key}
-                  className={`relative flex items-center group px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider select-none shrink-0 py-3 ${
-                    col.pinned ? 'sticky z-30 bg-slate-900' : ''
+                  className={`relative flex items-center group px-3 text-xs font-semibold text-fg-subtle uppercase tracking-wider select-none shrink-0 py-3 ${
+                    col.pinned ? 'sticky z-30 bg-surface' : ''
                   }`}
                   style={{
                     width: col.width,
@@ -1486,7 +1486,7 @@ export function LeadsDataGrid({
                   {sortKey ? (
                     <button
                       onClick={() => toggleSort(sortKey)}
-                      className="flex items-center gap-1 hover:text-slate-100 transition-colors"
+                      className="flex items-center gap-1 hover:text-fg transition-colors"
                     >
                       {def?.label ?? col.key}
                       {sortState ? (
@@ -1515,7 +1515,7 @@ export function LeadsDataGrid({
 
           {/* Rows */}
           {sortedLeads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+            <div className="flex flex-col items-center justify-center py-20 text-fg-muted">
               <TrendingUp size={40} className="mb-3 opacity-30" />
               <p className="text-sm">No leads found</p>
             </div>
@@ -1529,16 +1529,16 @@ export function LeadsDataGrid({
                     <button
                       type="button"
                       onClick={() => toggleGroup(g.key)}
-                      className="flex items-center gap-2 w-full sticky left-0 px-3 py-2 bg-slate-900/80 border-b border-slate-700/50 text-sm text-slate-200 hover:bg-slate-800/60 transition-colors"
+                      className="flex items-center gap-2 w-full sticky left-0 px-3 py-2 bg-slate-900/80 border-b border-slate-700/50 text-sm text-fg hover:bg-slate-800/60 transition-colors"
                       style={{ minWidth: `${totalWidth}px` }}
                     >
                       {isCollapsed ? (
-                        <ChevronDown size={14} className="-rotate-90 text-slate-400" />
+                        <ChevronDown size={14} className="-rotate-90 text-fg-subtle" />
                       ) : (
-                        <ChevronDown size={14} className="text-slate-400" />
+                        <ChevronDown size={14} className="text-fg-subtle" />
                       )}
                       <span className="font-semibold">{g.label}</span>
-                      <span className="text-xs text-slate-500 bg-slate-800 rounded-full px-2 py-0.5">
+                      <span className="text-xs text-fg-muted bg-surface-raised rounded-full px-2 py-0.5">
                         {g.count}
                       </span>
                     </button>

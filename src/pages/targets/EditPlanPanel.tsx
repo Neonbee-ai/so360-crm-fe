@@ -121,7 +121,7 @@ export default function EditPlanPanel({
       title={plan ? `Edit · ${plan.name}` : 'Edit plan'}
       action={
         <button
-          className="text-xs text-slate-400 hover:text-slate-200"
+          className="text-xs text-fg-subtle hover:text-fg"
           onClick={onClose}
         >
           Close
@@ -132,28 +132,28 @@ export default function EditPlanPanel({
       {notice && <div className="mb-2 text-sm text-emerald-300">{notice}</div>}
 
       {!plan ? (
-        <div className="text-sm text-slate-400">Loading plan…</div>
+        <div className="text-sm text-fg-subtle">Loading plan…</div>
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="grow basis-64">
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Name
               </label>
               <input
                 aria-label="Plan name"
-                className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Priority
               </label>
               <select
                 aria-label="Priority"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                 value={form.priority}
                 onChange={(e) => setForm({ ...form, priority: e.target.value })}
               >
@@ -163,12 +163,12 @@ export default function EditPlanPanel({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Status
               </label>
               <select
                 aria-label="Status"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
               >
@@ -178,19 +178,19 @@ export default function EditPlanPanel({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Role
               </label>
               <input
                 aria-label="Role"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
               />
             </div>
           </div>
 
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-fg-muted">
             {plan.start_date} → {plan.end_date} · {plan.period}. The window is
             fixed: history is already recorded against these buckets, so moving
             it would leave stored numbers attributed to a period that no longer
@@ -199,17 +199,17 @@ export default function EditPlanPanel({
 
           {periods.length > 0 && (
             <div className="border-t border-slate-800 pt-3">
-              <div className="mb-2 text-sm text-slate-300">Period targets</div>
+              <div className="mb-2 text-sm text-fg-subtle">Period targets</div>
               <div className="space-y-2">
                 {periods.map((pr) => (
                   <div key={pr.id} className="flex items-center gap-2">
-                    <span className="w-64 shrink-0 text-xs text-slate-400">
-                      <span className="text-slate-300">{pr.lineLabel}</span>{' '}
+                    <span className="w-64 shrink-0 text-xs text-fg-subtle">
+                      <span className="text-fg-subtle">{pr.lineLabel}</span>{' '}
                       {pr.period_start} → {pr.period_end}
                     </span>
                     <input
                       aria-label={`Target for ${pr.period_start}`}
-                      className="w-32 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                      className="w-32 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                       placeholder={String(pr.target_value ?? '')}
                       value={periodEdits[pr.id] ?? ''}
                       onChange={(e) =>
@@ -219,13 +219,13 @@ export default function EditPlanPanel({
                         })
                       }
                     />
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-fg-muted">
                       currently {pr.target_value}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-2 text-xs text-slate-500">
+              <div className="mt-2 text-xs text-fg-muted">
                 Leave a box empty to keep its current target. Every change is
                 recorded as a revision.
               </div>
@@ -234,12 +234,12 @@ export default function EditPlanPanel({
 
           <div className="flex flex-wrap items-end gap-3 border-t border-slate-800 pt-3">
             <div className="grow basis-64">
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Reason for the change
               </label>
               <input
                 aria-label="Change reason"
-                className="w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none"
+                className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
                 placeholder="Territory reassigned mid-quarter"
                 value={form.change_reason}
                 onChange={(e) =>
@@ -248,7 +248,7 @@ export default function EditPlanPanel({
               />
             </div>
             <button
-              className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
               onClick={save}
               disabled={busy}
             >

@@ -113,7 +113,7 @@ export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, labe
                 type="button"
                 onClick={goBack}
                 aria-label={label}
-                className={`flex items-center gap-1 text-slate-300 hover:text-slate-100 transition-colors group ${className}`}
+                className={`flex items-center gap-1 text-fg-subtle hover:text-fg transition-colors group ${className}`}
             >
                 <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                 {label}
@@ -125,7 +125,7 @@ export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, labe
                 aria-label={label}
                 title={label}
                 data-testid="detail-back-floating"
-                className={`fixed left-6 bottom-6 z-40 flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/95 px-4 py-3 text-xs font-bold text-slate-200 shadow-xl backdrop-blur transition-all hover:border-blue-500/60 hover:text-slate-50 ${
+                className={`fixed left-6 bottom-6 z-40 flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/95 px-4 py-3 text-xs font-bold text-fg shadow-xl backdrop-blur transition-all hover:border-blue-500/60 hover:text-fg ${
                     showFloating ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-2'
                 }`}
             >

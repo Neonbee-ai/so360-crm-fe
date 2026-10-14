@@ -159,12 +159,12 @@ export default function SalesReviewsPage() {
   };
 
   if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading reviews…</div>;
+    return <div className="p-6 text-sm text-fg-subtle">Loading reviews…</div>;
   }
 
   return (
     <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-slate-100">Reviews</h1>
+      <h1 className="text-lg font-semibold text-fg">Reviews</h1>
 
       {error && <div className="text-sm text-rose-300">{error}</div>}
       {notice && <div className="text-sm text-emerald-300">{notice}</div>}
@@ -172,17 +172,17 @@ export default function SalesReviewsPage() {
       <Panel title="Start a review">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-64">
-            <label className="block text-[11px] text-slate-400 mb-1">
+            <label className="block text-[11px] text-fg-subtle mb-1">
               Person
             </label>
             <PersonPicker value={newPersonId} onChange={setNewPersonId} />
           </div>
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
+            <label className="block text-[11px] text-fg-subtle mb-1">
               Period
             </label>
             <select
-              className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+              className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
               value={newPeriodType}
               aria-label="Period type"
               onChange={(e) => {
@@ -201,21 +201,21 @@ export default function SalesReviewsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-[11px] text-slate-400 mb-1">
+            <label className="block text-[11px] text-fg-subtle mb-1">
               {newPeriodType === 'monthly' ? 'Month' : 'Quarter'}
             </label>
             {newPeriodType === 'monthly' ? (
               <input
                 type="month"
                 aria-label="Month"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                 value={newAnchor}
                 onChange={(e) => setNewAnchor(e.target.value)}
               />
             ) : (
               <select
                 aria-label="Quarter"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                 value={newAnchor}
                 onChange={(e) => setNewAnchor(e.target.value)}
               >
@@ -233,14 +233,14 @@ export default function SalesReviewsPage() {
             )}
           </div>
           <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
             onClick={startReview}
             disabled={busy || !newPersonId || !bounds}
           >
             Open review
           </button>
           {bounds && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-fg-muted">
               {bounds.period_start} → {bounds.period_end}
             </span>
           )}
@@ -256,7 +256,7 @@ export default function SalesReviewsPage() {
             not yet usable as appraisal evidence.
           </span>
           <button
-            className="rounded bg-slate-700 px-3 py-1.5 text-xs text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+            className="rounded bg-line px-3 py-1.5 text-xs text-fg hover:bg-slate-600 disabled:opacity-50"
             onClick={retrySync}
             disabled={busy}
           >
@@ -272,7 +272,7 @@ export default function SalesReviewsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+                <tr className="text-left text-xs text-fg-subtle border-b border-slate-800">
                   <th className="py-2 pr-4 font-medium">Period</th>
                   <th className="py-2 pr-4 font-medium">Type</th>
                   <th className="py-2 pr-4 font-medium">Person</th>
@@ -288,17 +288,17 @@ export default function SalesReviewsPage() {
                     className="border-b border-slate-800/60 hover:bg-slate-800/40 cursor-pointer"
                     onClick={() => setActive(r)}
                   >
-                    <td className="py-2 pr-4 text-slate-200">
+                    <td className="py-2 pr-4 text-fg">
                       {r.period_start}
                     </td>
-                    <td className="py-2 pr-4 text-slate-400">{r.period_type}</td>
-                    <td className="py-2 pr-4 text-slate-400">
+                    <td className="py-2 pr-4 text-fg-subtle">{r.period_type}</td>
+                    <td className="py-2 pr-4 text-fg-subtle">
                       <PersonName id={r.person_id} />
                     </td>
-                    <td className="py-2 pr-4 text-slate-300">
+                    <td className="py-2 pr-4 text-fg-subtle">
                       {formatPct(r.results?.headline?.attainment)}
                     </td>
-                    <td className="py-2 pr-4 text-slate-300">{r.status}</td>
+                    <td className="py-2 pr-4 text-fg-subtle">{r.status}</td>
                     <td className="py-2 text-xs">
                       {r.pc_synced_at ? (
                         <span className="text-emerald-300">sent</span>
@@ -307,7 +307,7 @@ export default function SalesReviewsPage() {
                           {r.pc_sync_error ? 'failed' : 'pending'}
                         </span>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-fg-muted">—</span>
                       )}
                     </td>
                   </tr>
@@ -323,7 +323,7 @@ export default function SalesReviewsPage() {
           title={`Review · ${active.period_start} → ${active.period_end}`}
           action={
             <button
-              className="text-xs text-slate-400 hover:text-slate-200"
+              className="text-xs text-fg-subtle hover:text-fg"
               onClick={() => setActive(null)}
             >
               Close
@@ -338,8 +338,8 @@ export default function SalesReviewsPage() {
                     key={m.metric}
                     className="flex items-center justify-between gap-6"
                   >
-                    <span className="text-slate-400">{m.metric}</span>
-                    <span className="text-slate-200">
+                    <span className="text-fg-subtle">{m.metric}</span>
+                    <span className="text-fg">
                       {formatValue(m.actual, m.unit, currency)} /{' '}
                       {formatValue(m.target, m.unit, currency)} ·{' '}
                       {formatPct(m.attainment)}
@@ -351,8 +351,8 @@ export default function SalesReviewsPage() {
               {active.pipeline?.applicable && (
                 <Block title="Pipeline">
                   <div className="flex items-center justify-between gap-6">
-                    <span className="text-slate-400">Total</span>
-                    <span className="text-slate-200">
+                    <span className="text-fg-subtle">Total</span>
+                    <span className="text-fg">
                       {formatValue(
                         active.pipeline.total_pipeline,
                         'currency',
@@ -361,8 +361,8 @@ export default function SalesReviewsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-6">
-                    <span className="text-slate-400">Coverage</span>
-                    <span className="text-slate-200">
+                    <span className="text-fg-subtle">Coverage</span>
+                    <span className="text-fg">
                       {active.pipeline.coverage === null
                         ? '—'
                         : `${active.pipeline.coverage.toFixed(1)}×`}
@@ -373,15 +373,15 @@ export default function SalesReviewsPage() {
 
               <Block title="Win / Loss">
                 <div className="flex items-center justify-between gap-6">
-                  <span className="text-slate-400">Won / Lost</span>
-                  <span className="text-slate-200">
+                  <span className="text-fg-subtle">Won / Lost</span>
+                  <span className="text-fg">
                     {active.win_loss?.won_count ?? 0} /{' '}
                     {active.win_loss?.lost_count ?? 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-6">
-                  <span className="text-slate-400">Top loss reason</span>
-                  <span className="text-slate-200">
+                  <span className="text-fg-subtle">Top loss reason</span>
+                  <span className="text-fg">
                     {active.win_loss?.top_reason?.label ?? '—'}
                   </span>
                 </div>
@@ -390,14 +390,14 @@ export default function SalesReviewsPage() {
 
             <div className="border-t border-slate-800 pt-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-300">Action items</span>
+                <span className="text-sm text-fg-subtle">Action items</span>
                 {active.status !== 'finalized' && (
                   <div className="flex gap-2 text-xs">
                     {['Messaging', 'ICP', 'Pricing', 'Channel', 'Focus'].map(
                       (k) => (
                         <button
                           key={k}
-                          className="text-slate-400 hover:text-slate-200"
+                          className="text-fg-subtle hover:text-fg"
                           onClick={() => addActionItem(k)}
                         >
                           + {k}
@@ -411,11 +411,11 @@ export default function SalesReviewsPage() {
               <div className="space-y-2">
                 {(active.action_items ?? []).map((a: any, i: number) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 w-20 shrink-0">
+                    <span className="text-xs text-fg-muted w-20 shrink-0">
                       {a.kind}
                     </span>
                     <input
-                      className="flex-1 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100 outline-none disabled:opacity-60"
+                      className="flex-1 rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none disabled:opacity-60"
                       value={a.text}
                       disabled={active.status === 'finalized'}
                       onChange={(e) => {
@@ -427,7 +427,7 @@ export default function SalesReviewsPage() {
                   </div>
                 ))}
                 {!(active.action_items ?? []).length && (
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-fg-muted">
                     No action items yet. Keep this short — a review that becomes
                     a long form stops getting filled in honestly.
                   </div>
@@ -438,14 +438,14 @@ export default function SalesReviewsPage() {
             {active.status !== 'finalized' ? (
               <div className="flex justify-end gap-2">
                 <button
-                  className="rounded bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+                  className="rounded bg-surface-raised px-3 py-1.5 text-sm text-fg hover:bg-line disabled:opacity-50"
                   onClick={saveDraft}
                   disabled={busy}
                 >
                   Save draft
                 </button>
                 <button
-                  className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+                  className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
                   onClick={() => finalize(active.id)}
                   disabled={busy}
                 >
@@ -453,7 +453,7 @@ export default function SalesReviewsPage() {
                 </button>
               </div>
             ) : (
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-fg-muted">
                 Finalized{active.finalized_at ? ` on ${active.finalized_at.slice(0, 10)}` : ''} —
                 this review is now appraisal evidence and cannot be edited.
                 {active.pc_sync_error && (
@@ -480,7 +480,7 @@ function Block({
 }) {
   return (
     <div className="grow basis-64">
-      <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+      <div className="text-xs uppercase tracking-wide text-fg-muted mb-2">
         {title}
       </div>
       <div className="space-y-1">{children}</div>

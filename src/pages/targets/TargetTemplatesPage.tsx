@@ -88,12 +88,12 @@ export default function TargetTemplatesPage() {
     taskTypes.find((t) => t.id === id)?.name ?? 'Metric';
 
   if (loading) {
-    return <div className="p-6 text-sm text-slate-400">Loading templates…</div>;
+    return <div className="p-6 text-sm text-fg-subtle">Loading templates…</div>;
   }
 
   return (
     <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-slate-100">Target Templates</h1>
+      <h1 className="text-lg font-semibold text-fg">Target Templates</h1>
 
       {error && <div className="text-sm text-rose-300">{error}</div>}
       {notice && <div className="text-sm text-emerald-300">{notice}</div>}
@@ -109,17 +109,17 @@ export default function TargetTemplatesPage() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-sm font-medium text-slate-100">
+                  <div className="text-sm font-medium text-fg">
                     {t.name}
                   </div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-[11px] text-fg-muted">
                     {t.role ? `${t.role} · ` : ''}
                     {t.period} · {t.duration_periods} period
                     {t.duration_periods === 1 ? '' : 's'}
                   </div>
                 </div>
                 <button
-                  className="text-xs text-slate-400 hover:text-slate-200"
+                  className="text-xs text-fg-subtle hover:text-fg"
                   onClick={() => setAssigning(t)}
                 >
                   Assign
@@ -127,7 +127,7 @@ export default function TargetTemplatesPage() {
               </div>
 
               {t.description && (
-                <div className="mt-2 text-xs text-slate-400">
+                <div className="mt-2 text-xs text-fg-subtle">
                   {t.description}
                 </div>
               )}
@@ -138,11 +138,11 @@ export default function TargetTemplatesPage() {
                     key={l.id}
                     className="flex items-center justify-between text-xs"
                   >
-                    <span className="text-slate-300">
+                    <span className="text-fg-subtle">
                       {l.task_type?.name ?? nameOf(l.task_type_id)}
                       {l.dimension_value ? ` · ${l.dimension_value}` : ''}
                     </span>
-                    <span className="text-slate-400">
+                    <span className="text-fg-subtle">
                       {l.ramp && l.ramp.length
                         ? l.ramp.join(' → ')
                         : Number(l.value)}
@@ -150,7 +150,7 @@ export default function TargetTemplatesPage() {
                   </div>
                 ))}
                 {!(t.lines ?? []).length && (
-                  <div className="text-xs text-slate-500">No lines</div>
+                  <div className="text-xs text-fg-muted">No lines</div>
                 )}
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function TargetTemplatesPage() {
           title={`Assign "${assigning.name}"`}
           action={
             <button
-              className="text-xs text-slate-400 hover:text-slate-200"
+              className="text-xs text-fg-subtle hover:text-fg"
               onClick={() => setAssigning(null)}
             >
               Cancel
@@ -172,40 +172,40 @@ export default function TargetTemplatesPage() {
         >
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-64">
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Person
               </label>
               <PersonPicker value={ownerId} onChange={setOwnerId} />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">
+              <label className="block text-[11px] text-fg-subtle mb-1">
                 Start
               </label>
               <input
                 type="date"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">End</label>
+              <label className="block text-[11px] text-fg-subtle mb-1">End</label>
               <input
                 type="date"
-                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-100"
+                className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
             <button
-              className="rounded bg-slate-700 px-3 py-1.5 text-sm text-slate-100 hover:bg-slate-600 disabled:opacity-50"
+              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-slate-600 disabled:opacity-50"
               onClick={assign}
               disabled={busy || !ownerId || !startDate || !endDate}
             >
               {busy ? 'Creating…' : 'Create plan'}
             </button>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500">
+          <div className="mt-2 text-[11px] text-fg-muted">
             Lines are copied into the new plan. Editing this template later will
             not change the plan you create here.
           </div>

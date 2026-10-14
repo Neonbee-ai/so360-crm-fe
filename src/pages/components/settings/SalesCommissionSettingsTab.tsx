@@ -15,8 +15,8 @@ import {
 import { useCrmFeatureFlag, RE_FLAGS } from '../../../hooks/useCrmFeatureFlag';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 transition-all font-bold text-sm disabled:opacity-60';
-const LABEL_CLS = 'block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5';
+const FIELD_CLS = 'w-full bg-bg border border-slate-800 text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm disabled:opacity-60';
+const LABEL_CLS = 'block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-1.5';
 const CARD_CLS = 'bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-5';
 
 interface Props {
@@ -65,7 +65,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center gap-2 text-slate-400 text-sm" role="status">
+            <div className="flex items-center gap-2 text-fg-subtle text-sm" role="status">
                 <Loader2 className="animate-spin" size={16} /> Loading sales settings…
             </div>
         );
@@ -73,7 +73,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
     if (loadError || !draft) {
         return (
             <div className="space-y-3">
-                <p role="alert" className="text-sm text-rose-400">{loadError ?? 'Could not load sales settings.'}</p>
+                <p role="alert" className="text-sm text-danger">{loadError ?? 'Could not load sales settings.'}</p>
                 <button type="button" onClick={() => void load()} className="text-xs font-black uppercase tracking-widest text-blue-400 hover:text-blue-300">
                     Retry
                 </button>
@@ -129,7 +129,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
         <div className="space-y-6">
             {commissionsOn && (
                 <section className={CARD_CLS} aria-label="Commission">
-                    <h3 className="text-sm font-black text-slate-200 uppercase tracking-widest">Commission</h3>
+                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">Commission</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="sales-earn-trigger" className={LABEL_CLS}>Commission is earned</label>
@@ -189,7 +189,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                             />
                         </div>
                     </div>
-                    <label className="flex items-center gap-3 text-sm text-slate-300">
+                    <label className="flex items-center gap-3 text-sm text-fg-subtle">
                         <input
                             type="checkbox"
                             checked={draft.approval_required}
@@ -198,7 +198,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         />
                         Commission needs manager approval before it becomes payable
                     </label>
-                    <p className="text-xs text-slate-500">The company keeps whatever is left after the agent and team-leader shares.</p>
+                    <p className="text-xs text-fg-muted">The company keeps whatever is left after the agent and team-leader shares.</p>
 
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -214,11 +214,11 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                             )}
                         </div>
                         {draft.overrides.length === 0 ? (
-                            <p className="text-xs text-slate-500">No overrides — everyone uses the default split.</p>
+                            <p className="text-xs text-fg-muted">No overrides — everyone uses the default split.</p>
                         ) : (
                             <table className="w-full text-sm" aria-label="Share overrides">
                                 <thead>
-                                    <tr className="text-left text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    <tr className="text-left text-[10px] font-black text-fg-muted uppercase tracking-widest">
                                         <th className="py-2 pr-2">Applies to</th>
                                         <th className="py-2 pr-2">Who</th>
                                         <th className="py-2 pr-2">Agent %</th>
@@ -252,7 +252,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                                         onChange={(e) => setOverride(i, { role_key: e.target.value })}
                                                     />
                                                 ) : ro ? (
-                                                    <span className="text-slate-300">{o.user_id || '—'}</span>
+                                                    <span className="text-fg-subtle">{o.user_id || '—'}</span>
                                                 ) : (
                                                     <UserSelector
                                                         value={o.user_id || undefined}
@@ -294,7 +294,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                                         type="button"
                                                         aria-label={`Remove override ${i + 1}`}
                                                         onClick={() => removeOverride(i)}
-                                                        className="p-2 text-slate-500 hover:text-rose-400"
+                                                        className="p-2 text-fg-muted hover:text-danger"
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
@@ -311,7 +311,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
             {allocationOn && (
                 <section className={CARD_CLS} aria-label="Unit visibility">
-                    <h3 className="text-sm font-black text-slate-200 uppercase tracking-widest">Unit visibility</h3>
+                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">Unit visibility</h3>
                     <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 w-fit" role="radiogroup" aria-label="Agents can book">
                         {([['all', 'Any available unit'], ['assigned_only', 'Only units allocated to them']] as const).map(([v, label]) => (
                             <button
@@ -321,29 +321,29 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 aria-checked={draft.unit_visibility === v}
                                 disabled={ro}
                                 onClick={() => set({ unit_visibility: v as UnitVisibility })}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all disabled:opacity-60 ${draft.unit_visibility === v ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all disabled:opacity-60 ${draft.unit_visibility === v ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 {label}
                             </button>
                         ))}
                     </div>
-                    <p className="text-xs text-slate-500">Managers can always see and book every unit.</p>
+                    <p className="text-xs text-fg-muted">Managers can always see and book every unit.</p>
                 </section>
             )}
 
-            {error && <p role="alert" className="text-sm text-rose-400">{error}</p>}
+            {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
             {canWrite ? (
                 <button
                     type="button"
                     onClick={() => void save()}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
                 >
                     {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Save sales settings
                 </button>
             ) : (
-                <p className="text-xs text-slate-500">You can view these settings but not change them.</p>
+                <p className="text-xs text-fg-muted">You can view these settings but not change them.</p>
             )}
         </div>
     );

@@ -32,7 +32,7 @@ export default function NoteContent({ html }: { html: string }) {
   const clean = DOMPurify.sanitize(withMentionChips, { ALLOWED_TAGS, ALLOWED_ATTR });
   return (
     <div
-      className="text-slate-300 leading-relaxed text-sm [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-400 [&_a]:underline [&_code]:bg-slate-800 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-slate-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto [&_blockquote]:border-l-2 [&_blockquote]:border-slate-600 [&_blockquote]:pl-3 [&_blockquote]:text-slate-400 [&_.mention-chip]:inline-block [&_.mention-chip]:px-1 [&_.mention-chip]:rounded [&_.mention-chip]:bg-blue-500/15 [&_.mention-chip]:text-blue-300 [&_.mention-chip]:font-semibold"
+      className="text-fg-subtle leading-relaxed text-sm [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-400 [&_a]:underline [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:rounded [&_pre]:bg-surface-raised [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_blockquote]:text-fg-subtle [&_.mention-chip]:inline-block [&_.mention-chip]:px-1 [&_.mention-chip]:rounded [&_.mention-chip]:bg-blue-500/15 [&_.mention-chip]:text-blue-300 [&_.mention-chip]:font-semibold"
       // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: clean }}
     />

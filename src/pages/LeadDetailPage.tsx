@@ -21,7 +21,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { toast } from '@so360/design-system';
+import { toast, useConfirm } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -149,6 +149,7 @@ export async function openLeadDocument(doc: Attachment) {
 }
 
 const LeadDetailPage = () => {
+    const [confirm, confirmDialog] = useConfirm();
     const formatters = useCRMFormatters();
     const { id = '' } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -401,7 +402,7 @@ const LeadDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-slate-500 gap-3">
+            <div className="h-full flex items-center justify-center text-fg-muted gap-3">
                 <Loader2 className="animate-spin" />
                 <span>Loading lead workspace...</span>
             </div>
@@ -410,19 +411,19 @@ const LeadDetailPage = () => {
 
     if (accessDenied) {
         return (
-            <div className="p-8 text-center text-slate-500">
-                <p className="text-slate-700 dark:text-slate-200 font-medium">You don't have permission to view this lead.</p>
+            <div className="p-8 text-center text-fg-muted">
+                <p className="text-fg dark:text-fg font-medium">You don't have permission to view this lead.</p>
                 <p className="mt-1 text-sm">Ask an administrator to grant your role access to CRM leads.</p>
-                <button onClick={() => navigate(backRoute)} className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</button>
+                <button onClick={() => navigate(backRoute)} className="text-primary hover:underline mt-4 inline-block">{backLabel}</button>
             </div>
         );
     }
 
     if (!lead) {
         return (
-            <div className="p-8 text-center text-slate-500">
+            <div className="p-8 text-center text-fg-muted">
                 <p>Lead not found.</p>
-                <button onClick={() => navigate(backRoute)} className="text-blue-500 hover:underline mt-4 inline-block">{backLabel}</button>
+                <button onClick={() => navigate(backRoute)} className="text-primary hover:underline mt-4 inline-block">{backLabel}</button>
             </div>
         );
     }
@@ -537,12 +538,13 @@ const LeadDetailPage = () => {
     const tabCls = (tab: TabType) =>
         `flex shrink-0 items-center gap-2 px-4 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
             activeTab === tab
-                ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5'
-                : 'text-slate-300 hover:text-slate-50'
+                ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5'
+                : 'text-fg-subtle hover:text-fg'
         }`;
 
     return (
         <div className="p-8">
+            {confirmDialog}
             <header className="mb-8">
                 <DetailBackLink fallbackTo={backRoute} className="mb-4" />
                 <div className="flex justify-between items-start">
@@ -564,7 +566,7 @@ const LeadDetailPage = () => {
                                     }}
                                     onBlur={() => setIsChangingStatus(false)}
                                     autoFocus
-                                    className="bg-slate-900 border border-slate-700 text-xs font-black uppercase text-slate-50 rounded px-2 py-1 outline-none"
+                                    className="bg-surface border border-line text-xs font-black uppercase text-fg rounded px-2 py-1 outline-none"
                                 >
                                     {leadStages.map(stage => (
                                         <option key={stage.id} value={stage.id}>{stage.name}</option>
@@ -572,9 +574,9 @@ const LeadDetailPage = () => {
                                 </select>
                             ) : (
                                 <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
-                                    <h1 className="text-4xl font-black text-slate-50 tracking-tight">{getLeadDisplayName(lead)}</h1>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all group-hover:scale-110 ${lead.status === 'Converted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                        lead.status === 'Lost' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                    <h1 className="text-4xl font-black text-fg tracking-tight">{getLeadDisplayName(lead)}</h1>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all group-hover:scale-110 ${lead.status === 'Converted' ? 'bg-emerald-500/10 text-success border-emerald-500/20' :
+                                        lead.status === 'Lost' ? 'bg-rose-500/10 text-danger border-rose-500/20' :
                                             'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                         }`}>
                                         {lead.status}
@@ -584,12 +586,12 @@ const LeadDetailPage = () => {
                                             Partner
                                         </span>
                                     )}
-                                    <Edit2 size={12} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <Edit2 size={12} className="text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             )}
                         </div>
-                        <p className="text-xl text-slate-400 flex items-center gap-2 font-medium">
-                            <Building2 size={20} className="text-slate-500" />
+                        <p className="text-xl text-fg-subtle flex items-center gap-2 font-medium">
+                            <Building2 size={20} className="text-fg-muted" />
                             {lead.company_name}
                         </p>
                     </div>
@@ -602,7 +604,7 @@ const LeadDetailPage = () => {
                             onClick={() => setShowDeleteConfirm(true)}
                             aria-label="Delete"
                             title="Delete"
-                            className="bg-slate-800 hover:bg-red-600/20 text-slate-300 hover:text-red-400 p-3 rounded-xl transition-all flex items-center justify-center border border-slate-700 hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
+                            className="bg-surface-raised hover:bg-red-600/20 text-fg-subtle hover:text-danger p-3 rounded-xl transition-all flex items-center justify-center border border-line hover:border-red-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
                         >
                             <Trash2 size={16} />
                         </button>}
@@ -610,13 +612,13 @@ const LeadDetailPage = () => {
                             onClick={() => setIsMergeOpen(true)}
                             aria-label="Merge"
                             title="Merge a duplicate lead into this one"
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl transition-all flex items-center justify-center border border-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+                            className="bg-surface-raised hover:bg-line text-fg-subtle p-3 rounded-xl transition-all flex items-center justify-center border border-line focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
                         >
                             <GitMerge size={16} />
                         </button>}
                         {canCreateDeal && <button
                             onClick={() => setIsCreatingDeal(true)}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
+                            className="bg-primary hover:bg-primary text-white px-6 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 active:scale-95 text-xs flex items-center gap-2 uppercase tracking-widest"
                         >
                             <Plus size={16} />
                             Create Deal
@@ -654,8 +656,8 @@ const LeadDetailPage = () => {
 
             {/* Lead Journey Stepper — only for leads, not customers */}
             {!isCustomerDetailRoute && (
-            <div className="mb-8 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Lead Journey</h3>
+            <div className="mb-8 bg-surface border border-slate-800 rounded-2xl p-6">
+                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4">Lead Journey</h3>
                 <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
             </div>
             )}
@@ -696,25 +698,25 @@ const LeadDetailPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     {/* Lead Information Tabs Card */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col h-fit">
+                    <section className="bg-surface border border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col h-fit">
                         <div className="flex border-b border-slate-800 bg-slate-900/50">
                             <button
                                 onClick={() => setInfoTab('profile')}
-                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'profile' ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'profile' ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 <Users size={14} /> Full Profile
                             </button>
                             {customFieldDefs.length > 0 && (
                                 <button
                                     onClick={() => setInfoTab('additional')}
-                                    className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'additional' ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                                    className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'additional' ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                                 >
                                     <Info size={14} /> Additional Info
                                 </button>
                             )}
                             <button
                                 onClick={() => setInfoTab('business')}
-                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'business' ? 'text-blue-400 border-b-2 border-blue-500 bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'}`}
+                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'business' ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 <Building2 size={14} /> Business Profile
                             </button>
@@ -775,7 +777,7 @@ const LeadDetailPage = () => {
                                         }
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
-                                    className={`p-2 rounded-lg transition-all disabled:opacity-60 disabled:cursor-wait ${isEditingInfo ? 'bg-blue-600 text-slate-50 shadow-lg' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                                    className={`p-2 rounded-lg transition-all disabled:opacity-60 disabled:cursor-wait ${isEditingInfo ? 'bg-primary text-fg shadow-lg' : 'text-fg-muted hover:text-fg-subtle hover:bg-surface-raised'}`}
                                     title={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
                                     aria-busy={isSavingInfo}
                                 >
@@ -788,12 +790,12 @@ const LeadDetailPage = () => {
                             {infoTab === 'profile' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
                                     <div className="space-y-8">
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shadow-inner">
+                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-fg-subtle shadow-inner">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">First Name</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">First Name</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type="text"
@@ -803,22 +805,22 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, first_name: validateFirstNameRequired(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.first_name}
-                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.first_name || '—'}</span>
                                                 )}
                                                 {isEditingInfo && editErrors.first_name && (
-                                                    <p className="text-xs text-red-400 mt-1">{editErrors.first_name}</p>
+                                                    <p className="text-xs text-danger mt-1">{editErrors.first_name}</p>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 shadow-inner">
+                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-fg-subtle shadow-inner">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Last Name</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Last Name</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type="text"
@@ -828,22 +830,22 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, last_name: validateLastName(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.last_name}
-                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">{lead.last_name || '—'}</span>
                                                 )}
                                                 {isEditingInfo && editErrors.last_name && (
-                                                    <p className="text-xs text-red-400 mt-1">{editErrors.last_name}</p>
+                                                    <p className="text-xs text-danger mt-1">{editErrors.last_name}</p>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 shadow-inner">
+                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-blue-400 shadow-inner">
                                                 <Mail size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Email</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Email</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         /* `text`, not `email`: the browser's native popup
@@ -856,22 +858,22 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, contact_email: validateEmailRequired(e.target.value, 'Email') }));
                                                         }}
                                                         aria-invalid={!!editErrors.contact_email}
-                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-blue-400 transition-colors uppercase tracking-tight">{lead.contact_email}</a>
                                                 )}
                                                 {isEditingInfo && editErrors.contact_email && (
-                                                    <p className="text-xs text-red-400 mt-1">{editErrors.contact_email}</p>
+                                                    <p className="text-xs text-danger mt-1">{editErrors.contact_email}</p>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-purple-400 shadow-inner">
+                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-purple-400 shadow-inner">
                                                 <Phone size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Phone</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Phone</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type="text"
@@ -882,7 +884,7 @@ const LeadDetailPage = () => {
                                                         }}
                                                         placeholder="Add phone..."
                                                         aria-invalid={!!editErrors.phone}
-                                                        className={`bg-slate-950 border text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-red-500' : 'border-slate-800 focus:border-blue-500'}`}
+                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-danger' : 'border-slate-800 focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="flex items-center gap-2">
@@ -896,23 +898,23 @@ const LeadDetailPage = () => {
                                                     </span>
                                                 )}
                                                 {isEditingInfo && editErrors.phone && (
-                                                    <p className="text-xs text-red-400 mt-1">{editErrors.phone}</p>
+                                                    <p className="text-xs text-danger mt-1">{editErrors.phone}</p>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="space-y-8">
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-emerald-400 shadow-inner">
+                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-success shadow-inner">
                                                 <Tag size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Source</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Source</span>
                                                 {isEditingInfo ? (
                                                     <select
                                                         value={lead.source}
                                                         onChange={(e) => setLead({ ...lead, source: e.target.value })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
                                                     >
                                                         <option value="">— Select source —</option>
                                                         {sourceTypes.map(opt => (
@@ -927,12 +929,12 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
+                                        <div className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-violet-400 shadow-inner">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Referred By</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Referred By</span>
                                                 {isEditingInfo ? (
                                                     <PartnerSearchDropdown
                                                         partners={partners}
@@ -950,12 +952,12 @@ const LeadDetailPage = () => {
                                         </div>
 
                                         {isEditingInfo && (
-                                            <div className="flex items-center gap-4 text-slate-300">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-violet-400 shadow-inner">
+                                            <div className="flex items-center gap-4 text-fg-subtle">
+                                                <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-violet-400 shadow-inner">
                                                     <Users size={18} />
                                                 </div>
                                                 <div className="flex flex-col flex-1">
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Partner</span>
+                                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Partner</span>
                                                     <label className="flex items-center gap-2 cursor-pointer">
                                                         <input
                                                             type="checkbox"
@@ -969,12 +971,12 @@ const LeadDetailPage = () => {
                                             </div>
                                         )}
 
-                                        <div className="flex items-center gap-4 text-slate-300 text-opacity-50">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-amber-400 shadow-inner opacity-50">
+                                        <div className="flex items-center gap-4 text-fg-subtle text-opacity-50">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-warning shadow-inner opacity-50">
                                                 <Calendar size={18} />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Created</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Created</span>
                                                 <span className="text-sm font-bold uppercase tracking-tight">{formatters.formatDate(lead.created_at)}</span>
                                             </div>
                                         </div>
@@ -985,12 +987,12 @@ const LeadDetailPage = () => {
                             {infoTab === 'additional' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
                                     {customFieldDefs.map(field => (
-                                        <div key={field.id} className="flex items-center gap-4 text-slate-300">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-500 shadow-inner">
+                                        <div key={field.id} className="flex items-center gap-4 text-fg-subtle">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-fg-muted shadow-inner">
                                                 {field.type === 'date' ? <Calendar size={18} /> : field.type === 'boolean' ? <CheckCircle2 size={18} /> : <Tag size={18} />}
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">{field.label}</span>
+                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">{field.label}</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type={field.type === 'number' ? 'number' : 'text'}
@@ -1002,7 +1004,7 @@ const LeadDetailPage = () => {
                                                                 [field.id]: e.target.value
                                                             }
                                                         })}
-                                                        className="bg-slate-950 border border-slate-800 text-sm font-bold text-slate-50 rounded px-2 py-1 outline-none focus:border-blue-500"
+                                                        className="bg-bg border border-slate-800 text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
                                                     />
                                                 ) : (
                                                     <span className="text-sm font-bold uppercase tracking-tight">
@@ -1030,7 +1032,7 @@ const LeadDetailPage = () => {
                     </section>
 
                     {/* Workspace Tabs - Now below Profile Data */}
-                    <div ref={workspaceRef} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit scroll-mt-6">
+                    <div ref={workspaceRef} className="bg-surface border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit scroll-mt-6">
                         {/* The settings cog sits outside the scrolling strip: inside it, it
                             consumed the width the last tab needed and clipped its label
                             (the "Feedbac…" report). The strip scrolls on its own, with a
@@ -1056,7 +1058,7 @@ const LeadDetailPage = () => {
                             </div>
                             <button
                                 onClick={() => setShowLayoutSettings(true)}
-                                className="px-3 text-slate-300 hover:text-slate-50 transition-colors shrink-0 border-l border-slate-800"
+                                className="px-3 text-fg-subtle hover:text-fg transition-colors shrink-0 border-l border-slate-800"
                                 title="Layout Settings"
                                 aria-label="Layout Settings"
                             >
@@ -1066,30 +1068,30 @@ const LeadDetailPage = () => {
 
                         <div className="px-4 pt-3">
                             <div className="relative">
-                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
                                 <input
                                     value={commSearchQuery}
                                     onChange={(e) => setCommSearchQuery(e.target.value)}
                                     placeholder="Search notes, tasks, deals…"
-                                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-slate-300 placeholder-slate-600 outline-none focus:border-blue-500/40"
+                                    className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-fg-subtle placeholder-fg-subtle outline-none focus:border-blue-500/40"
                                 />
                             </div>
                             {commSearchQuery.trim() && (
                                 <div className="mt-2 max-h-64 overflow-y-auto border border-slate-800 rounded-lg divide-y divide-slate-800/70">
                                     {commSearchResults.length === 0 ? (
-                                        <p className="text-[11px] text-slate-600 italic px-3 py-2">No matches.</p>
+                                        <p className="text-[11px] text-fg-muted italic px-3 py-2">No matches.</p>
                                     ) : (
                                         commSearchResults.map((r) => (
                                             <button
                                                 key={r.id}
                                                 onClick={() => { setActiveTab(r.tab); setCommSearchQuery(''); }}
-                                                className="w-full text-left px-3 py-2 hover:bg-slate-900 transition-colors"
+                                                className="w-full text-left px-3 py-2 hover:bg-surface transition-colors"
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{r.kind}</span>
-                                                    <span className="text-[9px] text-slate-600">{formatters.formatDate(r.date)}</span>
+                                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{r.kind}</span>
+                                                    <span className="text-[9px] text-fg-muted">{formatters.formatDate(r.date)}</span>
                                                 </div>
-                                                <p className="text-xs text-slate-300 truncate">{r.title}</p>
+                                                <p className="text-xs text-fg-subtle truncate">{r.title}</p>
                                             </button>
                                         ))
                                     )}
@@ -1103,8 +1105,8 @@ const LeadDetailPage = () => {
                                     {/* Header */}
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Customer Timeline</p>
-                                            <p className="text-[10px] text-slate-600 mt-0.5">
+                                            <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Customer Timeline</p>
+                                            <p className="text-[10px] text-fg-muted mt-0.5">
                                                 Showing latest {entityTimeline.events.length}
                                             </p>
                                         </div>
@@ -1123,13 +1125,13 @@ const LeadDetailPage = () => {
                                     {/* Timeline */}
                                     <div className="space-y-3 relative">
                                         {entityTimeline.loading ? (
-                                            <div className="flex items-center justify-center py-8 text-slate-500">
+                                            <div className="flex items-center justify-center py-8 text-fg-muted">
                                                 <Loader2 size={18} className="animate-spin" />
                                             </div>
                                         ) : entityTimeline.events.length === 0 ? (
                                             <div className="text-center py-8 ml-6">
-                                                <p className="text-slate-500 italic text-sm">No activities logged yet.</p>
-                                                <p className="text-slate-600 text-[10px] mt-1">Activities will appear here automatically when users interact with this lead.</p>
+                                                <p className="text-fg-muted italic text-sm">No activities logged yet.</p>
+                                                <p className="text-fg-muted text-[10px] mt-1">Activities will appear here automatically when users interact with this lead.</p>
                                             </div>
                                         ) : (
                                             entityTimeline.events.map((event) => (
@@ -1146,7 +1148,7 @@ const LeadDetailPage = () => {
                                                         }
                                                     }}
                                                     onDelete={async (e) => {
-                                                        if (confirm('Delete this activity?') && e.related_id) {
+                                                        if (await confirm({ title: 'Delete?', message: 'Delete this activity?', intent: 'danger', confirmLabel: 'Delete' }) && e.related_id) {
                                                             await activitiesApi.delete(e.related_id);
                                                             entityTimeline.removeEvent(e.id);
                                                         }
@@ -1161,7 +1163,7 @@ const LeadDetailPage = () => {
                                             <button
                                                 onClick={entityTimeline.loadMore}
                                                 disabled={entityTimeline.loadingMore}
-                                                className="text-[10px] text-slate-600 hover:text-blue-400 transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
+                                                className="text-[10px] text-fg-muted hover:text-blue-400 transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
                                             >
                                                 {entityTimeline.loadingMore ? 'Loading…' : 'Load More →'}
                                             </button>
@@ -1173,18 +1175,18 @@ const LeadDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         {lead.notes.length === 0 ? (
-                                            <p className="text-slate-400 italic text-sm">No notes captured for this {isCustomerDetailRoute ? 'customer' : 'lead'} yet.</p>
+                                            <p className="text-fg-subtle italic text-sm">No notes captured for this {isCustomerDetailRoute ? 'customer' : 'lead'} yet.</p>
                                         ) : (
                                             <div className="space-y-4">
                                                 {sortNotesNewestFirst(lead.notes).map(note => (
                                                     <div key={note.id} className="text-sm bg-slate-900/40 border border-slate-800 rounded-xl p-4 group/note relative">
                                                         {editingNoteId === note.id ? (
-                                                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-2">
+                                                            <div className="bg-bg border border-slate-800 rounded-xl p-4 mb-2">
                                                                 <NoteEditor value={editingNoteContent} onChange={setEditingNoteContent} autoFocus />
                                                                 <div className="flex justify-end gap-2 mt-3">
                                                                     <button
                                                                         onClick={() => setEditingNoteId(null)}
-                                                                        className="text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                                                                        className="text-fg-subtle hover:text-fg px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest"
                                                                     >
                                                                         Cancel
                                                                     </button>
@@ -1199,7 +1201,7 @@ const LeadDetailPage = () => {
                                                                             setEditingNoteId(null);
                                                                         }}
                                                                         disabled={isNoteContentEmpty(editingNoteContent)}
-                                                                        className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50"
+                                                                        className="bg-slate-700/60 hover:bg-slate-600/60 text-fg px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50"
                                                                     >
                                                                         Save
                                                                     </button>
@@ -1215,7 +1217,7 @@ const LeadDetailPage = () => {
                                                                             setEditingNoteId(note.id);
                                                                             setEditingNoteContent(note.content);
                                                                         }}
-                                                                        className="text-slate-500 hover:text-blue-400"
+                                                                        className="text-fg-muted hover:text-blue-400"
                                                                     >
                                                                         <Edit2 size={12} />
                                                                     </button>
@@ -1223,7 +1225,7 @@ const LeadDetailPage = () => {
                                                                         aria-label="Delete note"
                                                                         data-testid={`delete-note-${note.id}`}
                                                                         onClick={async () => {
-                                                                            if (confirm('Delete this note?')) {
+                                                                            if (await confirm({ title: 'Delete?', message: 'Delete this note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                                 await crmService.deleteNote(note.id);
                                                                                 setLead({
                                                                                     ...lead,
@@ -1231,7 +1233,7 @@ const LeadDetailPage = () => {
                                                                                 });
                                                                             }
                                                                         }}
-                                                                        className="text-slate-500 hover:text-rose-400"
+                                                                        className="text-fg-muted hover:text-danger"
                                                                     >
                                                                         <Trash2 size={12} />
                                                                     </button>
@@ -1242,8 +1244,8 @@ const LeadDetailPage = () => {
                                                             </>
                                                         )}
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{note.author.full_name}</span>
-                                                            <span className="text-[10px] text-slate-400 font-bold">{formatters.formatDate(note.created_at)}</span>
+                                                            <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{note.author.full_name}</span>
+                                                            <span className="text-[10px] text-fg-subtle font-bold">{formatters.formatDate(note.created_at)}</span>
                                                         </div>
 
                                                         {(note.replies || []).length > 0 && (
@@ -1251,8 +1253,8 @@ const LeadDetailPage = () => {
                                                                 {groupConsecutiveReplies(note.replies || []).map((run) => (
                                                                     <div key={run[0].id} className="space-y-1.5">
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{run[0].author?.full_name}</span>
-                                                                            <span className="text-[10px] text-slate-500 font-bold">{formatters.formatDate(run[0].created_at)}</span>
+                                                                            <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{run[0].author?.full_name}</span>
+                                                                            <span className="text-[10px] text-fg-muted font-bold">{formatters.formatDate(run[0].created_at)}</span>
                                                                         </div>
                                                                         {run.map((reply) => (
                                                                             <div key={reply.id} className="text-sm">
@@ -1281,7 +1283,7 @@ const LeadDetailPage = () => {
                                                                     type="button"
                                                                     data-testid={`open-reply-${note.id}`}
                                                                     onClick={() => setOpenReplyNoteId(note.id)}
-                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 hover:text-blue-400 uppercase tracking-widest transition-colors"
+                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-fg-muted hover:text-blue-400 uppercase tracking-widest transition-colors"
                                                                 >
                                                                     <MessageSquare size={11} /> Reply
                                                                 </button>
@@ -1291,7 +1293,7 @@ const LeadDetailPage = () => {
                                                 ))}
                                             </div>
                                         )}
-                                        <div ref={noteComposerRef} className="bg-slate-950 border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
+                                        <div ref={noteComposerRef} className="bg-bg border border-slate-800 rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-blue-500/30">
                                             <NoteEditor
                                                 key={noteEditorKey}
                                                 value={newNoteContent}
@@ -1311,7 +1313,7 @@ const LeadDetailPage = () => {
                                                         setNoteEditorKey((k) => k + 1);
                                                     }}
                                                     disabled={isNoteContentEmpty(newNoteContent)}
-                                                    className="bg-slate-700/60 hover:bg-slate-600/60 text-slate-50 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50 shadow-sm"
+                                                    className="bg-slate-700/60 hover:bg-slate-600/60 text-fg px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-slate-600/50 disabled:opacity-50 shadow-sm"
                                                 >
                                                     Save Note
                                                 </button>
@@ -1325,9 +1327,9 @@ const LeadDetailPage = () => {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center mb-4">
                                         <div className="flex items-center gap-2">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Tasks</p>
+                                            <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Active Tasks</p>
                                             {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
-                                                <span className="bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                                <span className="bg-danger text-white text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
                                                     Due Reminders
                                                 </span>
                                             )}
@@ -1346,15 +1348,15 @@ const LeadDetailPage = () => {
                                            never reads as a second copy of the task below. */
                                         <div className="mb-6" data-testid="task-reminders-panel">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <Clock size={12} className="text-amber-500" />
-                                                <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                                                <Clock size={12} className="text-warning" />
+                                                <h4 className="text-[10px] font-black text-warning uppercase tracking-widest">
                                                     Upcoming &amp; Due Reminders
                                                 </h4>
-                                                <span className="text-[10px] text-slate-300 normal-case tracking-normal">
+                                                <span className="text-[10px] text-fg-subtle normal-case tracking-normal">
                                                     · alerts for tasks already listed below
                                                 </span>
                                             </div>
-                                            <div className="divide-y divide-amber-500/10 border-l-2 border-amber-500 bg-amber-500/[0.06] rounded-r">
+                                            <div className="divide-y divide-amber-500/10 border-l-2 border-warning bg-amber-500/[0.06] rounded-r">
                                                 {associatedTasks
                                                     .filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
                                                     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
@@ -1368,12 +1370,12 @@ const LeadDetailPage = () => {
                                                                 data-testid={`task-reminder-${task.id}`}
                                                                 className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-amber-500/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60"
                                                             >
-                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
-                                                                <span className="text-xs font-semibold text-slate-300 truncate">{task.title}</span>
-                                                                <span className={`text-[11px] shrink-0 ${reminderOverdue ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
+                                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-danger animate-pulse' : 'bg-warning'}`} />
+                                                                <span className="text-xs font-semibold text-fg-subtle truncate">{task.title}</span>
+                                                                <span className={`text-[11px] shrink-0 ${reminderOverdue ? 'text-danger font-bold' : 'text-fg-subtle'}`}>
                                                                     {reminderOverdue ? 'Overdue · ' : ''}{formatters.formatDateTime(task.due_date)}
                                                                 </span>
-                                                                <span className="ml-auto text-[10px] font-black text-amber-500 uppercase tracking-widest shrink-0">
+                                                                <span className="ml-auto text-[10px] font-black text-warning uppercase tracking-widest shrink-0">
                                                                     View Task
                                                                 </span>
                                                             </button>
@@ -1383,7 +1385,7 @@ const LeadDetailPage = () => {
                                         </div>
                                     )}
                                     {associatedTasks.length === 0 ? (
-                                        <div className="text-center py-10 text-slate-500 border-2 border-dashed border-slate-800 rounded-xl">
+                                        <div className="text-center py-10 text-fg-muted border-2 border-dashed border-slate-800 rounded-xl">
                                             <CheckCircle2 size={32} className="mx-auto mb-3 opacity-20" />
                                             <p className="text-sm font-medium">No active tasks or follow-ups.</p>
                                         </div>
@@ -1392,22 +1394,22 @@ const LeadDetailPage = () => {
                                             {associatedTasks.map(task => {
                                                 const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
                                                 return (
-                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-4 p-4 bg-slate-950 border rounded-xl group shadow-sm relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-amber-500/70' : ''} ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
+                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-4 p-4 bg-bg border rounded-xl group shadow-sm relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-amber-500/70' : ''} ${task.status === 'DONE' ? 'border-emerald-500/20 opacity-60' : overdue ? 'border-rose-500/40 hover:border-rose-500/60 bg-rose-950/10' : 'border-slate-800 hover:border-blue-500/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 'border-slate-700 group-hover:border-blue-500'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-success text-success' : 'border-line group-hover:border-primary'}`}
                                                     >
-                                                        <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'DONE' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-blue-500'}`} />
+                                                        <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'DONE' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-primary'}`} />
                                                     </button>
                                                     <div className="flex-1 min-w-0">
                                                         <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h4 className={`text-sm font-bold text-slate-50 leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'DONE' ? 'line-through text-slate-500' : ''}`}>
+                                                                <h4 className={`text-sm font-bold text-fg leading-tight truncate group-hover/link:text-blue-400 transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
                                                                     {task.title || 'Untitled Task'}
                                                                 </h4>
                                                                 <div className="flex items-center gap-2">
                                                                     {overdue && (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-rose-500/10 text-rose-400 border-rose-500/30" data-testid={`overdue-badge-${task.id}`}>
+                                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-rose-500/10 text-danger border-rose-500/30" data-testid={`overdue-badge-${task.id}`}>
                                                                             Overdue
                                                                         </span>
                                                                     )}
@@ -1418,13 +1420,13 @@ const LeadDetailPage = () => {
                                                                                 e.stopPropagation();
                                                                                 setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
                                                                             }}
-                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'}`}
+                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-emerald-500/10 text-success border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-surface-raised text-fg border-line hover:bg-line'}`}
                                                                             data-testid={`status-button-${task.id}`}
                                                                         >
                                                                             {task.status}
                                                                         </button>
                                                                         {expandedStatusDropdown === task.id && (
-                                                                            <div className="absolute top-full mt-1 right-0 z-10 bg-slate-900 border border-slate-700 rounded-lg shadow-lg" data-testid={`status-dropdown-${task.id}`}>
+                                                                            <div className="absolute top-full mt-1 right-0 z-10 bg-surface border border-line rounded-lg shadow-lg" data-testid={`status-dropdown-${task.id}`}>
                                                                                 {['OPEN', 'IN_PROGRESS', 'DONE'].map((status) => (
                                                                                     <button
                                                                                         key={status}
@@ -1442,7 +1444,7 @@ const LeadDetailPage = () => {
                                                                                                     toast.error('Failed to update task status');
                                                                                                 });
                                                                                         }}
-                                                                                        className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-blue-500/20 text-blue-400 border-b border-blue-500/20' : 'hover:bg-slate-800 text-slate-300'}`}
+                                                                                        className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-blue-500/20 text-blue-400 border-b border-blue-500/20' : 'hover:bg-surface-raised text-fg-subtle'}`}
                                                                                         data-testid={`status-option-${task.id}-${status}`}
                                                                                     >
                                                                                         {status}
@@ -1454,22 +1456,22 @@ const LeadDetailPage = () => {
                                                                 </div>
                                                             </div>
                                                             {task.description && (
-                                                                <p className="text-xs text-slate-300 mt-1 line-clamp-2">{task.description}</p>
+                                                                <p className="text-xs text-fg-subtle mt-1 line-clamp-2">{task.description}</p>
                                                             )}
                                                         </Link>
 
                                                         {/* Metadata row: readable in its own right, one weight below the
                                                             title. The previous slate-500 / rose-400/70 pairing sat under
                                                             3:1 on the light theme's white card. */}
-                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-t border-slate-800/50 pt-2">
-                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-fg-subtle uppercase tracking-wider border-t border-slate-800/50 pt-2">
+                                                            <span className={`flex items-center gap-1 ${overdue ? 'text-danger' : 'text-fg-subtle'}`}>
                                                                 <Clock size={11} />
                                                                 Due {formatters.formatDate(task.due_date)}
                                                             </span>
 
                                                             {task.assigned_to && (
-                                                                <span className="flex items-center gap-1 text-slate-300">
-                                                                    <div className="w-4 h-4 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
+                                                                <span className="flex items-center gap-1 text-fg-subtle">
+                                                                    <div className="w-4 h-4 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border border-line">
                                                                         {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} className="w-full h-full object-cover" /> : task.assigned_to.full_name?.charAt(0)}
                                                                     </div>
                                                                     {task.assigned_to.full_name}
@@ -1490,7 +1492,7 @@ const LeadDetailPage = () => {
                                                             disabled={isTaskLocked(task.status)}
                                                             title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit Task'}
                                                             aria-label="Edit Task"
-                                                            className="p-1.5 bg-slate-800 rounded hover:text-blue-400 hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-800 disabled:hover:text-current"
+                                                            className="p-1.5 bg-surface-raised rounded hover:text-blue-400 hover:bg-line transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-raised disabled:hover:text-current"
                                                         >
                                                             <Edit2 size={12} />
                                                         </button>
@@ -1506,8 +1508,8 @@ const LeadDetailPage = () => {
                             {activeTab === 'documents' && (
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-2">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Digital Assets & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 hover:bg-blue-500 text-slate-50 shadow-lg shadow-blue-500/20 active:scale-95'}`}>
+                                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Digital Assets & Contracts</p>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary text-fg shadow-lg shadow-blue-500/20 active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload Document'}
                                             <input
@@ -1541,33 +1543,33 @@ const LeadDetailPage = () => {
                                     </div>
 
                                     {(!lead.documents || lead.documents.length === 0) ? (
-                                        <div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
+                                        <div className="text-center py-12 text-fg-muted border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/30">
                                             <FileIcon size={48} className="mx-auto mb-4 opacity-10" />
                                             <p className="text-sm font-bold uppercase tracking-widest mb-1">No documents attached</p>
-                                            <p className="text-xs text-slate-400 lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
+                                            <p className="text-xs text-fg-subtle lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
                                         </div>
                                     ) : (
                                         <div className="grid gap-3">
                                             {lead.documents.map(doc => (
-                                                <div key={doc.id} className="flex items-center gap-4 p-4 bg-slate-950 border border-slate-800 rounded-2xl group hover:border-slate-700 transition-all shadow-sm">
-                                                    <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-blue-500 border border-slate-800 group-hover:scale-105 transition-transform shadow-inner">
+                                                <div key={doc.id} className="flex items-center gap-4 p-4 bg-bg border border-slate-800 rounded-2xl group hover:border-line transition-all shadow-sm">
+                                                    <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-primary border border-slate-800 group-hover:scale-105 transition-transform shadow-inner">
                                                         <File size={20} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 className="text-sm font-bold text-slate-50 truncate group-hover:text-blue-400 transition-colors">{doc.name}</h4>
-                                                        <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                        <h4 className="text-sm font-bold text-fg truncate group-hover:text-blue-400 transition-colors">{doc.name}</h4>
+                                                        <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-fg-subtle uppercase tracking-widest">
                                                             <span>{(doc.size / (1024 * 1024)).toFixed(2)} MB</span>
-                                                            <span className="w-1 h-1 bg-slate-800 rounded-full" />
+                                                            <span className="w-1 h-1 bg-surface-raised rounded-full" />
                                                             <span>{formatters.formatDate(doc.uploaded_at)}</span>
-                                                            <span className="w-1 h-1 bg-slate-800 rounded-full" />
-                                                            <span className="text-slate-500">by {doc.uploaded_by.full_name}</span>
+                                                            <span className="w-1 h-1 bg-surface-raised rounded-full" />
+                                                            <span className="text-fg-muted">by {doc.uploaded_by.full_name}</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-2">
                                                         {doc.dmsDocumentId ? (
                                                             <button
                                                                 onClick={() => { void openLeadDocument(doc); }}
-                                                                className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                                className="p-2 text-fg-muted hover:text-blue-400 hover:bg-surface-raised rounded-lg transition-all"
                                                                 title="View"
                                                             >
                                                                 <Eye size={16} />
@@ -1577,7 +1579,7 @@ const LeadDetailPage = () => {
                                                                 href={doc.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-all"
+                                                                className="p-2 text-fg-muted hover:text-blue-400 hover:bg-surface-raised rounded-lg transition-all"
                                                                 title="View"
                                                             >
                                                                 <Eye size={16} />
@@ -1605,14 +1607,14 @@ const LeadDetailPage = () => {
                                                                     }
                                                                 }
                                                             }}
-                                                            className="p-2 text-slate-500 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-all"
+                                                            className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-lg transition-all"
                                                             title="Download"
                                                         >
                                                             <Download size={16} />
                                                         </button>
                                                         <button
                                                             onClick={async () => {
-                                                                if (confirm('Delete this document?')) {
+                                                                if (await confirm({ title: 'Delete?', message: 'Delete this document?', intent: 'danger', confirmLabel: 'Delete' })) {
                                                                     await crmService.deleteDocument(lead.id, doc.id);
                                                                     setLead({
                                                                         ...lead,
@@ -1621,7 +1623,7 @@ const LeadDetailPage = () => {
                                                                     publishLeadDocumentsChanged(lead.id);
                                                                 }
                                                             }}
-                                                            className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                                                            className="p-2 text-fg-muted hover:text-danger hover:bg-rose-500/10 rounded-lg transition-all"
                                                             title="Delete document"
                                                             aria-label="Delete document"
                                                         >
@@ -1691,12 +1693,12 @@ const LeadDetailPage = () => {
                     )}
 
                     {/* Lead / Customer Potential Score Card */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
+                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
                             <Trophy size={120} />
                         </div>
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
                                 {isCustomerDetailRoute ? 'Customer Potential' : 'Lead Potential'}
                             </h3>
                             <div className="flex items-center gap-2">
@@ -1705,12 +1707,12 @@ const LeadDetailPage = () => {
                                         onClick={handleRecalculateScore}
                                         disabled={isRecalculatingScore}
                                         title="Recalculate score"
-                                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all disabled:opacity-40"
+                                        className="p-1.5 rounded-lg text-fg-muted hover:text-warning hover:bg-amber-500/10 transition-all disabled:opacity-40"
                                     >
                                         <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
                                     </button>
                                 )}
-                                <div className="bg-amber-500/10 text-amber-500 p-1.5 rounded-lg">
+                                <div className="bg-amber-500/10 text-warning p-1.5 rounded-lg">
                                     <Zap size={14} className="fill-amber-500" />
                                 </div>
                             </div>
@@ -1742,10 +1744,10 @@ const LeadDetailPage = () => {
                             return (
                                 <>
                                     <div className="flex items-end gap-3 mb-6">
-                                        <span className="text-6xl font-black text-slate-50 tracking-tighter leading-none">{engagementScore}</span>
+                                        <span className="text-6xl font-black text-fg tracking-tighter leading-none">{engagementScore}</span>
                                         <div className="pb-1">
-                                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Engagement</span>
-                                            <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] uppercase tracking-tighter">
+                                            <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Engagement</span>
+                                            <div className="flex items-center gap-1 text-success font-bold text-[10px] uppercase tracking-tighter">
                                                 <TrendingUp size={12} />
                                                 <span>/ 100</span>
                                             </div>
@@ -1753,18 +1755,18 @@ const LeadDetailPage = () => {
                                     </div>
                                     <div className="space-y-3 pt-6 border-t border-slate-800/50">
                                         {engagementBreakdown.length === 0 ? (
-                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No engagement data yet</p>
+                                            <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest italic text-center py-2 underline decoration-slate-800 decoration-wavy underline-offset-4">No engagement data yet</p>
                                         ) : (
                                             engagementBreakdown.map((item, idx) => (
                                                 <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="text-slate-400">{item.label}</span>
-                                                    <span className="text-emerald-400">+{item.points}</span>
+                                                    <span className="text-fg-subtle">{item.label}</span>
+                                                    <span className="text-success">+{item.points}</span>
                                                 </div>
                                             ))
                                         )}
                                     </div>
                                     <div className="mt-6 pt-4">
-                                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
                                                 style={{ width: `${engagementScore}%` }}
@@ -1776,9 +1778,9 @@ const LeadDetailPage = () => {
                         })() : (
                             <>
                                 <div className="flex items-end gap-3 mb-3">
-                                    <span className="text-6xl font-black text-slate-50 tracking-tighter leading-none">{score}</span>
+                                    <span className="text-6xl font-black text-fg tracking-tighter leading-none">{score}</span>
                                     <div className="pb-1">
-                                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest block">Score</span>
+                                        <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Score</span>
                                         <div
                                             className="flex items-center gap-1 font-black text-[10px] uppercase tracking-tighter px-2 py-0.5 rounded-md"
                                             style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
@@ -1791,14 +1793,14 @@ const LeadDetailPage = () => {
                                     {breakdown.length === 0 ? (
                                         <div className="text-center py-3">
                                             {scoringRules.filter(r => r.is_active).length === 0 ? (
-                                                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">No active scoring rules configured</p>
+                                                <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">No active scoring rules configured</p>
                                             ) : (
                                                 <>
-                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
+                                                    <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
                                                     <button
                                                         onClick={handleRecalculateScore}
                                                         disabled={isRecalculatingScore}
-                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-amber-500/70 hover:text-amber-400 transition-colors flex items-center gap-1 mx-auto disabled:opacity-40"
+                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-amber-500/70 hover:text-warning transition-colors flex items-center gap-1 mx-auto disabled:opacity-40"
                                                     >
                                                         <RefreshCw size={9} className={isRecalculatingScore ? 'animate-spin' : ''} />
                                                         Recalculate
@@ -1808,14 +1810,14 @@ const LeadDetailPage = () => {
                                         </div>
                                     ) : (
                                         <>
-                                            <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] mb-2">Matched Rules</p>
+                                            <p className="text-[8px] font-black text-fg-muted uppercase tracking-[0.2em] mb-2">Matched Rules</p>
                                             {breakdown.map((item, idx) => (
                                                 <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1.5 text-slate-400 truncate mr-2">
-                                                        <span className="text-emerald-500 shrink-0">✓</span>
+                                                    <span className="flex items-center gap-1.5 text-fg-subtle truncate mr-2">
+                                                        <span className="text-success shrink-0">✓</span>
                                                         <span className="truncate">{item.label}</span>
                                                     </span>
-                                                    <span className={item.points >= 0 ? 'text-emerald-400 shrink-0' : 'text-rose-400 shrink-0'}>
+                                                    <span className={item.points >= 0 ? 'text-success shrink-0' : 'text-danger shrink-0'}>
                                                         {item.points >= 0 ? '+' : ''}{item.points}
                                                     </span>
                                                 </div>
@@ -1824,7 +1826,7 @@ const LeadDetailPage = () => {
                                     )}
                                 </div>
                                 <div className="mt-6 pt-4">
-                                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                    <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
                                         <div
                                             className="h-full transition-all duration-1000 ease-out"
                                             style={{
@@ -1839,10 +1841,10 @@ const LeadDetailPage = () => {
                         )}
                     </section>
                     {/* Assigned Owner & Engagement Suite Combined */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-visible relative">
+                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-visible relative">
                         <div className="pb-6 border-b border-slate-800/50">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Assigned Owner</h3>
+                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Assigned Owner</h3>
                                 <button
                                     type="button"
                                     onClick={() => setIsChangingOwner(!isChangingOwner)}
@@ -1872,9 +1874,9 @@ const LeadDetailPage = () => {
                                                     toast.error('Failed to update owner.');
                                                 }
                                             }}
-                                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'}`}
+                                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-blue-600/10 border-blue-500/50' : 'bg-slate-950/50 border-slate-800 hover:border-line'}`}
                                         >
-                                            <div className="w-8 h-8 rounded-full bg-slate-800 overflow-hidden flex-shrink-0">
+                                            <div className="w-8 h-8 rounded-full bg-surface-raised overflow-hidden flex-shrink-0">
                                                 {user.avatar_url ? (
                                                     <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
                                                 ) : (
@@ -1882,15 +1884,15 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                             <div className="text-left overflow-hidden">
-                                                <p className="text-[10px] font-black text-slate-50 uppercase tracking-tight truncate">{user.full_name}</p>
-                                                <p className="text-[8px] text-slate-500 truncate">{user.email}</p>
+                                                <p className="text-[10px] font-black text-fg uppercase tracking-tight truncate">{user.full_name}</p>
+                                                <p className="text-[8px] text-fg-muted truncate">{user.email}</p>
                                             </div>
                                         </button>
                                     ))}
                                 </div>
                             ) : lead.owner ? (
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-slate-800 shadow-lg">
+                                    <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border-2 border-slate-800 shadow-lg">
                                         {lead.owner.avatar_url ? (
                                             <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="w-full h-full object-cover" />
                                         ) : (
@@ -1898,18 +1900,18 @@ const LeadDetailPage = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <p className="font-black text-slate-50 text-sm uppercase tracking-tight leading-none mb-1">{lead.owner.full_name}</p>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{lead.owner.email}</p>
+                                        <p className="font-black text-fg text-sm uppercase tracking-tight leading-none mb-1">{lead.owner.full_name}</p>
+                                        <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">{lead.owner.email}</p>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl">
-                                    <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-                                        <Users size={18} className="text-slate-500" />
+                                    <div className="w-10 h-10 rounded-full bg-surface-raised border border-line flex items-center justify-center">
+                                        <Users size={18} className="text-fg-muted" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-black text-slate-500 uppercase tracking-tight">Unassigned</p>
-                                        <p className="text-[9px] text-slate-400 uppercase tracking-widest">Click CHANGE to assign</p>
+                                        <p className="text-xs font-black text-fg-muted uppercase tracking-tight">Unassigned</p>
+                                        <p className="text-[9px] text-fg-subtle uppercase tracking-widest">Click CHANGE to assign</p>
                                     </div>
                                 </div>
                             )}
@@ -1917,7 +1919,7 @@ const LeadDetailPage = () => {
 
                         <div className="py-6 border-b border-slate-800/50">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
                                     {isCustomerDetailRoute ? 'CRM Stage' : 'Lead Stage'}
                                 </h3>
                                 {!isCustomerDetailRoute && (
@@ -1935,17 +1937,17 @@ const LeadDetailPage = () => {
                                 <>
                                     <div className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl">
                                         <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                                            <Users size={16} className="text-emerald-400" />
+                                            <Users size={16} className="text-success" />
                                         </div>
                                         <div className="flex-1">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Stage</span>
-                                            <p className="font-black text-slate-50 text-xs uppercase tracking-tight mt-1">Customer</p>
+                                            <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block">Stage</span>
+                                            <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">Customer</p>
                                         </div>
-                                        <span className="text-[8px] bg-slate-800 text-slate-500 px-2 py-1 rounded font-black uppercase tracking-widest">
+                                        <span className="text-[8px] bg-surface-raised text-fg-muted px-2 py-1 rounded font-black uppercase tracking-widest">
                                             Locked
                                         </span>
                                     </div>
-                                    <p className="text-[9px] text-slate-400 mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
+                                    <p className="text-[9px] text-fg-subtle mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
                                 </>
                             ) : isChangingStage ? (
                                 <div className="space-y-1">
@@ -1970,7 +1972,7 @@ const LeadDetailPage = () => {
                                             }}
                                             className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
                                                 ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-50'
+                                                : 'bg-slate-950/50 border-slate-800 text-fg-subtle hover:border-line hover:text-fg'
                                                 }`}
                                         >
                                             <span>{stage.name}</span>
@@ -1983,15 +1985,15 @@ const LeadDetailPage = () => {
                                     className="flex items-center gap-3 bg-slate-950/50 border border-slate-800/50 p-3 rounded-xl group hover:border-blue-500/20 transition-all cursor-pointer"
                                     onClick={() => setIsChangingStage(true)}
                                 >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${lead.status === 'Converted' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
-                                        lead.status === 'Lost' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${lead.status === 'Converted' ? 'bg-emerald-500/10 border-emerald-500/30 text-success' :
+                                        lead.status === 'Lost' ? 'bg-rose-500/10 border-rose-500/30 text-danger' :
                                             'bg-blue-500/10 border-blue-500/30 text-blue-400'
                                         }`}>
                                         <TrendingUp size={16} />
                                     </div>
                                     <div className="flex-1">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Status</span>
-                                        <p className="font-black text-slate-50 text-xs uppercase tracking-tight mt-1">
+                                        <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block leading-none">Status</span>
+                                        <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">
                                             {lead.status}
                                         </p>
                                     </div>
@@ -2000,11 +2002,11 @@ const LeadDetailPage = () => {
                         </div>
 
                         <div className="pt-6">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Engagement Suite</h3>
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em] mb-6">Engagement Suite</h3>
                             <div className="space-y-3">
                                 <button
                                     onClick={() => setIsCreatingTask(true)}
-                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
+                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
                                 >
                                     <Clock size={14} /> Schedule Follow-up
                                 </button>
@@ -2024,7 +2026,7 @@ const LeadDetailPage = () => {
                                             toast.error(error.message || 'Failed to log email.');
                                         }
                                     }}
-                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
+                                    className="w-full bg-slate-700/60 hover:bg-slate-600/60 text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-slate-600/50 shadow-sm"
                                 >
                                     <Mail size={14} /> Send Email
                                 </button> */}
@@ -2033,25 +2035,25 @@ const LeadDetailPage = () => {
                     </section>
 
                     {/* Revenue Intelligence Card */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
+                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm overflow-hidden relative">
                         <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Revenue Intelligence</h3>
-                            <div className="bg-emerald-500/10 text-emerald-500 p-1.5 rounded-lg">
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Revenue Intelligence</h3>
+                            <div className="bg-emerald-500/10 text-success p-1.5 rounded-lg">
                                 <DollarSign size={14} />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6 mb-8">
                             <div>
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Earned</span>
+                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Earned</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-slate-50">{formatters.formatCurrency(earned)}</span>
+                                    <span className="text-2xl font-black text-fg">{formatters.formatCurrency(earned)}</span>
                                 </div>
                             </div>
                             <div>
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Pipeline</span>
+                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Pipeline</span>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-slate-400">{formatters.formatCurrency(pipeline)}</span>
+                                    <span className="text-2xl font-black text-fg-subtle">{formatters.formatCurrency(pipeline)}</span>
                                 </div>
                             </div>
                         </div>
@@ -2059,12 +2061,12 @@ const LeadDetailPage = () => {
                         <div className="space-y-4">
                             <div>
                                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                                    <span className="text-slate-500">Revenue Contribution</span>
-                                    <span className="text-emerald-400">{totalValue > 0 ? Math.round((earned / totalValue) * 100) : 0}%</span>
+                                    <span className="text-fg-muted">Revenue Contribution</span>
+                                    <span className="text-success">{totalValue > 0 ? Math.round((earned / totalValue) * 100) : 0}%</span>
                                 </div>
                                 <div className="w-full h-3 bg-slate-800/50 rounded-full flex overflow-hidden border border-slate-700/30">
                                     <div
-                                        className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-1000"
+                                        className="h-full bg-success shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-1000"
                                         style={{ width: `${totalValue > 0 ? (earned / totalValue) * 100 : 0}%` }}
                                     />
                                     <div
@@ -2076,23 +2078,23 @@ const LeadDetailPage = () => {
 
                             <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
                                 <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Active Deals</span>
+                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Active Deals</span>
                                     <span className="text-sm font-black text-blue-400">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</span>
                                 </div>
                                 <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Total LTV</span>
-                                    <span className="text-sm font-black text-slate-50">{formatters.formatCurrency(totalValue)}</span>
+                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Total LTV</span>
+                                    <span className="text-sm font-black text-fg">{formatters.formatCurrency(totalValue)}</span>
                                 </div>
                             </div>
                             {productCount > 0 && (
                                 <div className="flex items-center gap-4 pt-4 border-t border-slate-800/50">
                                     <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                        <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Products Interested</span>
+                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Products Interested</span>
                                         <span className="text-sm font-black text-blue-400">{productCount}</span>
                                     </div>
                                     <div className="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/50 flex flex-col items-center">
-                                        <span className="text-[8px] font-black text-slate-400 uppercase mb-1">Est. Revenue</span>
-                                        <span className="text-sm font-black text-emerald-400">{formatters.formatCurrency(productValue)}</span>
+                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Est. Revenue</span>
+                                        <span className="text-sm font-black text-success">{formatters.formatCurrency(productValue)}</span>
                                     </div>
                                 </div>
                             )}
@@ -2100,12 +2102,12 @@ const LeadDetailPage = () => {
                     </section>
 
                     {/* Associated Deals Section */}
-                    <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+                    <section className="bg-surface border border-slate-800 rounded-2xl p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Deals ({associatedDeals.length})</h3>
+                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Deals ({associatedDeals.length})</h3>
                         </div>
                         {associatedDeals.length === 0 ? (
-                            <div className="text-center py-6 text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                            <div className="text-center py-6 text-fg-muted border border-dashed border-slate-800 rounded-xl">
                                 <Briefcase size={24} className="mx-auto mb-2 opacity-20" />
                                 <p className="text-[10px] font-bold uppercase tracking-widest">No deals yet</p>
                             </div>
@@ -2115,15 +2117,15 @@ const LeadDetailPage = () => {
                                     <Link
                                         key={deal.id}
                                         to={`../deal/${deal.id}`}
-                                        className="block p-4 bg-slate-950 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group"
+                                        className="block p-4 bg-bg border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group"
                                     >
                                         <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-xs font-bold text-slate-50 group-hover:text-blue-400 transition-colors uppercase tracking-tight">{deal.name}</h4>
-                                            <ExternalLink size={12} className="text-slate-400 group-hover:text-blue-400 transition-all" />
+                                            <h4 className="text-xs font-bold text-fg group-hover:text-blue-400 transition-colors uppercase tracking-tight">{deal.name}</h4>
+                                            <ExternalLink size={12} className="text-fg-subtle group-hover:text-blue-400 transition-all" />
                                         </div>
                                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                                             <span className="text-emerald-400/80">{formatters.formatCurrency(deal.value)}</span>
-                                            <span className="text-slate-500">{deal.stage}</span>
+                                            <span className="text-fg-muted">{deal.stage}</span>
                                         </div>
                                     </Link>
                                 ))}
@@ -2190,23 +2192,23 @@ const LeadDetailPage = () => {
             {/* Delete Lead Confirmation Modal */}
             {showDeleteConfirm && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                        <h2 className="text-xl font-bold text-slate-100 mb-2">Delete Lead</h2>
-                        <p className="text-slate-400 mb-6">
+                    <div className="bg-surface border border-slate-700/50 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+                        <h2 className="text-xl font-bold text-fg mb-2">Delete Lead</h2>
+                        <p className="text-fg-subtle mb-6">
                             Are you sure you want to delete this lead? This will remove all associated deals, notes, activities, tasks, and documents. This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 text-slate-300 hover:text-slate-50 transition-colors disabled:opacity-50"
+                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDeleteLead}
                                 disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white rounded-lg transition-colors flex items-center gap-2"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
                             >
                                 {isDeleting && <Loader2 size={16} className="animate-spin" />}
                                 Delete Lead

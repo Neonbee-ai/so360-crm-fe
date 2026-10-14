@@ -15,8 +15,8 @@ interface Props {
     developers: FilterOption[];
 }
 
-const FIELD_CLS = 'bg-slate-950 border border-slate-800 text-slate-50 rounded-xl px-3 py-2 outline-none focus:border-blue-500 transition-all font-bold text-xs';
-const LABEL_CLS = 'flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500';
+const FIELD_CLS = 'bg-bg border border-slate-800 text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
+const LABEL_CLS = 'flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-fg-muted';
 
 export const hasActiveFilters = (f: SalesFilters): boolean =>
     Boolean(f.project_id || f.agent_id || f.developer_id || f.from || f.to);
@@ -46,7 +46,7 @@ const SalesFiltersBar: React.FC<Props> = ({ value, onChange, developers }) => {
     const rangeError = validateDateRange(value);
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3" data-testid="sales-filters">
+        <div className="bg-surface border border-slate-800 rounded-2xl p-4 space-y-3" data-testid="sales-filters">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
                 <label className={LABEL_CLS}>
                     Project
@@ -81,12 +81,12 @@ const SalesFiltersBar: React.FC<Props> = ({ value, onChange, developers }) => {
                 </label>
             </div>
             <div className="flex items-center justify-between gap-3 min-h-[1.5rem]">
-                {rangeError ? <p role="alert" className="text-xs font-bold text-rose-400">{rangeError}</p> : <span />}
+                {rangeError ? <p role="alert" className="text-xs font-bold text-danger">{rangeError}</p> : <span />}
                 {hasActiveFilters(value) && (
                     <button
                         type="button"
                         onClick={() => onChange({})}
-                        className="flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-200"
+                        className="flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg"
                     >
                         <X size={12} /> Clear filters
                     </button>

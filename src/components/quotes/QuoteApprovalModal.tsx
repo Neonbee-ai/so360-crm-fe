@@ -142,16 +142,16 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
           <div className="flex items-center gap-2">
-            <Send className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-semibold text-slate-100">Submit Quote for Approval</h3>
+            <Send className="w-5 h-5 text-warning" />
+            <h3 className="text-lg font-semibold text-fg">Submit Quote for Approval</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-fg-subtle hover:text-fg p-1 rounded-lg hover:bg-surface-raised transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -169,29 +169,29 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
           {/* Quote summary card */}
           <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Quote:</span>
-              <span className="font-semibold text-slate-200">
+              <span className="text-fg-subtle">Quote:</span>
+              <span className="font-semibold text-fg">
                 {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Customer:</span>
-              <span className="font-medium text-slate-200 truncate max-w-[260px]">
+              <span className="text-fg-subtle">Customer:</span>
+              <span className="font-medium text-fg truncate max-w-[260px]">
                 {quote.customer_name || quote.deal?.company_name || 'Customer'}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">Amount:</span>
-              <span className="font-bold text-amber-400">{currencyFormatter(quoteTotal)}</span>
+              <span className="text-fg-subtle">Amount:</span>
+              <span className="font-bold text-warning">{currencyFormatter(quoteTotal)}</span>
             </div>
           </div>
 
           {/* Approver Selection */}
           <div className="space-y-2" ref={dropdownRef}>
-            <label className="block text-sm font-medium text-slate-300">
-              Select people who need to approve <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-fg-subtle">
+              Select people who need to approve <span className="text-danger">*</span>
             </label>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-fg-subtle">
               Approvers come from the People Connect employee directory. All selected people must approve.
             </p>
 
@@ -221,7 +221,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
               <input
                 type="text"
                 value={searchTerm}
@@ -231,20 +231,20 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                 }}
                 onFocus={() => setDropdownOpen(true)}
                 placeholder="Search by name, email, department or role..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                className="w-full pl-9 pr-4 py-2 bg-bg border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-warning focus:ring-1 focus:ring-warning transition-colors"
               />
             </div>
 
             {/* Candidate Dropdown */}
             {dropdownOpen && (
-              <div className="bg-slate-950 border border-slate-700 rounded-lg shadow-xl max-h-52 overflow-y-auto z-20 mt-1 divide-y divide-slate-800">
+              <div className="bg-bg border border-line rounded-lg shadow-xl max-h-52 overflow-y-auto z-20 mt-1 divide-y divide-slate-800">
                 {isLoading ? (
-                  <div className="p-4 flex items-center justify-center gap-2 text-slate-400 text-sm">
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                  <div className="p-4 flex items-center justify-center gap-2 text-fg-subtle text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin text-warning" />
                     <span>Loading people directory...</span>
                   </div>
                 ) : filteredCandidates.length === 0 ? (
-                  <div className="p-4 text-center text-slate-500 text-sm">
+                  <div className="p-4 text-center text-fg-muted text-sm">
                     {searchTerm ? 'No matching people found' : 'No available approvers'}
                   </div>
                 ) : (
@@ -264,21 +264,21 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                             : 'hover:bg-slate-800/80 cursor-pointer'
                         }`}
                       >
-                        <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-semibold text-xs flex-shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center text-fg-subtle font-semibold text-xs flex-shrink-0">
                           {cand.full_name?.charAt(0) || 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-slate-200 truncate">
+                            <p className="text-sm font-medium text-fg truncate">
                               {cand.full_name}
                             </p>
                             {isSelf && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-raised text-fg-subtle border border-line">
                                 You (Cannot approve)
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-400 truncate">
+                          <p className="text-xs text-fg-subtle truncate">
                             {cand.job_title || cand.department_name || cand.email || ''}
                           </p>
                         </div>
@@ -292,7 +292,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
           {/* Submission Note */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-slate-300">
+            <label className="block text-sm font-medium text-fg-subtle">
               Optional Note for Approvers
             </label>
             <textarea
@@ -300,7 +300,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add context or justification for this approval (e.g. Special commercial discount approved by VP Sales)..."
               rows={3}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+              className="w-full px-3 py-2 bg-bg border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-warning focus:ring-1 focus:ring-warning transition-colors"
             />
           </div>
         </div>
@@ -311,7 +311,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
+            className="px-4 py-2 text-sm text-fg-subtle hover:text-fg transition-colors"
           >
             Cancel
           </button>
@@ -319,7 +319,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
             type="button"
             onClick={handleSend}
             disabled={isSubmitting || selectedApprovers.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {isSubmitting ? (
               <>

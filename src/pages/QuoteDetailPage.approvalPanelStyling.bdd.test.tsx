@@ -81,6 +81,7 @@ vi.mock('@so360/formatters', () => ({
 }));
 
 vi.mock('@so360/design-system', () => ({
+  useConfirm: () => [vi.fn(async () => true), null],
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -171,7 +172,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const heading = await screen.findByText('Approval in Progress');
-      expect(heading.className).toContain('text-slate-100');
+      expect(heading.className).toContain('text-fg');
       expect(heading.className).not.toMatch(/text-amber-/);
     });
 
@@ -179,7 +180,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const body = await screen.findByText(/currently undergoing approval review/i);
-      expect(body.className).toContain('text-slate-400');
+      expect(body.className).toContain('text-fg-subtle');
       expect(body.className).not.toMatch(/text-amber-/);
     });
 
@@ -187,7 +188,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       await screen.findByText('Approval in Progress');
-      const icon = document.querySelector('svg.text-amber-400');
+      const icon = document.querySelector('svg.text-warning');
       expect(icon).toBeTruthy();
     });
 
@@ -209,7 +210,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
 
       const approverName = await screen.findByText('Alice Director');
       expect(approverName.className).not.toMatch(/text-amber-/);
-      expect(approverName.className).toContain('text-slate-200');
+      expect(approverName.className).toContain('text-fg');
     });
 
     it('Then the status chip surrounding the approver carries the scoped semantic color for pending status', async () => {
@@ -218,7 +219,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       const approverName = await screen.findByText('Alice Director');
       const chip = approverName.parentElement as HTMLElement;
       expect(chip.className).toContain('bg-slate-800/90');
-      expect(chip.className).toContain('text-slate-300');
+      expect(chip.className).toContain('text-fg-subtle');
     });
   });
 
@@ -227,7 +228,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const label = await screen.findByText('Required Approvers:');
-      expect(label.className).toContain('text-slate-400');
+      expect(label.className).toContain('text-fg-subtle');
       expect(label.className).not.toMatch(/text-amber-/);
     });
   });
@@ -239,7 +240,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const note = await screen.findByText(/you are an assigned reviewer/i);
-      expect(note.className).toContain('text-emerald-400');
+      expect(note.className).toContain('text-success');
     });
   });
 
@@ -269,8 +270,8 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       expect(rejectedChip.className).toContain('text-rose-300');
 
       // Names themselves stay neutral regardless of the chip's semantic color.
-      expect(approvedName.className).toContain('text-slate-200');
-      expect(rejectedName.className).toContain('text-slate-200');
+      expect(approvedName.className).toContain('text-fg');
+      expect(rejectedName.className).toContain('text-fg');
     });
   });
 });
