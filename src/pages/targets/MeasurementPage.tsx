@@ -9,6 +9,7 @@ import {
   formatPct,
   formatValue,
 } from './targetUi';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 /**
  * Pipeline health, deal mix, sales cycle and win/loss.
@@ -57,36 +58,36 @@ export default function MeasurementPage() {
   // that period with no way to choose another.
   const header = (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-fg">Measurement</h1>
-        <PeriodPicker value={asOf} onChange={setAsOf} />
-      </div>
+      <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
     </div>
   );
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
+      <DashboardPageTemplate title="Measurement" filters={header}>
+      <div className="space-y-4">
         <div className="text-sm text-fg-subtle">Loading…</div>
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (error) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-rose-300">{error}</div>
+      <DashboardPageTemplate title="Measurement" filters={header}>
+      <div className="space-y-4">
+        <div className="text-sm text-danger">{error}</div>
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (!data) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
+      <DashboardPageTemplate title="Measurement" filters={header}>
+      <div className="space-y-4">
         <EmptyState message="No measurement data for this period." />
       </div>
+      </DashboardPageTemplate>
     );
   }
 
@@ -95,9 +96,9 @@ export default function MeasurementPage() {
     !pipeline?.applicable && !mix?.applicable && !winLoss?.won_count && !winLoss?.lost_count;
 
   return (
-    <div className="p-6 space-y-5">
+    <DashboardPageTemplate title="Measurement" filters={header}>
+    <div className="space-y-5">
       <div>
-        {header}
         <div className="mt-1 text-xs text-fg-subtle">
           {data.period_start} → {data.period_end}
         </div>
@@ -130,7 +131,7 @@ export default function MeasurementPage() {
                   {pipeline.healthy !== null && (
                     <span
                       className={
-                        pipeline.healthy ? 'text-emerald-300' : 'text-amber-300'
+                        pipeline.healthy ? 'text-success' : 'text-warning'
                       }
                     >
                       {pipeline.healthy ? 'Healthy' : 'Below band'}
@@ -184,7 +185,7 @@ export default function MeasurementPage() {
               {mix.grouping === 'category_name' && (
                 // Worth surfacing: grouping on a free-text category is fragile,
                 // and the fix is a catalog backfill rather than a code change.
-                <div className="text-[11px] text-amber-300">
+                <div className="text-[11px] text-warning">
                   Grouped by category name — backfill product types for stable
                   service-line reporting.
                 </div>
@@ -230,7 +231,7 @@ export default function MeasurementPage() {
               {winLoss.uncoded_losses > 0 && (
                 // A data-quality signal, not an insight: an unexplained loss
                 // cannot inform the next quarter.
-                <div className="text-[11px] text-amber-300">
+                <div className="text-[11px] text-warning">
                   {winLoss.uncoded_losses} lost deal
                   {winLoss.uncoded_losses === 1 ? '' : 's'} without a reason code
                 </div>
@@ -240,6 +241,7 @@ export default function MeasurementPage() {
         )}
       </div>
     </div>
+    </DashboardPageTemplate>
   );
 }
 

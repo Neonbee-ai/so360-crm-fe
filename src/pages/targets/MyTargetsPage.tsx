@@ -15,6 +15,7 @@ import {
   PeriodPicker,
   AsOfBanner,
 } from './targetUi';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 /**
  * Per-metric detail view.
@@ -74,36 +75,36 @@ export default function MyTargetsPage() {
   // that period with no way to choose another.
   const header = (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-lg font-semibold text-fg">My Targets</h1>
-        <PeriodPicker value={asOf} onChange={setAsOf} />
-      </div>
+      <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
     </div>
   );
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
+      <DashboardPageTemplate title="My Targets" filters={header}>
+      <div className="space-y-4">
         <div className="text-sm text-fg-subtle">Loading targets…</div>
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (error) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
-        <div className="text-sm text-rose-300">{error}</div>
+      <DashboardPageTemplate title="My Targets" filters={header}>
+      <div className="space-y-4">
+        <div className="text-sm text-danger">{error}</div>
       </div>
+      </DashboardPageTemplate>
     );
   }
   if (!grouped.length) {
     return (
-      <div className="p-6 space-y-4">
-        {header}
+      <DashboardPageTemplate title="My Targets" filters={header}>
+      <div className="space-y-4">
         <EmptyState message="No targets assigned for this period." />
       </div>
+      </DashboardPageTemplate>
     );
   }
 
@@ -111,9 +112,9 @@ export default function MyTargetsPage() {
   const anyMetric = data?.metrics?.[0];
 
   return (
-    <div className="p-6 space-y-5">
+    <DashboardPageTemplate title="My Targets" filters={header}>
+    <div className="space-y-5">
       <div>
-        {header}
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
           <span>{plan?.name}</span>
           {anyMetric && (
@@ -149,6 +150,7 @@ export default function MyTargetsPage() {
         <span>★ Exceeded</span>
       </div>
     </div>
+    </DashboardPageTemplate>
   );
 }
 
