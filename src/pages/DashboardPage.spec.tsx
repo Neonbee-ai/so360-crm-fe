@@ -259,7 +259,7 @@ describe('Given DashboardPage', () => {
       const fetchStats = vi.fn().mockResolvedValue(STUB_STATS);
       render(<MemoryRouter><StubDashboardPage fetchStats={fetchStats} /></MemoryRouter>);
       await waitFor(() => expect(fetchStats).toHaveBeenCalledTimes(1));
-      fireEvent.click(screen.getByTestId('period-quarterly'));
+      fireEvent.click(await screen.findByTestId('period-quarterly'));
       await waitFor(() => {
         expect(fetchStats).toHaveBeenCalledWith('quarterly');
         expect(screen.getByTestId('period-quarterly')).toHaveAttribute('aria-pressed', 'true');
@@ -270,7 +270,7 @@ describe('Given DashboardPage', () => {
       const fetchStats = vi.fn().mockResolvedValue(STUB_STATS);
       render(<MemoryRouter><StubDashboardPage fetchStats={fetchStats} /></MemoryRouter>);
       await waitFor(() => expect(fetchStats).toHaveBeenCalledTimes(1));
-      fireEvent.click(screen.getByTestId('period-monthly'));
+      fireEvent.click(await screen.findByTestId('period-monthly'));
       await waitFor(() => {
         expect(fetchStats).toHaveBeenCalledWith('monthly');
       });
@@ -280,7 +280,7 @@ describe('Given DashboardPage', () => {
       const fetchStats = vi.fn().mockResolvedValue(STUB_STATS);
       render(<MemoryRouter><StubDashboardPage fetchStats={fetchStats} /></MemoryRouter>);
       await waitFor(() => expect(fetchStats).toHaveBeenCalled());
-      fireEvent.click(screen.getByTestId('period-quarterly'));
+      fireEvent.click(await screen.findByTestId('period-quarterly'));
       await waitFor(() => {
         expect(screen.getByTestId('period-quarterly')).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByTestId('period-yearly')).toHaveAttribute('aria-pressed', 'false');
