@@ -2,6 +2,24 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import federation from '@originjs/vite-plugin-federation';
 import path from 'path';
+import fs from 'fs';
+
+// @originjs/vite-plugin-federation builds the remote's CSS URL as `${base}${file}`,
+// dropping `assets/` when base is absolute. Copy the CSS to dist/ so that URL
+// resolves on every host (preview included), not only where nginx papers over it.
+function copyCssToDistRoot() {
+  return {
+    name: 'copy-css-to-dist-root',
+    closeBundle() {
+      const assetsDir = path.resolve(__dirname, 'dist/assets');
+      const distDir = path.resolve(__dirname, 'dist');
+      if (!fs.existsSync(assetsDir)) return;
+      fs.readdirSync(assetsDir)
+        .filter(f => f.endsWith('.css'))
+        .forEach(cssFile => fs.copyFileSync(path.join(assetsDir, cssFile), path.join(distDir, cssFile)));
+    },
+  };
+}
 
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -25,6 +43,7 @@ export default defineConfig(({ mode, command }) => {
         react({
             jsxRuntime: 'automatic',
         }),
+        copyCssToDistRoot(),
         federation({
             name: 'crm_app',
             filename: 'remoteEntry.js',
