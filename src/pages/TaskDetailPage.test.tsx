@@ -157,7 +157,7 @@ describe('Given TaskDetailPage', () => {
   it('When action / Then shows the universal Back link', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument();
     });
   });
 });

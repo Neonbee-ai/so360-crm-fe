@@ -12,8 +12,8 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
-import { toast, getErrorMessage, CrossLinkChip } from '@so360/design-system';
-import DetailBackLink from '../components/common/DetailBackLink';
+import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button } from '@so360/design-system';
+import { goBackFrom } from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
@@ -190,7 +190,7 @@ const TaskDetailPage = () => {
 
     if (!task) {
         return (
-            <div className="p-8 text-center text-fg-muted">
+            <div className="py-12 text-center text-fg-muted">
                 <p>Task not found.</p>
                 <button onClick={() => navigate('/crm/tasks')} className="text-primary hover:underline mt-4 inline-block">Back to Tasks</button>
             </div>
@@ -203,58 +203,37 @@ const TaskDetailPage = () => {
     const canReschedule = canRescheduleTask(task.status);
 
     return (
-        <div className="p-8 max-w-4xl mx-auto">
-            <header className="mb-8">
-                <DetailBackLink fallbackTo="/crm/tasks" className="mb-4" />
-                <div className="flex justify-between items-start">
-                    <div className="flex items-start gap-4">
-                        <button className="mt-1 text-fg-muted hover:text-blue-400 transition-colors">
-                            {task.status === 'DONE' ? <CheckCircle2 size={32} className="text-success" /> : <Circle size={32} />}
-                        </button>
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className={`text-4xl font-black tracking-tight ${task.status === 'DONE' ? 'text-fg-muted line-through' : 'text-fg'}`}>
-                                    {task.title}
-                                </h1>
-                                {/* Task-level actions are grouped together so users find
-                                    them in a single place instead of scanning the page. */}
-                                <div className="flex items-center gap-1" data-testid="task-actions">
-                                    <button
-                                        onClick={() => canEdit && setIsEditingTask(true)}
-                                        disabled={!canEdit}
-                                        aria-label="Edit Task"
-                                        title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
-                                        className="p-1.5 text-fg-muted hover:text-blue-400 hover:bg-surface-raised rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-fg-muted disabled:hover:bg-transparent"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                    {canCreateTask && (
-                                        <button
-                                            onClick={() => setShowDeleteConfirm(true)}
-                                            aria-label="Delete Task"
-                                            title="Delete Task"
-                                            className="p-1.5 text-fg-muted hover:text-danger hover:bg-surface-raised rounded-lg transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 mt-2">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-emerald-500/10 text-success border-emerald-500/20' : task.status === 'IN_PROGRESS' ? 'bg-amber-500/10 text-warning border-amber-500/20' : task.status === 'ON_HOLD' ? 'bg-orange-500/10 text-warning border-orange-500/20' : task.status === 'CANCELLED' ? 'bg-rose-500/10 text-danger border-rose-500/20' : 'bg-surface-raised text-fg-subtle border-line'
-                                    }`}>
-                                    {task.status}
-                                </span>
-                                {isOverdue && (
-                                    <span className="flex items-center gap-1 text-danger text-[10px] font-black uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded">
-                                        <AlertCircle size={12} /> Overdue
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+        <DetailPageTemplate
+            onBack={() => goBackFrom(navigate, '/crm/tasks')}
+            backLabel="Back"
+            title={task.title}
+            status={
+                <>
+                    {task.status === 'DONE' ? <CheckCircle2 size={20} className="text-success" /> : <Circle size={20} className="text-fg-muted" />}
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-success/10 text-success border-success/20' : task.status === 'IN_PROGRESS' || task.status === 'ON_HOLD' ? 'bg-warning/10 text-warning border-warning/20' : task.status === 'CANCELLED' ? 'bg-danger/10 text-danger border-danger/20' : 'bg-surface-raised text-fg-subtle border-line'
+                        }`}>
+                        {task.status}
+                    </span>
+                    {isOverdue && (
+                        <span className="flex items-center gap-1 text-danger text-[10px] font-black uppercase tracking-widest bg-danger/10 border border-danger/20 px-2 py-0.5 rounded">
+                            <AlertCircle size={12} /> Overdue
+                        </span>
+                    )}
+                </>
+            }
+            primaryAction={
+                <Button
+                    onClick={() => canEdit && setIsEditingTask(true)}
+                    disabled={!canEdit}
+                    aria-label="Edit Task"
+                    title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
+                    leftIcon={<Edit2 size={14} />}
+                >
+                    Edit
+                </Button>
+            }
+            overflowActions={canCreateTask ? [{ label: 'Delete Task', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []}
+        >
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="md:col-span-2 space-y-8">
@@ -263,12 +242,12 @@ const TaskDetailPage = () => {
                         <div className="space-y-6">
                             {(task.deal_name || task.deal_id) && (
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-blue-400 shrink-0">
+                                    <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shrink-0">
                                         <Briefcase size={20} />
                                     </div>
                                     <div className="min-w-0">
                                         <span className="text-[10px] font-bold text-fg-muted uppercase block mb-1">Associated Deal</span>
-                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-fg hover:text-blue-400 transition-colors truncate block">
+                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-fg hover:text-primary transition-colors truncate block">
                                             {task.deal_name || 'View Deal'}
                                         </Link>
                                     </div>
@@ -277,12 +256,12 @@ const TaskDetailPage = () => {
 
                             {(task.lead_id) && !task.deal_id && (
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-blue-400 shrink-0">
+                                    <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shrink-0">
                                         <UserIcon size={20} />
                                     </div>
                                     <div className="min-w-0">
                                         <span className="text-[10px] font-bold text-fg-muted uppercase block mb-1">Related Lead</span>
-                                        <Link to={`/crm/leads/${task.lead_id}`} className="text-lg font-bold text-fg hover:text-blue-400 transition-colors truncate block">
+                                        <Link to={`/crm/leads/${task.lead_id}`} className="text-lg font-bold text-fg hover:text-primary transition-colors truncate block">
                                             View Lead
                                         </Link>
                                     </div>
@@ -310,7 +289,7 @@ const TaskDetailPage = () => {
                                 absent/undefined means unaffected behavior, no UI at all. */}
                             {task.sync_status === 'connected' && (
                                 <div className="flex items-center gap-4" data-testid="project-sync-connected">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-success shrink-0">
+                                    <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0">
                                         <Link2 size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -337,7 +316,7 @@ const TaskDetailPage = () => {
 
                             {task.sync_status === 'sync_failed' && (
                                 <div className="flex items-center gap-4" data-testid="project-sync-failed">
-                                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-danger shrink-0">
+                                    <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center text-danger shrink-0">
                                         <AlertCircle size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -347,7 +326,7 @@ const TaskDetailPage = () => {
                                     <button
                                         onClick={handleRetrySync}
                                         disabled={isRetryingSync}
-                                        className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-blue-600/10 border border-blue-600/20 rounded-lg text-blue-400 hover:bg-blue-600/20 transition-colors disabled:opacity-50 shrink-0"
+                                        className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-primary/10 border border-primary/20 rounded-lg text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 shrink-0"
                                     >
                                         {isRetryingSync ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                                         Retry Sync
@@ -379,7 +358,7 @@ const TaskDetailPage = () => {
                             {canCreateTask && !notesError && !isAddingNote && (
                                 <button
                                     onClick={() => setIsAddingNote(true)}
-                                    className="text-xs text-blue-400 hover:text-blue-300 font-bold"
+                                    className="text-xs text-primary hover:text-primary font-bold"
                                 >
                                     + Add Note
                                 </button>
@@ -392,7 +371,7 @@ const TaskDetailPage = () => {
                                 <button
                                     onClick={handleRetryNotes}
                                     disabled={isRetryingNotes}
-                                    className="text-xs text-blue-400 hover:text-blue-300 font-bold shrink-0 disabled:opacity-50"
+                                    className="text-xs text-primary hover:text-primary font-bold shrink-0 disabled:opacity-50"
                                 >
                                     {isRetryingNotes ? 'Retrying…' : 'Retry'}
                                 </button>
@@ -406,7 +385,7 @@ const TaskDetailPage = () => {
                                 type="button"
                                 onClick={() => setIsAddingNote(true)}
                                 data-testid="note-composer-trigger"
-                                className="w-full text-left bg-bg border border-line hover:border-blue-500/50 text-fg-muted rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
+                                className="w-full text-left bg-bg border border-line hover:border-primary/50 text-fg-muted rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
                             >
                                 Add a note or comment...
                             </button>
@@ -442,7 +421,7 @@ const TaskDetailPage = () => {
                                                 toast.error(getErrorMessage(error, 'Failed to add note. Please try again.'));
                                             }
                                         }}
-                                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm"
+                                        className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-fg rounded-lg font-bold text-sm"
                                     >
                                         Add Note
                                     </button>
@@ -466,11 +445,11 @@ const TaskDetailPage = () => {
                                         <div key={note.id} className="bg-surface-sunken border border-line rounded-lg p-4 group">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden">
+                                                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                                                         {note.author?.avatar_url ? (
                                                             <img src={note.author.avatar_url} alt={note.author?.full_name || 'User'} className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <span className="text-xs font-bold text-blue-400">
+                                                            <span className="text-xs font-bold text-primary">
                                                                 {note.author?.full_name?.[0] || 'U'}
                                                             </span>
                                                         )}
@@ -488,7 +467,7 @@ const TaskDetailPage = () => {
                                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button
                                                                 onClick={() => setEditingNote({ id: note.id, content: note.content })}
-                                                                className="text-fg-muted hover:text-blue-400 p-1 transition-colors"
+                                                                className="text-fg-muted hover:text-primary p-1 transition-colors"
                                                                 title="Edit note"
                                                             >
                                                                 <Edit2 size={14} />
@@ -532,7 +511,7 @@ const TaskDetailPage = () => {
                         <div className="space-y-2">
                             <button
                                 onClick={handleTaskToggle}
-                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-white ${task.status === 'DONE' ? 'bg-success hover:bg-success/90 shadow-emerald-500/20' : 'bg-primary hover:bg-primary/90 shadow-blue-500/20'}`}
+                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-success-fg ${task.status === 'DONE' ? 'bg-success hover:bg-success/90 shadow-success/20' : 'bg-primary hover:bg-primary/90 shadow-primary/20'}`}
                             >
                                 {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
                             </button>
@@ -582,11 +561,11 @@ const TaskDetailPage = () => {
 
             {/* Edit Note Modal */}
             {editingNote && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-[600]">
                     <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                                <Edit2 className="text-blue-400" size={20} />
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <Edit2 className="text-primary" size={20} />
                             </div>
                             <div className="flex-1">
                                 <h3 className="text-lg font-bold text-fg mb-1">Edit Note</h3>
@@ -624,7 +603,7 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to update note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                                className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-fg rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20 active:scale-95"
                             >
                                 Save Changes
                             </button>
@@ -636,10 +615,10 @@ const TaskDetailPage = () => {
 
             {/* Delete Note Confirmation Modal */}
             {deleteNoteId && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-[600]">
                     <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center shrink-0">
                                 <Trash2 className="text-danger" size={20} />
                             </div>
                             <div>
@@ -668,7 +647,7 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to delete note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95"
+                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-danger-fg rounded-lg font-bold text-sm transition-all shadow-lg shadow-danger/20 active:scale-95"
                             >
                                 Delete Note
                             </button>
@@ -680,10 +659,10 @@ const TaskDetailPage = () => {
 
             {/* Disconnect from Project Confirmation Modal */}
             {showDisconnectConfirm && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[600]">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-[600]">
                     <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center shrink-0">
                                 <Unlink className="text-danger" size={20} />
                             </div>
                             <div>
@@ -732,7 +711,7 @@ const TaskDetailPage = () => {
                             <button
                                 onClick={handleDisconnect}
                                 disabled={isDisconnecting}
-                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-rose-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-danger-fg rounded-lg font-bold text-sm transition-all shadow-lg shadow-danger/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isDisconnecting && <Loader2 size={12} className="animate-spin" />}
                                 Disconnect
@@ -745,7 +724,7 @@ const TaskDetailPage = () => {
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
                     <div className="bg-surface border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl">
                         <h3 className="text-lg font-bold text-fg mb-2">Delete Task</h3>
                         <p className="text-fg-subtle mb-6">
@@ -760,7 +739,7 @@ const TaskDetailPage = () => {
                             </button>
                             <button
                                 onClick={handleDelete}
-                                className="px-6 py-2 bg-danger hover:bg-danger-hover text-white rounded-xl font-bold"
+                                className="px-6 py-2 bg-danger hover:bg-danger-hover text-danger-fg rounded-xl font-bold"
                             >
                                 Delete
                             </button>
@@ -769,7 +748,7 @@ const TaskDetailPage = () => {
                 </div>,
                 document.body
             )}
-        </div>
+        </DetailPageTemplate>
     );
 };
 

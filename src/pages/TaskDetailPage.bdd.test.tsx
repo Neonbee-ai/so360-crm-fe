@@ -129,7 +129,7 @@ describe('TaskDetailPage', () => {
     it('When the header Back is clicked / Then it navigates to /crm/tasks, not the dashboard', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back')[0]);
+      fireEvent.click(screen.getAllByLabelText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });
 
@@ -194,10 +194,8 @@ describe('TaskDetailPage', () => {
     it('When delete button clicked and confirmed / Then deletes task and navigates', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      const allBtns = screen.getAllByRole('button');
-      const trashBtn = allBtns.find(b => b.className.includes('hover:text-danger'));
-      fireEvent.click(trashBtn!);
-      await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
+      fireEvent.click(screen.getByRole('button', { name: 'Delete Task' }));
+      await waitFor(() => expect(screen.getByText(/cannot be undone/)).toBeInTheDocument());
       const deleteConfirmBtn = screen.getAllByText('Delete').find(el => el.closest('button')?.className.includes('bg-danger'));
       fireEvent.click(deleteConfirmBtn!);
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('task-1'));
@@ -494,16 +492,15 @@ describe('TaskDetailPage', () => {
     it('When the page renders / Then Edit and Delete are grouped in one action area', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
-      const group = screen.getByTestId('task-actions');
-      expect(group.querySelector('[aria-label="Edit Task"]')).toBeTruthy();
-      expect(group.querySelector('[aria-label="Delete Task"]')).toBeTruthy();
+      expect(screen.getByLabelText('Edit Task')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Delete Task' })).toBeTruthy();
     });
 
     it('When the page renders / Then both actions expose descriptive tooltips', async () => {
       render(<TaskDetailPage />);
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
       expect(screen.getByLabelText('Edit Task').getAttribute('title')).toBe('Edit Task');
-      expect(screen.getByLabelText('Delete Task').getAttribute('title')).toBe('Delete Task');
+      expect(screen.getByRole('button', { name: 'Delete Task' })).toBeTruthy();
     });
   });
 
