@@ -1,3 +1,4 @@
+import { ListPageTemplate } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
@@ -21,9 +22,9 @@ export const SALES_PAGE_SIZE = 25;
 const PAYMENT_CHIP: Record<SalePaymentStatus, string> = {
     none: 'bg-fg-muted/10 text-fg-subtle border-line',
     pending: 'bg-amber-500/10 text-warning border-amber-500/30',
-    partial: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+    partial: 'bg-info/10 text-info border-info/30',
     paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
-    overdue: 'bg-rose-500/10 text-danger border-rose-500/30',
+    overdue: 'bg-danger/10 text-danger border-danger/30',
 };
 
 const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-fg-muted whitespace-nowrap';
@@ -89,24 +90,19 @@ const SalesPage: React.FC = () => {
     const money = (v: number | null) => maskedMoney(v, fmt.formatCurrency);
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                    <h1 className="text-2xl font-black text-fg">Sales</h1>
-                    <p className="text-sm text-fg-subtle">Every unit sale with its payment progress and commission.</p>
-                </div>
-                {canExport ? (
-                    <ExportMenu label="Export sales" onExport={(format) => exportService.sales(filters, format)} />
-                ) : null}
-            </div>
-
-            <SalesFiltersBar value={filters} onChange={onFilters} developers={developers} />
-
+        <ListPageTemplate
+            title="Sales"
+            description="Every unit sale with its payment progress and commission."
+            headerSecondaryActions={canExport ? [
+                <ExportMenu key="export" label="Export sales" onExport={(format) => exportService.sales(filters, format)} />,
+            ] : undefined}
+            filters={<SalesFiltersBar value={filters} onChange={onFilters} developers={developers} />}
+        >
             {rangeInvalid ? null : loading ? (
                 <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales…</div>
             ) : error ? (
-                <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
-                    <span className="text-sm font-bold text-rose-300">{error}</span>
+                <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-2xl flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-danger">{error}</span>
                     <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
                         <RefreshCw size={12} /> Retry
                     </button>
@@ -139,7 +135,7 @@ const SalesPage: React.FC = () => {
                                         <td className={TD}>{r.sale_date ? fmt.formatDate(r.sale_date) : '—'}</td>
                                         <td className={TD}>{r.project_name || '—'}</td>
                                         <td className={TD}>
-                                            <Link to={`../deal/${r.deal_id}`} className="text-blue-400 hover:underline">
+                                            <Link to={`../deal/${r.deal_id}`} className="text-primary hover:underline">
                                                 {r.unit_number || 'View deal'}
                                             </Link>
                                         </td>
@@ -174,7 +170,7 @@ const SalesPage: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </ListPageTemplate>
     );
 };
 
