@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
+import { ListPageTemplate, Pagination, Button, toast } from '@so360/design-system';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
-import { toast } from '@so360/design-system';
 import TaskModal from './components/TaskModal';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 
@@ -384,25 +384,30 @@ const TasksPage = () => {
     ];
 
     return (
-        <div className="p-8" ref={listAnchorRef}>
-            <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-fg tracking-tight leading-none">Tasks & Follow-ups</h1>
-                    <p className="text-fg-subtle mt-2">Personal execution discipline and daily tasks</p>
+        <ListPageTemplate
+            title="Tasks & Follow-ups"
+            description="Personal execution discipline and daily tasks"
+            primaryAction={canCreateTask ? (
+                <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus size={16} />}>
+                    Create Task
+                </Button>
+            ) : undefined}
+            search={
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Search tasks..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
                 </div>
-                {canCreateTask && (
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-900/30 active:scale-95"
-                    >
-                        <Plus size={16} />
-                        Create Task
-                    </button>
-                )}
-            </header>
-
+            }
+            filters={
+                <>
             {(canViewTeamTasks || canViewAllTasks) && (
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-2">
                     {([
                         { key: 'own' as const, label: 'My Tasks' },
                         ...(canViewTeamTasks ? [{ key: 'team' as const, label: 'Team Tasks' }] : []),
@@ -412,7 +417,7 @@ const TasksPage = () => {
                             key={tab.key}
                             onClick={() => setTaskScope(tab.key)}
                             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
-                                ? 'bg-line text-white border-line'
+                                ? 'bg-line text-fg border-line'
                                 : 'bg-surface text-fg-subtle border-line hover:text-fg hover:bg-surface-raised'
                                 }`}
                         >
@@ -421,25 +426,13 @@ const TasksPage = () => {
                     ))}
                 </div>
             )}
-
-            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search tasks..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-bg border border-line text-fg placeholder-fg-subtle text-sm pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-all"
-                    />
-                </div>
                 <div className="flex flex-wrap gap-2">
                     {['All', 'Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map((btn) => (
                         <button
                             key={btn}
                             onClick={() => setFilter(btn)}
                             className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all border ${filter === btn
-                                ? 'bg-primary text-white border-primary shadow-lg shadow-blue-900/20'
+                                ? 'bg-primary text-white border-primary shadow-sm'
                                 : 'bg-surface text-fg-subtle border-line hover:text-fg hover:bg-surface-raised'
                                 }`}
                         >
@@ -447,18 +440,31 @@ const TasksPage = () => {
                         </button>
                     ))}
                 </div>
-            </div>
-
+                </>
+            }
+            pagination={sandboxLimitedTasks.length > 0 ? (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages || 1}
+                    totalItems={sandboxLimitedTasks.length}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                />
+            ) : undefined}
+        >
+            <div ref={listAnchorRef}>
             {error && (
-                <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
+                <div className="mb-4 p-4 bg-danger/20 border border-danger/50 rounded-lg text-danger">
                     {error}
-                    <button onClick={() => setError(null)} className="ml-2 text-danger hover:text-red-300">×</button>
+                    <button onClick={() => setError(null)} className="ml-2 text-danger hover:text-danger/80">×</button>
                 </div>
             )}
 
             {/* Sandbox limit notice */}
             {isSandboxMode && isLimited(sortedAndFilteredTasks.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-warning text-sm flex items-center gap-2">
+                <div className="mb-4 px-4 py-2.5 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm flex items-center gap-2">
                     <span className="font-semibold">Sandbox mode:</span>
                     showing {sandboxEntryLimit} of {sortedAndFilteredTasks.length} tasks — full list visible in production.
                 </div>
@@ -472,57 +478,7 @@ const TasksPage = () => {
                 emptyMessage="No tasks found for the selected filter."
             />
 
-            {/* Pagination Controls */}
-            {sandboxLimitedTasks.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-fg-subtle">
-                        <span>Show</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-surface-raised border border-line rounded px-2 py-1 text-fg"
-                        >
-                            {[10, 25, 50, 100].map(size => (
-                                <option key={size} value={size}>{size}</option>
-                            ))}
-                        </select>
-                        <span>of {sandboxLimitedTasks.length} tasks</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            First
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Prev
-                        </button>
-                        <span className="px-3 py-1 text-fg-subtle">
-                            Page {currentPage} of {totalPages || 1}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
-                        <button
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Last
-                        </button>
-                    </div>
-                </div>
-            )}
+            </div>
 
             {/* Create Task Modal */}
             {showCreateModal && (
@@ -538,7 +494,7 @@ const TasksPage = () => {
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-2">Delete Task</h2>
                         <p className="text-fg-subtle mb-6">
@@ -565,7 +521,7 @@ const TasksPage = () => {
                 </div>,
                 document.body
             )}
-        </div>
+        </ListPageTemplate>
     );
 };
 
