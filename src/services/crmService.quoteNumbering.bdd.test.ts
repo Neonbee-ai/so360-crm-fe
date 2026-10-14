@@ -2,10 +2,11 @@
  * crmService.isQuoteAutoNumbering — reads Settings → Documents → Numbering from Core (Pulse 0d0775ba)
  *
  * The New Quote modal asks for a hand-typed number only when the org turned
- * Sales Quote auto-numbering off. Same rule as crm-be: a saved Sales Quote
- * switch (numbering_schemes.sales_quote.enabled) wins; otherwise the panel's
- * "Auto-number documents" checkbox (auto_numbering) applies. crm-be enforces
- * the real setting, so when Core cannot be read the form falls back to auto.
+ * Sales Quote auto-numbering off. Same rule as crm-be: the panel's
+ * "Auto-number documents sequentially" checkbox (auto_numbering) is the master
+ * switch; when it is on, numbering_schemes.sales_quote.enabled decides. crm-be
+ * enforces the real setting, so when Core cannot be read the form falls back
+ * to auto.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { crmService } from './crmService';
@@ -55,6 +56,15 @@ describe('crmService.isQuoteAutoNumbering()', () => {
     describe('Given only the "Auto-number documents" checkbox was saved', () => {
         it('When it is unticked / Then quotes are manual', async () => {
             vi.stubGlobal('fetch', fetchReturning(settings({ auto_numbering: false })));
+
+            await expect(crmService.isQuoteAutoNumbering()).resolves.toBe(false);
+        });
+
+        it('When it is unticked but the Sales Quote scheme says ON / Then the checkbox wins (manual)', async () => {
+            vi.stubGlobal('fetch', fetchReturning(settings({
+                auto_numbering: false,
+                numbering_schemes: { sales_quote: { enabled: true } },
+            })));
 
             await expect(crmService.isQuoteAutoNumbering()).resolves.toBe(false);
         });
