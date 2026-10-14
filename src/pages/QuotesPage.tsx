@@ -13,27 +13,27 @@ import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
     draft: { bg: 'bg-fg-muted/10', text: 'text-fg-subtle', label: 'Draft', border: 'border-line' },
-    pending_approval: { bg: 'bg-amber-500/10', text: 'text-amber-300', label: 'Pending Approval', border: 'border-amber-500/30' },
-    approved: { bg: 'bg-emerald-500/10', text: 'text-emerald-300', label: 'Approved', border: 'border-emerald-500/30' },
-    rejected: { bg: 'bg-rose-500/10', text: 'text-rose-300', label: 'Rejected', border: 'border-rose-500/30' },
-    converted: { bg: 'bg-blue-500/10', text: 'text-blue-300', label: 'Converted', border: 'border-blue-500/30' },
+    pending_approval: { bg: 'bg-warning/10', text: 'text-warning', label: 'Pending Approval', border: 'border-warning/30' },
+    approved: { bg: 'bg-success/10', text: 'text-success', label: 'Approved', border: 'border-success/30' },
+    rejected: { bg: 'bg-danger/10', text: 'text-danger', label: 'Rejected', border: 'border-danger/30' },
+    converted: { bg: 'bg-primary/10', text: 'text-primary', label: 'Converted', border: 'border-primary/30' },
     expired: { bg: 'bg-fg-muted/10', text: 'text-fg-subtle', label: 'Expired', border: 'border-line' },
 };
 
 // Allowed next transitions per status — empty means terminal (no dropdown)
 const STATUS_TRANSITIONS: Partial<Record<QuoteStatus, Array<{ action: 'submit' | 'approve' | 'reject' | 'convert'; label: string; color: string }>>> = {
-    draft:            [{ action: 'submit',  label: 'Submit for Approval', color: 'text-amber-300 hover:bg-amber-500/20' }],
+    draft:            [{ action: 'submit',  label: 'Submit for Approval', color: 'text-warning hover:bg-warning/20' }],
     pending_approval: [
-        { action: 'approve', label: 'Approve',  color: 'text-green-300 hover:bg-green-500/20' },
-        { action: 'reject',  label: 'Reject',   color: 'text-red-300   hover:bg-red-500/20'   },
+        { action: 'approve', label: 'Approve',  color: 'text-success hover:bg-success/20' },
+        { action: 'reject',  label: 'Reject',   color: 'text-danger   hover:bg-danger/20'   },
     ],
-    approved: [{ action: 'convert', label: 'Convert to Order', color: 'text-blue-300 hover:bg-blue-500/20' }],
+    approved: [{ action: 'convert', label: 'Convert to Order', color: 'text-primary hover:bg-primary/20' }],
 };
 
 interface QuoteStatusCellProps {
@@ -82,7 +82,7 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${status.bg} ${status.text} ${status.border} ${transitions.length > 0 ? 'cursor-pointer hover:brightness-125' : 'cursor-default'} disabled:opacity-50`}
                 title={transitions.length > 0 ? 'Click to update status' : status.label}
             >
-                <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-emerald-400' : quote.status === 'pending_approval' ? 'bg-amber-400' : quote.status === 'rejected' ? 'bg-rose-400' : quote.status === 'converted' ? 'bg-blue-400' : 'bg-fg-subtle'}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-success' : quote.status === 'pending_approval' ? 'bg-warning' : quote.status === 'rejected' ? 'bg-danger' : quote.status === 'converted' ? 'bg-primary' : 'bg-fg-subtle'}`} />
                 <span>{status.label}</span>
                 {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />}
             </button>
@@ -427,9 +427,9 @@ const QuotesPage = () => {
             <span>{label}</span>
             {sortField === field ? (
                 sortDirection === 'asc' ? (
-                    <ChevronUp className="w-3.5 h-3.5 text-blue-400" />
+                    <ChevronUp className="w-3.5 h-3.5 text-primary" />
                 ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-blue-400" />
+                    <ChevronDown className="w-3.5 h-3.5 text-primary" />
                 )
             ) : (
                 <ChevronsUpDown className="w-3.5 h-3.5 text-fg-muted opacity-60" />
@@ -603,7 +603,7 @@ const QuotesPage = () => {
                 <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openQuote(quote.id); }}
-                    className="font-mono text-sm font-semibold text-blue-400 hover:text-blue-300 whitespace-nowrap transition-colors text-left"
+                    className="font-mono text-sm font-semibold text-primary hover:text-primary whitespace-nowrap transition-colors text-left"
                 >
                     {quote.quote_number || `Q-${quote.id.slice(0, 8)}`}
                 </button>
@@ -641,7 +641,7 @@ const QuotesPage = () => {
                             {customer.name}
                         </span>
                         {customer.isLead && (
-                            <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/10 text-success border border-emerald-500/20">
+                            <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-success/10 text-success border border-success/20">
                                 Lead
                             </span>
                         )}
@@ -699,8 +699,8 @@ const QuotesPage = () => {
                 if (isExpired) {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
-                            <span className="text-rose-400/80 line-through text-xs">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-danger border border-rose-500/20">
+                            <span className="text-danger/80 line-through text-xs">{formatDate(quote.valid_until)}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-danger/10 text-danger border border-danger/20">
                                 Expired
                             </span>
                         </div>
@@ -709,8 +709,8 @@ const QuotesPage = () => {
                 if (isExpiringSoon) {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
-                            <span className="text-amber-300 text-xs font-medium">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-warning border border-amber-500/20">
+                            <span className="text-warning text-xs font-medium">{formatDate(quote.valid_until)}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-warning/10 text-warning border border-warning/20">
                                 Soon
                             </span>
                         </div>
@@ -805,7 +805,7 @@ const QuotesPage = () => {
             accessor: (item: any) => (
                 <button
                     onClick={(e) => { e.stopPropagation(); openQuote(item.quote_id); }}
-                    className="font-mono text-sm font-semibold text-blue-400 hover:text-blue-300 text-left whitespace-nowrap"
+                    className="font-mono text-sm font-semibold text-primary hover:text-primary text-left whitespace-nowrap"
                 >
                     {item.quote_number || `Q-${item.quote_id.slice(0, 8)}`}
                 </button>
@@ -857,9 +857,9 @@ const QuotesPage = () => {
                         {others.map((o: any, idx: number) => {
                             const badgeColor =
                                 o.status === 'approved'
-                                    ? 'bg-emerald-500/10 text-success border-emerald-500/30'
+                                    ? 'bg-success/10 text-success border-success/30'
                                     : o.status === 'rejected'
-                                    ? 'bg-rose-500/10 text-danger border-rose-500/30'
+                                    ? 'bg-danger/10 text-danger border-danger/30'
                                     : 'bg-surface-raised text-fg-subtle border-line';
                             return (
                                 <span
@@ -881,7 +881,7 @@ const QuotesPage = () => {
             accessor: (item: any) => {
                 if (item.approver_status === 'approved') {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-success border border-emerald-500/30">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success border border-success/30">
                             <Check className="w-3 h-3" />
                             Approved
                         </span>
@@ -889,14 +889,14 @@ const QuotesPage = () => {
                 }
                 if (item.approver_status === 'rejected') {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-danger border border-rose-500/30">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-danger/10 text-danger border border-danger/30">
                             <X className="w-3 h-3" />
                             Rejected
                         </span>
                     );
                 }
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-warning border border-amber-500/30">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/30">
                         <Clock className="w-3 h-3" />
                         Pending
                     </span>
@@ -913,13 +913,13 @@ const QuotesPage = () => {
                             <button
                                 onClick={() => handleQuickApprove(item.quote_id)}
                                 disabled={actionLoading === item.quote_id + 'approve'}
-                                className="px-2.5 py-1 text-xs font-semibold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors disabled:opacity-50"
+                                className="px-2.5 py-1 text-xs font-semibold text-success bg-success/10 hover:bg-success/20 border border-success/30 rounded transition-colors disabled:opacity-50"
                             >
                                 Approve
                             </button>
                             <button
                                 onClick={() => handleQuickReject(item.quote_id)}
-                                className="px-2.5 py-1 text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded transition-colors"
+                                className="px-2.5 py-1 text-xs font-semibold text-danger bg-danger/10 hover:bg-danger/20 border border-danger/30 rounded transition-colors"
                             >
                                 Reject
                             </button>
@@ -950,6 +950,144 @@ const QuotesPage = () => {
     const activeMenuQuote = useMemo(() => {
         return quotes.find(q => q.id === activeActionMenuId);
     }, [quotes, activeActionMenuId]);
+
+    const searchNode = (
+                            <div className="relative flex-1 min-w-[220px] max-w-sm">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
+                                <input
+                                    type="text"
+                                    placeholder="Search quotes..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg text-xs"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
+    );
+    const filtersNode = (
+        <>
+                            {/* Status Filter Dropdown */}
+                            <div ref={statusDropdownRef} className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setStatusDropdownOpen(o => !o)}
+                                    className={`flex items-center gap-2 px-3 py-1.5 bg-surface border rounded-lg text-xs font-medium transition-colors hover:border-line ${statusFilter !== 'All' ? 'border-primary/60 text-primary bg-primary/5' : 'border-line text-fg-subtle'}`}
+                                >
+                                    <Filter className={`w-3.5 h-3.5 flex-shrink-0 ${statusFilter !== 'All' ? 'text-primary' : 'text-fg-subtle'}`} />
+                                    <span>
+                                        {statusFilter === 'All' ? 'All Status' : (statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter)}
+                                    </span>
+                                    {statusFilter !== 'All' && (
+                                        <span
+                                            role="button"
+                                            aria-label="Clear status filter"
+                                            onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
+                                            className="ml-0.5 text-primary hover:text-fg leading-none cursor-pointer"
+                                        >×</span>
+                                    )}
+                                    <ChevronDown className={`w-3.5 h-3.5 text-fg-subtle transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                {statusDropdownOpen && (
+                                    <div className="absolute left-0 top-full mt-1 z-30 w-52 bg-surface border border-line rounded-lg shadow-xl overflow-hidden">
+                                        <div className="py-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setStatusFilter('All'); setStatusDropdownOpen(false); }}
+                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === 'All' ? 'text-primary bg-primary/10' : 'text-fg-subtle'}`}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-fg-subtle flex-shrink-0" />
+                                                    All Status
+                                                </span>
+                                                <span className="text-fg-muted font-mono">{quotes.length}</span>
+                                            </button>
+                                            {(Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() => { setStatusFilter(value); setStatusDropdownOpen(false); }}
+                                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === value ? 'bg-primary/10' : ''}`}
+                                                >
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+                                                        {cfg.label}
+                                                    </span>
+                                                    <span className="text-xs text-fg-muted font-mono">
+                                                        {quotes.filter(q => q.status === value).length}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Deal Filter Dropdown */}
+                            {deals.length > 0 && (
+                                <select
+                                    value={dealFilter}
+                                    onChange={(e) => setDealFilter(e.target.value)}
+                                    className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${dealFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
+                                >
+                                    <option value="All">All Deals</option>
+                                    {deals.map(d => (
+                                        <option key={d.id} value={d.id}>Deal: {d.name}</option>
+                                    ))}
+                                </select>
+                            )}
+
+                            {/* Validity Filter */}
+                            <select
+                                value={validityFilter}
+                                onChange={(e) => setValidityFilter(e.target.value)}
+                                className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${validityFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
+                            >
+                                <option value="All">All Dates</option>
+                                <option value="valid">Valid Proposals</option>
+                                <option value="expired">Expired Proposals</option>
+                            </select>
+
+                            {/* Clear Filters Button */}
+                            {hasActiveFilters && (
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="text-xs text-danger hover:text-danger-300 underline font-medium px-1"
+                                >
+                                    Clear Filters
+                                </button>
+                            )}
+        </>
+    );
+    const bulkNode = selectedQuoteIds.length > 0 ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-lg text-xs animate-in fade-in">
+                                <span className="font-semibold text-primary">
+                                    {selectedQuoteIds.length} selected
+                                </span>
+                                <span className="text-fg-muted">|</span>
+                                <button
+                                    type="button"
+                                    onClick={handleExportSelected}
+                                    className="text-fg hover:text-fg font-medium underline"
+                                >
+                                    Export CSV
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedQuoteIds([])}
+                                    className="text-fg-subtle hover:text-fg ml-1"
+                                >
+                                    Deselect
+                                </button>
+                            </div>
+    ) : null;
 
     return (
         <ListPageTemplate
@@ -997,11 +1135,11 @@ const QuotesPage = () => {
             {/* Status Summary: Compact Interactive KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                 {[
-                    { id: 'All', label: 'Total Quotes', count: quoteStats.total, icon: FileText, color: 'text-blue-400', border: 'border-line' },
+                    { id: 'All', label: 'Total Quotes', count: quoteStats.total, icon: FileText, color: 'text-primary', border: 'border-line' },
                     { id: 'draft', label: 'Draft', count: quoteStats.draft, icon: Clock, color: 'text-fg-subtle', border: 'border-line' },
-                    { id: 'pending_approval', label: 'Pending Approval', count: quoteStats.pending, icon: Send, color: 'text-warning', border: 'border-amber-500/30' },
-                    { id: 'approved', label: 'Approved', count: quoteStats.approved, icon: CheckCircle, color: 'text-success', border: 'border-emerald-500/30' },
-                    { id: 'converted', label: 'Converted', count: quoteStats.converted, icon: Check, color: 'text-blue-400', border: 'border-blue-500/30' },
+                    { id: 'pending_approval', label: 'Pending Approval', count: quoteStats.pending, icon: Send, color: 'text-warning', border: 'border-warning/30' },
+                    { id: 'approved', label: 'Approved', count: quoteStats.approved, icon: CheckCircle, color: 'text-success', border: 'border-success/30' },
+                    { id: 'converted', label: 'Converted', count: quoteStats.converted, icon: Check, color: 'text-primary', border: 'border-primary/30' },
                 ].map((stat) => {
                     const isActive = statusFilter === stat.id;
                     const Icon = stat.icon;
@@ -1020,7 +1158,7 @@ const QuotesPage = () => {
                             }}
                             className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer select-none ${
                                 isActive
-                                    ? 'bg-blue-600/10 border-blue-500/60 ring-1 ring-blue-500/40 shadow-sm'
+                                    ? 'bg-primary/10 border-primary/60 ring-1 ring-primary/40 shadow-sm'
                                     : 'bg-surface-sunken border-line hover:border-line hover:bg-surface-high'
                             }`}
                         >
@@ -1035,7 +1173,7 @@ const QuotesPage = () => {
                                     {stat.count}
                                 </span>
                                 {isActive && (
-                                    <span className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider">
+                                    <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
                                         Filtered
                                     </span>
                                 )}
@@ -1046,6 +1184,20 @@ const QuotesPage = () => {
             </div>
             </>
             }
+            search={activeTab === 'all' ? searchNode : undefined}
+            filters={activeTab === 'all' ? filtersNode : undefined}
+            toolbarEnd={activeTab === 'all' ? bulkNode : undefined}
+            pagination={activeTab === 'all' && paginatedQuotes.length > 0 && effectiveQuotes.length > 0 ? (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.max(1, totalPages)}
+                    totalItems={effectiveQuotes.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                />
+            ) : undefined}
         >
             <div ref={listAnchorRef}>
             {/* View Switcher Tabs: All Quotes | Approvals */}
@@ -1054,7 +1206,7 @@ const QuotesPage = () => {
                     onClick={() => setActiveTab('all')}
                     className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                         activeTab === 'all'
-                            ? 'border-primary text-blue-400'
+                            ? 'border-primary text-primary'
                             : 'border-transparent text-fg-subtle hover:text-fg'
                     }`}
                 >
@@ -1065,7 +1217,7 @@ const QuotesPage = () => {
                     onClick={() => setActiveTab('approvals')}
                     className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                         activeTab === 'approvals'
-                            ? 'border-primary text-blue-400'
+                            ? 'border-primary text-primary'
                             : 'border-transparent text-fg-subtle hover:text-fg'
                     }`}
                 >
@@ -1074,7 +1226,7 @@ const QuotesPage = () => {
                     {pendingApprovalsCount > 0 && (
                         <span
                             data-testid="approvals-pending-badge"
-                            className="ml-0.5 text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30"
+                            className="ml-0.5 text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning font-bold border border-warning/30"
                         >
                             {pendingApprovalsCount}
                         </span>
@@ -1084,150 +1236,9 @@ const QuotesPage = () => {
 
             {activeTab === 'all' && (
                 <>
-                    {/* Unified Filter & Search Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[300px]">
-                            {/* Search bar */}
-                            <div className="relative flex-1 min-w-[220px] max-w-sm">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
-                                <input
-                                    type="text"
-                                    placeholder="Search quotes..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchTerm('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg text-xs"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Status Filter Dropdown */}
-                            <div ref={statusDropdownRef} className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setStatusDropdownOpen(o => !o)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 bg-surface border rounded-lg text-xs font-medium transition-colors hover:border-line ${statusFilter !== 'All' ? 'border-blue-500/60 text-blue-300 bg-blue-500/5' : 'border-line text-fg-subtle'}`}
-                                >
-                                    <Filter className={`w-3.5 h-3.5 flex-shrink-0 ${statusFilter !== 'All' ? 'text-blue-400' : 'text-fg-subtle'}`} />
-                                    <span>
-                                        {statusFilter === 'All' ? 'All Status' : (statusColors[statusFilter as QuoteStatus]?.label ?? statusFilter)}
-                                    </span>
-                                    {statusFilter !== 'All' && (
-                                        <span
-                                            role="button"
-                                            aria-label="Clear status filter"
-                                            onClick={(e) => { e.stopPropagation(); setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                            className="ml-0.5 text-blue-400 hover:text-fg leading-none cursor-pointer"
-                                        >×</span>
-                                    )}
-                                    <ChevronDown className={`w-3.5 h-3.5 text-fg-subtle transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
-                                </button>
-                                {statusDropdownOpen && (
-                                    <div className="absolute left-0 top-full mt-1 z-30 w-52 bg-surface border border-line rounded-lg shadow-xl overflow-hidden">
-                                        <div className="py-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => { setStatusFilter('All'); setStatusDropdownOpen(false); }}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === 'All' ? 'text-blue-300 bg-blue-600/10' : 'text-fg-subtle'}`}
-                                            >
-                                                <span className="flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-fg-subtle flex-shrink-0" />
-                                                    All Status
-                                                </span>
-                                                <span className="text-fg-muted font-mono">{quotes.length}</span>
-                                            </button>
-                                            {(Object.entries(statusColors) as [QuoteStatus, typeof statusColors[QuoteStatus]][]).map(([value, cfg]) => (
-                                                <button
-                                                    key={value}
-                                                    type="button"
-                                                    onClick={() => { setStatusFilter(value); setStatusDropdownOpen(false); }}
-                                                    className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-surface-raised transition-colors ${statusFilter === value ? 'bg-blue-600/10' : ''}`}
-                                                >
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
-                                                        {cfg.label}
-                                                    </span>
-                                                    <span className="text-xs text-fg-muted font-mono">
-                                                        {quotes.filter(q => q.status === value).length}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Deal Filter Dropdown */}
-                            {deals.length > 0 && (
-                                <select
-                                    value={dealFilter}
-                                    onChange={(e) => setDealFilter(e.target.value)}
-                                    className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${dealFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-line text-fg-subtle'}`}
-                                >
-                                    <option value="All">All Deals</option>
-                                    {deals.map(d => (
-                                        <option key={d.id} value={d.id}>Deal: {d.name}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {/* Validity Filter */}
-                            <select
-                                value={validityFilter}
-                                onChange={(e) => setValidityFilter(e.target.value)}
-                                className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${validityFilter !== 'All' ? 'border-blue-500/60 text-blue-300' : 'border-line text-fg-subtle'}`}
-                            >
-                                <option value="All">All Dates</option>
-                                <option value="valid">Valid Proposals</option>
-                                <option value="expired">Expired Proposals</option>
-                            </select>
-
-                            {/* Clear Filters Button */}
-                            {hasActiveFilters && (
-                                <button
-                                    type="button"
-                                    onClick={resetFilters}
-                                    className="text-xs text-danger hover:text-danger-300 underline font-medium px-1"
-                                >
-                                    Clear Filters
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Bulk Action Context Toolbar */}
-                        {selectedQuoteIds.length > 0 && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-xs animate-in fade-in">
-                                <span className="font-semibold text-blue-300">
-                                    {selectedQuoteIds.length} selected
-                                </span>
-                                <span className="text-fg-muted">|</span>
-                                <button
-                                    type="button"
-                                    onClick={handleExportSelected}
-                                    className="text-fg hover:text-white font-medium underline"
-                                >
-                                    Export CSV
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedQuoteIds([])}
-                                    className="text-fg-subtle hover:text-fg ml-1"
-                                >
-                                    Deselect
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
                     {/* Sandbox limit notice */}
                     {isSandboxMode && isLimited(filteredQuotes.length) && (
-                        <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-warning text-sm flex items-center gap-2">
+                        <div className="mb-4 px-4 py-2.5 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm flex items-center gap-2">
                             <span className="font-semibold">Sandbox mode:</span>
                             showing {sandboxEntryLimit} of {filteredQuotes.length} quotes — full list visible in production.
                         </div>
@@ -1254,7 +1265,7 @@ const QuotesPage = () => {
                                 canCreateQuote && (
                                     <button
                                         onClick={() => setIsCreateModalOpen(true)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg text-sm font-medium transition-colors"
                                     >
                                         <Plus className="w-4 h-4" />
                                         Create Quote
@@ -1271,62 +1282,6 @@ const QuotesPage = () => {
                                 onRowClick={(quote) => openQuote(quote.id)}
                             />
 
-                            {/* Pagination Controls */}
-                            {effectiveQuotes.length > 0 && (
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg text-xs text-fg-subtle">
-                                    <div className="flex items-center gap-2">
-                                        <span>Show</span>
-                                        <select
-                                            value={pageSize}
-                                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                            className="bg-surface-raised border border-line rounded px-2 py-1 text-fg text-xs focus:outline-none focus:ring-1 focus:ring-focus"
-                                        >
-                                            {[10, 25, 50, 100].map((size) => (
-                                                <option key={size} value={size}>{size}</option>
-                                            ))}
-                                        </select>
-                                        <span>of {effectiveQuotes.length} quotes</span>
-                                        {selectedQuoteIds.length > 0 && (
-                                            <span className="text-blue-400 ml-2 font-medium">
-                                                ({selectedQuoteIds.length} selected across pages)
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            onClick={() => setCurrentPage(1)}
-                                            disabled={currentPage === 1}
-                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            First
-                                        </button>
-                                        <button
-                                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                            disabled={currentPage === 1}
-                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            Prev
-                                        </button>
-                                        <span className="px-3 py-1 text-fg-subtle font-medium">
-                                            Page {currentPage} of {totalPages}
-                                        </span>
-                                        <button
-                                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                            disabled={currentPage === totalPages}
-                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            Next
-                                        </button>
-                                        <button
-                                            onClick={() => setCurrentPage(totalPages)}
-                                            disabled={currentPage === totalPages}
-                                            className="px-2.5 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            Last
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
                 </>
@@ -1348,14 +1303,14 @@ const QuotesPage = () => {
                                     onClick={() => setApprovalsStatusFilter(subtab.id as any)}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                                         approvalsStatusFilter === subtab.id
-                                            ? 'bg-primary text-white shadow-sm'
+                                            ? 'bg-primary text-primary-fg shadow-sm'
                                             : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
                                     }`}
                                 >
                                     <span>{subtab.label}</span>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                                         approvalsStatusFilter === subtab.id
-                                            ? 'bg-primary-hover text-blue-100'
+                                            ? 'bg-primary-hover text-primary'
                                             : 'bg-surface-raised text-fg-subtle'
                                     }`}>
                                         {subtab.count}
@@ -1371,7 +1326,7 @@ const QuotesPage = () => {
                                 placeholder="Search approvals..."
                                 value={approvalsSearchTerm}
                                 onChange={(e) => setApprovalsSearchTerm(e.target.value)}
-                                className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-xs"
+                                className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-primary/50 text-xs"
                             />
                         </div>
                     </div>
@@ -1410,7 +1365,7 @@ const QuotesPage = () => {
                     <button
                         type="button"
                         onClick={() => { setActiveActionMenuId(null); openQuote(activeMenuQuote.id); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
                     >
                         <Eye className="w-3.5 h-3.5 text-fg-subtle" />
                         View Quote Details
@@ -1419,7 +1374,7 @@ const QuotesPage = () => {
                         <button
                             type="button"
                             onClick={() => { setActiveActionMenuId(null); navigate(`/crm/quotes/${activeMenuQuote.id}?edit=true`); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
                         >
                             <FileText className="w-3.5 h-3.5 text-fg-subtle" />
                             Edit Quote
@@ -1429,7 +1384,7 @@ const QuotesPage = () => {
                         <button
                             type="button"
                             onClick={() => { setActiveActionMenuId(null); handleStatusAction(activeMenuQuote, 'submit'); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-amber-300 hover:bg-amber-500/10 transition-colors text-left"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-warning hover:bg-warning/10 transition-colors text-left"
                         >
                             <Send className="w-3.5 h-3.5 text-warning" />
                             Submit for Approval
@@ -1439,16 +1394,16 @@ const QuotesPage = () => {
                         <button
                             type="button"
                             onClick={() => { setActiveActionMenuId(null); handleStatusAction(activeMenuQuote, 'convert'); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-blue-300 hover:bg-blue-500/10 transition-colors text-left"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-primary hover:bg-primary/10 transition-colors text-left"
                         >
-                            <Check className="w-3.5 h-3.5 text-blue-400" />
+                            <Check className="w-3.5 h-3.5 text-primary" />
                             Convert to Order
                         </button>
                     )}
                     <button
                         type="button"
                         onClick={() => { setActiveActionMenuId(null); handlePrintQuote(activeMenuQuote); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
                     >
                         <Printer className="w-3.5 h-3.5 text-fg-subtle" />
                         Print Quote
@@ -1456,7 +1411,7 @@ const QuotesPage = () => {
                     <button
                         type="button"
                         onClick={() => { setActiveActionMenuId(null); openQuote(activeMenuQuote.id); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-white transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
                     >
                         <Send className="w-3.5 h-3.5 text-fg-subtle" />
                         Email to Customer
@@ -1467,7 +1422,7 @@ const QuotesPage = () => {
                             <button
                                 type="button"
                                 onClick={() => { setActiveActionMenuId(null); setShowDeleteConfirm(activeMenuQuote.id); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-danger hover:bg-rose-500/10 transition-colors text-left"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-danger hover:bg-danger/10 transition-colors text-left"
                             >
                                 <Trash2 className="w-3.5 h-3.5 text-danger" />
                                 Delete Quote
@@ -1480,7 +1435,7 @@ const QuotesPage = () => {
 
             {/* Create Quote Modal */}
             {isCreateModalOpen && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md">
                         <div className="px-6 pt-6 pb-2">
                             <h2 className="text-xl font-semibold text-fg mb-4">Create New Quote</h2>
@@ -1533,9 +1488,9 @@ const QuotesPage = () => {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => { setSelectedDealId(deal.id); setDealDropdownOpen(false); }}
-                                                                    className={`w-full flex flex-col items-start px-4 py-2.5 text-left hover:bg-line transition-colors ${selectedDealId === deal.id ? 'bg-blue-600/20' : ''}`}
+                                                                    className={`w-full flex flex-col items-start px-4 py-2.5 text-left hover:bg-line transition-colors ${selectedDealId === deal.id ? 'bg-primary/20' : ''}`}
                                                                 >
-                                                                    <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-blue-300' : 'text-fg'}`}>{deal.name}</span>
+                                                                    <span className={`text-sm font-medium truncate w-full ${selectedDealId === deal.id ? 'text-primary' : 'text-fg'}`}>{deal.name}</span>
                                                                     {deal.company_name && <span className="text-xs text-fg-subtle truncate w-full mt-0.5">{deal.company_name}</span>}
                                                                 </button>
                                                             </li>
@@ -1590,7 +1545,7 @@ const QuotesPage = () => {
                             <button
                                 onClick={handleCreateQuote}
                                 disabled={!selectedDealId || (!quoteAutoNumbering && !manualQuoteNumber.trim())}
-                                className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-primary-fg rounded-lg transition-colors"
                             >
                                 Create Quote
                             </button>
@@ -1602,7 +1557,7 @@ const QuotesPage = () => {
 
             {/* Reject Reason Modal */}
             {rejectTarget && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-lg font-semibold text-fg mb-2">Reject Quote</h2>
                         <p className="text-xs text-fg-subtle mb-3">
@@ -1642,7 +1597,7 @@ const QuotesPage = () => {
                                     }
                                 }}
                                 disabled={!rejectReason.trim()}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-danger-fg rounded-lg transition-colors font-medium"
                             >
                                 Confirm Reject
                             </button>
@@ -1654,7 +1609,7 @@ const QuotesPage = () => {
 
             {/* Delete Confirm Dialog */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-2">Delete Quote?</h2>
                         <p className="text-fg-subtle mb-6">
@@ -1678,7 +1633,7 @@ const QuotesPage = () => {
                             <button
                                 onClick={() => handleDeleteQuote(showDeleteConfirm)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover text-white rounded-lg transition-colors disabled:opacity-60"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover text-danger-fg rounded-lg transition-colors disabled:opacity-60"
                             >
                                 {isDeleting ? 'Deleting…' : 'Delete Quote'}
                             </button>

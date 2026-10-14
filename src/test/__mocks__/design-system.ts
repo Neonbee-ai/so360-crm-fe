@@ -15,8 +15,8 @@ export const Tooltip = (props: any) => props;
 export const QuotaGate = ({ children }: any) => React.createElement(React.Fragment, null, children);
 export const QuotaBar = ({ used, limit, isUnlimited, label }: any) =>
   React.createElement('div', { 'data-testid': 'quota-bar', 'data-used': String(used ?? 0), 'data-unlimited': String(!!isUnlimited) }, `${label ?? ''}: ${used ?? 0}`);
-export const Pagination = ({ page, pageSize, total }: any) =>
-  React.createElement('nav', { 'data-testid': 'pagination', 'data-page': String(page ?? ''), 'data-size': String(pageSize ?? ''), 'data-total': String(total ?? '') });
+export const Pagination = ({ page, currentPage, pageSize, total, totalItems }: any) =>
+  React.createElement('nav', { 'data-testid': 'pagination', 'data-page': String(page ?? currentPage ?? ''), 'data-size': String(pageSize ?? ''), 'data-total': String(total ?? totalItems ?? '') });
 export const DeleteConfirmDialog = () => null;
 export const CrossLinkChip = ({ label, id }: any) =>
   React.createElement('span', { 'data-testid': 'cross-link-chip' }, label ?? id ?? '');

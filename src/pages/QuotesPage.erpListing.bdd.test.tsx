@@ -295,16 +295,16 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
   });
 
   describe('Scenario 6: Pagination Control', () => {
-    it('Given loaded quotes, When rendered, Then shows pagination indicator and page size selector', async () => {
+    it('Given loaded quotes, When rendered, Then renders the Comb pagination with total and current page', async () => {
       render(<QuotesPage />);
 
       await waitFor(() => {
         expect(screen.getByText('QT-2026-00001')).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/of 4 quotes/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /first/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
+      const pagination = screen.getByTestId('pagination');
+      expect(pagination).toHaveAttribute('data-total', '4');
+      expect(pagination).toHaveAttribute('data-page', '1');
     });
   });
 });
