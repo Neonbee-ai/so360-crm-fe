@@ -13,7 +13,7 @@ import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, toast } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 
@@ -952,47 +952,33 @@ const QuotesPage = () => {
     }, [quotes, activeActionMenuId]);
 
     return (
-        <div className="p-6 max-w-[1600px] mx-auto" ref={listAnchorRef}>
-            {/* Header: Clean & Compact with action */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-                <div>
-                    <h1 className="text-2xl font-bold text-fg tracking-tight">Quotes</h1>
-                    <p className="text-xs sm:text-sm text-fg-subtle mt-0.5">Manage sales quotes and proposals</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={handleExportSelected}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-surface hover:bg-surface-raised border border-line text-fg-subtle hover:text-fg rounded-lg text-sm font-medium transition-colors"
-                        title="Export quotes to CSV"
-                    >
-                        <Download className="w-4 h-4" />
-                        <span>Export CSV</span>
-                    </button>
-                    {canCreateQuote && (
-                        <QuotaGate
-                            quotaKey="max_quotes"
-                            moduleCode="crm"
-                            used={quotaData?.current_usage ?? 0}
-                            limit={quotaData?.limit ?? 0}
-                            isUnlimited={quotaData?.is_unlimited}
-                            disableOnExceeded
-                        >
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-                            >
-                                <Plus className="w-4 h-4" />
-                                New Quote
-                            </button>
-                        </QuotaGate>
-                    )}
-                </div>
-            </div>
-
+        <ListPageTemplate
+            title="Quotes"
+            description="Manage sales quotes and proposals"
+            headerSecondaryActions={[
+                <Button key="export" variant="secondary" onClick={handleExportSelected} title="Export quotes to CSV" leftIcon={<Download className="w-4 h-4" />}>
+                    Export CSV
+                </Button>,
+            ]}
+            primaryAction={canCreateQuote ? (
+                <QuotaGate
+                    quotaKey="max_quotes"
+                    moduleCode="crm"
+                    used={quotaData?.current_usage ?? 0}
+                    limit={quotaData?.limit ?? 0}
+                    isUnlimited={quotaData?.is_unlimited}
+                    disableOnExceeded
+                >
+                    <Button onClick={() => setIsCreateModalOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
+                        New Quote
+                    </Button>
+                </QuotaGate>
+            ) : undefined}
+            kpis={
+            <>
             {/* Error Notification */}
             {error && (
-                <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm flex items-center justify-between">
+                <div className="mb-5 p-3.5 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
                         <span>{error}</span>
@@ -1000,7 +986,7 @@ const QuotesPage = () => {
                     <button
                         type="button"
                         onClick={fetchData}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/20 hover:bg-red-500/30 rounded text-xs font-semibold text-red-200 transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-danger/20 hover:bg-danger/30 rounded text-xs font-semibold text-danger transition-colors"
                     >
                         <RefreshCw className="w-3 h-3" />
                         Retry
@@ -1058,7 +1044,10 @@ const QuotesPage = () => {
                     );
                 })}
             </div>
-
+            </>
+            }
+        >
+            <div ref={listAnchorRef}>
             {/* View Switcher Tabs: All Quotes | Approvals */}
             <div className="flex items-center gap-4 border-b border-line mb-5">
                 <button
@@ -1698,7 +1687,8 @@ const QuotesPage = () => {
                 </div>,
                 document.body
             )}
-        </div>
+            </div>
+        </ListPageTemplate>
     );
 };
 
