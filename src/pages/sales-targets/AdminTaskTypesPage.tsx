@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { salesTargetService } from '../../services/salesTargetService';
-import { useConfirm } from '@so360/design-system';
+import { useConfirm, ListPageTemplate, Button } from '@so360/design-system';
 
 const SOURCE_LABELS: Record<string, string> = {
   MANUAL: 'Manual',
@@ -105,24 +105,12 @@ export default function AdminTaskTypesPage() {
   );
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {confirmDialog}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-fg">Sales Activity Types</h1>
-          <p className="text-sm text-fg-subtle mt-1">Define what activities reps track — auto-counted or manual</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded transition-colors"
-        >
-          + New Type
-        </button>
-      </div>
-
-      {/* Industry filter */}
-      <div className="flex gap-2 mb-4 flex-wrap">
+    <ListPageTemplate
+      title="Sales Activity Types"
+      description="Define what activities reps track — auto-counted or manual"
+      primaryAction={<Button onClick={() => setShowModal(true)}>+ New Type</Button>}
+      filters={(
+      <div className="flex gap-2 flex-wrap">
         {INDUSTRY_OPTIONS.map(ind => (
           <button
             key={ind}
@@ -130,7 +118,7 @@ export default function AdminTaskTypesPage() {
             onClick={() => setFilterIndustry(ind)}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               filterIndustry === ind
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-primary-fg'
                 : 'bg-surface-raised text-fg-subtle hover:bg-line'
             }`}
           >
@@ -138,9 +126,12 @@ export default function AdminTaskTypesPage() {
           </button>
         ))}
       </div>
+      )}
+    >
+      {confirmDialog}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-red-300 text-sm">{error}</div>
+        <div className="mb-4 p-3 bg-danger/30 border border-danger rounded text-danger text-sm">{error}</div>
       )}
 
       {loading ? (
@@ -173,8 +164,8 @@ export default function AdminTaskTypesPage() {
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       tt.source === 'MANUAL' ? 'bg-line text-fg-subtle'
-                      : tt.source === 'FLOW_TRANSITION' ? 'bg-purple-900/50 text-purple-300'
-                      : 'bg-green-900/50 text-green-300'
+                      : tt.source === 'FLOW_TRANSITION' ? 'bg-primary/50 text-primary'
+                      : 'bg-success/50 text-success'
                     }`}>
                       {SOURCE_LABELS[tt.source] ?? tt.source}
                     </span>
@@ -197,7 +188,7 @@ export default function AdminTaskTypesPage() {
                       <button
                         type="button"
                         onClick={() => handleDelete(tt)}
-                        className="text-danger hover:text-red-300 text-xs"
+                        className="text-danger hover:text-danger text-xs"
                       >
                         Delete
                       </button>
@@ -212,7 +203,7 @@ export default function AdminTaskTypesPage() {
 
       {/* Create modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-overlay/70 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-xl border border-line w-full max-w-md p-6">
             <h2 className="text-lg font-semibold text-fg mb-4">New Activity Type</h2>
 
@@ -303,7 +294,7 @@ export default function AdminTaskTypesPage() {
                             ? [...f.industry_tags, ind]
                             : f.industry_tags.filter(t => t !== ind),
                         }))}
-                        className="accent-blue-500"
+                        className="accent-primary"
                       />
                       {ind.replace(/_/g, ' ')}
                     </label>
@@ -324,7 +315,7 @@ export default function AdminTaskTypesPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !form.name}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white text-sm font-medium rounded transition-colors"
+                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-fg text-sm font-medium rounded transition-colors"
               >
                 {saving ? 'Saving…' : 'Create'}
               </button>
@@ -332,6 +323,6 @@ export default function AdminTaskTypesPage() {
           </div>
         </div>
       )}
-    </div>
+    </ListPageTemplate>
   );
 }
