@@ -6,7 +6,7 @@ import { usePersistedState } from '../hooks/useListViewState';
 import { Deal, FlowState } from '../types/crm';
 import { Loader2, Plus } from 'lucide-react';
 import { StageTransitionModal } from '../components/kanban/StageTransitionModal';
-import { toast } from '@so360/design-system';
+import { toast, ListPageTemplate, Button } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
 import { DealFilters } from '../pages/components/DealFilters';
@@ -138,36 +138,26 @@ const PipelinePage = () => {
     }
 
     return (
-        <div className="p-8 flex flex-col">
-            <header className="mb-4 flex justify-between items-start">
-                <div>
-                    <h1 className="text-3xl font-bold text-fg tracking-tight">Deals Pipeline</h1>
-                    <p className="text-fg-subtle mt-1">Visualize deal movement and sales progress</p>
+        <ListPageTemplate
+            title="Deals Pipeline"
+            description="Visualize deal movement and sales progress"
+            primaryAction={canCreateDeal ? (
+                <Button onClick={() => setIsCreateDealOpen(true)}>
+                    <Plus size={16} aria-hidden="true" />
+                    New Deal
+                </Button>
+            ) : undefined}
+            headerSecondaryActions={canExportDeals ? [
+                <ExportMenu key="export" label="Export deals" onExport={(format) => exportService.deals(filters, format)} />,
+            ] : undefined}
+            filters={<DealFilters filters={filters} onChange={setFilters} />}
+            toolbarEnd={isFiltering ? (
+                <div className="flex items-center gap-2 text-info bg-info/10 px-3 py-1.5 rounded-full border border-info/20 animate-pulse">
+                    <Loader2 className="animate-spin" size={14} />
+                    <span className="text-xs font-bold uppercase tracking-wider">Refining results...</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    {isFiltering && (
-                        <div className="flex items-center gap-2 text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 animate-pulse">
-                            <Loader2 className="animate-spin" size={14} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Refining results...</span>
-                        </div>
-                    )}
-                    {canExportDeals && (
-                        <ExportMenu label="Export deals" onExport={(format) => exportService.deals(filters, format)} />
-                    )}
-                    {canCreateDeal && (
-                        <button
-                            onClick={() => setIsCreateDealOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold transition-colors"
-                        >
-                            <Plus size={16} />
-                            New Deal
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            <DealFilters filters={filters} onChange={setFilters} />
-
+            ) : undefined}
+        >
             <div
                 ref={boardWrapperRef}
                 style={{ height: boardHeight }}
@@ -195,7 +185,7 @@ const PipelinePage = () => {
                     onSuccess={() => { setIsCreateDealOpen(false); fetchData(); }}
                 />
             )}
-        </div>
+        </ListPageTemplate>
     );
 };
 
