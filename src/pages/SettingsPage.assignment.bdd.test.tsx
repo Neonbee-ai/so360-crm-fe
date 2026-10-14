@@ -54,7 +54,7 @@ describe('Given CRM Settings', () => {
         it('Then there is no Assignment tab', async () => {
             render(<SettingsPage />);
             await waitFor(() => screen.getByText('CRM Settings'));
-            expect(screen.queryByRole('button', { name: /^assignment$/i })).not.toBeInTheDocument();
+            expect(screen.queryByRole('tab', { name: /^assignment$/i })).not.toBeInTheDocument();
             expect(screen.queryByTestId('assignment-tab')).not.toBeInTheDocument();
         });
     });
@@ -64,7 +64,7 @@ describe('Given CRM Settings', () => {
             flags.on.add('submodule:crm:lead_assignment');
             render(<SettingsPage />);
             await waitFor(() => screen.getByText('CRM Settings'));
-            fireEvent.click(screen.getByRole('button', { name: /^assignment$/i }));
+            fireEvent.click(screen.getByRole('tab', { name: /^assignment$/i }));
             expect(await screen.findByTestId('assignment-tab')).toHaveAttribute('data-can-write', 'true');
         });
     });
@@ -75,7 +75,7 @@ describe('Given CRM Settings', () => {
             flags.settingsWrite = false;
             render(<SettingsPage />);
             await waitFor(() => screen.getByText('CRM Settings'));
-            fireEvent.click(screen.getByRole('button', { name: /^assignment$/i }));
+            fireEvent.click(screen.getByRole('tab', { name: /^assignment$/i }));
             expect(await screen.findByTestId('assignment-tab')).toHaveAttribute('data-can-write', 'false');
         });
     });
@@ -85,7 +85,7 @@ describe('Given CRM Settings', () => {
             flags.on.add('submodule:crm:lead_assignment');
             render(<SettingsPage />);
             await waitFor(() => screen.getByText('CRM Settings'));
-            const tab = screen.getByRole('button', { name: /^assignment$/i });
+            const tab = screen.getByRole('tab', { name: /^assignment$/i });
             expect(tab.className).toMatch(/text-fg-subtle/);
             fireEvent.click(tab);
             await screen.findByTestId('assignment-tab');
@@ -102,7 +102,7 @@ describe('Given CRM Settings', () => {
             flags.loaded = false;
             render(<SettingsPage />);
             await waitFor(() => screen.getByText('CRM Settings'));
-            expect(screen.queryByRole('button', { name: /^assignment$/i })).not.toBeInTheDocument();
+            expect(screen.queryByRole('tab', { name: /^assignment$/i })).not.toBeInTheDocument();
         });
     });
 });
