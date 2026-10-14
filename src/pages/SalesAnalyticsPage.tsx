@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { DashboardPageTemplate } from '@so360/design-system';
 import SalesFiltersBar, { type FilterOption } from './components/SalesFiltersBar';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { validateDateRange, type SalesFilters } from '../services/salesReportService';
@@ -167,8 +168,8 @@ const SalesAnalyticsPage: React.FC = () => {
         );
     } else if (error) {
         body = (
-            <div role="alert" className="p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
-                <span className="text-sm font-bold text-rose-300">{error}</span>
+            <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-2xl flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-danger">{error}</span>
                 <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
                     <RefreshCw size={12} /> Retry
                 </button>
@@ -243,27 +244,28 @@ const SalesAnalyticsPage: React.FC = () => {
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-                <div>
-                    <h1 className="text-2xl font-black text-fg">Sales reports</h1>
-                    <p className="text-sm text-fg-subtle">Bookings, lead sources, lost reasons, reservations and agent performance.</p>
+        <DashboardPageTemplate
+            title="Sales reports"
+            description="Bookings, lead sources, lost reasons, reservations and agent performance."
+            filters={(
+                <div className="space-y-4">
+            <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-fg-muted">
+                Period
+                <select
+                    aria-label="Report period"
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
+                    className="bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary font-bold text-xs"
+                >
+                    {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
+                </select>
+            </label>
+                    <SalesFiltersBar value={filters} onChange={setFilters} developers={developers} />
                 </div>
-                <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-fg-muted">
-                    Period
-                    <select
-                        aria-label="Report period"
-                        value={period}
-                        onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-                        className="bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary font-bold text-xs"
-                    >
-                        {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
-                    </select>
-                </label>
-            </div>
-            <SalesFiltersBar value={filters} onChange={setFilters} developers={developers} />
-            {body}
-        </div>
+            )}
+        >
+            <div className="space-y-6">{body}</div>
+        </DashboardPageTemplate>
     );
 };
 
