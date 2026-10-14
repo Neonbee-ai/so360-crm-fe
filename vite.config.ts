@@ -3,17 +3,22 @@ import react from '@vitejs/plugin-react';
 import federation from '@originjs/vite-plugin-federation';
 import path from 'path';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     base: env.VITE_BASE_URL || process.env.VITE_BASE_URL || 'http://localhost:3004/',
     resolve: {
         alias: {
-            '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/src/index.ts'),
-            '@so360/cross-link': path.resolve(__dirname, '../../so360-shell-fe/packages/cross-link/src/index.ts'),
-            '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src/index.ts'),
-            '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/src/index.ts'),
-            '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/src/index.ts'),
+            // Dev server only (like the shell): build/preview resolve @so360/* from
+            // node_modules dist so federation shares the host's single copy instead of
+            // bundling a private one into this remote.
+            ...(command === 'serve' ? {
+                '@so360/shell-context': path.resolve(__dirname, '../../so360-shell-fe/packages/shell-context/src/index.ts'),
+                '@so360/cross-link': path.resolve(__dirname, '../../so360-shell-fe/packages/cross-link/src/index.ts'),
+                '@so360/design-system': path.resolve(__dirname, '../../so360-shell-fe/packages/design-system/src/index.ts'),
+                '@so360/event-bus': path.resolve(__dirname, '../../so360-shell-fe/packages/event-bus/src/index.ts'),
+                '@so360/formatters': path.resolve(__dirname, '../../so360-shell-fe/packages/formatters/src/index.ts'),
+            } : {}),
         },
     },
     plugins: [
