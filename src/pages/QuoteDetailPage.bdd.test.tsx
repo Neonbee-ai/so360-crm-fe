@@ -152,7 +152,8 @@ describe('QuoteDetailPage', () => {
     });
   });
 
-  // Task a171957e: the line Total is pre-tax; discount and tax only reach the totals block.
+  // Task a171957e (+ PR #69 review): the line Amount is after the line discount and
+  // before tax; Subtotal sums the line Amounts (no Discount row) and Total = Subtotal + Tax.
   describe('Given a quote line with a discount and tax', () => {
     const taxedQuote = {
       ...quoteData,
@@ -160,44 +161,58 @@ describe('QuoteDetailPage', () => {
         { id: 'ql1', description: 'Harper 4 Seater Dining Table', quantity: 1, unit_price: 15999, line_total: 16990.94, discount_percent: 10, tax_rate: 18 },
       ],
     };
-    // Line Total is the 7th cell (Description, Stock, Qty, Unit Price, Disc %, Tax %, Total).
-    const lineTotalCell = (row: HTMLElement) => row.querySelectorAll('td')[6] as HTMLElement;
     // In edit mode the description is an input, so fall back to its value.
     const lineRow = () => (screen.queryByText('Harper 4 Seater Dining Table') ?? screen.getByDisplayValue('Harper 4 Seater Dining Table')).closest('tr') as HTMLElement;
+    const lineAmountCell = (row: HTMLElement) => within(row).getByTestId('quote-line-amount');
+    const grandTotalRow = () => screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
 
-    it('When rendered / Then the line Total shows Qty × Unit Price, not the stored after-tax line_total', async () => {
+    it('When rendered / Then the line column is labelled Amount, not Total', async () => {
       mockGetQuoteById.mockResolvedValue(taxedQuote);
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
-      expect(lineTotalCell(lineRow())).toHaveTextContent(/^\$15999$/);
+      expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeInTheDocument();
+      expect(screen.queryByRole('columnheader', { name: 'Total' })).not.toBeInTheDocument();
+    });
+
+    it('When rendered / Then the line Amount is after discount and before tax, not the stored after-tax line_total', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^$14399.1/);
       expect(within(lineRow()).queryByText(/16990/)).not.toBeInTheDocument();
     });
 
-    it('When rendered / Then the totals block carries the discount and tax, and only the last Total shows the final amount', async () => {
+    it('When rendered / Then Subtotal is the after-discount amount, there is no Discount row, and only the last Total shows the final amount', async () => {
       mockGetQuoteById.mockResolvedValue(taxedQuote);
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
-      const subtotalRow = screen.getByText('Subtotal').parentElement as HTMLElement;
-      expect(within(subtotalRow).getByText('$15999')).toBeInTheDocument();
-      expect(screen.getByText(/^-\$1599\.9/)).toBeInTheDocument();
-      expect(screen.getAllByText(/^\$16990\.93/).length).toBeGreaterThan(0);
-      const grandTotalRow = screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
-      expect(within(grandTotalRow).getByText(/^\$16990\.93/)).toBeInTheDocument();
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText(/^$14399.1/)).toBeInTheDocument();
+      expect(screen.queryByText('Discount')).not.toBeInTheDocument();
+      expect(within(screen.getByText('Tax').parentElement as HTMLElement).getByText(/^$2591.83/)).toBeInTheDocument();
+      // Same final figure as before the change: 15999 − 1599.90 + 2591.84.
+      expect(within(grandTotalRow()).getByText(/^$16990.93/)).toBeInTheDocument();
     });
 
-    it('When Disc % is changed in edit mode / Then the line Total stays the same while the final Total changes', async () => {
+    it('When Tax % is changed in edit mode / Then the line Amount stays the same and only the totals change', async () => {
       mockGetQuoteById.mockResolvedValue(taxedQuote);
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
       fireEvent.click(screen.getByText(/^edit$/i));
-      fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '0' } });
       fireEvent.change(screen.getByDisplayValue('18'), { target: { value: '0' } });
-      await waitFor(() => expect(lineTotalCell(lineRow())).toHaveTextContent(/^\$15999$/));
-      const grandTotalRow = screen.getAllByText('Total').map((el) => el.parentElement as HTMLElement).find((el) => el.tagName === 'DIV') as HTMLElement;
-      expect(within(grandTotalRow).getByText('$15999')).toBeInTheDocument();
+      await waitFor(() => expect(within(grandTotalRow()).getByText(/^$14399.1/)).toBeInTheDocument());
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^$14399.1/);
     });
 
-    it('When there are several lines / Then each line shows its own pre-tax amount and Subtotal is their sum', async () => {
+    it('When Disc % is changed in edit mode / Then the line Amount reflects the new discount', async () => {
+      mockGetQuoteById.mockResolvedValue(taxedQuote);
+      render(<QuoteDetailPage />);
+      await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
+      fireEvent.click(screen.getByText(/^edit$/i));
+      fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '20' } });
+      await waitFor(() => expect(lineAmountCell(lineRow())).toHaveTextContent(/^$12799.2/));
+    });
+
+    it('When there are several lines / Then each line shows its own after-discount amount and Subtotal is their sum', async () => {
       mockGetQuoteById.mockResolvedValue({
         ...quoteData,
         lines: [
@@ -207,9 +222,9 @@ describe('QuoteDetailPage', () => {
       });
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Line A'));
-      expect(lineTotalCell(screen.getByText('Line A').closest('tr') as HTMLElement)).toHaveTextContent(/^\$200$/);
-      expect(lineTotalCell(screen.getByText('Line B').closest('tr') as HTMLElement)).toHaveTextContent(/^\$150$/);
-      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$350')).toBeInTheDocument();
+      expect(lineAmountCell(screen.getByText('Line A').closest('tr') as HTMLElement)).toHaveTextContent(/^$200$/);
+      expect(lineAmountCell(screen.getByText('Line B').closest('tr') as HTMLElement)).toHaveTextContent(/^$135$/);
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$335')).toBeInTheDocument();
     });
   });
 

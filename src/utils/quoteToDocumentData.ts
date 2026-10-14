@@ -1,6 +1,6 @@
 import type { DocumentData, DocumentLineItem, DocumentParty } from '@so360/shell-context';
 import type { Quote, QuoteLine, Lead } from '../types/crm';
-import { quoteLinePreTaxAmount } from './quoteLineAmounts';
+import { quoteLinePreTaxAmount, quoteTotals } from './quoteLineAmounts';
 
 function lineLabel(line: QuoteLine): string {
     const base = line.description || line.item_name || '—';
@@ -131,25 +131,21 @@ function lineToDocumentItem(line: QuoteLine): DocumentLineItem {
  * formula exactly, it only guarantees a finite number reaches the renderer.
  */
 function resolveTotals(quote: Quote, lines: QuoteLine[]) {
+    // Task a171957e: line amounts are already net of line discounts, so
+    // Subtotal is their sum and there is no separate Discount row (discount 0).
+    // Total is unchanged: Σ(after-discount) + tax == gross − discount + tax.
     if (lines.length > 0) {
-        let subtotal = 0;
-        let discount = 0;
-        let tax = 0;
-        for (const line of lines) {
-            const lineSubtotal = numOr0(line.quantity) * numOr0(line.unit_price);
-            const lineDiscount = lineSubtotal * (numOr0(line.discount_percent) / 100);
-            subtotal += lineSubtotal;
-            discount += lineDiscount;
-            tax += (lineSubtotal - lineDiscount) * (numOr0(line.tax_rate) / 100);
-        }
-        return { subtotal, discount, tax, total: subtotal - discount + tax };
+        const { subtotal, taxTotal, grandTotal } = quoteTotals(lines);
+        return { subtotal, discount: 0, tax: taxTotal, total: grandTotal };
     }
 
-    const subtotal = numOr0(quote.subtotal);
+    // The persisted subtotal is gross, so fold the stored discount into it to
+    // keep the same "Subtotal + Tax = Total" shape as when lines are present.
     const discount = numOr0(quote.total_discount ?? quote.discount_total);
+    const subtotal = numOr0(quote.subtotal) - discount;
     const tax = numOr0(quote.total_tax ?? quote.tax_total);
     const total = num(quote.total_amount ?? quote.grand_total);
-    return { subtotal, discount, tax, total: total ?? subtotal - discount + tax };
+    return { subtotal, discount: 0, tax, total: total ?? subtotal + tax };
 }
 
 /**

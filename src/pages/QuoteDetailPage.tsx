@@ -13,7 +13,7 @@ import { useBusinessSettings, useActivity, useShellBridge, useOrganization } fro
 import { useFormatters } from '@so360/formatters';
 import { ProductPickerModal } from '../components/ProductPickerModal';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
-import { quoteLinePreTaxAmount } from '../utils/quoteLineAmounts';
+import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
@@ -379,23 +379,6 @@ const QuoteDetailPage = () => {
         setDraftValues(prev => { const n = { ...prev }; delete n[`${index}_${field as string}`]; return n; });
     };
 
-    const calculateTotals = () => {
-        const subtotal = lines.reduce((acc, l) => acc + l.quantity * l.unit_price, 0);
-        const discountTotal = lines.reduce((acc, l) => acc + (l.quantity * l.unit_price * ((l.discount_percent || 0) / 100)), 0);
-        const afterDiscount = subtotal - discountTotal;
-        const taxTotal = lines.reduce((acc, l) => {
-            const lineSubtotal = l.quantity * l.unit_price;
-            const lineDiscount = lineSubtotal * ((l.discount_percent || 0) / 100);
-            return acc + ((lineSubtotal - lineDiscount) * ((l.tax_rate || 0) / 100));
-        }, 0);
-        return {
-            subtotal,
-            discountTotal,
-            taxTotal,
-            grandTotal: afterDiscount + taxTotal,
-        };
-    };
-
     // Format functions now use dynamic settings
     const formatCurrency = (value: number) => formatters.formatCurrency(value);
     const formatDate = (dateString: string) => formatters.formatDate(dateString, { year: 'numeric', month: 'long', day: 'numeric' });
@@ -429,7 +412,7 @@ const QuoteDetailPage = () => {
     }
 
     const status = statusConfig[quote.status];
-    const totals = calculateTotals();
+    const totals = quoteTotals(lines);
 
     const currentUserId = shell?.user?.id;
     const currentApprovalRequest = quote.current_approval_request;
@@ -714,7 +697,7 @@ const QuoteDetailPage = () => {
                                         <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-32">Unit Price</th>
                                         <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-24">Disc %</th>
                                         <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-24">Tax %</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-32">Total</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-slate-400 uppercase w-32">Amount</th>
                                         {isEditing && <th className="w-12"></th>}
                                     </tr>
                                 </thead>
@@ -852,7 +835,7 @@ const QuoteDetailPage = () => {
                                                     <span className="text-slate-300">{line.tax_rate || 0}%</span>
                                                 )}
                                             </td>
-                                            <td className="py-3 px-4 text-right">
+                                            <td className="py-3 px-4 text-right" data-testid="quote-line-amount">
                                                 <span className="text-slate-200 font-medium">
                                                     {formatCurrency(quoteLinePreTaxAmount(line))}
                                                 </span>
@@ -887,10 +870,6 @@ const QuoteDetailPage = () => {
                                     <div className="flex justify-between text-slate-400">
                                         <span>Subtotal</span>
                                         <span>{formatCurrency(totals.subtotal)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-slate-400">
-                                        <span>Discount</span>
-                                        <span>-{formatCurrency(totals.discountTotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-slate-400">
                                         <span>Tax</span>
