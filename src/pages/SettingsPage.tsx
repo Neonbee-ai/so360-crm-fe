@@ -504,7 +504,7 @@ const SettingsPage = () => {
                             Unsaved changes
                         </span>
                     )}
-                    <Button onClick={handleSave} disabled={isSaving || !isDirty} leftIcon={<Save size={16} />}>
+                    <Button onClick={handleSave} disabled={isSaving || !isDirty}><Save size={16} />
                         {isSaving ? 'Saving...' : 'Save Configuration'}
                     </Button>
                 </div>

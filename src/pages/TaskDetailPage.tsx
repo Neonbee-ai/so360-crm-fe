@@ -227,8 +227,7 @@ const TaskDetailPage = () => {
                     disabled={!canEdit}
                     aria-label="Edit Task"
                     title={canEdit ? 'Edit Task' : TASK_LOCKED_HINT}
-                    leftIcon={<Edit2 size={14} />}
-                >
+                ><Edit2 size={14} />
                     Edit
                 </Button>
             }

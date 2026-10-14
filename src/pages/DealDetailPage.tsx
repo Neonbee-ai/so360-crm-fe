@@ -639,13 +639,13 @@ const DealDetailPage = () => {
                 </>
             )}
             primaryAction={FEATURES.DEAL_PROJECT_CREATION ? (
-                <Button onClick={handleOpenProjectModal} leftIcon={<Briefcase size={14} />}>
+                <Button onClick={handleOpenProjectModal}><Briefcase size={14} />
                     {deal.project_id ? 'Manage Project' : 'Create Project'}
                 </Button>
             ) : undefined}
             secondaryActions={[
-                ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate} leftIcon={<FileText size={14} />}>Create Estimate</Button>] : []),
-                ...(FEATURES.DEAL_INVOICE_REQUEST ? [<Button key="invoice" variant="secondary" onClick={handleCreateInvoice} leftIcon={<Receipt size={14} />}>Create Invoice</Button>] : []),
+                ...(FEATURES.DEAL_ESTIMATE_REQUEST ? [<Button key="estimate" variant="secondary" onClick={handleCreateEstimate}><FileText size={14} />Create Estimate</Button>] : []),
+                ...(FEATURES.DEAL_INVOICE_REQUEST ? [<Button key="invoice" variant="secondary" onClick={handleCreateInvoice}><Receipt size={14} />Create Invoice</Button>] : []),
             ]}
             overflowActions={[
                 ...(isSignEnabled ? [{ label: 'Request Signature', onSelect: () => setSignOpen(true) }] : []),

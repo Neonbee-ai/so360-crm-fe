@@ -148,7 +148,7 @@ const MarketingCouponsPage: React.FC = () => {
       title="Discount Coupons"
       description="Manage promotional codes and offers"
       primaryAction={canCreateMarketing ? (
-        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => { resetForm(); setShowForm(true); }}>
+        <Button variant="primary" onClick={() => { resetForm(); setShowForm(true); }}><Plus size={16} />
           Create Coupon
         </Button>
       ) : undefined}

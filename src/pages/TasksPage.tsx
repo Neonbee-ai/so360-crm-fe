@@ -388,7 +388,7 @@ const TasksPage = () => {
             title="Tasks & Follow-ups"
             description="Personal execution discipline and daily tasks"
             primaryAction={canCreateTask ? (
-                <Button onClick={() => setShowCreateModal(true)} leftIcon={<Plus size={16} />}>
+                <Button onClick={() => setShowCreateModal(true)}><Plus size={16} />
                     Create Task
                 </Button>
             ) : undefined}

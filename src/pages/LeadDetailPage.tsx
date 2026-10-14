@@ -588,7 +588,7 @@ const LeadDetailPage = () => {
                 onBack={() => (window.history.length > 1 ? navigate(-1) : navigate(backRoute))}
                 backLabel={backLabel}
                 primaryAction={canCreateDeal ? (
-                    <Button onClick={() => setIsCreatingDeal(true)} leftIcon={<Plus size={16} />}>
+                    <Button onClick={() => setIsCreatingDeal(true)}><Plus size={16} />
                         Create Deal
                     </Button>
                 ) : undefined}
@@ -599,8 +599,7 @@ const LeadDetailPage = () => {
                         onClick={() => setIsMergeOpen(true)}
                         aria-label="Merge"
                         title="Merge a duplicate lead into this one"
-                        leftIcon={<GitMerge size={16} />}
-                    >
+                    ><GitMerge size={16} />
                         Merge
                     </Button>,
                 ] : undefined}
@@ -625,7 +624,7 @@ const LeadDetailPage = () => {
                                     {recentActivity.map((event) => (
                                         <li key={event.id} className="text-sm text-fg">
                                             <span className="block truncate">{event.title}</span>
-                                            <span className="text-xs text-fg-muted">{formatters.formatDate(event.date)}</span>
+                                            <span className="text-xs text-fg-muted">{formatters.formatDate(event.created_at)}</span>
                                         </li>
                                     ))}
                                 </ul>

@@ -460,21 +460,21 @@ const QuoteDetailPage = () => {
     // secondaries, everything else (print, reject) in the overflow menu.
     const act = {
         save: isEditing ? (
-            <Button key="save" onClick={handleSave} disabled={isSaving} leftIcon={<Save className="w-4 h-4" />}>
+            <Button key="save" onClick={handleSave} disabled={isSaving}><Save className="w-4 h-4" />
                 {isSaving ? 'Saving...' : 'Save'}
             </Button>
         ) : null,
         approve: canApproveQuote && canApprove ? (
-            <Button key="approve" onClick={handleApprove} leftIcon={<CheckCircle className="w-4 h-4" />}>Approve</Button>
+            <Button key="approve" onClick={handleApprove}><CheckCircle className="w-4 h-4" />Approve</Button>
         ) : null,
         submit: canSubmit && !isEditing ? (
-            <Button key="submit" onClick={handleOpenApprovalModal} leftIcon={<Send className="w-4 h-4" />}>Submit for Approval</Button>
+            <Button key="submit" onClick={handleOpenApprovalModal}><Send className="w-4 h-4" />Submit for Approval</Button>
         ) : null,
         convert: canConvertQuote && canConvert ? (
-            <Button key="convert" onClick={() => setShowConvertModal(true)} leftIcon={<FileText className="w-4 h-4" />}>Convert to Order</Button>
+            <Button key="convert" onClick={() => setShowConvertModal(true)}><FileText className="w-4 h-4" />Convert to Order</Button>
         ) : null,
         email: !isEditing ? (
-            <Button key="email" onClick={openSendModal} leftIcon={<Send className="w-4 h-4" />}>Email to Customer</Button>
+            <Button key="email" onClick={openSendModal}><Send className="w-4 h-4" />Email to Customer</Button>
         ) : null,
     };
     const primaryKey = (['save', 'approve', 'submit', 'convert', 'email'] as const).find(k => act[k]);
@@ -486,7 +486,7 @@ const QuoteDetailPage = () => {
         ...(!isEditing && primaryKey !== 'email' ? [{ label: 'Email to Customer', onSelect: openSendModal, icon: <Send className="w-4 h-4" /> }] : []),
     ];
     const secondaryActions = secondaryCandidates.slice(0, 2).map(c => (
-        <Button key={c.label} variant="secondary" onClick={c.onSelect} leftIcon={c.icon}>{c.label}</Button>
+        <Button key={c.label} variant="secondary" onClick={c.onSelect}>{c.icon}{c.label}</Button>
     ));
     const overflowActions = [
         ...secondaryCandidates.slice(2).map(c => ({ label: c.label, onSelect: c.onSelect })),

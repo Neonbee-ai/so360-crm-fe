@@ -1094,7 +1094,7 @@ const QuotesPage = () => {
             title="Quotes"
             description="Manage sales quotes and proposals"
             headerSecondaryActions={[
-                <Button key="export" variant="secondary" onClick={handleExportSelected} title="Export quotes to CSV" leftIcon={<Download className="w-4 h-4" />}>
+                <Button key="export" variant="secondary" onClick={handleExportSelected} title="Export quotes to CSV"><Download className="w-4 h-4" />
                     Export CSV
                 </Button>,
             ]}
@@ -1107,7 +1107,7 @@ const QuotesPage = () => {
                     isUnlimited={quotaData?.is_unlimited}
                     disableOnExceeded
                 >
-                    <Button onClick={() => setIsCreateModalOpen(true)} leftIcon={<Plus className="w-4 h-4" />}>
+                    <Button onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4" />
                         New Quote
                     </Button>
                 </QuotaGate>

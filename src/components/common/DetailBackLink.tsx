@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, type NavigateFunction } from 'react-router-dom';
 
 /**
  * Back navigation for record detail pages.
@@ -67,7 +67,7 @@ export function backTargetFromState(locationState: unknown): string | null {
 }
 
 /** Same destination rules as the DetailBackLink click, for pages whose header owns the Back control (DetailPageTemplate onBack). */
-export function goBackFrom(navigate: (to: string | number) => void, fallbackTo: string): void {
+export function goBackFrom(navigate: NavigateFunction, fallbackTo: string): void {
     const explicit = typeof window !== 'undefined' ? backTargetFromState(window.history.state?.usr) : null;
     if (explicit) navigate(explicit);
     else if (typeof window !== 'undefined' && hasInAppHistory(window.history.state)) navigate(-1);
