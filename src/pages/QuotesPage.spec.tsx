@@ -7,6 +7,7 @@ const mockCrmService = vi.hoisted(() => ({
   approveQuote: vi.fn(),
   convertQuoteToOrder: vi.fn(),
   createQuote: vi.fn(),
+  isQuoteAutoNumbering: vi.fn(async () => true),
   deleteQuote: vi.fn(),
   getDeals: vi.fn(),
   getQuotes: vi.fn(),
