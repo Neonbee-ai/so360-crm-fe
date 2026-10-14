@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { EmptyState, Panel } from './targetUi';
+import { DashboardPageTemplate, Button } from '@so360/design-system';
 
 /**
  * Channel catalog admin.
@@ -123,22 +124,18 @@ export default function TouchpointChannelsPage() {
   };
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-fg">
-          Touchpoint Channels
-        </h1>
-        <button
-          className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
-          onClick={importSources}
-          disabled={busy}
-        >
+    <DashboardPageTemplate
+      title="Touchpoint Channels"
+      primaryAction={(
+        <Button variant="secondary" onClick={importSources} disabled={busy}>
           Import from Lead Sources
-        </button>
-      </div>
+        </Button>
+      )}
+    >
+    <div className="space-y-5">
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
-      {notice && <div className="text-sm text-emerald-300">{notice}</div>}
+      {error && <div className="text-sm text-danger">{error}</div>}
+      {notice && <div className="text-sm text-success">{notice}</div>}
 
       <Panel title="Add a channel">
         <div className="flex flex-wrap items-end gap-3">
@@ -184,7 +181,7 @@ export default function TouchpointChannelsPage() {
           </button>
         </div>
         {actualsSource === 'auto' && (
-          <div className="mt-2 text-[11px] text-amber-300">
+          <div className="mt-2 text-[11px] text-warning">
             Auto channels need an emitter binding — configure it via the API
             until the binding picker ships.
           </div>
@@ -276,7 +273,7 @@ export default function TouchpointChannelsPage() {
               ↔ linked to an existing CRM lead source — configured once,
               reconcilable in reporting
             </div>
-            <div className="text-amber-300">
+            <div className="text-warning">
               ⚠ Manual channels are self-reported. Compensation eligibility is
               off by default and must be enabled deliberately.
             </div>
@@ -284,5 +281,6 @@ export default function TouchpointChannelsPage() {
         </Panel>
       )}
     </div>
+    </DashboardPageTemplate>
   );
 }

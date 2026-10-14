@@ -14,6 +14,7 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
+import { DashboardPageTemplate, Button } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
 
@@ -310,21 +311,18 @@ export default function TargetPlansPage() {
     (ownerType !== 'rep' || ownerId.trim().length > 0);
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-fg">Target Plans</h1>
-        {canCreatePlan(shell) && (
-          <button
-            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high"
-            onClick={() => setShowForm((s) => !s)}
-          >
-            {showForm ? 'Cancel' : 'New plan'}
-          </button>
-        )}
-      </div>
+    <DashboardPageTemplate
+      title="Target Plans"
+      primaryAction={canCreatePlan(shell) ? (
+        <Button onClick={() => setShowForm((s) => !s)}>
+          {showForm ? 'Cancel' : 'New plan'}
+        </Button>
+      ) : undefined}
+    >
+    <div className="space-y-5">
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
-      {notice && <div className="text-sm text-emerald-300">{notice}</div>}
+      {error && <div className="text-sm text-danger">{error}</div>}
+      {notice && <div className="text-sm text-success">{notice}</div>}
 
       {!loading && !taskTypes.length && (
         <Panel title="Set up your metrics first">
@@ -467,7 +465,7 @@ export default function TargetPlansPage() {
                   {catalog && (
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-purple-300 border border-purple-500/30 text-xs font-medium transition-all disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-primary border border-primary/30 text-xs font-medium transition-all disabled:opacity-40"
                       onClick={() => setShowLeadStageModal(true)}
                       disabled={!unlinkedLeadStages.length}
                       title={
@@ -481,14 +479,14 @@ export default function TargetPlansPage() {
                   )}
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-amber-300 border border-amber-500/30 text-xs font-medium transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-warning border border-warning/30 text-xs font-medium transition-all"
                     onClick={() => setShowCustomMetricModal(true)}
                   >
                     <Sparkles size={12} className="text-warning" /> + Custom Metric
                   </button>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-medium transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-fg text-xs font-medium transition-all shadow-sm"
                     onClick={addLine}
                     disabled={!taskTypes.length}
                   >
@@ -498,7 +496,7 @@ export default function TargetPlansPage() {
               </div>
 
               {!taskTypes.length && (
-                <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
+                <div className="text-xs text-warning bg-warning/10 border border-warning/20 p-3 rounded-lg">
                   No metrics configured yet. Click "Load starter metrics" above, add a task type, or click "+ Custom Metric" to begin.
                 </div>
               )}
@@ -704,8 +702,8 @@ export default function TargetPlansPage() {
                           <span
                             className={`px-2 py-0.5 rounded text-[11px] ${
                               isWeightValid
-                                ? 'bg-emerald-500/15 text-success border border-emerald-500/30'
-                                : 'bg-amber-500/15 text-warning border border-amber-500/30'
+                                ? 'bg-success/15 text-success border border-success/30'
+                                : 'bg-warning/15 text-warning border border-warning/30'
                             }`}
                           >
                             {totalWeight.toFixed(1)}% {isWeightValid ? '✓ 100% Valid' : '⚠ Sum to 100%'}
@@ -841,7 +839,7 @@ export default function TargetPlansPage() {
                     }}
                     className={`flex flex-col p-2.5 rounded-lg border text-left text-xs transition-colors ${
                       customMetricKind === k.value
-                        ? 'border-primary bg-blue-500/10 text-blue-200'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-line bg-surface-high text-fg-subtle hover:border-line'
                     }`}
                   >
@@ -876,7 +874,7 @@ export default function TargetPlansPage() {
               <button
                 type="submit"
                 disabled={!customMetricName.trim() || customMetricSaving}
-                className="rounded bg-primary px-4 py-1.5 text-xs font-medium text-white hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5"
+                className="rounded bg-primary px-4 py-1.5 text-xs font-medium text-primary-fg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5"
               >
                 {customMetricSaving && <Loader2 size={12} className="animate-spin" />}
                 Create & Add to Plan
@@ -916,7 +914,7 @@ export default function TargetPlansPage() {
                         await handleAddLeadStageMetric(stage);
                         setShowLeadStageModal(false);
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-line bg-surface-high hover:border-purple-500/40 text-left text-xs text-fg disabled:opacity-50"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-line bg-surface-high hover:border-primary/40 text-left text-xs text-fg disabled:opacity-50"
                     >
                       <span className="flex items-center gap-2">
                         <span
@@ -945,6 +943,7 @@ export default function TargetPlansPage() {
         </Modal>
       )}
     </div>
+    </DashboardPageTemplate>
   );
 }
 

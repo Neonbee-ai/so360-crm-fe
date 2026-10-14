@@ -15,6 +15,7 @@ import {
   formatPct,
   formatValue,
 } from './targetUi';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 /**
  * The landing screen.
@@ -58,14 +59,14 @@ export default function TargetsOverviewPage() {
   }, [load]);
 
   if (loading) {
-    return <div className="p-6 text-sm text-fg-subtle">Loading overview…</div>;
+    return <div className="text-sm text-fg-subtle">Loading overview…</div>;
   }
   if (error) {
-    return <div className="p-6 text-sm text-rose-300">{error}</div>;
+    return <div className="text-sm text-danger">{error}</div>;
   }
   if (!data || !data.plans?.length) {
     return (
-      <div className="p-6">
+      <div>
         <EmptyState message="No active target plan for this period. An admin can create one under Target Plans." />
       </div>
     );
@@ -75,26 +76,28 @@ export default function TargetsOverviewPage() {
   const plan = data.plans[0];
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-fg">Overview</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
+    <DashboardPageTemplate
+      title="Overview"
+      meta={(
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-subtle">
           <span>{plan?.name}</span>
           {h && <span>{h.days_remaining} days left</span>}
           {plan?.linked_goal_id && (
-            <span className="text-sky-300">Linked goal ↗</span>
+            <span className="text-info">Linked goal ↗</span>
           )}
         </div>
-        {h && (
-          <div className="mt-3 max-w-md">
-            <div className="flex justify-between text-[11px] text-fg-muted mb-1">
-              <span>Period elapsed</span>
-              <span>{formatPct(h.elapsed_fraction)}</span>
-            </div>
-            <ElapsedBar fraction={h.elapsed_fraction} />
+      )}
+    >
+    <div className="space-y-5">
+      {h && (
+        <div className="max-w-md">
+          <div className="flex justify-between text-[11px] text-fg-muted mb-1">
+            <span>Period elapsed</span>
+            <span>{formatPct(h.elapsed_fraction)}</span>
           </div>
-        )}
-      </div>
+          <ElapsedBar fraction={h.elapsed_fraction} />
+        </div>
+      )}
 
       {h && (
         <Panel title={h.metric_name}>
@@ -143,8 +146,8 @@ export default function TargetsOverviewPage() {
                       <span
                         className={`text-xs ${
                           h.projection.projectedGap < 0
-                            ? 'text-amber-300'
-                            : 'text-emerald-300'
+                            ? 'text-warning'
+                            : 'text-success'
                         }`}
                       >
                         {h.projection.projectedGap < 0 ? 'short by ' : 'over by '}
@@ -245,5 +248,6 @@ export default function TargetsOverviewPage() {
         </div>
       </Panel>
     </div>
+    </DashboardPageTemplate>
   );
 }
