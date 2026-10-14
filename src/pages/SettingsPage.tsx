@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { toast } from '@so360/design-system';
+import { toast, SettingsPageTemplate, Button } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -493,87 +493,35 @@ const SettingsPage = () => {
     }
 
     return (
-        <div className="p-8">
-            <header className="mb-10 flex justify-between items-center">
-                <div>
-                    <h1 className="text-4xl font-black text-fg tracking-tight">CRM Settings</h1>
-                    <p className="text-fg-subtle mt-1 font-medium">Configure your workspace and custom data points</p>
+        <SettingsPageTemplate
+            title="CRM Settings"
+            description="Configure your workspace and custom data points"
+            primaryAction={canWriteSettings ? (
+                <div className="flex items-center gap-3">
+                    {isDirty && !isSaving && (
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-warning uppercase tracking-wider">
+                            <AlertCircle size={14} />
+                            Unsaved changes
+                        </span>
+                    )}
+                    <Button onClick={handleSave} disabled={isSaving || !isDirty} leftIcon={<Save size={16} />}>
+                        {isSaving ? 'Saving...' : 'Save Configuration'}
+                    </Button>
                 </div>
-                {canWriteSettings && (
-                    <div className="flex items-center gap-3">
-                        {isDirty && !isSaving && (
-                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-warning uppercase tracking-wider">
-                                <AlertCircle size={14} />
-                                Unsaved changes
-                            </span>
-                        )}
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving || !isDirty}
-                            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-black transition-all shadow-xl shadow-blue-900/30 disabled:opacity-50 active:scale-95"
-                        >
-                            <Save size={20} />
-                            {isSaving ? 'Saving...' : 'Save Configuration'}
-                        </button>
-                    </div>
-                )}
-            </header>
-
-            <div className="flex gap-1 mb-8 bg-surface-sunken p-1 rounded-xl border border-line shadow-sm w-fit">
-                <button
-                    onClick={() => setActiveTab('pipeline')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pipeline' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                >
-                    Pipeline
-                </button>
-                <button
-                    onClick={() => setActiveTab('lead-stages')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'lead-stages' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                >
-                    Lead Stages
-                </button>
-                <button
-                    onClick={() => setActiveTab('custom-fields')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'custom-fields' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                >
-                    Custom Fields
-                </button>
-                <button
-                    onClick={() => setActiveTab('sources')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'sources' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                >
-                    Lead Sources
-                </button>
-                <button
-                    onClick={() => setActiveTab('scoring')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'scoring' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                >
-                    Lead Scoring
-                </button>
-                <button
-                    onClick={() => setActiveTab('deal-naming')}
-                    className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'deal-naming' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                >
-                    Deal Naming
-                </button>
-                {assignmentEnabled && (
-                    <button
-                        onClick={() => setActiveTab('assignment')}
-                        className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'assignment' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                    >
-                        Assignment
-                    </button>
-                )}
-                {salesSettingsEnabled && (
-                    <button
-                        onClick={() => setActiveTab('sales-commission')}
-                        className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'sales-commission' ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                    >
-                        Sales &amp; commission
-                    </button>
-                )}
-            </div>
-
+            ) : undefined}
+            sections={[
+                { id: 'pipeline', label: 'Pipeline' },
+                { id: 'lead-stages', label: 'Lead Stages' },
+                { id: 'custom-fields', label: 'Custom Fields' },
+                { id: 'sources', label: 'Lead Sources' },
+                { id: 'scoring', label: 'Lead Scoring' },
+                { id: 'deal-naming', label: 'Deal Naming' },
+                ...(assignmentEnabled ? [{ id: 'assignment', label: 'Assignment' }] : []),
+                ...(salesSettingsEnabled ? [{ id: 'sales-commission', label: 'Sales & commission' }] : []),
+            ]}
+            activeSection={activeTab}
+            onSectionChange={(id) => setActiveTab(id as SettingsTab)}
+        >
             <div className="space-y-10">
                 {activeTab === 'pipeline' && (
                     <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
@@ -1246,7 +1194,7 @@ const SettingsPage = () => {
                     <SalesCommissionSettingsTab canWrite={canWriteSettings} />
                 )}
             </div>
-        </div>
+        </SettingsPageTemplate>
     );
 };
 

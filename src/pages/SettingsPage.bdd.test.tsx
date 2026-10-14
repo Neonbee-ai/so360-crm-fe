@@ -154,7 +154,7 @@ describe('SettingsPage BDD', () => {
     it('When rendered / Then Pipeline tab is active by default', async () => {
       render(<SettingsPage />);
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /pipeline/i })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: /pipeline/i })).toBeInTheDocument();
       });
     });
   });
@@ -177,7 +177,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead stages/i }));
+      await user.click(screen.getByRole('tab', { name: /lead stages/i }));
       await waitFor(() => {
         // Lead stages are read-only (owned by the Flow module) — rendered as text, not inputs
         expect(screen.getByText('New Lead')).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /custom fields/i }));
+      await user.click(screen.getByRole('tab', { name: /custom fields/i }));
       await waitFor(() => {
         expect(screen.getByDisplayValue('Company Size')).toBeInTheDocument();
       });
@@ -202,7 +202,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead sources/i }));
+      await user.click(screen.getByRole('tab', { name: /lead sources/i }));
       await waitFor(() => {
         // Sources tab now shows source_type_options as text labels (not input fields)
         expect(screen.getByText('Website')).toBeInTheDocument();
@@ -215,7 +215,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead scoring/i }));
+      await user.click(screen.getByRole('tab', { name: /lead scoring/i }));
       await waitFor(() => {
         // Scoring tab content is rendered
         const body = document.body.textContent || '';
@@ -418,7 +418,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('tab', { name: /deal naming/i }));
       // Edit the template so `settings` actually diverges — the tab's own
       // mount-time onChange call alone doesn't dirty anything.
       await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
@@ -457,7 +457,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('tab', { name: /deal naming/i }));
       await waitFor(() => expect(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}')).toBeInTheDocument());
       fireEvent.change(screen.getByDisplayValue('{lead_name} - {YYYYMMDD}'), { target: { value: 'DL-{seq}' } });
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeEnabled());
@@ -475,7 +475,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByRole('button', { name: /save configuration/i })).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /deal naming/i }));
+      await user.click(screen.getByRole('tab', { name: /deal naming/i }));
       await waitFor(() => expect(screen.getByText(/deal naming convention/i)).toBeInTheDocument());
       // Exactly one Save Configuration control on the page — the global one.
       expect(screen.getAllByRole('button', { name: /save configuration/i })).toHaveLength(1);
@@ -488,7 +488,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /lead sources/i }));
+      await user.click(screen.getByRole('tab', { name: /lead sources/i }));
       await waitFor(() => {
         // Sources tab now shows source_type_options as text labels (not input fields)
         expect(screen.getByText('Website')).toBeInTheDocument();
