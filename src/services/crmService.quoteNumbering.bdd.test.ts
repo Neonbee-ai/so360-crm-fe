@@ -1,9 +1,11 @@
 /**
- * crmService.isQuoteAutoNumbering — reads Settings → Numbering from Core (Pulse 0d0775ba)
+ * crmService.isQuoteAutoNumbering — reads Settings → Documents → Numbering from Core (Pulse 0d0775ba)
  *
  * The New Quote modal asks for a hand-typed number only when the org turned
- * Sales Quote auto-numbering off. crm-be enforces the real setting, so when
- * Core cannot be read the form falls back to auto rather than blocking.
+ * Sales Quote auto-numbering off. Same rule as crm-be: a saved Sales Quote
+ * switch (numbering_schemes.sales_quote.enabled) wins; otherwise the panel's
+ * "Auto-number documents" checkbox (auto_numbering) applies. crm-be enforces
+ * the real setting, so when Core cannot be read the form falls back to auto.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { crmService } from './crmService';
@@ -19,6 +21,8 @@ const fetchReturning = (body: unknown, ok = true, status = 200) =>
         json: async () => body,
     });
 
+const settings = (document_settings: unknown) => ({ base_currency: 'INR', document_settings });
+
 describe('crmService.isQuoteAutoNumbering()', () => {
     beforeEach(() => {
         crmService.setOrgId(ORG);
@@ -27,27 +31,44 @@ describe('crmService.isQuoteAutoNumbering()', () => {
         vi.unstubAllGlobals();
     });
 
-    describe('Given the sales_quote scheme has auto-generation enabled', () => {
-        it('When asked / Then it is auto, read from the org numbering endpoint', async () => {
-            const fetchMock = fetchReturning({ sales_quote: { enabled: true, prefix: 'QT' } });
+    describe('Given the Sales Quote switch is saved ON', () => {
+        it("When asked / Then it is auto, read from the org's business settings", async () => {
+            const fetchMock = fetchReturning(settings({ numbering_schemes: { sales_quote: { enabled: true } } }));
             vi.stubGlobal('fetch', fetchMock);
 
             await expect(crmService.isQuoteAutoNumbering()).resolves.toBe(true);
-            expect(String(fetchMock.mock.calls[0][0])).toContain(`/v1/business-settings/${ORG}/numbering`);
+            expect(String(fetchMock.mock.calls[0][0])).toMatch(new RegExp(`/v1/business-settings/${ORG}$`));
         });
     });
 
-    describe('Given the admin turned Sales Quote auto-numbering off', () => {
-        it('When asked / Then it is manual', async () => {
-            vi.stubGlobal('fetch', fetchReturning({ sales_quote: { enabled: false } }));
+    describe('Given the Sales Quote switch is saved OFF', () => {
+        it('When asked / Then it is manual, even if "Auto-number documents" is ticked', async () => {
+            vi.stubGlobal('fetch', fetchReturning(settings({
+                auto_numbering: true,
+                numbering_schemes: { sales_quote: { enabled: false } },
+            })));
 
             await expect(crmService.isQuoteAutoNumbering()).resolves.toBe(false);
         });
     });
 
-    describe('Given no sales_quote scheme in the response', () => {
+    describe('Given only the "Auto-number documents" checkbox was saved', () => {
+        it('When it is unticked / Then quotes are manual', async () => {
+            vi.stubGlobal('fetch', fetchReturning(settings({ auto_numbering: false })));
+
+            await expect(crmService.isQuoteAutoNumbering()).resolves.toBe(false);
+        });
+
+        it('When it is ticked / Then quotes are auto', async () => {
+            vi.stubGlobal('fetch', fetchReturning(settings({ auto_numbering: true })));
+
+            await expect(crmService.isQuoteAutoNumbering()).resolves.toBe(true);
+        });
+    });
+
+    describe('Given nothing numbering-related was ever saved', () => {
         it('When asked / Then it defaults to auto', async () => {
-            vi.stubGlobal('fetch', fetchReturning({ invoice: { enabled: false } }));
+            vi.stubGlobal('fetch', fetchReturning({ base_currency: 'INR' }));
 
             await expect(crmService.isQuoteAutoNumbering()).resolves.toBe(true);
         });

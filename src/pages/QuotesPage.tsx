@@ -154,7 +154,7 @@ const QuotesPage = () => {
     // Modals and action tracking
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedDealId, setSelectedDealId] = useState<string>('');
-    // Settings → Numbering: when Sales Quote auto-numbering is off the user types the number.
+    // Settings → Documents → Numbering: when Sales Quote auto-numbering is off the user types the number.
     const [quoteAutoNumbering, setQuoteAutoNumbering] = useState(true);
     const [manualQuoteNumber, setManualQuoteNumber] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -1579,7 +1579,7 @@ const QuotesPage = () => {
                                             className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                         <p className="mt-1.5 text-xs text-slate-400">
-                                            Auto-numbering for quotes is turned off in Settings → Numbering. Use letters, digits and - / _ . only; the number must be unique.
+                                            Auto-numbering for quotes is turned off in Settings → Documents → Numbering. Use letters, digits and - / _ . only; the number must be unique.
                                         </p>
                                     </div>
                                 )}

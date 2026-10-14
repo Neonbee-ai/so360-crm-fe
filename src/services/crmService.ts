@@ -2463,17 +2463,24 @@ export const crmService = {
     },
 
     /**
-     * Whether Sales Quote numbers are generated automatically (Core Settings →
-     * Numbering). When false the quote form must collect the number by hand.
-     * Defaults to auto when the setting cannot be read: crm-be enforces the real
-     * setting and answers "Quote number is required" if it is actually off.
+     * Whether Sales Quote numbers are generated automatically (Settings →
+     * Documents → Numbering). When false the quote form must collect the number
+     * by hand. Same rule as crm-be's resolveQuoteScheme: a saved Sales Quote
+     * switch wins; otherwise the panel's "Auto-number documents" checkbox
+     * (document_settings.auto_numbering) applies. Defaults to auto when the
+     * settings cannot be read: crm-be enforces the real setting and answers
+     * "Quote number is required" if it is actually off.
      */
     async isQuoteAutoNumbering(): Promise<boolean> {
         try {
-            const schemes = await coreClient.get<Record<string, { enabled?: boolean }>>(
-                `/v1/business-settings/${coreClient.getOrgId()}/numbering`,
+            const settings = await coreClient.get<{ document_settings?: any }>(
+                `/v1/business-settings/${coreClient.getOrgId()}`,
             );
-            return schemes?.sales_quote?.enabled !== false;
+            const doc = settings?.document_settings ?? {};
+            const quoteEnabled = doc.numbering_schemes?.sales_quote?.enabled;
+            if (typeof quoteEnabled === 'boolean') return quoteEnabled;
+            if (typeof doc.auto_numbering === 'boolean') return doc.auto_numbering;
+            return true;
         } catch {
             return true;
         }

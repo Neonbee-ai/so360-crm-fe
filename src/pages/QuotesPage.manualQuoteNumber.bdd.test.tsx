@@ -1,7 +1,7 @@
 /**
  * QuotesPage — manual quote number when auto-numbering is off (Pulse 0d0775ba)
  *
- * Settings → Numbering lets an admin turn Sales Quote auto-numbering off. The
+ * Settings → Documents → Numbering lets an admin turn Sales Quote auto-numbering off. The
  * New Quote modal then has to collect the number: an editable, required
  * "Quote Number (manual)" field, sent to crm-be as `quote_number`. With
  * auto-numbering on the modal is unchanged and sends the deal alone.
@@ -76,7 +76,7 @@ async function openModalWithDeal() {
   return user;
 }
 
-describe('QuotesPage — quote number follows Settings → Numbering', () => {
+describe('QuotesPage — quote number follows Settings → Documents → Numbering', () => {
   describe('Given Sales Quote auto-numbering is ON', () => {
     beforeEach(() => mockIsAuto.mockResolvedValue(true));
 
@@ -98,7 +98,7 @@ describe('QuotesPage — quote number follows Settings → Numbering', () => {
       await openModalWithDeal();
 
       expect(await screen.findByLabelText(/Quote Number \(manual\) \*/)).toBeInTheDocument();
-      expect(screen.getByText(/turned off in Settings → Numbering/)).toBeInTheDocument();
+      expect(screen.getByText(/turned off in Settings → Documents → Numbering/)).toBeInTheDocument();
     });
 
     it('When no number is entered / Then Create Quote stays disabled and nothing is sent', async () => {
@@ -140,7 +140,7 @@ describe('QuotesPage — quote number follows Settings → Numbering', () => {
 
     it('When creating fails with that message / Then the manual field appears', async () => {
       mockCreateQuote.mockRejectedValueOnce(
-        new Error('Quote number is required: auto-numbering for Sales Quotes is turned off in Settings → Numbering.'),
+        new Error('Quote number is required: auto-numbering for Sales Quotes is turned off in Settings → Documents → Numbering.'),
       );
       const user = await openModalWithDeal();
 
