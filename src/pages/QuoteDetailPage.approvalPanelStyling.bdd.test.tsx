@@ -160,12 +160,12 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       expect(container).toBeTruthy();
 
       const classList = Array.from(container.classList);
-      const hasDirectAmberTextClass = classList.some((c) => /^text-amber-/.test(c));
+      const hasDirectAmberTextClass = classList.some((c) => /^text-warning/.test(c));
       expect(hasDirectAmberTextClass).toBe(false);
 
       // Subtle scoped background/border accent is retained.
-      expect(container.className).toContain('bg-amber-500/10');
-      expect(container.className).toContain('border-amber-500/30');
+      expect(container.className).toContain('bg-warning/10');
+      expect(container.className).toContain('border-warning/30');
     });
 
     it('Then the heading uses the standard neutral heading color, not amber', async () => {
@@ -173,7 +173,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
 
       const heading = await screen.findByText('Approval in Progress');
       expect(heading.className).toContain('text-fg');
-      expect(heading.className).not.toMatch(/text-amber-/);
+      expect(heading.className).not.toMatch(/text-warning/);
     });
 
     it('Then the body description uses standard muted text color, not amber', async () => {
@@ -181,7 +181,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
 
       const body = await screen.findByText(/currently undergoing approval review/i);
       expect(body.className).toContain('text-fg-subtle');
-      expect(body.className).not.toMatch(/text-amber-/);
+      expect(body.className).not.toMatch(/text-warning/);
     });
 
     it('Then the icon retains its scoped amber accent color', async () => {
@@ -196,9 +196,9 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const badge = await screen.findByText('Locked');
-      expect(badge.className).toContain('bg-amber-400/20');
-      expect(badge.className).toContain('text-amber-300');
-      expect(badge.className).toContain('border-amber-400/30');
+      expect(badge.className).toContain('bg-warning/20');
+      expect(badge.className).toContain('text-warning');
+      expect(badge.className).toContain('border-warning/30');
       expect(badge.className).toContain('rounded-full');
       expect(badge.className).toContain('text-xs');
     });
@@ -209,7 +209,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const approverName = await screen.findByText('Alice Director');
-      expect(approverName.className).not.toMatch(/text-amber-/);
+      expect(approverName.className).not.toMatch(/text-warning/);
       expect(approverName.className).toContain('text-fg');
     });
 
@@ -229,7 +229,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
 
       const label = await screen.findByText('Required Approvers:');
       expect(label.className).toContain('text-fg-subtle');
-      expect(label.className).not.toMatch(/text-amber-/);
+      expect(label.className).not.toMatch(/text-warning/);
     });
   });
 

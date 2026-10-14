@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
-import DetailBackLink from '../components/common/DetailBackLink';
+import { goBackFrom } from '../components/common/DetailBackLink';
 import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage, useConfirm } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -19,10 +19,10 @@ import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quote
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
     draft: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Draft' },
-    pending_approval: { bg: 'bg-amber-500/20', text: 'text-amber-300', label: 'Pending Approval' },
-    approved: { bg: 'bg-green-500/20', text: 'text-green-300', label: 'Approved' },
-    rejected: { bg: 'bg-red-500/20', text: 'text-red-300', label: 'Rejected' },
-    converted: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Converted' },
+    pending_approval: { bg: 'bg-warning/20', text: 'text-warning', label: 'Pending Approval' },
+    approved: { bg: 'bg-success/20', text: 'text-success', label: 'Approved' },
+    rejected: { bg: 'bg-danger/20', text: 'text-danger', label: 'Rejected' },
+    converted: { bg: 'bg-primary/20', text: 'text-primary', label: 'Converted' },
     expired: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Expired' },
 };
 
@@ -386,7 +386,7 @@ const QuoteDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="p-8">
+            <div>
                 <div className="animate-pulse space-y-4">
                     <div className="h-8 bg-surface-raised rounded w-64" />
                     <div className="h-96 bg-surface-raised rounded" />
@@ -397,13 +397,13 @@ const QuoteDetailPage = () => {
 
     if (!quote) {
         return (
-            <div className="p-8">
+            <div>
                 <div className="text-center py-16">
                     <FileText className="w-16 h-16 mx-auto text-fg-subtle mb-4" />
                     <h2 className="text-xl font-semibold text-fg-subtle mb-2">Quote not found</h2>
                     <button
                         onClick={() => navigate('/crm/quotes')}
-                        className="text-blue-400 hover:text-blue-300"
+                        className="text-primary hover:text-primary"
                     >
                         Back to Quotes
                     </button>
@@ -435,155 +435,96 @@ const QuoteDetailPage = () => {
     const canSubmit = (quote.status === 'draft' || quote.status === 'rejected') && lines.length > 0;
     const canConvert = quote.status === 'approved';
 
-    return (
-        <div className="p-8">
-            {confirmDialog}
-            {/* Header */}
-            <DetailBackLink fallbackTo="/crm/quotes" className="mb-4" />
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold text-fg">
-                                {quote.quote_number || `Quote #${quote.id.slice(0, 8)}`}
-                            </h1>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
-                                {status.label}
-                            </span>
-                        </div>
-                        <p className="text-fg-subtle mt-1">
-                            Created {formatDate(quote.created_at)}
-                            {quote.valid_until && ` • Valid until ${formatDate(quote.valid_until)}`}
-                        </p>
-                    </div>
-                </div>
+    const handlePrint = () => shell?.printDocument?.('sales_quote', quoteToDocumentData(quote, {
+        currency: settings?.base_currency || 'XXX',
+        seller: {
+            name: currentOrg?.name || '',
+            address: (currentOrg as any)?.billing_address
+                ? [
+                    (currentOrg as any).billing_address.street,
+                    (currentOrg as any).billing_address.city,
+                    (currentOrg as any).billing_address.country,
+                  ].filter(Boolean).join(', ')
+                : undefined,
+            tax_number: (currentOrg as any)?.tax_id,
+            pan: (currentOrg as any)?.pan,
+        },
+        customer,
+        // Compared against the buyer's state to decide
+        // whether the supply is intra- or inter-state.
+        sellerState: (currentOrg as any)?.billing_address?.state,
+        sellerCountry: (currentOrg as any)?.billing_address?.country,
+    }));
 
-                <div className="flex items-center gap-3">
-                    {canCreateQuote && canEdit && !isEditing && (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="flex items-center gap-2 px-4 py-2 text-fg-subtle hover:text-fg border border-line hover:border-line rounded-lg transition-colors"
-                        >
-                            <Edit2 className="w-4 h-4" />
-                            Edit
-                        </button>
-                    )}
-                    {isEditing && (
-                        <>
-                            <button
-                                onClick={() => {
-                                    setIsEditing(false);
-                                    setDraftValues({});
-                                    fetchQuote();
-                                }}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                <Save className="w-4 h-4" />
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </button>
-                        </>
-                    )}
-                    {canSubmit && !isEditing && (
-                        <button
-                            onClick={handleOpenApprovalModal}
-                            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-amber-700 text-white rounded-lg transition-colors"
-                        >
-                            <Send className="w-4 h-4" />
-                            Submit for Approval
-                        </button>
-                    )}
-                    {canWithdraw && !isEditing && (
-                        <button
-                            onClick={() => setShowWithdrawModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 text-amber-300 hover:text-amber-100 border border-amber-500/40 hover:bg-amber-500/20 rounded-lg transition-colors"
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                            Withdraw Request
-                        </button>
-                    )}
-                    {canApproveQuote && canApprove && (
-                        <>
-                            <button
-                                onClick={() => setShowRejectModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 text-danger hover:text-white border border-red-500/50 hover:bg-danger rounded-lg transition-colors"
-                            >
-                                <XCircle className="w-4 h-4" />
-                                Reject
-                            </button>
-                            <button
-                                onClick={handleApprove}
-                                className="flex items-center gap-2 px-4 py-2 bg-success hover:bg-green-700 text-white rounded-lg transition-colors"
-                            >
-                                <CheckCircle className="w-4 h-4" />
-                                Approve
-                            </button>
-                        </>
-                    )}
-                    {canConvertQuote && canConvert && (
-                        <button
-                            onClick={() => setShowConvertModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
-                        >
-                            <FileText className="w-4 h-4" />
-                            Convert to Order
-                        </button>
-                    )}
-                    {!isEditing && (
-                        <button
-                            onClick={() => shell?.printDocument?.('sales_quote', quoteToDocumentData(quote, {
-                                currency: settings?.base_currency || 'XXX',
-                                seller: {
-                                    name: currentOrg?.name || '',
-                                    address: (currentOrg as any)?.billing_address
-                                        ? [
-                                            (currentOrg as any).billing_address.street,
-                                            (currentOrg as any).billing_address.city,
-                                            (currentOrg as any).billing_address.country,
-                                          ].filter(Boolean).join(', ')
-                                        : undefined,
-                                    tax_number: (currentOrg as any)?.tax_id,
-                                    pan: (currentOrg as any)?.pan,
-                                },
-                                customer,
-                                // Compared against the buyer's state to decide
-                                // whether the supply is intra- or inter-state.
-                                sellerState: (currentOrg as any)?.billing_address?.state,
-                                sellerCountry: (currentOrg as any)?.billing_address?.country,
-                            }))}
-                            className="flex items-center gap-2 px-4 py-2 text-fg-subtle hover:text-fg border border-line hover:border-line rounded-lg transition-colors"
-                        >
-                            <Printer className="w-4 h-4" />
-                            Print Quote
-                        </button>
-                    )}
-                    {!isEditing && (
-                        <button
-                            onClick={openSendModal}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
-                        >
-                            <Send className="w-4 h-4" />
-                            Email to Customer
-                        </button>
-                    )}
-                </div>
-            </div>
+    // Header actions: one primary (first available by priority), at most 2
+    // secondaries, everything else (print, reject) in the overflow menu.
+    const act = {
+        save: isEditing ? (
+            <Button key="save" onClick={handleSave} disabled={isSaving} leftIcon={<Save className="w-4 h-4" />}>
+                {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+        ) : null,
+        approve: canApproveQuote && canApprove ? (
+            <Button key="approve" onClick={handleApprove} leftIcon={<CheckCircle className="w-4 h-4" />}>Approve</Button>
+        ) : null,
+        submit: canSubmit && !isEditing ? (
+            <Button key="submit" onClick={handleOpenApprovalModal} leftIcon={<Send className="w-4 h-4" />}>Submit for Approval</Button>
+        ) : null,
+        convert: canConvertQuote && canConvert ? (
+            <Button key="convert" onClick={() => setShowConvertModal(true)} leftIcon={<FileText className="w-4 h-4" />}>Convert to Order</Button>
+        ) : null,
+        email: !isEditing ? (
+            <Button key="email" onClick={openSendModal} leftIcon={<Send className="w-4 h-4" />}>Email to Customer</Button>
+        ) : null,
+    };
+    const primaryKey = (['save', 'approve', 'submit', 'convert', 'email'] as const).find(k => act[k]);
+    const doCancel = () => { setIsEditing(false); setDraftValues({}); fetchQuote(); };
+    const secondaryCandidates: Array<{ label: string; onSelect: () => void; icon: React.ReactNode }> = [
+        ...(isEditing ? [{ label: 'Cancel', onSelect: doCancel, icon: null }] : []),
+        ...(canCreateQuote && canEdit && !isEditing ? [{ label: 'Edit', onSelect: () => setIsEditing(true), icon: <Edit2 className="w-4 h-4" /> }] : []),
+        ...(canWithdraw && !isEditing ? [{ label: 'Withdraw Request', onSelect: () => setShowWithdrawModal(true), icon: <RotateCcw className="w-4 h-4" /> }] : []),
+        ...(!isEditing && primaryKey !== 'email' ? [{ label: 'Email to Customer', onSelect: openSendModal, icon: <Send className="w-4 h-4" /> }] : []),
+    ];
+    const secondaryActions = secondaryCandidates.slice(0, 2).map(c => (
+        <Button key={c.label} variant="secondary" onClick={c.onSelect} leftIcon={c.icon}>{c.label}</Button>
+    ));
+    const overflowActions = [
+        ...secondaryCandidates.slice(2).map(c => ({ label: c.label, onSelect: c.onSelect })),
+        ...(canApproveQuote && canApprove ? [{ label: 'Reject', danger: true, onSelect: () => setShowRejectModal(true) }] : []),
+        ...(!isEditing ? [{ label: 'Print Quote', onSelect: handlePrint }] : []),
+    ];
+
+    return (
+        <DetailPageTemplate
+            onBack={() => goBackFrom(navigate, '/crm/quotes')}
+            backLabel="Back"
+            title={quote.quote_number || `Quote #${quote.id.slice(0, 8)}`}
+            status={
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
+                    {status.label}
+                </span>
+            }
+            meta={
+                <p className="text-fg-subtle">
+                    Created {formatDate(quote.created_at)}
+                    {quote.valid_until && ` • Valid until ${formatDate(quote.valid_until)}`}
+                </p>
+            }
+            primaryAction={primaryKey ? act[primaryKey] : undefined}
+            secondaryActions={secondaryActions}
+            overflowActions={overflowActions}
+        >
+            {confirmDialog}
 
             {error && (
-                <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
+                <div className="mb-4 p-4 bg-danger/20 border border-danger/50 rounded-lg text-danger">
                     {error}
                 </div>
             )}
 
             {/* Approval in Progress Banner */}
             {quote.status === 'pending_approval' && (
-                <div className="mb-6 p-5 rounded-xl border border-amber-500/30 bg-amber-500/10 space-y-3">
+                <div className="mb-6 p-5 rounded-xl border border-warning/30 bg-warning/10 space-y-3">
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2.5">
                             <Clock className="w-5 h-5 text-warning" />
@@ -592,7 +533,7 @@ const QuoteDetailPage = () => {
                                     <span className="font-semibold text-fg text-base">
                                         Approval in Progress
                                     </span>
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold border border-amber-400/30">
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning font-semibold border border-warning/30">
                                         Locked
                                     </span>
                                 </div>
@@ -602,7 +543,7 @@ const QuoteDetailPage = () => {
                     <p className="text-sm text-fg-subtle leading-relaxed">
                         This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.
                         {isSubmitter && !isAuthorizedApprover && (
-                            <span className="block mt-1 text-xs text-amber-300 font-medium">
+                            <span className="block mt-1 text-xs text-warning font-medium">
                                 You submitted this quote. Self-review is not permitted.
                             </span>
                         )}
@@ -613,16 +554,16 @@ const QuoteDetailPage = () => {
                         )}
                     </p>
                     {currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0 && (
-                        <div className="pt-3 border-t border-amber-500/20 flex flex-wrap gap-2 items-center">
+                        <div className="pt-3 border-t border-warning/20 flex flex-wrap gap-2 items-center">
                             <span className="text-xs font-semibold text-fg-subtle">Required Approvers:</span>
                             {currentApprovalRequest.approvers.map((a: any, idx: number) => (
                                 <span
                                     key={a.id || idx}
                                     className={`text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
                                         a.status === 'approved'
-                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                                            ? 'bg-success/10 border-success/30 text-success'
                                             : a.status === 'rejected'
-                                            ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                            ? 'bg-danger/10 border-danger/30 text-danger'
                                             : 'bg-surface-high border-line text-fg-subtle'
                                     }`}
                                 >
@@ -681,7 +622,7 @@ const QuoteDetailPage = () => {
                             {canCreateQuote && isEditing && (
                                 <button
                                     onClick={addLine}
-                                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-400 hover:text-blue-300 border border-blue-500/50 hover:border-primary rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:text-primary border border-primary/50 hover:border-primary rounded-lg transition-colors"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Add Line
@@ -717,7 +658,7 @@ const QuoteDetailPage = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => setPickerLineIndex(index)}
-                                                            className="w-full flex items-center gap-2 px-3 py-1.5 bg-surface border border-line hover:border-blue-500/50 rounded text-sm transition-colors text-left"
+                                                            className="w-full flex items-center gap-2 px-3 py-1.5 bg-surface border border-line hover:border-primary/50 rounded text-sm transition-colors text-left"
                                                         >
                                                             {line.item_image_url ? (
                                                                 <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
@@ -730,7 +671,7 @@ const QuoteDetailPage = () => {
                                                                     <span className="flex items-center gap-1 mt-0.5">
                                                                         <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
                                                                         {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                                            <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded">{line.sub_sku}</span>
+                                                                            <span className="text-xs px-1.5 py-0.5 bg-primary/50 text-primary rounded">{line.sub_sku}</span>
                                                                         )}
                                                                     </span>
                                                                 </span>
@@ -758,7 +699,7 @@ const QuoteDetailPage = () => {
                                                                 <span className="flex items-center gap-1 mt-0.5">
                                                                     <span className="text-xs px-1.5 py-0.5 bg-fg-muted/20 text-fg-subtle rounded">{line.sku}</span>
                                                                     {line.sub_sku && line.sub_sku !== 'NIL' && (
-                                                                        <span className="text-xs px-1.5 py-0.5 bg-blue-900/40 text-blue-400 rounded">{line.sub_sku}</span>
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-primary/40 text-primary rounded">{line.sub_sku}</span>
                                                                     )}
                                                                 </span>
                                                             )}
@@ -771,11 +712,11 @@ const QuoteDetailPage = () => {
                                                     stock === undefined ? (
                                                         <span className="text-xs text-fg-muted">—</span>
                                                     ) : isOOS ? (
-                                                        <span className="text-xs font-medium text-danger bg-rose-500/10 px-2 py-0.5 rounded">OOS</span>
+                                                        <span className="text-xs font-medium text-danger bg-danger/10 px-2 py-0.5 rounded">OOS</span>
                                                     ) : isLowStock ? (
-                                                        <span className="text-xs font-medium text-warning bg-amber-500/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                        <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-0.5 rounded">{stock} avail</span>
                                                     ) : (
-                                                        <span className="text-xs font-medium text-success bg-emerald-500/10 px-2 py-0.5 rounded">{stock} avail</span>
+                                                        <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded">{stock} avail</span>
                                                     )
                                                 ) : (
                                                     <span className="text-xs text-fg-subtle">—</span>
@@ -1080,9 +1021,9 @@ const QuoteDetailPage = () => {
                     )}
 
                     {quote.rejection_reason && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6">
-                            <h2 className="text-lg font-semibold text-red-300 mb-2">Rejection Reason</h2>
-                            <p className="text-red-200">{quote.rejection_reason}</p>
+                        <div className="bg-danger/10 border border-danger/30 rounded-lg p-6">
+                            <h2 className="text-lg font-semibold text-danger mb-2">Rejection Reason</h2>
+                            <p className="text-danger">{quote.rejection_reason}</p>
                         </div>
                     )}
                 </div>
@@ -1097,7 +1038,7 @@ const QuoteDetailPage = () => {
 
             {/* Reject Modal */}
             {showRejectModal && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-4">Reject Quote</h2>
                         <div className="mb-4">
@@ -1125,7 +1066,7 @@ const QuoteDetailPage = () => {
                             <button
                                 onClick={handleReject}
                                 disabled={!rejectReason}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-danger-fg rounded-lg transition-colors"
                             >
                                 Reject Quote
                             </button>
@@ -1137,7 +1078,7 @@ const QuoteDetailPage = () => {
 
             {/* Convert Modal */}
             {showConvertModal && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-4">Convert to Sales Order</h2>
                         <p className="text-fg-subtle mb-6">
@@ -1152,7 +1093,7 @@ const QuoteDetailPage = () => {
                             </button>
                             <button
                                 onClick={handleConvert}
-                                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg transition-colors"
                             >
                                 Convert to Order
                             </button>
@@ -1213,7 +1154,7 @@ const QuoteDetailPage = () => {
                         type="button"
                         onClick={handleSendQuote}
                         disabled={isSending || !sendTo.trim()}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Send className="w-4 h-4" />
                         {isSending ? 'Sending…' : 'Send quotation'}
@@ -1223,7 +1164,7 @@ const QuoteDetailPage = () => {
 
             {/* Withdraw Modal */}
             {showWithdrawModal && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
                     <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md p-6">
                         <div className="flex items-center gap-2 mb-2 text-warning">
                             <RotateCcw className="w-5 h-5" />
@@ -1258,7 +1199,7 @@ const QuoteDetailPage = () => {
                             <button
                                 onClick={handleWithdraw}
                                 disabled={isWithdrawing}
-                                className="px-4 py-2 bg-warning hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center gap-2 font-medium"
+                                className="px-4 py-2 bg-warning hover:bg-warning/90 disabled:opacity-50 text-warning-fg rounded-lg transition-colors flex items-center gap-2 font-medium"
                             >
                                 <RotateCcw className="w-4 h-4" />
                                 {isWithdrawing ? 'Withdrawing...' : 'Confirm Withdrawal'}
@@ -1278,7 +1219,7 @@ const QuoteDetailPage = () => {
                 onClose={() => setShowApprovalModal(false)}
                 onSubmit={handleSubmitForApproval}
             />
-        </div>
+        </DetailPageTemplate>
     );
 };
 
