@@ -99,21 +99,21 @@ const MarketingOverviewPage: React.FC = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             {kpis.map((kpi) => (
-              <div key={kpi.label} className="bg-surface-sunken border border-line rounded-xl p-5">
+              <div key={kpi.label} className="bg-surface border border-line rounded-nb-lg p-5">
                 <p className="text-fg-subtle text-sm font-medium">{kpi.label}</p>
-                <p className="text-fg text-3xl font-bold mt-2 tracking-tight">{kpi.value}</p>
+                <p className="text-fg text-3xl font-bold mt-2">{kpi.value}</p>
                 {kpi.hint && <p className="text-fg-muted text-xs mt-2 font-medium">{kpi.hint}</p>}
               </div>
             ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Link to="/crm/marketing/reviews" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/reviews" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
                   <MessageSquare size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Customer Reviews</span>
+                <span className="text-xs font-semibold text-fg-subtle">Customer Reviews</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-fg">Moderate Feedback</span>
@@ -121,12 +121,12 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/wishlist" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/wishlist" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center text-danger">
                   <Heart size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Wishlist Feed</span>
+                <span className="text-xs font-semibold text-fg-subtle">Wishlist Feed</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-fg">Track Customer Intent</span>
@@ -134,12 +134,12 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/newsletter" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/newsletter" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                   <Mail size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Newsletter Audience</span>
+                <span className="text-xs font-semibold text-fg-subtle">Newsletter Audience</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-fg">Manage Subscribers</span>
@@ -147,12 +147,12 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/coupons" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/coupons" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success">
                   <Tag size={16} />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Discount Coupons</span>
+                <span className="text-xs font-semibold text-fg-subtle">Discount Coupons</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-fg">Configure Offers</span>
@@ -162,7 +162,7 @@ const MarketingOverviewPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-surface-sunken border border-line rounded-xl p-6">
+            <div className="bg-surface border border-line rounded-nb-lg p-6">
               <h3 className="text-fg font-bold mb-4">Top Selling Products</h3>
               <div className="space-y-1">
                 {bestSelling.map((row: any) => (
@@ -175,7 +175,7 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface-sunken border border-line rounded-xl p-6">
+            <div className="bg-surface border border-line rounded-nb-lg p-6">
               <h3 className="text-fg font-bold mb-4">Top Buyers</h3>
               <div className="space-y-1">
                 {topBuyers.map((row: any) => (
@@ -188,7 +188,7 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface-sunken border border-line rounded-xl p-6">
+            <div className="bg-surface border border-line rounded-nb-lg p-6">
               <h3 className="text-fg font-bold mb-4">Inactive Customers</h3>
               <div className="space-y-1">
                 {inactive.map((row: any) => (
@@ -201,7 +201,7 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface-sunken border border-line rounded-xl p-6">
+            <div className="bg-surface border border-line rounded-nb-lg p-6">
               <h3 className="text-fg font-bold mb-4">Conversion Funnel</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center py-2 border-b border-line">
@@ -223,7 +223,7 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface-sunken border border-line rounded-xl p-6 lg:col-span-2">
+            <div className="bg-surface border border-line rounded-nb-lg p-6 lg:col-span-2">
               <h3 className="text-fg font-bold mb-4">Recent Storefront Searches</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {data.searchLogs?.map((row: any) => {
@@ -233,11 +233,11 @@ const MarketingOverviewPage: React.FC = () => {
                     <div key={row.id} className="flex items-center justify-between p-3 bg-surface-sunken border border-line rounded-lg">
                       <div>
                         <p className="text-fg font-bold text-sm">"{row.search_query}"</p>
-                        <p className="text-fg-muted text-[10px] uppercase font-black mt-1">
+                        <p className="text-fg-muted text-xs font-semibold mt-1">
                           {name} • {formatters.formatDate(row.created_at)}
                         </p>
                       </div>
-                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded border border-primary/20 font-bold">
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded border border-primary/20 font-bold">
                         Search
                       </span>
                     </div>

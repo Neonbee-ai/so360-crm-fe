@@ -102,7 +102,7 @@ describe('Given TaskDetailPage', () => {
   it('When action / Then shows task status', async () => {
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('OPEN')).toBeInTheDocument();
+      expect(screen.getByText(/^open$/i)).toBeInTheDocument();
     });
   });
 
@@ -150,7 +150,7 @@ describe('Given TaskDetailPage', () => {
     mockGetTaskById.mockResolvedValue({ ...taskData, status: 'DONE' });
     render(<TaskDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('DONE')).toBeInTheDocument();
+      expect(screen.getByText(/^done$/i)).toBeInTheDocument();
     });
   });
 

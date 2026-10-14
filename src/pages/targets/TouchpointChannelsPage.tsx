@@ -140,7 +140,7 @@ export default function TouchpointChannelsPage() {
       <Panel title="Add a channel">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-[11px] text-fg-subtle mb-1">
+            <label className="block text-xs text-fg-subtle mb-1">
               Label
             </label>
             <input
@@ -151,7 +151,7 @@ export default function TouchpointChannelsPage() {
             />
           </div>
           <div>
-            <label className="block text-[11px] text-fg-subtle mb-1">Key</label>
+            <label className="block text-xs text-fg-subtle mb-1">Key</label>
             <input
               className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
               value={value}
@@ -160,7 +160,7 @@ export default function TouchpointChannelsPage() {
             />
           </div>
           <div>
-            <label className="block text-[11px] text-fg-subtle mb-1">
+            <label className="block text-xs text-fg-subtle mb-1">
               Actuals
             </label>
             <select
@@ -181,7 +181,7 @@ export default function TouchpointChannelsPage() {
           </button>
         </div>
         {actualsSource === 'auto' && (
-          <div className="mt-2 text-[11px] text-warning">
+          <div className="mt-2 text-xs text-warning">
             Auto channels need an emitter binding — configure it via the API
             until the binding picker ships.
           </div>
@@ -213,7 +213,7 @@ export default function TouchpointChannelsPage() {
                       {c.label}
                       {c.linked_source_value && (
                         <span
-                          className="ml-2 text-[11px] text-fg-muted"
+                          className="ml-2 text-xs text-fg-muted"
                           title="Linked to an existing CRM lead source"
                         >
                           ↔ lead source
@@ -268,7 +268,7 @@ export default function TouchpointChannelsPage() {
             </table>
           </div>
 
-          <div className="mt-3 space-y-1 text-[11px] text-fg-muted">
+          <div className="mt-3 space-y-1 text-xs text-fg-muted">
             <div>
               ↔ linked to an existing CRM lead source — configured once,
               reconcilable in reporting

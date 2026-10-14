@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Button, Badge, EmptyState } from '@so360/design-system';
 import { Package, Plus, Trash2, ChevronDown, Loader2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
@@ -12,11 +13,11 @@ import { MatchingUnitsPanel } from '../../components/matching/MatchingUnitsPanel
 import { MatchingUnit, unitLabel } from '../../services/matchingUnitsService';
 
 const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; color: string }[] = [
-    { value: 'interested', label: 'Interested', color: 'bg-blue-500/15 text-blue-400' },
-    { value: 'quoted', label: 'Quoted', color: 'bg-amber-500/15 text-warning' },
-    { value: 'approved', label: 'Approved', color: 'bg-emerald-500/15 text-success' },
-    { value: 'ordered', label: 'Ordered', color: 'bg-purple-500/15 text-purple-400' },
-    { value: 'cancelled', label: 'Cancelled', color: 'bg-rose-500/15 text-danger' },
+    { value: 'interested', label: 'Interested', color: 'bg-primary/15 text-primary' },
+    { value: 'quoted', label: 'Quoted', color: 'bg-warning/15 text-warning' },
+    { value: 'approved', label: 'Approved', color: 'bg-success/15 text-success' },
+    { value: 'ordered', label: 'Ordered', color: 'bg-info/15 text-info' },
+    { value: 'cancelled', label: 'Cancelled', color: 'bg-danger/15 text-danger' },
 ];
 
 function statusStyle(status: string) {
@@ -124,9 +125,9 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
 
     return (
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-surface border border-line rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">Add Product</h3>
+                    <h3 className="text-sm font-medium text-fg">Add Product</h3>
                     <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">✕</button>
                 </div>
 
@@ -139,7 +140,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 placeholder="Search product name or SKU…"
-                                className="w-full bg-surface-raised border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
+                                className="w-full bg-surface-raised border border-line rounded-nb pl-9 pr-4 py-2.5 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
                             />
                         </div>
                         {unitBooking && (
@@ -154,7 +155,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                         )}
                         {loading && (
                             <div className="flex items-center justify-center py-8">
-                                <Loader2 size={20} className="animate-spin text-blue-400" />
+                                <Loader2 size={20} className="animate-spin text-primary" />
                             </div>
                         )}
                         {!loading && error && (
@@ -163,7 +164,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 <p className="text-xs text-fg-subtle max-w-xs">{error}</p>
                                 <button
                                     onClick={() => setReloadToken(t => t + 1)}
-                                    className="px-4 py-2 bg-surface-raised border border-line hover:border-blue-500/50 rounded-xl text-[10px] font-black text-fg-subtle uppercase tracking-widest transition-all"
+                                    className="px-4 py-2 bg-surface-raised border border-line hover:border-primary/50 rounded-nb text-xs font-medium text-fg-subtle transition-all"
                                 >
                                     Retry
                                 </button>
@@ -172,7 +173,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                         {/* Empty state is for "nothing matched" only — a failed load
                             shows the error/retry block above instead. */}
                         {!loading && !error && visibleItems.length === 0 && (
-                            <p className="text-center text-fg-muted text-xs py-8 uppercase font-bold tracking-widest">
+                            <p className="text-center text-fg-muted text-xs py-8 font-medium">
                                 {query.trim() ? 'No products match your search' : 'No products in inventory'}
                             </p>
                         )}
@@ -186,19 +187,19 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                         onClick={() => !alreadyAdded && setSelected(item)}
                                         disabled={alreadyAdded}
                                         title={alreadyAdded ? 'Already added to this record' : undefined}
-                                        className={`w-full text-left p-3 bg-surface-raised border rounded-xl transition-all group ${
-                                            alreadyAdded
-                                                ? 'border-line opacity-50 cursor-not-allowed'
-                                                : 'border-line hover:border-blue-500/50'
-                                        }`}
+                                        className={`w-full text-left p-3 bg-surface-raised border rounded-nb transition-all group ${
+ alreadyAdded
+ ? 'border-line opacity-50 cursor-not-allowed'
+ : 'border-line hover:border-primary/50'
+ }`}
                                     >
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="min-w-0">
-                                                <p className="text-xs font-bold text-fg group-hover:text-blue-400 transition-colors truncate">{item.name}</p>
+                                                <p className="text-xs font-medium text-fg group-hover:text-primary transition-colors truncate">{item.name}</p>
                                                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                                    {item.sku && <span className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">SKU: {item.sku}</span>}
+                                                    {item.sku && <span className="text-xs text-fg-muted font-medium">SKU: {item.sku}</span>}
                                                     {stock != null && (
-                                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${stock > 0 ? 'text-success' : 'text-danger'}`}>
+                                                        <span className={`text-xs font-medium ${stock > 0 ? 'text-success' : 'text-danger'}`}>
                                                             {stock > 0 ? `${stock} in stock` : 'Out of stock'}
                                                         </span>
                                                     )}
@@ -206,7 +207,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                                 {item.price > 0 && (
-                                                    <span className="text-xs font-black text-success">₹{item.price.toLocaleString()}</span>
+                                                    <span className="text-xs font-medium text-success">₹{item.price.toLocaleString()}</span>
                                                 )}
                                                 {alreadyAdded && <Check size={12} className="text-fg-muted" />}
                                             </div>
@@ -216,38 +217,38 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                             })}
                             {loadingMore && (
                                 <div className="flex items-center justify-center py-3">
-                                    <Loader2 size={14} className="animate-spin text-blue-400" />
+                                    <Loader2 size={14} className="animate-spin text-primary" />
                                 </div>
                             )}
                         </div>
                     </>
                 ) : (
                     <div className="space-y-4">
-                        <div className="p-4 bg-surface-raised border border-line rounded-xl">
-                            <p className="text-xs font-bold text-fg">{selected.name}</p>
-                            {selected.sku && <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest mt-0.5">SKU: {selected.sku}</p>}
-                            <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-fg-muted hover:text-blue-400 font-bold uppercase tracking-widest transition-colors">← Change Product</button>
+                        <div className="p-4 bg-surface-raised border border-line rounded-nb">
+                            <p className="text-xs font-medium text-fg">{selected.name}</p>
+                            {selected.sku && <p className="text-xs text-fg-muted font-medium mt-0.5">SKU: {selected.sku}</p>}
+                            <button onClick={() => setSelected(null)} className="mt-2 text-xs text-fg-muted hover:text-primary font-medium transition-colors">← Change Product</button>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Quantity</label>
+                            <label className="block text-xs font-medium text-fg-muted mb-2">Quantity</label>
                             <input
                                 type="number"
                                 min={1}
                                 value={qty}
                                 onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-                                className="w-full bg-surface-raised border border-line rounded-xl px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary"
+                                className="w-full bg-surface-raised border border-line rounded-nb px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary"
                             />
                         </div>
                         <div className="flex gap-3">
                             <button
                                 onClick={onClose}
-                                className="flex-1 py-2.5 border border-line rounded-xl text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-all"
+                                className="flex-1 py-2.5 border border-line rounded-nb text-xs font-medium text-fg-subtle hover:border-line transition-all"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)}
-                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all"
+                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-nb text-xs font-medium text-primary-fg transition-all"
                             >
                                 Add Product
                             </button>
@@ -378,31 +379,25 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Products ({products.length})</p>
+                    <p className="text-xs font-medium text-fg-muted">Products ({products.length})</p>
                     {products.length > 0 && (
-                        <p className="text-xs text-success font-bold mt-0.5">
+                        <p className="text-xs text-success font-medium mt-0.5">
                             Est. Value: {formatters.formatCurrency(totalValue)}
                         </p>
                     )}
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setShowCustomBuildModal(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 bg-surface-high hover:bg-line text-amber-300 border border-amber-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                    >
-                        <Sparkles size={12} className="text-warning" /> Custom Build Request
-                    </button>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                    >
-                        <Plus size={12} /> Add Product
-                    </button>
+                    <Button variant="secondary" onClick={() => setShowCustomBuildModal(true)}>
+                        <Sparkles size={12} /> Custom build request
+                    </Button>
+                    <Button variant="primary" onClick={() => setShowAddModal(true)}>
+                        <Plus size={12} /> Add product
+                    </Button>
                 </div>
             </div>
 
             {addError && (
-                <p role="alert" className="text-xs text-danger bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2">
+                <p role="alert" className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-nb px-3 py-2">
                     {addError}
                 </p>
             )}
@@ -410,28 +405,22 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
             {/* Product list */}
             {loading ? (
                 <div className="flex justify-center py-12">
-                    <Loader2 size={24} className="animate-spin text-blue-400" />
+                    <Loader2 size={24} className="animate-spin text-primary" />
                 </div>
             ) : products.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-line rounded-2xl">
-                    <Package size={32} className="mx-auto mb-3 text-fg opacity-40" />
-                    <p className="text-[10px] font-bold text-fg-muted uppercase tracking-widest">No products added yet</p>
-                    <p className="text-xs text-fg-muted mt-1">Add products from inventory or create a custom build request</p>
-                </div>
+                <EmptyState icon={Package} title="No products added yet" description="Add products from inventory or create a custom build request." />
             ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-line">
                     {products.map(product => {
                         const lineTotal = product.quantity * product.unit_price;
                         return (
-                            <div key={product.id} className="bg-surface-sunken border border-line rounded-xl p-4 group hover:border-line transition-all">
+                            <div key={product.id} className="py-nb-3 first:pt-0 last:pb-0 group">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            <p className="text-xs font-bold text-fg truncate">{product.item_name}</p>
+                                            <p className="text-xs font-medium text-fg truncate">{product.item_name}</p>
                                             {product.is_custom_build && (
-                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-warning border border-amber-500/30 flex-shrink-0">
-                                                    Custom Build
-                                                </span>
+                                                <Badge tone="warning" size="sm">Custom build</Badge>
                                             )}
                                             {unitBooking && (
                                                 <ReservationChip
@@ -442,16 +431,14 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                         </div>
                                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                                             {product.item_sku && (
-                                                <p className="text-[9px] font-black text-fg-muted uppercase tracking-widest">SKU: {product.item_sku}</p>
+                                                <p className="text-xs font-medium text-fg-muted">SKU: {product.item_sku}</p>
                                             )}
                                             {product.category_name && (
-                                                <span className="text-[9px] font-medium text-fg-subtle bg-surface-high border border-line px-2 py-0.5 rounded">
-                                                    {product.category_name}
-                                                </span>
+                                                <Badge size="sm">{product.category_name}</Badge>
                                             )}
                                         </div>
                                         {product.notes && (
-                                            <p className="text-[11px] text-fg-subtle mt-1.5 bg-surface-sunken px-2.5 py-1.5 rounded-lg border border-line">
+                                            <p className="text-xs text-fg-subtle mt-1.5">
                                                 {product.notes}
                                             </p>
                                         )}
@@ -467,7 +454,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                 <div className="flex items-center gap-4 mt-3 flex-wrap">
                                     {/* Quantity */}
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[9px] font-black text-fg-muted uppercase tracking-widest">Qty</span>
+                                        <span className="text-xs font-medium text-fg-muted">Qty</span>
                                         <input
                                             type="number"
                                             min={1}
@@ -475,20 +462,20 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                             disabled={updatingId === product.id}
                                             onChange={e => handleQtyChange(product, parseInt(e.target.value) || 1)}
                                             onBlur={e => handleQtyChange(product, parseInt(e.target.value) || 1)}
-                                            className="w-16 bg-surface-raised border border-line rounded-lg px-2 py-1 text-xs text-fg text-center focus:outline-none focus:border-primary"
+                                            className="w-16 bg-surface-raised border border-line rounded-nb px-2 py-1 text-xs text-fg text-center focus:outline-none focus:border-primary"
                                         />
                                     </div>
 
                                     {/* Unit price */}
                                     {product.unit_price > 0 && (
                                         <div className="flex items-center gap-1">
-                                            <span className="text-[9px] font-black text-fg-muted uppercase tracking-widest">@ {formatters.formatCurrency(product.unit_price)}</span>
+                                            <span className="text-xs font-medium text-fg-muted">@ {formatters.formatCurrency(product.unit_price)}</span>
                                         </div>
                                     )}
 
                                     {/* Line total */}
                                     {lineTotal > 0 && (
-                                        <span className="text-xs font-black text-success ml-auto">
+                                        <span className="text-xs font-medium text-success ml-auto">
                                             {formatters.formatCurrency(lineTotal)}
                                         </span>
                                     )}
@@ -499,7 +486,7 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
                                             value={product.status}
                                             disabled={updatingId === product.id}
                                             onChange={e => handleStatusChange(product, e.target.value as ProductInterestStatus)}
-                                            className={`appearance-none text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border-0 cursor-pointer focus:outline-none pr-6 ${statusStyle(product.status)}`}
+                                            className={`appearance-none text-xs font-medium px-2.5 py-1 rounded-nb border-0 cursor-pointer focus:outline-none pr-6 ${statusStyle(product.status)}`}
                                         >
                                             {STATUS_OPTIONS.map(s => (
                                                 <option key={s.value} value={s.value}>{s.label}</option>

@@ -134,13 +134,13 @@ export default function CompensationPage() {
       <Panel title="Calculate">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-64">
-            <label className="block text-[11px] text-fg-subtle mb-1">
+            <label className="block text-xs text-fg-subtle mb-1">
               Person
             </label>
             <PersonPicker value={personId} onChange={setPersonId} />
           </div>
           <div>
-            <label className="block text-[11px] text-fg-subtle mb-1">From</label>
+            <label className="block text-xs text-fg-subtle mb-1">From</label>
             <input
               type="date"
               className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
@@ -149,7 +149,7 @@ export default function CompensationPage() {
             />
           </div>
           <div>
-            <label className="block text-[11px] text-fg-subtle mb-1">To</label>
+            <label className="block text-xs text-fg-subtle mb-1">To</label>
             <input
               type="date"
               className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
@@ -205,7 +205,7 @@ export default function CompensationPage() {
               </tbody>
             </table>
           </div>
-          <div className="mt-3 text-[11px] text-warning">
+          <div className="mt-3 text-xs text-warning">
             {calc.advisory_notice}
           </div>
         </Panel>
@@ -231,7 +231,7 @@ export default function CompensationPage() {
           <div className="space-y-3">
             <div className="flex flex-wrap items-end gap-3">
               <div className="grow basis-64">
-                <label className="block text-[11px] text-fg-subtle mb-1">
+                <label className="block text-xs text-fg-subtle mb-1">
                   Name
                 </label>
                 <input
@@ -243,7 +243,7 @@ export default function CompensationPage() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-fg-subtle mb-1">
+                <label className="block text-xs text-fg-subtle mb-1">
                   Type
                 </label>
                 <select
@@ -268,7 +268,7 @@ export default function CompensationPage() {
               {form.rule_type !== 'deal_commission' && (
                 <>
                   <div>
-                    <label className="block text-[11px] text-fg-subtle mb-1">
+                    <label className="block text-xs text-fg-subtle mb-1">
                       Metric
                     </label>
                     <select
@@ -288,7 +288,7 @@ export default function CompensationPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] text-fg-subtle mb-1">
+                    <label className="block text-xs text-fg-subtle mb-1">
                       Amount
                     </label>
                     <input
@@ -305,7 +305,7 @@ export default function CompensationPage() {
 
               {form.rule_type === 'attainment_bonus' && (
                 <div>
-                  <label className="block text-[11px] text-fg-subtle mb-1">
+                  <label className="block text-xs text-fg-subtle mb-1">
                     At attainment (%)
                   </label>
                   <input
@@ -325,7 +325,7 @@ export default function CompensationPage() {
 
             {form.rule_type === 'deal_commission' && (
               <div className="space-y-2">
-                <div className="text-[11px] text-fg-subtle">
+                <div className="text-xs text-fg-subtle">
                   Bands by deal value. Leave the top band&apos;s maximum empty
                   so the largest deals still earn commission.
                 </div>
@@ -396,7 +396,7 @@ export default function CompensationPage() {
 
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <label className="block text-[11px] text-fg-subtle mb-1">
+                <label className="block text-xs text-fg-subtle mb-1">
                   Applies to
                 </label>
                 <select
@@ -417,7 +417,7 @@ export default function CompensationPage() {
               </div>
               {form.scope === 'role' && (
                 <div>
-                  <label className="block text-[11px] text-fg-subtle mb-1">
+                  <label className="block text-xs text-fg-subtle mb-1">
                     Role
                   </label>
                   <input
@@ -432,7 +432,7 @@ export default function CompensationPage() {
               )}
               {form.scope === 'person' && (
                 <div className="min-w-64">
-                  <label className="block text-[11px] text-fg-subtle mb-1">
+                  <label className="block text-xs text-fg-subtle mb-1">
                     Person
                   </label>
                   <PersonPicker
@@ -444,7 +444,7 @@ export default function CompensationPage() {
                 </div>
               )}
               <div>
-                <label className="block text-[11px] text-fg-subtle mb-1">
+                <label className="block text-xs text-fg-subtle mb-1">
                   From
                 </label>
                 <input
@@ -458,7 +458,7 @@ export default function CompensationPage() {
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-fg-subtle mb-1">
+                <label className="block text-xs text-fg-subtle mb-1">
                   To
                 </label>
                 <input

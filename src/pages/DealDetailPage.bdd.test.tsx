@@ -432,33 +432,14 @@ describe('DealDetailPage', () => {
   });
 
   describe('Given the Deal Detail navigation tabs', () => {
-    it('When the page renders / Then the tab strip scrolls horizontally instead of clipping tabs', async () => {
+    it('When the page renders / Then every tab is reachable in the tab list', async () => {
       render(<DealDetailPage />);
       await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
 
-      const strip = screen.getByTestId('deal-detail-tab-strip');
-      expect(strip.className).toContain('overflow-x-auto');
-      expect(strip.parentElement?.className).not.toContain('overflow-hidden');
-
-      // Every tab must still be reachable inside the scroll strip, not hidden.
-      const tabButtons = within(strip).getAllByRole('button');
-      const tabLabels = tabButtons.map((btn) => btn.textContent);
+      const tabLabels = screen.getAllByRole('tab').map((btn) => btn.textContent);
       ['Activity', 'Notes', 'Products', 'Additional Info', 'Calls'].forEach((label) => {
         expect(tabLabels.some((text) => text?.includes(label))).toBe(true);
       });
-    });
-
-    it('When switching tabs / Then the newly active tab scrolls into view', async () => {
-      const user = userEvent.setup();
-      const scrollIntoViewMock = vi.fn();
-      HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
-
-      render(<DealDetailPage />);
-      await waitFor(() => expect(screen.getByText('Big Deal')).toBeInTheDocument());
-      scrollIntoViewMock.mockClear();
-
-      await user.click(screen.getByText('Products'));
-      await waitFor(() => expect(scrollIntoViewMock).toHaveBeenCalled());
     });
   });
 

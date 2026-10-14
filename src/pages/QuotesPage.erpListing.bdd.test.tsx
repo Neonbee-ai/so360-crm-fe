@@ -203,7 +203,7 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
       expect(screen.queryByText('QT-2026-00001')).not.toBeInTheDocument();
     });
 
-    it('Given active filters, When clicking Clear Filters, Then clears all filters and restores full list', async () => {
+    it('Given active filters, When clicking Clear filters, Then clears all filters and restores full list', async () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
 

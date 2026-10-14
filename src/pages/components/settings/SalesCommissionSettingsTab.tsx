@@ -15,9 +15,9 @@ import {
 import { useCrmFeatureFlag, RE_FLAGS } from '../../../hooks/useCrmFeatureFlag';
 import { describeApiError } from '../../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm disabled:opacity-60';
-const LABEL_CLS = 'block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-1.5';
-const CARD_CLS = 'bg-surface-sunken border border-line rounded-2xl p-6 space-y-5';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm disabled:opacity-60';
+const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
+const CARD_CLS = 'bg-surface-sunken border border-line rounded-nb-lg p-6 space-y-5';
 
 interface Props {
     canWrite: boolean;
@@ -74,7 +74,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
         return (
             <div className="space-y-3">
                 <p role="alert" className="text-sm text-danger">{loadError ?? 'Could not load sales settings.'}</p>
-                <button type="button" onClick={() => void load()} className="text-xs font-black uppercase tracking-widest text-blue-400 hover:text-blue-300">
+                <button type="button" onClick={() => void load()} className="text-xs font-semibold text-primary hover:text-primary-hover">
                     Retry
                 </button>
             </div>
@@ -129,7 +129,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
         <div className="space-y-6">
             {commissionsOn && (
                 <section className={CARD_CLS} aria-label="Commission">
-                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">Commission</h3>
+                    <h3 className="text-sm font-semibold text-fg">Commission</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="sales-earn-trigger" className={LABEL_CLS}>Commission is earned</label>
@@ -207,7 +207,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 <button
                                     type="button"
                                     onClick={addOverride}
-                                    className="flex items-center gap-1 text-xs font-black uppercase tracking-widest text-blue-400 hover:text-blue-300"
+                                    className="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover"
                                 >
                                     <Plus size={14} /> Add override
                                 </button>
@@ -218,7 +218,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         ) : (
                             <table className="w-full text-sm" aria-label="Share overrides">
                                 <thead>
-                                    <tr className="text-left text-[10px] font-black text-fg-muted uppercase tracking-widest">
+                                    <tr className="text-left text-xs font-semibold text-fg-muted">
                                         <th className="py-2 pr-2">Applies to</th>
                                         <th className="py-2 pr-2">Who</th>
                                         <th className="py-2 pr-2">Agent %</th>
@@ -311,8 +311,8 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
 
             {allocationOn && (
                 <section className={CARD_CLS} aria-label="Unit visibility">
-                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">Unit visibility</h3>
-                    <div className="flex gap-1 bg-surface-sunken p-1 rounded-xl border border-line w-fit" role="radiogroup" aria-label="Agents can book">
+                    <h3 className="text-sm font-semibold text-fg">Unit visibility</h3>
+                    <div className="flex gap-1 bg-surface-sunken p-1 rounded-nb border border-line w-fit" role="radiogroup" aria-label="Agents can book">
                         {([['all', 'Any available unit'], ['assigned_only', 'Only units allocated to them']] as const).map(([v, label]) => (
                             <button
                                 key={v}
@@ -321,7 +321,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 aria-checked={draft.unit_visibility === v}
                                 disabled={ro}
                                 onClick={() => set({ unit_visibility: v as UnitVisibility })}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all disabled:opacity-60 ${draft.unit_visibility === v ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-60 ${draft.unit_visibility === v ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 {label}
                             </button>
@@ -338,7 +338,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     type="button"
                     onClick={() => void save()}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-black uppercase tracking-widest disabled:opacity-60"
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-nb bg-primary hover:bg-primary/90 text-primary-fg text-xs font-semibold disabled:opacity-60"
                 >
                     {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Save sales settings
                 </button>

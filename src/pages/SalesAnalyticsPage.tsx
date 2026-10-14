@@ -14,7 +14,7 @@ import {
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 
-const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-fg-muted whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-xs font-semibold text-fg-muted whitespace-nowrap';
 const TD = 'px-4 py-3 text-xs font-bold text-fg-subtle whitespace-nowrap';
 
 const PERIOD_LABELS: Record<ReportPeriod, string> = { month: 'Monthly', quarter: 'Quarterly', year: 'Yearly' };
@@ -162,22 +162,22 @@ const SalesAnalyticsPage: React.FC = () => {
         body = <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales reports…</div>;
     } else if (forbidden) {
         body = (
-            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
+            <div data-testid="sales-analytics-forbidden" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">
                 You don't have access to sales reports. Ask your manager if you need them.
             </div>
         );
     } else if (error) {
         body = (
-            <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-2xl flex items-center justify-between gap-3">
+            <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-nb-lg flex items-center justify-between gap-3">
                 <span className="text-sm font-bold text-danger">{error}</span>
-                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
+                <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-nb text-xs font-semibold text-fg bg-surface-raised hover:bg-line">
                     <RefreshCw size={12} /> Retry
                 </button>
             </div>
         );
     } else if (data && isEmptyAnalytics(data)) {
         body = (
-            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
+            <div data-testid="sales-analytics-empty" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">
                 No sales activity for these filters.
             </div>
         );
@@ -196,16 +196,16 @@ const SalesAnalyticsPage: React.FC = () => {
             <>
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
                     {cards.map((c) => (
-                        <div key={c.key} className="bg-surface border border-line rounded-2xl p-4">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-fg-muted">{c.label}</p>
-                            <p className="mt-1 text-lg font-black text-fg" data-testid={`sa-total-${c.key}`}>{c.value}</p>
+                        <div key={c.key} className="bg-surface border border-line rounded-nb-lg p-4">
+                            <p className="text-xs font-semibold text-fg-muted">{c.label}</p>
+                            <p className="mt-1 text-lg font-semibold text-fg" data-testid={`sa-total-${c.key}`}>{c.value}</p>
                         </div>
                     ))}
                 </div>
                 {sections.map((s) => (
-                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-surface border border-line rounded-2xl overflow-hidden">
+                    <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                         <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-3 flex-wrap">
-                            <h2 className="text-xs font-black uppercase tracking-widest text-fg-subtle">{s.title}</h2>
+                            <h2 className="text-xs font-semibold text-fg-subtle">{s.title}</h2>
                             {canExport ? (
                                 <ExportMenu
                                     label={`Export ${s.title}`}
@@ -249,13 +249,13 @@ const SalesAnalyticsPage: React.FC = () => {
             description="Bookings, lead sources, lost reasons, reservations and agent performance."
             filters={(
                 <div className="space-y-4">
-            <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-fg-muted">
+            <label className="flex flex-col gap-1 text-xs font-semibold text-fg-muted">
                 Period
                 <select
                     aria-label="Report period"
                     value={period}
                     onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-                    className="bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary font-bold text-xs"
+                    className="bg-bg border border-line text-fg rounded-nb px-3 py-2 outline-none focus:border-primary font-bold text-xs"
                 >
                     {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
                 </select>

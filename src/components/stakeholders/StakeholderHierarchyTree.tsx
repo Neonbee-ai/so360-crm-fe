@@ -38,16 +38,16 @@ function buildTree(stakeholders: Stakeholder[]): TreeNode[] {
 const TreeRow: React.FC<{ node: TreeNode; depth: number; allStakeholders: Stakeholder[]; onSetManager: Props['onSetManager'] }> = ({ node, depth, allStakeholders, onSetManager }) => {
     return (
         <div style={{ marginLeft: depth * 20 }} className="mt-2">
-            <div className="flex items-center gap-2 bg-surface-sunken border border-line rounded-lg px-3 py-2">
-                <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-[10px] font-black text-fg-subtle">
+            <div className="flex items-center gap-2 bg-surface-sunken border border-line rounded-nb px-3 py-2">
+                <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium text-fg-subtle">
                     {(node.stakeholder.full_name || '?').charAt(0).toUpperCase()}
                 </div>
-                <span className="text-xs font-bold text-fg">{node.stakeholder.full_name || 'Unnamed'}</span>
-                {node.stakeholder.job_title && <span className="text-[10px] text-fg-muted">{node.stakeholder.job_title}</span>}
+                <span className="text-xs font-medium text-fg">{node.stakeholder.full_name || 'Unnamed'}</span>
+                {node.stakeholder.job_title && <span className="text-xs text-fg-muted">{node.stakeholder.job_title}</span>}
                 <select
                     value={node.stakeholder.reports_to_stakeholder_id || ''}
                     onChange={(e) => onSetManager(node.stakeholder.id, e.target.value || null)}
-                    className="ml-auto bg-surface border border-line rounded px-2 py-1 text-[10px] text-fg-subtle outline-none"
+                    className="ml-auto bg-surface border border-line rounded px-2 py-1 text-xs text-fg-subtle outline-none"
                 >
                     <option value="">No manager (top level)</option>
                     {allStakeholders.filter((s) => s.id !== node.stakeholder.id).map((s) => (

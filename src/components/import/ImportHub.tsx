@@ -28,7 +28,7 @@ const STEPS: Array<{ key: Step; label: string }> = [
 ];
 
 const SELECT_CLS = 'w-full bg-bg border border-line text-fg rounded-lg px-3 py-2 text-sm outline-none focus:border-primary';
-const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
+const PRIMARY_BTN = 'flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50';
 const SECONDARY_BTN = 'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-fg-subtle hover:text-fg disabled:opacity-50';
 const OPTION_BTN = 'w-full flex items-center gap-3 text-left bg-bg border border-line hover:border-primary rounded-xl px-4 py-3';
 
@@ -188,7 +188,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                         <li
                             key={s.key}
                             aria-current={i === stepIndex ? 'step' : undefined}
-                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-primary text-white border-primary' : i < stepIndex ? 'text-blue-400 border-blue-500/30' : 'text-fg-muted border-line'}`}
+                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-primary text-primary-fg border-primary' : i < stepIndex ? 'text-blue-400 border-blue-500/30' : 'text-fg-muted border-line'}`}
                         >
                             {i + 1}. {s.label}
                         </li>

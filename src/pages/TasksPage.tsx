@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { ListPageTemplate, Pagination, Button, toast } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, Tabs, toast } from '@so360/design-system';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
@@ -157,8 +157,8 @@ const TasksPage = () => {
 
     const SortIcon = ({ field }: { field: SortField }) => {
         if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
+        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-primary" />;
+        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-primary" />;
         return <ChevronsUpDown size={14} className="text-fg-muted" />;
     };
 
@@ -246,7 +246,7 @@ const TasksPage = () => {
                             e.stopPropagation();
                             handleStatusChange(task, task.status === 'DONE' ? 'OPEN' : 'DONE');
                         }}
-                        className="mt-0.5 text-fg-muted hover:text-blue-400 transition-colors"
+                        className="mt-0.5 text-fg-muted hover:text-primary transition-colors"
                     >
                         {task.status === 'DONE' ? <CheckCircle2 size={18} className="text-success" /> : <Circle size={18} />}
                     </button>
@@ -270,7 +270,7 @@ const TasksPage = () => {
                         {hasTimeComponent(task.due_date) && (
                             <span className="text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
                         )}
-                        {isOverdue && <span className="uppercase text-[9px] font-black tracking-tighter">Overdue</span>}
+                        {isOverdue && <span className="uppercase text-[9px] font-semibold tracking-tighter">Overdue</span>}
                     </div>
                 );
             }
@@ -290,11 +290,11 @@ const TasksPage = () => {
 
                 return (
                     <div className="flex items-center gap-2">
-                        <Building2 size={13} className={entity.type === 'deal' ? 'text-violet-400 shrink-0' : 'text-blue-400 shrink-0'} />
+                        <Building2 size={13} className={entity.type === 'deal' ? 'text-primary shrink-0' : 'text-primary shrink-0'} />
                         <div className="flex flex-col gap-0.5 min-w-0">
                             <span className="text-sm text-fg truncate">{entity.label}</span>
                             {entity.sub && <span className="text-[11px] text-fg-subtle truncate">{entity.sub}</span>}
-                            <span className={`text-[9px] font-black uppercase tracking-widest ${entity.type === 'deal' ? 'text-violet-500' : 'text-primary'}`}>
+                            <span className={`text-[9px] font-semibold  ${entity.type === 'deal' ? 'text-primary' : 'text-primary'}`}>
                                 {entity.type}
                             </span>
                         </div>
@@ -325,7 +325,7 @@ const TasksPage = () => {
                         <button
                             onClick={() => handleQuickAssignToMe(task)}
                             disabled={!canCurrentUserBeAssigned(currentUser, users) || isTaskLocked(task.status)}
-                            className="p-1 text-fg-subtle hover:text-blue-400 hover:bg-blue-600/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1 text-fg-subtle hover:text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title={
                                 isTaskLocked(task.status)
                                     ? TASK_LOCKED_HINT
@@ -347,14 +347,14 @@ const TasksPage = () => {
                     <select
                         value={task.status}
                         onChange={(e) => handleStatusChange(task, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface ${task.status === 'DONE'
-                            ? 'bg-emerald-500/10 text-success border-emerald-500/20 focus:ring-success'
+                        className={`px-2 py-1 rounded-full text-[10px] font-semibold  border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface ${task.status === 'DONE'
+                            ? 'bg-success/10 text-success border-success/20 focus:ring-success'
                             : task.status === 'IN_PROGRESS'
-                            ? 'bg-amber-500/10 text-warning border-amber-500/20 focus:ring-warning'
+                            ? 'bg-warning/10 text-warning border-warning/20 focus:ring-warning'
                             : task.status === 'ON_HOLD'
-                            ? 'bg-orange-500/10 text-warning border-orange-500/20 focus:ring-warning'
+                            ? 'bg-warning/10 text-warning border-warning/20 focus:ring-warning'
                             : task.status === 'CANCELLED'
-                            ? 'bg-rose-500/10 text-danger border-rose-500/20 focus:ring-danger'
+                            ? 'bg-danger/10 text-danger border-danger/20 focus:ring-danger'
                             : 'bg-surface-raised text-fg-subtle border-line focus:ring-line-strong'
                             }`}
                     >
@@ -392,48 +392,38 @@ const TasksPage = () => {
                     Create Task
                 </Button>
             ) : undefined}
-            search={
-                <div className="relative">
+            filters={
+                <>
+            {(canViewTeamTasks || canViewAllTasks) && (
+                <Tabs
+                    name="task-scope"
+                    value={taskScope}
+                    onChange={(id) => setTaskScope(id as typeof taskScope)}
+                    items={[
+                        { id: 'own', label: 'My Tasks' },
+                        ...(canViewTeamTasks ? [{ id: 'team', label: 'Team Tasks' }] : []),
+                        ...(canViewAllTasks ? [{ id: 'all', label: 'All Tasks' }] : []),
+                    ]}
+                />
+            )}
+                <div className="relative w-full wc-medium:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
                         placeholder="Search tasks..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     />
                 </div>
-            }
-            filters={
-                <>
-            {(canViewTeamTasks || canViewAllTasks) && (
-                <div className="flex flex-wrap gap-2">
-                    {([
-                        { key: 'own' as const, label: 'My Tasks' },
-                        ...(canViewTeamTasks ? [{ key: 'team' as const, label: 'Team Tasks' }] : []),
-                        ...(canViewAllTasks ? [{ key: 'all' as const, label: 'All Tasks' }] : []),
-                    ]).map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setTaskScope(tab.key)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border ${taskScope === tab.key
-                                ? 'bg-line text-fg border-line'
-                                : 'bg-surface text-fg-subtle border-line hover:text-fg hover:bg-surface-raised'
-                                }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-            )}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-nb-1">
                     {['All', 'Open', 'In Progress', 'Done', 'On Hold', 'Cancelled', 'Overdue'].map((btn) => (
                         <button
                             key={btn}
                             onClick={() => setFilter(btn)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all border ${filter === btn
-                                ? 'bg-primary text-white border-primary shadow-sm'
-                                : 'bg-surface text-fg-subtle border-line hover:text-fg hover:bg-surface-raised'
+                            className={`h-nb-control-md px-nb-3 rounded-nb text-nb-body transition-colors ${filter === btn
+                                ? 'bg-surface-raised text-fg font-medium'
+                                : 'text-fg-muted hover:text-fg hover:bg-surface-raised'
                                 }`}
                         >
                             {btn}
@@ -511,7 +501,7 @@ const TasksPage = () => {
                             <button
                                 onClick={() => handleDeleteTask(showDeleteConfirm)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
+                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-primary-fg rounded-lg transition-colors flex items-center gap-2"
                             >
                                 {isDeleting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
                                 Delete

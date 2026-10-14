@@ -148,7 +148,7 @@ describe('TaskDetailPage', () => {
 
     it('When rendered / Then shows task status badge', async () => {
       render(<TaskDetailPage />);
-      await waitFor(() => expect(screen.getByText('OPEN')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/^open$/i)).toBeInTheDocument());
     });
 
     it('When task has deal / Then shows deal link', async () => {

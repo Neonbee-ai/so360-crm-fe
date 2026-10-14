@@ -21,13 +21,13 @@ export const SALES_PAGE_SIZE = 25;
 
 const PAYMENT_CHIP: Record<SalePaymentStatus, string> = {
     none: 'bg-fg-muted/10 text-fg-subtle border-line',
-    pending: 'bg-amber-500/10 text-warning border-amber-500/30',
+    pending: 'bg-warning/10 text-warning border-warning/30',
     partial: 'bg-info/10 text-info border-info/30',
-    paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
+    paid: 'bg-success/10 text-success border-success/30',
     overdue: 'bg-danger/10 text-danger border-danger/30',
 };
 
-const TH = 'px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-fg-muted whitespace-nowrap';
+const TH = 'px-4 py-3 text-left text-xs font-semibold text-fg-muted whitespace-nowrap';
 const TD = 'px-4 py-3 text-xs font-bold text-fg-subtle whitespace-nowrap';
 
 /**
@@ -101,18 +101,18 @@ const SalesPage: React.FC = () => {
             {rangeInvalid ? null : loading ? (
                 <div role="status" className="p-8 text-sm text-fg-subtle">Loading sales…</div>
             ) : error ? (
-                <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-2xl flex items-center justify-between gap-3">
+                <div role="alert" className="p-6 bg-danger/10 border border-danger/30 rounded-nb-lg flex items-center justify-between gap-3">
                     <span className="text-sm font-bold text-danger">{error}</span>
-                    <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line">
+                    <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="flex items-center gap-1 px-3 py-2 rounded-nb text-xs font-semibold text-fg bg-surface-raised hover:bg-line">
                         <RefreshCw size={12} /> Retry
                     </button>
                 </div>
             ) : rows.length === 0 ? (
-                <div data-testid="sales-empty" className="p-10 text-center bg-surface border border-line rounded-2xl text-sm text-fg-subtle">
+                <div data-testid="sales-empty" className="p-10 text-center bg-surface border border-line rounded-nb-lg text-sm text-fg-subtle">
                     No sales match these filters.
                 </div>
             ) : (
-                <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+                <div className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                     <div className="overflow-x-auto">
                         <table aria-label="Sales" className="w-full">
                             <thead className="border-b border-line">
@@ -144,7 +144,7 @@ const SalesPage: React.FC = () => {
                                         <td className={TD}>{r.agent_name || '—'}</td>
                                         <td className={`${TD} text-right`}>{money(r.sale_price)}</td>
                                         <td className={TD}>
-                                            <span data-testid={`sale-status-${r.deal_id}`} className={`px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase tracking-widest ${PAYMENT_CHIP[r.payment_status]}`}>
+                                            <span data-testid={`sale-status-${r.deal_id}`} className={`px-2 py-0.5 rounded-lg border text-xs font-semibold ${PAYMENT_CHIP[r.payment_status]}`}>
                                                 {PAYMENT_STATUS_LABELS[r.payment_status]}
                                             </span>
                                         </td>
@@ -160,10 +160,10 @@ const SalesPage: React.FC = () => {
                             Page {page} of {pages} · {total} {total === 1 ? 'sale' : 'sales'}
                         </span>
                         <div className="flex items-center gap-2">
-                            <button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="p-2 rounded-xl bg-surface-raised text-fg-subtle disabled:opacity-40">
+                            <button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="p-2 rounded-nb bg-surface-raised text-fg-subtle disabled:opacity-40">
                                 <ChevronLeft size={14} />
                             </button>
-                            <button type="button" aria-label="Next page" disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="p-2 rounded-xl bg-surface-raised text-fg-subtle disabled:opacity-40">
+                            <button type="button" aria-label="Next page" disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="p-2 rounded-nb bg-surface-raised text-fg-subtle disabled:opacity-40">
                                 <ChevronRight size={14} />
                             </button>
                         </div>

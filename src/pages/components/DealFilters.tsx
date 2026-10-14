@@ -52,91 +52,73 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
     const hasActiveFilters = Object.keys(filters).length > 0;
 
     return (
-        <div className="bg-surface border border-line p-4 rounded-xl mb-4 flex flex-wrap gap-4 items-end">
-            {/* Date Range */}
-            <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Date Range</label>
-                <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
-                        <select
-                            value={filters.date_range || ''}
-                            onChange={(e) => handleChange('date_range', e.target.value)}
-                            className="bg-bg border border-line text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary appearance-none min-w-[160px]"
-                        >
-                            <option value="">All Time</option>
-                            <option value="today">Today</option>
-                            <option value="yesterday">Yesterday</option>
-                            <option value="this_week">This Week</option>
-                            <option value="last_week">Last Week</option>
-                            <option value="this_month">This Month</option>
-                            <option value="last_month">Last Month</option>
-                            <option value="this_year">This Year</option>
-                            <option value="custom">Custom Range</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {/* Custom Date Range */}
-            {showCustomDate && (
-                <>
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Start Date</label>
-                        <input
-                            type="date"
-                            value={filters.start_date || ''}
-                            onChange={(e) => handleChange('start_date', e.target.value)}
-                            className="bg-bg border border-line text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">End Date</label>
-                        <input
-                            type="date"
-                            value={filters.end_date || ''}
-                            onChange={(e) => handleChange('end_date', e.target.value)}
-                            className="bg-bg border border-line text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary"
-                        />
-                    </div>
-                </>
-            )}
-
-            {/* Owner */}
-            <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Owner</label>
+        <div className="flex flex-wrap items-center gap-nb-2">
+            <div className="relative">
+                <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size=14 />
                 <select
-                    value={filters.owner_id || ''}
-                    onChange={(e) => handleChange('owner_id', e.target.value)}
-                    className="bg-bg border border-line text-sm font-bold text-fg rounded-lg px-3 py-2 outline-none focus:border-primary min-w-[140px]"
+                    aria-label="Date range"
+                    value={filters.date_range || ''}
+                    onChange={(e) => handleChange('date_range', e.target.value)}
+                    className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary pl-9 min-w-[10rem]"
                 >
-                    <option value="">All Owners</option>
-                    {users.map(u => (
-                        <option key={u.id} value={u.id}>{u.full_name}</option>
-                    ))}
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="this_week">This Week</option>
+                    <option value="last_week">Last Week</option>
+                    <option value="this_month">This Month</option>
+                    <option value="last_month">Last Month</option>
+                    <option value="this_year">This Year</option>
+                    <option value="custom">Custom Range</option>
                 </select>
             </div>
 
-            {/* Company Name */}
-            <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-fg-muted tracking-widest block">Company</label>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
+            {showCustomDate && (
+                <>
                     <input
-                        type="text"
-                        placeholder="Search company..."
-                        value={filters.company_name || ''}
-                        onChange={(e) => handleChange('company_name', e.target.value)}
-                        className="bg-bg border border-line text-sm font-bold text-fg rounded-lg pl-9 pr-4 py-2 outline-none focus:border-primary w-[180px]"
+                        type="date"
+                        aria-label="Start date"
+                        value={filters.start_date || ''}
+                        onChange={(e) => handleChange('start_date', e.target.value)}
+                        className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary"
                     />
-                </div>
+                    <input
+                        type="date"
+                        aria-label="End date"
+                        value={filters.end_date || ''}
+                        onChange={(e) => handleChange('end_date', e.target.value)}
+                        className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary"
+                    />
+                </>
+            )}
+
+            <select
+                aria-label="Owner"
+                value={filters.owner_id || ''}
+                onChange={(e) => handleChange('owner_id', e.target.value)}
+                className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary min-w-[9rem]"
+            >
+                <option value="">All Owners</option>
+                {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.full_name}</option>
+                ))}
+            </select>
+
+            <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
+                <input
+                    type="text"
+                    placeholder="Search company..."
+                    value={filters.company_name || ''}
+                    onChange={(e) => handleChange('company_name', e.target.value)}
+                    className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary pl-9 w-full wc-medium:w-56"
+                />
             </div>
 
-            {/* Clear Button */}
             {hasActiveFilters && (
                 <button
                     onClick={clearFilters}
-                    className="flex items-center gap-1.5 text-fg-subtle hover:text-fg px-3 py-2 rounded-lg hover:bg-surface-raised transition-colors text-xs font-bold"
+                    className="inline-flex items-center gap-1.5 h-nb-control-md px-3 rounded-nb text-xs text-fg-muted hover:text-fg hover:bg-surface-raised transition-colors"
                 >
                     <X size={14} />
                     Clear

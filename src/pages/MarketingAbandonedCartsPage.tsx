@@ -61,15 +61,12 @@ const MarketingAbandonedCartsPage: React.FC = () => {
     <ListPageTemplate
       title="Abandoned Carts"
       description="Managed from CRM, sourced from Storefront."
-      filters={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
-    >
-
-      <div className="flex items-center gap-3 mb-6 bg-surface-sunken p-3 rounded-xl border border-line w-fit">
-        <label className="text-fg-subtle text-sm font-medium">Status Filter</label>
+      filters={
         <select
+          aria-label="Status filter"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus transition-shadow appearance-none cursor-pointer pr-8"
+          className="h-nb-control-md rounded-nb border border-line bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
         >
           <option value="">All Carts</option>
           <option value="pending">Pending</option>
@@ -77,7 +74,9 @@ const MarketingAbandonedCartsPage: React.FC = () => {
           <option value="recovered">Recovered</option>
           <option value="expired">Expired</option>
         </select>
-      </div>
+      }
+      toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
+    >
 
       {loading && <p className="text-fg-subtle">Loading...</p>}
       {error && <p className="text-danger mb-3">{error}</p>}
@@ -87,7 +86,7 @@ const MarketingAbandonedCartsPage: React.FC = () => {
           {cards.map((card) => (
             <div key={card.label} className="bg-surface-sunken border border-line rounded-xl p-5">
               <p className="text-fg-subtle text-sm font-medium">{card.label}</p>
-              <p className="text-fg text-3xl font-bold mt-2 tracking-tight">{card.value}</p>
+              <p className="text-fg text-3xl font-bold mt-2">{card.value}</p>
             </div>
           ))}
         </div>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, mapCampaign } from './marketing/marketingMappers';
-import { Button, ListPageTemplate } from '@so360/design-system';
+import { Button, ListPageTemplate, Menu } from '@so360/design-system';
 import CampaignTemplateEditor from '../components/CampaignTemplateEditor';
 import { useShellBridge } from '@so360/shell-context';
 
@@ -80,7 +80,7 @@ const MarketingCampaignsPage: React.FC = () => {
           {showCreate ? 'Close Form' : 'New Campaign'}
         </Button>
       ) : undefined}
-      filters={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
+      toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
 
       {showCreate && (
@@ -116,12 +116,12 @@ const MarketingCampaignsPage: React.FC = () => {
             value={form.subjectTemplate}
             onChange={(e) => setForm({ ...form, subjectTemplate: e.target.value })}
           />
-          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 uppercase tracking-wider">Email Body</label>
+          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 ">Email Body</label>
           <CampaignTemplateEditor
             value={form.bodyTemplate}
             onChange={(html) => setForm({ ...form, bodyTemplate: html })}
           />
-          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 uppercase tracking-wider">Audience Filter (JSON)</label>
+          <label className="block text-xs font-semibold text-fg-subtle mt-5 mb-2 ">Audience Filter (JSON)</label>
           <textarea
             className="w-full bg-surface border border-line rounded-lg px-4 py-3 text-sm text-fg-subtle font-mono focus:outline-none focus:ring-2 focus:ring-focus resize-y"
             rows={5}
@@ -209,16 +209,19 @@ const MarketingCampaignsPage: React.FC = () => {
                         Pause
                       </Button>
                     )}
-                    {canCreateMarketing && <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={async () => {
-                        await crmService.deleteCampaign(storeId, row.id);
-                        await load();
-                      }}
-                    >
-                      Delete
-                    </Button>}
+                    {canCreateMarketing && (
+                      <Menu
+                        trigger={<Button variant="secondary" size="sm" aria-label="Row actions">&#8942;</Button>}
+                        items={[{
+                          label: 'Delete',
+                          danger: true,
+                          onSelect: async () => {
+                            await crmService.deleteCampaign(storeId, row.id);
+                            await load();
+                          },
+                        }]}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}

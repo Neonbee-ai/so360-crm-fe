@@ -762,7 +762,7 @@ const LeadsPage = () => {
           />
         }
         search={
-          <div className="relative">
+          <div className="relative w-full wc-medium:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
             <input
               type="text"
@@ -845,7 +845,7 @@ const LeadsPage = () => {
         <div ref={moreFiltersRef} className="relative shrink-0">
           <button
             onClick={() => setOpenDropdown((v) => (v === 'moreFilters' ? null : 'moreFilters'))}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
+            className={`flex h-nb-control-md items-center gap-1.5 px-3 rounded-nb text-nb-body border transition-colors ${
               filters.creator !== 'All'
                 ? 'text-primary bg-primary/10 border-primary/40'
                 : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
@@ -854,14 +854,14 @@ const LeadsPage = () => {
             <Filter size={13} />
             More Filters
             {filters.creator !== 'All' && (
-              <span className="text-[10px] bg-primary text-primary-fg rounded-full px-1.5 py-0.5">1</span>
+              <span className="text-xs bg-primary text-primary-fg rounded-full px-1.5">1</span>
             )}
             <ChevronDown size={13} />
           </button>
 
           {openDropdown === 'moreFilters' && (
             <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl min-w-[220px] p-3">
-              <label className="block text-[10px] font-bold text-fg-muted uppercase tracking-wider mb-1.5">Created By</label>
+              <label className="block text-xs text-fg-muted mb-1.5">Created by</label>
               <select
                 value={filters.creator}
                 onChange={(e) => setFilter('creator', e.target.value)}
@@ -876,17 +876,7 @@ const LeadsPage = () => {
           )}
         </div>
 
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text-xs text-danger hover:text-danger-300 underline flex items-center gap-1 shrink-0"
-          >
-            <X size={12} />
-            Clear filters
-          </button>
-        )}
 
-        <div className="flex-1" />
             {hasActiveFilters && !isFilteredEmpty && (
               <Button variant="secondary" size="sm" onClick={clearFilters}>
                 <X size={12} aria-hidden="true" />
@@ -901,7 +891,7 @@ const LeadsPage = () => {
         <div ref={viewsDropdownRef} className="relative shrink-0">
             <button
               onClick={() => setOpenDropdown((v) => (v === 'views' ? null : 'views'))}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-surface-raised border border-line transition-colors"
+              className="flex h-nb-control-md items-center gap-1.5 px-3 rounded-nb text-nb-body text-fg-subtle hover:text-fg hover:bg-surface-raised border border-line transition-colors"
             >
               <Bookmark size={14} />
               {activeViewId ? savedViews.find((v) => v.id === activeViewId)?.name ?? 'Views' : 'Views'}
@@ -1023,7 +1013,7 @@ const LeadsPage = () => {
           <div className="relative">
             <button
               onClick={() => setShowAdvancedFilters((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors ${
+              className={`flex h-nb-control-md items-center gap-1.5 px-3 rounded-nb text-nb-body border transition-colors ${
                 advancedFilter
                   ? 'text-primary bg-primary/10 border-primary/40'
                   : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
@@ -1032,7 +1022,7 @@ const LeadsPage = () => {
               <SlidersHorizontal size={14} />
               Advanced
               {advancedFilter && (
-                <span className="text-[10px] bg-primary text-primary-fg rounded-full px-1.5 py-0.5">
+                <span className="text-xs bg-primary text-primary-fg rounded-full px-1.5">
                   {countActiveRules(advancedFilter)}
                 </span>
               )}

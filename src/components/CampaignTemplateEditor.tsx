@@ -270,7 +270,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
     <div className="flex gap-4 min-h-[400px]">
       {/* Sidebar — block palette */}
       <div className="w-36 flex-shrink-0">
-        <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wider mb-3">Blocks</p>
+        <p className="text-xs font-semibold text-fg-subtle mb-3">Blocks</p>
         <div className="space-y-1.5">
           {BLOCK_TYPES.map(bt => (
             <div
@@ -290,7 +290,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
         </div>
 
         <div className="mt-6 space-y-2">
-          <p className="text-xs font-semibold text-fg-subtle uppercase tracking-wider mb-2">Variables</p>
+          <p className="text-xs font-semibold text-fg-subtle mb-2">Variables</p>
           {['customer_name', 'email', 'first_name'].map(v => (
             <button
               key={v}
@@ -358,7 +358,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                 {/* Block header */}
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-line">
                   <span className="text-fg-muted cursor-grab active:cursor-grabbing">⠿</span>
-                  <span className="text-xs text-fg-muted font-medium uppercase">{block.type}</span>
+                  <span className="text-xs text-fg-muted font-medium ">{block.type}</span>
                   <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={e => { e.stopPropagation(); moveBlock(idx, Math.max(0, idx - 1)); }}

@@ -77,6 +77,21 @@ vi.mock('@so360/design-system', () => ({
       {children}
     </button>
   ),
+  Menu: ({ trigger, items }: any) => {
+    const [open, setOpen] = React.useState(false);
+    return (
+      <>
+        {React.cloneElement(trigger, { onClick: () => setOpen((v: boolean) => !v) })}
+        {open && (
+          <div role="menu">
+            {items.map((i: any) => (
+              <div key={i.label} role="menuitem" onClick={() => { i.onSelect(); setOpen(false); }}>{i.label}</div>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  },
 }));
 
 vi.mock('@so360/shell-context', () => ({
@@ -281,8 +296,9 @@ describe('MarketingCampaignsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('Summer Sale')).toBeInTheDocument());
 
-      const deleteBtns = screen.getAllByRole('button', { name: /^delete$/i });
-      await user.click(deleteBtns[0]);
+      const kebabs = screen.getAllByText('\u22EE');
+      await user.click(kebabs[0]);
+      await user.click(screen.getByRole('menuitem', { name: /^delete$/i }));
       await waitFor(() => {
         expect(mockDeleteCampaign).toHaveBeenCalledWith('store-1', 'camp-1');
       });

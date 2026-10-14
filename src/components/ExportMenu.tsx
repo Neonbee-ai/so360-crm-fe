@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { useShellBridge } from '@so360/shell-context';
+import { Button, Menu } from '@so360/design-system';
 import { EXPORT_FORMATS, EXPORT_FORMAT_LABELS, type ExportFormat } from '../services/exportService';
 import { describeApiError } from '../utils/apiErrorMessage';
 
@@ -18,13 +19,13 @@ export function useCanExport(permission: string, flagKey?: string): boolean {
 }
 
 interface ExportMenuProps {
-    /** Accessible name, e.g. "Export leads". Also prefixes each format button. */
+    /** Accessible name, e.g. "Export leads". */
     label: string;
     onExport: (format: ExportFormat) => Promise<void>;
     className?: string;
 }
 
-/** CSV / Excel / PDF download buttons with a busy state and an inline error. */
+/** Single "Export" button opening a CSV / Excel / PDF menu, with a busy state and an inline error. */
 const ExportMenu: React.FC<ExportMenuProps> = ({ label, onExport, className }) => {
     const [busy, setBusy] = useState<ExportFormat | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -43,24 +44,22 @@ const ExportMenu: React.FC<ExportMenuProps> = ({ label, onExport, className }) =
     };
 
     return (
-        <div className={`flex flex-col items-end gap-1 ${className ?? ''}`}>
-            <div role="group" aria-label={label} className="flex items-center gap-1">
-                <Download size={14} className="text-fg-muted" aria-hidden="true" />
-                {EXPORT_FORMATS.map((f) => (
-                    <button
-                        key={f}
-                        type="button"
-                        onClick={() => { void run(f); }}
-                        disabled={busy !== null}
-                        aria-label={`${label} as ${EXPORT_FORMAT_LABELS[f]}`}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-fg bg-surface-raised hover:bg-line disabled:opacity-50"
-                    >
-                        {busy === f ? <Loader2 size={12} className="animate-spin" /> : null}
-                        {EXPORT_FORMAT_LABELS[f]}
-                    </button>
-                ))}
-            </div>
-            {error ? <p role="alert" className="text-[11px] font-bold text-rose-300">{error}</p> : null}
+        <div className={`flex items-center gap-nb-2 ${className ?? ''}`}>
+            <Menu
+                name="export"
+                trigger={
+                    <Button variant="secondary" aria-label={label} disabled={busy !== null}>
+                        {busy ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Download size={14} aria-hidden="true" />}
+                        Export
+                    </Button>
+                }
+                items={EXPORT_FORMATS.map((f) => ({
+                    label: EXPORT_FORMAT_LABELS[f],
+                    onSelect: () => { void run(f); },
+                    disabled: busy !== null,
+                }))}
+            />
+            {error ? <p role="alert" className="text-xs text-danger">{error}</p> : null}
         </div>
     );
 };

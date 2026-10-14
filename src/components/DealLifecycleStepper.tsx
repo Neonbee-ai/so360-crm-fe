@@ -29,7 +29,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
 
     if (isLostType(currentStage) || currentState?.toLowerCase() === 'lost') {
         return (
-            <div className="flex items-center gap-3 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+            <div className="flex items-center gap-3 p-4 bg-danger/10 rounded-lg border border-danger/20">
                 <XCircle className="w-5 h-5 text-danger" />
                 <span className="text-danger font-medium">Deal Lost</span>
             </div>
@@ -58,21 +58,21 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
                     <React.Fragment key={stage.id}>
                         <div className="flex flex-col items-center">
                             <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
-                                isCompleted ? (isTerminalWon ? 'bg-success text-white' : 'bg-teal-500 text-white') :
-                                isCurrent ? (isWonType(stage) ? 'bg-emerald-500/20 border-2 border-success text-success' : 'bg-teal-500/20 border-2 border-teal-500 text-teal-400') :
+                                isCompleted ? (isTerminalWon ? 'bg-success text-white' : 'bg-info text-white') :
+                                isCurrent ? (isWonType(stage) ? 'bg-success/20 border-2 border-success text-success' : 'bg-info/20 border-2 border-info text-info') :
                                 'bg-fg-muted/10 border border-line-strong text-fg-subtle'
                             }`}>
                                 {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                             </div>
                             <span className={`text-xs mt-2 text-center w-16 truncate ${
-                                isCompleted || isCurrent ? (isWonType(stage) ? 'text-success' : 'text-teal-400') : 'text-fg-subtle'
+                                isCompleted || isCurrent ? (isWonType(stage) ? 'text-success' : 'text-info') : 'text-fg-subtle'
                             }`} title={stage.name}>
                                 {stage.name}
                             </span>
                         </div>
                         {!isLast && (
                             <div className={`flex-1 h-0.5 min-w-4 ${
-                                isCompleted ? 'bg-teal-500' : 'bg-fg-muted/40'
+                                isCompleted ? 'bg-info' : 'bg-fg-muted/40'
                             }`} />
                         )}
                     </React.Fragment>

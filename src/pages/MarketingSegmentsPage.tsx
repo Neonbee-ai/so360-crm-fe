@@ -241,11 +241,8 @@ const MarketingSegmentsPage: React.FC = () => {
     <ListPageTemplate
       title="Customer Segments"
       description="Create CRM segments for leads/customers. Storefront segments are read-only."
+      toolbarEnd={dailystoreEnabled ? <MarketingStorePicker storeId={storeId} onChange={applyStore} /> : undefined}
     >
-
-      <div className="mb-6">
-        {dailystoreEnabled && <MarketingStorePicker storeId={storeId} onChange={applyStore} />}
-      </div>
       {loading && <p className="text-fg-subtle text-sm mb-4">Loading Storefront insights...</p>}
       {manualLoading && <p className="text-fg-subtle text-sm mb-4">Loading CRM segments...</p>}
       {error && <p className="text-danger mb-4 bg-danger/10 border border-danger/20 p-3 rounded-lg text-sm">{error}</p>}
@@ -371,7 +368,7 @@ const MarketingSegmentsPage: React.FC = () => {
                             Customers
                           </Button>
                           {canCreateMarketing && <Button
-                            variant="danger"
+                            variant="secondary"
                             size="sm"
                             onClick={async () => {
                               await crmService.deleteCustomerSegment(row.id);

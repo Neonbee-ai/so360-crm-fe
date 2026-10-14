@@ -236,14 +236,14 @@ describe('CustomersPage', () => {
   });
 
   describe('Given clear filters', () => {
-    it('When Clear Filters is clicked / Then resets all filters', async () => {
+    it('When Clear filters is clicked / Then resets all filters', async () => {
       const user = userEvent.setup();
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
       const channelSelect = screen.getByDisplayValue('All Channels');
       await user.selectOptions(channelSelect, 'pos');
-      await waitFor(() => expect(screen.getByText('Clear Filters')).toBeInTheDocument());
-      await user.click(screen.getByText('Clear Filters'));
+      await waitFor(() => expect(screen.getByText('Clear filters')).toBeInTheDocument());
+      await user.click(screen.getByText('Clear filters'));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
     });
   });

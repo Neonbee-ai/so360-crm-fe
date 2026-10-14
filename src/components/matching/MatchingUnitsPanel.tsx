@@ -74,7 +74,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
 
     return (
         <section aria-label="Matching units" data-testid="matching-units-panel" className="space-y-2">
-            <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
+            <p className="text-xs font-semibold text-fg-muted">
                 Matching units ({units.length})
             </p>
             <ul className="space-y-2">
@@ -86,9 +86,9 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                         <li
                             key={u.item_id}
                             data-testid="matching-unit"
-                            className="flex items-start gap-3 p-3 bg-surface-sunken border border-line rounded-xl"
+                            className="flex items-start gap-3 p-3 bg-surface-sunken border border-line rounded-nb-lg"
                         >
-                            <Building2 size={16} className="text-blue-400 mt-0.5 shrink-0" />
+                            <Building2 size={16} className="text-info mt-0.5 shrink-0" />
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-sm font-bold text-fg">{name}</span>
@@ -98,7 +98,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                         </span>
                                     )}
                                     <span
-                                        className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${scoreTone(u.score)}`}
+                                        className={`text-xs font-semibold px-1.5 py-0.5 rounded border ${scoreTone(u.score)}`}
                                         title="Match score"
                                     >
                                         {Math.round(u.score)}% match
@@ -112,7 +112,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                     ].filter(Boolean).join(' · ')}
                                 </p>
                                 {u.reasons?.length > 0 && (
-                                    <p className="text-[11px] text-fg-muted mt-0.5">{u.reasons.join(' · ')}</p>
+                                    <p className="text-xs text-fg-muted mt-0.5">{u.reasons.join(' · ')}</p>
                                 )}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
@@ -121,7 +121,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                     aria-label={`Share ${name}`}
                                     title="Copy unit details"
                                     onClick={() => share(u)}
-                                    className="p-1.5 text-fg-subtle hover:text-blue-300 rounded-lg"
+                                    className="p-1.5 text-fg-subtle hover:text-info rounded-lg"
                                 >
                                     <Share2 size={14} />
                                 </button>
@@ -130,7 +130,7 @@ export const MatchingUnitsPanel: React.FC<Props> = ({ entity, id, existingItemId
                                     aria-label={added ? `${name} added` : `Attach ${name}`}
                                     disabled={added || busy}
                                     onClick={() => attach(u)}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white disabled:bg-surface-raised disabled:text-fg-muted"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-primary/90 text-white disabled:bg-surface-raised disabled:text-fg-muted"
                                 >
                                     {busy ? <Loader2 size={12} className="animate-spin" /> : added ? <Check size={12} /> : <Plus size={12} />}
                                     {added ? 'Added' : 'Attach'}

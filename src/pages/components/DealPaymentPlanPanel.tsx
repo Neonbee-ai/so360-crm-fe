@@ -23,9 +23,9 @@ import {
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
-const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-xl px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60';
-const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg';
+const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb-lg px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
+const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-nb-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold disabled:opacity-60';
+const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg';
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
     full_invoice: 'One invoice for the full price',
@@ -34,10 +34,10 @@ export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
 };
 
 const STATUS_CHIP: Record<ScheduleLineStatus, string> = {
-    due: 'bg-amber-500/10 text-warning border-amber-500/30',
-    invoiced: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    paid: 'bg-emerald-500/10 text-success border-emerald-500/30',
-    bounced: 'bg-rose-500/10 text-danger border-rose-500/30',
+    due: 'bg-warning/10 text-warning border-warning/30',
+    invoiced: 'bg-info/10 text-info border-info/30',
+    paid: 'bg-success/10 text-success border-success/30',
+    bounced: 'bg-danger/10 text-danger border-danger/30',
     cancelled: 'bg-fg-muted/10 text-fg-subtle border-line',
 };
 
@@ -221,7 +221,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         return (
             <div className="p-8 space-y-6" data-testid="payment-plan-empty">
                 <div>
-                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">No payment plan yet</h3>
+                    <h3 className="text-sm font-semibold text-fg">No payment plan yet</h3>
                     <p className="text-xs text-fg-muted mt-1">Start from one of the project's plans, or enter the instalments yourself.</p>
                 </div>
                 {manual === null && (
@@ -229,7 +229,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                         {templates.length > 0 ? (
                             <>
                                 <div className="min-w-[16rem]">
-                                    <label htmlFor="pp-template" className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-1.5">Project plan</label>
+                                    <label htmlFor="pp-template" className="block text-xs font-semibold text-fg-muted mb-1.5">Project plan</label>
                                     <select id="pp-template" className={FIELD_CLS} value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
                                         {templates.map((t) => (
                                             <option key={t.id} value={t.id}>{t.name}{t.is_default ? ' (default)' : ''}</option>
@@ -304,16 +304,16 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
         <div className="p-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">{schedule.template_name ?? 'Payment plan'}</h3>
+                    <h3 className="text-sm font-semibold text-fg">{schedule.template_name ?? 'Payment plan'}</h3>
                     <p className="text-xs text-fg-muted mt-1">{BILLING_MODE_LABELS[schedule.billing_mode]}</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
                 {([['Total', totals.total], ['Paid', totals.paid], ['Outstanding', totals.outstanding]] as const).map(([label, v]) => (
-                    <div key={label} className="bg-surface-sunken border border-line rounded-xl p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
-                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{label}</p>
-                        <p className="text-lg font-black text-fg mt-1">{fmt.formatCurrency(v)}</p>
+                    <div key={label} className="bg-surface-sunken border border-line rounded-nb-lg p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
+                        <p className="text-xs font-semibold text-fg-muted">{label}</p>
+                        <p className="text-lg font-semibold text-fg mt-1">{fmt.formatCurrency(v)}</p>
                     </div>
                 ))}
             </div>
@@ -321,7 +321,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
             <div className="overflow-x-auto">
                 <table className="w-full text-xs" aria-label="Instalments">
                     <thead>
-                        <tr className="text-left text-[10px] font-black text-fg-muted uppercase tracking-widest">
+                        <tr className="text-left text-xs font-semibold text-fg-muted">
                             <th className="py-2 pr-3">#</th>
                             <th className="py-2 pr-3">Instalment</th>
                             <th className="py-2 pr-3">Amount</th>
@@ -339,7 +339,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                     <td className="py-3 pr-3 text-fg-muted">{l.seq}</td>
                                     <td className="py-3 pr-3">
                                         <p className="font-bold text-fg">{l.label}</p>
-                                        {l.trigger && <p className="text-[10px] text-fg-muted">{TRIGGER_LABELS[l.trigger]}</p>}
+                                        {l.trigger && <p className="text-xs text-fg-muted">{TRIGGER_LABELS[l.trigger]}</p>}
                                     </td>
                                     <td className="py-3 pr-3">
                                         {d ? (
@@ -375,7 +375,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                             <>
                                                 <span className="text-fg-subtle">{modeLabel(l.payment_mode)}</span>
                                                 {isChequeMode(l.payment_mode) && (l.cheque_number || l.cheque_bank) && (
-                                                    <p className="text-[10px] text-fg-muted">
+                                                    <p className="text-xs text-fg-muted">
                                                         {[l.cheque_number && `#${l.cheque_number}`, l.cheque_bank, l.cheque_date && fmt.formatDate(l.cheque_date)].filter(Boolean).join(' · ')}
                                                     </p>
                                                 )}
@@ -398,11 +398,11 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                                     .map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                                             </select>
                                         ) : (
-                                            <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${STATUS_CHIP[l.status]}`}>
+                                            <span className={`inline-block px-2 py-0.5 rounded-full border text-xs font-semibold ${STATUS_CHIP[l.status]}`}>
                                                 {statusLabel(l.status)}
                                             </span>
                                         )}
-                                        {l.invoice_id && !d && <p className="text-[10px] text-fg-muted mt-1">Invoice raised</p>}
+                                        {l.invoice_id && !d && <p className="text-xs text-fg-muted mt-1">Invoice raised</p>}
                                     </td>
                                     <td className="py-3 text-right whitespace-nowrap">
                                         {d ? (

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Mail, Phone, Edit2, Loader2, Check, X,
-    BarChart2, DollarSign, Trophy, MapPin, Percent, Users, User,
+    MapPin, Percent, Users, User,
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
@@ -12,20 +12,20 @@ import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { goBackFrom } from '../components/common/DetailBackLink';
-import { DetailPageTemplate } from '@so360/design-system';
+import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState } from '@so360/design-system';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
 const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
     low:  { label: 'Low',  color: 'bg-fg-muted/10 text-fg-subtle border-line' },
-    mid:  { label: 'Mid',  color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-    high: { label: 'High', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
+    mid:  { label: 'Mid',  color: 'bg-info/10 text-info border-info/20' },
+    high: { label: 'High', color: 'bg-success/10 text-success border-success/20' },
 };
 
 const COMMISSION_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-    pending:  { label: 'Pending',  color: 'bg-amber-500/10 text-warning border-amber-500/20' },
-    approved: { label: 'Approved', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-    paid:     { label: 'Paid',     color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
+    pending:  { label: 'Pending',  color: 'bg-warning/10 text-warning border-warning/20' },
+    approved: { label: 'Approved', color: 'bg-info/10 text-info border-info/20' },
+    paid:     { label: 'Paid',     color: 'bg-success/10 text-success border-success/20' },
 };
 
 const AREA_OPTIONS = ['South India', 'North India', 'Central India', 'East India', 'West India'];
@@ -57,7 +57,7 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
 
     return createPortal(
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60">
-            <div className="bg-surface border border-line rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-sm shadow-2xl">
                 <h2 className="text-base font-semibold text-fg mb-4">Mark Royalty as Paid</h2>
                 {error && <p className="text-danger text-sm mb-3">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -252,9 +252,20 @@ const PartnerDetailPage = () => {
 
     const gradingCfg = GRADING_CONFIG[partner.grading] || null;
 
-    const fieldLabelCls = 'text-[10px] font-bold text-fg-muted uppercase tracking-widest mb-1.5';
+    const fieldLabelCls = 'text-xs text-fg-muted mb-1';
     const editLabelCls = 'text-xs text-fg-subtle mb-1 block';
     const editInputCls = 'w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary/50';
+
+    const overviewActions = isEditing ? (
+        <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => { setIsEditing(false); }}><X size={14} /> Cancel</Button>
+            <Button variant="primary" onClick={handleSave} disabled={saving}>
+                <Check size={14} />{saving ? 'Saving...' : 'Save'}
+            </Button>
+        </div>
+    ) : (
+        <Button variant="secondary" onClick={() => setIsEditing(true)}><Edit2 size={14} /> Edit</Button>
+    );
 
     const partnerName = [partner.first_name, partner.last_name].filter(Boolean).join(' ') || partner.contact_name;
 
@@ -265,9 +276,7 @@ const PartnerDetailPage = () => {
             title={partnerName}
             status={
                 <>
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
-                        {getTypeLabel(partner.partner_type)}
-                    </span>
+                    <Badge size="sm" tone="info">{getTypeLabel(partner.partner_type)}</Badge>
                     {gradingCfg && (
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
                             {gradingCfg.label}
@@ -313,24 +322,9 @@ const PartnerDetailPage = () => {
         >
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-                <div className="bg-surface-sunken border border-line rounded-xl p-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-sm font-semibold text-fg uppercase tracking-wider">Partner Information</h2>
-                        {isEditing ? (
-                            <div className="flex gap-2">
-                                <button onClick={() => { setIsEditing(false); }} className="p-1.5 rounded text-fg-subtle hover:text-fg"><X size={16} /></button>
-                                <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded text-xs font-medium disabled:opacity-50">
-                                    <Check size={14} />{saving ? 'Saving...' : 'Save'}
-                                </button>
-                            </div>
-                        ) : (
-                            <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-fg border border-line hover:border-line text-xs font-medium transition-colors">
-                                <Edit2 size={14} /> Edit
-                            </button>
-                        )}
-                    </div>
-
+                <div className="flex flex-col gap-nb-3">
                     {isEditing ? (
+                        <Card title="Partner information" actions={overviewActions}>
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                                 <div>
@@ -372,7 +366,7 @@ const PartnerDetailPage = () => {
                                     <label className={editLabelCls}>Phone</label>
                                     <input type="tel" maxLength={20} value={editForm.phone}
                                         onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                        className={`w-full bg-bg border rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-line focus:ring-primary/50'}`} />
+                                        className={`w-full bg-bg border rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 ${phoneError ? 'border-danger/60 focus:ring-danger/50' : 'border-line focus:ring-primary/50'}`} />
                                     {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
                                 </div>
                                 <div>
@@ -453,7 +447,7 @@ const PartnerDetailPage = () => {
                                                 }}
                                                 className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                                                     selected
-                                                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                                        ? 'bg-primary/10 text-primary border-primary/40'
                                                         : 'bg-surface-raised text-fg-subtle border-line hover:border-line'
                                                 }`}
                                             >
@@ -464,36 +458,29 @@ const PartnerDetailPage = () => {
                                 </div>
                             </div>
                         </div>
+                        </Card>
                     ) : (
-                        <div className="space-y-8">
-
-                            {/* Partner Details */}
-                            <div>
-                                <div className="flex items-center gap-3 mb-5">
-                                    <span className="text-[10px] font-bold text-fg-muted uppercase tracking-widest whitespace-nowrap">Partner Details</span>
-                                    <span className="flex-1 h-px bg-surface-raised" />
-                                </div>
-                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                        <>
+                            <Card title="Partner details" actions={overviewActions}>
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-nb-3">
                                     <div>
-                                        <dt className={fieldLabelCls}>Partner Type</dt>
+                                        <dt className={fieldLabelCls}>Partner type</dt>
                                         <dd className="mt-1">
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
-                                                {getTypeLabel(partner.partner_type)}
-                                            </span>
+                                            <Badge size="sm" tone="info">{getTypeLabel(partner.partner_type)}</Badge>
                                         </dd>
                                     </div>
                                     <div>
-                                        <dt className={fieldLabelCls}>Architect Grading</dt>
+                                        <dt className={fieldLabelCls}>Architect grading</dt>
                                         <dd className="mt-1">
                                             {gradingCfg ? (
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-medium border ${gradingCfg.color}`}>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
                                                     {gradingCfg.label}
                                                 </span>
                                             ) : <span className="text-fg-muted text-sm">—</span>}
                                         </dd>
                                     </div>
                                     <div>
-                                        <dt className={fieldLabelCls}>Royalty Rate</dt>
+                                        <dt className={fieldLabelCls}>Royalty rate</dt>
                                         <dd className="text-sm text-fg mt-1 flex items-center gap-1.5">
                                             {partner.commission_rate > 0
                                                 ? <><Percent size={13} className="text-fg-subtle" /><span>{partner.commission_rate}%</span></>
@@ -501,7 +488,7 @@ const PartnerDetailPage = () => {
                                         </dd>
                                     </div>
                                     <div>
-                                        <dt className={fieldLabelCls}>Relationship Manager</dt>
+                                        <dt className={fieldLabelCls}>Relationship manager</dt>
                                         <dd className="text-sm text-fg mt-1 flex items-center gap-1.5">
                                             {getUserName(partner.owner_person_id)
                                                 ? <><User size={13} className="text-fg-subtle" /><span>{getUserName(partner.owner_person_id)}</span></>
@@ -509,79 +496,35 @@ const PartnerDetailPage = () => {
                                         </dd>
                                     </div>
                                 </dl>
-                            </div>
+                            </Card>
 
-                            {/* Geographic Coverage */}
-                            <div>
-                                <div className="flex items-center gap-3 mb-5">
-                                    <span className="text-[10px] font-bold text-fg-muted uppercase tracking-widest whitespace-nowrap">Geographic Coverage</span>
-                                    <span className="flex-1 h-px bg-surface-raised" />
-                                </div>
+                            <Card title="Geographic coverage">
                                 <dl>
-                                    <dt className={fieldLabelCls}>Area Served</dt>
+                                    <dt className={fieldLabelCls}>Area served</dt>
                                     <dd className="flex flex-wrap gap-2 mt-2">
                                         {(partner.area_served || []).length > 0
                                             ? partner.area_served.map((area: string) => (
-                                                <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border bg-surface-raised text-fg-subtle border-line">
-                                                    <MapPin size={10} />{area}
-                                                </span>
+                                                <Badge key={area} size="sm" tone="neutral">
+                                                    <MapPin size={10} className="mr-1" />{area}
+                                                </Badge>
                                             ))
                                             : <span className="text-fg-muted text-sm">—</span>
                                         }
                                     </dd>
                                 </dl>
+                            </Card>
+
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
+                                <KpiCard label="Customers connected" value={partner.customers_connected != null ? partner.customers_connected : '—'} />
+                                <KpiCard label="Value of purchase" value={partner.value_of_purchase != null ? formatters.formatCurrency(partner.value_of_purchase) : '—'} />
+                                <KpiCard label="Total purchase till date" value={partner.total_purchase_till_date != null ? formatters.formatCurrency(partner.total_purchase_till_date) : '—'} />
                             </div>
 
-                            {/* Business Metrics */}
-                            <div>
-                                <div className="flex items-center gap-3 mb-5">
-                                    <span className="text-[10px] font-bold text-fg-muted uppercase tracking-widest whitespace-nowrap">Business Metrics</span>
-                                    <span className="flex-1 h-px bg-surface-raised" />
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                        <div className="flex items-center gap-2 text-fg-subtle text-[10px] font-bold uppercase tracking-widest mb-2">
-                                            <Users size={12} />Customers Connected
-                                        </div>
-                                        <div className="text-2xl font-bold text-fg">
-                                            {partner.customers_connected != null
-                                                ? partner.customers_connected
-                                                : <span className="text-fg-muted text-base font-normal">—</span>}
-                                        </div>
-                                    </div>
-                                    <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                        <div className="flex items-center gap-2 text-fg-subtle text-[10px] font-bold uppercase tracking-widest mb-2">
-                                            <DollarSign size={12} />Value of Purchase
-                                        </div>
-                                        <div className="text-xl font-bold text-fg">
-                                            {partner.value_of_purchase != null
-                                                ? formatters.formatCurrency(partner.value_of_purchase)
-                                                : <span className="text-fg-muted text-base font-normal">—</span>}
-                                        </div>
-                                    </div>
-                                    <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                        <div className="flex items-center gap-2 text-fg-subtle text-[10px] font-bold uppercase tracking-widest mb-2">
-                                            <BarChart2 size={12} />Total Purchase Till Date
-                                        </div>
-                                        <div className="text-xl font-bold text-fg">
-                                            {partner.total_purchase_till_date != null
-                                                ? formatters.formatCurrency(partner.total_purchase_till_date)
-                                                : <span className="text-fg-muted text-base font-normal">—</span>}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Contact Information */}
-                            <div>
-                                <div className="flex items-center gap-3 mb-5">
-                                    <span className="text-[10px] font-bold text-fg-muted uppercase tracking-widest whitespace-nowrap">Contact Information</span>
-                                    <span className="flex-1 h-px bg-surface-raised" />
-                                </div>
-                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                            <Card title="Contact information">
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-nb-3">
                                     {partner.company_name && (
                                         <div className="sm:col-span-2">
-                                            <dt className={fieldLabelCls}>Company Name</dt>
+                                            <dt className={fieldLabelCls}>Company name</dt>
                                             <dd className="text-sm text-fg mt-1">{partner.company_name}</dd>
                                         </div>
                                     )}
@@ -605,7 +548,7 @@ const PartnerDetailPage = () => {
                                         <dt className={fieldLabelCls}>Email</dt>
                                         <dd className="mt-1">
                                             {partner.email
-                                                ? <a href={`mailto:${partner.email}`} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1.5 transition-colors"><Mail size={13} />{partner.email}</a>
+                                                ? <a href={`mailto:${partner.email}`} className="text-sm text-primary hover:underline flex items-center gap-1.5 transition-colors"><Mail size={13} />{partner.email}</a>
                                                 : <span className="text-fg-muted text-sm">—</span>}
                                         </dd>
                                     </div>
@@ -618,189 +561,167 @@ const PartnerDetailPage = () => {
                                         </dd>
                                     </div>
                                 </dl>
-                            </div>
-
-                        </div>
+                            </Card>
+                        </>
                     )}
                 </div>
             )}
 
             {/* Referred Deals Tab */}
             {activeTab === 'deals' && (
-                <div>
+                <div className="flex flex-col gap-nb-3">
                     {deals ? (
                         <>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                    <div className="flex items-center gap-2 text-fg-subtle text-xs font-medium mb-1"><BarChart2 size={14} />Total Deals</div>
-                                    <div className="text-2xl font-bold text-fg">{deals.summary.total_count}</div>
-                                </div>
-                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                    <div className="flex items-center gap-2 text-fg-subtle text-xs font-medium mb-1"><DollarSign size={14} />Total Value</div>
-                                    <div className="text-xl font-bold text-fg">{formatters.formatCurrency(deals.summary.total_value || 0)}</div>
-                                </div>
-                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                    <div className="flex items-center gap-2 text-success text-xs font-medium mb-1"><Trophy size={14} />Won Deals</div>
-                                    <div className="text-2xl font-bold text-fg">{deals.summary.won_count}</div>
-                                </div>
-                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                    <div className="flex items-center gap-2 text-success text-xs font-medium mb-1"><DollarSign size={14} />Won Value</div>
-                                    <div className="text-xl font-bold text-fg">{formatters.formatCurrency(deals.summary.won_value || 0)}</div>
-                                </div>
+                            <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
+                                <KpiCard label="Total deals" value={deals.summary.total_count} />
+                                <KpiCard label="Total value" value={formatters.formatCurrency(deals.summary.total_value || 0)} />
+                                <KpiCard label="Won deals" value={deals.summary.won_count} />
+                                <KpiCard label="Won value" value={formatters.formatCurrency(deals.summary.won_value || 0)} />
                             </div>
-                            {deals.deals.length > 0 ? (
-                                <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b border-line">
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Deal Name</th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Customer</th>
-                                                <th className="text-right px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Value</th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Stage</th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Won Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {deals.deals.map((deal: any) => (
-                                                <tr
-                                                    key={deal.id}
-                                                    className="border-b border-line hover:bg-surface-high cursor-pointer"
-                                                    onClick={() => navigate(`/crm/deal/${deal.id}`)}
-                                                >
-                                                    <td className="px-4 py-3 text-fg font-medium">{deal.name}</td>
-                                                    <td className="px-4 py-3 text-fg-subtle">{deal.company || '-'}</td>
-                                                    <td className="px-4 py-3 text-fg-subtle text-right">{formatters.formatCurrency(deal.value || 0)}</td>
-                                                    <td className="px-4 py-3">
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${deal.status === 'won' ? 'bg-emerald-500/10 text-success border-emerald-500/20' : deal.status === 'lost' ? 'bg-rose-500/10 text-danger border-rose-500/20' : 'bg-fg-muted/10 text-fg-subtle border-line'}`}>
-                                                            {deal.stage?.name || deal.status || '-'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-fg-subtle">{deal.won_at ? formatters.formatDate(deal.won_at) : '-'}</td>
+                            <Card title="Referred deals" padding="none">
+                                {deals.deals.length > 0 ? (
+                                    <div className="w-full overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-line">
+                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Deal name</th>
+                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Customer</th>
+                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Value</th>
+                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Stage</th>
+                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Won date</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className="bg-surface-sunken border border-line rounded-xl p-8 text-center text-fg-muted">
-                                    No referred deals yet.
-                                </div>
-                            )}
+                                            </thead>
+                                            <tbody className="divide-y divide-line">
+                                                {deals.deals.map((deal: any) => (
+                                                    <tr
+                                                        key={deal.id}
+                                                        className="hover:bg-surface-high cursor-pointer"
+                                                        onClick={() => navigate(`/crm/deal/${deal.id}`)}
+                                                    >
+                                                        <td className="px-nb-3 py-nb-2 text-fg font-medium">{deal.name}</td>
+                                                        <td className="px-nb-3 py-nb-2 text-fg-subtle">{deal.company || '-'}</td>
+                                                        <td className="px-nb-3 py-nb-2 text-fg-subtle text-right">{formatters.formatCurrency(deal.value || 0)}</td>
+                                                        <td className="px-nb-3 py-nb-2">
+                                                            <Badge size="sm" tone={deal.status === 'won' ? 'success' : deal.status === 'lost' ? 'danger' : 'neutral'}>
+                                                                {deal.stage?.name || deal.status || '-'}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-nb-3 py-nb-2 text-fg-subtle">{deal.won_at ? formatters.formatDate(deal.won_at) : '-'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <EmptyState title="No referred deals yet." />
+                                )}
+                            </Card>
                         </>
                     ) : (
-                        <div className="flex items-center gap-3 text-fg-muted p-8"><Loader2 className="animate-spin" /> Loading deals...</div>
+                        <div className="flex items-center gap-3 text-fg-muted p-nb-4"><Loader2 className="animate-spin" /> Loading deals...</div>
                     )}
                 </div>
             )}
 
             {/* Commissions Tab */}
             {activeTab === 'commissions' && (
-                <div>
+                <div className="flex flex-col gap-nb-3">
                     {commissions ? (
                         <>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                    <div className="flex items-center gap-2 text-fg-subtle text-xs font-medium mb-1"><DollarSign size={14} />Total Earned</div>
-                                    <div className="text-xl font-bold text-fg">{formatters.formatCurrency(commissions.summary.total_earned || 0)}</div>
-                                </div>
-                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                    <div className="flex items-center gap-2 text-warning text-xs font-medium mb-1"><DollarSign size={14} />Pending</div>
-                                    <div className="text-xl font-bold text-fg">{formatters.formatCurrency(commissions.summary.pending || 0)}</div>
-                                </div>
-                                <div className="bg-surface-sunken border border-line rounded-xl p-4">
-                                    <div className="flex items-center gap-2 text-success text-xs font-medium mb-1"><DollarSign size={14} />Paid</div>
-                                    <div className="text-xl font-bold text-fg">{formatters.formatCurrency(commissions.summary.paid || 0)}</div>
-                                </div>
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
+                                <KpiCard label="Total earned" value={formatters.formatCurrency(commissions.summary.total_earned || 0)} />
+                                <KpiCard label="Pending" value={formatters.formatCurrency(commissions.summary.pending || 0)} />
+                                <KpiCard label="Paid" value={formatters.formatCurrency(commissions.summary.paid || 0)} />
                             </div>
-                            {commissions.commissions.length > 0 ? (
-                                <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b border-line">
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Deal</th>
-                                                <th className="text-right px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Deal Amount</th>
-                                                <th className="text-right px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Rate</th>
-                                                <th className="text-right px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Royalty</th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Status</th>
-                                                <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {commissions.commissions.map((c: any) => {
-                                                const statusCfg = COMMISSION_STATUS_CONFIG[c.status] || COMMISSION_STATUS_CONFIG.pending;
-                                                return (
-                                                    <tr key={c.id} className="border-b border-line">
-                                                        <td className="px-4 py-3 text-fg">{c.deal?.name || c.deal_id.slice(0, 8)}</td>
-                                                        <td className="px-4 py-3 text-fg-subtle text-right">{formatters.formatCurrency(c.deal_amount || 0)}</td>
-                                                        <td className="px-4 py-3 text-fg-subtle text-right">{c.commission_rate}%</td>
-                                                        <td className="px-4 py-3 text-fg font-medium text-right">{formatters.formatCurrency(c.commission_amount || 0)}</td>
-                                                        <td className="px-4 py-3">
-                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusCfg.color}`}>
-                                                                {statusCfg.label}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            {c.status === 'pending' && (
-                                                                <button
-                                                                    onClick={() => handleApprove(c.id)}
-                                                                    disabled={approvingId === c.id}
-                                                                    className="px-3 py-1 text-xs bg-primary hover:bg-primary/90 text-white rounded font-medium disabled:opacity-50 transition-colors"
-                                                                >
-                                                                    {approvingId === c.id ? 'Approving...' : 'Approve'}
-                                                                </button>
-                                                            )}
-                                                            {c.status === 'approved' && (
-                                                                <button
-                                                                    onClick={() => setMarkPaidId(c.id)}
-                                                                    className="px-3 py-1 text-xs bg-success hover:bg-success/90 text-white rounded font-medium transition-colors"
-                                                                >
-                                                                    Mark Paid
-                                                                </button>
-                                                            )}
-                                                            {c.status === 'paid' && c.payment_ref && (
-                                                                <span className="text-xs text-fg-muted">{c.payment_ref}</span>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className="bg-surface-sunken border border-line rounded-xl p-8 text-center text-fg-muted">
-                                    No royalties yet. Royalties are created automatically when a referred deal is won.
-                                </div>
-                            )}
+                            <Card title="Royalties" padding="none">
+                                {commissions.commissions.length > 0 ? (
+                                    <div className="w-full overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-line">
+                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Deal</th>
+                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Deal amount</th>
+                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Rate</th>
+                                                    <th className="text-right px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Royalty</th>
+                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Status</th>
+                                                    <th className="text-left px-nb-3 py-nb-2 text-xs font-medium text-fg-muted">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-line">
+                                                {commissions.commissions.map((c: any) => {
+                                                    const statusCfg = COMMISSION_STATUS_CONFIG[c.status] || COMMISSION_STATUS_CONFIG.pending;
+                                                    return (
+                                                        <tr key={c.id}>
+                                                            <td className="px-nb-3 py-nb-2 text-fg">{c.deal?.name || c.deal_id.slice(0, 8)}</td>
+                                                            <td className="px-nb-3 py-nb-2 text-fg-subtle text-right">{formatters.formatCurrency(c.deal_amount || 0)}</td>
+                                                            <td className="px-nb-3 py-nb-2 text-fg-subtle text-right">{c.commission_rate}%</td>
+                                                            <td className="px-nb-3 py-nb-2 text-fg font-medium text-right">{formatters.formatCurrency(c.commission_amount || 0)}</td>
+                                                            <td className="px-nb-3 py-nb-2">
+                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${statusCfg.color}`}>
+                                                                    {statusCfg.label}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-nb-3 py-nb-2">
+                                                                {c.status === 'pending' && (
+                                                                    <Button
+                                                                        variant="secondary"
+                                                                        onClick={() => handleApprove(c.id)}
+                                                                        disabled={approvingId === c.id}
+                                                                    >
+                                                                        {approvingId === c.id ? 'Approving...' : 'Approve'}
+                                                                    </Button>
+                                                                )}
+                                                                {c.status === 'approved' && (
+                                                                    <Button
+                                                                        variant="secondary"
+                                                                        onClick={() => setMarkPaidId(c.id)}
+                                                                    >
+                                                                        Mark Paid
+                                                                    </Button>
+                                                                )}
+                                                                {c.status === 'paid' && c.payment_ref && (
+                                                                    <span className="text-xs text-fg-muted">{c.payment_ref}</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <EmptyState title="No royalties yet." description="Royalties are created automatically when a referred deal is won." />
+                                )}
+                            </Card>
                         </>
                     ) : (
-                        <div className="flex items-center gap-3 text-fg-muted p-8"><Loader2 className="animate-spin" /> Loading royalties...</div>
+                        <div className="flex items-center gap-3 text-fg-muted p-nb-4"><Loader2 className="animate-spin" /> Loading royalties...</div>
                     )}
                 </div>
             )}
 
             {/* Activity Tab */}
             {activeTab === 'activity' && (
-                <div className="space-y-3">
+                <Card title="Activity" padding="none">
                     {activities.length === 0 ? (
-                        <div className="bg-surface-sunken border border-line rounded-xl p-8 text-center text-fg-muted">
-                            No activity recorded yet.
-                        </div>
+                        <EmptyState title="No activity recorded yet." />
                     ) : (
-                        activities.map((a: any) => (
-                            <div key={a.id} className="bg-surface-sunken border border-line rounded-xl p-4 flex items-start gap-4">
-                                <div className="w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                                    <Users size={14} className="text-blue-400" />
+                        <div className="divide-y divide-line">
+                            {activities.map((a: any) => (
+                                <div key={a.id} className="p-nb-3 flex items-start gap-nb-3">
+                                    <div className="w-8 h-8 rounded-full bg-surface-raised border border-line flex items-center justify-center flex-shrink-0">
+                                        <Users size={14} className="text-fg-muted" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-fg font-medium">{a.type || 'Activity'}</p>
+                                        <p className="text-sm text-fg-subtle mt-0.5">{a.notes || '-'}</p>
+                                        <p className="text-xs text-fg-muted mt-1">{a.created_at ? formatters.formatDateTime(a.created_at) : ''}</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-fg font-medium">{a.type || 'Activity'}</p>
-                                    <p className="text-sm text-fg-subtle mt-0.5">{a.notes || '-'}</p>
-                                    <p className="text-xs text-fg-muted mt-1">{a.created_at ? formatters.formatDateTime(a.created_at) : ''}</p>
-                                </div>
-                            </div>
-                        ))
+                            ))}
+                        </div>
                     )}
-                </div>
+                </Card>
             )}
 
             {markPaidId && (

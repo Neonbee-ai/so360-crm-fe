@@ -31,22 +31,22 @@ const StakeholderDealLinker: React.FC<Props> = ({ stakeholderId, availableDeals,
     };
 
     if (unlinked.length === 0) {
-        return <p className="text-[10px] text-fg-muted italic">All deals on this lead are already linked.</p>;
+        return <p className="text-xs text-fg-muted italic">All deals on this lead are already linked.</p>;
     }
 
     return (
         <div className="flex items-center gap-2">
-            <select value={dealId} onChange={(e) => setDealId(e.target.value)} className="flex-1 bg-surface border border-line rounded-lg px-2 py-1.5 text-[10px] text-fg-subtle outline-none">
+            <select value={dealId} onChange={(e) => setDealId(e.target.value)} className="flex-1 bg-surface border border-line rounded-nb px-2 py-1.5 text-xs text-fg-subtle outline-none">
                 <option value="">Select a deal…</option>
                 {unlinked.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-            <select value={role} onChange={(e) => setRole(e.target.value)} className="bg-surface border border-line rounded-lg px-2 py-1.5 text-[10px] text-fg-subtle outline-none">
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="bg-surface border border-line rounded-nb px-2 py-1.5 text-xs text-fg-subtle outline-none">
                 {INVOLVEMENT_ROLES.map((r) => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
             </select>
             <button
                 onClick={handleLink}
                 disabled={!dealId || saving}
-                className="bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg disabled:opacity-50"
+                className="bg-primary hover:bg-primary/90 text-primary-fg text-xs font-medium px-3 py-1.5 rounded-nb disabled:opacity-50"
             >
                 Link
             </button>

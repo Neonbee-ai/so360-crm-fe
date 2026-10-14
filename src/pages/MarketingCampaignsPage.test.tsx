@@ -30,6 +30,22 @@ vi.mock('./marketing/marketingMappers', () => ({
 
 vi.mock('@so360/design-system', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  ListPageTemplate: (p: any) => (
+    <div>
+      {p.primaryAction}
+      {p.filters}
+      {p.toolbarEnd}
+      {p.children}
+    </div>
+  ),
+  Menu: ({ trigger, items }: any) => (
+    <div>
+      {trigger}
+      {items?.map((i: any) => (
+        <button key={i.label} role="menuitem" onClick={i.onSelect}>{i.label}</button>
+      ))}
+    </div>
+  ),
 }));
 
 vi.mock('../components/CampaignTemplateEditor', () => ({

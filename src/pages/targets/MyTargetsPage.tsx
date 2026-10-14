@@ -142,7 +142,7 @@ export default function MyTargetsPage() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-fg-muted">
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-fg-muted">
         <span>● On Track</span>
         <span>◐ At Risk</span>
         <span>○ Behind</span>
@@ -165,7 +165,7 @@ function MetricCard({
 }) {
   return (
     <div className="rounded-lg border border-line bg-surface-sunken p-4 grow basis-80 max-w-md">
-      <div className="text-xs uppercase tracking-wide text-fg-subtle">
+      <div className="text-xs text-fg-subtle">
         {metric.metric_name}
       </div>
 
@@ -193,7 +193,7 @@ function MetricCard({
         </span>
       </div>
 
-      <div className="mt-1 text-[11px] text-fg-muted">
+      <div className="mt-1 text-xs text-fg-muted">
         {formatPct(metric.attainment)} achieved
         {metric.projection.projectable &&
           metric.projection.projectedAttainment !== null && (

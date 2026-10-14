@@ -20,7 +20,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { toast, useConfirm, DetailPageTemplate, Button, Badge, ConfirmDialog, EmptyState } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, Badge, Card, ConfirmDialog, EmptyState } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -547,7 +547,7 @@ const LeadDetailPage = () => {
                                         }}
                                         onBlur={() => setIsChangingStatus(false)}
                                         autoFocus
-                                        className="bg-surface border border-line text-xs font-black uppercase text-fg rounded-nb px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                                        className="bg-surface border border-line text-xs font-medium text-fg rounded-nb px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-focus"
                                     >
                                         {leadStages.map(stage => (
                                             <option key={stage.id} value={stage.id}>{stage.name}</option>
@@ -611,196 +611,18 @@ const LeadDetailPage = () => {
                 activeTab={activeTab}
                 onTabChange={(tab) => setActiveTab(tab as TabType)}
                 sidePanel={
-                    <div className="space-y-6">
-                        <section className="bg-surface border border-line rounded-nb p-4" data-testid="recent-activity-rail">
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wide">Recent Activity</h3>
-                                <button onClick={() => setActiveTab('activity')} className="text-xs text-primary hover:underline">View all</button>
-                            </div>
-                            {recentActivity.length === 0 ? (
-                                <p className="text-sm text-fg-muted">No activities logged yet.</p>
-                            ) : (
-                                <ul className="space-y-2">
-                                    {recentActivity.map((event) => (
-                                        <li key={event.id} className="text-sm text-fg">
-                                            <span className="block truncate">{event.title}</span>
-                                            <span className="text-xs text-fg-muted">{formatters.formatDate(event.created_at)}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </section>
-                    {canUseNeuraAi && (
-                        <NeuraAiSummaryCard
-                            leadId={lead.id}
-                            leadLabel={lead.company_name || getLeadDisplayName(lead)}
-                            isInboxEnabled={isInboxEnabled}
-                        />
-                    )}
-
-                    {/* Lead / Customer Potential Score Card */}
-                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-hidden relative">
-                        <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
-                            <Trophy size={120} />
-                        </div>
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
-                                {isCustomerDetailRoute ? 'Customer Potential' : 'Lead Potential'}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                                {!isCustomerDetailRoute && (
-                                    <button
-                                        onClick={handleRecalculateScore}
-                                        disabled={isRecalculatingScore}
-                                        title="Recalculate score"
-                                        className="p-1.5 rounded-lg text-fg-muted hover:text-warning hover:bg-warning/10 transition-all disabled:opacity-40"
-                                    >
-                                        <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
-                                    </button>
-                                )}
-                                <div className="bg-warning/10 text-warning p-1.5 rounded-lg">
-                                    <Zap size={14} className="fill-warning" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {isCustomerDetailRoute ? (() => {
-                            const sfOrders = [];
-                            const sfWishlist = [];
-                            const sfActivities = [];
-                            const sfReviews = [];
-                            const sfAbandonedCarts = [];
-                            const sfCoupons = [];
-                            const engagementScore = Math.min(100,
-                                sfOrders.length * 20 +
-                                sfWishlist.length * 5 +
-                                Math.min(sfActivities.length, 20) * 2 +
-                                sfReviews.length * 10 +
-                                sfAbandonedCarts.length * 8 +
-                                sfCoupons.length * 6
-                            );
-                            const engagementBreakdown = [
-                                { label: `Orders placed (${sfOrders.length})`, points: sfOrders.length * 20 },
-                                { label: `Wishlist items (${sfWishlist.length})`, points: sfWishlist.length * 5 },
-                                { label: `Browsing sessions (${Math.min(sfActivities.length, 20)})`, points: Math.min(sfActivities.length, 20) * 2 },
-                                { label: `Reviews submitted (${sfReviews.length})`, points: sfReviews.length * 10 },
-                                { label: `Abandoned carts (${sfAbandonedCarts.length})`, points: sfAbandonedCarts.length * 8 },
-                                { label: `Coupons used (${sfCoupons.length})`, points: sfCoupons.length * 6 },
-                            ].filter(item => item.points > 0);
-                            return (
-                                <>
-                                    <div className="flex items-end gap-3 mb-6">
-                                        <span className="text-6xl font-black text-fg tracking-tighter leading-none">{engagementScore}</span>
-                                        <div className="pb-1">
-                                            <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Engagement</span>
-                                            <div className="flex items-center gap-1 text-success font-bold text-[10px] uppercase tracking-tighter">
-                                                <TrendingUp size={12} />
-                                                <span>/ 100</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3 pt-6 border-t border-line">
-                                        {engagementBreakdown.length === 0 ? (
-                                            <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest italic text-center py-2 underline decoration-line decoration-wavy underline-offset-4">No engagement data yet</p>
-                                        ) : (
-                                            engagementBreakdown.map((item, idx) => (
-                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="text-fg-subtle">{item.label}</span>
-                                                    <span className="text-success">+{item.points}</span>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                    <div className="mt-6 pt-4">
-                                        <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-primary to-success transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]"
-                                                style={{ width: `${engagementScore}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            );
-                        })() : (
-                            <>
-                                <div className="flex items-end gap-3 mb-3">
-                                    <span className="text-6xl font-black text-fg tracking-tighter leading-none">{score}</span>
-                                    <div className="pb-1">
-                                        <span className="text-xs font-black text-fg-muted uppercase tracking-widest block">Score</span>
-                                        <div
-                                            className="flex items-center gap-1 font-black text-[10px] uppercase tracking-tighter px-2 py-0.5 rounded-md"
-                                            style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
-                                        >
-                                            <span>● {scoreCategory.label}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2 pt-5 border-t border-line">
-                                    {breakdown.length === 0 ? (
-                                        <div className="text-center py-3">
-                                            {scoringRules.filter(r => r.is_active).length === 0 ? (
-                                                <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">No active scoring rules configured</p>
-                                            ) : (
-                                                <>
-                                                    <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
-                                                    <button
-                                                        onClick={handleRecalculateScore}
-                                                        disabled={isRecalculatingScore}
-                                                        className="mt-2 text-[9px] font-black uppercase tracking-widest text-warning hover:text-warning transition-colors flex items-center gap-1 mx-auto disabled:opacity-40"
-                                                    >
-                                                        <RefreshCw size={9} className={isRecalculatingScore ? 'animate-spin' : ''} />
-                                                        Recalculate
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <p className="text-[8px] font-black text-fg-muted uppercase tracking-[0.2em] mb-2">Matched Rules</p>
-                                            {breakdown.map((item, idx) => (
-                                                <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="flex items-center gap-1.5 text-fg-subtle truncate mr-2">
-                                                        <span className="text-success shrink-0">✓</span>
-                                                        <span className="truncate">{item.label}</span>
-                                                    </span>
-                                                    <span className={item.points >= 0 ? 'text-success shrink-0' : 'text-danger shrink-0'}>
-                                                        {item.points >= 0 ? '+' : ''}{item.points}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
-                                </div>
-                                <div className="mt-6 pt-4">
-                                    <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full transition-all duration-1000 ease-out"
-                                            style={{
-                                                width: `${Math.min(100, (score / 150) * 100)}%`,
-                                                backgroundColor: scoreCategory.color,
-                                                boxShadow: `0 0 8px ${scoreCategory.color}80`,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </section>
-                    {/* Assigned Owner & Engagement Suite Combined */}
-                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-visible relative">
-                        <div className="pb-6 border-b border-line">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Assigned Owner</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsChangingOwner(!isChangingOwner)}
-                                    className="text-[10px] text-primary font-black uppercase tracking-widest hover:text-primary transition-colors"
-                                >
-                                    {isChangingOwner ? 'CANCEL' : 'CHANGE'}
-                                </button>
-                            </div>
+                    <div className="flex flex-col gap-nb-3">
+                        {/* 1. Owner */}
+                        <Card
+                            title="Assigned owner"
+                            actions={
+                                <Button variant="secondary" type="button" onClick={() => setIsChangingOwner(!isChangingOwner)}>
+                                    {isChangingOwner ? 'Cancel' : 'Change'}
+                                </Button>
+                            }
+                        >
                             {isChangingOwner ? (
-                                <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                                <div className="flex max-h-48 flex-col gap-nb-1 overflow-y-auto">
                                     {allUsers.map(user => (
                                         <button
                                             type="button"
@@ -820,83 +642,63 @@ const LeadDetailPage = () => {
                                                     toast.error('Failed to update owner.');
                                                 }
                                             }}
-                                            className={`w-full flex items-center gap-3 p-2 rounded-xl border transition-all ${lead.owner && user.id === lead.owner.id ? 'bg-primary/10 border-primary/50' : 'bg-bg border-line hover:border-line'}`}
+                                            className={`flex w-full items-center gap-nb-3 rounded-nb border p-2 text-left transition-colors ${lead.owner && user.id === lead.owner.id ? 'border-primary bg-primary/10' : 'border-line bg-surface hover:bg-surface-raised'}`}
                                         >
-                                            <div className="w-8 h-8 rounded-full bg-surface-raised overflow-hidden flex-shrink-0">
+                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-xs font-medium text-fg">
                                                 {user.avatar_url ? (
-                                                    <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                                                    <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center font-black text-xs">{user.full_name?.charAt(0)}</div>
+                                                    user.full_name?.charAt(0)
                                                 )}
                                             </div>
-                                            <div className="text-left overflow-hidden">
-                                                <p className="text-[10px] font-black text-fg uppercase tracking-tight truncate">{user.full_name}</p>
-                                                <p className="text-[8px] text-fg-muted truncate">{user.email}</p>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-medium text-fg">{user.full_name}</p>
+                                                <p className="truncate text-xs text-fg-muted">{user.email}</p>
                                             </div>
                                         </button>
                                     ))}
                                 </div>
                             ) : lead.owner ? (
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border-2 border-line shadow-lg">
+                                <div className="flex items-center gap-nb-3">
+                                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-sm font-medium text-fg">
                                         {lead.owner.avatar_url ? (
-                                            <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="w-full h-full object-cover" />
+                                            <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="h-full w-full object-cover" />
                                         ) : (
-                                            <div className="text-xl font-black">{lead.owner.full_name?.charAt(0)}</div>
+                                            lead.owner.full_name?.charAt(0)
                                         )}
                                     </div>
-                                    <div>
-                                        <p className="font-black text-fg text-sm uppercase tracking-tight leading-none mb-1">{lead.owner.full_name}</p>
-                                        <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest">{lead.owner.email}</p>
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium text-fg">{lead.owner.full_name}</p>
+                                        <p className="truncate text-xs text-fg-muted">{lead.owner.email}</p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-3 bg-bg border border-line p-3 rounded-xl">
-                                    <div className="w-10 h-10 rounded-full bg-surface-raised border border-line flex items-center justify-center">
-                                        <Users size={18} className="text-fg-muted" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-black text-fg-muted uppercase tracking-tight">Unassigned</p>
-                                        <p className="text-[9px] text-fg-subtle uppercase tracking-widest">Click CHANGE to assign</p>
-                                    </div>
-                                </div>
+                                <EmptyState icon={Users} title="Unassigned" description="Choose Change to assign an owner." />
                             )}
-                        </div>
+                        </Card>
 
-                        <div className="py-6 border-b border-line">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">
-                                    {isCustomerDetailRoute ? 'CRM Stage' : 'Lead Stage'}
-                                </h3>
-                                {!isCustomerDetailRoute && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsChangingStage(!isChangingStage)}
-                                        className="text-[10px] font-black text-primary hover:text-primary transition-colors uppercase tracking-[0.2em]"
-                                    >
-                                        {isChangingStage ? 'CANCEL' : 'CHANGE'}
-                                    </button>
-                                )}
-                            </div>
-
+                        {/* 2. Stage / status */}
+                        <Card
+                            title={isCustomerDetailRoute ? 'CRM stage' : 'Lead stage'}
+                            actions={!isCustomerDetailRoute ? (
+                                <Button variant="secondary" type="button" onClick={() => setIsChangingStage(!isChangingStage)}>
+                                    {isChangingStage ? 'Cancel' : 'Change'}
+                                </Button>
+                            ) : undefined}
+                        >
                             {isCustomerDetailRoute ? (
                                 <>
-                                    <div className="flex items-center gap-3 bg-bg border border-line p-3 rounded-xl">
-                                        <div className="w-8 h-8 rounded-lg bg-success/10 border border-success/30 flex items-center justify-center">
-                                            <Users size={16} className="text-success" />
+                                    <div className="flex items-center justify-between gap-nb-3">
+                                        <div>
+                                            <span className="block text-xs text-fg-muted">Stage</span>
+                                            <p className="text-sm font-medium text-fg">Customer</p>
                                         </div>
-                                        <div className="flex-1">
-                                            <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block">Stage</span>
-                                            <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">Customer</p>
-                                        </div>
-                                        <span className="text-[8px] bg-surface-raised text-fg-muted px-2 py-1 rounded font-black uppercase tracking-widest">
-                                            Locked
-                                        </span>
+                                        <Badge tone="neutral" size="sm">Locked</Badge>
                                     </div>
-                                    <p className="text-[9px] text-fg-subtle mt-2 text-center">Assign to a CRM pipeline from the pipeline view</p>
+                                    <p className="mt-2 text-xs text-fg-muted">Assign to a CRM pipeline from the pipeline view.</p>
                                 </>
                             ) : isChangingStage ? (
-                                <div className="space-y-1">
+                                <div className="flex flex-col gap-nb-1">
                                     {leadStages.map(stage => (
                                         <button
                                             type="button"
@@ -916,168 +718,256 @@ const LeadDetailPage = () => {
                                                     toast.error(error.message || 'Failed to update stage. Please try again.');
                                                 }
                                             }}
-                                            className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${stage.name === lead.status
-                                                ? 'bg-primary/10 border-primary/50 text-primary'
-                                                : 'bg-bg border-line text-fg-subtle hover:border-line hover:text-fg'
-                                                }`}
+                                            className={`flex w-full items-center justify-between rounded-nb border px-3 py-2 text-sm transition-colors ${stage.name === lead.status
+ ? 'border-primary bg-primary/10 text-primary'
+ : 'border-line bg-surface text-fg hover:bg-surface-raised'
+ }`}
                                         >
                                             <span>{stage.name}</span>
-                                            {stage.name === lead.status && <CheckCircle2 size={12} />}
+                                            {stage.name === lead.status && <CheckCircle2 size={14} />}
                                         </button>
                                     ))}
                                 </div>
                             ) : (
                                 <div
-                                    className="flex items-center gap-3 bg-bg border border-line p-3 rounded-xl group hover:border-primary/20 transition-all cursor-pointer"
+                                    className="flex cursor-pointer items-center justify-between gap-nb-3"
                                     onClick={() => setIsChangingStage(true)}
                                 >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${lead.status === 'Converted' ? 'bg-success/10 border-success/30 text-success' :
-                                        lead.status === 'Lost' ? 'bg-danger/10 border-danger/40 text-danger' :
-                                            'bg-primary/10 border-primary/30 text-primary'
-                                        }`}>
-                                        <TrendingUp size={16} />
+                                    <div>
+                                        <span className="block text-xs text-fg-muted">Status</span>
+                                        <p className="text-sm font-medium text-fg">{lead.status}</p>
                                     </div>
-                                    <div className="flex-1">
-                                        <span className="text-[9px] font-black text-fg-subtle uppercase tracking-widest block leading-none">Status</span>
-                                        <p className="font-black text-fg text-xs uppercase tracking-tight mt-1">
-                                            {lead.status}
-                                        </p>
-                                    </div>
+                                    <Badge tone={lead.status === 'Converted' ? 'success' : lead.status === 'Lost' ? 'danger' : 'primary'} size="sm">
+                                        <TrendingUp size={12} />
+                                    </Badge>
                                 </div>
                             )}
-                        </div>
+                            <div className="mt-nb-3 border-t border-line pt-nb-3">
+                                <Button variant="secondary" onClick={() => setIsCreatingTask(true)}>
+                                    <Clock size={14} /> Schedule follow-up
+                                </Button>
+                            </div>
+                        </Card>
 
-                        <div className="pt-6">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em] mb-6">Engagement Suite</h3>
-                            <div className="space-y-3">
-                                <button
-                                    onClick={() => setIsCreatingTask(true)}
-                                    className="w-full bg-surface-raised hover:bg-line text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-line shadow-sm"
-                                >
-                                    <Clock size={14} /> Schedule Follow-up
-                                </button>
-                                {/* <button
-                                    onClick={async () => {
-                                        try {
-                                            await crmService.logActivity({
-                                                lead_id: id,
-                                                type: 'EMAIL',
-                                                notes: 'Outbound email sent to lead contact',
-                                                date: new Date().toISOString()
-                                            });
-                                            fetchLeadData();
-                                            setActiveTab('activity');
-                                        } catch (error: any) {
-                                            console.error('Failed to log email:', error);
-                                            toast.error(error.message || 'Failed to log email.');
-                                        }
-                                    }}
-                                    className="w-full bg-surface-raised hover:bg-line text-fg py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95 border border-line shadow-sm"
-                                >
-                                    <Mail size={14} /> Send Email
-                                </button> */}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Revenue Intelligence Card */}
-                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-hidden relative">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Revenue Intelligence</h3>
-                            <div className="bg-success/10 text-success p-1.5 rounded-lg">
-                                <DollarSign size={14} />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6 mb-8">
-                            <div>
-                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Earned</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-fg">{formatters.formatCurrency(earned)}</span>
+                        {/* 3. Value / revenue */}
+                        <Card title="Revenue intelligence">
+                            <div className="grid grid-cols-2 gap-nb-3">
+                                <div>
+                                    <span className="block text-xs text-fg-muted">Earned</span>
+                                    <span className="text-lg font-semibold text-fg">{formatters.formatCurrency(earned)}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xs text-fg-muted">Pipeline</span>
+                                    <span className="text-lg font-semibold text-fg">{formatters.formatCurrency(pipeline)}</span>
                                 </div>
                             </div>
-                            <div>
-                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Pipeline</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-fg-subtle">{formatters.formatCurrency(pipeline)}</span>
+                            <div className="mt-nb-3">
+                                <div className="mb-1 flex justify-between text-xs">
+                                    <span className="text-fg-muted">Revenue contribution</span>
+                                    <span className="text-fg">{totalValue > 0 ? Math.round((earned / totalValue) * 100) : 0}%</span>
+                                </div>
+                                <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-raised">
+                                    <div className="h-full bg-success" style={{ width: `${totalValue > 0 ? (earned / totalValue) * 100 : 0}%` }} />
+                                    <div className="h-full bg-primary/40" style={{ width: `${totalValue > 0 ? (pipeline / totalValue) * 100 : 0}%` }} />
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                                    <span className="text-fg-muted">Revenue Contribution</span>
-                                    <span className="text-success">{totalValue > 0 ? Math.round((earned / totalValue) * 100) : 0}%</span>
+                            <dl className="mt-nb-3 grid grid-cols-2 gap-nb-3 border-t border-line pt-nb-3">
+                                <div>
+                                    <dt className="text-xs text-fg-muted">Active deals</dt>
+                                    <dd className="text-sm font-medium text-fg">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</dd>
                                 </div>
-                                <div className="w-full h-3 bg-surface-raised rounded-full flex overflow-hidden border border-line">
-                                    <div
-                                        className="h-full bg-success shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-1000"
-                                        style={{ width: `${totalValue > 0 ? (earned / totalValue) * 100 : 0}%` }}
-                                    />
-                                    <div
-                                        className="h-full bg-primary/40 transition-all duration-1000"
-                                        style={{ width: `${totalValue > 0 ? (pipeline / totalValue) * 100 : 0}%` }}
-                                    />
+                                <div>
+                                    <dt className="text-xs text-fg-muted">Total LTV</dt>
+                                    <dd className="text-sm font-medium text-fg">{formatters.formatCurrency(totalValue)}</dd>
                                 </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 pt-4 border-t border-line">
-                                <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Active Deals</span>
-                                    <span className="text-sm font-black text-primary">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</span>
-                                </div>
-                                <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
-                                    <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Total LTV</span>
-                                    <span className="text-sm font-black text-fg">{formatters.formatCurrency(totalValue)}</span>
-                                </div>
-                            </div>
-                            {productCount > 0 && (
-                                <div className="flex items-center gap-4 pt-4 border-t border-line">
-                                    <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
-                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Products Interested</span>
-                                        <span className="text-sm font-black text-primary">{productCount}</span>
-                                    </div>
-                                    <div className="flex-1 bg-bg rounded-xl p-3 border border-line flex flex-col items-center">
-                                        <span className="text-[8px] font-black text-fg-subtle uppercase mb-1">Est. Revenue</span>
-                                        <span className="text-sm font-black text-success">{formatters.formatCurrency(productValue)}</span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-
-                    {/* Associated Deals Section */}
-                    <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Deals ({associatedDeals.length})</h3>
-                        </div>
-                        {associatedDeals.length === 0 ? (
-                            <div className="text-center py-6 text-fg-muted border border-dashed border-line rounded-xl">
-                                <Briefcase size={24} className="mx-auto mb-2 opacity-20" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest">No deals yet</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {associatedDeals.map(deal => (
-                                    <Link
-                                        key={deal.id}
-                                        to={`../deal/${deal.id}`}
-                                        className="block p-4 bg-bg border border-line rounded-xl hover:border-primary/50 transition-all group"
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="text-xs font-bold text-fg group-hover:text-primary transition-colors uppercase tracking-tight">{deal.name}</h4>
-                                            <ExternalLink size={12} className="text-fg-subtle group-hover:text-primary transition-all" />
+                                {productCount > 0 && (
+                                    <>
+                                        <div>
+                                            <dt className="text-xs text-fg-muted">Products interested</dt>
+                                            <dd className="text-sm font-medium text-fg">{productCount}</dd>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                                            <span className="text-success">{formatters.formatCurrency(deal.value)}</span>
-                                            <span className="text-fg-muted">{deal.stage}</span>
+                                        <div>
+                                            <dt className="text-xs text-fg-muted">Est. revenue</dt>
+                                            <dd className="text-sm font-medium text-fg">{formatters.formatCurrency(productValue)}</dd>
                                         </div>
-                                    </Link>
-                                ))}
-                            </div>
+                                    </>
+                                )}
+                            </dl>
+                        </Card>
+
+                        {/* 4. Neura summary */}
+                        {canUseNeuraAi && (
+                            <NeuraAiSummaryCard
+                                leadId={lead.id}
+                                leadLabel={lead.company_name || getLeadDisplayName(lead)}
+                                isInboxEnabled={isInboxEnabled}
+                            />
                         )}
-                    </section>
+
+                        {/* 5. Recent activity */}
+                        <div data-testid="recent-activity-rail">
+                            <Card
+                                title="Recent activity"
+                                actions={<Button variant="secondary" onClick={() => setActiveTab('activity')}>View all</Button>}
+                            >
+                                {recentActivity.length === 0 ? (
+                                    <EmptyState icon={Clock} title="No activities logged yet" />
+                                ) : (
+                                    <ul className="divide-y divide-line">
+                                        {recentActivity.map((event) => (
+                                            <li key={event.id} className="py-2 text-sm text-fg first:pt-0 last:pb-0">
+                                                <span className="block truncate">{event.title}</span>
+                                                <span className="text-xs text-fg-muted">{formatters.formatDate(event.created_at)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </Card>
+                        </div>
+
+                        {/* Potential score */}
+                        <Card
+                            title={isCustomerDetailRoute ? 'Customer potential' : 'Lead potential'}
+                            actions={!isCustomerDetailRoute ? (
+                                <Button
+                                    variant="secondary"
+                                    onClick={handleRecalculateScore}
+                                    disabled={isRecalculatingScore}
+                                    title="Recalculate score"
+                                    aria-label="Recalculate score"
+                                >
+                                    <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                </Button>
+                            ) : undefined}
+                        >
+                            {isCustomerDetailRoute ? (() => {
+                                const sfOrders = [];
+                                const sfWishlist = [];
+                                const sfActivities = [];
+                                const sfReviews = [];
+                                const sfAbandonedCarts = [];
+                                const sfCoupons = [];
+                                const engagementScore = Math.min(100,
+                                    sfOrders.length * 20 +
+                                    sfWishlist.length * 5 +
+                                    Math.min(sfActivities.length, 20) * 2 +
+                                    sfReviews.length * 10 +
+                                    sfAbandonedCarts.length * 8 +
+                                    sfCoupons.length * 6
+                                );
+                                const engagementBreakdown = [
+                                    { label: `Orders placed (${sfOrders.length})`, points: sfOrders.length * 20 },
+                                    { label: `Wishlist items (${sfWishlist.length})`, points: sfWishlist.length * 5 },
+                                    { label: `Browsing sessions (${Math.min(sfActivities.length, 20)})`, points: Math.min(sfActivities.length, 20) * 2 },
+                                    { label: `Reviews submitted (${sfReviews.length})`, points: sfReviews.length * 10 },
+                                    { label: `Abandoned carts (${sfAbandonedCarts.length})`, points: sfAbandonedCarts.length * 8 },
+                                    { label: `Coupons used (${sfCoupons.length})`, points: sfCoupons.length * 6 },
+                                ].filter(item => item.points > 0);
+                                return (
+                                    <>
+                                        <div className="flex items-baseline gap-nb-2">
+                                            <span className="text-3xl font-semibold text-fg">{engagementScore}</span>
+                                            <span className="text-xs text-fg-muted">Engagement / 100</span>
+                                        </div>
+                                        <div className="mt-nb-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
+                                            <div className="h-full bg-primary transition-all" style={{ width: `${engagementScore}%` }} />
+                                        </div>
+                                        <div className="mt-nb-3 border-t border-line pt-nb-3">
+                                            {engagementBreakdown.length === 0 ? (
+                                                <p className="text-sm text-fg-muted">No engagement data yet</p>
+                                            ) : (
+                                                <ul className="divide-y divide-line">
+                                                    {engagementBreakdown.map((item, idx) => (
+                                                        <li key={idx} className="flex items-center justify-between py-1.5 text-sm">
+                                                            <span className="text-fg-muted">{item.label}</span>
+                                                            <span className="text-success">+{item.points}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </>
+                                );
+                            })() : (
+                                <>
+                                    <div className="flex items-baseline gap-nb-2">
+                                        <span className="text-3xl font-semibold text-fg">{score}</span>
+                                        <span className="text-xs text-fg-muted">Score</span>
+                                        <span
+                                            className="ml-auto rounded-nb px-2 py-0.5 text-xs font-medium"
+                                            style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
+                                        >
+                                            {scoreCategory.label}
+                                        </span>
+                                    </div>
+                                    <div className="mt-nb-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
+                                        <div
+                                            className="h-full transition-all"
+                                            style={{ width: `${Math.min(100, (score / 150) * 100)}%`, backgroundColor: scoreCategory.color }}
+                                        />
+                                    </div>
+                                    <div className="mt-nb-3 border-t border-line pt-nb-3">
+                                        {breakdown.length === 0 ? (
+                                            scoringRules.filter(r => r.is_active).length === 0 ? (
+                                                <p className="text-sm text-fg-muted">No active scoring rules configured</p>
+                                            ) : (
+                                                <div className="flex items-center justify-between gap-nb-2">
+                                                    <p className="text-sm text-fg-muted">0 of {scoringRules.filter(r => r.is_active).length} rules matched</p>
+                                                    <Button variant="secondary" onClick={handleRecalculateScore} disabled={isRecalculatingScore}>
+                                                        <RefreshCw size={12} className={isRecalculatingScore ? 'animate-spin' : ''} />
+                                                        Recalculate
+                                                    </Button>
+                                                </div>
+                                            )
+                                        ) : (
+                                            <>
+                                                <p className="mb-1 text-xs text-fg-muted">Matched rules</p>
+                                                <ul className="divide-y divide-line">
+                                                    {breakdown.map((item, idx) => (
+                                                        <li key={idx} className="flex items-center justify-between py-1.5 text-sm">
+                                                            <span className="mr-2 flex min-w-0 items-center gap-1.5 text-fg">
+                                                                <span className="shrink-0 text-success">✓</span>
+                                                                <span className="truncate">{item.label}</span>
+                                                            </span>
+                                                            <span className={item.points >= 0 ? 'shrink-0 text-success' : 'shrink-0 text-danger'}>
+                                                                {item.points >= 0 ? '+' : ''}{item.points}
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </Card>
+
+                        {/* Deals */}
+                        <Card title={`Deals (${associatedDeals.length})`}>
+                            {associatedDeals.length === 0 ? (
+                                <EmptyState icon={Briefcase} title="No deals yet" />
+                            ) : (
+                                <ul className="divide-y divide-line">
+                                    {associatedDeals.map(deal => (
+                                        <li key={deal.id}>
+                                            <Link
+                                                to={`../deal/${deal.id}`}
+                                                className="group block py-2 first:pt-0 last:pb-0"
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <h4 className="text-sm font-medium text-fg group-hover:text-primary">{deal.name}</h4>
+                                                    <ExternalLink size={12} className="text-fg-subtle group-hover:text-primary" />
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs">
+                                                    <span className="text-success">{formatters.formatCurrency(deal.value)}</span>
+                                                    <span className="text-fg-muted">{deal.stage}</span>
+                                                </div>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </Card>
                     </div>
                 }
             >
@@ -1110,13 +1000,12 @@ const LeadDetailPage = () => {
 
 
                 {activeTab === 'overview' && (
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-nb-3">
             {/* Lead Journey Stepper — only for leads, not customers */}
             {!isCustomerDetailRoute && (
-            <div className="mb-8 bg-surface border border-line rounded-2xl p-6">
-                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4">Lead Journey</h3>
-                <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
-            </div>
+                <Card title="Lead journey">
+                    <LeadJourneyStepper currentState={(lead as any).current_flow_state || lead.status} />
+                </Card>
             )}
             <QuickActionBar
                 onAddNote={() => {
@@ -1150,29 +1039,29 @@ const LeadDetailPage = () => {
                 tasks={associatedTasks}
             />
                     {/* Lead Information Tabs Card */}
-                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-sm flex flex-col h-fit">
+                    <Card padding="none" className="overflow-hidden">
                         <div className="flex border-b border-line bg-surface">
                             <button
                                 onClick={() => setInfoTab('profile')}
-                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'profile' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                className={`flex items-center gap-2 px-4 py-3 text-xs font-medium transition-all ${infoTab === 'profile' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 <Users size={14} /> Full Profile
                             </button>
                             {customFieldDefs.length > 0 && (
                                 <button
                                     onClick={() => setInfoTab('additional')}
-                                    className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'additional' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                    className={`flex items-center gap-2 px-4 py-3 text-xs font-medium transition-all ${infoTab === 'additional' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                                 >
                                     <Info size={14} /> Additional Info
                                 </button>
                             )}
                             <button
                                 onClick={() => setInfoTab('business')}
-                                className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${infoTab === 'business' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                className={`flex items-center gap-2 px-4 py-3 text-xs font-medium transition-all ${infoTab === 'business' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
                             >
                                 <Building2 size={14} /> Business Profile
                             </button>
-                            <div className="ml-auto flex items-center px-6">
+                            <div className="ml-auto flex items-center px-4">
                                 <button
                                     disabled={isSavingInfo}
                                     onClick={async () => {
@@ -1229,7 +1118,7 @@ const LeadDetailPage = () => {
                                         }
                                         setIsEditingInfo(!isEditingInfo);
                                     }}
-                                    className={`p-2 rounded-lg transition-all disabled:opacity-60 disabled:cursor-wait ${isEditingInfo ? 'bg-primary text-fg shadow-lg' : 'text-fg-muted hover:text-fg-subtle hover:bg-surface-raised'}`}
+                                    className={`p-2 rounded-nb transition-all disabled:opacity-60 disabled:cursor-wait ${isEditingInfo ? 'bg-primary text-fg ' : 'text-fg-muted hover:text-fg-subtle hover:bg-surface-raised'}`}
                                     title={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
                                     aria-busy={isSavingInfo}
                                 >
@@ -1238,16 +1127,16 @@ const LeadDetailPage = () => {
                             </div>
                         </div>
 
-                        <div className="p-8">
+                        <div className="p-4">
                             {infoTab === 'profile' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
-                                    <div className="space-y-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div className="space-y-6">
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-fg-subtle shadow-inner">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">First Name</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">First Name</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type="text"
@@ -1257,10 +1146,10 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, first_name: validateFirstNameRequired(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.first_name}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-danger' : 'border-line focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.first_name ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.first_name || '—'}</span>
+                                                    <span className="text-sm font-medium">{lead.first_name || '—'}</span>
                                                 )}
                                                 {isEditingInfo && editErrors.first_name && (
                                                     <p className="text-xs text-danger mt-1">{editErrors.first_name}</p>
@@ -1268,11 +1157,11 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-fg-subtle shadow-inner">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Last Name</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">Last Name</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type="text"
@@ -1282,10 +1171,10 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, last_name: validateLastName(e.target.value) }));
                                                         }}
                                                         aria-invalid={!!editErrors.last_name}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-danger' : 'border-line focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.last_name ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">{lead.last_name || '—'}</span>
+                                                    <span className="text-sm font-medium">{lead.last_name || '—'}</span>
                                                 )}
                                                 {isEditingInfo && editErrors.last_name && (
                                                     <p className="text-xs text-danger mt-1">{editErrors.last_name}</p>
@@ -1293,11 +1182,11 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Mail size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Email</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">Email</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         /* `text`, not `email`: the browser's native popup
@@ -1310,10 +1199,10 @@ const LeadDetailPage = () => {
                                                             setEditErrors(prev => ({ ...prev, contact_email: validateEmailRequired(e.target.value, 'Email') }));
                                                         }}
                                                         aria-invalid={!!editErrors.contact_email}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-danger' : 'border-line focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.contact_email ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
-                                                    <a href={`mailto:${lead.contact_email}`} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-tight">{lead.contact_email}</a>
+                                                    <a href={`mailto:${lead.contact_email}`} className="text-sm font-medium hover:text-primary transition-colors">{lead.contact_email}</a>
                                                 )}
                                                 {isEditingInfo && editErrors.contact_email && (
                                                     <p className="text-xs text-danger mt-1">{editErrors.contact_email}</p>
@@ -1321,11 +1210,11 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Phone size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Phone</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">Phone</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type="text"
@@ -1336,11 +1225,11 @@ const LeadDetailPage = () => {
                                                         }}
                                                         placeholder="Add phone..."
                                                         aria-invalid={!!editErrors.phone}
-                                                        className={`bg-bg border text-sm font-bold text-fg rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-danger' : 'border-line focus:border-primary'}`}
+                                                        className={`bg-bg border text-sm font-medium text-fg rounded px-2 py-1 outline-none ${editErrors.phone ? 'border-danger' : 'border-line focus:border-primary'}`}
                                                     />
                                                 ) : (
                                                     <span className="flex items-center gap-2">
-                                                        <span className="text-sm font-bold uppercase tracking-tight">{lead.phone || 'Not provided'}</span>
+                                                        <span className="text-sm font-medium">{lead.phone || 'Not provided'}</span>
                                                         <ClickToCallButton
                                                             number={lead.phone}
                                                             entityType={isCustomerDetailRoute ? 'contact' : 'lead'}
@@ -1355,18 +1244,18 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-8">
+                                    <div className="space-y-6">
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-success shadow-inner">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-success">
                                                 <Tag size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Source</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">Source</span>
                                                 {isEditingInfo ? (
                                                     <select
                                                         value={lead.source}
                                                         onChange={(e) => setLead({ ...lead, source: e.target.value })}
-                                                        className="bg-bg border border-line text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
+                                                        className="bg-bg border border-line text-sm font-medium text-fg rounded px-2 py-1 outline-none focus:border-primary"
                                                     >
                                                         <option value="">— Select source —</option>
                                                         {sourceTypes.map(opt => (
@@ -1374,7 +1263,7 @@ const LeadDetailPage = () => {
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">
+                                                    <span className="text-sm font-medium">
                                                         {sourceTypes.find(o => o.value === lead.source)?.label ?? lead.source}
                                                     </span>
                                                 )}
@@ -1382,11 +1271,11 @@ const LeadDetailPage = () => {
                                         </div>
 
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Referred By</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">Referred By</span>
                                                 {isEditingInfo ? (
                                                     <PartnerSearchDropdown
                                                         partners={partners}
@@ -1396,7 +1285,7 @@ const LeadDetailPage = () => {
                                                         inputClassName="text-sm font-bold"
                                                     />
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">
+                                                    <span className="text-sm font-medium">
                                                         {partners.find(p => p.id === lead.referred_by)?.company_name || '—'}
                                                     </span>
                                                 )}
@@ -1405,11 +1294,11 @@ const LeadDetailPage = () => {
 
                                         {isEditingInfo && (
                                             <div className="flex items-center gap-4 text-fg-subtle">
-                                                <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shadow-inner">
+                                                <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                     <Users size={18} />
                                                 </div>
                                                 <div className="flex flex-col flex-1">
-                                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Partner</span>
+                                                    <span className="text-xs font-medium text-fg-muted mb-0.5">Partner</span>
                                                     <label className="flex items-center gap-2 cursor-pointer">
                                                         <input
                                                             type="checkbox"
@@ -1417,19 +1306,19 @@ const LeadDetailPage = () => {
                                                             onChange={(e) => setLead({ ...lead, type: e.target.checked ? 'partner' : 'lead' })}
                                                             className="w-4 h-4 rounded accent-primary"
                                                         />
-                                                        <span className="text-sm font-bold">Mark as Partner</span>
+                                                        <span className="text-sm font-medium">Mark as Partner</span>
                                                     </label>
                                                 </div>
                                             </div>
                                         )}
 
                                         <div className="flex items-center gap-4 text-fg-subtle text-opacity-50">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-warning shadow-inner opacity-50">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-warning opacity-50">
                                                 <Calendar size={18} />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">Created</span>
-                                                <span className="text-sm font-bold uppercase tracking-tight">{formatters.formatDate(lead.created_at)}</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">Created</span>
+                                                <span className="text-sm font-medium">{formatters.formatDate(lead.created_at)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1437,14 +1326,14 @@ const LeadDetailPage = () => {
                             )}
 
                             {infoTab === 'additional' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
                                     {customFieldDefs.map(field => (
                                         <div key={field.id} className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-fg-muted shadow-inner">
+                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-muted">
                                                 {field.type === 'date' ? <Calendar size={18} /> : field.type === 'boolean' ? <CheckCircle2 size={18} /> : <Tag size={18} />}
                                             </div>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-wider mb-0.5">{field.label}</span>
+                                                <span className="text-xs font-medium text-fg-muted mb-0.5">{field.label}</span>
                                                 {isEditingInfo ? (
                                                     <input
                                                         type={field.type === 'number' ? 'number' : 'text'}
@@ -1456,10 +1345,10 @@ const LeadDetailPage = () => {
                                                                 [field.id]: e.target.value
                                                             }
                                                         })}
-                                                        className="bg-bg border border-line text-sm font-bold text-fg rounded px-2 py-1 outline-none focus:border-primary"
+                                                        className="bg-bg border border-line text-sm font-medium text-fg rounded px-2 py-1 outline-none focus:border-primary"
                                                     />
                                                 ) : (
-                                                    <span className="text-sm font-bold uppercase tracking-tight">
+                                                    <span className="text-sm font-medium">
                                                         {field.type === 'boolean'
                                                             ? (lead.custom_fields?.[field.id] ? 'Yes' : 'No')
                                                             : field.type === 'date' && lead.custom_fields?.[field.id]
@@ -1481,63 +1370,56 @@ const LeadDetailPage = () => {
                                 />
                             )}
                         </div>
-                    </section>
+                    </Card>
                     </div>
                 )}
 
                 {activeTab !== 'overview' && (
                     <div ref={workspaceRef} className="space-y-4 scroll-mt-6" data-testid="detail-workspace">
-                        <div className="px-4 pt-3">
-                            <div className="relative">
-                                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
-                                <input
-                                    value={commSearchQuery}
-                                    onChange={(e) => setCommSearchQuery(e.target.value)}
-                                    placeholder="Search notes, tasks, deals…"
-                                    className="w-full bg-bg border border-line rounded-lg pl-8 pr-3 py-1.5 text-[11px] text-fg-subtle placeholder-fg-subtle outline-none focus:border-primary/40"
-                                />
-                            </div>
-                            {commSearchQuery.trim() && (
-                                <div className="mt-2 max-h-64 overflow-y-auto border border-line rounded-lg divide-y divide-line">
-                                    {commSearchResults.length === 0 ? (
-                                        <p className="text-[11px] text-fg-muted italic px-3 py-2">No matches.</p>
-                                    ) : (
-                                        commSearchResults.map((r) => (
-                                            <button
-                                                key={r.id}
-                                                onClick={() => { setActiveTab(r.tab); setCommSearchQuery(''); }}
-                                                className="w-full text-left px-3 py-2 hover:bg-surface transition-colors"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{r.kind}</span>
-                                                    <span className="text-[9px] text-fg-muted">{formatters.formatDate(r.date)}</span>
-                                                </div>
-                                                <p className="text-xs text-fg-subtle truncate">{r.title}</p>
-                                            </button>
-                                        ))
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        <div className="bg-surface border border-line rounded-nb p-4">
+                        <div className="flex flex-col gap-nb-3">
                             {activeTab === 'activity' && (
-                                <div className="space-y-6">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Customer Timeline</p>
-                                            <p className="text-[10px] text-fg-muted mt-0.5">
-                                                Showing latest {entityTimeline.events.length}
-                                            </p>
+                                <Card
+                                    title="Customer timeline"
+                                    actions={
+                                        <div className="flex items-center gap-nb-2">
+                                            <div className="relative">
+                                                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-muted" />
+                                                <input
+                                                    value={commSearchQuery}
+                                                    onChange={(e) => setCommSearchQuery(e.target.value)}
+                                                    placeholder="Search notes, tasks, deals…"
+                                                    aria-label="Search notes, tasks, deals"
+                                                    className="h-nb-control-md w-48 rounded-nb border border-line bg-surface pl-8 pr-3 text-sm text-fg placeholder:text-fg-subtle outline-none focus:border-primary wc-medium:w-64"
+                                                />
+                                            </div>
+                                            <Button variant="secondary" onClick={() => setShowActivityDrawer(true)}>
+                                                <ExternalLink size={12} /> View all history
+                                            </Button>
                                         </div>
-                                        <button
-                                            onClick={() => setShowActivityDrawer(true)}
-                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary transition-colors"
-                                        >
-                                            <ExternalLink size={11} />
-                                            View All History
-                                        </button>
-                                    </div>
+                                    }
+                                >
+                                <div className="space-y-6">
+                                    {commSearchQuery.trim() && (
+                                        <div className="max-h-64 overflow-y-auto rounded-nb border border-line divide-y divide-line">
+                                            {commSearchResults.length === 0 ? (
+                                                <p className="px-3 py-2 text-sm text-fg-muted">No matches.</p>
+                                            ) : (
+                                                commSearchResults.map((r) => (
+                                                    <button
+                                                        key={r.id}
+                                                        onClick={() => { setActiveTab(r.tab); setCommSearchQuery(''); }}
+                                                        className="w-full px-3 py-2 text-left transition-colors hover:bg-surface-raised"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-xs font-medium text-fg-muted">{r.kind}</span>
+                                                            <span className="text-xs text-fg-muted">{formatters.formatDate(r.date)}</span>
+                                                        </div>
+                                                        <p className="truncate text-sm text-fg">{r.title}</p>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* AI/health summary */}
                                     {entityTimeline.summary && <TimelineSummaryBanner summary={entityTimeline.summary} />}
@@ -1549,10 +1431,7 @@ const LeadDetailPage = () => {
                                                 <Loader2 size={18} className="animate-spin" />
                                             </div>
                                         ) : entityTimeline.events.length === 0 ? (
-                                            <div className="text-center py-8 ml-6">
-                                                <p className="text-fg-muted italic text-sm">No activities logged yet.</p>
-                                                <p className="text-fg-muted text-[10px] mt-1">Activities will appear here automatically when users interact with this lead.</p>
-                                            </div>
+                                            <EmptyState title="No activities logged yet" description="Activities appear here automatically when users interact with this record." />
                                         ) : (
                                             entityTimeline.events.map((event) => (
                                                 <TimelineEventCard
@@ -1580,37 +1459,38 @@ const LeadDetailPage = () => {
 
                                     {entityTimeline.hasMore && (
                                         <div className="flex flex-col items-center gap-3 pt-2">
-                                            <button
+                                            <Button
+                                                variant="secondary"
                                                 onClick={entityTimeline.loadMore}
                                                 disabled={entityTimeline.loadingMore}
-                                                className="text-[10px] text-fg-muted hover:text-primary transition-colors font-bold uppercase tracking-widest disabled:opacity-50"
                                             >
-                                                {entityTimeline.loadingMore ? 'Loading…' : 'Load More →'}
-                                            </button>
+                                                {entityTimeline.loadingMore ? 'Loading…' : 'Load more'}
+                                            </Button>
                                         </div>
                                     )}
-                                </div>
+                                </Card>
                             )}
                             {activeTab === 'notes' && (
-                                <div className="space-y-6">
-                                    <div className="space-y-4">
+                                <Card title="Notes">
+                                    <div className="flex flex-col gap-nb-3">
                                         {lead.notes.length === 0 ? (
-                                            <p className="text-fg-subtle italic text-sm">No notes captured for this {isCustomerDetailRoute ? 'customer' : 'lead'} yet.</p>
+                                            <EmptyState title="No notes yet" description={`Notes captured for this ${isCustomerDetailRoute ? 'customer' : 'lead'} will appear here.`} />
                                         ) : (
-                                            <div className="space-y-4">
+                                            <div className="divide-y divide-line">
                                                 {sortNotesNewestFirst(lead.notes).map(note => (
-                                                    <div key={note.id} className="text-sm bg-surface border border-line rounded-xl p-4 group/note relative">
+                                                    <div key={note.id} className="text-sm py-nb-3 first:pt-0 group/note relative">
                                                         {editingNoteId === note.id ? (
-                                                            <div className="bg-bg border border-line rounded-xl p-4 mb-2">
+                                                            <div className="mb-2">
                                                                 <NoteEditor value={editingNoteContent} onChange={setEditingNoteContent} autoFocus />
                                                                 <div className="flex justify-end gap-2 mt-3">
-                                                                    <button
+                                                                    <Button
+                                                                        variant="secondary"
                                                                         onClick={() => setEditingNoteId(null)}
-                                                                        className="text-fg-subtle hover:text-fg px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest"
                                                                     >
                                                                         Cancel
-                                                                    </button>
-                                                                    <button
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="primary"
                                                                         onClick={async () => {
                                                                             if (isNoteContentEmpty(editingNoteContent)) return;
                                                                             await crmService.updateNote(note.id, editingNoteContent);
@@ -1621,15 +1501,14 @@ const LeadDetailPage = () => {
                                                                             setEditingNoteId(null);
                                                                         }}
                                                                         disabled={isNoteContentEmpty(editingNoteContent)}
-                                                                        className="bg-surface-raised hover:bg-line text-fg px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-line disabled:opacity-50"
                                                                     >
                                                                         Save
-                                                                    </button>
+                                                                    </Button>
                                                                 </div>
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <div className="absolute right-0 top-0 opacity-0 group-hover/note:opacity-100 transition-opacity flex gap-2">
+                                                                <div className="absolute right-0 top-nb-3 opacity-0 group-hover/note:opacity-100 transition-opacity flex gap-2">
                                                                     <button
                                                                         aria-label="Edit note"
                                                                         data-testid={`edit-note-${note.id}`}
@@ -1664,8 +1543,8 @@ const LeadDetailPage = () => {
                                                             </>
                                                         )}
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{note.author.full_name}</span>
-                                                            <span className="text-[10px] text-fg-subtle font-bold">{formatters.formatDate(note.created_at)}</span>
+                                                            <span className="text-xs font-medium text-fg-muted">{note.author.full_name}</span>
+                                                            <span className="text-xs text-fg-subtle font-medium">{formatters.formatDate(note.created_at)}</span>
                                                         </div>
 
                                                         {(note.replies || []).length > 0 && (
@@ -1673,8 +1552,8 @@ const LeadDetailPage = () => {
                                                                 {groupConsecutiveReplies(note.replies || []).map((run) => (
                                                                     <div key={run[0].id} className="space-y-1.5">
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{run[0].author?.full_name}</span>
-                                                                            <span className="text-[10px] text-fg-muted font-bold">{formatters.formatDate(run[0].created_at)}</span>
+                                                                            <span className="text-xs font-medium text-fg-muted">{run[0].author?.full_name}</span>
+                                                                            <span className="text-xs text-fg-muted font-medium">{formatters.formatDate(run[0].created_at)}</span>
                                                                         </div>
                                                                         {run.map((reply) => (
                                                                             <div key={reply.id} className="text-sm">
@@ -1703,7 +1582,7 @@ const LeadDetailPage = () => {
                                                                     type="button"
                                                                     data-testid={`open-reply-${note.id}`}
                                                                     onClick={() => setOpenReplyNoteId(note.id)}
-                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-fg-muted hover:text-primary uppercase tracking-widest transition-colors"
+                                                                    className="flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-primary transition-colors"
                                                                 >
                                                                     <MessageSquare size={11} /> Reply
                                                                 </button>
@@ -1713,7 +1592,7 @@ const LeadDetailPage = () => {
                                                 ))}
                                             </div>
                                         )}
-                                        <div ref={noteComposerRef} className="bg-bg border border-line rounded-xl p-4 transition-all focus-within:ring-1 focus-within:ring-focus">
+                                        <div ref={noteComposerRef} className="border-t border-line pt-nb-3 first:border-t-0 first:pt-0">
                                             <NoteEditor
                                                 key={noteEditorKey}
                                                 value={newNoteContent}
@@ -1721,7 +1600,8 @@ const LeadDetailPage = () => {
                                                 placeholder="Add a private note about this lead..."
                                             />
                                             <div className="flex justify-end mt-3">
-                                                <button
+                                                <Button
+                                                    variant="primary"
                                                     onClick={async () => {
                                                         if (isNoteContentEmpty(newNoteContent)) return;
                                                         const freshNote = await crmService.createNote({ lead_id: lead.id, content: newNoteContent });
@@ -1733,46 +1613,40 @@ const LeadDetailPage = () => {
                                                         setNoteEditorKey((k) => k + 1);
                                                     }}
                                                     disabled={isNoteContentEmpty(newNoteContent)}
-                                                    className="bg-surface-raised hover:bg-line text-fg px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border border-line disabled:opacity-50 shadow-sm"
                                                 >
-                                                    Save Note
-                                                </button>
+                                                    Save note
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </Card>
                             )}
 
                             {activeTab === 'tasks' && (
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Active Tasks</p>
-                                            {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
-                                                <span className="bg-danger text-primary-fg text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">
-                                                    Due Reminders
-                                                </span>
+                                <Card
+                                    title="Tasks"
+                                    actions={
+                                        <Button variant="secondary" onClick={() => setIsCreatingTask(true)}>
+                                            <Plus size={12} /> Add task
+                                        </Button>
+                                    }
+                                >
+                                <div className="flex flex-col gap-nb-3">
+                                    {associatedTasks.some(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 60 * 60 * 1000)) && (
+                                                <Badge tone="danger" size="sm">Due reminders</Badge>
                                             )}
-                                        </div>
-                                        <button
-                                            onClick={() => setIsCreatingTask(true)}
-                                            className="text-[10px] font-black text-primary bg-primary/10 px-3 py-2 rounded-lg hover:bg-primary/20 transition-all uppercase tracking-widest flex items-center gap-2"
-                                        >
-                                            <Plus size={12} /> Add Task
-                                        </button>
-                                    </div>
 
                                     {/* Reminders Alert Section */}
                                     {associatedTasks.filter(t => t.type === 'REMINDER' && t.status === 'OPEN' && new Date(t.due_date) <= new Date(new Date().getTime() + 24 * 60 * 60 * 1000)).length > 0 && (
                                         /* Notification strip — deliberately NOT card-shaped, so it
                                            never reads as a second copy of the task below. */
-                                        <div className="mb-6" data-testid="task-reminders-panel">
+                                        <div data-testid="task-reminders-panel">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <Clock size={12} className="text-warning" />
-                                                <h4 className="text-[10px] font-black text-warning uppercase tracking-widest">
-                                                    Upcoming &amp; Due Reminders
+                                                <h4 className="text-xs font-medium text-warning">
+                                                    Upcoming and due reminders
                                                 </h4>
-                                                <span className="text-[10px] text-fg-subtle normal-case tracking-normal">
+                                                <span className="text-xs text-fg-subtle">
                                                     · alerts for tasks already listed below
                                                 </span>
                                             </div>
@@ -1792,11 +1666,11 @@ const LeadDetailPage = () => {
                                                             >
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-danger animate-pulse' : 'bg-warning'}`} />
                                                                 <span className="text-xs font-semibold text-fg-subtle truncate">{task.title}</span>
-                                                                <span className={`text-[11px] shrink-0 ${reminderOverdue ? 'text-danger font-bold' : 'text-fg-subtle'}`}>
+                                                                <span className={`text-xs shrink-0 ${reminderOverdue ? 'text-danger font-medium' : 'text-fg-subtle'}`}>
                                                                     {reminderOverdue ? 'Overdue · ' : ''}{formatters.formatDateTime(task.due_date)}
                                                                 </span>
-                                                                <span className="ml-auto text-[10px] font-black text-warning uppercase tracking-widest shrink-0">
-                                                                    View Task
+                                                                <span className="ml-auto text-xs font-medium text-warning shrink-0">
+                                                                    View task
                                                                 </span>
                                                             </button>
                                                         );
@@ -1805,16 +1679,13 @@ const LeadDetailPage = () => {
                                         </div>
                                     )}
                                     {associatedTasks.length === 0 ? (
-                                        <div className="text-center py-10 text-fg-muted border-2 border-dashed border-line rounded-xl">
-                                            <CheckCircle2 size={32} className="mx-auto mb-3 opacity-20" />
-                                            <p className="text-sm font-medium">No active tasks or follow-ups.</p>
-                                        </div>
+                                        <EmptyState icon={CheckCircle2} title="No active tasks or follow-ups" description="Use Add task to track the next step." />
                                     ) : (
-                                        <div className="grid gap-3">
+                                        <div className="divide-y divide-line">
                                             {associatedTasks.map(task => {
                                                 const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
                                                 return (
-                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-4 p-4 bg-bg border rounded-xl group shadow-sm relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-warning' : ''} ${task.status === 'DONE' ? 'border-success/30 opacity-60' : overdue ? 'border-danger/40 hover:border-danger/40 bg-danger/10' : 'border-line hover:border-primary/50'}`}>
+                                                <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-warning rounded-nb' : ''} ${task.status === 'DONE' ? 'opacity-60' : ''}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
                                                         className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-success/10 border-success text-success' : 'border-line group-hover:border-primary'}`}
@@ -1824,14 +1695,12 @@ const LeadDetailPage = () => {
                                                     <div className="flex-1 min-w-0">
                                                         <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
-                                                                <h4 className={`text-sm font-bold text-fg leading-tight truncate group-hover/link:text-primary transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
-                                                                    {task.title || 'Untitled Task'}
+                                                                <h4 className={`text-sm font-medium text-fg leading-tight truncate group-hover/link:text-primary transition-colors ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
+                                                                    {task.title || 'Untitled task'}
                                                                 </h4>
                                                                 <div className="flex items-center gap-2">
                                                                     {overdue && (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-danger/10 text-danger border-danger/40" data-testid={`overdue-badge-${task.id}`}>
-                                                                            Overdue
-                                                                        </span>
+                                                                        <Badge tone="danger" size="sm" data-testid={`overdue-badge-${task.id}`}>Overdue</Badge>
                                                                     )}
                                                                     <div className="relative">
                                                                         <button
@@ -1840,13 +1709,13 @@ const LeadDetailPage = () => {
                                                                                 e.stopPropagation();
                                                                                 setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
                                                                             }}
-                                                                            className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border cursor-pointer transition-all hover:shadow-md ${task.status === 'DONE' ? 'bg-success/10 text-success border-success/30 hover:bg-success/20' : 'bg-surface-raised text-fg border-line hover:bg-line'}`}
+                                                                            className="cursor-pointer"
                                                                             data-testid={`status-button-${task.id}`}
                                                                         >
-                                                                            {task.status}
-                                                                        </button>
+                                            <Badge size="sm" tone={task.status === 'DONE' ? 'success' : task.status === 'IN_PROGRESS' ? 'info' : 'neutral'}>{task.status}</Badge>
+                                        </button>
                                                                         {expandedStatusDropdown === task.id && (
-                                                                            <div className="absolute top-full mt-1 right-0 z-10 bg-surface border border-line rounded-lg shadow-lg" data-testid={`status-dropdown-${task.id}`}>
+                                                                            <div className="absolute top-full mt-1 right-0 z-10 bg-surface border border-line rounded-nb" data-testid={`status-dropdown-${task.id}`}>
                                                                                 {['OPEN', 'IN_PROGRESS', 'DONE'].map((status) => (
                                                                                     <button
                                                                                         key={status}
@@ -1864,7 +1733,7 @@ const LeadDetailPage = () => {
                                                                                                     toast.error('Failed to update task status');
                                                                                                 });
                                                                                         }}
-                                                                                        className={`w-full text-left px-3 py-1.5 text-[8px] font-black uppercase tracking-widest transition-colors ${task.status === status ? 'bg-primary/20 text-primary border-b border-primary/20' : 'hover:bg-surface-raised text-fg-subtle'}`}
+                                                                                        className={`w-full text-left px-3 py-1.5 text-xs font-medium transition-colors ${task.status === status ? 'bg-primary/20 text-primary border-b border-primary/20' : 'hover:bg-surface-raised text-fg-subtle'}`}
                                                                                         data-testid={`status-option-${task.id}-${status}`}
                                                                                     >
                                                                                         {status}
@@ -1883,7 +1752,7 @@ const LeadDetailPage = () => {
                                                         {/* Metadata row: readable in its own right, one weight below the
                                                             title. The previous muted-grey / pale-red pairing sat under
                                                             3:1 on the light theme's white card. */}
-                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-fg-subtle uppercase tracking-wider border-t border-line pt-2">
+                                                        <div className="flex items-center gap-4 mt-3 text-xs font-medium text-fg-subtle border-t border-line pt-2">
                                                             <span className={`flex items-center gap-1 ${overdue ? 'text-danger' : 'text-fg-subtle'}`}>
                                                                 <Clock size={11} />
                                                                 Due {formatters.formatDate(task.due_date)}
@@ -1910,7 +1779,7 @@ const LeadDetailPage = () => {
                                                         <button
                                                             onClick={() => !isTaskLocked(task.status) && setEditingTask(task)}
                                                             disabled={isTaskLocked(task.status)}
-                                                            title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit Task'}
+                                                            title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : 'Edit task'}
                                                             aria-label="Edit Task"
                                                             className="p-1.5 bg-surface-raised rounded hover:text-primary hover:bg-line transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-raised disabled:hover:text-current"
                                                         >
@@ -1923,15 +1792,14 @@ const LeadDetailPage = () => {
                                         </div>
                                     )}
                                 </div>
+                                </Card>
                             )}
 
                             {activeTab === 'documents' && (
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Digital Assets & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary/90 text-fg shadow-lg shadow-primary/30 active:scale-95'}`}>
+                                <Card title="Documents" actions={
+<label className={`inline-flex items-center gap-nb-2 h-nb-control-md px-nb-3 rounded-nb border border-line text-sm font-medium cursor-pointer transition-colors ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-surface text-fg hover:bg-surface-raised'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
-                                            {isUploading ? 'Uploading...' : 'Upload Document'}
+                                            {isUploading ? 'Uploading…' : 'Upload document'}
                                             <input
                                                 ref={documentInputRef}
                                                 type="file"
@@ -1960,24 +1828,19 @@ const LeadDetailPage = () => {
                                                 }}
                                             />
                                         </label>
-                                    </div>
-
+                                }>
                                     {(!lead.documents || lead.documents.length === 0) ? (
-                                        <div className="text-center py-12 text-fg-muted border-2 border-dashed border-line rounded-2xl bg-bg">
-                                            <FileIcon size={48} className="mx-auto mb-4 opacity-10" />
-                                            <p className="text-sm font-bold uppercase tracking-widest mb-1">No documents attached</p>
-                                            <p className="text-xs text-fg-subtle lowercase italic">Centralize proposals, contracts, and requirement docs here.</p>
-                                        </div>
+                                        <EmptyState icon={FileIcon} title="No documents attached" description="Centralize proposals, contracts, and requirement docs here." />
                                     ) : (
-                                        <div className="grid gap-3">
+                                        <div className="divide-y divide-line">
                                             {lead.documents.map(doc => (
-                                                <div key={doc.id} className="flex items-center gap-4 p-4 bg-bg border border-line rounded-2xl group hover:border-line transition-all shadow-sm">
-                                                    <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-primary border border-line group-hover:scale-105 transition-transform shadow-inner">
+                                                <div key={doc.id} className="flex items-center gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group">
+                                                    <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary shrink-0">
                                                         <File size={20} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <h4 className="text-sm font-bold text-fg truncate group-hover:text-primary transition-colors">{doc.name}</h4>
-                                                        <div className="flex items-center gap-3 mt-1 text-[9px] font-bold text-fg-subtle uppercase tracking-widest">
+                                                        <h4 className="text-sm font-medium text-fg truncate group-hover:text-primary transition-colors">{doc.name}</h4>
+                                                        <div className="flex items-center gap-3 mt-1 text-xs font-medium text-fg-subtle">
                                                             <span>{(doc.size / (1024 * 1024)).toFixed(2)} MB</span>
                                                             <span className="w-1 h-1 bg-surface-raised rounded-full" />
                                                             <span>{formatters.formatDate(doc.uploaded_at)}</span>
@@ -1989,7 +1852,7 @@ const LeadDetailPage = () => {
                                                         {doc.dmsDocumentId ? (
                                                             <button
                                                                 onClick={() => { void openLeadDocument(doc); }}
-                                                                className="p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-lg transition-all"
+                                                                className="p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-nb transition-all"
                                                                 title="View"
                                                             >
                                                                 <Eye size={16} />
@@ -1999,7 +1862,7 @@ const LeadDetailPage = () => {
                                                                 href={doc.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-lg transition-all"
+                                                                className="p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-nb transition-all"
                                                                 title="View"
                                                             >
                                                                 <Eye size={16} />
@@ -2027,7 +1890,7 @@ const LeadDetailPage = () => {
                                                                     }
                                                                 }
                                                             }}
-                                                            className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-lg transition-all"
+                                                            className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-all"
                                                             title="Download"
                                                         >
                                                             <Download size={16} />
@@ -2043,7 +1906,7 @@ const LeadDetailPage = () => {
                                                                     publishLeadDocumentsChanged(lead.id);
                                                                 }
                                                             }}
-                                                            className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
+                                                            className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 rounded-nb transition-all"
                                                             title="Delete document"
                                                             aria-label="Delete document"
                                                         >
@@ -2054,47 +1917,61 @@ const LeadDetailPage = () => {
                                             ))}
                                         </div>
                                     )}
-                                </div>
+                                </Card>
                             )}
 
                             {activeTab === 'products' && lead && (
-                                <LeadProductsTab
-                                    leadId={lead.id}
-                                    onStatsChange={(count, value) => {
-                                        setProductCount(count);
-                                        setProductValue(value);
-                                    }}
-                                />
+                                <Card title="Products">
+                                    <LeadProductsTab
+                                        leadId={lead.id}
+                                        onStatsChange={(count, value) => {
+                                            setProductCount(count);
+                                            setProductValue(value);
+                                        }}
+                                    />
+                                </Card>
                             )}
 
                             {activeTab === 'feedback' && lead && (
-                                <CustomerFeedbackTab leadId={lead.id} />
+                                <Card title="Feedback">
+                                    <CustomerFeedbackTab leadId={lead.id} />
+                                </Card>
                             )}
 
                             {activeTab === 'calls' && lead && (
-                                <CallsTab key={callsRefreshKey} leadId={lead.id} />
+                                <Card title="Calls">
+                                    <CallsTab key={callsRefreshKey} leadId={lead.id} />
+                                </Card>
                             )}
 
                             {activeTab === 'audit' && lead && (
-                                <AuditHistoryTab entityType="lead" entityId={lead.id} />
+                                <Card title="Audit history">
+                                    <AuditHistoryTab entityType="lead" entityId={lead.id} />
+                                </Card>
                             )}
 
                             {activeTab === 'stakeholders' && lead && (
-                                <StakeholdersTab
-                                    leadId={lead.id}
-                                    deals={associatedDeals}
-                                    onSwitchToNotes={() => setActiveTab('notes')}
-                                    onSwitchToCalls={() => setActiveTab('calls')}
-                                    onSwitchToMeetings={() => setActiveTab('meetings')}
-                                />
+                                <Card title="Stakeholders">
+                                    <StakeholdersTab
+                                        leadId={lead.id}
+                                        deals={associatedDeals}
+                                        onSwitchToNotes={() => setActiveTab('notes')}
+                                        onSwitchToCalls={() => setActiveTab('calls')}
+                                        onSwitchToMeetings={() => setActiveTab('meetings')}
+                                    />
+                                </Card>
                             )}
 
                             {activeTab === 'emails' && lead && (
-                                <EmailsTab leadId={lead.id} />
+                                <Card title="Emails">
+                                    <EmailsTab leadId={lead.id} />
+                                </Card>
                             )}
 
                             {activeTab === 'meetings' && lead && (
-                                <MeetingsTab key={meetingsRefreshKey} leadId={lead.id} />
+                                <Card title="Meetings">
+                                    <MeetingsTab key={meetingsRefreshKey} leadId={lead.id} />
+                                </Card>
                             )}
                         </div>
                     </div>

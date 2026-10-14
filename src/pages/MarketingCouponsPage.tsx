@@ -152,39 +152,27 @@ const MarketingCouponsPage: React.FC = () => {
           Create Coupon
         </Button>
       ) : undefined}
+      filters={
+        <div className="relative w-full wc-medium:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-9 pr-3 text-sm text-fg outline-none focus:border-primary"
+            placeholder="Search by coupon code..."
+          />
+        </div>
+      }
+      toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
       {confirmDialog}
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-surface border border-line rounded-2xl p-4">
-          {/* `md:items-end` rather than a bare `items-end`: another remote's
-              Tailwind sheet can flatten `md:flex-row` to a column (media
-              queries add no specificity, so source order wins), and an
-              unprefixed cross-axis pin would then shrink-wrap this `flex-1`
-              child to its content — collapsing the search box. Keeping the
-              alignment behind the same breakpoint as the direction makes the
-              pair fail safe together; `w-full` covers it either way. */}
-          <div className="flex flex-col md:flex-row gap-4 md:items-end">
-            <div className="w-full sm:w-64">
-              <MarketingStorePicker storeId={storeId} onChange={applyStore} />
-            </div>
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                placeholder="Search by coupon code..."
-              />
-            </div>
-          </div>
-        </section>
-
         {showForm && (
           <section className="bg-surface border border-primary/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
             <div className="p-6 border-b border-line flex justify-between items-center bg-primary/5">
-              <h3 className="text-[10px] font-black text-primary uppercase tracking-widest">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
+              <h3 className="text-xs font-semibold text-primary">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
               <button onClick={() => setShowForm(false)} className="text-fg-muted hover:text-fg transition-colors">
                 <X size={20} />
               </button>
@@ -192,7 +180,7 @@ const MarketingCouponsPage: React.FC = () => {
             <div className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-2">
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Coupon Code *</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Coupon Code *</label>
                   <input 
                     type="text" 
                     value={form.code} 
@@ -201,11 +189,11 @@ const MarketingCouponsPage: React.FC = () => {
                     placeholder="WELCOME20"
                   />
                   {fieldErrors.code && (
-                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.code}</p>
+                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.code}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Type</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Type</label>
                   <select 
                     value={form.discount_type} 
                     onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })} 
@@ -216,7 +204,7 @@ const MarketingCouponsPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Value</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Value</label>
                   <div className="relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted">
                       {form.discount_type === 'percentage' ? <Percent size={14} /> : <DollarSign size={14} />}
@@ -230,11 +218,11 @@ const MarketingCouponsPage: React.FC = () => {
                     />
                   </div>
                   {fieldErrors.discount_value && (
-                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.discount_value}</p>
+                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.discount_value}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Min Order</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Min Order</label>
                   <input
                     type="number"
                     value={form.min_order_amount}
@@ -242,11 +230,11 @@ const MarketingCouponsPage: React.FC = () => {
                     className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                   {fieldErrors.min_order_amount && (
-                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.min_order_amount}</p>
+                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.min_order_amount}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Usage Limit</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Usage Limit</label>
                   <input
                     type="number"
                     value={form.usage_limit}
@@ -255,11 +243,11 @@ const MarketingCouponsPage: React.FC = () => {
                     placeholder="0 = Unlimited"
                   />
                   {fieldErrors.usage_limit && (
-                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.usage_limit}</p>
+                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.usage_limit}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Valid From</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Valid From</label>
                   <input
                     type="date"
                     value={form.valid_from}
@@ -268,7 +256,7 @@ const MarketingCouponsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Valid Until</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Valid Until</label>
                   <input
                     type="date"
                     value={form.valid_until}
@@ -276,11 +264,11 @@ const MarketingCouponsPage: React.FC = () => {
                     className="w-full bg-bg border border-line rounded-xl py-3 px-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
                   />
                   {fieldErrors.valid_until && (
-                    <p className="text-[10px] font-bold text-danger mt-1 ml-1">{fieldErrors.valid_until}</p>
+                    <p className="text-xs font-bold text-danger mt-1 ml-1">{fieldErrors.valid_until}</p>
                   )}
                 </div>
                 <div className="lg:col-span-4">
-                  <label className="block text-[10px] font-black text-fg-muted uppercase tracking-wider mb-2 ml-1">Description</label>
+                  <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Description</label>
                   <textarea 
                     value={form.description} 
                     onChange={(e) => setForm({ ...form, description: e.target.value })} 
@@ -292,14 +280,14 @@ const MarketingCouponsPage: React.FC = () => {
               <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-line">
                 <button 
                   onClick={() => setShowForm(false)} 
-                  className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-all"
+                  className="px-6 py-3 rounded-xl text-xs font-semibold text-fg-subtle hover:text-fg transition-all"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSave} 
                   disabled={saving} 
-                  className="bg-primary hover:bg-primary/90 text-primary-fg font-black text-[10px] uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-fg font-semibold text-xs px-8 py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Coupon' : 'Create Coupon'}
@@ -311,17 +299,17 @@ const MarketingCouponsPage: React.FC = () => {
 
         <div className="bg-surface border border-line rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-line bg-surface-sunken flex justify-between items-center">
-            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Active & Scheduled Coupons ({filtered.length})</h3>
+            <h3 className="text-xs font-semibold text-fg-muted">Active & Scheduled Coupons ({filtered.length})</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="text-left border-b border-line">
-                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest">Code & Info</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Discount</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Usage</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-center">Validity</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-fg-muted uppercase tracking-widest text-right">Actions</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted">Code & Info</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-center">Discount</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-center">Usage</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-center">Validity</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-fg-muted text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -330,7 +318,7 @@ const MarketingCouponsPage: React.FC = () => {
                     <td colSpan={5} className="py-20 text-center">
                       <div className="flex flex-col items-center gap-3 text-fg-muted">
                         <Loader2 className="w-8 h-8 animate-spin" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Loading coupons...</span>
+                        <span className="text-xs font-semibold">Loading coupons...</span>
                       </div>
                     </td>
                   </tr>
@@ -339,7 +327,7 @@ const MarketingCouponsPage: React.FC = () => {
                     <td colSpan={5} className="py-20 text-center">
                       <div className="flex flex-col items-center gap-4 opacity-20">
                         <Tag size={48} className="text-fg-muted" />
-                        <p className="text-sm font-bold uppercase tracking-widest">No coupons found</p>
+                        <p className="text-sm font-bold">No coupons found</p>
                       </div>
                     </td>
                   </tr>
@@ -352,17 +340,17 @@ const MarketingCouponsPage: React.FC = () => {
                             <Tag size={18} />
                           </div>
                           <div>
-                            <p className="text-sm font-black text-fg tracking-tight uppercase">{coupon.code}</p>
-                            <p className="text-[10px] text-fg-muted font-bold truncate max-w-xs">{coupon.description || 'No description'}</p>
+                            <p className="text-sm font-semibold text-fg ">{coupon.code}</p>
+                            <p className="text-xs text-fg-muted font-bold truncate max-w-xs">{coupon.description || 'No description'}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5 text-center">
-                        <span className="text-sm font-black text-success">
+                        <span className="text-sm font-semibold text-success">
                           {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : formatMoney(coupon.discount_value, currencyCode, locale)}
                         </span>
                         {coupon.min_order_amount > 0 && (
-                          <p className="text-[8px] text-fg-muted font-black uppercase mt-1">Min: {formatMoney(coupon.min_order_amount, currencyCode, locale)}</p>
+                          <p className="text-xs text-fg-muted font-semibold mt-1">Min: {formatMoney(coupon.min_order_amount, currencyCode, locale)}</p>
                         )}
                       </td>
                       <td className="px-6 py-5 text-center">
@@ -377,7 +365,7 @@ const MarketingCouponsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-5 text-center">
-                        <div className="flex flex-col items-center gap-1 text-[10px] font-bold">
+                        <div className="flex flex-col items-center gap-1 text-xs font-bold">
                           <div className="flex items-center gap-1 text-fg-subtle">
                             <Calendar size={10} />
                             {coupon.valid_from ? formatters.formatDate(coupon.valid_from) : 'Start'}

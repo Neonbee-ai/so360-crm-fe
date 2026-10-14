@@ -58,16 +58,16 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
             />
 
             {/* Drawer — starts below the shell's fixed 56px (h-14) glass-nav header so the title/close controls are never clipped */}
-            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-bg border-l border-line z-50 flex flex-col shadow-2xl">
+            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-bg border-l border-line z-50 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
                     <div>
-                        <p className="text-xs font-black text-fg uppercase tracking-widest">Activity History</p>
-                        <p className="text-[10px] text-fg-muted mt-0.5">
+                        <p className="text-xs font-medium text-fg">Activity History</p>
+                        <p className="text-xs text-fg-muted mt-0.5">
                             {timeline.events.length > 0 ? `${timeline.events.length} loaded` : 'Loading…'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg transition-colors rounded-lg hover:bg-surface-raised">
+                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg transition-colors rounded-nb hover:bg-surface-raised">
                         <X size={16} />
                     </button>
                 </div>
@@ -81,7 +81,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                             placeholder="Search activities…"
                             value={timeline.search}
                             onChange={e => timeline.setSearch(e.target.value)}
-                            className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-line transition-colors"
+                            className="w-full bg-surface border border-line rounded-nb pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-line transition-colors"
                         />
                     </div>
                 </div>
@@ -93,11 +93,11 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                             <button
                                 key={f.key}
                                 onClick={() => timeline.setModuleFilter(f.key)}
-                                className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
-                                    timeline.moduleFilter === f.key
-                                        ? 'bg-primary text-white'
-                                        : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
-                                }`}
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+ timeline.moduleFilter === f.key
+ ? 'bg-primary text-primary-fg'
+ : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
+ }`}
                             >
                                 {f.label}
                             </button>
@@ -112,11 +112,11 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                             type="button"
                             aria-pressed={timeline.typeFilter.length === 0}
                             onClick={() => timeline.setTypeFilter([])}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
-                                timeline.typeFilter.length === 0
-                                    ? 'bg-primary text-white'
-                                    : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
-                            }`}
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+ timeline.typeFilter.length === 0
+ ? 'bg-primary text-primary-fg'
+ : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
+ }`}
                         >
                             All types
                         </button>
@@ -130,11 +130,11 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                                     aria-pressed={active}
                                     data-testid={`type-chip-${t.key}`}
                                     onClick={() => timeline.toggleType(t.key)}
-                                    className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${
-                                        active
-                                            ? 'bg-primary text-white'
-                                            : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
-                                    }`}
+                                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+ active
+ ? 'bg-primary text-primary-fg'
+ : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
+ }`}
                                 >
                                     {t.label}
                                     {count !== undefined && <span className="ml-1 opacity-70">({count})</span>}
@@ -160,10 +160,10 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                     ) : timeline.events.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-fg-muted px-6 text-center">
                             <Search size={32} className="mb-3 text-fg" />
-                            <p className="text-xs font-bold uppercase tracking-widest text-fg-subtle">
+                            <p className="text-xs font-medium text-fg-subtle">
                                 {timeline.search || timeline.moduleFilter || timeline.typeFilter.length > 0 ? 'No matching activities' : 'No Activity Yet'}
                             </p>
-                            <p className="text-[11px] text-fg-muted mt-1">
+                            <p className="text-xs text-fg-muted mt-1">
                                 {timeline.search || timeline.moduleFilter || timeline.typeFilter.length > 0
                                     ? 'Try adjusting your search or filter.'
                                     : 'Activities will appear here automatically when users interact with this record.'}
@@ -199,7 +199,7 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                                     <button
                                         onClick={timeline.loadMore}
                                         disabled={timeline.loadingMore}
-                                        className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg bg-surface-raised hover:bg-line rounded-lg transition-colors disabled:opacity-50"
+                                        className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-fg-subtle hover:text-fg bg-surface-raised hover:bg-line rounded-nb transition-colors disabled:opacity-50"
                                     >
                                         {timeline.loadingMore ? <Loader2 size={12} className="animate-spin" /> : <ChevronDown size={12} />}
                                         {timeline.loadingMore ? 'Loading…' : 'Load More'}

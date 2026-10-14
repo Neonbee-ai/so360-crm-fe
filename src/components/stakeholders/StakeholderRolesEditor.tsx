@@ -39,11 +39,11 @@ const StakeholderRolesEditor: React.FC<Props> = ({ value, onChange, readOnly }) 
                         type="button"
                         onClick={() => toggle(role)}
                         disabled={readOnly}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                            active
-                                ? 'bg-primary border-primary text-white'
-                                : 'bg-surface border-line text-fg-subtle hover:border-line'
-                        } ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+ active
+ ? 'bg-primary border-primary text-primary-fg'
+ : 'bg-surface border-line text-fg-subtle hover:border-line'
+ } ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
                     >
                         {ROLE_LABELS[role]}
                     </button>

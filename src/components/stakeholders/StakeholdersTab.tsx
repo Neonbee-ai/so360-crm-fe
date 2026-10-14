@@ -67,22 +67,22 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search stakeholders…"
-                        className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none"
+                        className="w-full bg-surface border border-line rounded-nb pl-9 pr-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none"
                     />
                 </div>
-                <select value={strengthFilter} onChange={(e) => setStrengthFilter(e.target.value)} className="bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg-subtle outline-none">
+                <select value={strengthFilter} onChange={(e) => setStrengthFilter(e.target.value)} className="bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg-subtle outline-none">
                     <option value="">All Relationship Strengths</option>
                     {['very_strong', 'strong', 'moderate', 'weak', 'no_relationship'].map((s) => (
                         <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                     ))}
                 </select>
-                <div className="flex items-center gap-1 bg-surface border border-line rounded-lg p-1">
-                    <button onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-primary text-white' : 'text-fg-muted'}`}><List size={14} /></button>
-                    <button onClick={() => setView('hierarchy')} className={`p-1.5 rounded ${view === 'hierarchy' ? 'bg-primary text-white' : 'text-fg-muted'}`}><SlidersHorizontal size={14} /></button>
+                <div className="flex items-center gap-1 bg-surface border border-line rounded-nb p-1">
+                    <button onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><List size={14} /></button>
+                    <button onClick={() => setView('hierarchy')} className={`p-1.5 rounded ${view === 'hierarchy' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><SlidersHorizontal size={14} /></button>
                 </div>
                 <button
                     onClick={() => setEditingStakeholder(null)}
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-fg px-3 py-2 rounded-nb text-xs font-medium"
                 >
                     <Plus size={14} /> Add Stakeholder
                 </button>
@@ -109,7 +109,7 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
                             />
                             <button
                                 onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
-                                className="text-[9px] text-fg-muted hover:text-blue-400 font-black uppercase tracking-widest mt-1 ml-1"
+                                className="text-xs text-fg-muted hover:text-primary font-medium mt-1 ml-1"
                             >
                                 {expandedId === s.id ? 'Hide activity' : 'Show activity'}
                             </button>

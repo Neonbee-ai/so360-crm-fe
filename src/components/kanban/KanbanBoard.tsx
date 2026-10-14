@@ -157,18 +157,18 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                             the drop zone below it scrolls independently. */}
                         <div className="flex-shrink-0 flex items-center justify-between px-2">
                             <h3
-                                className="font-black text-fg flex items-center gap-2 text-sm uppercase tracking-wider"
+                                className="font-semibold text-fg flex items-center gap-2 text-sm"
                                 style={{ color: accentColor }}
                             >
                                 {stage.name}
-                                <span className="text-[10px] bg-fg-muted/20 text-fg-muted px-2 py-0.5 rounded-full font-black">
+                                <span className="text-xs bg-fg-muted/20 text-fg-muted px-2 py-0.5 rounded-full font-semibold">
                                     {stageDeals.length}
                                 </span>
                                 {stage.is_terminal && (
                                     <Lock size={11} className="text-fg-muted" />
                                 )}
                             </h3>
-                            <span className="text-[10px] text-fg-muted font-black tracking-wider">
+                            <span className="text-xs text-fg-muted font-semibold">
                                 {formatters.formatCurrency(stageDeals.reduce((sum, d) => sum + d.value, 0))}
                             </span>
                         </div>
@@ -206,14 +206,14 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                         </h4>
                                     </div>
 
-                                    <p className="text-[11px] text-fg-muted mb-4 line-clamp-1 flex items-center gap-1">
+                                    <p className="text-xs text-fg-muted mb-4 line-clamp-1 flex items-center gap-1">
                                         <TrendingUp size={10} className="text-fg-muted" />
                                         {deal.company_name}
                                     </p>
 
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-fg-muted/30 flex items-center justify-center text-[8px] font-black overflow-hidden border border-line">
+                                            <div className="w-5 h-5 rounded-full bg-fg-muted/30 flex items-center justify-center text-xs font-semibold overflow-hidden border border-line">
                                                 {deal.owner.avatar_url ? (
                                                     <img src={deal.owner.avatar_url} alt={deal.owner.full_name} />
                                                 ) : (
@@ -221,10 +221,10 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                                 )}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-fg">{formatters.formatCurrency(deal.value)}</span>
+                                                <span className="text-xs font-semibold text-fg">{formatters.formatCurrency(deal.value)}</span>
                                             </div>
                                         </div>
-                                        <span className="text-[9px] text-fg-muted font-bold flex items-center gap-1 bg-fg-muted/10 px-1.5 py-0.5 rounded">
+                                        <span className="text-xs text-fg-muted font-bold flex items-center gap-1 bg-fg-muted/10 px-1.5 py-0.5 rounded">
                                             <Calendar size={10} className="text-fg-muted" /> {deal.expected_close_date}
                                         </span>
                                     </div>
@@ -234,7 +234,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                             {/* Empty state hint */}
                             {stageDeals.length === 0 && !isOver && (
                                 <div className="flex-1 flex items-center justify-center border-2 border-dashed border-line rounded-xl">
-                                    <span className="text-[10px] font-black text-fg-subtle uppercase tracking-widest">Drop here</span>
+                                    <span className="text-xs font-semibold text-fg-subtle">Drop here</span>
                                 </div>
                             )}
                         </div>

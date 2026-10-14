@@ -205,7 +205,7 @@ describe('Given Custom Product Build Request flow', () => {
         render(<LeadProductsTab leadId="lead-1" />);
 
         expect(await screen.findByText('Custom Conference Table')).toBeInTheDocument();
-        expect(screen.getByText('Custom Build')).toBeInTheDocument();
+        expect(screen.getByText('Custom build')).toBeInTheDocument();
         expect(screen.getByText('Custom Joinery')).toBeInTheDocument();
     });
 });

@@ -139,7 +139,7 @@ export default function MeasurementPage() {
                   )}
                 </span>
               </div>
-              <div className="text-[11px] text-fg-muted">
+              <div className="text-xs text-fg-muted">
                 Healthy band {pipeline.coverage_min}× – {pipeline.coverage_max}×
                 (org configurable)
               </div>
@@ -185,7 +185,7 @@ export default function MeasurementPage() {
               {mix.grouping === 'category_name' && (
                 // Worth surfacing: grouping on a free-text category is fragile,
                 // and the fix is a catalog backfill rather than a code change.
-                <div className="text-[11px] text-warning">
+                <div className="text-xs text-warning">
                   Grouped by category name — backfill product types for stable
                   service-line reporting.
                 </div>
@@ -231,7 +231,7 @@ export default function MeasurementPage() {
               {winLoss.uncoded_losses > 0 && (
                 // A data-quality signal, not an insight: an unexplained loss
                 // cannot inform the next quarter.
-                <div className="text-[11px] text-warning">
+                <div className="text-xs text-warning">
                   {winLoss.uncoded_losses} lost deal
                   {winLoss.uncoded_losses === 1 ? '' : 's'} without a reason code
                 </div>

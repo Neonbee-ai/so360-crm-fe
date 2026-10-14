@@ -132,7 +132,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                             <p className="text-sm">Couldn't load products.</p>
                             <button
                                 onClick={() => search(query)}
-                                className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
+                                className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-info bg-info/10 hover:bg-info/20 transition-colors"
                             >
                                 Retry
                             </button>
@@ -181,7 +181,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                     {item.price.toFixed(2)}
                                                 </span>
                                             ) : (
-                                                <span className="text-xs text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                <span className="text-xs text-warning/90 font-medium bg-warning/10 border border-warning/20 px-2 py-0.5 rounded flex-shrink-0">
                                                     No price configured
                                                 </span>
                                             )}
@@ -192,7 +192,7 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                     ? <ChevronDown className="w-4 h-4 text-fg-subtle flex-shrink-0" />
                                                     : <ChevronRight className="w-4 h-4 text-fg-subtle flex-shrink-0" />
                                             ) : (
-                                                <ChevronRight className="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
+                                                <ChevronRight className="w-4 h-4 text-info opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
                                             )}
                                         </button>
 
@@ -235,12 +235,12 @@ export const ProductPickerModal = ({ isOpen, onClose, onSelect }: ProductPickerM
                                                                 {variant.price.toFixed(2)}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-xs text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded flex-shrink-0">
+                                                            <span className="text-xs text-warning/90 font-medium bg-warning/10 border border-warning/20 px-2 py-0.5 rounded flex-shrink-0">
                                                                 No price configured
                                                             </span>
                                                         )}
 
-                                                        <ChevronRight className="w-4 h-4 text-blue-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
+                                                        <ChevronRight className="w-4 h-4 text-info opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" />
                                                     </button>
                                                 ))}
                                             </div>

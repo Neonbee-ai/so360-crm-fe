@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
+import { Card } from '@so360/design-system';
+import { RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import { neuraAiService, inboxIntegrationApi, NeuraEntityRef } from '../../services/crmService';
 
 interface Props {
@@ -108,24 +109,20 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
     }, [leadId]);
 
     return (
-        <section className="bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-hidden relative">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <div className="bg-violet-500/10 text-violet-400 p-1.5 rounded-lg">
-                        <Sparkles size={14} />
-                    </div>
-                    <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-[0.2em]">Neura AI Summary</h3>
-                </div>
+        <Card
+            title="Neura AI summary"
+            actions={
                 <button
                     onClick={() => fetchSummary(true)}
                     disabled={isLoading}
                     title="Refresh summary"
-                    className="p-1.5 rounded-lg text-fg-muted hover:text-violet-400 hover:bg-violet-500/10 transition-all disabled:opacity-40"
+                    aria-label="Refresh summary"
+                    className="p-1.5 rounded-nb text-fg-muted hover:text-fg hover:bg-surface-raised transition-colors disabled:opacity-40"
                 >
                     <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
                 </button>
-            </div>
-
+            }
+        >
             {isLoading && !summary ? (
                 <div className="flex items-center gap-2 text-fg-muted py-4">
                     <Loader2 size={14} className="animate-spin" />
@@ -134,12 +131,12 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
             ) : error && !summary ? (
                 <div className="flex items-center gap-2 text-danger py-2">
                     <AlertCircle size={12} />
-                    <span className="text-[11px]">{error}</span>
+                    <span className="text-xs">{error}</span>
                 </div>
             ) : summary ? (
-                <p className="text-[12px] text-fg-subtle leading-relaxed whitespace-pre-wrap">{summary}</p>
+                <p className="text-xs text-fg-subtle leading-relaxed whitespace-pre-wrap">{summary}</p>
             ) : null}
-        </section>
+        </Card>
     );
 };
 

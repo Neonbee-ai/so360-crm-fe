@@ -227,7 +227,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
             <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0">
-                    <h2 className="text-xl font-black text-fg uppercase tracking-tight flex items-center gap-2">
+                    <h2 className="text-xl font-semibold text-fg tracking-tight flex items-center gap-2">
                         <CheckCircle2 className={isEditing ? "text-primary" : "text-success"} size={24} />
                         {isEditing ? 'Edit Task' : 'New Task'}
                     </h2>
@@ -239,34 +239,34 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                 <div className="p-8 space-y-6 overflow-y-auto flex-1">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Task Title</label>
+                            <label className="text-xs font-semibold text-fg-muted">Task Title</label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                 required
                                 placeholder="e.g. Follow up email..."
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Description</label>
+                            <label className="text-xs font-semibold text-fg-muted">Description</label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold resize-none h-20"
+                                className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 outline-none focus:border-primary transition-all font-bold resize-none h-20"
                                 placeholder="Add details..."
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Priority</label>
+                            <label className="text-xs font-semibold text-fg-muted">Priority</label>
                             <div className="relative">
                                 <select
                                     value={priority}
                                     onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                                    className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     {TASK_PRIORITY_OPTIONS.map(o => (
                                         <option key={o.value} value={o.value}>{o.label}</option>
@@ -276,7 +276,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Type</label>
+                            <label className="text-xs font-semibold text-fg-muted">Type</label>
                             <div className="relative">
                                 <select
                                     value={type}
@@ -287,7 +287,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         // sensible one rather than an empty field.
                                         if (nextType === 'REMINDER' && !dueTime) setDueTime('09:00');
                                     }}
-                                    className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="TODO">To Do</option>
                                     <option value="CALL">Call</option>
@@ -300,19 +300,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Start Date</label>
+                                <label className="text-xs font-semibold text-fg-muted">Start Date</label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                                     <input
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label htmlFor="task-due-date" className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
+                                <label htmlFor="task-due-date" className="text-xs font-semibold text-fg-muted">
                                     Due Date
                                 </label>
                                 <div className="relative">
@@ -323,7 +323,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
                                         min={todayDate}
-                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                         required
                                     />
                                 </div>
@@ -334,7 +334,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                             is an alarm. Left blank the task stays a plain calendar
                             date — no invented 9am, no invented midnight. */}
                         <div className="space-y-2">
-                            <label htmlFor="task-due-time" className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
+                            <label htmlFor="task-due-time" className="text-xs font-semibold text-fg-muted">
                                 Due Time {type === 'REMINDER' ? <span className="text-danger">*</span> : <span className="text-fg-muted normal-case tracking-normal font-bold">(optional)</span>}
                             </label>
                             <div className="flex gap-2">
@@ -345,7 +345,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         type="time"
                                         value={dueTime}
                                         onChange={(e) => setDueTime(e.target.value)}
-                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
+                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                         required={type === 'REMINDER'}
                                     />
                                 </div>
@@ -353,7 +353,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <button
                                         type="button"
                                         onClick={() => setDueTime('')}
-                                        className="px-3 py-3 rounded-xl border border-line text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-colors"
+                                        className="px-3 py-3 rounded-nb-lg border border-line text-xs font-semibold text-fg-subtle hover:text-fg transition-colors"
                                     >
                                         Clear
                                     </button>
@@ -363,11 +363,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
                         {type === 'REMINDER' && (
                             <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Remind me before</label>
+                                <label className="text-xs font-semibold text-fg-muted">Remind me before</label>
                                 <select
                                     value={reminderMinutes}
                                     onChange={(e) => setReminderMinutes(e.target.value)}
-                                    className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                 >
                                     <option value="">No reminder notification</option>
                                     <option value="15">15 minutes before</option>
@@ -379,14 +379,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         )}
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Assigned To</label>
+                            <label className="text-xs font-semibold text-fg-muted">Assigned To</label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
                                     <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
                                     <select
                                         value={assignedToId}
                                         onChange={(e) => setAssignedToId(e.target.value)}
-                                        className="w-full bg-bg border border-line text-fg rounded-xl pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                        className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                     >
                                         <option value="">{isEditing ? 'Unassigned' : 'Select assignee…'}</option>
                                         {users.map(u => (
@@ -401,7 +401,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     type="button"
                                     onClick={handleAssignToMe}
                                     disabled={!currentUserId || assignedToId === currentUserId}
-                                    className="flex items-center gap-1.5 px-3 py-3 text-sm bg-blue-600/10 border border-blue-600/20 rounded-xl text-blue-400 hover:bg-blue-600/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                    className="flex items-center gap-1.5 px-3 py-3 text-sm bg-info/10 border border-info/20 rounded-nb-lg text-info hover:bg-info/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                     title={
                                         !currentUserId
                                             ? "User session not available"
@@ -411,19 +411,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     }
                                 >
                                     <UserPlus className="w-4 h-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Me</span>
+                                    <span className="text-xs font-semibold">Me</span>
                                 </button>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest flex items-center gap-1.5">
+                            <label className="text-xs font-semibold text-fg-muted flex items-center gap-1.5">
                                 <Link2 size={12} />
                                 Project <span className="text-fg-muted normal-case tracking-normal font-bold">(optional)</span>
                             </label>
                             <ProjectSelect value={projectId} onChange={setProjectId} />
                             {projectId && (
-                                <p className="text-[11px] text-fg-muted">
+                                <p className="text-xs text-fg-muted">
                                     This task will be synchronized with the selected Project.
                                 </p>
                             )}
@@ -431,7 +431,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
                         {showAssociatePicker && (
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest flex items-center gap-1.5">
+                                <label className="text-xs font-semibold text-fg-muted flex items-center gap-1.5">
                                     <Link2 size={12} />
                                     Associate With
                                 </label>
@@ -440,7 +440,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                         <select
                                             value={associateType}
                                             onChange={(e) => { setAssociateType(e.target.value as any); setAssociateId(''); }}
-                                            className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                            className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                         >
                                             <option value="none">None</option>
                                             <option value="lead">Lead</option>
@@ -453,7 +453,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                             <select
                                                 value={associateId}
                                                 onChange={(e) => setAssociateId(e.target.value)}
-                                                className="w-full bg-bg border border-line text-fg rounded-xl px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
+                                                className="w-full bg-bg border border-line text-fg rounded-nb-lg px-4 py-3 pr-9 outline-none focus:border-primary transition-all font-bold appearance-none cursor-pointer"
                                             >
                                                 <option value="">Select {associateType === 'lead' ? 'Lead' : 'Deal'}…</option>
                                                 {associateType === 'lead'
@@ -478,11 +478,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
 
                         {isEditing && (
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Status</label>
+                                <label className="text-xs font-semibold text-fg-muted">Status</label>
                                 <select
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value as Task['status'])}
-                                    className="w-full bg-bg border border-line rounded-xl px-4 py-3 text-sm font-bold text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-all appearance-none cursor-pointer"
+                                    className="w-full bg-bg border border-line rounded-nb-lg px-4 py-3 text-sm font-bold text-fg focus:outline-none focus:ring-2 focus:ring-info/50 focus:border-primary transition-all appearance-none cursor-pointer"
                                 >
                                     <option value="OPEN">Open</option>
                                     <option value="IN_PROGRESS">In Progress</option>
@@ -499,14 +499,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg transition-colors"
+                            className="px-6 py-3 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`px-8 py-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-blue-500/20' : 'bg-success hover:bg-success/90 shadow-emerald-500/20'}`}
+                            className={`px-8 py-3 text-white rounded-nb-lg text-xs font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-blue-500/20' : 'bg-success hover:bg-success/90 shadow-emerald-500/20'}`}
                         >
                             {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                             {isEditing ? 'Save Changes' : 'Create Task'}

@@ -26,14 +26,14 @@ export const Table = <T extends { id: string }>({
 
     if (data.length === 0) {
         return (
-            <div className="bg-surface-sunken border border-line rounded-xl p-12 text-center text-fg-subtle shadow-sm">
+            <div className="bg-surface border border-line rounded-nb-lg p-12 text-center text-fg-subtle shadow-sm">
                 {emptyMessage}
             </div>
         );
     }
 
     return (
-        <div className="overflow-x-auto rounded-xl border border-line shadow-sm">
+        <div className="w-full min-w-0 overflow-x-auto rounded-nb-lg border border-line">
             <table className="w-full text-left text-sm">
                 <thead className="bg-surface text-fg-subtle font-medium border-b border-line">
                     <tr>
@@ -49,7 +49,7 @@ export const Table = <T extends { id: string }>({
                         <tr
                             key={item.id}
                             onClick={() => onRowClick?.(item)}
-                            className={`hover:bg-blue-500/5 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                            className={`hover:bg-surface-raised transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                         >
                             {columns.map((col, i) => (
                                 <td key={i} className={`px-6 py-4 ${col.className ?? ''}`}>

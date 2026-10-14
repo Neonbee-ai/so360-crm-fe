@@ -399,7 +399,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         {/* Custom Fields */}
                         {customFieldDefs.length > 0 && (
                             <div className="pt-4 border-t border-line space-y-4">
-                                <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Additional Details</p>
+                                <p className="text-xs font-semibold text-fg-muted">Additional Details</p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {customFieldDefs.map(field => (
                                         <div key={field.id} className="space-y-1">
@@ -636,7 +636,7 @@ const PartnersPage = () => {
             }
             kpis={<PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />}
             search={
-                <div className="relative">
+                <div className="relative w-full wc-medium:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
@@ -652,7 +652,7 @@ const PartnersPage = () => {
                 <select
                     value={typeFilter}
                     onChange={e => setTypeFilter(e.target.value)}
-                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="h-nb-control-md bg-surface border border-line text-fg px-3 rounded-nb text-sm focus:outline-none focus:border-primary"
                 >
                     <option value="All">All Types</option>
                     {partnerTypes.map(pt => (
@@ -660,7 +660,7 @@ const PartnersPage = () => {
                     ))}
                 </select>
                 {(searchTerm || typeFilter !== 'All') && (
-                    <button onClick={() => { setSearchTerm(''); setTypeFilter('All'); }} className="text-xs text-danger hover:text-danger/80 underline">
+                    <button onClick={() => { setSearchTerm(''); setTypeFilter('All'); }} className="h-nb-control-md px-3 rounded-nb text-xs text-fg-muted hover:text-fg hover:bg-surface-raised">
                         Clear Filters
                     </button>
                 )}

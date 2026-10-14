@@ -142,7 +142,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-surface border border-line rounded-nb-lg shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-line">
           <div className="flex items-center gap-2">
@@ -160,7 +160,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
         {/* Content */}
         <div className="p-6 space-y-5 overflow-y-auto flex-1">
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/40 rounded-lg flex items-center gap-2.5 text-red-300 text-sm">
+            <div className="p-3 bg-danger/10 border border-danger/40 rounded-lg flex items-center gap-2.5 text-danger text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -201,7 +201,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                 {selectedApprovers.map((approver) => (
                   <span
                     key={approver.user_id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-medium"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warning/20 text-warning border border-warning/30 rounded-full text-xs font-medium"
                   >
                     <UserIcon className="w-3 h-3" />
                     <span>{approver.full_name}</span>
@@ -209,7 +209,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                       type="button"
                       onClick={() => handleRemove(approver.user_id)}
                       aria-label={`Remove ${approver.full_name}`}
-                      className="hover:text-red-300 hover:bg-amber-500/30 rounded-full p-0.5 transition-colors"
+                      className="hover:text-danger hover:bg-warning/30 rounded-full p-0.5 transition-colors"
                       title={`Remove ${approver.full_name}`}
                     >
                       <X className="w-3 h-3" />
@@ -273,7 +273,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
                               {cand.full_name}
                             </p>
                             {isSelf && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-raised text-fg-subtle border border-line">
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-surface-raised text-fg-subtle border border-line">
                                 You (Cannot approve)
                               </span>
                             )}
@@ -319,7 +319,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
             type="button"
             onClick={handleSend}
             disabled={isSubmitting || selectedApprovers.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-warning text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {isSubmitting ? (
               <>

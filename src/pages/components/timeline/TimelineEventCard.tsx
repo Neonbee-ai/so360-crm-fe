@@ -17,20 +17,20 @@ interface Props {
 
 function getEventIcon(event: EntityTimelineEvent) {
     switch (event.icon) {
-        case 'edit': return <TrendingUp size={13} className="text-blue-400" />;
+        case 'edit': return <TrendingUp size={13} className="text-primary" />;
         case 'note': return <FileText size={13} className="text-warning" />;
         case 'task': return <CheckCircle2 size={13} className="text-primary" />;
-        case 'document': return <File size={13} className="text-indigo-400" />;
+        case 'document': return <File size={13} className="text-primary" />;
         case 'deal': return <Briefcase size={13} className="text-success" />;
-        case 'call': return <Phone size={13} className="text-blue-400" />;
+        case 'call': return <Phone size={13} className="text-primary" />;
         // G8 Client 360: meetings, bookings and Inbox-sourced conversations
-        case 'meeting': return <Users size={13} className="text-purple-400" />;
+        case 'meeting': return <Users size={13} className="text-info" />;
         case 'email': return <AtSign size={13} className="text-success" />;
         case 'whatsapp': return <MessageCircle size={13} className="text-success" />;
-        case 'message': return <MessageSquare size={13} className="text-sky-400" />;
+        case 'message': return <MessageSquare size={13} className="text-primary" />;
         case 'booking': return <Home size={13} className="text-danger" />;
         case 'activity':
-            if (event.group_key.includes('MEETING')) return <Users size={13} className="text-purple-400" />;
+            if (event.group_key.includes('MEETING')) return <Users size={13} className="text-info" />;
             if (event.group_key.includes('EMAIL')) return <AtSign size={13} className="text-success" />;
             return <FileText size={13} className="text-warning" />;
         default: return <Info size={13} className="text-fg-subtle" />;
@@ -52,20 +52,20 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
         <>
             <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-fg uppercase tracking-tight leading-tight">{event.title}</span>
-                    <span className="text-[8px] bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{event.module}</span>
+                    <span className="text-xs font-medium text-fg leading-tight">{event.title}</span>
+                    <span className="text-xs bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-medium">{event.module}</span>
                 </div>
-                <span className="text-[9px] text-fg-muted font-mono shrink-0">{formatters.formatDateTime(event.created_at)}</span>
+                <span className="text-xs text-fg-muted font-mono shrink-0">{formatters.formatDateTime(event.created_at)}</span>
             </div>
             {event.description && (
-                <p className="text-[11px] text-fg-subtle leading-relaxed">{event.description}</p>
+                <p className="text-xs text-fg-subtle leading-relaxed">{event.description}</p>
             )}
             <div className="mt-2 flex items-center justify-between">
                 {event.actor_name && (
-                    <span className="text-[9px] text-fg-muted font-bold uppercase tracking-widest">{event.actor_name}</span>
+                    <span className="text-xs text-fg-muted font-medium">{event.actor_name}</span>
                 )}
                 {event.status_badge && (
-                    <span className="text-[9px] bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{event.status_badge}</span>
+                    <span className="text-xs bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-medium">{event.status_badge}</span>
                 )}
             </div>
         </>
@@ -76,7 +76,7 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
             <div className="absolute left-0 top-1.5 w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center z-10">
                 {getEventIcon(event)}
             </div>
-            <div className="bg-surface border border-line p-3 rounded-lg hover:border-line transition-colors">
+            <div className="bg-surface border border-line p-3 rounded-nb hover:border-line transition-colors">
                 {link ? <Link to={link} className="block">{body}</Link> : body}
                 {(onTogglePin || canManage) && (
                     <div className="mt-2 pt-2 border-t border-line flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -90,7 +90,7 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
                             </button>
                         )}
                         {canManage && onEdit && (
-                            <button onClick={() => onEdit(event)} className="p-1 text-fg-muted hover:text-blue-400 transition-colors" title="Edit">
+                            <button onClick={() => onEdit(event)} className="p-1 text-fg-muted hover:text-primary transition-colors" title="Edit">
                                 <Edit2 size={12} />
                             </button>
                         )}

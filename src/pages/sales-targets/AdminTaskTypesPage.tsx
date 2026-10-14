@@ -139,7 +139,7 @@ export default function AdminTaskTypesPage() {
       ) : (
         <div className="rounded-lg border border-line overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-surface text-fg-subtle text-xs uppercase tracking-wider">
+            <thead className="bg-surface text-fg-subtle text-xs">
               <tr>
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">Source</th>
@@ -204,7 +204,7 @@ export default function AdminTaskTypesPage() {
       {/* Create modal */}
       {showModal && (
         <div className="fixed inset-0 bg-overlay/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-xl border border-line w-full max-w-md p-6">
+          <div className="bg-surface rounded-nb border border-line w-full max-w-md p-6">
             <h2 className="text-lg font-semibold text-fg mb-4">New Activity Type</h2>
 
             <div className="space-y-4">

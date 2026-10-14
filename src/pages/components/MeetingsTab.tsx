@@ -3,18 +3,18 @@ import { Calendar, Plus, Loader2, MapPin, CheckCircle2, XCircle, Clock } from 'l
 import { meetingsApi } from '../../services/crmService';
 import { Meeting } from '../../types/crm';
 import MeetingModal from './MeetingModal';
-import { useConfirm } from '@so360/design-system';
+import { useConfirm, Button, Badge, EmptyState } from '@so360/design-system';
 
 interface Props {
     leadId?: string;
     dealId?: string;
 }
 
-const STATUS_STYLE: Record<string, string> = {
-    upcoming: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    completed: 'bg-emerald-500/10 text-success border-emerald-500/20',
-    cancelled: 'bg-surface-raised text-fg-muted border-line',
-    missed: 'bg-red-500/10 text-danger border-red-500/20',
+const STATUS_TONE: Record<string, 'primary' | 'success' | 'neutral' | 'danger'> = {
+    upcoming: 'primary',
+    completed: 'success',
+    cancelled: 'neutral',
+    missed: 'danger',
 };
 
 function formatDateTime(iso: string): string {
@@ -65,37 +65,31 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
         <div className="space-y-4">
             {confirmDialog}
             <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Meetings</p>
-                <button
-                    onClick={() => { setEditingMeeting(null); setShowModal(true); }}
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
-                >
-                    <Plus size={14} /> Schedule Meeting
-                </button>
+                <p className="text-xs font-medium text-fg-muted">Meetings</p>
+                <Button variant="primary" onClick={() => { setEditingMeeting(null); setShowModal(true); }}>
+                    <Plus size={14} /> Schedule meeting
+                </Button>
             </div>
 
             {loading ? (
                 <div className="flex justify-center py-10 text-fg-muted"><Loader2 size={20} className="animate-spin" /></div>
             ) : meetings.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-fg-muted">
-                    <Calendar size={24} className="mb-2" />
-                    <p className="text-xs">No meetings scheduled yet.</p>
-                </div>
+                <EmptyState icon={Calendar} title="No meetings scheduled yet" />
             ) : (
-                <div className="space-y-2">
+                <div className="divide-y divide-line">
                     {meetings.map((m) => (
-                        <div key={m.id} className="bg-surface-sunken border border-line rounded-xl p-4">
+                        <div key={m.id} className="py-nb-3 first:pt-0 last:pb-0">
                             <div className="flex items-start justify-between gap-2">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-fg">{m.title}</span>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${STATUS_STYLE[m.status]}`}>{m.status}</span>
+                                        <span className="text-xs font-medium text-fg">{m.title}</span>
+                                        <Badge size="sm" tone={STATUS_TONE[m.status] ?? 'neutral'}>{m.status}</Badge>
                                     </div>
-                                    <p className="text-[10px] text-fg-muted mt-1 flex items-center gap-1">
+                                    <p className="text-xs text-fg-muted mt-1 flex items-center gap-1">
                                         <Clock size={11} /> {formatDateTime(m.scheduled_at)} · {m.duration_minutes} min
                                     </p>
-                                    {m.location && <p className="text-[10px] text-fg-muted mt-0.5 flex items-center gap-1"><MapPin size={11} /> {m.location}</p>}
-                                    {m.outcome && <p className="text-[10px] text-fg-subtle mt-1">Outcome: {m.outcome}</p>}
+                                    {m.location && <p className="text-xs text-fg-muted mt-0.5 flex items-center gap-1"><MapPin size={11} /> {m.location}</p>}
+                                    {m.outcome && <p className="text-xs text-fg-subtle mt-1">Outcome: {m.outcome}</p>}
                                 </div>
                                 {m.status === 'upcoming' && (
                                     <div className="flex items-center gap-1 shrink-0">

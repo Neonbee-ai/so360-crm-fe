@@ -113,7 +113,7 @@ export default function TargetTemplatesPage() {
                   <div className="text-sm font-medium text-fg">
                     {t.name}
                   </div>
-                  <div className="text-[11px] text-fg-muted">
+                  <div className="text-xs text-fg-muted">
                     {t.role ? `${t.role} · ` : ''}
                     {t.period} · {t.duration_periods} period
                     {t.duration_periods === 1 ? '' : 's'}
@@ -173,13 +173,13 @@ export default function TargetTemplatesPage() {
         >
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-64">
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Person
               </label>
               <PersonPicker value={ownerId} onChange={setOwnerId} />
             </div>
             <div>
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Start
               </label>
               <input
@@ -190,7 +190,7 @@ export default function TargetTemplatesPage() {
               />
             </div>
             <div>
-              <label className="block text-[11px] text-fg-subtle mb-1">End</label>
+              <label className="block text-xs text-fg-subtle mb-1">End</label>
               <input
                 type="date"
                 className="rounded bg-surface-raised px-2 py-1.5 text-sm text-fg"
@@ -206,7 +206,7 @@ export default function TargetTemplatesPage() {
               {busy ? 'Creating…' : 'Create plan'}
             </button>
           </div>
-          <div className="mt-2 text-[11px] text-fg-muted">
+          <div className="mt-2 text-xs text-fg-muted">
             Lines are copied into the new plan. Editing this template later will
             not change the plan you create here.
           </div>

@@ -499,7 +499,7 @@ const SettingsPage = () => {
             primaryAction={canWriteSettings ? (
                 <div className="flex items-center gap-3">
                     {isDirty && !isSaving && (
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-warning uppercase tracking-wider">
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-warning">
                             <AlertCircle size={14} />
                             Unsaved changes
                         </span>
@@ -524,15 +524,15 @@ const SettingsPage = () => {
         >
             <div className="space-y-10">
                 {activeTab === 'pipeline' && (
-                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                    <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                         <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                             <div>
-                                <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Pipeline Stages</h3>
-                                <p className="text-[10px] text-fg-muted font-bold mt-1">THE ORDER DEFINES YOUR SALES FUNNEL</p>
+                                <h3 className="font-semibold text-fg text-xs">Deal Pipeline Stages</h3>
+                                <p className="text-xs text-fg-muted mt-1">The order defines your sales funnel</p>
                             </div>
                             <button
                                 onClick={addStage}
-                                className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95"
+                                className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
                             >
                                 <Plus size={12} /> ADD STAGE
                             </button>
@@ -540,8 +540,8 @@ const SettingsPage = () => {
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.deal_stages.map((stage, idx) => (
-                                    <div key={stage.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-xl group hover:border-line transition-all shadow-sm">
-                                        <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-fg-muted">
+                                    <div key={stage.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-nb group hover:border-line transition-all shadow-sm">
+                                        <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-xs font-semibold text-fg-muted">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
@@ -553,7 +553,7 @@ const SettingsPage = () => {
                                                 onKeyDown={(e) => handleStageNameKeyDown(e, idx)}
                                                 onBlur={() => handleStageNameBlur(idx)}
                                                 placeholder="Stage Name"
-                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300 placeholder:text-fg-muted"
+                                                className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover placeholder:text-fg-muted"
                                             />
                                         </div>
                                         <StageStatusSelect
@@ -581,16 +581,16 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'lead-stages' && (
-                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                    <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                         <div className="p-6 border-b border-line bg-surface-sunken">
-                            <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Lifecycle Stages</h3>
-                            <p className="text-[10px] text-fg-muted font-bold mt-1">MANAGED IN THE FLOW MODULE — EDIT THE CRM LEAD WORKFLOW TO CHANGE THESE STAGES</p>
+                            <h3 className="font-semibold text-fg text-xs">Lead Lifecycle Stages</h3>
+                            <p className="text-xs text-fg-muted mt-1">Managed in the Flow module — edit the CRM lead workflow to change these stages</p>
                         </div>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
-                                    <div key={stage.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-xl shadow-sm">
-                                        <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-fg-muted">
+                                    <div key={stage.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-nb shadow-sm">
+                                        <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-xs font-semibold text-fg-muted">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1">
@@ -606,17 +606,17 @@ const SettingsPage = () => {
                 {activeTab === 'custom-fields' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Lead Custom Fields */}
-                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl h-fit">
+                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden h-fit">
                             <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Fields</h3>
+                                    <h3 className="font-semibold text-fg text-xs">Lead Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, lead_custom_fields: [...settings.lead_custom_fields, newField] });
                                     }}
-                                    className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -624,7 +624,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.lead_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-xl group hover:border-line transition-all">
+                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-nb group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -635,7 +635,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, lead_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover"
                                                     />
                                                 </div>
                                                 <select
@@ -645,7 +645,7 @@ const SettingsPage = () => {
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                     }}
-                                                    className="bg-surface border border-line text-[10px] font-black uppercase text-fg-subtle rounded-lg px-2 py-1 outline-none"
+                                                    className="bg-surface border border-line text-xs font-semibold text-fg-subtle rounded-lg px-2 py-1 outline-none"
                                                 >
                                                     <option value="text">TEXT</option>
                                                     <option value="number">NUM</option>
@@ -702,7 +702,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
                                                             setSettings({ ...settings, lead_custom_fields: newFields });
                                                         }}
-                                                        className="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-black flex items-center gap-1 transition-colors"
+                                                        className="mt-2 text-xs text-primary hover:text-primary-hover font-semibold flex items-center gap-1 transition-colors"
                                                     ><Plus size={10} /> Add Option</button>
                                                 </div>
                                             )}
@@ -713,17 +713,17 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Deal Custom Fields */}
-                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl h-fit">
+                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden h-fit">
                             <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Deal Fields</h3>
+                                    <h3 className="font-semibold text-fg text-xs">Deal Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, deal_custom_fields: [...settings.deal_custom_fields, newField] });
                                     }}
-                                    className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -731,7 +731,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.deal_custom_fields.map((field, idx) => (
-                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-xl group hover:border-line transition-all">
+                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-nb group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -742,7 +742,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, deal_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover"
                                                     />
                                                 </div>
                                                 <select
@@ -752,7 +752,7 @@ const SettingsPage = () => {
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? ((newFields[idx] as any).options || []) : (newFields[idx] as any).options };
                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                     }}
-                                                    className="bg-surface border border-line text-[10px] font-black uppercase text-fg-subtle rounded-lg px-2 py-1 outline-none"
+                                                    className="bg-surface border border-line text-xs font-semibold text-fg-subtle rounded-lg px-2 py-1 outline-none"
                                                 >
                                                     <option value="text">TEXT</option>
                                                     <option value="number">NUM</option>
@@ -809,7 +809,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], options: [...((newFields[idx] as any).options || []), ''] } as any;
                                                             setSettings({ ...settings, deal_custom_fields: newFields });
                                                         }}
-                                                        className="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-black flex items-center gap-1 transition-colors"
+                                                        className="mt-2 text-xs text-primary hover:text-primary-hover font-semibold flex items-center gap-1 transition-colors"
                                                     ><Plus size={10} /> Add Option</button>
                                                 </div>
                                             )}
@@ -820,17 +820,17 @@ const SettingsPage = () => {
                         </section>
 
                         {/* Partner Custom Fields */}
-                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl h-fit">
+                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden h-fit">
                             <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs">Partner Fields</h3>
+                                    <h3 className="font-semibold text-fg text-xs">Partner Fields</h3>
                                 </div>
                                 <button
                                     onClick={() => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
                                     }}
-                                    className="text-[10px] bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                    className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
@@ -838,7 +838,7 @@ const SettingsPage = () => {
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {(settings.partner_custom_fields || []).map((field, idx) => (
-                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-xl group hover:border-line transition-all">
+                                        <div key={field.id} className="bg-surface-sunken border border-line rounded-nb group hover:border-line transition-all">
                                             <div className="flex items-center gap-3 p-3">
                                                 <div className="flex-1">
                                                     <input
@@ -849,7 +849,7 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], label: e.target.value };
                                                             setSettings({ ...settings, partner_custom_fields: newFields });
                                                         }}
-                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-blue-300"
+                                                        className="w-full bg-transparent border-none p-0 text-sm font-bold text-fg outline-none focus:ring-0 focus:outline-none focus:text-primary-hover"
                                                     />
                                                 </div>
                                                 <select
@@ -859,7 +859,7 @@ const SettingsPage = () => {
                                                         newFields[idx] = { ...newFields[idx], type: e.target.value as any, options: e.target.value === 'SELECT' ? (newFields[idx].options || []) : newFields[idx].options };
                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                     }}
-                                                    className="bg-surface border border-line text-[10px] font-black uppercase text-fg-subtle rounded-lg px-2 py-1 outline-none"
+                                                    className="bg-surface border border-line text-xs font-semibold text-fg-subtle rounded-lg px-2 py-1 outline-none"
                                                 >
                                                     <option value="text">TEXT</option>
                                                     <option value="number">NUM</option>
@@ -916,14 +916,14 @@ const SettingsPage = () => {
                                                             newFields[idx] = { ...newFields[idx], options: [...(newFields[idx].options || []), ''] };
                                                             setSettings({ ...settings, partner_custom_fields: newFields });
                                                         }}
-                                                        className="mt-2 text-[10px] text-blue-400 hover:text-blue-300 font-black flex items-center gap-1 transition-colors"
+                                                        className="mt-2 text-xs text-primary hover:text-primary-hover font-semibold flex items-center gap-1 transition-colors"
                                                     ><Plus size={10} /> Add Option</button>
                                                 </div>
                                             )}
                                         </div>
                                     ))}
                                     {(settings.partner_custom_fields || []).length === 0 && (
-                                        <p className="text-[11px] text-fg-muted font-bold text-center py-4">No partner fields yet. Click ADD to create one.</p>
+                                        <p className="text-xs text-fg-muted font-bold text-center py-4">No partner fields yet. Click ADD to create one.</p>
                                     )}
                                 </div>
                             </div>
@@ -932,21 +932,21 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'sources' && (
-                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                    <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                         <div className="p-6 border-b border-line bg-surface-sunken">
-                            <h3 className="font-black text-fg uppercase tracking-widest text-xs">Lead Source Types</h3>
-                            <p className="text-[10px] text-fg-muted font-bold mt-1">WHERE DO YOUR LEADS COME FROM? SYSTEM TYPES CANNOT BE DELETED.</p>
+                            <h3 className="font-semibold text-fg text-xs">Lead Source Types</h3>
+                            <p className="text-xs text-fg-muted mt-1">Where do your leads come from? system types cannot be deleted.</p>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="space-y-2">
                                 {sourceTypes.map(option => (
-                                    <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-xl transition-all ${!option.is_active ? 'opacity-50 border-line bg-surface-sunken' : 'border-line bg-surface-sunken hover:border-line'}`}>
+                                    <div key={option.id} className={`flex items-center gap-4 border p-3 rounded-nb transition-all ${!option.is_active ? 'opacity-50 border-line bg-surface-sunken' : 'border-line bg-surface-sunken hover:border-line'}`}>
                                         <div className="flex-1">
                                             <span className="text-sm font-bold text-fg">{option.label}</span>
-                                            <span className="ml-2 text-[10px] font-black text-fg-muted uppercase">{option.value}</span>
+                                            <span className="ml-2 text-xs font-semibold text-fg-muted">{option.value}</span>
                                         </div>
                                         {option.is_system && (
-                                            <span className="text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">System</span>
+                                            <span className="text-xs font-semibold bg-primary/10 text-primary border border-line px-2 py-0.5 rounded-full">System</span>
                                         )}
                                         {canWriteSettings && (
                                             <div className="flex items-center gap-2">
@@ -979,12 +979,12 @@ const SettingsPage = () => {
                                         onChange={(e) => setNewSourceLabel(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddSourceType()}
                                         placeholder="New source type label…"
-                                        className="flex-1 bg-bg border border-line px-3 py-2 rounded-lg text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        className="flex-1 bg-bg border border-line px-3 py-2 rounded-lg text-sm text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-focus"
                                     />
                                     <button
                                         onClick={handleAddSourceType}
                                         disabled={isAddingSource || !newSourceLabel.trim()}
-                                        className="text-[10px] bg-success hover:bg-success/90 text-white px-3 py-2 rounded-lg font-black flex items-center gap-1.5 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                        className="text-xs bg-success hover:bg-success/90 text-primary-fg px-3 py-2 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         <Plus size={12} /> ADD
                                     </button>
@@ -996,30 +996,30 @@ const SettingsPage = () => {
                 {activeTab === 'scoring' && (
                     <div className="space-y-6">
                         {/* ── Rules Section ── */}
-                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                             <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
                                 <div>
-                                    <h3 className="font-black text-fg uppercase tracking-widest text-xs flex items-center gap-2">
+                                    <h3 className="font-semibold text-fg text-xs flex items-center gap-2">
                                         <Trophy size={14} className="text-warning" />
                                         Lead Scoring Rules
                                     </h3>
-                                    <p className="text-[10px] text-fg-muted font-bold mt-1 uppercase tracking-tight">RULE-BASED AUTO-SCORING ENGINE</p>
+                                    <p className="text-xs text-fg-muted mt-1">Rule-based auto-scoring engine</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={handleRecalculateScores}
                                         disabled={isRecalculating}
-                                        className="text-[10px] border border-line hover:border-warning text-fg-subtle hover:text-warning px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+                                        className="text-xs border border-line hover:border-warning text-fg-subtle hover:text-warning px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {isRecalculating
                                             ? <Loader2 size={12} className="animate-spin" />
                                             : <RefreshCw size={12} />
-                                        } RECALCULATE SCORES
+                                        } Recalculate scores
                                     </button>
                                     {!isAddingRule && (
                                         <button
                                             onClick={handleStartAddRule}
-                                            className="text-[10px] bg-warning hover:bg-warning/90 text-white px-3 py-1.5 rounded-lg font-black flex items-center gap-1.5 transition-all active:scale-95"
+                                            className="text-xs bg-warning hover:bg-warning/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
                                         >
                                             <Plus size={12} /> ADD RULE
                                         </button>
@@ -1042,7 +1042,7 @@ const SettingsPage = () => {
                                 )}
 
                                 {scoringRules.length === 0 && !isAddingRule && (
-                                    <p className="text-center text-[11px] text-fg-muted font-bold uppercase tracking-widest py-8">
+                                    <p className="text-center text-xs text-fg-muted font-bold py-8">
                                         No scoring rules yet. Click ADD RULE to get started.
                                     </p>
                                 )}
@@ -1061,9 +1061,9 @@ const SettingsPage = () => {
                                             getFieldType={getFieldType}
                                         />
                                     ) : (
-                                        <div key={rule.id} className="flex items-center gap-3 bg-surface-sunken border border-line p-4 rounded-xl group hover:border-line transition-all">
+                                        <div key={rule.id} className="flex items-center gap-3 bg-surface-sunken border border-line p-4 rounded-nb group hover:border-line transition-all">
                                             {/* Priority */}
-                                            <span className="text-[9px] font-black text-fg-muted w-4 text-center">{idx + 1}</span>
+                                            <span className="text-xs font-semibold text-fg-muted w-4 text-center">{idx + 1}</span>
 
                                             {/* Icon */}
                                             <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-warning shrink-0">
@@ -1074,17 +1074,17 @@ const SettingsPage = () => {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span className="text-sm font-bold text-fg truncate">{rule.name}</span>
-                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0 ${rule.rule_type === 'source' ? 'bg-blue-500/20 text-blue-400' : rule.rule_type === 'activity' ? 'bg-purple-500/20 text-purple-400' : 'bg-teal-500/20 text-teal-400'}`}>
+                                                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${rule.rule_type === 'source' ? 'bg-primary/10 text-primary' : rule.rule_type === 'activity' ? 'bg-info/10 text-info' : 'bg-teal-500/20 text-teal-400'}`}>
                                                         {rule.rule_type === 'source' ? 'Source' : rule.rule_type === 'activity' ? 'Activity' : 'Field'}
                                                     </span>
                                                 </div>
-                                                <p className="text-[10px] text-fg-muted font-bold uppercase tracking-wider truncate">
+                                                <p className="text-xs text-fg-muted font-bold truncate">
                                                     {getTargetLabel(rule)} — {getRuleConditionLabel(rule)}
                                                 </p>
                                             </div>
 
                                             {/* Score badge */}
-                                            <div className={`text-sm font-black px-2 py-1 rounded-lg shrink-0 ${rule.score_points >= 0 ? 'text-success bg-emerald-500/10' : 'text-danger bg-rose-500/10'}`}>
+                                            <div className={`text-sm font-semibold px-2 py-1 rounded-lg shrink-0 ${rule.score_points >= 0 ? 'text-success bg-success/10' : 'text-danger bg-rose-500/10'}`}>
                                                 {rule.score_points >= 0 ? '+' : ''}{rule.score_points}
                                             </div>
 
@@ -1104,7 +1104,7 @@ const SettingsPage = () => {
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                                 <button
                                                     onClick={() => handleStartEditRule(rule)}
-                                                    className="p-1.5 hover:bg-blue-500/10 rounded-lg text-fg-subtle hover:text-blue-400 transition-all"
+                                                    className="p-1.5 hover:bg-primary/10 rounded-lg text-fg-subtle hover:text-primary-hover transition-all"
                                                 >
                                                     <Edit2 size={14} />
                                                 </button>
@@ -1122,17 +1122,17 @@ const SettingsPage = () => {
                         </section>
 
                         {/* ── Score Bands Section ── */}
-                        <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl">
+                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                             <div className="p-6 border-b border-line bg-surface-sunken">
-                                <h3 className="font-black text-fg uppercase tracking-widest text-xs flex items-center gap-2">
+                                <h3 className="font-semibold text-fg text-xs flex items-center gap-2">
                                     <ShieldCheck size={14} className="text-success" />
                                     Score Bands
                                 </h3>
-                                <p className="text-[10px] text-fg-muted font-bold mt-1 uppercase tracking-tight">DEFINE WHAT EACH SCORE RANGE MEANS</p>
+                                <p className="text-xs text-fg-muted mt-1">Define what each score range means</p>
                             </div>
                             <div className="p-6 space-y-2">
                                 {scoreCategories.map(cat => (
-                                    <div key={cat.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-xl">
+                                    <div key={cat.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-nb">
                                         <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                                         <div className="flex-1 flex items-center gap-3">
                                             <input
@@ -1142,13 +1142,13 @@ const SettingsPage = () => {
                                                 onBlur={e => handleUpdateCategory(cat, { label: e.target.value })}
                                                 className="bg-transparent text-sm font-bold text-fg border-none outline-none w-24"
                                             />
-                                            <div className="flex items-center gap-1 text-[10px] font-black text-fg-muted">
+                                            <div className="flex items-center gap-1 text-xs font-semibold text-fg-muted">
                                                 <input
                                                     type="number"
                                                     value={cat.min_score}
                                                     onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, min_score: parseInt(e.target.value) || 0 } : c))}
                                                     onBlur={e => handleUpdateCategory(cat, { min_score: parseInt(e.target.value) || 0 })}
-                                                    className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-[10px] font-black"
+                                                    className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-xs font-semibold"
                                                 />
                                                 <span>→</span>
                                                 {cat.max_score !== null ? (
@@ -1157,7 +1157,7 @@ const SettingsPage = () => {
                                                         value={cat.max_score ?? ''}
                                                         onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, max_score: parseInt(e.target.value) || 0 } : c))}
                                                         onBlur={e => handleUpdateCategory(cat, { max_score: parseInt(e.target.value) || 0 })}
-                                                        className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-[10px] font-black"
+                                                        className="bg-surface-raised text-fg-subtle rounded px-1.5 py-0.5 w-14 text-center border-none outline-none text-xs font-semibold"
                                                     />
                                                 ) : (
                                                     <span className="text-fg-muted italic">∞</span>
@@ -1222,7 +1222,7 @@ function ScoringRuleForm({
     const hideValue = ['is_empty', 'is_not_empty'].includes(draft.condition || '') || ruleType === 'source';
 
     const inputCls = 'w-full bg-surface-sunken border border-line text-fg text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-warning transition-colors';
-    const labelCls = 'text-[8px] font-black text-fg-muted uppercase tracking-widest mb-1 block';
+    const labelCls = 'text-xs font-semibold text-fg-muted mb-1 block';
 
     const getTargetOptions = () => {
         if (ruleType === 'source') return sourceTypes.map(s => ({ value: s.value, label: s.label }));
@@ -1233,7 +1233,7 @@ function ScoringRuleForm({
     };
 
     return (
-        <div className="bg-bg border border-amber-600/40 rounded-xl p-5 space-y-4">
+        <div className="bg-bg border border-warning/30 rounded-nb p-5 space-y-4">
             {/* Row 1: Name */}
             <div>
                 <label className={labelCls}>Rule Name</label>
@@ -1329,17 +1329,17 @@ function ScoringRuleForm({
                 <div className="flex gap-2 ml-auto">
                     <button
                         onClick={onCancel}
-                        className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-line text-fg-subtle hover:text-fg transition-all"
+                        className="text-xs font-semibold px-3 py-2 rounded-lg border border-line text-fg-subtle hover:text-fg transition-all"
                     >
                         <X size={12} />
                     </button>
                     <button
                         onClick={onSave}
                         disabled={isSaving}
-                        className="text-[10px] font-black uppercase px-4 py-2 rounded-lg bg-warning hover:bg-warning/90 text-white flex items-center gap-1.5 transition-all disabled:opacity-50"
+                        className="text-xs font-semibold px-4 py-2 rounded-lg bg-warning hover:bg-warning/90 text-primary-fg flex items-center gap-1.5 transition-all disabled:opacity-50"
                     >
                         {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                        SAVE RULE
+                        Save rule
                     </button>
                 </div>
             </div>

@@ -104,7 +104,7 @@ export interface LeadsDataGridProps {
 // ─── Status helpers ────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  New: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  New: 'bg-primary/10 text-primary border-primary/20',
   Contacted: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
   Qualified: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
   'Proposal Sent': 'bg-amber-500/10 text-warning border-amber-500/20',
@@ -162,7 +162,7 @@ const COL_DEFS: ColDef[] = [
           {lead.company_name}
         </span>
         {lead.type && (
-          <span className="text-[10px] uppercase tracking-wider text-fg-muted font-medium">
+          <span className="text-xs text-fg-muted font-medium">
             {lead.type}
           </span>
         )}
@@ -182,7 +182,7 @@ const COL_DEFS: ColDef[] = [
       return (
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold shrink-0"
+            className="w-7 h-7 rounded-full bg-primary text-primary-fg flex items-center justify-center text-[10px] font-bold shrink-0"
             title={name}
           >
             {name !== '—' ? initials(name) : '?'}
@@ -202,7 +202,7 @@ const COL_DEFS: ColDef[] = [
         <a
           href={`mailto:${lead.contact_email}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-fg-subtle hover:text-blue-400 transition-colors text-sm truncate"
+          className="flex items-center gap-1.5 text-fg-subtle hover:text-primary transition-colors text-sm truncate"
           title={lead.contact_email}
         >
           <Mail size={13} className="shrink-0" />
@@ -443,7 +443,7 @@ const COL_DEFS: ColDef[] = [
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 text-fg-subtle hover:text-blue-400 transition-colors text-sm truncate"
+          className="flex items-center gap-1.5 text-fg-subtle hover:text-primary transition-colors text-sm truncate"
         >
           <Globe size={13} className="shrink-0" />
           <span className="truncate">{site}</span>
@@ -565,7 +565,7 @@ const COL_DEFS: ColDef[] = [
       const tone: Record<string, string> = {
         overdue: 'text-danger',
         today: 'text-warning',
-        tomorrow: 'text-blue-400',
+        tomorrow: 'text-primary',
         upcoming: 'text-fg-subtle',
       };
       return <span className={`text-xs font-medium ${tone[f.tone]}`}>{f.label}</span>;
@@ -609,7 +609,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
       <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-2">
-            <Columns2 size={18} className="text-blue-400" />
+            <Columns2 size={18} className="text-primary" />
             <h2 className="text-base font-semibold text-fg">Customize Columns</h2>
           </div>
           <div className="flex items-center gap-2">
@@ -644,7 +644,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
                   onClick={() => onToggle(col.key, !col.visible)}
                   className={`w-4 h-4 rounded border transition-colors shrink-0 flex items-center justify-center ${col.visible ? 'bg-primary border-primary' : 'border-line hover:border-line-strong'}`}
                 >
-                  {col.visible && <Check size={10} className="text-white" />}
+                  {col.visible && <Check size={10} className="text-primary-fg" />}
                 </button>
                 <span className="text-sm text-fg-subtle flex-1 select-none">
                   {def?.label ?? col.key}
@@ -652,7 +652,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
                 <button
                   onClick={() => onPin(col.key, !col.pinned)}
                   title={col.pinned ? 'Unpin column' : 'Pin column to left'}
-                  className={`text-xs px-2 py-0.5 rounded transition-colors ${col.pinned ? 'text-blue-400 bg-blue-500/10' : 'text-fg-muted hover:text-fg-subtle'}`}
+                  className={`text-xs px-2 py-0.5 rounded transition-colors ${col.pinned ? 'text-primary bg-primary/10' : 'text-fg-muted hover:text-fg-subtle'}`}
                 >
                   {col.pinned ? 'Pinned' : 'Pin'}
                 </button>
@@ -663,7 +663,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
         <div className="px-5 py-4 border-t border-line flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-fg text-sm font-medium rounded-lg transition-colors"
           >
             Done
           </button>
@@ -1193,7 +1193,7 @@ export function LeadsDataGrid({
         className={`flex border-b border-line cursor-pointer transition-colors group/row ${
           virtualize && !grouped ? 'overflow-hidden' : ''
         } ${
-          isFocused ? 'ring-1 ring-inset ring-blue-500/70 bg-blue-600/10' : isSelected ? 'bg-blue-600/8' : isHovered ? 'bg-surface-high' : 'hover:bg-surface-high'
+          isFocused ? 'ring-1 ring-inset ring-primary/70 bg-primary/10' : isSelected ? 'bg-primary/8' : isHovered ? 'bg-surface-high' : 'hover:bg-surface-high'
         }`}
         style={{ minWidth: `${totalWidth}px`, ...(virtualize && !grouped ? { height: rowH } : {}) }}
         onClick={() => onRowClick(lead)}
@@ -1213,7 +1213,7 @@ export function LeadsDataGrid({
               <div
                 key="select"
                 className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
-                  isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-surface-high' : 'bg-bg'
+                  isSelected ? 'bg-primary/10' : isHovered ? 'bg-surface-high' : 'bg-bg'
                 }`}
                 style={{ width: col.width, left: colLeftOffsets['select'] }}
                 onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
@@ -1223,7 +1223,7 @@ export function LeadsDataGrid({
                     isSelected ? 'bg-primary border-primary' : 'border-line hover:border-line-strong'
                   }`}
                 >
-                  {isSelected && <Check size={10} className="text-white" />}
+                  {isSelected && <Check size={10} className="text-primary-fg" />}
                 </div>
               </div>
             );
@@ -1261,7 +1261,7 @@ export function LeadsDataGrid({
                 canEditCell ? 'cursor-text' : ''
               } ${
                 isSticky
-                  ? `sticky z-10 ${isSelected ? 'bg-blue-600/10' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
+                  ? `sticky z-10 ${isSelected ? 'bg-primary/10' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
                   : ''
               }`}
               style={{
@@ -1314,13 +1314,12 @@ export function LeadsDataGrid({
   return (
     <>
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-sm text-fg-subtle">
-          {sortedLeads.length} lead{sortedLeads.length !== 1 ? 's' : ''}
+      <div className="flex w-full min-w-0 items-center justify-between mb-2">
+        <span className="text-sm text-fg-muted">
           {sorts.length > 0 && (
             <button
               onClick={() => setSorts([])}
-              className="ml-2 text-xs text-blue-400 hover:text-blue-300"
+              className="text-xs text-primary hover:underline"
             >
               Clear sort
             </button>
@@ -1333,7 +1332,7 @@ export function LeadsDataGrid({
               onClick={() => setShowGroupMenu((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${
                 grouped
-                  ? 'text-blue-300 bg-blue-500/10 border-blue-500/40'
+                  ? 'text-primary bg-primary/10 border-primary/40'
                   : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
               }`}
               title="Group by"
@@ -1351,7 +1350,7 @@ export function LeadsDataGrid({
                     key={o.key}
                     onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}
                     className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                      groupBy === o.key ? 'text-blue-400 bg-blue-500/10' : 'text-fg-subtle hover:bg-surface-raised'
+                      groupBy === o.key ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
                     }`}
                   >
                     {groupBy === o.key && <Check size={12} />}
@@ -1379,7 +1378,7 @@ export function LeadsDataGrid({
                     key={d}
                     onClick={() => { setDensity(d); setShowDensityMenu(false); }}
                     className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors capitalize ${
-                      density === d ? 'text-blue-400 bg-blue-500/10' : 'text-fg-subtle hover:bg-surface-raised'
+                      density === d ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
                     }`}
                   >
                     {density === d && <Check size={12} />}
@@ -1413,7 +1412,7 @@ export function LeadsDataGrid({
       ) : (
       <div
         ref={containerRef}
-        className="rounded-xl border border-line overflow-auto bg-bg"
+        className="w-full min-w-0 rounded-nb-lg border border-line overflow-x-auto overflow-y-auto bg-bg"
         style={{ maxHeight: 'calc(100vh - 210px)' }}
         onContextMenu={(e) => e.preventDefault()}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
@@ -1446,9 +1445,9 @@ export function LeadsDataGrid({
                       className="text-fg-subtle hover:text-fg transition-colors"
                     >
                       {allSelected ? (
-                        <CheckSquare2 size={16} className="text-blue-400" />
+                        <CheckSquare2 size={16} className="text-primary" />
                       ) : someSelected ? (
-                        <MinusSquare size={16} className="text-blue-400" />
+                        <MinusSquare size={16} className="text-primary" />
                       ) : (
                         <Square2 size={16} />
                       )}
@@ -1466,7 +1465,7 @@ export function LeadsDataGrid({
               return (
                 <div
                   key={col.key}
-                  className={`relative flex items-center group px-3 text-xs font-semibold text-fg-subtle uppercase tracking-wider select-none shrink-0 py-3 ${
+                  className={`relative flex items-center group px-3 text-xs font-medium text-fg-muted select-none shrink-0 py-3 ${
                     col.pinned ? 'sticky z-30 bg-surface' : ''
                   }`}
                   style={{
@@ -1491,9 +1490,9 @@ export function LeadsDataGrid({
                       {def?.label ?? col.key}
                       {sortState ? (
                         sortState.direction === 'asc' ? (
-                          <ChevronUp size={12} className="text-blue-400" />
+                          <ChevronUp size={12} className="text-primary" />
                         ) : (
-                          <ChevronDown size={12} className="text-blue-400" />
+                          <ChevronDown size={12} className="text-primary" />
                         )
                       ) : (
                         <ChevronsUpDown size={12} className="opacity-0 group-hover:opacity-100" />
@@ -1505,7 +1504,7 @@ export function LeadsDataGrid({
 
                   {/* Resize handle */}
                   <div
-                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize opacity-0 group-hover:opacity-100 hover:bg-blue-500/30 rounded"
+                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize opacity-0 group-hover:opacity-100 hover:bg-primary/30 rounded"
                     onMouseDown={(e) => startResize(col.key, e)}
                   />
                 </div>

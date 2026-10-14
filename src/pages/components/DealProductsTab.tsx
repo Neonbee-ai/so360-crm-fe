@@ -1,3 +1,4 @@
+import { EmptyState } from '@so360/design-system';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Package, Plus, Trash2, ChevronDown, Loader2, Search, Copy } from 'lucide-react';
 import { crmService } from '../../services/crmService';
@@ -11,11 +12,11 @@ import { MatchingUnitsPanel } from '../../components/matching/MatchingUnitsPanel
 import { MatchingUnit, unitLabel } from '../../services/matchingUnitsService';
 
 const STATUS_OPTIONS: { value: ProductInterestStatus; label: string; color: string }[] = [
-    { value: 'interested', label: 'Interested', color: 'bg-blue-500/15 text-blue-400' },
-    { value: 'quoted', label: 'Quoted', color: 'bg-amber-500/15 text-warning' },
-    { value: 'approved', label: 'Approved', color: 'bg-emerald-500/15 text-success' },
-    { value: 'ordered', label: 'Ordered', color: 'bg-purple-500/15 text-purple-400' },
-    { value: 'cancelled', label: 'Cancelled', color: 'bg-rose-500/15 text-danger' },
+    { value: 'interested', label: 'Interested', color: 'bg-info/15 text-info' },
+    { value: 'quoted', label: 'Quoted', color: 'bg-warning/15 text-warning' },
+    { value: 'approved', label: 'Approved', color: 'bg-success/15 text-success' },
+    { value: 'ordered', label: 'Ordered', color: 'bg-primary/15 text-primary' },
+    { value: 'cancelled', label: 'Cancelled', color: 'bg-danger/15 text-danger' },
 ];
 
 function statusStyle(status: string) {
@@ -90,24 +91,24 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
 
     return (
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-surface border border-line rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-black text-fg uppercase tracking-widest">Add Product to Deal</h3>
+                    <h3 className="text-sm font-semibold text-fg">Add Product to Deal</h3>
                     <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">✕</button>
                 </div>
 
                 {/* Tabs */}
                 {leadId && (
-                    <div className="flex gap-1 mb-4 bg-surface-high rounded-xl p-1">
+                    <div className="flex gap-1 mb-4 bg-surface-high rounded-nb-lg p-1">
                         <button
                             onClick={() => setTab('from-lead')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${tab === 'from-lead' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'from-lead' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
                         >
                             <Copy size={10} className="inline mr-1" />From Lead
                         </button>
                         <button
                             onClick={() => setTab('search')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${tab === 'search' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'search' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
                         >
                             <Search size={10} className="inline mr-1" />Search Inventory
                         </button>
@@ -118,36 +119,36 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                 {tab === 'from-lead' && (
                     <>
                         {leadLoading ? (
-                            <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-blue-400" /></div>
+                            <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-info" /></div>
                         ) : leadProducts.length === 0 ? (
-                            <p className="text-center text-fg-muted text-xs py-8 uppercase font-bold tracking-widest">No products on lead</p>
+                            <p className="text-center text-fg-muted text-xs py-8 font-bold">No products on lead</p>
                         ) : (
                             <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
                                 {leadProducts.map(lp => (
-                                    <label key={lp.id} className="flex items-center gap-3 p-3 bg-surface-raised border border-line rounded-xl cursor-pointer hover:border-blue-500/50 transition-all">
+                                    <label key={lp.id} className="flex items-center gap-3 p-3 bg-surface-raised border border-line rounded-nb-lg cursor-pointer hover:border-info/50 transition-all">
                                         <input
                                             type="checkbox"
                                             checked={selectedLeadProducts.has(lp.id)}
                                             onChange={() => toggleLeadProduct(lp.id)}
-                                            className="w-4 h-4 rounded accent-blue-500"
+                                            className="w-4 h-4 rounded accent-primary"
                                         />
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-bold text-fg truncate">{lp.item_name}</p>
-                                            <p className="text-[9px] text-fg-muted font-bold uppercase tracking-widest mt-0.5">
+                                            <p className="text-xs text-fg-muted font-bold mt-0.5">
                                                 Qty: {lp.quantity} · {lp.unit_price > 0 ? `₹${lp.unit_price.toLocaleString()}` : 'No price'}
                                             </p>
                                         </div>
-                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${statusStyle(lp.status)}`}>{lp.status}</span>
+                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${statusStyle(lp.status)}`}>{lp.status}</span>
                                     </label>
                                 ))}
                             </div>
                         )}
                         <div className="flex gap-3">
-                            <button onClick={onClose} className="flex-1 py-2.5 border border-line rounded-xl text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-all">Cancel</button>
+                            <button onClick={onClose} className="flex-1 py-2.5 border border-line rounded-nb-lg text-xs font-semibold text-fg-subtle hover:border-line transition-all">Cancel</button>
                             <button
                                 disabled={selectedLeadProducts.size === 0}
                                 onClick={() => onImportFromLead(leadProducts.filter(lp => selectedLeadProducts.has(lp.id)))}
-                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all"
+                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-nb-lg text-xs font-semibold text-white transition-all"
                             >
                                 Add {selectedLeadProducts.size > 0 ? `(${selectedLeadProducts.size})` : ''}
                             </button>
@@ -167,7 +168,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                         value={query}
                                         onChange={e => setQuery(e.target.value)}
                                         placeholder="Search product name or SKU…"
-                                        className="w-full bg-surface-raised border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
+                                        className="w-full bg-surface-raised border border-line rounded-nb-lg pl-9 pr-4 py-2.5 text-sm text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
                                     />
                                 </div>
                                 {unitBooking && (
@@ -180,22 +181,22 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                         onHoldHoursChange={setHoldHours}
                                     />
                                 )}
-                                {loading && <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-blue-400" /></div>}
+                                {loading && <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-info" /></div>}
                                 {!loading && visibleItems.length === 0 && hasCriteria && (
-                                    <p className="text-center text-fg-muted text-xs py-8 uppercase font-bold tracking-widest">No products found</p>
+                                    <p className="text-center text-fg-muted text-xs py-8 font-bold">No products found</p>
                                 )}
                                 {!loading && !hasCriteria && (
                                     <p className="text-center text-fg-muted text-xs py-8 italic">Start typing to search inventory…</p>
                                 )}
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {visibleItems.map(item => (
-                                        <button key={item.id} onClick={() => setSelected(item)} className="w-full text-left p-3 bg-surface-raised border border-line hover:border-blue-500/50 rounded-xl transition-all group">
+                                        <button key={item.id} onClick={() => setSelected(item)} className="w-full text-left p-3 bg-surface-raised border border-line hover:border-info/50 rounded-nb-lg transition-all group">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-xs font-bold text-fg group-hover:text-blue-400 transition-colors">{item.name}</p>
-                                                    {item.sku && <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest mt-0.5">SKU: {item.sku}</p>}
+                                                    <p className="text-xs font-bold text-fg group-hover:text-info transition-colors">{item.name}</p>
+                                                    {item.sku && <p className="text-xs text-fg-muted font-bold mt-0.5">SKU: {item.sku}</p>}
                                                 </div>
-                                                {item.price > 0 && <span className="text-xs font-black text-success">₹{item.price.toLocaleString()}</span>}
+                                                {item.price > 0 && <span className="text-xs font-semibold text-success">₹{item.price.toLocaleString()}</span>}
                                             </div>
                                         </button>
                                     ))}
@@ -203,19 +204,19 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                             </>
                         ) : (
                             <div className="space-y-4">
-                                <div className="p-4 bg-surface-raised border border-line rounded-xl">
+                                <div className="p-4 bg-surface-raised border border-line rounded-nb-lg">
                                     <p className="text-xs font-bold text-fg">{selected.name}</p>
-                                    {selected.sku && <p className="text-[10px] text-fg-muted font-bold uppercase tracking-widest mt-0.5">SKU: {selected.sku}</p>}
-                                    <button onClick={() => setSelected(null)} className="mt-2 text-[10px] text-fg-muted hover:text-blue-400 font-bold uppercase tracking-widest transition-colors">← Change</button>
+                                    {selected.sku && <p className="text-xs text-fg-muted font-bold mt-0.5">SKU: {selected.sku}</p>}
+                                    <button onClick={() => setSelected(null)} className="mt-2 text-xs text-fg-muted hover:text-info font-bold transition-colors">← Change</button>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Quantity</label>
+                                    <label className="block text-xs font-semibold text-fg-muted mb-2">Quantity</label>
                                     <input type="number" min={1} value={qty} onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-                                        className="w-full bg-surface-raised border border-line rounded-xl px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary" />
+                                        className="w-full bg-surface-raised border border-line rounded-nb-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary" />
                                 </div>
                                 <div className="flex gap-3">
-                                    <button onClick={onClose} className="flex-1 py-2.5 border border-line rounded-xl text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-all">Cancel</button>
-                                    <button onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)} className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all">Add Product</button>
+                                    <button onClick={onClose} className="flex-1 py-2.5 border border-line rounded-nb-lg text-xs font-semibold text-fg-subtle hover:border-line transition-all">Cancel</button>
+                                    <button onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)} className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-nb-lg text-xs font-semibold text-white transition-all">Add Product</button>
                                 </div>
                             </div>
                         )}
@@ -347,7 +348,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Products ({products.length})</p>
+                    <p className="text-xs font-semibold text-fg-muted">Products ({products.length})</p>
                     {products.length > 0 && (
                         <p className="text-xs text-success font-bold mt-0.5">
                             Deal Value: {formatters.formatCurrency(totalValue)}
@@ -356,34 +357,28 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                 </div>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-nb-lg text-xs font-semibold transition-all"
                 >
                     <Plus size={12} /> Add Product
                 </button>
             </div>
 
             {addError && (
-                <p role="alert" className="text-xs text-danger bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2">
+                <p role="alert" className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-nb-lg px-3 py-2">
                     {addError}
                 </p>
             )}
 
             {loading ? (
-                <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-blue-400" /></div>
+                <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-info" /></div>
             ) : products.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-line rounded-2xl">
-                    <Package size={32} className="mx-auto mb-3 text-fg opacity-40" />
-                    <p className="text-[10px] font-bold text-fg-muted uppercase tracking-widest">No products in this deal</p>
-                    <p className="text-xs text-fg-muted mt-1">
-                        {leadId ? 'Import from lead or add from inventory' : 'Add products from inventory'}
-                    </p>
-                </div>
+                <EmptyState title="No products in this deal" description={leadId ? 'Import from lead or add from inventory' : 'Add products from inventory'} />
             ) : (
                 <div className="space-y-3">
                     {products.map(product => {
                         const lineTotal = product.quantity * product.unit_price;
                         return (
-                            <div key={product.id} className="bg-surface-sunken border border-line rounded-xl p-4 group hover:border-line transition-all">
+                            <div key={product.id} className="bg-surface-sunken border border-line rounded-nb-lg p-4 group hover:border-line transition-all">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 min-w-0">
@@ -396,7 +391,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                                             )}
                                         </div>
                                         {product.item_sku && (
-                                            <p className="text-[9px] font-black text-fg-muted uppercase tracking-widest mt-0.5">SKU: {product.item_sku}</p>
+                                            <p className="text-xs font-semibold text-fg-muted mt-0.5">SKU: {product.item_sku}</p>
                                         )}
                                     </div>
                                     <button
@@ -409,7 +404,7 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
 
                                 <div className="flex items-center gap-4 mt-3 flex-wrap">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[9px] font-black text-fg-muted uppercase tracking-widest">Qty</span>
+                                        <span className="text-xs font-semibold text-fg-muted">Qty</span>
                                         <input
                                             type="number"
                                             min={1}
@@ -421,17 +416,17 @@ export default function DealProductsTab({ dealId, leadId }: Props) {
                                         />
                                     </div>
                                     {product.unit_price > 0 && (
-                                        <span className="text-[9px] font-black text-fg-muted uppercase tracking-widest">@ {formatters.formatCurrency(product.unit_price)}</span>
+                                        <span className="text-xs font-semibold text-fg-muted">@ {formatters.formatCurrency(product.unit_price)}</span>
                                     )}
                                     {lineTotal > 0 && (
-                                        <span className="text-xs font-black text-success ml-auto">{formatters.formatCurrency(lineTotal)}</span>
+                                        <span className="text-xs font-semibold text-success ml-auto">{formatters.formatCurrency(lineTotal)}</span>
                                     )}
                                     <div className="relative ml-auto">
                                         <select
                                             value={product.status}
                                             disabled={updatingId === product.id}
                                             onChange={e => handleStatusChange(product, e.target.value as ProductInterestStatus)}
-                                            className={`appearance-none text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border-0 cursor-pointer focus:outline-none pr-6 ${statusStyle(product.status)}`}
+                                            className={`appearance-none text-xs font-semibold px-2.5 py-1 rounded-lg border-0 cursor-pointer focus:outline-none pr-6 ${statusStyle(product.status)}`}
                                         >
                                             {STATUS_OPTIONS.map(s => (
                                                 <option key={s.value} value={s.value}>{s.label}</option>

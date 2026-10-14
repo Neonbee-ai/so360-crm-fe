@@ -137,7 +137,7 @@ export default function EditPlanPanel({
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="grow basis-64">
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Name
               </label>
               <input
@@ -148,7 +148,7 @@ export default function EditPlanPanel({
               />
             </div>
             <div>
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Priority
               </label>
               <select
@@ -163,7 +163,7 @@ export default function EditPlanPanel({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Status
               </label>
               <select
@@ -178,7 +178,7 @@ export default function EditPlanPanel({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Role
               </label>
               <input
@@ -234,7 +234,7 @@ export default function EditPlanPanel({
 
           <div className="flex flex-wrap items-end gap-3 border-t border-line pt-3">
             <div className="grow basis-64">
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Reason for the change
               </label>
               <input

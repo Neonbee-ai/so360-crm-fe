@@ -110,7 +110,7 @@ export default function AllocateTeamPlanPanel({
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="block text-[11px] text-fg-subtle mb-1">
+              <label className="block text-xs text-fg-subtle mb-1">
                 Metric
               </label>
               <select

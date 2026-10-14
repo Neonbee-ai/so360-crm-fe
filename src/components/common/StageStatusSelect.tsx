@@ -62,7 +62,7 @@ export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onC
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
                 onClick={() => setIsOpen(o => !o)}
-                className={`flex items-center gap-1 bg-surface border text-[10px] font-black uppercase rounded-lg px-2 py-1 outline-none focus:border-primary transition-colors ${selected.collapsedTextClassName}`}
+                className={`flex items-center gap-1 bg-surface border text-xs font-semibold rounded-lg px-2 py-1 outline-none focus:border-primary transition-colors ${selected.collapsedTextClassName}`}
                 data-testid="stage-status-trigger"
             >
                 {selected.label}
@@ -82,9 +82,9 @@ export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onC
                             role="option"
                             aria-selected={opt.value === value}
                             onClick={() => handleSelect(opt.value)}
-                            className={`w-full flex items-center gap-2 text-left px-2.5 py-1.5 text-[10px] font-black uppercase transition-colors ${
+                            className={`w-full flex items-center gap-2 text-left px-2.5 py-1.5 text-xs font-semibold transition-colors ${
                                 opt.value === value
-                                    ? 'bg-primary text-white'
+                                    ? 'bg-primary text-primary-fg'
                                     : 'text-fg-subtle hover:bg-surface-raised'
                             }`}
                             data-testid={`stage-status-option-${opt.value}`}

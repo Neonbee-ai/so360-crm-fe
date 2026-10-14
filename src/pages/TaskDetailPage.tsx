@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
-import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button } from '@so360/design-system';
+import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState } from '@so360/design-system';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -208,18 +208,16 @@ const TaskDetailPage = () => {
             backLabel="Back"
             title={task.title}
             status={
-                <>
-                    {task.status === 'DONE' ? <CheckCircle2 size={20} className="text-success" /> : <Circle size={20} className="text-fg-muted" />}
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${task.status === 'DONE' ? 'bg-success/10 text-success border-success/20' : task.status === 'IN_PROGRESS' || task.status === 'ON_HOLD' ? 'bg-warning/10 text-warning border-warning/20' : task.status === 'CANCELLED' ? 'bg-danger/10 text-danger border-danger/20' : 'bg-surface-raised text-fg-subtle border-line'
-                        }`}>
-                        {task.status}
-                    </span>
+                <span className="flex items-center gap-nb-2">
+                    <StatusBadge
+                        status={task.status}
+                        size="sm"
+                        map={{ done: 'success', in_progress: 'warning', on_hold: 'warning', cancelled: 'danger' }}
+                    />
                     {isOverdue && (
-                        <span className="flex items-center gap-1 text-danger text-[10px] font-black uppercase tracking-widest bg-danger/10 border border-danger/20 px-2 py-0.5 rounded">
-                            <AlertCircle size={12} /> Overdue
-                        </span>
+                        <Badge size="sm" tone="danger"><AlertCircle size={12} /> Overdue</Badge>
                     )}
-                </>
+                </span>
             }
             primaryAction={
                 <Button
@@ -231,57 +229,80 @@ const TaskDetailPage = () => {
                     Edit
                 </Button>
             }
+            secondaryActions={[
+                <Button key="toggle" variant="secondary" onClick={handleTaskToggle}>
+                    {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
+                </Button>,
+                <Button
+                    key="reschedule"
+                    variant="secondary"
+                    onClick={() => canReschedule && setIsRescheduling(true)}
+                    disabled={!canReschedule}
+                    title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
+                >
+                    Reschedule
+                </Button>,
+            ]}
             overflowActions={canCreateTask ? [{ label: 'Delete Task', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []}
+            sidePanel={
+                <div className="flex flex-col gap-nb-3">
+                    <Card title="Assignee">
+                        <div className="flex items-center gap-nb-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-surface-raised text-fg">
+                                {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-fg">{task.assigned_to.full_name}</p>
+                                <p className="text-xs text-fg-muted">Sales Representative</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card title="Schedule">
+                        <p className="text-xs text-fg-muted">Due date</p>
+                        <p className={`text-sm ${isOverdue ? 'text-danger' : 'text-fg'}`}>
+                            {formatters.formatDate(dueDateCalendarDay(task.due_date), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            {/* The time appears only when the user chose one. */}
+                            {hasTimeComponent(task.due_date) && (
+                                <span className="ml-2 text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
+                            )}
+                        </p>
+                        {isLocked && (
+                            <p className="mt-nb-2 text-xs text-fg-muted" data-testid="task-locked-hint">
+                                {TASK_LOCKED_HINT}
+                            </p>
+                        )}
+                    </Card>
+                </div>
+            }
         >
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-2 space-y-8">
-                    <section className="bg-surface border border-line rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-6 border-b border-line pb-2">Related Information</h3>
-                        <div className="space-y-6">
-                            {(task.deal_name || task.deal_id) && (
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shrink-0">
-                                        <Briefcase size={20} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="text-[10px] font-bold text-fg-muted uppercase block mb-1">Associated Deal</span>
-                                        <Link to={`/deals/${task.deal_id}`} className="text-lg font-bold text-fg hover:text-primary transition-colors truncate block">
-                                            {task.deal_name || 'View Deal'}
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                            {(task.lead_id) && !task.deal_id && (
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-primary shrink-0">
-                                        <UserIcon size={20} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="text-[10px] font-bold text-fg-muted uppercase block mb-1">Related Lead</span>
-                                        <Link to={`/crm/leads/${task.lead_id}`} className="text-lg font-bold text-fg hover:text-primary transition-colors truncate block">
-                                            View Lead
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-surface-raised flex items-center justify-center text-warning shrink-0">
-                                    <Calendar size={20} />
-                                </div>
-                                <div>
-                                    <span className="text-[10px] font-bold text-fg-muted uppercase block mb-1">Due Date</span>
-                                    <p className={`text-lg font-bold ${isOverdue ? 'text-danger' : 'text-fg'}`}>
-                                        {formatters.formatDate(dueDateCalendarDay(task.due_date), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                        {/* The time appears only when the user chose one. */}
-                                        {hasTimeComponent(task.due_date) && (
-                                            <span className="ml-2 text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
-                                        )}
-                                    </p>
+            <div className="flex flex-col gap-nb-3">
+                <Card title="Related information">
+                    <div className="flex flex-col gap-nb-4">
+                        {(task.deal_name || task.deal_id) && (
+                            <div className="flex items-center gap-nb-3">
+                                <Briefcase size={18} className="shrink-0 text-fg-muted" />
+                                <div className="min-w-0">
+                                    <span className="block text-xs text-fg-muted">Associated deal</span>
+                                    <Link to={`/deals/${task.deal_id}`} className="block truncate text-sm font-medium text-fg hover:text-primary">
+                                        {task.deal_name || 'View Deal'}
+                                    </Link>
                                 </div>
                             </div>
+                        )}
+
+                        {(task.lead_id) && !task.deal_id && (
+                            <div className="flex items-center gap-nb-3">
+                                <UserIcon size={18} className="shrink-0 text-fg-muted" />
+                                <div className="min-w-0">
+                                    <span className="block text-xs text-fg-muted">Related lead</span>
+                                    <Link to={`/crm/leads/${task.lead_id}`} className="block truncate text-sm font-medium text-fg hover:text-primary">
+                                        View Lead
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
 
                             {/* Project connection status. `sync_status` is only present
                                 once the task has (or once had) a Project connection —
@@ -292,7 +313,7 @@ const TaskDetailPage = () => {
                                         <Link2 size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <span className="text-[10px] font-bold text-fg-muted uppercase block mb-1">Connected to Project</span>
+                                        <span className="text-xs text-fg-muted block mb-1">Connected to Project</span>
                                         <div className="flex items-center gap-3 flex-wrap">
                                             {task.project_id && <CrossLinkChip type="projects.project" id={task.project_id} />}
                                             {task.last_synced_at && (
@@ -319,13 +340,13 @@ const TaskDetailPage = () => {
                                         <AlertCircle size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <span className="text-[10px] font-bold text-danger uppercase block mb-1">Sync Failed</span>
+                                        <span className="text-xs text-danger block mb-1">Sync Failed</span>
                                         <span className="text-sm text-fg-subtle">This task couldn't be synchronized with its Project.</span>
                                     </div>
                                     <button
                                         onClick={handleRetrySync}
                                         disabled={isRetryingSync}
-                                        className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest bg-primary/10 border border-primary/20 rounded-lg text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 shrink-0"
+                                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-surface-raised border border-line rounded-nb text-primary hover:bg-surface-sunken transition-colors disabled:opacity-50 shrink-0"
                                     >
                                         {isRetryingSync ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                                         Retry Sync
@@ -338,32 +359,22 @@ const TaskDetailPage = () => {
                                     Previously connected to a Project.
                                 </p>
                             )}
-                        </div>
-                    </section>
+                    </div>
+                </Card>
 
-                    <section className="bg-surface border border-line rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-4 border-b border-line pb-2">Description</h3>
-                        <p className={`text-fg-subtle leading-relaxed ${!task.description ? 'italic' : ''}`}>
-                            {task.description || 'No additional description provided for this task.'}
-                        </p>
-                    </section>
+                <Card title="Description">
+                    <p className={`text-sm leading-relaxed text-fg-subtle ${!task.description ? 'italic' : ''}`}>
+                        {task.description || 'No additional description provided for this task.'}
+                    </p>
+                </Card>
 
-                    {/* Notes & Comments Section */}
-                    <section className="bg-surface border border-line rounded-2xl p-6">
-                        <div className="flex items-center justify-between mb-4 border-b border-line pb-2">
-                            <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest">Notes & Comments</h3>
-                            {/* Only one Cancel exists in this section — inside the editor.
-                                The header keeps a single "open editor" affordance. */}
-                            {canCreateTask && !notesError && !isAddingNote && (
-                                <button
-                                    onClick={() => setIsAddingNote(true)}
-                                    className="text-xs text-primary hover:text-primary font-bold"
-                                >
-                                    + Add Note
-                                </button>
-                            )}
-                        </div>
-
+                {/* Notes & Comments Section */}
+                <Card
+                    title="Notes & Comments"
+                    actions={canCreateTask && !notesError && !isAddingNote ? (
+                        <Button variant="secondary" onClick={() => setIsAddingNote(true)}>+ Add Note</Button>
+                    ) : undefined}
+                >
                         {notesError && (
                             <div className="bg-surface-high border border-line rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
                                 <p className="text-xs text-fg-subtle">{notesError}</p>
@@ -384,14 +395,14 @@ const TaskDetailPage = () => {
                                 type="button"
                                 onClick={() => setIsAddingNote(true)}
                                 data-testid="note-composer-trigger"
-                                className="w-full text-left bg-bg border border-line hover:border-primary/50 text-fg-muted rounded-lg px-4 py-2.5 text-sm mb-4 transition-colors"
+                                className="mb-nb-3 w-full rounded-nb border border-line bg-bg px-nb-3 py-nb-2 text-left text-sm text-fg-muted hover:bg-surface-raised"
                             >
                                 Add a note or comment...
                             </button>
                         )}
 
                         {isAddingNote && (
-                            <div className="bg-surface-sunken border border-line rounded-xl p-4 mb-4">
+                            <div className="mb-nb-3 border-b border-line pb-nb-3">
                                 <textarea
                                     autoFocus
                                     value={newNote}
@@ -428,12 +439,10 @@ const TaskDetailPage = () => {
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="divide-y divide-line">
                             {notes.length === 0 ? (
                                 !notesError && (
-                                    <p className="text-fg-muted text-sm italic">
-                                        No notes added yet. Add the first note to collaborate with your team.
-                                    </p>
+                                    <EmptyState title="No notes added yet. Add the first note to collaborate with your team." />
                                 )
                             ) : (
                                 notes.map(note => {
@@ -441,7 +450,7 @@ const TaskDetailPage = () => {
                                     const isEdited = !!note.updated_at && note.updated_at !== note.created_at;
 
                                     return (
-                                        <div key={note.id} className="bg-surface-sunken border border-line rounded-lg p-4 group">
+                                        <div key={note.id} className="group py-nb-3 first:pt-0 last:pb-0">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
@@ -488,48 +497,7 @@ const TaskDetailPage = () => {
                                 })
                             )}
                         </div>
-                    </section>
-                </div>
-
-                <div className="space-y-8">
-                    <section className="bg-surface border border-line rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-6">Assignee</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center overflow-hidden border-2 border-line">
-                                {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
-                            </div>
-                            <div>
-                                <p className="font-bold text-fg">{task.assigned_to.full_name}</p>
-                                <p className="text-xs text-fg-muted">Sales Representative</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="bg-surface border border-line rounded-2xl p-6">
-                        <h3 className="text-sm font-black text-fg-muted uppercase tracking-widest mb-4">Task Actions</h3>
-                        <div className="space-y-2">
-                            <button
-                                onClick={handleTaskToggle}
-                                className={`w-full py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 text-success-fg ${task.status === 'DONE' ? 'bg-success hover:bg-success/90 shadow-success/20' : 'bg-primary hover:bg-primary/90 shadow-primary/20'}`}
-                            >
-                                {task.status === 'DONE' ? 'Mark as Open' : 'Mark as Complete'}
-                            </button>
-                            <button
-                                onClick={() => canReschedule && setIsRescheduling(true)}
-                                disabled={!canReschedule}
-                                title={canReschedule ? 'Reschedule this task' : TASK_LOCKED_HINT}
-                                className="w-full bg-surface-high hover:bg-surface-high text-fg py-2 rounded-lg text-xs font-bold transition-all border border-line disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface-high"
-                            >
-                                Reschedule
-                            </button>
-                            {isLocked && (
-                                <p className="text-[10px] text-fg-muted leading-snug pt-1" data-testid="task-locked-hint">
-                                    {TASK_LOCKED_HINT}
-                                </p>
-                            )}
-                        </div>
-                    </section>
-                </div>
+                </Card>
             </div>
 
             {/* Task Edit Modal */}

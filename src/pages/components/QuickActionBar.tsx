@@ -67,7 +67,7 @@ const QuickActionBar: React.FC<Props> = ({
                     key={a.label}
                     type="button"
                     onClick={guard(a.label, a.onClick)}
-                    className="flex items-center gap-1.5 bg-surface hover:bg-surface-raised border border-line text-fg-subtle hover:text-fg px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                    className="flex items-center gap-1.5 bg-surface hover:bg-surface-raised border border-line text-fg-subtle hover:text-fg px-3 py-1.5 rounded-nb text-xs font-medium transition-all"
                 >
                     {a.icon} {a.label}
                 </button>

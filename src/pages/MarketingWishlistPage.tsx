@@ -50,46 +50,37 @@ const MarketingWishlistPage: React.FC = () => {
     <ListPageTemplate
       title="Customer Wishlists"
       description="Track high-intent items across storefront customers"
+      filters={
+        <div className="relative w-full wc-medium:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-9 pr-3 text-sm text-fg outline-none focus:border-primary"
+            placeholder="Filter by product or customer name..."
+          />
+        </div>
+      }
+      toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="bg-surface border border-line rounded-2xl p-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-            <div className="md:col-span-4">
-              <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Store Context</label>
-              <MarketingStorePicker storeId={storeId} onChange={applyStore} />
-            </div>
-            <div className="md:col-span-8">
-              <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-3 ml-1">Search Wishlists</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-muted" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-bg border border-line rounded-xl py-3 pl-10 pr-4 text-sm text-fg focus:border-primary outline-none transition-all font-bold"
-                  placeholder="Filter by product or customer name..."
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
         <div className="bg-surface border border-line rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-line bg-surface-sunken">
-            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Wishlist Activity Feed ({filtered.length})</h3>
+            <h3 className="text-xs font-semibold text-fg-muted">Wishlist Activity Feed ({filtered.length})</h3>
           </div>
           <div className="p-6">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-fg-muted gap-3">
                 <Loader2 className="animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Tracking intent...</span>
+                <span className="text-xs font-semibold">Tracking intent...</span>
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-20 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
                 <Heart className="mx-auto mb-4 text-fg w-12 h-12 opacity-20" />
-                <p className="text-sm font-bold uppercase text-fg-muted tracking-widest">No wishlist items found</p>
-                <p className="text-[10px] text-fg-muted uppercase mt-1 italic font-bold">Insights will appear as customers add items to their wishlist</p>
+                <p className="text-sm font-bold text-fg-muted">No wishlist items found</p>
+                <p className="text-xs text-fg-muted mt-1 italic font-bold">Insights will appear as customers add items to their wishlist</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
@@ -109,23 +100,23 @@ const MarketingWishlistPage: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex justify-between items-start mb-1">
-                          <p className="text-sm font-black text-fg truncate uppercase tracking-tight">{item.items?.name || 'Unknown Item'}</p>
+                          <p className="text-sm font-semibold text-fg truncate">{item.items?.name || 'Unknown Item'}</p>
                           <Heart size={12} className="text-danger fill-danger/20" />
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <User className="w-3 h-3 text-fg-muted" />
                             {crmLeadId ? (
-                              <Link to={`/crm/leads/${crmLeadId}`} className="text-[10px] font-black text-primary hover:text-primary uppercase tracking-widest flex items-center gap-1 truncate">
+                              <Link to={`/crm/leads/${crmLeadId}`} className="text-xs font-semibold text-primary hover:text-primary flex items-center gap-1 truncate">
                                 {customerName} <ExternalLink size={8} />
                               </Link>
                             ) : (
-                              <span className="text-[10px] font-black text-fg-subtle uppercase tracking-widest truncate">{customerName}</span>
+                              <span className="text-xs font-semibold text-fg-subtle truncate">{customerName}</span>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="w-3 h-3 text-fg-muted" />
-                            <span className="text-[9px] font-bold text-fg-muted uppercase tracking-tighter">Added {formatters.formatDate(item.added_at)}</span>
+                            <span className="text-xs font-bold text-fg-muted">Added {formatters.formatDate(item.added_at)}</span>
                           </div>
                         </div>
                       </div>

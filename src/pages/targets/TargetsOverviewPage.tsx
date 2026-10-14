@@ -91,7 +91,7 @@ export default function TargetsOverviewPage() {
     <div className="space-y-5">
       {h && (
         <div className="max-w-md">
-          <div className="flex justify-between text-[11px] text-fg-muted mb-1">
+          <div className="flex justify-between text-xs text-fg-muted mb-1">
             <span>Period elapsed</span>
             <span>{formatPct(h.elapsed_fraction)}</span>
           </div>
@@ -188,7 +188,7 @@ export default function TargetsOverviewPage() {
           }
         >
           <Sparkline points={data.trend.points} />
-          <div className="mt-2 flex gap-2 text-[11px] text-fg-muted">
+          <div className="mt-2 flex gap-2 text-xs text-fg-muted">
             {data.trend.points.map((p) => (
               <div key={p.period_start} className="flex-1 text-center">
                 {formatPct(p.attainment)}
@@ -196,7 +196,7 @@ export default function TargetsOverviewPage() {
             ))}
           </div>
           {data.trend.planChanges > 0 && (
-            <div className="mt-3 text-[11px] text-fg-muted">
+            <div className="mt-3 text-xs text-fg-muted">
               {data.trend.planChanges} period
               {data.trend.planChanges === 1 ? '' : 's'} had the target edited
               mid-flight

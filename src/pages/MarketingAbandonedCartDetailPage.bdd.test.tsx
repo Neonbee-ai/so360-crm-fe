@@ -70,7 +70,7 @@ describe('MarketingAbandonedCartDetailPage', () => {
 
     it('When rendered / Then shows recovery status', async () => {
       render(<MarketingAbandonedCartDetailPage />);
-      await waitFor(() => expect(screen.getByText('pending')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText(/pending/i)).toBeInTheDocument());
     });
 
     it('When rendered / Then shows back button', async () => {

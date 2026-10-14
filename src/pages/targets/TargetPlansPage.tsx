@@ -14,7 +14,7 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
-import { DashboardPageTemplate, Button } from '@so360/design-system';
+import { DashboardPageTemplate, Button, EmptyState as DsEmptyState } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
 
@@ -457,7 +457,7 @@ export default function TargetPlansPage() {
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <span className="text-sm font-medium text-fg">Target Metrics & Weights</span>
-                  <p className="text-[11px] text-fg-subtle">
+                  <p className="text-xs text-fg-subtle">
                     Define measurable target lines with period quotas and weight distributions. Weights must sum to 100%.
                   </p>
                 </div>
@@ -502,15 +502,12 @@ export default function TargetPlansPage() {
               )}
 
               {lines.length === 0 ? (
-                <div className="text-center py-8 border border-dashed border-line rounded-xl">
-                  <p className="text-xs text-fg-subtle">No target lines added yet.</p>
-                  <p className="text-[11px] text-fg-muted mt-1">Click "Add Metric Row" to configure quotas for this plan.</p>
-                </div>
+                <DsEmptyState title="No target lines added yet." description='Click "Add Metric Row" to configure quotas for this plan.' />
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-line bg-surface-sunken shadow-sm">
+                <div className="overflow-x-auto rounded-nb border border-line bg-surface-sunken shadow-sm">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-line bg-surface-high text-fg-subtle uppercase tracking-wider font-semibold text-[10px]">
+                      <tr className="border-b border-line bg-surface-high text-fg-subtle font-semibold text-xs">
                         <th className="py-2.5 px-3 w-10 text-center">#</th>
                         <th className="py-2.5 px-3 min-w-[200px]">Metric</th>
                         <th className="py-2.5 px-3 w-28">Unit</th>
@@ -577,7 +574,7 @@ export default function TargetPlansPage() {
                                 </select>
                               </td>
                               <td className="py-2 px-3">
-                                <span className="inline-block px-2 py-0.5 rounded bg-surface-raised border border-line text-[11px] text-fg-subtle font-mono truncate max-w-[110px]">
+                                <span className="inline-block px-2 py-0.5 rounded bg-surface-raised border border-line text-xs text-fg-subtle font-mono truncate max-w-[110px]">
                                   {metric?.unit || metric?.kind || 'count'}
                                 </span>
                               </td>
@@ -606,7 +603,7 @@ export default function TargetPlansPage() {
                                       updateLine(l.key, { weight: Number(e.target.value) })
                                     }
                                   />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted text-[10px] pointer-events-none">%</span>
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted text-xs pointer-events-none">%</span>
                                 </div>
                               </td>
                               <td className="py-2 px-3">
@@ -629,7 +626,7 @@ export default function TargetPlansPage() {
                                     ))}
                                   </select>
                                 ) : (
-                                  <span className="text-[11px] text-fg-muted italic px-1">All Channels / N/A</span>
+                                  <span className="text-xs text-fg-muted italic px-1">All Channels / N/A</span>
                                 )}
                               </td>
                               <td className="py-2 px-3 text-center">
@@ -668,7 +665,7 @@ export default function TargetPlansPage() {
                               <tr className="bg-surface-sunken border-b border-line">
                                 <td colSpan={8} className="px-4 py-2 text-xs">
                                   <div className="flex items-center gap-3">
-                                    <span className="text-[11px] text-fg-subtle font-medium whitespace-nowrap">Ramp Curve:</span>
+                                    <span className="text-xs text-fg-subtle font-medium whitespace-nowrap">Ramp Curve:</span>
                                     <input
                                       className="flex-1 rounded bg-surface-raised border border-line px-2.5 py-1 text-xs text-fg font-mono focus:border-primary focus:outline-none"
                                       placeholder="e.g. 20, 35, 50, 75 (comma-separated values per period)"
@@ -700,7 +697,7 @@ export default function TargetPlansPage() {
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono">
                           <span
-                            className={`px-2 py-0.5 rounded text-[11px] ${
+                            className={`px-2 py-0.5 rounded text-xs ${
                               isWeightValid
                                 ? 'bg-success/15 text-success border border-success/30'
                                 : 'bg-warning/15 text-warning border border-warning/30'
@@ -709,7 +706,7 @@ export default function TargetPlansPage() {
                             {totalWeight.toFixed(1)}% {isWeightValid ? '✓ 100% Valid' : '⚠ Sum to 100%'}
                           </span>
                         </td>
-                        <td colSpan={3} className="py-2.5 px-3 text-fg-muted text-right text-[11px]">
+                        <td colSpan={3} className="py-2.5 px-3 text-fg-muted text-right text-xs">
                           {!isWeightValid && 'Total line weights must equal 100% to save'}
                         </td>
                       </tr>
@@ -844,7 +841,7 @@ export default function TargetPlansPage() {
                     }`}
                   >
                     <span className="font-semibold text-fg">{k.label}</span>
-                    <span className="text-[10px] mt-0.5 text-fg-subtle">{k.desc}</span>
+                    <span className="text-xs mt-0.5 text-fg-subtle">{k.desc}</span>
                   </button>
                 ))}
               </div>
@@ -958,7 +955,7 @@ function Field({
 }) {
   return (
     <div className={grow ? 'grow basis-64' : ''}>
-      <label className="block text-[11px] text-fg-subtle mb-1">{label}</label>
+      <label className="block text-xs text-fg-subtle mb-1">{label}</label>
       {children}
     </div>
   );

@@ -152,9 +152,9 @@ const PipelinePage = () => {
             ] : undefined}
             filters={<DealFilters filters={filters} onChange={setFilters} />}
             toolbarEnd={isFiltering ? (
-                <div className="flex items-center gap-2 text-info bg-info/10 px-3 py-1.5 rounded-full border border-info/20 animate-pulse">
+                <div className="flex items-center gap-2 text-info h-nb-control-md px-3">
                     <Loader2 className="animate-spin" size={14} />
-                    <span className="text-xs font-bold uppercase tracking-wider">Refining results...</span>
+                    <span className="text-xs">Refining results...</span>
                 </div>
             ) : undefined}
         >

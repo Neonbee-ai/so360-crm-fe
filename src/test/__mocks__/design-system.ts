@@ -7,7 +7,8 @@ export const Select = ({ value, onChange, options = [], placeholder, ...rest }: 
   React.createElement('select', { value: value ?? '', onChange: (e: any) => onChange?.(e.target.value), 'aria-label': rest['aria-label'] ?? placeholder, 'data-testid': rest['data-testid'] },
     options.map((o: any) => React.createElement('option', { key: String(o.value), value: o.value }, o.label)));
 export const Modal = (props: any) => props;
-export const Card = (props: any) => props;
+export const Card = ({ title, actions, footer, children, 'data-testid': testId }: any) =>
+    React.createElement('div', { 'data-testid': testId }, title ? React.createElement('h3', null, title) : null, actions, children, footer);
 export const Badge = ({ children, onClick, 'data-testid': testId }: any) =>
   React.createElement('span', { onClick, 'data-testid': testId }, children);
 export const Spinner = (props: any) => props;
@@ -143,3 +144,9 @@ export const SettingsPageTemplate = (p: any) =>
     React.createElement('main', { 'data-slot': 'main' }, p.children));
 export const SettingsCard = (p: any) =>
   React.createElement('section', null, p.title ? React.createElement('h2', null, p.title) : null, p.children);
+export const Menu = ({ trigger, items = [], 'data-testid': testId }: any) =>
+    React.createElement('div', { 'data-testid': testId }, trigger, ...items.map((it: any) =>
+        React.createElement('button', { key: it.label, role: 'menuitem', disabled: it.disabled, onClick: it.onSelect }, it.label)));
+export const KpiCard = ({ label, value, onClick, 'data-testid': testId }: any) =>
+    React.createElement('div', { 'data-testid': testId, onClick }, React.createElement('span', null, label), React.createElement('span', null, value));
+export const StatusBadge = ({ status, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId }, status);

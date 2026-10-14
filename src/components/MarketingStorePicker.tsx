@@ -50,12 +50,12 @@ export const MarketingStorePicker: React.FC<MarketingStorePickerProps> = ({ stor
   };
 
   return (
-    <div className={className || 'mb-4'}>
-      <label className="block text-sm text-fg-subtle mb-1">Store</label>
+    <div className={className || 'w-64 max-w-full'}>
+      <label className="sr-only">Store</label>
       <select
         value={value}
         onChange={(e) => applyValue(e.target.value)}
-        className="w-full md:max-w-[460px] bg-surface border border-line rounded px-3 py-2 text-sm text-fg"
+        className="w-full h-nb-control-md bg-surface border border-line rounded-nb px-3 text-sm text-fg"
         disabled={loading || stores.length === 0}
       >
         {loading && <option value="">Loading stores...</option>}

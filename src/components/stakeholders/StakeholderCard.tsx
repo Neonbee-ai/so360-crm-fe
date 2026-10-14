@@ -4,18 +4,18 @@ import { Stakeholder } from '../../types/crm';
 import { ROLE_LABELS } from './StakeholderRolesEditor';
 
 const STRENGTH_STYLE: Record<string, string> = {
-    very_strong: 'bg-emerald-500/10 text-success border-emerald-500/20',
-    strong: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    very_strong: 'bg-success/10 text-success border-success/20',
+    strong: 'bg-primary/10 text-primary border-primary/20',
     moderate: 'bg-surface-raised text-fg-subtle border-line',
-    weak: 'bg-amber-500/10 text-warning border-amber-500/20',
+    weak: 'bg-warning/10 text-warning border-warning/20',
     no_relationship: 'bg-surface text-fg-muted border-line',
 };
 
 const COMMITTEE_STYLE: Record<string, string> = {
-    primary_decision_maker: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    strong_supporter: 'bg-emerald-500/10 text-success border-emerald-500/20',
+    primary_decision_maker: 'bg-info/10 text-info border-info/20',
+    strong_supporter: 'bg-success/10 text-success border-success/20',
     neutral: 'bg-surface-raised text-fg-subtle border-line',
-    opposed: 'bg-red-500/10 text-danger border-red-500/20',
+    opposed: 'bg-danger/10 text-danger border-danger/20',
     unknown: 'bg-surface text-fg-muted border-line',
 };
 
@@ -28,61 +28,61 @@ interface Props {
 
 const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpenQuickActions }) => {
     return (
-        <div className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-line transition-all group">
+        <div className="bg-surface-sunken border border-line rounded-nb p-4 hover:border-line transition-all group">
             <div className="flex items-start justify-between gap-2">
                 <button className="flex items-center gap-2 text-left" onClick={() => onOpenQuickActions(stakeholder)}>
-                    <div className="w-9 h-9 rounded-full bg-surface-raised flex items-center justify-center text-xs font-black text-fg-subtle shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium text-fg-subtle shrink-0">
                         {(stakeholder.full_name || '?').charAt(0).toUpperCase()}
                     </div>
                     <div>
                         <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-fg text-xs">{stakeholder.full_name || 'Unnamed'}</span>
-                            {stakeholder.is_primary_contact && <Star size={12} className="text-warning fill-amber-400" />}
-                            {!stakeholder.is_active && <span className="text-[8px] bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-black uppercase">Inactive</span>}
+                            <span className="font-medium text-fg text-xs">{stakeholder.full_name || 'Unnamed'}</span>
+                            {stakeholder.is_primary_contact && <Star size={12} className="text-warning fill-warning" />}
+                            {!stakeholder.is_active && <span className="text-xs bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-medium">Inactive</span>}
                         </div>
-                        <p className="text-[10px] text-fg-muted">
+                        <p className="text-xs text-fg-muted">
                             {[stakeholder.job_title, stakeholder.department].filter(Boolean).join(' · ') || '—'}
                         </p>
                     </div>
                 </button>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                    <button onClick={() => onEdit(stakeholder)} className="p-1 text-fg-muted hover:text-blue-400 transition-colors"><Edit2 size={12} /></button>
+                    <button onClick={() => onEdit(stakeholder)} className="p-1 text-fg-muted hover:text-primary transition-colors"><Edit2 size={12} /></button>
                     <button onClick={() => onDelete(stakeholder)} className="p-1 text-fg-muted hover:text-danger transition-colors"><Trash2 size={12} /></button>
                 </div>
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {stakeholder.roles.map((role) => (
-                    <span key={role} className="text-[9px] bg-surface-raised text-fg-subtle px-1.5 py-0.5 rounded font-black uppercase tracking-widest">
+                    <span key={role} className="text-xs bg-surface-raised text-fg-subtle px-1.5 py-0.5 rounded font-medium">
                         {ROLE_LABELS[role] || role}
                     </span>
                 ))}
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className={`text-[9px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${COMMITTEE_STYLE[stakeholder.buying_committee_role]}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${COMMITTEE_STYLE[stakeholder.buying_committee_role]}`}>
                     {stakeholder.buying_committee_role.replace(/_/g, ' ')}
                 </span>
-                <span className={`text-[9px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${STRENGTH_STYLE[stakeholder.relationship_strength]}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STRENGTH_STYLE[stakeholder.relationship_strength]}`}>
                     {stakeholder.relationship_strength.replace(/_/g, ' ')}
                 </span>
                 {stakeholder.do_not_contact && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-red-500/20 bg-red-500/10 text-danger font-black uppercase tracking-widest flex items-center gap-1">
+                    <span className="text-xs px-2 py-0.5 rounded-full border border-danger/20 bg-danger/10 text-danger font-medium flex items-center gap-1">
                         <XCircle size={9} /> Do Not Contact
                     </span>
                 )}
                 {stakeholder.marketing_opt_out && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 text-warning font-black uppercase tracking-widest flex items-center gap-1">
+                    <span className="text-xs px-2 py-0.5 rounded-full border border-warning/20 bg-warning/10 text-warning font-medium flex items-center gap-1">
                         <MailX size={9} /> Opted Out
                     </span>
                 )}
             </div>
 
-            <div className="mt-3 flex items-center gap-3 text-[10px] text-fg-muted">
+            <div className="mt-3 flex items-center gap-3 text-xs text-fg-muted">
                 {stakeholder.email && <span className="flex items-center gap-1"><Mail size={11} /> {stakeholder.email}</span>}
                 {stakeholder.phone && <span className="flex items-center gap-1"><Phone size={11} /> {stakeholder.phone}</span>}
                 {stakeholder.linkedin_url && (
-                    <a href={stakeholder.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-blue-400">
+                    <a href={stakeholder.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary">
                         <Link2 size={11} /> LinkedIn
                     </a>
                 )}

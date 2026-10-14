@@ -1,4 +1,5 @@
 import React from 'react';
+import { EmptyState as DsEmptyState } from '@so360/design-system';
 import type { TargetStatus, TrendPoint } from '../../services/targetPlanService';
 
 /**
@@ -201,9 +202,7 @@ export function Panel({
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-line p-8 text-center text-sm text-fg-subtle">
-      {message}
-    </div>
+    <DsEmptyState title={message} />
   );
 }
 
@@ -397,7 +396,7 @@ export function PersonPicker({
         aria-label="Person"
       />
       {open && !loading && !failed ? (
-        <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-line bg-surface py-1 text-sm shadow-lg">
+        <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-line bg-surface py-1 text-sm">
           {matches.length === 0 ? (
             <li className="px-2 py-1.5 text-fg-muted">No matching people</li>
           ) : (
@@ -497,7 +496,7 @@ export function PeriodPicker({
   return (
     <div className="flex items-end gap-2">
       <div>
-        <label className="block text-[11px] text-fg-subtle mb-1">{label}</label>
+        <label className="block text-xs text-fg-subtle mb-1">{label}</label>
         <input
           type="date"
           aria-label={label}

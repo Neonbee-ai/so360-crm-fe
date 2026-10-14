@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Card } from '@so360/design-system';
 
 interface PartnerTypeOption {
     value: string;
@@ -61,11 +62,10 @@ export const PartnerStatusOverview: React.FC<PartnerStatusOverviewProps> = ({ pa
     const segments = orderedKeys.map(key => ({ key, count: counts[key] }));
 
     return (
-        <div className="bg-surface-sunken rounded-xl border border-line p-4 mb-6">
-            <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-medium text-fg-subtle uppercase tracking-wide">Partner Type Distribution</span>
-                <span className="text-xs text-fg-muted">{total} partner{total === 1 ? '' : 's'}</span>
-            </div>
+        <Card
+            title="Partner type distribution"
+            actions={<span className="text-xs text-fg-muted">{total} partner{total === 1 ? '' : 's'}</span>}
+        >
             <div
                 className="h-2 rounded-full bg-surface-raised overflow-hidden flex"
                 role="img"
@@ -94,7 +94,7 @@ export const PartnerStatusOverview: React.FC<PartnerStatusOverviewProps> = ({ pa
                     );
                 })}
             </div>
-        </div>
+        </Card>
     );
 };
 

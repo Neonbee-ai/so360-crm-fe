@@ -13,18 +13,18 @@ type SortField = 'contact_name' | 'email' | 'channel' | 'created_at';
 type SortDirection = 'asc' | 'desc' | null;
 
 const CHANNEL_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-    storefront_web: { label: 'Web', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Globe },
-    storefront_mobile: { label: 'Mobile', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', icon: Smartphone },
-    pos: { label: 'POS', color: 'bg-amber-500/10 text-warning border-amber-500/20', icon: ShoppingCart },
+    storefront_web: { label: 'Web', color: 'bg-primary/10 text-primary border-primary/20', icon: Globe },
+    storefront_mobile: { label: 'Mobile', color: 'bg-primary/10 text-primary border-primary/20', icon: Smartphone },
+    pos: { label: 'POS', color: 'bg-warning/10 text-warning border-warning/20', icon: ShoppingCart },
     manual: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line', icon: UserPlus },
 };
 
 const ACQUISITION_SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
-    storefront_registration: { label: 'Registration', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-    guest_checkout: { label: 'Guest Checkout', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
-    pos_inline: { label: 'POS', color: 'bg-amber-500/10 text-warning border-amber-500/20' },
+    storefront_registration: { label: 'Registration', color: 'bg-primary/10 text-primary border-primary/20' },
+    guest_checkout: { label: 'Guest Checkout', color: 'bg-info/10 text-info border-info/20' },
+    pos_inline: { label: 'POS', color: 'bg-warning/10 text-warning border-warning/20' },
     manual_entry: { label: 'Manual', color: 'bg-fg-muted/10 text-fg-subtle border-line' },
-    lead_promotion: { label: 'Promoted', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
+    lead_promotion: { label: 'Promoted', color: 'bg-success/10 text-success border-success/20' },
 };
 
 const CustomersPage = () => {
@@ -142,8 +142,8 @@ const CustomersPage = () => {
 
     const SortIcon = ({ field }: { field: SortField }) => {
         if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
+        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-primary" />;
+        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-primary" />;
         return <ChevronsUpDown size={14} className="text-fg-muted" />;
     };
 
@@ -219,7 +219,7 @@ const CustomersPage = () => {
     const CategoryBadge = ({ category }: { category: string }) => {
         if (category === 'b2b') {
             return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-success border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-success/10 text-success border border-success/20">
                     <Building2 size={11} /> B2B
                 </span>
             );
@@ -310,7 +310,7 @@ const CustomersPage = () => {
                 if (!c.referred_by) return <span className="text-fg-muted text-sm">—</span>;
                 const partner = partners.find((p: any) => p.id === c.referred_by);
                 return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                         <GitMerge size={11} />
                         {partner?.company_name || c.referred_by}
                     </span>
@@ -354,7 +354,7 @@ const CustomersPage = () => {
             />
             }
             search={
-                <div className="relative">
+                <div className="relative w-full wc-medium:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
@@ -376,7 +376,7 @@ const CustomersPage = () => {
                 <select
                     value={channelFilter}
                     onChange={(e) => setChannelFilter(e.target.value)}
-                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="h-nb-control-md bg-surface border border-line text-fg px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 >
                     <option value="All">All Channels</option>
                     <option value="storefront_web">Web</option>
@@ -387,7 +387,7 @@ const CustomersPage = () => {
                 <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="h-nb-control-md bg-surface border border-line text-fg px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 >
                     <option value="All">All Categories</option>
                     <option value="b2b">B2B</option>
@@ -401,15 +401,16 @@ const CustomersPage = () => {
                             setCategoryFilter('All');
                             navigate('/crm/customers');
                         }}
-                        className="text-xs text-danger hover:text-danger/80 underline"
+                        className="text-xs text-fg-muted hover:text-fg underline"
                     >
-                        Clear Filters
+                        Clear filters
                     </button>
                 )}
                 </>
             }
             pagination={sandboxLimitedCustomers.length > 0 ? (
                 <Pagination
+                    className="w-full"
                     currentPage={currentPage}
                     totalPages={totalPages || 1}
                     totalItems={sandboxLimitedCustomers.length}

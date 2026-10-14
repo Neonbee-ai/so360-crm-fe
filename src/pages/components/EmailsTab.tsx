@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Badge, EmptyState } from '@so360/design-system';
 import { Mail, Loader2, ExternalLink, Smartphone, MessageSquare } from 'lucide-react';
 import { inboxIntegrationApi, InboxConversationPreview } from '../../services/crmService';
 
@@ -7,9 +8,9 @@ interface Props {
 }
 
 const PLATFORM_ICON: Record<string, React.ReactNode> = {
-    email: <Mail size={14} className="text-blue-400" />,
+    email: <Mail size={14} className="text-primary" />,
     whatsapp: <MessageSquare size={14} className="text-success" />,
-    instagram: <Smartphone size={14} className="text-pink-400" />,
+    instagram: <Smartphone size={14} className="text-info" />,
     facebook: <Smartphone size={14} className="text-primary" />,
     web_chat: <MessageSquare size={14} className="text-fg-subtle" />,
 };
@@ -46,21 +47,17 @@ const EmailsTab: React.FC<Props> = ({ leadId }) => {
     }
 
     if (error) {
-        return <div className="bg-red-500/10 border border-red-500/20 text-danger text-xs rounded-lg px-4 py-3">{error}</div>;
+        return <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-nb px-4 py-3">{error}</div>;
     }
 
     if (conversations.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 text-fg-muted">
-                <Mail size={24} className="mb-2" />
-                <p className="text-xs">No email or messaging conversations linked to this lead yet.</p>
-                <p className="text-[10px] text-fg mt-1">Conversations from Inbox will appear here automatically once linked.</p>
-            </div>
+            <EmptyState icon={Mail} title="No email or messaging conversations linked to this lead yet" description="Conversations from Inbox will appear here automatically once linked." />
         );
     }
 
     return (
-        <div className="space-y-2">
+        <div className="divide-y divide-line">
             {conversations.map((c) => (
                 <a
                     key={c.id}
@@ -70,18 +67,18 @@ const EmailsTab: React.FC<Props> = ({ leadId }) => {
                     // — matches the existing convention (see DealDetailPage.tsx).
                     href={`/inbox/conversations/${c.id}`}
                     onClick={(e) => { e.preventDefault(); window.location.href = `/inbox/conversations/${c.id}`; }}
-                    className="flex items-center justify-between gap-3 bg-surface-sunken border border-line rounded-xl px-4 py-3 hover:border-line transition-all group cursor-pointer"
+                    className="flex items-center justify-between gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group cursor-pointer"
                 >
                     <div className="flex items-center gap-3 min-w-0">
                         {PLATFORM_ICON[c.platform] || <Mail size={14} className="text-fg-subtle" />}
                         <div className="min-w-0">
-                            <p className="text-xs font-bold text-fg truncate">{c.customer_name || c.topic || 'Conversation'}</p>
-                            <p className="text-[10px] text-fg-muted">{c.message_count} messages · {formatDateTime(c.last_message_at)}</p>
+                            <p className="text-xs font-medium text-fg truncate">{c.customer_name || c.topic || 'Conversation'}</p>
+                            <p className="text-xs text-fg-muted">{c.message_count} messages · {formatDateTime(c.last_message_at)}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[9px] bg-surface-raised text-fg-muted px-1.5 py-0.5 rounded font-black uppercase tracking-widest">{c.status}</span>
-                        <ExternalLink size={12} className="text-fg-muted group-hover:text-blue-400 transition-colors" />
+                        <Badge size="sm">{c.status}</Badge>
+                        <ExternalLink size={12} className="text-fg-muted group-hover:text-primary transition-colors" />
                     </div>
                 </a>
             ))}

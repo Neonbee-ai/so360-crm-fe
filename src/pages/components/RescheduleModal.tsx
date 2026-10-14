@@ -31,7 +31,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
-            <div className="bg-surface border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-surface border border-line rounded-nb-lg w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-fg">Reschedule Task</h3>
                     <button onClick={onClose} className="text-fg-subtle hover:text-fg">
@@ -40,7 +40,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <label htmlFor="reschedule-date" className="text-xs font-bold text-fg-subtle uppercase">New Due Date</label>
+                        <label htmlFor="reschedule-date" className="text-xs font-bold text-fg-subtle">New Due Date</label>
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={16} />
                             <input
@@ -48,13 +48,13 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                                 type="date"
                                 value={newDate}
                                 onChange={(e) => setNewDate(e.target.value)}
-                                className="w-full bg-bg border border-line text-fg rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary"
+                                className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-10 pr-4 py-3 outline-none focus:border-primary"
                                 required
                             />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <label htmlFor="reschedule-time" className="text-xs font-bold text-fg-subtle uppercase">
+                        <label htmlFor="reschedule-time" className="text-xs font-bold text-fg-subtle">
                             New Due Time <span className="normal-case text-fg-muted">(optional)</span>
                         </label>
                         <div className="flex gap-2">
@@ -65,14 +65,14 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                                     type="time"
                                     value={newTime}
                                     onChange={(e) => setNewTime(e.target.value)}
-                                    className="w-full bg-bg border border-line text-fg rounded-xl pl-10 pr-4 py-3 outline-none focus:border-primary"
+                                    className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-10 pr-4 py-3 outline-none focus:border-primary"
                                 />
                             </div>
                             {newTime && (
                                 <button
                                     type="button"
                                     onClick={() => setNewTime('')}
-                                    className="px-3 py-3 rounded-xl border border-line text-xs font-bold uppercase text-fg-subtle hover:text-fg"
+                                    className="px-3 py-3 rounded-nb-lg border border-line text-xs font-bold text-fg-subtle hover:text-fg"
                                 >
                                     Clear
                                 </button>
@@ -89,7 +89,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold"
+                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-nb-lg font-bold"
                         >
                             Reschedule
                         </button>

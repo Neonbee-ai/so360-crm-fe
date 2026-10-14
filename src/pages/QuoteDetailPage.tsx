@@ -6,7 +6,7 @@ import { goBackFrom } from '../components/common/DetailBackLink';
 import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, type BadgeTone } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -17,13 +17,13 @@ import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
 
-const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string }> = {
-    draft: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Draft' },
-    pending_approval: { bg: 'bg-warning/20', text: 'text-warning', label: 'Pending Approval' },
-    approved: { bg: 'bg-success/20', text: 'text-success', label: 'Approved' },
-    rejected: { bg: 'bg-danger/20', text: 'text-danger', label: 'Rejected' },
-    converted: { bg: 'bg-primary/20', text: 'text-primary', label: 'Converted' },
-    expired: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Expired' },
+const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string; tone: BadgeTone }> = {
+    draft: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Draft', tone: 'neutral' },
+    pending_approval: { bg: 'bg-warning/20', text: 'text-warning', label: 'Pending Approval', tone: 'warning' },
+    approved: { bg: 'bg-success/20', text: 'text-success', label: 'Approved', tone: 'success' },
+    rejected: { bg: 'bg-danger/20', text: 'text-danger', label: 'Rejected', tone: 'danger' },
+    converted: { bg: 'bg-primary/20', text: 'text-primary', label: 'Converted', tone: 'primary' },
+    expired: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Expired', tone: 'neutral' },
 };
 
 const QuoteDetailPage = () => {
@@ -500,9 +500,7 @@ const QuoteDetailPage = () => {
             backLabel="Back"
             title={quote.quote_number || `Quote #${quote.id.slice(0, 8)}`}
             status={
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${status.bg} ${status.text}`}>
-                    {status.label}
-                </span>
+                <Badge size="sm" tone={status.tone}>{status.label}</Badge>
             }
             meta={
                 <p className="text-fg-subtle">
@@ -511,6 +509,86 @@ const QuoteDetailPage = () => {
                 </p>
             }
             primaryAction={primaryKey ? act[primaryKey] : undefined}
+            sidePanel={
+                <div className="flex flex-col gap-nb-3">
+                        <Card title="Summary">
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="text-sm text-fg-subtle">Grand Total</span>
+                                    <p className="text-2xl font-bold text-fg">{formatCurrency(totals.grandTotal)}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-line">
+                                    <div>
+                                        <span className="text-sm text-fg-subtle">Items</span>
+                                        <p className="text-lg font-semibold text-fg">{lines.length}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-sm text-fg-subtle">Status</span>
+                                        <p className={`text-lg font-semibold ${status.text}`}>{status.label}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+    
+                        {/* The customer the quote is raised for — resolved from the deal
+                            when the quote was created. Read-only here: the record lives
+                            in Customers, and a quote must reference it rather than keep
+                            its own divergent copy. */}
+                        {customer && (
+                            <Card title="Customer">
+                                <button
+                                    onClick={() => navigate(`/crm/customers/${customer.id}`)}
+                                    className="w-full text-left rounded-nb hover:bg-surface-raised transition-colors"
+                                >
+                                    <p className="font-medium text-fg">
+                                        {customer.company_name || customer.contact_name || '—'}
+                                    </p>
+                                    {customer.company_name && customer.contact_name && (
+                                        <p className="text-sm text-fg-subtle">{customer.contact_name}</p>
+                                    )}
+                                </button>
+                                <div className="mt-4 space-y-2 text-sm">
+                                    {customer.contact_email && (
+                                        <div className="flex justify-between gap-3">
+                                            <span className="text-fg-subtle">Email</span>
+                                            <span className="text-fg-subtle truncate">{customer.contact_email}</span>
+                                        </div>
+                                    )}
+                                    {customer.phone && (
+                                        <div className="flex justify-between gap-3">
+                                            <span className="text-fg-subtle">Phone</span>
+                                            <span className="text-fg-subtle">{customer.phone}</span>
+                                        </div>
+                                    )}
+                                    {customer.tax_id && (
+                                        <div className="flex justify-between gap-3">
+                                            <span className="text-fg-subtle">Tax ID</span>
+                                            <span className="text-fg-subtle truncate">{customer.tax_id}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        )}
+    
+                        {quote.deal && (
+                            <Card title="Related Deal">
+                                <button
+                                    onClick={() => navigate(`/crm/deal/${quote.deal_id}`)}
+                                    className="w-full text-left rounded-nb hover:bg-surface-raised transition-colors"
+                                >
+                                    <p className="font-medium text-fg">{quote.deal.name}</p>
+                                    <p className="text-sm text-fg-subtle">{quote.deal.company_name}</p>
+                                </button>
+                            </Card>
+                        )}
+    
+                        {quote.rejection_reason && (
+                            <Card title="Rejection Reason">
+                                <p className="text-sm text-danger">{quote.rejection_reason}</p>
+                            </Card>
+                        )}
+                    </div>
+            }
             secondaryActions={secondaryActions}
             overflowActions={overflowActions}
         >
@@ -577,11 +655,10 @@ const QuoteDetailPage = () => {
             )}
 
             {/* Quote Details */}
-            <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 space-y-6">
+            <div>
+                <div className="flex flex-col gap-nb-3">
                     {/* Basic Info */}
-                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-fg mb-4">Quote Details</h2>
+                    <Card title="Quote Details">
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Title</label>
@@ -613,34 +690,21 @@ const QuoteDetailPage = () => {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Line Items */}
-                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-fg">Line Items</h2>
-                            {canCreateQuote && isEditing && (
-                                <button
-                                    onClick={addLine}
-                                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:text-primary border border-primary/50 hover:border-primary rounded-lg transition-colors"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Add Line
-                                </button>
-                            )}
-                        </div>
-
+                    <Card title="Line Items" actions={canCreateQuote && isEditing ? (<Button variant="secondary" onClick={addLine}><Plus className="w-4 h-4" />Add Line</Button>) : undefined}>
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-line">
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle uppercase">Description</th>
-                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-28">Stock</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-24">Qty</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-32">Unit Price</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-24">Disc %</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-24">Tax %</th>
-                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle uppercase w-32">Amount</th>
+                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle ">Description</th>
+                                        <th className="text-left py-3 px-4 text-xs font-medium text-fg-subtle w-28">Stock</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-24">Qty</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-32">Unit Price</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-24">Disc %</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-24">Tax %</th>
+                                        <th className="text-right py-3 px-4 text-xs font-medium text-fg-subtle w-32">Amount</th>
                                         {isEditing && <th className="w-12"></th>}
                                     </tr>
                                 </thead>
@@ -829,11 +893,10 @@ const QuoteDetailPage = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Notes & Terms */}
-                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-fg mb-4">Notes & Terms</h2>
+                    <Card title="Notes & Terms">
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Notes</label>
@@ -933,7 +996,7 @@ const QuoteDetailPage = () => {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Approval History Audit Trail */}
                     <QuoteApprovalHistory
@@ -942,90 +1005,6 @@ const QuoteDetailPage = () => {
                         formatDate={formatDate}
                         formatCurrency={formatCurrency}
                     />
-                </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                    <div className="bg-surface-sunken border border-line rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-fg mb-4">Summary</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <span className="text-sm text-fg-subtle">Grand Total</span>
-                                <p className="text-2xl font-bold text-fg">{formatCurrency(totals.grandTotal)}</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-line">
-                                <div>
-                                    <span className="text-sm text-fg-subtle">Items</span>
-                                    <p className="text-lg font-semibold text-fg">{lines.length}</p>
-                                </div>
-                                <div>
-                                    <span className="text-sm text-fg-subtle">Status</span>
-                                    <p className={`text-lg font-semibold ${status.text}`}>{status.label}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* The customer the quote is raised for — resolved from the deal
-                        when the quote was created. Read-only here: the record lives
-                        in Customers, and a quote must reference it rather than keep
-                        its own divergent copy. */}
-                    {customer && (
-                        <div className="bg-surface-sunken border border-line rounded-lg p-6">
-                            <h2 className="text-lg font-semibold text-fg mb-4">Customer</h2>
-                            <button
-                                onClick={() => navigate(`/crm/customers/${customer.id}`)}
-                                className="w-full text-left p-4 bg-surface-high hover:bg-surface-raised border border-line rounded-lg transition-colors"
-                            >
-                                <p className="font-medium text-fg">
-                                    {customer.company_name || customer.contact_name || '—'}
-                                </p>
-                                {customer.company_name && customer.contact_name && (
-                                    <p className="text-sm text-fg-subtle">{customer.contact_name}</p>
-                                )}
-                            </button>
-                            <div className="mt-4 space-y-2 text-sm">
-                                {customer.contact_email && (
-                                    <div className="flex justify-between gap-3">
-                                        <span className="text-fg-subtle">Email</span>
-                                        <span className="text-fg-subtle truncate">{customer.contact_email}</span>
-                                    </div>
-                                )}
-                                {customer.phone && (
-                                    <div className="flex justify-between gap-3">
-                                        <span className="text-fg-subtle">Phone</span>
-                                        <span className="text-fg-subtle">{customer.phone}</span>
-                                    </div>
-                                )}
-                                {customer.tax_id && (
-                                    <div className="flex justify-between gap-3">
-                                        <span className="text-fg-subtle">Tax ID</span>
-                                        <span className="text-fg-subtle truncate">{customer.tax_id}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {quote.deal && (
-                        <div className="bg-surface-sunken border border-line rounded-lg p-6">
-                            <h2 className="text-lg font-semibold text-fg mb-4">Related Deal</h2>
-                            <button
-                                onClick={() => navigate(`/crm/deal/${quote.deal_id}`)}
-                                className="w-full text-left p-4 bg-surface-high hover:bg-surface-raised border border-line rounded-lg transition-colors"
-                            >
-                                <p className="font-medium text-fg">{quote.deal.name}</p>
-                                <p className="text-sm text-fg-subtle">{quote.deal.company_name}</p>
-                            </button>
-                        </div>
-                    )}
-
-                    {quote.rejection_reason && (
-                        <div className="bg-danger/10 border border-danger/30 rounded-lg p-6">
-                            <h2 className="text-lg font-semibold text-danger mb-2">Rejection Reason</h2>
-                            <p className="text-danger">{quote.rejection_reason}</p>
-                        </div>
-                    )}
                 </div>
             </div>
 

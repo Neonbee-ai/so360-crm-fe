@@ -437,7 +437,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByPlaceholderText('Add a private note about this lead...')).toBeInTheDocument());
       const textarea = screen.getByPlaceholderText('Add a private note about this lead...');
       fireEvent.change(textarea, { target: { value: 'Important lead update' } });
-      await user.click(screen.getByText('Save Note'));
+      await user.click(screen.getByText('Save note'));
       await waitFor(() => expect(mockCreateNote).toHaveBeenCalledWith({ lead_id: 'lead-1', content: 'Important lead update' }));
     });
 
@@ -447,7 +447,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
-      await waitFor(() => expect(screen.getByText('No notes captured for this lead yet.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('No notes yet')).toBeInTheDocument());
     });
 
     it('When no notes exist on the customer route / Then the empty state is entity-agnostic', async () => {
@@ -457,8 +457,8 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
-      await waitFor(() => expect(screen.getByText('No notes captured for this customer yet.')).toBeInTheDocument());
-      expect(screen.queryByText('No notes captured for this lead yet.')).not.toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText('Notes captured for this customer will appear here.')).toBeInTheDocument());
+      expect(screen.queryByText('Notes captured for this lead will appear here.')).not.toBeInTheDocument();
     });
 
     it('When switching to notes tab / Then each top-level note renders in its own card container', async () => {
@@ -630,7 +630,7 @@ describe('LeadDetailPage', () => {
       await user.click(screen.getByText('Notes'));
       await waitFor(() => expect(screen.getByText('Needs follow up')).toBeInTheDocument());
       fireEvent.change(screen.getByPlaceholderText('Add a private note about this lead...'), { target: { value: 'Brand new note' } });
-      await user.click(screen.getByText('Save Note'));
+      await user.click(screen.getByText('Save note'));
       await waitFor(() => expect(screen.getByText('Brand new note')).toBeInTheDocument());
       expect(renderedNoteContents()).toEqual(['Brand new note', 'Needs follow up', 'Hot lead from conference']);
     });
@@ -720,7 +720,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(0\)/));
-      await waitFor(() => expect(screen.getByText('No active tasks or follow-ups.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('No active tasks or follow-ups')).toBeInTheDocument());
     });
 
     it('When Add Task is clicked / Then opens task creation modal', async () => {
@@ -728,8 +728,8 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(2\)/));
-      await waitFor(() => expect(screen.getByText('Add Task')).toBeInTheDocument());
-      await user.click(screen.getByText('Add Task'));
+      await waitFor(() => expect(screen.getByText('Add task')).toBeInTheDocument());
+      await user.click(screen.getByText('Add task'));
       await waitFor(() => expect(screen.getByTestId('task-modal')).toBeInTheDocument());
     });
 
@@ -823,7 +823,7 @@ describe('LeadDetailPage', () => {
       mockGetDocumentsByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('No activities logged yet')).toBeInTheDocument());
     });
   });
 
@@ -934,7 +934,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(1\)/));
-      await waitFor(() => expect(screen.getByText('Due Reminders')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Due reminders')).toBeInTheDocument());
     });
   });
 
@@ -1203,7 +1203,7 @@ describe('LeadDetailPage', () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [] }));
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('No activities logged yet.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('No activities logged yet')).toBeInTheDocument());
     });
 
     it('When the timeline is loading / Then shows a spinner instead of the empty state', async () => {
@@ -1211,15 +1211,15 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      expect(screen.queryByText('No activities logged yet.')).not.toBeInTheDocument();
+      expect(screen.queryByText('No activities logged yet')).not.toBeInTheDocument();
     });
 
     it('When View All History is clicked / Then opens ActivityHistoryDrawer', async () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('View All History')).toBeInTheDocument());
-      await user.click(screen.getByText('View All History'));
+      await waitFor(() => expect(screen.getByText('View all history')).toBeInTheDocument());
+      await user.click(screen.getByText('View all history'));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
     });
 
@@ -1227,8 +1227,8 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('View All History')).toBeInTheDocument());
-      await user.click(screen.getByText('View All History'));
+      await waitFor(() => expect(screen.getByText('View all history')).toBeInTheDocument());
+      await user.click(screen.getByText('View all history'));
       await waitFor(() => expect(screen.getByTestId('activity-history-drawer')).toBeInTheDocument());
       await user.click(screen.getByText('Close Drawer'));
       await waitFor(() => expect(screen.queryByTestId('activity-history-drawer')).not.toBeInTheDocument());
@@ -1240,8 +1240,8 @@ describe('LeadDetailPage', () => {
       const user = userEvent.setup();
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('Load More →')).toBeInTheDocument());
-      await user.click(screen.getByText('Load More →'));
+      await waitFor(() => expect(screen.getByText('Load more')).toBeInTheDocument());
+      await user.click(screen.getByText('Load more'));
       expect(mockLoadMore).toHaveBeenCalled();
     });
 

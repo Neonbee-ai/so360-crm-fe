@@ -65,18 +65,18 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-bg border border-line rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="bg-bg border border-line rounded-nb-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-line sticky top-0 bg-bg z-10">
-                    <p className="text-xs font-black text-fg uppercase tracking-widest">
+                    <p className="text-xs font-medium text-fg">
                         {isEditing ? 'Edit Stakeholder' : 'Add Stakeholder'}
                     </p>
-                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-lg hover:bg-surface-raised">
+                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-nb hover:bg-surface-raised">
                         <X size={16} />
                     </button>
                 </div>
 
                 <div className="p-5 space-y-4">
-                    {error && <div className="bg-red-500/10 border border-red-500/20 text-danger text-xs rounded-lg px-3 py-2">{error}</div>}
+                    {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-nb px-3 py-2">{error}</div>}
 
                     <div className="grid grid-cols-2 gap-3">
                         <Field label="First Name"><input value={form.first_name} onChange={(e) => set('first_name', e.target.value)} className="input" /></Field>
@@ -125,11 +125,11 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                 </div>
 
                 <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line sticky bottom-0 bg-bg">
-                    <button onClick={onClose} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-fg-subtle hover:text-fg">Cancel</button>
+                    <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-fg-subtle hover:text-fg">Cancel</button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-nb text-xs font-medium disabled:opacity-50"
                     >
                         {saving && <Loader2 size={12} className="animate-spin" />}
                         {isEditing ? 'Save Changes' : 'Add Stakeholder'}
@@ -144,13 +144,13 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
     <label className="block">
-        <span className="block text-[9px] font-black uppercase tracking-widest text-fg-muted mb-1">{label}</span>
+        <span className="block text-xs font-medium text-fg-muted mb-1">{label}</span>
         {children}
     </label>
 );
 
 const Checkbox: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({ label, checked, onChange }) => (
-    <label className="flex items-center gap-1.5 text-[10px] text-fg-subtle cursor-pointer">
+    <label className="flex items-center gap-1.5 text-xs text-fg-subtle cursor-pointer">
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-line bg-surface" />
         {label}
     </label>

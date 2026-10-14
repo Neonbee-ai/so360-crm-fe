@@ -159,7 +159,7 @@ describe('Given PartnerDetailPage — overview tab', () => {
   test('Given overview tab / When rendered / Then "Royalty Rate" label appears in details section', async () => {
     render(<PartnerDetailPage />);
     await waitFor(() => {
-      expect(screen.getByText('Royalty Rate')).toBeInTheDocument();
+      expect(screen.getByText('Royalty rate')).toBeInTheDocument();
     });
   });
 
@@ -187,7 +187,7 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => {
       expect(mockPartnersGetCommissions).toHaveBeenCalledWith('partner-1');
-      expect(screen.getByText('Total Earned')).toBeInTheDocument();
+      expect(screen.getByText('Total earned')).toBeInTheDocument();
     });
   });
 
@@ -207,7 +207,7 @@ describe('Given PartnerDetailPage — Royalties tab', () => {
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Royalties' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('tab', { name: 'Royalties' }));
     await waitFor(() => {
-      expect(screen.getByText('No royalties yet. Royalties are created automatically when a referred deal is won.')).toBeInTheDocument();
+      expect(screen.getByText('Royalties are created automatically when a referred deal is won.')).toBeInTheDocument();
     });
   });
 

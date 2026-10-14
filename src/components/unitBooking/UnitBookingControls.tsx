@@ -48,7 +48,7 @@ export function UnitBookingControls({
                 <option value="">All projects</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <label className="flex items-center gap-1.5 text-[10px] font-bold text-fg-subtle uppercase tracking-widest cursor-pointer">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-fg-subtle cursor-pointer">
                 <input
                     type="checkbox"
                     checked={onlyAvailable}

@@ -26,10 +26,10 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-bg border border-line rounded-2xl w-full max-w-sm shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-bg border border-line rounded-nb-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-                    <p className="text-xs font-black text-fg uppercase tracking-widest">{stakeholder.full_name || 'Stakeholder'}</p>
-                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-lg hover:bg-surface-raised"><X size={16} /></button>
+                    <p className="text-xs font-medium text-fg">{stakeholder.full_name || 'Stakeholder'}</p>
+                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-nb hover:bg-surface-raised"><X size={16} /></button>
                 </div>
                 <div className="p-3 space-y-1.5">
                     <ActionButton
@@ -49,7 +49,7 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
                     <ActionButton icon={<CheckSquare size={14} />} label="Create Task" onClick={() => setShowTaskModal(true)} />
                     <ActionButton icon={<FileEdit size={14} />} label="Add Note" onClick={() => onAddNote?.(stakeholder)} />
                     <ActionButton icon={<Users size={14} />} label="Open Contact Profile" onClick={() => onOpenProfile(stakeholder)} />
-                    {blocked && <p className="text-[9px] text-danger px-2 pt-1">This stakeholder is marked Do Not Contact.</p>}
+                    {blocked && <p className="text-xs text-danger px-2 pt-1">This stakeholder is marked Do Not Contact.</p>}
                 </div>
             </div>
 
@@ -66,7 +66,7 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
 };
 
 const ActionButton: React.FC<{ icon: React.ReactNode; label: string; disabled?: boolean; href?: string; onClick?: () => void }> = ({ icon, label, disabled, href, onClick }) => {
-    const className = `w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-bold text-fg-subtle transition-colors ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-raised'}`;
+    const className = `w-full flex items-center gap-2.5 px-3 py-2.5 rounded-nb text-xs font-medium text-fg-subtle transition-colors ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-surface-raised'}`;
     if (href && !disabled) {
         return <a href={href} className={className}>{icon}{label}</a>;
     }

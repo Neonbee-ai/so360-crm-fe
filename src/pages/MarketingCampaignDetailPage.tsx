@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DetailPageTemplate } from '@so360/design-system';
+import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
@@ -52,22 +52,39 @@ const MarketingCampaignDetailPage: React.FC = () => {
     <DetailPageTemplate
       onBack={() => goBackFrom(navigate, '/crm/marketing/campaigns')}
       title={campaign ? campaign.name : 'Campaign'}
-      status={campaign ? <span className="text-fg-subtle text-sm">{campaign.campaign_type} • {campaign.status}</span> : undefined}
+      status={campaign ? (
+        <span className="flex items-center gap-nb-2">
+          <Badge size="sm" tone="neutral">{campaign.campaign_type}</Badge>
+          <Badge size="sm" tone="info">{campaign.status}</Badge>
+        </span>
+      ) : undefined}
+      sidePanel={campaign ? (
+        <div className="flex flex-col gap-nb-3">
+          <Card title="Campaign details">
+            <dl className="flex flex-col gap-nb-3 text-sm">
+              <div>
+                <dt className="text-xs text-fg-muted">Subject</dt>
+                <dd className="text-fg">{campaign.subject_template || '-'}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-fg-muted">Sent at</dt>
+                <dd className="text-fg">{formatDateTime(campaign.sent_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-fg-muted">Recipients</dt>
+                <dd className="text-fg">{campaign.total_recipients || 0}</dd>
+              </div>
+            </dl>
+          </Card>
+        </div>
+      ) : undefined}
     >
       {loading && <p className="text-fg-subtle">Loading...</p>}
       {error && <p className="text-danger">{error}</p>}
 
       {campaign && (
-        <>
-          <div className="bg-surface border border-line rounded-xl p-4 mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <p className="text-fg-subtle"><span className="text-fg-muted">Subject:</span> {campaign.subject_template || '-'}</p>
-              <p className="text-fg-subtle"><span className="text-fg-muted">Sent At:</span> {formatDateTime(campaign.sent_at)}</p>
-              <p className="text-fg-subtle"><span className="text-fg-muted">Recipients:</span> {campaign.total_recipients || 0}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="flex flex-col gap-nb-3">
+          <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
             {[
               { label: 'Open Rate', value: `${Math.round((campaign.open_rate || 0) * 100)}%` },
               { label: 'Click Rate', value: `${Math.round((campaign.click_rate || 0) * 100)}%` },
@@ -78,45 +95,40 @@ const MarketingCampaignDetailPage: React.FC = () => {
               { label: 'Clicks', value: String(campaign.clicks || 0) },
               ...(campaign.segment ? [{ label: 'Segment', value: campaign.segment }] : []),
             ].map(({ label, value }) => (
-              <div key={label} className="bg-surface border border-line rounded-xl p-4">
-                <p className="text-fg-subtle text-xs">{label}</p>
-                <p className="text-fg text-xl font-bold">{value}</p>
-              </div>
+              <KpiCard key={label} label={label} value={value} />
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div className="bg-surface border border-line rounded-xl p-4">
-              <h3 className="text-fg font-semibold mb-2">Test Send</h3>
-              <div className="flex gap-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-nb-3">
+            <Card title="Test Send">
+              <div className="flex gap-nb-2">
                 <input
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
                   placeholder="test@example.com"
-                  className="flex-1 bg-bg border border-line rounded px-3 py-2 text-sm text-fg"
+                  className="h-nb-control-md flex-1 rounded-nb border border-line bg-bg px-nb-3 text-sm text-fg"
                 />
-                <button
-                  className="px-3 py-2 text-sm rounded bg-primary hover:bg-primary/90 text-primary-fg"
+                <Button
+                  variant="secondary"
                   onClick={async () => {
                     await crmService.testSendCampaign(storeId, campaignId!, testEmail);
                   }}
                 >
                   Send Test
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-surface border border-line rounded-xl p-4">
-              <h3 className="text-fg font-semibold mb-2">Schedule</h3>
-              <div className="flex gap-2">
+            <Card title="Schedule">
+              <div className="flex gap-nb-2">
                 <input
                   type="datetime-local"
                   value={scheduleAt}
                   onChange={(e) => setScheduleAt(e.target.value)}
-                  className="flex-1 bg-bg border border-line rounded px-3 py-2 text-sm text-fg"
+                  className="h-nb-control-md flex-1 rounded-nb border border-line bg-bg px-nb-3 text-sm text-fg"
                 />
-                <button
-                  className="px-3 py-2 text-sm rounded bg-success hover:bg-success/90 text-success-fg"
+                <Button
+                  variant="primary"
                   onClick={async () => {
                     if (!scheduleAt) return;
                     await crmService.scheduleCampaign(storeId, campaignId!, new Date(scheduleAt).toISOString());
@@ -125,35 +137,38 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   }}
                 >
                   Schedule
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
 
-          <div className="bg-surface border border-line rounded-xl overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-high text-fg-subtle">
-                <tr>
-                  <th className="text-left px-3 py-2">Email</th>
-                  <th className="text-left px-3 py-2">Status</th>
-                  <th className="text-left px-3 py-2">Sent At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recipients.map((row) => (
-                  <tr key={row.id} className="border-t border-line">
-                    <td className="px-3 py-2 text-fg">{row.email}</td>
-                    <td className="px-3 py-2 text-fg-subtle">{row.status}</td>
-                    <td className="px-3 py-2 text-fg-muted">{formatDateTime(row.sent_at)}</td>
-                  </tr>
-                ))}
-                {recipients.length === 0 && (
-                  <tr><td colSpan={3} className="px-3 py-6 text-center text-fg-muted">No recipients yet.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
+          <Card title="Recipients" padding="none">
+            {recipients.length === 0 ? (
+              <EmptyState title="No recipients yet." />
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs text-fg-muted">
+                    <tr>
+                      <th className="px-nb-3 py-nb-2 font-medium">Email</th>
+                      <th className="px-nb-3 py-nb-2 font-medium">Status</th>
+                      <th className="px-nb-3 py-nb-2 font-medium">Sent At</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {recipients.map((row) => (
+                      <tr key={row.id}>
+                        <td className="px-nb-3 py-nb-2 text-fg">{row.email}</td>
+                        <td className="px-nb-3 py-nb-2 text-fg-subtle">{row.status}</td>
+                        <td className="px-nb-3 py-nb-2 text-fg-muted">{formatDateTime(row.sent_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </div>
       )}
     </DetailPageTemplate>
   );

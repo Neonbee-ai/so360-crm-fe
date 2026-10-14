@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DetailPageTemplate, Button } from '@so360/design-system';
+import { DetailPageTemplate, Button, Card, EmptyState, StatusBadge } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
@@ -52,6 +52,27 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
     <DetailPageTemplate
       onBack={() => goBackFrom(navigate, '/crm/marketing/abandoned-carts')}
       title="Abandoned Cart Detail"
+      status={cart?.recovery_status ? <StatusBadge status={cart.recovery_status} size="sm" /> : undefined}
+      sidePanel={cart ? (
+        <div className="flex flex-col gap-nb-3">
+          <Card title="Customer">
+            <p className="text-xs text-fg-muted">Email</p>
+            <p className="text-sm text-fg">{cart.customer_email || '-'}</p>
+          </Card>
+          <Card title="Cart value and dates">
+            <dl className="flex flex-col gap-nb-3 text-sm">
+              <div>
+                <dt className="text-xs text-fg-muted">Cart total</dt>
+                <dd className="text-fg">{formatMoney(cart.cart_total, currencyCode, locale)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-fg-muted">Abandoned at</dt>
+                <dd className="text-fg">{formatDateTime(cart.abandoned_at)}</dd>
+              </div>
+            </dl>
+          </Card>
+        </div>
+      ) : undefined}
       primaryAction={cart ? (
         <Button
           variant="primary"
@@ -72,40 +93,32 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
       {error && <p className="text-danger">{error}</p>}
 
       {cart && (
-        <>
-          <div className="bg-surface border border-line rounded-xl p-4 mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <p className="text-fg-subtle"><span className="text-fg-muted">Customer:</span> {cart.customer_email || '-'}</p>
-              <p className="text-fg-subtle"><span className="text-fg-muted">Status:</span> {cart.recovery_status || '-'}</p>
-              <p className="text-fg-subtle"><span className="text-fg-muted">Cart Total:</span> {formatMoney(cart.cart_total, currencyCode, locale)}</p>
-              <p className="text-fg-subtle"><span className="text-fg-muted">Abandoned At:</span> {formatDateTime(cart.abandoned_at)}</p>
-            </div>
-          </div>
-
-          <div className="bg-surface border border-line rounded-xl overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-high text-fg-subtle">
-                <tr>
-                  <th className="text-left px-3 py-2">Item</th>
-                  <th className="text-left px-3 py-2">Qty</th>
-                  <th className="text-left px-3 py-2">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item: any, idx: number) => (
-                  <tr key={`${item.item_id || idx}`} className="border-t border-line">
-                    <td className="px-3 py-2 text-fg">{item.name || item.item_name || '-'}</td>
-                    <td className="px-3 py-2 text-fg-subtle">{item.qty || item.quantity || 0}</td>
-                    <td className="px-3 py-2 text-fg-subtle">{formatMoney(item.price || item.unit_price || 0, currencyCode, locale)}</td>
+        <Card title="Items" padding="none">
+          {items.length === 0 ? (
+            <EmptyState title="No item data found." />
+          ) : (
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-fg-muted">
+                  <tr>
+                    <th className="px-nb-3 py-nb-2 font-medium">Item</th>
+                    <th className="px-nb-3 py-nb-2 font-medium">Qty</th>
+                    <th className="px-nb-3 py-nb-2 font-medium">Price</th>
                   </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr><td colSpan={3} className="px-3 py-6 text-center text-fg-muted">No item data found.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {items.map((item: any, idx: number) => (
+                    <tr key={`${item.item_id || idx}`}>
+                      <td className="px-nb-3 py-nb-2 text-fg">{item.name || item.item_name || '-'}</td>
+                      <td className="px-nb-3 py-nb-2 text-fg-subtle">{item.qty || item.quantity || 0}</td>
+                      <td className="px-nb-3 py-nb-2 text-fg-subtle">{formatMoney(item.price || item.unit_price || 0, currencyCode, locale)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
     </DetailPageTemplate>
   );

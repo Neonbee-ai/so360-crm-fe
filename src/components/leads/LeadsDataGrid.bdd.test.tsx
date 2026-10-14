@@ -514,12 +514,12 @@ describe('LeadsDataGrid — lead count display', () => {
   it('shows correct lead count in toolbar', () => {
     const leads = [makeLead(), makeLead({ id: 'l2', company_name: 'Beta' })];
     render(<LeadsDataGrid leads={leads} context={buildContext()} onRowClick={vi.fn()} />);
-    expect(screen.getByText('2 leads')).toBeDefined();
+    expect(screen.queryByText('2 leads')).toBeNull(); // count lives in the page header only
   });
 
   it('shows singular form for one lead', () => {
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
-    expect(screen.getByText('1 lead')).toBeDefined();
+    expect(screen.queryByText('1 lead')).toBeNull();
   });
 });
 

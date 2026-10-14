@@ -422,7 +422,7 @@ const QuotesPage = () => {
         <button
             type="button"
             onClick={(e) => { e.stopPropagation(); handleSort(field); }}
-            className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-fg-subtle hover:text-fg transition-colors ${align === 'right' ? 'justify-end w-full' : ''}`}
+            className={`inline-flex items-center gap-1 text-xs font-semibold  text-fg-subtle hover:text-fg transition-colors ${align === 'right' ? 'justify-end w-full' : ''}`}
         >
             <span>{label}</span>
             {sortField === field ? (
@@ -700,7 +700,7 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-danger/80 line-through text-xs">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-danger/10 text-danger border border-danger/20">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold  bg-danger/10 text-danger border border-danger/20">
                                 Expired
                             </span>
                         </div>
@@ -710,7 +710,7 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-warning text-xs font-medium">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-warning/10 text-warning border border-warning/20">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold  bg-warning/10 text-warning border border-warning/20">
                                 Soon
                             </span>
                         </div>
@@ -952,14 +952,14 @@ const QuotesPage = () => {
     }, [quotes, activeActionMenuId]);
 
     const searchNode = (
-                            <div className="relative flex-1 min-w-[220px] max-w-sm">
+                            <div className="relative w-full wc-medium:w-72">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
                                 <input
                                     type="text"
                                     placeholder="Search quotes..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                    className="h-nb-control-md w-full pl-9 pr-4 bg-surface border border-line rounded-nb text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                                 />
                                 {searchTerm && (
                                     <button
@@ -979,7 +979,7 @@ const QuotesPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStatusDropdownOpen(o => !o)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 bg-surface border rounded-lg text-xs font-medium transition-colors hover:border-line ${statusFilter !== 'All' ? 'border-primary/60 text-primary bg-primary/5' : 'border-line text-fg-subtle'}`}
+                                    className={`flex h-nb-control-md items-center gap-2 px-3 bg-surface border rounded-nb text-nb-body transition-colors ${statusFilter !== 'All' ? 'border-primary/60 text-primary bg-primary/5' : 'border-line text-fg-subtle'}`}
                                 >
                                     <Filter className={`w-3.5 h-3.5 flex-shrink-0 ${statusFilter !== 'All' ? 'text-primary' : 'text-fg-subtle'}`} />
                                     <span>
@@ -1034,7 +1034,7 @@ const QuotesPage = () => {
                                 <select
                                     value={dealFilter}
                                     onChange={(e) => setDealFilter(e.target.value)}
-                                    className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${dealFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
+                                    className={`h-nb-control-md bg-surface border px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${dealFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
                                 >
                                     <option value="All">All Deals</option>
                                     {deals.map(d => (
@@ -1047,7 +1047,7 @@ const QuotesPage = () => {
                             <select
                                 value={validityFilter}
                                 onChange={(e) => setValidityFilter(e.target.value)}
-                                className={`bg-surface border px-3 py-1.5 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-focus ${validityFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
+                                className={`h-nb-control-md bg-surface border px-3 rounded-nb text-nb-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${validityFilter !== 'All' ? 'border-primary/60 text-primary' : 'border-line text-fg-subtle'}`}
                             >
                                 <option value="All">All Dates</option>
                                 <option value="valid">Valid Proposals</option>
@@ -1059,9 +1059,9 @@ const QuotesPage = () => {
                                 <button
                                     type="button"
                                     onClick={resetFilters}
-                                    className="text-xs text-danger hover:text-danger-300 underline font-medium px-1"
+                                    className="text-xs text-fg-muted hover:text-fg underline px-1"
                                 >
-                                    Clear Filters
+                                    Clear filters
                                 </button>
                             )}
         </>
@@ -1089,13 +1089,44 @@ const QuotesPage = () => {
                             </div>
     ) : null;
 
+    const viewTabsNode = (
+        <div role="tablist" aria-label="Quote views" className="inline-flex h-nb-control-md items-center gap-nb-1 rounded-nb border border-line bg-surface p-0.5">
+            {([
+                { id: 'all' as const, label: 'All Quotes', Icon: FileText },
+                { id: 'approvals' as const, label: 'Approvals', Icon: Inbox },
+            ]).map(({ id, label, Icon }) => (
+                <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === id}
+                    onClick={() => setActiveTab(id)}
+                    className={`flex h-full items-center gap-1.5 rounded-nb px-nb-3 text-nb-body transition-colors ${
+                        activeTab === id ? 'bg-surface-raised text-fg font-medium' : 'text-fg-muted hover:text-fg'
+                    }`}
+                >
+                    <Icon className="w-4 h-4" />
+                    <span>{label}</span>
+                    {id === 'approvals' && pendingApprovalsCount > 0 && (
+                        <span
+                            data-testid="approvals-pending-badge"
+                            className="text-xs px-1.5 rounded-full bg-warning/20 text-warning font-medium"
+                        >
+                            {pendingApprovalsCount}
+                        </span>
+                    )}
+                </button>
+            ))}
+        </div>
+    );
+
     return (
         <ListPageTemplate
             title="Quotes"
             description="Manage sales quotes and proposals"
             headerSecondaryActions={[
                 <Button key="export" variant="secondary" onClick={handleExportSelected} title="Export quotes to CSV"><Download className="w-4 h-4" />
-                    Export CSV
+                    Export
                 </Button>,
             ]}
             primaryAction={canCreateQuote ? (
@@ -1133,7 +1164,7 @@ const QuotesPage = () => {
             )}
 
             {/* Status Summary: Compact Interactive KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+            <div className="grid grid-cols-2 wc-medium:grid-cols-3 lg:grid-cols-5 gap-nb-3 mb-nb-4">
                 {[
                     { id: 'All', label: 'Total Quotes', count: quoteStats.total, icon: FileText, color: 'text-primary', border: 'border-line' },
                     { id: 'draft', label: 'Draft', count: quoteStats.draft, icon: Clock, color: 'text-fg-subtle', border: 'border-line' },
@@ -1158,12 +1189,12 @@ const QuotesPage = () => {
                             }}
                             className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer select-none ${
                                 isActive
-                                    ? 'bg-primary/10 border-primary/60 ring-1 ring-primary/40 shadow-sm'
-                                    : 'bg-surface-sunken border-line hover:border-line hover:bg-surface-high'
+                                    ? 'bg-surface border-primary ring-1 ring-primary/40'
+                                    : 'bg-surface border-line hover:bg-surface-raised'
                             }`}
                         >
                             <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-medium text-fg-subtle uppercase tracking-wider truncate">
+                                <span className="text-xs text-fg-muted truncate">
                                     {stat.label}
                                 </span>
                                 <Icon className={`w-4 h-4 ${stat.color} shrink-0 opacity-80`} />
@@ -1173,7 +1204,7 @@ const QuotesPage = () => {
                                     {stat.count}
                                 </span>
                                 {isActive && (
-                                    <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                                    <span className="text-xs text-primary">
                                         Filtered
                                     </span>
                                 )}
@@ -1184,8 +1215,7 @@ const QuotesPage = () => {
             </div>
             </>
             }
-            search={activeTab === 'all' ? searchNode : undefined}
-            filters={activeTab === 'all' ? filtersNode : undefined}
+            filters={<>{viewTabsNode}{activeTab === 'all' ? <>{searchNode}{filtersNode}</> : null}</>}
             toolbarEnd={activeTab === 'all' ? bulkNode : undefined}
             pagination={activeTab === 'all' && paginatedQuotes.length > 0 && effectiveQuotes.length > 0 ? (
                 <Pagination
@@ -1200,40 +1230,6 @@ const QuotesPage = () => {
             ) : undefined}
         >
             <div ref={listAnchorRef}>
-            {/* View Switcher Tabs: All Quotes | Approvals */}
-            <div className="flex items-center gap-4 border-b border-line mb-5">
-                <button
-                    onClick={() => setActiveTab('all')}
-                    className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 transition-colors ${
-                        activeTab === 'all'
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-fg-subtle hover:text-fg'
-                    }`}
-                >
-                    <FileText className="w-4 h-4" />
-                    <span>All Quotes</span>
-                </button>
-                <button
-                    onClick={() => setActiveTab('approvals')}
-                    className={`flex items-center gap-2 pb-3 text-sm font-semibold border-b-2 transition-colors ${
-                        activeTab === 'approvals'
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-fg-subtle hover:text-fg'
-                    }`}
-                >
-                    <Inbox className="w-4 h-4" />
-                    <span>Approvals</span>
-                    {pendingApprovalsCount > 0 && (
-                        <span
-                            data-testid="approvals-pending-badge"
-                            className="ml-0.5 text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning font-bold border border-warning/30"
-                        >
-                            {pendingApprovalsCount}
-                        </span>
-                    )}
-                </button>
-            </div>
-
             {activeTab === 'all' && (
                 <>
                     {/* Sandbox limit notice */}
@@ -1259,7 +1255,7 @@ const QuotesPage = () => {
                                     onClick={resetFilters}
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-surface-raised hover:bg-line border border-line text-fg rounded-lg text-sm font-medium transition-colors"
                                 >
-                                    Clear Filters
+                                    Clear filters
                                 </button>
                             ) : (
                                 canCreateQuote && (

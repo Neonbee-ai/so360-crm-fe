@@ -173,13 +173,13 @@ export default function SalesReviewsPage() {
       <Panel title="Start a review">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-64">
-            <label className="block text-[11px] text-fg-subtle mb-1">
+            <label className="block text-xs text-fg-subtle mb-1">
               Person
             </label>
             <PersonPicker value={newPersonId} onChange={setNewPersonId} />
           </div>
           <div>
-            <label className="block text-[11px] text-fg-subtle mb-1">
+            <label className="block text-xs text-fg-subtle mb-1">
               Period
             </label>
             <select
@@ -202,7 +202,7 @@ export default function SalesReviewsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-[11px] text-fg-subtle mb-1">
+            <label className="block text-xs text-fg-subtle mb-1">
               {newPeriodType === 'monthly' ? 'Month' : 'Quarter'}
             </label>
             {newPeriodType === 'monthly' ? (
@@ -482,7 +482,7 @@ function Block({
 }) {
   return (
     <div className="grow basis-64">
-      <div className="text-xs uppercase tracking-wide text-fg-muted mb-2">
+      <div className="text-xs text-fg-muted mb-2">
         {title}
       </div>
       <div className="space-y-1">{children}</div>

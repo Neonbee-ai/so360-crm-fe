@@ -42,8 +42,8 @@ function ToolbarButton({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={`p-1.5 rounded transition-colors ${
-        active ? 'bg-primary text-white' : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
-      }`}
+ active ? 'bg-primary text-primary-fg' : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
+ }`}
     >
       {children}
     </button>
@@ -70,7 +70,7 @@ export default function NoteEditor({ value, onChange, placeholder, autoFocus }: 
         role: 'textbox',
         'aria-multiline': 'true',
         class:
-          'min-h-[6rem] text-sm text-fg focus:outline-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-blue-400 [&_a]:underline [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:rounded [&_pre]:bg-surface-raised [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto',
+          'min-h-[6rem] text-sm text-fg focus:outline-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline [&_code]:bg-surface-raised [&_code]:px-1 [&_code]:rounded [&_pre]:bg-surface-raised [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto',
       },
     },
   });

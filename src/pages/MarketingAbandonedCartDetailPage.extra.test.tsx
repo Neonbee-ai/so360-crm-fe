@@ -131,7 +131,7 @@ describe('MarketingAbandonedCartDetailPage — with store selected', () => {
     it('shows recovery status', async () => {
       render(<MarketingAbandonedCartDetailPage />);
       await waitFor(() => {
-        expect(screen.getByText(/pending/)).toBeInTheDocument();
+        expect(screen.getByText(/pending/i)).toBeInTheDocument();
       });
     });
 

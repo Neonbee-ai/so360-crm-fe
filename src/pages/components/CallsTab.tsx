@@ -4,7 +4,7 @@ import {
     Trash2, FileText, Clock,
 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
-import { useConfirm } from '@so360/design-system';
+import { useConfirm, Button, Badge, EmptyState } from '@so360/design-system';
 
 interface Props {
     leadId?: string;
@@ -36,15 +36,15 @@ interface CallUploadFields {
     sentiment?: 'positive' | 'neutral' | 'negative' | 'mixed';
 }
 
-const SENTIMENT_STYLE: Record<string, string> = {
-    positive: 'bg-emerald-500/10 text-success border-emerald-500/20',
-    negative: 'bg-red-500/10 text-danger border-red-500/20',
-    neutral: 'bg-surface-raised text-fg-muted border-line',
-    mixed: 'bg-amber-500/10 text-warning border-amber-500/20',
+const SENTIMENT_TONE: Record<string, 'success' | 'danger' | 'neutral' | 'warning'> = {
+    positive: 'success',
+    negative: 'danger',
+    neutral: 'neutral',
+    mixed: 'warning',
 };
 
-function sentimentStyle(sentiment?: string | null): string {
-    return sentiment ? (SENTIMENT_STYLE[sentiment] ?? SENTIMENT_STYLE.neutral) : SENTIMENT_STYLE.neutral;
+function sentimentTone(sentiment?: string | null): 'success' | 'danger' | 'neutral' | 'warning' {
+    return sentiment ? (SENTIMENT_TONE[sentiment] ?? 'neutral') : 'neutral';
 }
 
 function formatDateTime(iso: string): string {
@@ -121,84 +121,84 @@ export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
     };
 
     return (
-        <div className="bg-bg border border-line rounded-2xl p-5 space-y-4">
+        <div className="border-b border-line pb-nb-3 mb-nb-3 space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-black text-fg uppercase tracking-widest">Upload Call Recording</h3>
+                <h3 className="text-xs font-medium text-fg">Upload Call Recording</h3>
                 <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">
                     <X size={14} />
                 </button>
             </div>
 
             <div>
-                <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Audio File</label>
+                <label className="block text-xs font-medium text-fg-muted mb-2">Audio File</label>
                 <input
                     type="file"
                     accept="audio/*"
                     onChange={handleFileChange}
-                    className="w-full text-xs text-fg-subtle file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-surface-raised file:text-fg hover:file:bg-line"
+                    className="w-full text-xs text-fg-subtle file:mr-3 file:py-2 file:px-4 file:rounded-nb file:border-0 file:text-xs file:font-medium file: file:st file:bg-surface-raised file:text-fg hover:file:bg-line"
                 />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Direction</label>
+                    <label className="block text-xs font-medium text-fg-muted mb-2">Direction</label>
                     <select
                         value={direction}
                         onChange={e => setDirection(e.target.value as 'inbound' | 'outbound')}
-                        className="w-full bg-surface-raised border border-line rounded-xl px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
+                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
                     >
                         <option value="outbound">Outbound</option>
                         <option value="inbound">Inbound</option>
                     </select>
                 </div>
                 <div>
-                    <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Occurred At</label>
+                    <label className="block text-xs font-medium text-fg-muted mb-2">Occurred At</label>
                     <input
                         type="datetime-local"
                         value={occurredAt}
                         onChange={e => setOccurredAt(e.target.value)}
-                        className="w-full bg-surface-raised border border-line rounded-xl px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
+                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
                     />
                 </div>
                 <div>
-                    <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Duration (seconds)</label>
+                    <label className="block text-xs font-medium text-fg-muted mb-2">Duration (seconds)</label>
                     <input
                         type="number"
                         min={0}
                         value={durationSeconds}
                         onChange={e => setDurationSeconds(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                        className="w-full bg-surface-raised border border-line rounded-xl px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
+                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
                     />
                 </div>
                 <div>
-                    <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Phone Number</label>
+                    <label className="block text-xs font-medium text-fg-muted mb-2">Phone Number</label>
                     <input
                         type="text"
                         value={phoneNumber}
                         onChange={e => setPhoneNumber(e.target.value)}
                         placeholder="+1 555 000 0000"
-                        className="w-full bg-surface-raised border border-line rounded-xl px-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
+                        className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-primary"
                     />
                 </div>
             </div>
 
             <div>
-                <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Transcript (optional)</label>
+                <label className="block text-xs font-medium text-fg-muted mb-2">Transcript (optional)</label>
                 <textarea
                     value={transcriptText}
                     onChange={e => setTranscriptText(e.target.value)}
                     rows={3}
                     placeholder="Paste or type the call transcript…"
-                    className="w-full bg-surface-raised border border-line rounded-xl px-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-primary resize-none"
+                    className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg placeholder-fg-subtle focus:outline-none focus:border-primary resize-none"
                 />
             </div>
 
             <div>
-                <label className="block text-[10px] font-black text-fg-muted uppercase tracking-widest mb-2">Sentiment (optional)</label>
+                <label className="block text-xs font-medium text-fg-muted mb-2">Sentiment (optional)</label>
                 <select
                     value={sentiment}
                     onChange={e => setSentiment(e.target.value as typeof sentiment)}
-                    className="w-full bg-surface-raised border border-line rounded-xl px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
+                    className="w-full bg-surface-raised border border-line rounded-nb px-3 py-2 text-xs text-fg focus:outline-none focus:border-primary"
                 >
                     <option value="">Unspecified</option>
                     <option value="positive">Positive</option>
@@ -208,20 +208,11 @@ export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
                 </select>
             </div>
 
-            <div className="flex gap-3">
-                <button
-                    onClick={onClose}
-                    className="flex-1 py-2.5 border border-line rounded-xl text-[10px] font-black text-fg-subtle uppercase tracking-widest hover:border-line transition-all"
-                >
-                    Cancel
-                </button>
-                <button
-                    onClick={handleSubmit}
-                    disabled={!file || submitting}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-primary/90 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all disabled:opacity-50"
-                >
-                    {submitting ? <><Loader2 size={12} className="animate-spin" /> Uploading...</> : 'Upload Recording'}
-                </button>
+            <div className="flex justify-end gap-nb-2">
+                <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button variant="primary" onClick={handleSubmit} disabled={!file || submitting}>
+                    {submitting ? <><Loader2 size={12} className="animate-spin" /> Uploading…</> : 'Upload recording'}
+                </Button>
             </div>
         </div>
     );
@@ -331,15 +322,12 @@ export default function CallsTab({ leadId, dealId }: Props) {
         <div className="space-y-4">
             {confirmDialog}
             <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">
+                <p className="text-xs font-medium text-fg-muted">
                     Calls ({calls.length})
                 </p>
-                <button
-                    onClick={() => setShowUploadForm(v => !v)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                >
-                    <Plus size={12} /> Upload Call Recording
-                </button>
+                <Button variant="primary" onClick={() => setShowUploadForm(v => !v)}>
+                    <Plus size={12} /> Upload call recording
+                </Button>
             </div>
 
             {showUploadForm && (
@@ -347,36 +335,28 @@ export default function CallsTab({ leadId, dealId }: Props) {
             )}
 
             {calls.length === 0 ? (
-                <div className="text-center py-16 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
-                    <Phone size={40} className="mx-auto mb-4 text-fg" />
-                    <p className="text-sm font-bold text-fg-muted uppercase tracking-widest mb-1">No calls logged yet</p>
-                    <p className="text-xs text-fg-muted lowercase italic">
-                        Upload a call recording to start tracking transcripts and sentiment here.
-                    </p>
-                </div>
+                <EmptyState icon={Phone} title="No calls logged yet" description="Upload a call recording to start tracking transcripts and sentiment here." />
             ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-line">
                     {calls.map(call => {
                         const DirectionIcon = call.direction === 'inbound' ? ArrowDownRight : ArrowUpRight;
                         const playbackUrl = playbackUrls[call.id];
                         return (
                             <div
                                 key={call.id}
-                                className="flex items-start gap-4 p-4 bg-bg border border-line rounded-2xl hover:border-line transition-all group"
+                                className="flex items-start gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group"
                             >
-                                <div className="w-10 h-10 rounded-xl bg-surface border border-line flex items-center justify-center text-blue-400 flex-shrink-0">
+                                <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary flex-shrink-0">
                                     <DirectionIcon size={18} />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-2 mb-1">
-                                        <h4 className="text-sm font-bold text-fg truncate">
+                                        <h4 className="text-sm font-medium text-fg truncate">
                                             {call.phone_number || (call.direction === 'inbound' ? 'Inbound Call' : 'Outbound Call')}
                                         </h4>
                                         {call.sentiment && (
-                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-black border flex-shrink-0 ${sentimentStyle(call.sentiment)}`}>
-                                                {call.sentiment}
-                                            </span>
+                                            <Badge size="sm" tone={sentimentTone(call.sentiment)}>{call.sentiment}</Badge>
                                         )}
                                     </div>
 
@@ -389,7 +369,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
                                         </p>
                                     )}
 
-                                    <div className="flex items-center gap-3 text-[10px] font-bold text-fg-muted uppercase tracking-wider flex-wrap">
+                                    <div className="flex items-center gap-3 text-xs font-medium text-fg-muted flex-wrap">
                                         <span className="flex items-center gap-1">
                                             <Clock size={10} />
                                             {formatDateTime(call.occurred_at)}
@@ -402,16 +382,12 @@ export default function CallsTab({ leadId, dealId }: Props) {
                                             {playbackUrl ? (
                                                 <audio controls src={playbackUrl} className="h-8 max-w-full" />
                                             ) : (
-                                                <button
-                                                    onClick={() => handlePlay(call)}
-                                                    disabled={playbackLoadingId === call.id}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-raised hover:bg-line text-fg-subtle rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors disabled:opacity-50"
-                                                >
+                                                <Button variant="secondary" onClick={() => handlePlay(call)} disabled={playbackLoadingId === call.id}>
                                                     {playbackLoadingId === call.id
                                                         ? <Loader2 size={11} className="animate-spin" />
                                                         : <Play size={11} />}
                                                     Play
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
                                     )}
@@ -421,7 +397,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
                                     {call.transcript_text && (
                                         <button
                                             onClick={() => setSelected(call)}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-fg-muted hover:text-blue-400 hover:bg-surface-raised rounded-lg"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-nb"
                                             title="View full transcript"
                                         >
                                             <FileText size={14} />
@@ -430,7 +406,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
                                     <button
                                         onClick={() => handleDelete(call.id)}
                                         disabled={deletingId === call.id}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-fg-muted hover:text-danger hover:bg-surface-raised rounded-lg disabled:opacity-50"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-fg-muted hover:text-danger hover:bg-surface-raised rounded-nb disabled:opacity-50"
                                         title="Delete call"
                                     >
                                         <Trash2 size={14} />
@@ -449,21 +425,21 @@ export default function CallsTab({ leadId, dealId }: Props) {
                 >
                     <div className="absolute inset-0 bg-surface-sunken backdrop-blur-sm" />
                     <div
-                        className="relative bg-surface border border-line rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+                        className="relative bg-surface border border-line rounded-nb-lg w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between px-6 py-4 border-b border-line">
                             <div>
-                                <h3 className="text-sm font-black text-fg uppercase tracking-tight">
+                                <h3 className="text-sm font-medium text-fg">
                                     Call Transcript
                                 </h3>
-                                <p className="text-[10px] text-fg-muted font-bold mt-0.5">
+                                <p className="text-xs text-fg-muted font-medium mt-0.5">
                                     {formatDateTime(selected.occurred_at)}
                                 </p>
                             </div>
                             <button
                                 onClick={() => setSelected(null)}
-                                className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-lg transition-colors"
+                                className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
                             >
                                 <X size={16} />
                             </button>

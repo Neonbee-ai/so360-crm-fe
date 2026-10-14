@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -228,7 +228,7 @@ const PP = 'submodule:crm:payment_plans';
 const CM = 'submodule:crm:commissions';
 
 const tabLabels = () =>
-  within(screen.getByTestId('deal-detail-tab-strip')).getAllByRole('button').map((b) => b.textContent || '');
+  screen.getAllByRole('tab').map((b) => b.textContent || '');
 
 const renderLoaded = async () => {
   render(<DealDetailPage />);

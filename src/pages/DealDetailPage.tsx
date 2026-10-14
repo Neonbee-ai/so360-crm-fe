@@ -15,7 +15,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, Card, EmptyState } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
@@ -51,6 +51,18 @@ export async function openDealDocument(doc: Attachment) {
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+const DEAL_TAB_TITLES: Record<string, string> = {
+    activity: 'Activity timeline',
+    notes: 'Deal notes',
+    tasks: 'Deal tasks',
+    documents: 'Deal documents',
+    products: 'Deal products',
+    custom: 'Additional details',
+    calls: 'Call log',
+    'payment-plan': 'Payment schedule',
+    commission: 'Commission details',
+};
+
 const DealDetailPage = () => {
     const [confirm, confirmDialog] = useConfirm();
     const formatters = useCRMFormatters();
@@ -72,11 +84,6 @@ const DealDetailPage = () => {
     const [dealStages, setDealStages] = useState<{ id: string, name: string, type?: string }[]>([]);
 
     const [activeTab, setActiveTab] = useState<TabType>('activity');
-    const activeDealTabRef = useRef<HTMLButtonElement | null>(null);
-
-    useEffect(() => {
-        activeDealTabRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    }, [activeTab]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -535,24 +542,24 @@ const DealDetailPage = () => {
                                 <div className="h-4 bg-surface-raised rounded w-40" />
                             </div>
                             <div className="flex flex-wrap gap-3">
-                                <div className="h-10 w-10 bg-surface-raised rounded-xl" />
-                                <div className="h-10 w-36 bg-surface-raised rounded-xl" />
-                                <div className="h-10 w-36 bg-surface-raised rounded-xl" />
+                                <div className="h-10 w-10 bg-surface-raised rounded-nb-lg" />
+                                <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
+                                <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
                             </div>
                         </div>
                     </div>
 
                     {/* Lifecycle stepper region */}
-                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-surface border border-line rounded-2xl p-6 h-28" />
+                    <div data-testid="deal-detail-skeleton-lifecycle" className="bg-surface border border-line rounded-nb-lg p-6 h-28" />
 
                     {/* Two-column grid region */}
                     <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-8">
-                            <div className="bg-surface border border-line rounded-2xl h-40" />
-                            <div data-testid="deal-detail-skeleton-tabs" className="bg-surface border border-line rounded-2xl h-96" />
+                            <div className="bg-surface border border-line rounded-nb-lg h-40" />
+                            <div data-testid="deal-detail-skeleton-tabs" className="bg-surface border border-line rounded-nb-lg h-96" />
                         </div>
                         <div className="space-y-8">
-                            <div className="bg-surface border border-line rounded-2xl h-64" />
+                            <div className="bg-surface border border-line rounded-nb-lg h-64" />
                         </div>
                     </div>
                 </div>
@@ -569,6 +576,18 @@ const DealDetailPage = () => {
         );
     }
 
+    const dealTabs = [
+        { id: 'activity', label: 'Activity' },
+        { id: 'notes', label: 'Notes' },
+        { id: 'tasks', label: `Tasks (${tasks.length})` },
+        { id: 'documents', label: `Docs (${deal.documents?.length || 0})` },
+        { id: 'products', label: 'Products' },
+        { id: 'custom', label: 'Additional Info' },
+        { id: 'calls', label: 'Calls' },
+        ...(paymentPlansOn ? [{ id: 'payment-plan', label: 'Payment plan' }] : []),
+        ...(commissionsOn ? [{ id: 'commission', label: 'Commission' }] : []),
+    ];
+
     return (
         <DetailPageTemplate
             title={deal.name}
@@ -584,18 +603,18 @@ const DealDetailPage = () => {
                                     disabled={!canEditDeal}
                                     onClick={() => { if (canEditDeal) setIsChangingStage(o => !o); }}
                                     title={canEditDeal ? 'Change stage' : undefined}
-                                    className={`group flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-blue-500/10 text-blue-400 border-blue-500/20 transition-all outline-none ${canEditDeal ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
+                                    className={`group flex items-center gap-1.5 px-2 py-0.5 rounded-nb text-xs font-medium border bg-info/10 text-info border-info/20 transition-colors outline-none ${canEditDeal ? 'cursor-pointer hover:bg-info/20' : 'cursor-default'}`}
                                     data-testid="deal-stage-trigger"
                                 >
                                     {deal.stage}
-                                    {canEditDeal && <Edit2 size={12} className="text-blue-400/70 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                                    {canEditDeal && <Edit2 size={12} className="text-info opacity-0 group-hover:opacity-100 transition-opacity" />}
                                 </button>
 
                                 {isChangingStage && canEditDeal && (
                                     <div
                                         role="listbox"
                                         data-testid="deal-stage-list"
-                                        className="absolute z-50 top-full left-0 mt-1 min-w-[160px] bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
+                                        className="absolute z-50 top-full left-0 mt-1 min-w-[160px] bg-surface border border-line rounded-nb shadow-xl overflow-hidden"
                                     >
                                         {dealStages.map(s => {
                                             const isCurrent = s.id === (deal.stage_id || deal.stage);
@@ -606,7 +625,7 @@ const DealDetailPage = () => {
                                                     role="option"
                                                     aria-selected={isCurrent}
                                                     onClick={() => handleSelectStage(s.id)}
-                                                    className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                                                    className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-xs font-medium transition-colors ${
                                                         isCurrent ? 'bg-primary text-white' : 'text-fg-subtle hover:bg-surface-raised'
                                                     }`}
                                                     data-testid={`deal-stage-option-${s.id}`}
@@ -632,7 +651,7 @@ const DealDetailPage = () => {
                             )}
                         </p>
                     {isRefreshing && (
-                        <div className="flex items-center gap-1 text-[10px] font-black text-info uppercase tracking-widest animate-pulse">
+                        <div className="flex items-center gap-1 text-xs text-info animate-pulse">
                             <Loader2 size={10} className="animate-spin" /> Syncing...
                         </div>
                     )}
@@ -651,79 +670,81 @@ const DealDetailPage = () => {
                 ...(isSignEnabled ? [{ label: 'Request Signature', onSelect: () => setSignOpen(true) }] : []),
                 ...(canDeleteDeal ? [{ label: 'Delete', danger: true, onSelect: () => setShowDeleteConfirm(true) }] : []),
             ]}
-        >
-            {confirmDialog}
-
-
-            {/* Deal Lifecycle Stepper */}
-            <div className="mb-8 bg-surface border border-line rounded-2xl p-6">
-                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4">Deal Lifecycle</h3>
-                <DealLifecycleStepper
-                    stages={dealStages}
-                    currentStageId={deal.stage_id}
-                    currentState={deal.current_flow_state || deal.stage}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Workspace Column */}
-                <div className="lg:col-span-2 space-y-8">
-
-                    {/* Summary & Identity Dual-Tab */}
-                    <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-sm">
-                        <div className="flex border-b border-line bg-surface-sunken">
-                            <button className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-blue-400 border-b-2 border-primary flex items-center gap-2">
-                                <Plus size={14} /> Deal Profile
-                            </button>
-                            <div className="ml-auto flex items-center gap-2 px-6">
-                                {isEditingSummary ? (
-                                    <>
-                                        <button
-                                            onClick={handleCancelEdit}
-                                            className="p-2 rounded-lg text-fg-subtle hover:text-fg hover:bg-surface-raised transition-all"
-                                            title="Cancel"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                        <button
-                                            onClick={handleSaveProfile}
-                                            disabled={isSavingProfile}
-                                            className="p-2 rounded-lg bg-success text-white hover:bg-success/90 transition-all disabled:opacity-50 flex items-center gap-1"
-                                            title="Save Changes"
-                                        >
-                                            {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={handleStartEditing}
-                                        className="p-2 rounded-lg text-fg-muted hover:text-fg-subtle hover:bg-surface-raised transition-all"
-                                        title="Edit Profile"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                )}
+            tabs={dealTabs}
+            activeTab={activeTab}
+            onTabChange={(id) => setActiveTab(id as TabType)}
+            sidePanel={(
+                <>
+                    <Card
+                        title="Owner"
+                        actions={isEditingSummary ? (
+                            <div className="flex items-center gap-2">
+                                <Button type="button" variant="secondary" onClick={handleCancelEdit} title="Cancel"><X size={14} /></Button>
+                                <Button type="button" variant="primary" onClick={handleSaveProfile} disabled={isSavingProfile} title="Save Changes">
+                                    {isSavingProfile ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                                </Button>
                             </div>
-                        </div>
-                        <div className="p-8">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Financial Value</span>
+                        ) : (
+                            <Button type="button" variant="secondary" onClick={handleStartEditing} title="Edit Profile"><Edit2 size={14} /></Button>
+                        )}
+                    >
+                        <div className="flex flex-col gap-nb-3">
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Deal Owner</span>
                                     {isEditingSummary ? (
-                                        <input
-                                            type="number"
-                                            value={editedValue ?? deal.value}
-                                            onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
-                                            className="bg-bg border border-line text-success font-black rounded px-2 py-1 w-full outline-none focus:border-success"
-                                        />
+                                        <select
+                                            value={editedOwnerId ?? deal.owner.id}
+                                            onChange={(e) => setEditedOwnerId(e.target.value)}
+                                            className="bg-bg border border-line text-fg font-bold rounded px-2 py-1 w-full outline-none focus:border-primary"
+                                        >
+                                            {allUsers.map(u => (
+                                                <option key={u.id} value={u.id}>{u.full_name}</option>
+                                            ))}
+                                        </select>
                                     ) : (
-                                        <p className="text-xl font-black text-success flex items-center gap-1.5">
-                                            {formatters.formatCurrency(deal.value)}
-                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium overflow-hidden border border-line">
+                                                {deal.owner.avatar_url ? <img src={deal.owner.avatar_url} alt={deal.owner.full_name} /> : deal.owner.full_name.charAt(0)}
+                                            </div>
+                                            <span className="text-sm font-bold text-fg">{deal.owner.full_name}</span>
+                                        </div>
                                     )}
                                 </div>
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Expected Close</span>
+<div className="space-y-1">
+                                        <span className="text-xs text-fg-muted">Sales Rep</span>
+                                        {deal.owner_person ? (
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium overflow-hidden border border-line">
+                                                    {deal.owner_person.avatar_url
+                                                        ? <img src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
+                                                        : (deal.owner_person.full_name || '?').charAt(0)}
+                                                </div>
+                                                <span className="text-sm font-bold text-fg">{deal.owner_person.full_name}</span>
+                                                {deal.owner_person.job_title && (
+                                                    <span className="text-xs font-bold text-fg-muted">{deal.owner_person.job_title}</span>
+                                                )}
+                                                {deal.owner_person.department_name && (
+                                                    <span className="text-xs font-bold text-fg-muted">· {deal.owner_person.department_name}</span>
+                                                )}
+                                                {deal.owner_person.status !== 'active' && (
+                                                    <span className="text-xs text-warning border border-warning/40 rounded-nb px-1.5 py-0.5">
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm font-bold text-fg-muted">
+                                                Sales rep unavailable from People Connect
+                                            </p>
+                                        )}
+                                    </div>
+                        </div>
+                    </Card>
+
+                    <Card title="Dates">
+                        <div className="flex flex-col gap-nb-3">
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Expected Close</span>
                                     {isEditingSummary ? (
                                         <input
                                             type="date"
@@ -737,116 +758,226 @@ const DealDetailPage = () => {
                                         </p>
                                     )}
                                 </div>
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Deal Owner</span>
-                                    {isEditingSummary ? (
-                                        <select
-                                            value={editedOwnerId ?? deal.owner.id}
-                                            onChange={(e) => setEditedOwnerId(e.target.value)}
-                                            className="bg-bg border border-line text-fg font-bold rounded px-2 py-1 w-full outline-none focus:border-primary"
-                                        >
-                                            {allUsers.map(u => (
-                                                <option key={u.id} value={u.id}>{u.full_name}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-[10px] font-bold overflow-hidden border border-line">
-                                                {deal.owner.avatar_url ? <img src={deal.owner.avatar_url} alt={deal.owner.full_name} /> : deal.owner.full_name.charAt(0)}
-                                            </div>
-                                            <span className="text-sm font-bold text-fg">{deal.owner.full_name}</span>
-                                        </div>
-                                    )}
-                                </div>
-                                {/* Sales Rep — resolved from People Connect's People
-                                    Registry. An assignment survives the person going
-                                    inactive: the name stays and is badged, never
-                                    silently dropped. */}
-                                {deal.owner_person_id && (
-                                    <div className="space-y-1">
-                                        <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Sales Rep</span>
-                                        {deal.owner_person ? (
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <div className="w-6 h-6 rounded-full bg-surface-raised flex items-center justify-center text-[10px] font-bold overflow-hidden border border-line">
-                                                    {deal.owner_person.avatar_url
-                                                        ? <img src={deal.owner_person.avatar_url} alt={deal.owner_person.full_name} />
-                                                        : (deal.owner_person.full_name || '?').charAt(0)}
-                                                </div>
-                                                <span className="text-sm font-bold text-fg">{deal.owner_person.full_name}</span>
-                                                {deal.owner_person.job_title && (
-                                                    <span className="text-xs font-bold text-fg-muted">{deal.owner_person.job_title}</span>
-                                                )}
-                                                {deal.owner_person.department_name && (
-                                                    <span className="text-xs font-bold text-fg-muted">· {deal.owner_person.department_name}</span>
-                                                )}
-                                                {deal.owner_person.status !== 'active' && (
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-warning border border-amber-500/40 rounded px-1.5 py-0.5">
-                                                        Inactive
-                                                    </span>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <p className="text-sm font-bold text-fg-muted">
-                                                Sales rep unavailable from People Connect
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                                <div className="space-y-1">
-                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Last Activity</span>
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Last Activity</span>
                                     <p className="text-sm font-bold text-fg-subtle flex items-center gap-1.5">
                                         <Clock size={16} className="text-fg-muted" />
                                         {deal.last_activity_at ? formatters.formatDate(deal.last_activity_at) : 'None'}
                                     </p>
                                 </div>
+                            <div className="space-y-1">
+                                <span className="text-xs text-fg-muted">Created</span>
+                                <p className="text-sm text-fg-subtle">{formatters.formatDate(deal.created_at)}</p>
                             </div>
                         </div>
-                    </section>
+                    </Card>
 
-                    {/* Navigation Tabs */}
-                    <div className="bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl flex flex-col h-fit">
-                        <div className="relative flex border-b border-line bg-surface-sunken min-w-0">
-                            <div className="flex items-center overflow-x-auto scrollbar-hide" data-testid="deal-detail-tab-strip">
-                                {[
-                                    { id: 'activity', name: 'Activity', icon: MessageSquare },
-                                    { id: 'notes', name: 'Notes', icon: FileText },
-                                    { id: 'tasks', name: `Tasks (${tasks.length})`, icon: CheckCircle2 },
-                                    { id: 'documents', name: `Docs (${deal.documents?.length || 0})`, icon: FileIcon },
-                                    { id: 'products', name: 'Products', icon: Briefcase },
-                                    { id: 'custom', name: 'Additional Info', icon: Tag },
-                                    { id: 'calls', name: 'Calls', icon: Phone },
-                                    ...(paymentPlansOn ? [{ id: 'payment-plan', name: 'Payment plan', icon: Receipt }] : []),
-                                    ...(commissionsOn ? [{ id: 'commission', name: 'Commission', icon: DollarSign }] : []),
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        ref={activeTab === tab.id ? activeDealTabRef : undefined}
-                                        onClick={() => setActiveTab(tab.id as TabType)}
-                                        className={`flex shrink-0 items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === tab.id ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5' : 'text-fg-muted hover:text-fg-subtle'}`}
-                                    >
-                                        <tab.icon size={14} /> {tab.name}
-                                    </button>
-                                ))}
-                            </div>
-                            <div
-                                aria-hidden="true"
-                                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface-sunken to-transparent"
-                            />
-                        </div>
-
-                        <div className="p-8">
-                            {/* ACTIVITY TAB */}
-                            {activeTab === 'activity' && (
-                                <div className="flex justify-end mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowActivityDrawer(true)}
-                                        className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
-                                    >
-                                        View All History
-                                    </button>
+                    <Card title="Value">
+<div className="space-y-1">
+                                    <span className="text-xs text-fg-muted">Financial Value</span>
+                                    {isEditingSummary ? (
+                                        <input
+                                            type="number"
+                                            value={editedValue ?? deal.value}
+                                            onChange={(e) => setEditedValue(parseFloat(e.target.value) || 0)}
+                                            className="bg-bg border border-line text-success font-semibold rounded px-2 py-1 w-full outline-none focus:border-success"
+                                        />
+                                    ) : (
+                                        <p className="text-xl font-semibold text-success flex items-center gap-1.5">
+                                            {formatters.formatCurrency(deal.value)}
+                                        </p>
+                                    )}
                                 </div>
-                            )}
+                    </Card>
+
+                    {/* Cross-module linked records */}
+                    {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
+                        <Card title="Linked Records">
+                            <div className="flex flex-wrap gap-2">
+                                {deal.invoice_id && (
+                                    <CrossLinkChip type="accounting.invoice" id={deal.invoice_id} label={deal.invoice_number || undefined} />
+                                )}
+                                {deal.project_id && <CrossLinkChip type="projects.project" id={deal.project_id} />}
+                                {fulfillmentOrder?.id && <CrossLinkChip type="fulfillment.order" id={fulfillmentOrder.id} />}
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Contact Details Card */}
+                    {associatedLead && (
+                        <Card title="Primary Contact">
+                            <div className="space-y-6">
+                                <Link to={`/crm/leads/${associatedLead.id}`} className="group/link block">
+                                    <h4 className="text-lg font-medium text-fg group-hover/link:text-info transition-colors">{associatedLead.contact_name}</h4>
+                                    <p className="text-xs font-bold text-fg-subtle flex items-center gap-1">
+                                        <Building2 size={12} /> {associatedLead.company_name}
+                                    </p>
+                                </Link>
+                                <div className="space-y-3 pt-4 border-t border-line">
+                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
+                                        <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Mail size={14} /></div>
+                                        {associatedLead.contact_email}
+                                    </a>
+                                    {associatedLead.phone && (
+                                        <div className="flex items-center gap-2">
+                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
+                                                <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Phone size={14} /></div>
+                                                {associatedLead.phone}
+                                            </a>
+                                            <ClickToCallButton
+                                                number={associatedLead.phone}
+                                                entityType="deal"
+                                                entityId={deal.id}
+                                                name={associatedLead.contact_name || deal.name}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Linked Invoice Card */}
+                    {invoiceStatus?.has_invoice && (
+                        <Card title="Linked Invoice">
+                            <div className="space-y-4">
+                                {invoiceStatus.invoice_number && (
+                                    <div>
+                                        <span className="text-xs font-medium text-fg-muted  block mb-1">Invoice Number</span>
+                                        <p className="text-sm font-bold text-fg">{invoiceStatus.invoice_number}</p>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center py-2 border-t border-line">
+                                    <span className="text-xs font-medium text-fg-muted ">Status</span>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-medium  ${
+                                        invoiceStatus.status === 'paid' ? 'bg-success/10 text-success border border-success/20' :
+                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'bg-info/10 text-info border border-info/20' :
+                                        invoiceStatus.status === 'overdue' ? 'bg-danger/10 text-danger border border-danger/20' :
+                                        invoiceStatus.status === 'draft' ? 'bg-fg-muted/10 text-fg-subtle border border-line' :
+                                        invoiceStatus.status === 'partially_paid' ? 'bg-warning/10 text-warning border border-warning/20' :
+                                        'bg-fg-muted/10 text-fg-subtle border border-line'
+                                    }`}>
+                                        {invoiceStatus.status === 'partially_paid' ? 'Partial' : invoiceStatus.status || 'Unknown'}
+                                    </span>
+                                </div>
+
+                                {invoiceStatus.total != null && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Total</span>
+                                        <span className="text-sm font-bold text-success">
+                                            {formatters.formatCurrency(Number(invoiceStatus.total))}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {invoiceStatus.amount_paid != null && invoiceStatus.amount_paid > 0 && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Paid</span>
+                                        <span className="text-sm font-bold text-success">
+                                            {formatters.formatCurrency(Number(invoiceStatus.amount_paid))}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {invoiceStatus.balance_due != null && invoiceStatus.balance_due > 0 && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Balance Due</span>
+                                        <span className="text-sm font-bold text-warning">
+                                            {formatters.formatCurrency(Number(invoiceStatus.balance_due))}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {invoiceStatus.due_date && (
+                                    <div className="flex justify-between items-center py-2 border-t border-line">
+                                        <span className="text-xs font-medium text-fg-muted ">Due Date</span>
+                                        <span className="text-xs font-bold text-fg-subtle">
+                                            {formatters.formatDate(invoiceStatus.due_date)}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <a
+                                    href="/accounting/invoices"
+                                    className="mt-2 flex items-center justify-center gap-2 w-full py-2.5 bg-surface-raised hover:bg-line text-fg rounded-nb-lg text-xs font-medium  transition-all border border-line"
+                                >
+                                    <ExternalLink size={12} /> View in Accounting
+                                </a>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Fulfillment Tracking Card */}
+                    {fulfillmentOrder && (() => {
+                        const fo = fulfillmentOrder;
+                        const lastShipment = fo.fulfillment_shipments?.[0];
+                        const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
+                        const statusColor =
+                            fo.status === 'delivered' ? 'text-success bg-success/10 border-success/20' :
+                            fo.status === 'out_for_delivery' ? 'text-success bg-success/10 border-success/20' :
+                            fo.status === 'in_transit' ? 'text-info bg-info/10 border-info/20' :
+                            fo.status === 'delivery_failed' ? 'text-danger bg-danger/10 border-danger/20' :
+                            'text-fg-subtle bg-fg-muted/10 border-line';
+                        return (
+                            <Card title="Fulfillment Tracking">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-fg-muted ">Status</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs font-medium  border ${statusColor}`}>
+                                            {fo.status?.replace(/_/g, ' ') || 'pending'}
+                                        </span>
+                                    </div>
+                                    {lastShipment?.tracking_number && (
+                                        <div className="flex items-center justify-between py-2 border-t border-line">
+                                            <span className="text-xs font-medium text-fg-muted ">Tracking #</span>
+                                            <span className="text-xs font-mono text-fg-subtle">{lastShipment.tracking_number}</span>
+                                        </div>
+                                    )}
+                                    {lastEvent && (
+                                        <div className="py-2 border-t border-line">
+                                            <span className="text-xs font-medium text-fg-muted  block mb-1">Last Event</span>
+                                            <p className="text-xs text-fg-subtle leading-relaxed">{lastEvent.description}</p>
+                                            {lastEvent.location && (
+                                                <p className="text-xs text-fg-muted mt-0.5">{lastEvent.location}</p>
+                                            )}
+                                            <p className="text-xs text-fg-muted mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
+                                        </div>
+                                    )}
+                                    {fo.estimated_delivery_at && (
+                                        <div className="flex items-center justify-between py-2 border-t border-line">
+                                            <span className="text-xs font-medium text-fg-muted ">ETA</span>
+                                            <span className="text-xs font-bold text-fg-subtle">{formatters.formatDate(fo.estimated_delivery_at)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        );
+                    })()}
+                </>
+            )}
+        >
+            {confirmDialog}
+
+            <div className="flex flex-col gap-nb-3">
+                <Card title="Deal lifecycle">
+                    <DealLifecycleStepper
+                        stages={dealStages}
+                        currentStageId={deal.stage_id}
+                        currentState={deal.current_flow_state || deal.stage}
+                    />
+                </Card>
+
+                <Card
+                    title={DEAL_TAB_TITLES[activeTab] || 'Details'}
+                    actions={activeTab === 'activity' ? (
+                        <Button type="button" variant="secondary" onClick={() => setShowActivityDrawer(true)}>
+                            View All History
+                        </Button>
+                    ) : undefined}
+                >
+                        <div>
+
                             {activeTab === 'activity' && (
                                 <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-surface-raised">
                                     {getAggregatedTimeline().length === 0 ? (
@@ -861,17 +992,17 @@ const DealDetailPage = () => {
                                         getAggregatedTimeline().map((ev) => (
                                             <div key={ev.id} className="relative pl-10">
                                                 <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-surface-raised border-2 border-line flex items-center justify-center z-10">
-                                                    {(ev.type === 'Activity' && ev.subType === 'CALL') && <Phone size={14} className="text-blue-400" />}
-                                                    {(ev.type === 'Activity' && ev.subType === 'MEETING') && <Users size={14} className="text-purple-400" />}
+                                                    {(ev.type === 'Activity' && ev.subType === 'CALL') && <Phone size={14} className="text-info" />}
+                                                    {(ev.type === 'Activity' && ev.subType === 'MEETING') && <Users size={14} className="text-primary" />}
                                                     {(ev.type === 'Activity' && ev.subType === 'EMAIL') && <AtSign size={14} className="text-success" />}
                                                     {ev.type === 'NOTE' && <FileText size={14} className="text-warning" />}
-                                                    {ev.type === 'TASK' && <CheckCircle2 size={14} className="text-indigo-400" />}
-                                                    {ev.type === 'DOCUMENT' && <UploadCloud size={14} className="text-sky-400" />}
+                                                    {ev.type === 'TASK' && <CheckCircle2 size={14} className="text-primary" />}
+                                                    {ev.type === 'DOCUMENT' && <UploadCloud size={14} className="text-info" />}
                                                     {['STATUS_CHANGE', 'STAGE_CHANGE', 'OWNER_CHANGE', 'PROFILE_UPDATE'].includes(ev.type) && <Zap size={14} className="text-warning" />}
                                                 </div>
-                                                <div className="bg-surface-sunken border border-line p-4 rounded-xl group hover:border-line transition-all">
+                                                <div className="bg-surface-sunken border border-line p-4 rounded-nb-lg group hover:border-line transition-all">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-black text-fg text-[10px] uppercase tracking-widest">
+                                                        <span className="font-semibold text-fg text-xs">
                                                             {ev.title}
                                                         </span>
                                                         <div className="flex items-center gap-2">
@@ -885,7 +1016,7 @@ const DealDetailPage = () => {
                                                                                 fetchData();
                                                                             }
                                                                         }}
-                                                                        className="p-1 text-fg-muted hover:text-blue-400 transition-colors"
+                                                                        className="p-1 text-fg-muted hover:text-info transition-colors"
                                                                         title="Edit activity"
                                                                     >
                                                                         <Edit2 size={12} />
@@ -904,7 +1035,7 @@ const DealDetailPage = () => {
                                                                     </button>
                                                                 </div>
                                                             )}
-                                                            <span className="text-[9px] bg-surface-raised text-fg-muted px-2 py-0.5 rounded font-black tracking-widest uppercase">
+                                                            <span className="text-xs bg-surface-raised text-fg-muted px-2 py-0.5 rounded font-semibold">
                                                                 {formatters.formatDateTime(ev.date)}
                                                             </span>
                                                         </div>
@@ -912,10 +1043,10 @@ const DealDetailPage = () => {
                                                     <p className="text-fg-subtle text-sm leading-relaxed">{ev.description}</p>
                                                     {ev.author && (
                                                         <div className="mt-4 flex items-center gap-2">
-                                                            <div className="w-5 h-5 rounded-full bg-surface-raised flex items-center justify-center text-[8px] font-black overflow-hidden border border-line">
+                                                            <div className="w-5 h-5 rounded-full bg-surface-raised flex items-center justify-center text-[8px] font-semibold overflow-hidden border border-line">
                                                                 {ev.author.avatar_url ? <img src={ev.author.avatar_url} /> : ev.author.full_name?.charAt(0)}
                                                             </div>
-                                                            <span className="text-[9px] font-bold text-fg-muted uppercase tracking-widest">{ev.author.full_name}</span>
+                                                            <span className="text-xs font-bold text-fg-muted">{ev.author.full_name}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -930,7 +1061,7 @@ const DealDetailPage = () => {
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         {deal.notes.map(note => (
-                                            <div key={note.id} className="text-sm border-l-2 border-amber-500/30 pl-4 py-1 group relative">
+                                            <div key={note.id} className="text-sm border-l-2 border-warning/30 pl-4 py-1 group relative">
                                                 <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                                                     <button
                                                         onClick={async () => {
@@ -940,7 +1071,7 @@ const DealDetailPage = () => {
                                                                 fetchData();
                                                             }
                                                         }}
-                                                        className="text-fg-muted hover:text-blue-400"
+                                                        className="text-fg-muted hover:text-info"
                                                     ><Edit2 size={12} /></button>
                                                     <button
                                                         onClick={async () => {
@@ -954,13 +1085,13 @@ const DealDetailPage = () => {
                                                 </div>
                                                 <p className="text-fg-subtle leading-relaxed mb-2 pr-12">{note.content}</p>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{note.author.full_name}</span>
-                                                    <span className="text-[10px] text-fg-muted font-bold">{formatters.formatDate(note.created_at)}</span>
+                                                    <span className="text-xs font-semibold text-fg-muted">{note.author.full_name}</span>
+                                                    <span className="text-xs text-fg-muted font-bold">{formatters.formatDate(note.created_at)}</span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="bg-bg border border-line rounded-xl p-4">
+                                    <div className="bg-bg border border-line rounded-nb-lg p-4">
                                         <textarea
                                             placeholder="Capture commercial context..."
                                             value={newNoteContent}
@@ -974,7 +1105,7 @@ const DealDetailPage = () => {
                                                     setNewNoteContent('');
                                                     fetchData();
                                                 }}
-                                                className="bg-warning hover:bg-warning/90 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest"
+                                                className="bg-warning hover:bg-warning/90 text-white px-4 py-2 rounded-lg text-xs font-semibold"
                                             >Save Note</button>
                                         </div>
                                     </div>
@@ -985,23 +1116,20 @@ const DealDetailPage = () => {
                             {activeTab === 'tasks' && (
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h4 className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Planned actions</h4>
-                                        <button onClick={() => setIsCreatingTask(true)} className="text-[10px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest flex items-center gap-1.5">
+                                        <h4 className="text-xs font-semibold text-fg-muted">Planned actions</h4>
+                                        <button onClick={() => setIsCreatingTask(true)} className="text-xs font-semibold text-info hover:text-info transition-colors flex items-center gap-1.5">
                                             <Plus size={12} /> Add Task
                                         </button>
                                     </div>
                                     <div className="grid gap-3">
                                         {tasks.length === 0 ? (
-                                            <div className="text-center py-10 text-fg-muted border-2 border-dashed border-line rounded-xl">
-                                                <CheckCircle2 size={32} className="mx-auto mb-3 opacity-20" />
-                                                <p className="text-sm font-medium uppercase tracking-tight">Zero pending actions</p>
-                                            </div>
+                                            <EmptyState title="Zero pending actions" />
                                         ) : (
                                             tasks.map(task => (
-                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-bg border rounded-xl group relative transition-all ${task.status === 'DONE' ? 'border-emerald-500/10 opacity-60' : 'border-line hover:border-blue-500/50'}`}>
+                                                <div key={task.id} className={`flex items-start gap-4 p-4 bg-bg border rounded-nb-lg group relative transition-all ${task.status === 'DONE' ? 'border-success/10 opacity-60' : 'border-line hover:border-info/50'}`}>
                                                     <button
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-emerald-500/10 border-success text-success' : 'border-line'}`}
+                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-success/10 border-success text-success' : 'border-line'}`}
                                                     >
                                                         {task.status === 'DONE' && <CheckCircle2 size={12} />}
                                                     </button>
@@ -1011,14 +1139,14 @@ const DealDetailPage = () => {
                                                                 {task.title}
                                                             </h4>
                                                         </div>
-                                                        <div className="flex items-center gap-4 mt-3 text-[11px] font-bold text-fg-subtle uppercase tracking-wider pt-2 border-t border-line">
+                                                        <div className="flex items-center gap-4 mt-3 text-xs font-bold text-fg-subtle pt-2 border-t border-line">
                                                             <span className="flex items-center gap-1 text-fg-subtle">
                                                                 <Clock size={11} /> Due {formatters.formatDate(task.due_date)}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
-                                                        <button onClick={() => setEditingTask(task)} className="p-1 hover:text-blue-400"><Edit2 size={14} /></button>
+                                                        <button onClick={() => setEditingTask(task)} className="p-1 hover:text-info"><Edit2 size={14} /></button>
                                                         <button
                                                             onClick={async () => {
                                                                 if (await confirm({ title: 'Delete?', message: 'Delete task?', intent: 'danger', confirmLabel: 'Delete' })) {
@@ -1040,8 +1168,8 @@ const DealDetailPage = () => {
                             {activeTab === 'documents' && (
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Attachments & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary/90 text-fg shadow-lg active:scale-95'}`}>
+                                        <p className="text-xs font-semibold text-fg-muted">Attachments & Contracts</p>
+                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-nb-lg text-xs font-semibold cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary/90 text-fg shadow-lg active:scale-95'}`}>
                                             {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
                                             {isUploading ? 'Uploading...' : 'Upload File'}
                                             <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => {
@@ -1059,12 +1187,12 @@ const DealDetailPage = () => {
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {(deal.documents || []).map(doc => (
-                                            <div key={doc.id} className="flex items-center justify-between p-4 bg-bg border border-line rounded-xl group hover:border-line">
+                                            <div key={doc.id} className="flex items-center justify-between p-4 bg-bg border border-line rounded-nb-lg group hover:border-line">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="bg-surface-raised p-2 rounded-lg text-blue-400"><FileIcon size={20} /></div>
+                                                    <div className="bg-surface-raised p-2 rounded-lg text-info"><FileIcon size={20} /></div>
                                                     <div>
                                                         <p className="text-sm font-bold text-fg truncate max-w-[150px]">{doc.name}</p>
-                                                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{(doc.size / 1024).toFixed(1)} KB</p>
+                                                        <p className="text-xs font-semibold text-fg-muted">{(doc.size / 1024).toFixed(1)} KB</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
@@ -1102,7 +1230,7 @@ const DealDetailPage = () => {
                                     ) : (
                                         customFieldDefs.map(field => (
                                             <div key={field.id} className="flex flex-col gap-1.5">
-                                                <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">{field.label}</span>
+                                                <span className="text-xs font-semibold text-fg-muted">{field.label}</span>
                                                 <p className="text-sm font-bold text-fg border-l-2 border-line pl-3 py-1">
                                                     {field.type === 'boolean'
                                                         ? (deal.custom_fields?.[field.id] ? 'Yes' : 'No')
@@ -1135,208 +1263,7 @@ const DealDetailPage = () => {
                                 <DealCommissionPanel dealId={deal.id} />
                             )}
                         </div>
-                    </div>
-                </div>
-
-                {/* Sidebar Context */}
-                <div className="space-y-8">
-                    {/* Cross-module linked records */}
-                    {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
-                        <section className="bg-surface border border-line rounded-2xl p-6">
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <ExternalLink size={14} className="text-blue-400" /> Linked Records
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {deal.invoice_id && (
-                                    <CrossLinkChip type="accounting.invoice" id={deal.invoice_id} label={deal.invoice_number || undefined} />
-                                )}
-                                {deal.project_id && <CrossLinkChip type="projects.project" id={deal.project_id} />}
-                                {fulfillmentOrder?.id && <CrossLinkChip type="fulfillment.order" id={fulfillmentOrder.id} />}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Contact Details Card */}
-                    {associatedLead && (
-                        <section className="bg-surface border border-line rounded-2xl p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-colors" />
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Users size={14} className="text-blue-400" /> Primary Contact
-                            </h3>
-                            <div className="space-y-6">
-                                <Link to={`/crm/leads/${associatedLead.id}`} className="group/link block">
-                                    <h4 className="text-lg font-black text-fg group-hover/link:text-blue-400 transition-colors">{associatedLead.contact_name}</h4>
-                                    <p className="text-xs font-bold text-fg-subtle flex items-center gap-1">
-                                        <Building2 size={12} /> {associatedLead.company_name}
-                                    </p>
-                                </Link>
-                                <div className="space-y-3 pt-4 border-t border-line">
-                                    <a href={`mailto:${associatedLead.contact_email}`} className="flex items-center gap-3 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
-                                        <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Mail size={14} /></div>
-                                        {associatedLead.contact_email}
-                                    </a>
-                                    {associatedLead.phone && (
-                                        <div className="flex items-center gap-2">
-                                            <a href={`tel:${associatedLead.phone}`} className="flex items-center gap-3 flex-1 text-xs font-bold text-fg-subtle hover:text-fg transition-colors">
-                                                <div className="w-8 h-8 rounded-lg bg-surface-raised flex items-center justify-center"><Phone size={14} /></div>
-                                                {associatedLead.phone}
-                                            </a>
-                                            <ClickToCallButton
-                                                number={associatedLead.phone}
-                                                entityType="deal"
-                                                entityId={deal.id}
-                                                name={associatedLead.contact_name || deal.name}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Linked Invoice Card */}
-                    {invoiceStatus?.has_invoice && (
-                        <section className="bg-surface border border-line rounded-2xl p-6 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/10 transition-colors" />
-                            <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <Receipt size={14} className="text-success" /> Linked Invoice
-                            </h3>
-                            <div className="space-y-4">
-                                {invoiceStatus.invoice_number && (
-                                    <div>
-                                        <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest block mb-1">Invoice Number</span>
-                                        <p className="text-sm font-bold text-fg">{invoiceStatus.invoice_number}</p>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between items-center py-2 border-t border-line">
-                                    <span className="text-[10px] font-black text-fg-muted uppercase">Status</span>
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
-                                        invoiceStatus.status === 'paid' ? 'bg-emerald-500/10 text-success border border-emerald-500/20' :
-                                        invoiceStatus.status === 'sent' || invoiceStatus.status === 'pending' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                                        invoiceStatus.status === 'overdue' ? 'bg-red-500/10 text-danger border border-red-500/20' :
-                                        invoiceStatus.status === 'draft' ? 'bg-fg-muted/10 text-fg-subtle border border-line' :
-                                        invoiceStatus.status === 'partially_paid' ? 'bg-amber-500/10 text-warning border border-amber-500/20' :
-                                        'bg-fg-muted/10 text-fg-subtle border border-line'
-                                    }`}>
-                                        {invoiceStatus.status === 'partially_paid' ? 'Partial' : invoiceStatus.status || 'Unknown'}
-                                    </span>
-                                </div>
-
-                                {invoiceStatus.total != null && (
-                                    <div className="flex justify-between items-center py-2 border-t border-line">
-                                        <span className="text-[10px] font-black text-fg-muted uppercase">Total</span>
-                                        <span className="text-sm font-bold text-success">
-                                            {formatters.formatCurrency(Number(invoiceStatus.total))}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {invoiceStatus.amount_paid != null && invoiceStatus.amount_paid > 0 && (
-                                    <div className="flex justify-between items-center py-2 border-t border-line">
-                                        <span className="text-[10px] font-black text-fg-muted uppercase">Paid</span>
-                                        <span className="text-sm font-bold text-success">
-                                            {formatters.formatCurrency(Number(invoiceStatus.amount_paid))}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {invoiceStatus.balance_due != null && invoiceStatus.balance_due > 0 && (
-                                    <div className="flex justify-between items-center py-2 border-t border-line">
-                                        <span className="text-[10px] font-black text-fg-muted uppercase">Balance Due</span>
-                                        <span className="text-sm font-bold text-warning">
-                                            {formatters.formatCurrency(Number(invoiceStatus.balance_due))}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {invoiceStatus.due_date && (
-                                    <div className="flex justify-between items-center py-2 border-t border-line">
-                                        <span className="text-[10px] font-black text-fg-muted uppercase">Due Date</span>
-                                        <span className="text-[10px] font-bold text-fg-subtle">
-                                            {formatters.formatDate(invoiceStatus.due_date)}
-                                        </span>
-                                    </div>
-                                )}
-
-                                <a
-                                    href="/accounting/invoices"
-                                    className="mt-2 flex items-center justify-center gap-2 w-full py-2.5 bg-surface-raised hover:bg-line text-fg rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-line"
-                                >
-                                    <ExternalLink size={12} /> View in Accounting
-                                </a>
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Fulfillment Tracking Card */}
-                    {fulfillmentOrder && (() => {
-                        const fo = fulfillmentOrder;
-                        const lastShipment = fo.fulfillment_shipments?.[0];
-                        const lastEvent = lastShipment?.fulfillment_shipment_events?.[0];
-                        const statusColor =
-                            fo.status === 'delivered' ? 'text-teal-400 bg-teal-500/10 border-teal-500/20' :
-                            fo.status === 'out_for_delivery' ? 'text-success bg-emerald-500/10 border-emerald-500/20' :
-                            fo.status === 'in_transit' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
-                            fo.status === 'delivery_failed' ? 'text-danger bg-red-500/10 border-red-500/20' :
-                            'text-fg-subtle bg-fg-muted/10 border-line';
-                        return (
-                            <section className="bg-surface-sunken border border-line rounded-2xl p-5 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-teal-500/10 transition-colors" />
-                                <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-5 flex items-center gap-2">
-                                    <Zap size={14} className="text-teal-400" /> Fulfillment Tracking
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-fg-muted uppercase">Status</span>
-                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${statusColor}`}>
-                                            {fo.status?.replace(/_/g, ' ') || 'pending'}
-                                        </span>
-                                    </div>
-                                    {lastShipment?.tracking_number && (
-                                        <div className="flex items-center justify-between py-2 border-t border-line">
-                                            <span className="text-[10px] font-black text-fg-muted uppercase">Tracking #</span>
-                                            <span className="text-xs font-mono text-fg-subtle">{lastShipment.tracking_number}</span>
-                                        </div>
-                                    )}
-                                    {lastEvent && (
-                                        <div className="py-2 border-t border-line">
-                                            <span className="text-[10px] font-black text-fg-muted uppercase block mb-1">Last Event</span>
-                                            <p className="text-xs text-fg-subtle leading-relaxed">{lastEvent.description}</p>
-                                            {lastEvent.location && (
-                                                <p className="text-[10px] text-fg-muted mt-0.5">{lastEvent.location}</p>
-                                            )}
-                                            <p className="text-[9px] text-fg-muted mt-1">{formatters.formatDateTime(lastEvent.occurred_at || lastEvent.created_at)}</p>
-                                        </div>
-                                    )}
-                                    {fo.estimated_delivery_at && (
-                                        <div className="flex items-center justify-between py-2 border-t border-line">
-                                            <span className="text-[10px] font-black text-fg-muted uppercase">ETA</span>
-                                            <span className="text-[10px] font-bold text-fg-subtle">{formatters.formatDate(fo.estimated_delivery_at)}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
-                        );
-                    })()}
-
-                    {/* Stats & Metadata */}
-                    <section className="bg-surface border border-line rounded-2xl p-6">
-                        <h3 className="text-[10px] font-black text-fg-muted uppercase tracking-widest mb-6 flex items-center gap-2">
-                            System Intelligence
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center py-2 border-b border-line">
-                                <span className="text-[10px] font-black text-fg-muted uppercase">Created On</span>
-                                <span className="text-[10px] font-bold text-fg-subtle">{formatters.formatDate(deal.created_at)}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-2">
-                                <span className="text-[10px] font-black text-fg-muted uppercase">Last Sync</span>
-                                <span className="text-[10px] font-bold text-fg-subtle">Just now</span>
-                            </div>
-                        </div>
-                    </section>
-                </div>
+                </Card>
             </div>
 
             {/* Sign Request Modal */}
@@ -1355,8 +1282,8 @@ const DealDetailPage = () => {
                 <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
                     <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <div className="p-6 border-b border-line flex items-center justify-between bg-surface-sunken">
-                            <h3 className="text-fg font-black uppercase tracking-widest text-xs flex items-center gap-2">
-                                <Briefcase size={16} className="text-blue-400" />
+                            <h3 className="text-fg font-semibold text-xs flex items-center gap-2">
+                                <Briefcase size={16} className="text-info" />
                                 Project Management
                             </h3>
                             <button onClick={() => setIsProjectModalOpen(false)} className="text-fg-muted hover:text-fg transition-colors">
@@ -1366,15 +1293,15 @@ const DealDetailPage = () => {
 
                         <div className="p-8 space-y-8">
                             {/* CREATE OPTION */}
-                            <div className="bg-surface-sunken border border-line rounded-2xl p-6 space-y-4 hover:border-blue-500/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
+                            <div className="bg-surface-sunken border border-line rounded-nb-lg p-6 space-y-4 hover:border-info/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
                                 <div className="flex items-start justify-between">
                                     <div>
-                                        <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-blue-400 transition-colors">Create New Project</h4>
-                                        <p className="text-fg-muted text-[10px] leading-relaxed max-w-[200px]">
+                                        <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-info transition-colors">Create New Project</h4>
+                                        <p className="text-fg-muted text-xs leading-relaxed max-w-[200px]">
                                             Open the Projects module with deal info pre-filled to create and configure a new project.
                                         </p>
                                     </div>
-                                    <div className="bg-primary group-hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-1">
+                                    <div className="bg-primary group-hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all shadow-lg flex items-center gap-1">
                                         Open <ExternalLink size={10} />
                                     </div>
                                 </div>
@@ -1382,7 +1309,7 @@ const DealDetailPage = () => {
 
                             <div className="relative flex items-center gap-4">
                                 <div className="flex-1 h-px bg-surface-raised"></div>
-                                <span className="text-[9px] font-black text-fg uppercase tracking-widest">OR</span>
+                                <span className="text-xs font-semibold text-fg">OR</span>
                                 <div className="flex-1 h-px bg-surface-raised"></div>
                             </div>
 
@@ -1390,7 +1317,7 @@ const DealDetailPage = () => {
                             <div className="space-y-4">
                                 <div>
                                     <h4 className="text-fg font-bold text-sm mb-1">Link Existing Project</h4>
-                                    <p className="text-fg-muted text-[10px]">Reference a project already existing in the system.</p>
+                                    <p className="text-fg-muted text-xs">Reference a project already existing in the system.</p>
                                 </div>
 
                                 <div className="space-y-3">
@@ -1402,7 +1329,7 @@ const DealDetailPage = () => {
                                     <button
                                         onClick={handleLinkExistingProject}
                                         disabled={!selectedProjectId}
-                                        className="w-full bg-surface-raised hover:bg-line disabled:opacity-50 text-fg px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-line"
+                                        className="w-full bg-surface-raised hover:bg-line disabled:opacity-50 text-fg px-4 py-3 rounded-nb-lg text-xs font-semibold transition-all border border-line"
                                     >
                                         Confirm Link
                                     </button>
@@ -1411,15 +1338,15 @@ const DealDetailPage = () => {
                         </div>
 
                         {projectDetails && (
-                            <div className="p-4 bg-blue-500/5 border-t border-line">
+                            <div className="p-4 bg-info/5 border-t border-line">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-black text-fg-muted uppercase tracking-widest">
+                                    <span className="text-xs font-semibold text-fg-muted">
                                         Linked Project
                                     </span>
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
                                         projectDetails.status === 'COMPLETED'
-                                            ? 'bg-emerald-500/10 text-success'
-                                            : 'bg-blue-500/10 text-blue-400'
+                                            ? 'bg-success/10 text-success'
+                                            : 'bg-info/10 text-info'
                                     }`}>
                                         {projectDetails.status}
                                     </span>
@@ -1486,7 +1413,7 @@ const DealDetailPage = () => {
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-sm">
-                    <div className="bg-surface border border-line rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
+                    <div className="bg-surface border border-line rounded-nb-lg shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <h2 className="text-xl font-bold text-fg mb-2">Delete Deal</h2>
                         <p className="text-fg-subtle mb-6">
                             Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.
