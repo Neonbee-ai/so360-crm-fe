@@ -11,7 +11,8 @@ import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import DetailBackLink from '../components/common/DetailBackLink';
+import { goBackFrom } from '../components/common/DetailBackLink';
+import { DetailPageTemplate } from '@so360/design-system';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -67,7 +68,7 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
                             value={paymentRef}
                             onChange={e => setPaymentRef(e.target.value)}
                             placeholder="e.g. NEFT-2026-001"
-                            className="w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary/50"
                         />
                     </div>
                     <div className="flex justify-end gap-3">
@@ -231,16 +232,9 @@ const PartnerDetailPage = () => {
         return found?.full_name || null;
     };
 
-    const tabCls = (tab: TabType) =>
-        `flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
-            activeTab === tab
-                ? 'text-blue-400 border-b-2 border-primary bg-blue-500/5'
-                : 'text-fg-muted hover:text-fg-subtle'
-        }`;
-
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center text-fg-muted gap-3 p-8">
+            <div className="h-full flex items-center justify-center text-fg-muted gap-3 py-12">
                 <Loader2 className="animate-spin" />
                 <span>Loading partner...</span>
             </div>
@@ -249,7 +243,7 @@ const PartnerDetailPage = () => {
 
     if (!partner) {
         return (
-            <div className="p-8 text-center text-fg-muted">
+            <div className="py-12 text-center text-fg-muted">
                 <p>Partner not found.</p>
                 <button onClick={() => navigate('/crm/partners')} className="text-primary hover:underline mt-4 inline-block">Back to Partners</button>
             </div>
@@ -260,64 +254,63 @@ const PartnerDetailPage = () => {
 
     const fieldLabelCls = 'text-[10px] font-bold text-fg-muted uppercase tracking-widest mb-1.5';
     const editLabelCls = 'text-xs text-fg-subtle mb-1 block';
-    const editInputCls = 'w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+    const editInputCls = 'w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary/50';
+
+    const partnerName = [partner.first_name, partner.last_name].filter(Boolean).join(' ') || partner.contact_name;
 
     return (
-        <div className="p-8">
-
-            {/* Header */}
-            <header className="mb-8">
-                <DetailBackLink fallbackTo="/crm/partners" className="mb-4" />
-                <div className="flex items-start justify-between">
-                    <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-3xl font-bold text-fg">
-                                {[partner.first_name, partner.last_name].filter(Boolean).join(' ') || partner.contact_name}
-                            </h1>
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
-                                {getTypeLabel(partner.partner_type)}
+        <DetailPageTemplate
+            onBack={() => goBackFrom(navigate, '/crm/partners')}
+            backLabel="Back"
+            title={partnerName}
+            status={
+                <>
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
+                        {getTypeLabel(partner.partner_type)}
+                    </span>
+                    {gradingCfg && (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
+                            {gradingCfg.label}
+                        </span>
+                    )}
+                </>
+            }
+            meta={
+                <>
+                    {partner.company_name && (
+                        <p className="text-fg-subtle text-sm mb-1">{partner.company_name}</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-4 text-fg-subtle text-sm">
+                        {partner.email && <span className="flex items-center gap-1.5"><Mail size={14} />{partner.email}</span>}
+                        {partner.phone && (
+                            <span className="flex items-center gap-1.5">
+                                <Phone size={14} />{partner.phone}
+                                <ClickToCallButton
+                                    number={partner.phone}
+                                    entityType="company"
+                                    entityId={partner.id}
+                                    name={partnerName}
+                                />
                             </span>
-                            {gradingCfg && (
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${gradingCfg.color}`}>
-                                    {gradingCfg.label}
-                                </span>
-                            )}
-                        </div>
-                        {partner.company_name && (
-                            <p className="text-fg-subtle text-sm mb-1">{partner.company_name}</p>
                         )}
-                        <div className="flex flex-wrap items-center gap-4 text-fg-subtle text-sm">
-                            {partner.email && <span className="flex items-center gap-1.5"><Mail size={14} />{partner.email}</span>}
-                            {partner.phone && (
-                                <span className="flex items-center gap-1.5">
-                                    <Phone size={14} />{partner.phone}
-                                    <ClickToCallButton
-                                        number={partner.phone}
-                                        entityType="company"
-                                        entityId={partner.id}
-                                        name={[partner.first_name, partner.last_name].filter(Boolean).join(' ') || partner.contact_name}
-                                    />
-                                </span>
-                            )}
-                            {partner.commission_rate > 0 && (
-                                <span className="flex items-center gap-1.5"><Percent size={14} />{partner.commission_rate}% royalty</span>
-                            )}
-                            {getUserName(partner.owner_person_id) && (
-                                <span className="flex items-center gap-1.5"><User size={14} />{getUserName(partner.owner_person_id)}</span>
-                            )}
-                        </div>
+                        {partner.commission_rate > 0 && (
+                            <span className="flex items-center gap-1.5"><Percent size={14} />{partner.commission_rate}% royalty</span>
+                        )}
+                        {getUserName(partner.owner_person_id) && (
+                            <span className="flex items-center gap-1.5"><User size={14} />{getUserName(partner.owner_person_id)}</span>
+                        )}
                     </div>
-                </div>
-            </header>
-
-            {/* Tabs */}
-            <div className="border-b border-line mb-6 flex overflow-x-auto">
-                <button className={tabCls('overview')} onClick={() => setActiveTab('overview')}>Overview</button>
-                <button className={tabCls('deals')} onClick={() => setActiveTab('deals')}>Referred Deals</button>
-                <button className={tabCls('commissions')} onClick={() => setActiveTab('commissions')}>Royalties</button>
-                <button className={tabCls('activity')} onClick={() => setActiveTab('activity')}>Activity</button>
-            </div>
-
+                </>
+            }
+            tabs={[
+                { id: 'overview', label: 'Overview' },
+                { id: 'deals', label: 'Referred Deals' },
+                { id: 'commissions', label: 'Royalties' },
+                { id: 'activity', label: 'Activity' },
+            ]}
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab as TabType)}
+        >
             {/* Overview Tab */}
             {activeTab === 'overview' && (
                 <div className="bg-surface-sunken border border-line rounded-xl p-8">
@@ -379,7 +372,7 @@ const PartnerDetailPage = () => {
                                     <label className={editLabelCls}>Phone</label>
                                     <input type="tel" maxLength={20} value={editForm.phone}
                                         onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                        className={`w-full bg-bg border rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-line focus:ring-blue-500/50'}`} />
+                                        className={`w-full bg-bg border rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 ${phoneError ? 'border-rose-500/60 focus:ring-rose-500/50' : 'border-line focus:ring-primary/50'}`} />
                                     {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
                                 </div>
                                 <div>
@@ -817,7 +810,7 @@ const PartnerDetailPage = () => {
                     onPaid={() => { setMarkPaidId(null); toast.success('Royalty marked as paid'); fetchCommissions(); }}
                 />
             )}
-        </div>
+        </DetailPageTemplate>
     );
 };
 
