@@ -7,7 +7,7 @@
  *     fall back to the persisted columns when the quote carries no lines
  *   - Totals are always finite numbers — never undefined, which used to crash
  *     the print renderer on `.toFixed()`
- *   - Per-line Amount is qty·price only (Task a171957e); discount and tax appear only in the totals
+ *   - Per-line Amount is qty·price less the line discount, without tax (Task a171957e); tax appears only in the totals
  *   - SKU is folded into the line description when present (NIL sub_sku dropped)
  *   - Buyer falls back customer_name → deal.company_name → deal.name → ''
  *   - document_title is left unset so the template label drives it
@@ -168,20 +168,20 @@ describe('quoteToDocumentData > buyer resolution', () => {
 });
 
 describe('quoteToDocumentData > line items', () => {
-    it('Given a persisted line_total that includes discount and tax, Then the line amount is still the pre-tax Qty × Unit Price', () => {
+    it('Given a persisted line_total that includes discount and tax, Then the line amount is after the discount and without tax', () => {
         const d = quoteToDocumentData(
             baseQuote({ lines: [{ description: 'Widget', quantity: 2, unit_price: 50, discount_percent: 10, tax_rate: 5, line_total: 94.5 } as any] }),
             { currency: 'AED', seller: SELLER },
         );
-        expect(d.line_items[0].amount).toBe(100);
+        expect(d.line_items[0].amount).toBe(90);
     });
 
-    it('Given a line with discount and tax, Then only the totals carry them and the final total is unchanged', () => {
+    it('Given a line with discount and tax, Then the line carries the discount but not the tax, and the totals are unchanged', () => {
         const d = quoteToDocumentData(
             baseQuote({ lines: [{ description: 'Table', quantity: 1, unit_price: 15999, discount_percent: 10, tax_rate: 18 } as any] }),
             { currency: 'INR', seller: SELLER },
         );
-        expect(d.line_items[0].amount).toBe(15999);
+        expect(d.line_items[0].amount).toBeCloseTo(14399.1);
         expect(d.subtotal).toBe(15999);
         expect(d.discount_amount).toBeCloseTo(1599.9);
         expect(d.tax_amount).toBeCloseTo(2591.838);
