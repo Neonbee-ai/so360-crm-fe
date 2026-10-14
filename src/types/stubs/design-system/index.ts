@@ -21,6 +21,23 @@ export const QuotaGate: any = _any;
 export const DepartmentSelector: any = _any;
 export const UserSelector: any = _any;
 
+// Comb page templates + primitives (type-only fallback; real implementations live in the design-system package)
+export const ListPageTemplate: any = _any;
+export const DetailPageTemplate: any = _any;
+export const FormPageTemplate: any = _any;
+export const PageHeader: any = _any;
+export const PageContainer: any = _any;
+export const Tabs: any = _any;
+export const DataTable: any = _any;
+export const EmptyState: any = _any;
+export const ConfirmDialog: any = _any;
+export const Skeleton: any = _any;
+export const Menu: any = _any;
+export const SearchInput: any = _any;
+export const StatusBadge: any = _any;
+export const Drawer: any = _any;
+export const Textarea: any = _any;
+
 // Universal toast surface
 export const toast: {
     success: (message: string, opts?: any) => string;
