@@ -178,7 +178,7 @@ describe('QuoteDetailPage', () => {
       mockGetQuoteById.mockResolvedValue(taxedQuote);
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
-      expect(lineAmountCell(lineRow())).toHaveTextContent(/^$14399.1/);
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$14399\.1/);
       expect(within(lineRow()).queryByText(/16990/)).not.toBeInTheDocument();
     });
 
@@ -186,11 +186,11 @@ describe('QuoteDetailPage', () => {
       mockGetQuoteById.mockResolvedValue(taxedQuote);
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
-      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText(/^$14399.1/)).toBeInTheDocument();
+      expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText(/^\$14399\.1/)).toBeInTheDocument();
       expect(screen.queryByText('Discount')).not.toBeInTheDocument();
-      expect(within(screen.getByText('Tax').parentElement as HTMLElement).getByText(/^$2591.83/)).toBeInTheDocument();
+      expect(within(screen.getByText('Tax').parentElement as HTMLElement).getByText(/^\$2591\.83/)).toBeInTheDocument();
       // Same final figure as before the change: 15999 − 1599.90 + 2591.84.
-      expect(within(grandTotalRow()).getByText(/^$16990.93/)).toBeInTheDocument();
+      expect(within(grandTotalRow()).getByText(/^\$16990\.93/)).toBeInTheDocument();
     });
 
     it('When Tax % is changed in edit mode / Then the line Amount stays the same and only the totals change', async () => {
@@ -199,8 +199,8 @@ describe('QuoteDetailPage', () => {
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
       fireEvent.click(screen.getByText(/^edit$/i));
       fireEvent.change(screen.getByDisplayValue('18'), { target: { value: '0' } });
-      await waitFor(() => expect(within(grandTotalRow()).getByText(/^$14399.1/)).toBeInTheDocument());
-      expect(lineAmountCell(lineRow())).toHaveTextContent(/^$14399.1/);
+      await waitFor(() => expect(within(grandTotalRow()).getByText(/^\$14399\.1/)).toBeInTheDocument());
+      expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$14399\.1/);
     });
 
     it('When Disc % is changed in edit mode / Then the line Amount reflects the new discount', async () => {
@@ -209,7 +209,7 @@ describe('QuoteDetailPage', () => {
       await waitFor(() => screen.getByText('Harper 4 Seater Dining Table'));
       fireEvent.click(screen.getByText(/^edit$/i));
       fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '20' } });
-      await waitFor(() => expect(lineAmountCell(lineRow())).toHaveTextContent(/^$12799.2/));
+      await waitFor(() => expect(lineAmountCell(lineRow())).toHaveTextContent(/^\$12799\.2/));
     });
 
     it('When there are several lines / Then each line shows its own after-discount amount and Subtotal is their sum', async () => {
@@ -222,8 +222,8 @@ describe('QuoteDetailPage', () => {
       });
       render(<QuoteDetailPage />);
       await waitFor(() => screen.getByText('Line A'));
-      expect(lineAmountCell(screen.getByText('Line A').closest('tr') as HTMLElement)).toHaveTextContent(/^$200$/);
-      expect(lineAmountCell(screen.getByText('Line B').closest('tr') as HTMLElement)).toHaveTextContent(/^$135$/);
+      expect(lineAmountCell(screen.getByText('Line A').closest('tr') as HTMLElement)).toHaveTextContent(/^\$200$/);
+      expect(lineAmountCell(screen.getByText('Line B').closest('tr') as HTMLElement)).toHaveTextContent(/^\$135$/);
       expect(within(screen.getByText('Subtotal').parentElement as HTMLElement).getByText('$335')).toBeInTheDocument();
     });
   });
