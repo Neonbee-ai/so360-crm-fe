@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { DetailPageTemplate } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
 import { useActivity } from '@so360/shell-context';
-import DetailBackLink from '../components/common/DetailBackLink';
+import { goBackFrom } from '../components/common/DetailBackLink';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
 const MarketingCampaignDetailPage: React.FC = () => {
   const formatters = useCRMFormatters();
   const { campaignId } = useParams<{ campaignId: string }>();
+  const navigate = useNavigate();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const { recordActivity } = useActivity();
   const [campaign, setCampaign] = useState<any>(null);
@@ -43,22 +45,22 @@ const MarketingCampaignDetailPage: React.FC = () => {
   }, [storeId, campaignId]);
 
   if (!storeId) {
-    return <div className="p-8 text-warning">Select a store from Campaigns page first.</div>;
+    return <div className="text-warning">Select a store from Campaigns page first.</div>;
   }
 
   return (
-    <div className="p-8">
-      <DetailBackLink fallbackTo="/crm/marketing/campaigns" className="mb-4 text-sm" />
-
+    <DetailPageTemplate
+      onBack={() => goBackFrom(navigate, '/crm/marketing/campaigns')}
+      title={campaign ? campaign.name : 'Campaign'}
+      status={campaign ? <span className="text-fg-subtle text-sm">{campaign.campaign_type} • {campaign.status}</span> : undefined}
+    >
       {loading && <p className="text-fg-subtle">Loading...</p>}
       {error && <p className="text-danger">{error}</p>}
 
       {campaign && (
         <>
           <div className="bg-surface border border-line rounded-xl p-4 mb-4">
-            <h1 className="text-2xl font-semibold text-fg">{campaign.name}</h1>
-            <p className="text-fg-subtle mt-1">{campaign.campaign_type} • {campaign.status}</p>
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
               <p className="text-fg-subtle"><span className="text-fg-muted">Subject:</span> {campaign.subject_template || '-'}</p>
               <p className="text-fg-subtle"><span className="text-fg-muted">Sent At:</span> {formatDateTime(campaign.sent_at)}</p>
               <p className="text-fg-subtle"><span className="text-fg-muted">Recipients:</span> {campaign.total_recipients || 0}</p>
@@ -94,7 +96,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   className="flex-1 bg-bg border border-line rounded px-3 py-2 text-sm text-fg"
                 />
                 <button
-                  className="px-3 py-2 text-sm rounded bg-primary hover:bg-primary/90 text-white"
+                  className="px-3 py-2 text-sm rounded bg-primary hover:bg-primary/90 text-primary-fg"
                   onClick={async () => {
                     await crmService.testSendCampaign(storeId, campaignId!, testEmail);
                   }}
@@ -114,7 +116,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   className="flex-1 bg-bg border border-line rounded px-3 py-2 text-sm text-fg"
                 />
                 <button
-                  className="px-3 py-2 text-sm rounded bg-emerald-700 hover:bg-success text-white"
+                  className="px-3 py-2 text-sm rounded bg-success hover:bg-success/90 text-success-fg"
                   onClick={async () => {
                     if (!scheduleAt) return;
                     await crmService.scheduleCampaign(storeId, campaignId!, new Date(scheduleAt).toISOString());
@@ -153,7 +155,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
           </div>
         </>
       )}
-    </div>
+    </DetailPageTemplate>
   );
 };
 

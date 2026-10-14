@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { DetailPageTemplate, Button } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
-import DetailBackLink from '../components/common/DetailBackLink';
+import { goBackFrom } from '../components/common/DetailBackLink';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -12,6 +13,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
   const currencyCode = settings?.base_currency;
   const locale = settings?.document_language || 'en-US';
   const { cartId } = useParams<{ cartId: string }>();
+  const navigate = useNavigate();
   const [storeId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -36,56 +38,47 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
   }, [storeId, cartId]);
 
   if (!storeId) {
-    return <div className="p-8 text-warning">Select a store from Abandoned Carts page first.</div>;
+    return <div className="text-warning">Select a store from Abandoned Carts page first.</div>;
   }
 
   const items = Array.isArray(cart?.items_summary) ? cart.items_summary : [];
 
-  return (
-    <div className="p-8">
-      <DetailBackLink fallbackTo="/crm/marketing/abandoned-carts" className="mb-4 text-sm" />
+  const markStatus = (status: 'recovered' | 'expired') => async () => {
+    await crmService.updateAbandonedCartStatus(storeId, cart.id, status);
+    await load();
+  };
 
+  return (
+    <DetailPageTemplate
+      onBack={() => goBackFrom(navigate, '/crm/marketing/abandoned-carts')}
+      title="Abandoned Cart Detail"
+      primaryAction={cart ? (
+        <Button
+          variant="primary"
+          onClick={async () => {
+            await crmService.sendAbandonedCartRecovery(storeId, cart.id);
+            await load();
+          }}
+        >
+          Send Recovery
+        </Button>
+      ) : undefined}
+      secondaryActions={cart ? [
+        <Button key="recovered" variant="secondary" onClick={markStatus('recovered')}>Mark Recovered</Button>,
+      ] : undefined}
+      overflowActions={cart ? [{ label: 'Mark Expired', onSelect: markStatus('expired') }] : undefined}
+    >
       {loading && <p className="text-fg-subtle">Loading...</p>}
       {error && <p className="text-danger">{error}</p>}
 
       {cart && (
         <>
           <div className="bg-surface border border-line rounded-xl p-4 mb-4">
-            <h1 className="text-2xl font-semibold text-fg">Abandoned Cart Detail</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
               <p className="text-fg-subtle"><span className="text-fg-muted">Customer:</span> {cart.customer_email || '-'}</p>
               <p className="text-fg-subtle"><span className="text-fg-muted">Status:</span> {cart.recovery_status || '-'}</p>
               <p className="text-fg-subtle"><span className="text-fg-muted">Cart Total:</span> {formatMoney(cart.cart_total, currencyCode, locale)}</p>
               <p className="text-fg-subtle"><span className="text-fg-muted">Abandoned At:</span> {formatDateTime(cart.abandoned_at)}</p>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <button
-                className="text-xs px-2 py-1 rounded bg-primary hover:bg-primary/90 text-white"
-                onClick={async () => {
-                  await crmService.sendAbandonedCartRecovery(storeId, cart.id);
-                  await load();
-                }}
-              >
-                Send Recovery
-              </button>
-              <button
-                className="text-xs px-2 py-1 rounded bg-emerald-700 hover:bg-success text-white"
-                onClick={async () => {
-                  await crmService.updateAbandonedCartStatus(storeId, cart.id, 'recovered');
-                  await load();
-                }}
-              >
-                Mark Recovered
-              </button>
-              <button
-                className="text-xs px-2 py-1 rounded bg-amber-700 hover:bg-warning text-white"
-                onClick={async () => {
-                  await crmService.updateAbandonedCartStatus(storeId, cart.id, 'expired');
-                  await load();
-                }}
-              >
-                Mark Expired
-              </button>
             </div>
           </div>
 
@@ -114,7 +107,7 @@ const MarketingAbandonedCartDetailPage: React.FC = () => {
           </div>
         </>
       )}
-    </div>
+    </DetailPageTemplate>
   );
 };
 
