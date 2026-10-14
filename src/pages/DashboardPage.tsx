@@ -6,7 +6,7 @@ import {
     Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -646,12 +646,9 @@ const DashboardPage = () => {
     };
 
     return (
-        <div className="p-8 space-y-6 pb-12">
-            <header className="flex justify-between items-end">
-                <div>
-                    <h1 className="text-3xl font-black text-fg tracking-tight mb-2">Executive Overview</h1>
-                    <p className="text-fg-subtle font-medium">
-                        Sales performance and financial insights for {
+        <DashboardPageTemplate
+            title="Executive Overview"
+            description={`Sales performance and financial insights for ${
                             period === 'yearly'
                                 ? `${year}`
                                 : period === 'quarterly'
@@ -668,11 +665,9 @@ const DashboardPage = () => {
                                             const fmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
                                             return `Week ${week} · ${fmt(wStart)} – ${fmt(wEnd)}`;
                                         })()
-                                        : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`
-                        }
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
+                                        : `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}`}
+            filters={
+                <>
                     {customizeEnabled && (
                         <button
                             type="button"
@@ -721,13 +716,17 @@ const DashboardPage = () => {
                         Weekly
                     </button>
                 </div>
-                </div>
-            </header>
-
+                </>
+            }
+            primary={
+                <>
             {visibleWidgets(dashLayout.layout).map((key) => (
                 <React.Fragment key={key}>{widgetNodes[key]}</React.Fragment>
             ))}
 
+                </>
+            }
+        >
             {customizeEnabled && showCustomize && (
                 <LeadLayoutSettingsPanel
                     title="Customize Dashboard"
@@ -739,7 +738,7 @@ const DashboardPage = () => {
                     onClose={() => setShowCustomize(false)}
                 />
             )}
-        </div>
+        </DashboardPageTemplate>
     );
 };
 

@@ -128,3 +128,18 @@ export const Tabs = ({ items = [], value, onChange }: any) =>
   React.createElement('div', { role: 'tablist' }, items.map((t: any) =>
     React.createElement('button', { key: t.id, role: 'tab', 'aria-selected': t.id === value, onClick: () => onChange?.(t.id) }, t.label)));
 export const Skeleton = () => React.createElement('div', { 'data-testid': 'skeleton' });
+export const DashboardPageTemplate = (p: any) =>
+  React.createElement('div', { 'data-template': 'dashboard' },
+    React.createElement('header', { 'data-slot': 'header' },
+      React.createElement('h1', null, p.title), p.description ? React.createElement('p', null, p.description) : null,
+      slot('meta', p.meta), slot('filters', p.filters), slot('primary-action', p.primaryAction)),
+    slot('kpis', p.kpis), slot('primary', p.primary), slot('secondary', p.secondary), slot('bottom', p.bottom), p.children);
+export const SettingsPageTemplate = (p: any) =>
+  React.createElement('div', { 'data-template': 'settings' },
+    React.createElement('header', { 'data-slot': 'header' }, React.createElement('h1', null, p.title),
+      p.description ? React.createElement('p', null, p.description) : null, slot('primary-action', p.primaryAction)),
+    React.createElement('nav', { 'data-slot': 'sections', role: 'tablist' }, (p.sections ?? []).map((s: any) =>
+      React.createElement('button', { key: s.id, role: 'tab', 'aria-selected': s.id === p.activeSection, onClick: () => p.onSectionChange?.(s.id) }, s.label))),
+    React.createElement('main', { 'data-slot': 'main' }, p.children));
+export const SettingsCard = (p: any) =>
+  React.createElement('section', null, p.title ? React.createElement('h2', null, p.title) : null, p.children);
