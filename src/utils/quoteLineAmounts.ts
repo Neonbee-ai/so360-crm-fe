@@ -8,35 +8,45 @@ const toNumber = (value: unknown): number => {
 };
 
 /**
- * Task a171957e: a quote line's "Amount" — Qty × Unit Price after the line
- * discount, before tax (the convention Zoho, QuickBooks and Odoo use, and what
- * Accounting stores as an invoice line's net amount). Tax is only added in the
- * totals block, so the final payable figure appears once, in the last Total.
+ * Task a171957e: a quote line's "Amount" — Qty × Unit Price only. The line
+ * discount and tax are shown once each, in the totals block (Discount, Tax),
+ * so neither is duplicated on the line and the final payable figure appears
+ * only in the last Total.
  *
  * Deliberately ignores the persisted `line_total`: crm-be stores it after
  * discount and tax, and it still feeds sales orders and invoices unchanged.
  */
 export function quoteLinePreTaxAmount(line: AmountLine): number {
-    const gross = toNumber(line.quantity) * toNumber(line.unit_price);
-    return gross * (1 - toNumber(line.discount_percent) / 100);
+    return toNumber(line.quantity) * toNumber(line.unit_price);
+}
+
+/** The line's discount, in money (Amount × Disc %). */
+export function quoteLineDiscount(line: AmountLine): number {
+    return quoteLinePreTaxAmount(line) * (toNumber(line.discount_percent) / 100);
 }
 
 /** Tax on a line, charged on its after-discount amount (unchanged rule). */
 export function quoteLineTax(line: AmountLine): number {
-    return quoteLinePreTaxAmount(line) * (toNumber(line.tax_rate) / 100);
+    return (quoteLinePreTaxAmount(line) - quoteLineDiscount(line)) * (toNumber(line.tax_rate) / 100);
 }
 
 /**
- * Totals block for a quote. Subtotal is the sum of the line Amounts (already
- * net of line discounts, so there is no separate Discount row), and Total is
- * Subtotal + Tax — the same figure as the previous Subtotal − Discount + Tax.
+ * Totals block for a quote: Subtotal (sum of line Amounts), Discount, Tax and
+ * Total = Subtotal − Discount + Tax — the same rules as before this task.
  */
-export function quoteTotals(lines: AmountLine[]): { subtotal: number; taxTotal: number; grandTotal: number } {
+export function quoteTotals(lines: AmountLine[]): {
+    subtotal: number;
+    discountTotal: number;
+    taxTotal: number;
+    grandTotal: number;
+} {
     let subtotal = 0;
+    let discountTotal = 0;
     let taxTotal = 0;
     for (const line of lines) {
         subtotal += quoteLinePreTaxAmount(line);
+        discountTotal += quoteLineDiscount(line);
         taxTotal += quoteLineTax(line);
     }
-    return { subtotal, taxTotal, grandTotal: subtotal + taxTotal };
+    return { subtotal, discountTotal, taxTotal, grandTotal: subtotal - discountTotal + taxTotal };
 }

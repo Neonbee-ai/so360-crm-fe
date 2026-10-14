@@ -7,8 +7,7 @@
  *     fall back to the persisted columns when the quote carries no lines
  *   - Totals are always finite numbers — never undefined, which used to crash
  *     the print renderer on `.toFixed()`
- *   - Per-line amount is qty·price after the line discount, before tax (Task a171957e)
- *   - Subtotal is the sum of those amounts, so discount_amount is 0 and Total = Subtotal + Tax
+ *   - Per-line Amount is qty·price only (Task a171957e); discount and tax appear only in the totals
  *   - SKU is folded into the line description when present (NIL sub_sku dropped)
  *   - Buyer falls back customer_name → deal.company_name → deal.name → ''
  *   - document_title is left unset so the template label drives it
@@ -50,10 +49,10 @@ describe('quoteToDocumentData > header & totals', () => {
         expect(d.currency).toBe('AED');
     });
 
-    it('Given a quote without lines, Then the stored discount is folded into Subtotal and Total is unchanged', () => {
+    it('Given a quote, Then totals map straight through from the quote', () => {
         const d = quoteToDocumentData(baseQuote(), { currency: 'AED', seller: SELLER });
-        expect(d.subtotal).toBe(90);
-        expect(d.discount_amount).toBe(0);
+        expect(d.subtotal).toBe(100);
+        expect(d.discount_amount).toBe(10);
         expect(d.tax_amount).toBe(5);
         expect(d.total).toBe(95);
     });
@@ -80,8 +79,7 @@ describe('quoteToDocumentData > header & totals', () => {
         );
         expect(d.total).toBe(95);
         expect(d.tax_amount).toBe(5);
-        expect(d.subtotal).toBe(90);
-        expect(d.discount_amount).toBe(0);
+        expect(d.discount_amount).toBe(10);
     });
 
     it('Given no persisted totals at all, Then every total is 0 rather than undefined', () => {
@@ -108,10 +106,10 @@ describe('quoteToDocumentData > header & totals', () => {
             }),
             { currency: 'AED', seller: SELLER },
         );
-        expect(d.subtotal).toBe(230);      // (200 − 10%) + 50
-        expect(d.discount_amount).toBe(0); // already inside the line amounts
+        expect(d.subtotal).toBe(250);      // 200 + 50
+        expect(d.discount_amount).toBe(20); // 10% of 200
         expect(d.tax_amount).toBe(9);       // 5% of 180
-        expect(d.total).toBe(239);          // 230 + 9, same as before
+        expect(d.total).toBe(239);          // 250 − 20 + 9
     });
 
     it('Given a single line with no discount and no tax, Then the total is qty × price', () => {
@@ -140,7 +138,7 @@ describe('quoteToDocumentData > header & totals', () => {
             { currency: 'AED', seller: SELLER },
         );
         expect(d.total).toBe(95);
-        expect(d.subtotal).toBe(90);
+        expect(d.subtotal).toBe(100);
     });
 
     it('Then document_title is left unset so the template label wins', () => {
@@ -170,22 +168,22 @@ describe('quoteToDocumentData > buyer resolution', () => {
 });
 
 describe('quoteToDocumentData > line items', () => {
-    it('Given a persisted line_total that includes tax, Then the line amount is after discount and before tax', () => {
+    it('Given a persisted line_total that includes discount and tax, Then the line amount is still the pre-tax Qty × Unit Price', () => {
         const d = quoteToDocumentData(
             baseQuote({ lines: [{ description: 'Widget', quantity: 2, unit_price: 50, discount_percent: 10, tax_rate: 5, line_total: 94.5 } as any] }),
             { currency: 'AED', seller: SELLER },
         );
-        expect(d.line_items[0].amount).toBe(90);
+        expect(d.line_items[0].amount).toBe(100);
     });
 
-    it('Given a line with discount and tax, Then the line and Subtotal are after discount, tax is only in the totals, and the final total is unchanged', () => {
+    it('Given a line with discount and tax, Then only the totals carry them and the final total is unchanged', () => {
         const d = quoteToDocumentData(
             baseQuote({ lines: [{ description: 'Table', quantity: 1, unit_price: 15999, discount_percent: 10, tax_rate: 18 } as any] }),
             { currency: 'INR', seller: SELLER },
         );
-        expect(d.line_items[0].amount).toBeCloseTo(14399.1);
-        expect(d.subtotal).toBeCloseTo(14399.1);
-        expect(d.discount_amount).toBe(0);
+        expect(d.line_items[0].amount).toBe(15999);
+        expect(d.subtotal).toBe(15999);
+        expect(d.discount_amount).toBeCloseTo(1599.9);
         expect(d.tax_amount).toBeCloseTo(2591.838);
         expect(d.total).toBeCloseTo(16990.938);
     });

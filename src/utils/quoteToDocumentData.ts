@@ -131,21 +131,18 @@ function lineToDocumentItem(line: QuoteLine): DocumentLineItem {
  * formula exactly, it only guarantees a finite number reaches the renderer.
  */
 function resolveTotals(quote: Quote, lines: QuoteLine[]) {
-    // Task a171957e: line amounts are already net of line discounts, so
-    // Subtotal is their sum and there is no separate Discount row (discount 0).
-    // Total is unchanged: Σ(after-discount) + tax == gross − discount + tax.
+    // Task a171957e: same helper as the Quote page — Subtotal (Σ Qty × Price),
+    // Discount, Tax, and Total = Subtotal − Discount + Tax.
     if (lines.length > 0) {
-        const { subtotal, taxTotal, grandTotal } = quoteTotals(lines);
-        return { subtotal, discount: 0, tax: taxTotal, total: grandTotal };
+        const { subtotal, discountTotal, taxTotal, grandTotal } = quoteTotals(lines);
+        return { subtotal, discount: discountTotal, tax: taxTotal, total: grandTotal };
     }
 
-    // The persisted subtotal is gross, so fold the stored discount into it to
-    // keep the same "Subtotal + Tax = Total" shape as when lines are present.
+    const subtotal = numOr0(quote.subtotal);
     const discount = numOr0(quote.total_discount ?? quote.discount_total);
-    const subtotal = numOr0(quote.subtotal) - discount;
     const tax = numOr0(quote.total_tax ?? quote.tax_total);
     const total = num(quote.total_amount ?? quote.grand_total);
-    return { subtotal, discount: 0, tax, total: total ?? subtotal + tax };
+    return { subtotal, discount, tax, total: total ?? subtotal - discount + tax };
 }
 
 /**

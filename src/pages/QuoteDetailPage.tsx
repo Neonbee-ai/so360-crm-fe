@@ -872,6 +872,10 @@ const QuoteDetailPage = () => {
                                         <span>{formatCurrency(totals.subtotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-slate-400">
+                                        <span>Discount</span>
+                                        <span>-{formatCurrency(totals.discountTotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-400">
                                         <span>Tax</span>
                                         <span>{formatCurrency(totals.taxTotal)}</span>
                                     </div>
