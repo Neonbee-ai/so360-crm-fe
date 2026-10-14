@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, ChevronUp, ChevronDown, ChevronsUpDown, X } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
+import { ListPageTemplate, Pagination, Button } from '@so360/design-system';
 import { Table } from '../components/common/Table';
 import { PartnerStatusOverview } from '../components/partners/PartnerStatusOverview';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
@@ -624,40 +625,34 @@ const PartnersPage = () => {
     ];
 
     return (
-        <div className="p-8" ref={listAnchorRef}>
-            <header className="mb-8 flex items-start justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-fg tracking-tight">Partners</h1>
-                    <p className="text-fg-subtle mt-1">Referral agents, resellers, and dealers who bring in deals</p>
-                </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-medium text-sm transition-colors"
-                >
+        <ListPageTemplate
+            title="Partners"
+            description="Referral agents, resellers, and dealers who bring in deals"
+            primaryAction={
+                <Button onClick={() => setShowCreateModal(true)}>
                     <Plus size={16} />
                     Add Partner
-                </button>
-            </header>
-
-            {/* Status Overview — replaces the old 4-card KPI grid (task 52daf7c7) */}
-            <PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6 bg-surface-sunken p-4 rounded-xl border border-line">
-                <div className="flex-1 min-w-[200px] relative">
+                </Button>
+            }
+            kpis={<PartnerStatusOverview partners={partners} partnerTypes={partnerTypes} />}
+            search={
+                <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
                         placeholder="Search partners by name, email..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                 </div>
+            }
+            filters={
+                <>
                 <select
                     value={typeFilter}
                     onChange={e => setTypeFilter(e.target.value)}
-                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                     <option value="All">All Types</option>
                     {partnerTypes.map(pt => (
@@ -665,12 +660,24 @@ const PartnersPage = () => {
                     ))}
                 </select>
                 {(searchTerm || typeFilter !== 'All') && (
-                    <button onClick={() => { setSearchTerm(''); setTypeFilter('All'); }} className="text-xs text-danger hover:text-danger-300 underline">
+                    <button onClick={() => { setSearchTerm(''); setTypeFilter('All'); }} className="text-xs text-danger hover:text-danger/80 underline">
                         Clear Filters
                     </button>
                 )}
-            </div>
-
+                </>
+            }
+            pagination={filteredPartners.length > 0 ? (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.max(1, totalPages)}
+                    totalItems={filteredPartners.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    showPageSizeSelector={false}
+                />
+            ) : undefined}
+        >
+            <div ref={listAnchorRef}>
             <Table
                 data={paginatedPartners}
                 columns={columns}
@@ -679,18 +686,7 @@ const PartnersPage = () => {
                 emptyMessage={error || 'No partners found. Add a partner to get started.'}
             />
 
-            {filteredPartners.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg">
-                    <span className="text-sm text-fg-subtle">{filteredPartners.length} partners</span>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">First</button>
-                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">Prev</button>
-                        <span className="px-3 py-1 text-fg-subtle text-sm">Page {currentPage} of {Math.max(1, totalPages)}</span>
-                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">Next</button>
-                        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50">Last</button>
-                    </div>
-                </div>
-            )}
+            </div>
 
             {showCreateModal && (
                 <CreatePartnerModal
@@ -699,7 +695,7 @@ const PartnersPage = () => {
                     onCreated={() => { setShowCreateModal(false); fetchData(); }}
                 />
             )}
-        </div>
+        </ListPageTemplate>
     );
 };
 
