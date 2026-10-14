@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal } from '../common/Modal';
+import { FormPageTemplate, Button } from '@so360/design-system';
 import { PartnerSearchDropdown } from '../common/PartnerSearchDropdown';
 import { crmService, settingsApi } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
@@ -71,9 +71,9 @@ const phoneCountLabel = (value: string): string => {
 };
 
 const INPUT_BASE =
-    'w-full bg-bg border px-3 py-2 rounded-lg focus:outline-none focus:ring-2 text-fg placeholder:text-fg-muted';
+    'w-full bg-bg border px-3 py-2 rounded-nb focus:outline-none focus-visible:ring-2 text-fg placeholder:text-fg-muted';
 const inputCls = (hasError: boolean) =>
-    `${INPUT_BASE} ${hasError ? 'border-danger focus:ring-red-500/50' : 'border-slate-800 focus:ring-blue-500/50'}`;
+    `${INPUT_BASE} ${hasError ? 'border-danger focus-visible:ring-danger' : 'border-line focus-visible:ring-focus'}`;
 
 interface CreateLeadModalProps {
     isOpen: boolean;
@@ -268,406 +268,433 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Create New Lead" size="xl">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {isDuplicate && (
-                    <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-warning text-sm">
-                        <AlertCircle size={18} className="shrink-0" />
-                        <p>Potential duplicate detected. A lead with this company name already exists.</p>
-                    </div>
-                )}
-
-                {duplicateLead && (
-                    <DuplicateLeadWarning duplicate={duplicateLead} onCancel={onClose} />
-                )}
-
-                {error && (
-                    <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-danger text-sm" role="alert">
-                        <AlertCircle size={18} className="shrink-0" />
-                        <div>
-                            <p>{error}</p>
-                            {existingRecord && (
-                                <a
-                                    href={`/crm/${existingRecord.type === 'customer' ? 'customers' : 'leads'}/${existingRecord.id}`}
-                                    className="underline text-red-300 hover:text-red-200"
-                                    data-testid="open-existing-record"
-                                >
-                                    Open the existing {existingRecord.type || 'record'} →
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                <div className="space-y-1.5">
-                    <label htmlFor="lead-company-name" className="text-sm font-medium text-fg-subtle">Company Name</label>
-                    <input
-                        id="lead-company-name"
-                        ref={(el) => { fieldRefs.current.company_name = el; }}
-                        type="text"
-                        value={formData.company_name}
-                        onChange={(e) => handleChange('company_name', e.target.value)}
-                        onBlur={(e) => validateField('company_name', e.target.value)}
-                        className={inputCls(!!errors.company_name)}
-                        placeholder="e.g. Acme Corp"
-                        aria-invalid={!!errors.company_name}
-                        aria-describedby={errors.company_name ? 'lead-company-name-error' : undefined}
-                    />
-                    {errors.company_name && (
-                        <p id="lead-company-name-error" className="text-xs text-danger mt-1">{errors.company_name}</p>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label htmlFor="lead-first-name" className="text-sm font-medium text-fg-subtle">First Name <RequiredMark /></label>
-                        <input
-                            id="lead-first-name"
-                            ref={(el) => { fieldRefs.current.first_name = el; }}
-                            type="text"
-                            value={formData.first_name}
-                            onChange={(e) => handleChange('first_name', e.target.value)}
-                            onBlur={(e) => validateField('first_name', e.target.value)}
-                            className={inputCls(!!errors.first_name)}
-                            placeholder="e.g. John"
-                            aria-required="true"
-                            aria-invalid={!!errors.first_name}
-                            aria-describedby={errors.first_name ? 'lead-first-name-error' : undefined}
-                        />
-                        {errors.first_name && (
-                            <p id="lead-first-name-error" className="text-xs text-danger mt-1">{errors.first_name}</p>
-                        )}
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="lead-last-name" className="text-sm font-medium text-fg-subtle">Last Name</label>
-                        <input
-                            id="lead-last-name"
-                            ref={(el) => { fieldRefs.current.last_name = el; }}
-                            type="text"
-                            value={formData.last_name}
-                            onChange={(e) => handleChange('last_name', e.target.value)}
-                            onBlur={(e) => validateField('last_name', e.target.value)}
-                            className={inputCls(!!errors.last_name)}
-                            placeholder="e.g. Doe"
-                            aria-invalid={!!errors.last_name}
-                            aria-describedby={errors.last_name ? 'lead-last-name-error' : undefined}
-                        />
-                        {errors.last_name && (
-                            <p id="lead-last-name-error" className="text-xs text-danger mt-1">{errors.last_name}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label htmlFor="lead-contact-email" className="text-sm font-medium text-fg-subtle">Contact Email <RequiredMark /></label>
-                        <input
-                            id="lead-contact-email"
-                            ref={(el) => { fieldRefs.current.contact_email = el; }}
-                            /* `type="text"` deliberately: the browser's own popup
-                               ("Please enter a part following '@'") pre-empted the
-                               inline message and looked nothing like the rest of
-                               the form. Validation is the app's job here. */
-                            type="text"
-                            inputMode="email"
-                            autoComplete="email"
-                            value={formData.contact_email}
-                            onChange={(e) => handleChange('contact_email', e.target.value)}
-                            // Blur is the point the value is "finished", so an
-                            // empty optional-looking field is reported as a format
-                            // problem only once it holds something.
-                            onBlur={(e) => setErrors(prev => ({ ...prev, contact_email: validateEmail(e.target.value) }))}
-                            className={inputCls(!!emailError)}
-                            placeholder="name@company.com"
-                            aria-required="true"
-                            aria-invalid={!!emailError}
-                            aria-describedby={emailError ? 'lead-contact-email-error' : undefined}
-                        />
-                        {emailError && (
-                            <p id="lead-contact-email-error" className="text-xs text-danger mt-1">{emailError}</p>
-                        )}
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="lead-phone" className="text-sm font-medium text-fg-subtle">
-                            Phone <RequiredMark />
-                            <span className="ml-2 text-xs font-normal text-fg-muted">{phoneCountLabel(formData.phone)}</span>
-                        </label>
-                        <input
-                            id="lead-phone"
-                            ref={(el) => { fieldRefs.current.phone = el; }}
-                            type="tel"
-                            value={formData.phone}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setFormData(prev => ({ ...prev, phone: val }));
-                                setErrors(prev => ({ ...prev, phone: val.trim() ? validatePhone(val) : null }));
-                            }}
-                            onBlur={(e) => validateField('phone', e.target.value)}
-                            className={inputCls(!!phoneError)}
-                            placeholder="+91 98765 43210"
-                            aria-required="true"
-                            aria-invalid={!!phoneError}
-                            aria-describedby={phoneError ? 'lead-phone-error' : undefined}
-                        />
-                        {phoneError && (
-                            <p id="lead-phone-error" className="text-xs text-danger mt-1">{phoneError}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label htmlFor="lead-alt-phone" className="text-sm font-medium text-fg-subtle">
-                            Alt. Phone
-                            <span className="ml-2 text-xs font-normal text-fg-muted">{phoneCountLabel(formData.alt_phone)}</span>
-                        </label>
-                        <input
-                            id="lead-alt-phone"
-                            ref={(el) => { fieldRefs.current.alt_phone = el; }}
-                            type="tel"
-                            value={formData.alt_phone}
-                            onChange={(e) => handleChange('alt_phone', e.target.value)}
-                            onBlur={(e) => validateField('alt_phone', e.target.value)}
-                            className={inputCls(!!errors.alt_phone)}
-                            placeholder="+91 98765 43211"
-                            aria-invalid={!!errors.alt_phone}
-                            aria-describedby={errors.alt_phone ? 'lead-alt-phone-error' : undefined}
-                        />
-                        {errors.alt_phone && (
-                            <p id="lead-alt-phone-error" className="text-xs text-danger mt-1">{errors.alt_phone}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="space-y-1.5">
-                    <label htmlFor="lead-address" className="text-sm font-medium text-fg-subtle">Address</label>
-                    <input
-                        id="lead-address"
-                        ref={(el) => { fieldRefs.current.address = el; }}
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => handleChange('address', e.target.value)}
-                        onBlur={(e) => validateField('address', e.target.value)}
-                        className={inputCls(!!errors.address)}
-                        placeholder="Street / area"
-                        aria-invalid={!!errors.address}
-                        aria-describedby={errors.address ? 'lead-address-error' : undefined}
-                    />
-                    {errors.address && (
-                        <p id="lead-address-error" className="text-xs text-danger mt-1">{errors.address}</p>
-                    )}
-                </div>
-
-                <div className="space-y-1.5">
-                    <label htmlFor="lead-country" className="text-sm font-medium text-fg-subtle">Country</label>
-                    <select
-                        id="lead-country"
-                        value={formData.country}
-                        // Changing country changes what a valid postal code is,
-                        // so a standing error has to be re-judged against the
-                        // new rule rather than left over from the old one.
-                        onChange={(e) => {
-                            const country = e.target.value;
-                            setFormData(prev => ({ ...prev, country }));
-                            setErrors(prev => ({ ...prev, pin_code: validatePostalCode(formData.pin_code, country) }));
-                        }}
-                        className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
-                    >
-                        {countryOptions().map(c => (
-                            <option key={c.code} value={c.code}>{c.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label htmlFor="lead-city" className="text-sm font-medium text-fg-subtle">City</label>
-                        <input
-                            id="lead-city"
-                            ref={(el) => { fieldRefs.current.city = el; }}
-                            type="text"
-                            value={formData.city}
-                            onChange={(e) => handleChange('city', e.target.value)}
-                            onBlur={(e) => validateField('city', e.target.value)}
-                            className={inputCls(!!errors.city)}
-                            placeholder="Bangalore"
-                            aria-invalid={!!errors.city}
-                            aria-describedby={errors.city ? 'lead-city-error' : undefined}
-                        />
-                        {errors.city && (
-                            <p id="lead-city-error" className="text-xs text-danger mt-1">{errors.city}</p>
-                        )}
-                    </div>
-                    <div className="space-y-1.5">
-                        <label htmlFor="lead-pin-code" className="text-sm font-medium text-fg-subtle">
-                            {postalRule.label}
-                            {postalRule.digits && (
-                                <span className="ml-2 text-xs font-normal text-fg-muted">
-                                    {formData.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
-                                </span>
-                            )}
-                            {!postalRule.pattern && (
-                                <span className="ml-2 text-xs font-normal text-fg-muted">not used in {postalRule.name}</span>
-                            )}
-                        </label>
-                        <input
-                            id="lead-pin-code"
-                            ref={(el) => { fieldRefs.current.pin_code = el; }}
-                            type="text"
-                            inputMode={postalRule.numericOnly ? 'numeric' : 'text'}
-                            maxLength={postalRule.maxLength}
-                            value={formData.pin_code}
-                            // Where the country's format is digits-only, a letter is
-                            // never intended — drop it at the keystroke rather than
-                            // reporting it back. Alphanumeric formats (UK, Canada)
-                            // must be left alone.
-                            onChange={(e) => handleChange(
-                                'pin_code',
-                                postalRule.numericOnly
-                                    ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength)
-                                    : e.target.value,
-                            )}
-                            onBlur={(e) => validateField('pin_code', e.target.value)}
-                            className={inputCls(!!errors.pin_code)}
-                            placeholder={postalRule.example}
-                            aria-invalid={!!errors.pin_code}
-                            aria-describedby={errors.pin_code ? 'lead-pin-code-error' : undefined}
-                        />
-                        {errors.pin_code && (
-                            <p id="lead-pin-code-error" className="text-xs text-danger mt-1">{errors.pin_code}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-fg-subtle">Lead Source</label>
-                        <select
-                            value={formData.source}
-                            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
+        isOpen ? (
+        <div className="fixed inset-0 z-[600] overflow-y-auto bg-bg" data-testid="create-lead-form-page">
+            <form onSubmit={handleSubmit}>
+                <FormPageTemplate
+                    title="Create New Lead"
+                    onBack={onClose}
+                    onCancel={onClose}
+                    primaryAction={
+                        <Button
+                            type="submit"
+                            // Disabled — not hidden — until the form is complete and
+                            // valid: the button stays visible so users can see the
+                            // action exists, and Cancel is always reachable.
+                            disabled={isSubmitting || !isFormValid}
+                            aria-disabled={isSubmitting || !isFormValid}
+                            title={!isFormValid ? 'Complete all required fields with valid values to create the lead' : undefined}
                         >
-                            <option value="">— Select source —</option>
-                            {sourceTypes.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                    </div>
+                            {isSubmitting ? 'Creating...' : 'Create Lead'}
+                        </Button>
+                    }
+                    sections={[
+                        {
+                            id: 'contact',
+                            title: 'Contact',
+                            content: (
+                                <>
+                                <div className="md:col-span-2 space-y-3">
+                                                {isDuplicate && (
+                                                    <div className="flex items-start gap-3 p-3 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm">
+                                                        <AlertCircle size={18} className="shrink-0" />
+                                                        <p>Potential duplicate detected. A lead with this company name already exists.</p>
+                                                    </div>
+                                                )}
 
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-fg-subtle">Lead Stage</label>
-                        <select
-                            value={formData.status}
-                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
-                        >
-                            {leadStages.map(stage => (
-                                <option key={stage.id} value={stage.name}>{stage.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                                                {duplicateLead && (
+                                                    <DuplicateLeadWarning duplicate={duplicateLead} onCancel={onClose} />
+                                                )}
 
-                <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-fg-subtle">Referred By</label>
-                    <PartnerSearchDropdown
-                        partners={partners}
-                        value={formData.referred_by}
-                        onChange={(id) => setFormData({ ...formData, referred_by: id })}
-                        placeholder="Search and select partner..."
-                    />
-                </div>
-
-                <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-fg-subtle">Owner</label>
-                    <select
-                        value={formData.owner_id}
-                        onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
-                        className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
-                    >
-                        {users.length === 0 && (
-                            <option value="">Loading...</option>
-                        )}
-                        {users.map(u => (
-                            <option key={u.id} value={u.id}>{u.full_name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {customFieldDefs.length > 0 && (
-                    <div className="pt-4 border-t border-slate-800 space-y-4">
-                        <p className="text-[10px] font-black text-fg-muted uppercase tracking-widest">Additional Details</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            {customFieldDefs.map(field => (
-                                <div key={field.id} className="space-y-1.5">
-                                    <label className="text-sm font-medium text-fg-subtle">{field.label} {field.required && <RequiredMark />}</label>
-                                    {field.type === 'boolean' ? (
-                                        <div className="flex items-center h-10">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.custom_fields[field.id] || false}
-                                                onChange={(e) => setFormData({
-                                                    ...formData,
-                                                    custom_fields: { ...formData.custom_fields, [field.id]: e.target.checked }
-                                                })}
-                                                className="w-4 h-4 rounded bg-bg border-slate-800 text-primary focus:ring-blue-500/50"
-                                            />
-                                        </div>
-                                    ) : field.type === 'SELECT' || field.field_type === 'SELECT' ? (
-                                        <select
-                                            required={field.required}
-                                            value={formData.custom_fields[field.id] || ''}
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
-                                            })}
-                                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg"
-                                        >
-                                            <option value="">— Select —</option>
-                                            {(field.options || []).map((opt: string) => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input
-                                            required={field.required}
-                                            type={field.type === 'number' || field.field_type === 'NUMBER' ? 'number' : field.type === 'date' || field.field_type === 'DATE' ? 'date' : 'text'}
-                                            value={formData.custom_fields[field.id] || ''}
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
-                                            })}
-                                            className="w-full bg-bg border border-slate-800 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-fg placeholder:text-fg-muted"
-                                        />
-                                    )}
+                                                {error && (
+                                                    <div className="flex items-start gap-3 p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm" role="alert">
+                                                        <AlertCircle size={18} className="shrink-0" />
+                                                        <div>
+                                                            <p>{error}</p>
+                                                            {existingRecord && (
+                                                                <a
+                                                                    href={`/crm/${existingRecord.type === 'customer' ? 'customers' : 'leads'}/${existingRecord.id}`}
+                                                                    className="underline text-danger hover:underline"
+                                                                    data-testid="open-existing-record"
+                                                                >
+                                                                    Open the existing {existingRecord.type || 'record'} →
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                                                <div className="space-y-1.5">
+                                                    <label htmlFor="lead-company-name" className="text-sm font-medium text-fg-subtle">Company Name</label>
+                                                    <input
+                                                        id="lead-company-name"
+                                                        ref={(el) => { fieldRefs.current.company_name = el; }}
+                                                        type="text"
+                                                        value={formData.company_name}
+                                                        onChange={(e) => handleChange('company_name', e.target.value)}
+                                                        onBlur={(e) => validateField('company_name', e.target.value)}
+                                                        className={inputCls(!!errors.company_name)}
+                                                        placeholder="e.g. Acme Corp"
+                                                        aria-invalid={!!errors.company_name}
+                                                        aria-describedby={errors.company_name ? 'lead-company-name-error' : undefined}
+                                                    />
+                                                    {errors.company_name && (
+                                                        <p id="lead-company-name-error" className="text-xs text-danger mt-1">{errors.company_name}</p>
+                                                    )}
+                                                </div>
 
-                <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 rounded-lg border border-slate-800 text-fg-subtle hover:bg-surface-raised transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        // Disabled — not hidden — until the form is complete and
-                        // valid: the button stays visible so users can see the
-                        // action exists, and Cancel is always reachable.
-                        disabled={isSubmitting || !isFormValid}
-                        aria-disabled={isSubmitting || !isFormValid}
-                        title={!isFormValid ? 'Complete all required fields with valid values to create the lead' : undefined}
-                        className="px-6 py-2 bg-primary hover:bg-primary text-white rounded-lg font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
-                    >
-                        {isSubmitting ? 'Creating...' : 'Create Lead'}
-                    </button>
-                </div>
+                                                <div className="contents">
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="lead-first-name" className="text-sm font-medium text-fg-subtle">First Name <RequiredMark /></label>
+                                                        <input
+                                                            id="lead-first-name"
+                                                            ref={(el) => { fieldRefs.current.first_name = el; }}
+                                                            type="text"
+                                                            value={formData.first_name}
+                                                            onChange={(e) => handleChange('first_name', e.target.value)}
+                                                            onBlur={(e) => validateField('first_name', e.target.value)}
+                                                            className={inputCls(!!errors.first_name)}
+                                                            placeholder="e.g. John"
+                                                            aria-required="true"
+                                                            aria-invalid={!!errors.first_name}
+                                                            aria-describedby={errors.first_name ? 'lead-first-name-error' : undefined}
+                                                        />
+                                                        {errors.first_name && (
+                                                            <p id="lead-first-name-error" className="text-xs text-danger mt-1">{errors.first_name}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="lead-last-name" className="text-sm font-medium text-fg-subtle">Last Name</label>
+                                                        <input
+                                                            id="lead-last-name"
+                                                            ref={(el) => { fieldRefs.current.last_name = el; }}
+                                                            type="text"
+                                                            value={formData.last_name}
+                                                            onChange={(e) => handleChange('last_name', e.target.value)}
+                                                            onBlur={(e) => validateField('last_name', e.target.value)}
+                                                            className={inputCls(!!errors.last_name)}
+                                                            placeholder="e.g. Doe"
+                                                            aria-invalid={!!errors.last_name}
+                                                            aria-describedby={errors.last_name ? 'lead-last-name-error' : undefined}
+                                                        />
+                                                        {errors.last_name && (
+                                                            <p id="lead-last-name-error" className="text-xs text-danger mt-1">{errors.last_name}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="contents">
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="lead-contact-email" className="text-sm font-medium text-fg-subtle">Contact Email <RequiredMark /></label>
+                                                        <input
+                                                            id="lead-contact-email"
+                                                            ref={(el) => { fieldRefs.current.contact_email = el; }}
+                                                            /* `type="text"` deliberately: the browser's own popup
+                                                               ("Please enter a part following '@'") pre-empted the
+                                                               inline message and looked nothing like the rest of
+                                                               the form. Validation is the app's job here. */
+                                                            type="text"
+                                                            inputMode="email"
+                                                            autoComplete="email"
+                                                            value={formData.contact_email}
+                                                            onChange={(e) => handleChange('contact_email', e.target.value)}
+                                                            // Blur is the point the value is "finished", so an
+                                                            // empty optional-looking field is reported as a format
+                                                            // problem only once it holds something.
+                                                            onBlur={(e) => setErrors(prev => ({ ...prev, contact_email: validateEmail(e.target.value) }))}
+                                                            className={inputCls(!!emailError)}
+                                                            placeholder="name@company.com"
+                                                            aria-required="true"
+                                                            aria-invalid={!!emailError}
+                                                            aria-describedby={emailError ? 'lead-contact-email-error' : undefined}
+                                                        />
+                                                        {emailError && (
+                                                            <p id="lead-contact-email-error" className="text-xs text-danger mt-1">{emailError}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="lead-phone" className="text-sm font-medium text-fg-subtle">
+                                                            Phone <RequiredMark />
+                                                            <span className="ml-2 text-xs font-normal text-fg-muted">{phoneCountLabel(formData.phone)}</span>
+                                                        </label>
+                                                        <input
+                                                            id="lead-phone"
+                                                            ref={(el) => { fieldRefs.current.phone = el; }}
+                                                            type="tel"
+                                                            value={formData.phone}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setFormData(prev => ({ ...prev, phone: val }));
+                                                                setErrors(prev => ({ ...prev, phone: val.trim() ? validatePhone(val) : null }));
+                                                            }}
+                                                            onBlur={(e) => validateField('phone', e.target.value)}
+                                                            className={inputCls(!!phoneError)}
+                                                            placeholder="+91 98765 43210"
+                                                            aria-required="true"
+                                                            aria-invalid={!!phoneError}
+                                                            aria-describedby={phoneError ? 'lead-phone-error' : undefined}
+                                                        />
+                                                        {phoneError && (
+                                                            <p id="lead-phone-error" className="text-xs text-danger mt-1">{phoneError}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="contents">
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="lead-alt-phone" className="text-sm font-medium text-fg-subtle">
+                                                            Alt. Phone
+                                                            <span className="ml-2 text-xs font-normal text-fg-muted">{phoneCountLabel(formData.alt_phone)}</span>
+                                                        </label>
+                                                        <input
+                                                            id="lead-alt-phone"
+                                                            ref={(el) => { fieldRefs.current.alt_phone = el; }}
+                                                            type="tel"
+                                                            value={formData.alt_phone}
+                                                            onChange={(e) => handleChange('alt_phone', e.target.value)}
+                                                            onBlur={(e) => validateField('alt_phone', e.target.value)}
+                                                            className={inputCls(!!errors.alt_phone)}
+                                                            placeholder="+91 98765 43211"
+                                                            aria-invalid={!!errors.alt_phone}
+                                                            aria-describedby={errors.alt_phone ? 'lead-alt-phone-error' : undefined}
+                                                        />
+                                                        {errors.alt_phone && (
+                                                            <p id="lead-alt-phone-error" className="text-xs text-danger mt-1">{errors.alt_phone}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                </>
+                            ),
+                        },
+                        {
+                            id: 'address',
+                            title: 'Address',
+                            content: (
+                                <>
+                                                <div className="space-y-1.5 md:col-span-2">
+                                                    <label htmlFor="lead-address" className="text-sm font-medium text-fg-subtle">Address</label>
+                                                    <input
+                                                        id="lead-address"
+                                                        ref={(el) => { fieldRefs.current.address = el; }}
+                                                        type="text"
+                                                        value={formData.address}
+                                                        onChange={(e) => handleChange('address', e.target.value)}
+                                                        onBlur={(e) => validateField('address', e.target.value)}
+                                                        className={inputCls(!!errors.address)}
+                                                        placeholder="Street / area"
+                                                        aria-invalid={!!errors.address}
+                                                        aria-describedby={errors.address ? 'lead-address-error' : undefined}
+                                                    />
+                                                    {errors.address && (
+                                                        <p id="lead-address-error" className="text-xs text-danger mt-1">{errors.address}</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-1.5">
+                                                    <label htmlFor="lead-country" className="text-sm font-medium text-fg-subtle">Country</label>
+                                                    <select
+                                                        id="lead-country"
+                                                        value={formData.country}
+                                                        // Changing country changes what a valid postal code is,
+                                                        // so a standing error has to be re-judged against the
+                                                        // new rule rather than left over from the old one.
+                                                        onChange={(e) => {
+                                                            const country = e.target.value;
+                                                            setFormData(prev => ({ ...prev, country }));
+                                                            setErrors(prev => ({ ...prev, pin_code: validatePostalCode(formData.pin_code, country) }));
+                                                        }}
+                                                        className="w-full bg-bg border border-line px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus text-fg"
+                                                    >
+                                                        {countryOptions().map(c => (
+                                                            <option key={c.code} value={c.code}>{c.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div className="contents">
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="lead-city" className="text-sm font-medium text-fg-subtle">City</label>
+                                                        <input
+                                                            id="lead-city"
+                                                            ref={(el) => { fieldRefs.current.city = el; }}
+                                                            type="text"
+                                                            value={formData.city}
+                                                            onChange={(e) => handleChange('city', e.target.value)}
+                                                            onBlur={(e) => validateField('city', e.target.value)}
+                                                            className={inputCls(!!errors.city)}
+                                                            placeholder="Bangalore"
+                                                            aria-invalid={!!errors.city}
+                                                            aria-describedby={errors.city ? 'lead-city-error' : undefined}
+                                                        />
+                                                        {errors.city && (
+                                                            <p id="lead-city-error" className="text-xs text-danger mt-1">{errors.city}</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="lead-pin-code" className="text-sm font-medium text-fg-subtle">
+                                                            {postalRule.label}
+                                                            {postalRule.digits && (
+                                                                <span className="ml-2 text-xs font-normal text-fg-muted">
+                                                                    {formData.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
+                                                                </span>
+                                                            )}
+                                                            {!postalRule.pattern && (
+                                                                <span className="ml-2 text-xs font-normal text-fg-muted">not used in {postalRule.name}</span>
+                                                            )}
+                                                        </label>
+                                                        <input
+                                                            id="lead-pin-code"
+                                                            ref={(el) => { fieldRefs.current.pin_code = el; }}
+                                                            type="text"
+                                                            inputMode={postalRule.numericOnly ? 'numeric' : 'text'}
+                                                            maxLength={postalRule.maxLength}
+                                                            value={formData.pin_code}
+                                                            // Where the country's format is digits-only, a letter is
+                                                            // never intended — drop it at the keystroke rather than
+                                                            // reporting it back. Alphanumeric formats (UK, Canada)
+                                                            // must be left alone.
+                                                            onChange={(e) => handleChange(
+                                                                'pin_code',
+                                                                postalRule.numericOnly
+                                                                    ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength)
+                                                                    : e.target.value,
+                                                            )}
+                                                            onBlur={(e) => validateField('pin_code', e.target.value)}
+                                                            className={inputCls(!!errors.pin_code)}
+                                                            placeholder={postalRule.example}
+                                                            aria-invalid={!!errors.pin_code}
+                                                            aria-describedby={errors.pin_code ? 'lead-pin-code-error' : undefined}
+                                                        />
+                                                        {errors.pin_code && (
+                                                            <p id="lead-pin-code-error" className="text-xs text-danger mt-1">{errors.pin_code}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                </>
+                            ),
+                        },
+                        {
+                            id: 'assignment',
+                            title: 'Assignment',
+                            content: (
+                                <>
+                                                <div className="contents">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-sm font-medium text-fg-subtle">Lead Source</label>
+                                                        <select
+                                                            value={formData.source}
+                                                            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                                                            className="w-full bg-bg border border-line px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus text-fg"
+                                                        >
+                                                            <option value="">— Select source —</option>
+                                                            {sourceTypes.map(opt => (
+                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-sm font-medium text-fg-subtle">Lead Stage</label>
+                                                        <select
+                                                            value={formData.status}
+                                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                                            className="w-full bg-bg border border-line px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus text-fg"
+                                                        >
+                                                            {leadStages.map(stage => (
+                                                                <option key={stage.id} value={stage.name}>{stage.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-medium text-fg-subtle">Referred By</label>
+                                                    <PartnerSearchDropdown
+                                                        partners={partners}
+                                                        value={formData.referred_by}
+                                                        onChange={(id) => setFormData({ ...formData, referred_by: id })}
+                                                        placeholder="Search and select partner..."
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-1.5">
+                                                    <label className="text-sm font-medium text-fg-subtle">Owner</label>
+                                                    <select
+                                                        value={formData.owner_id}
+                                                        onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
+                                                        className="w-full bg-bg border border-line px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus text-fg"
+                                                    >
+                                                        {users.length === 0 && (
+                                                            <option value="">Loading...</option>
+                                                        )}
+                                                        {users.map(u => (
+                                                            <option key={u.id} value={u.id}>{u.full_name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                </>
+                            ),
+                        },
+                        ...(customFieldDefs.length > 0
+                            ? [{
+                                id: 'custom',
+                                title: 'Additional Details',
+                                content: (
+                                    <>
+                                                            <div className="contents">
+                                                                {customFieldDefs.map(field => (
+                                                                    <div key={field.id} className="space-y-1.5">
+                                                                        <label className="text-sm font-medium text-fg-subtle">{field.label} {field.required && <RequiredMark />}</label>
+                                                                        {field.type === 'boolean' ? (
+                                                                            <div className="flex items-center h-10">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={formData.custom_fields[field.id] || false}
+                                                                                    onChange={(e) => setFormData({
+                                                                                        ...formData,
+                                                                                        custom_fields: { ...formData.custom_fields, [field.id]: e.target.checked }
+                                                                                    })}
+                                                                                    className="w-4 h-4 rounded bg-bg border-line text-primary focus-visible:ring-focus"
+                                                                                />
+                                                                            </div>
+                                                                        ) : field.type === 'SELECT' || field.field_type === 'SELECT' ? (
+                                                                            <select
+                                                                                required={field.required}
+                                                                                value={formData.custom_fields[field.id] || ''}
+                                                                                onChange={(e) => setFormData({
+                                                                                    ...formData,
+                                                                                    custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
+                                                                                })}
+                                                                                className="w-full bg-bg border border-line px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus text-fg"
+                                                                            >
+                                                                                <option value="">— Select —</option>
+                                                                                {(field.options || []).map((opt: string) => (
+                                                                                    <option key={opt} value={opt}>{opt}</option>
+                                                                                ))}
+                                                                            </select>
+                                                                        ) : (
+                                                                            <input
+                                                                                required={field.required}
+                                                                                type={field.type === 'number' || field.field_type === 'NUMBER' ? 'number' : field.type === 'date' || field.field_type === 'DATE' ? 'date' : 'text'}
+                                                                                value={formData.custom_fields[field.id] || ''}
+                                                                                onChange={(e) => setFormData({
+                                                                                    ...formData,
+                                                                                    custom_fields: { ...formData.custom_fields, [field.id]: e.target.value }
+                                                                                })}
+                                                                                className="w-full bg-bg border border-line px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus text-fg placeholder:text-fg-muted"
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                    </>
+                                ),
+                            }]
+                            : []),
+                    ]}
+                />
             </form>
-        </Modal>
+        </div>
+        ) : null
     );
 };
