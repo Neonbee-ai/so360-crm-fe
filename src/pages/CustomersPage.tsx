@@ -5,6 +5,7 @@ import { Search, Globe, Smartphone, ShoppingCart, UserPlus, ChevronUp, ChevronDo
 import { useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { crmService } from '../services/crmService';
+import { ListPageTemplate, Pagination } from '@so360/design-system';
 import { Table } from '../components/common/Table';
 import { SummaryMetricChips } from '../components/common/SummaryMetricChips';
 
@@ -328,15 +329,11 @@ const CustomersPage = () => {
     ];
 
     return (
-        <div className="p-8" ref={listAnchorRef}>
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold text-fg tracking-tight">Customers</h1>
-                <p className="text-fg-subtle mt-1">Customers from Storefront, POS, guest checkout, and promoted leads</p>
-            </header>
-
-            {/* Summary chips — gated by feature flags; standardized with Leads & Accounts */}
+        <ListPageTemplate
+            title="Customers"
+            description="Customers from Storefront, POS, guest checkout, and promoted leads"
+            kpis={
             <SummaryMetricChips
-                className="mb-6"
                 chips={[
                     { key: 'total', label: 'Total', count: stats.total || 0, active: channelFilter === 'All' && categoryFilter === 'All', onClick: () => { setChannelFilter('All'); setCategoryFilter('All'); } },
                     ...(showModelSplit ? [
@@ -355,29 +352,31 @@ const CustomersPage = () => {
                     ] : []),
                 ]}
             />
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-6 bg-surface-sunken p-4 rounded-xl border border-line">
-                {activeSegmentName && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
-                        <Tag size={12} />
-                        Segment: {activeSegmentName}
-                    </span>
-                )}
-                <div className="flex-1 min-w-[200px] relative">
+            }
+            search={
+                <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none" size={16} />
                     <input
                         type="text"
                         placeholder="Search customers by name, email, phone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="h-nb-control-md w-full rounded-nb border border-line bg-surface pl-10 pr-4 text-nb-body text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                 </div>
+            }
+            filters={
+                <>
+                {activeSegmentName && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
+                        <Tag size={12} />
+                        Segment: {activeSegmentName}
+                    </span>
+                )}
                 <select
                     value={channelFilter}
                     onChange={(e) => setChannelFilter(e.target.value)}
-                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                     <option value="All">All Channels</option>
                     <option value="storefront_web">Web</option>
@@ -388,7 +387,7 @@ const CustomersPage = () => {
                 <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="bg-bg border border-line text-fg-subtle px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                     <option value="All">All Categories</option>
                     <option value="b2b">B2B</option>
@@ -402,16 +401,29 @@ const CustomersPage = () => {
                             setCategoryFilter('All');
                             navigate('/crm/customers');
                         }}
-                        className="text-xs text-danger hover:text-danger-300 underline"
+                        className="text-xs text-danger hover:text-danger/80 underline"
                     >
                         Clear Filters
                     </button>
                 )}
-            </div>
-
+                </>
+            }
+            pagination={sandboxLimitedCustomers.length > 0 ? (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages || 1}
+                    totalItems={sandboxLimitedCustomers.length}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+                />
+            ) : undefined}
+        >
+            <div ref={listAnchorRef}>
             {/* Sandbox limit notice */}
             {isSandboxMode && isLimited(filteredCustomers.length) && (
-                <div className="mb-4 px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-warning text-sm flex items-center gap-2">
+                <div className="mb-4 px-4 py-2.5 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm flex items-center gap-2">
                     <span className="font-semibold">Sandbox mode:</span>
                     showing {sandboxEntryLimit} of {filteredCustomers.length} customers — full list visible in production.
                 </div>
@@ -426,32 +438,8 @@ const CustomersPage = () => {
                 emptyMessage={error || 'No customers found. Customers appear here when they register via Storefront, POS, guest checkout, or are promoted from Leads.'}
             />
 
-            {/* Pagination */}
-            {sandboxLimitedCustomers.length > 0 && (
-                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-surface-sunken border border-line rounded-lg">
-                    <div className="flex items-center gap-2 text-sm text-fg-subtle">
-                        <span>Show</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            className="bg-surface-raised border border-line rounded px-2 py-1 text-fg"
-                        >
-                            {[10, 25, 50, 100].map((size) => (
-                                <option key={size} value={size}>{size}</option>
-                            ))}
-                        </select>
-                        <span>of {sandboxLimitedCustomers.length} customers</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">First</button>
-                        <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
-                        <span className="px-3 py-1 text-fg-subtle">Page {currentPage} of {totalPages}</span>
-                        <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
-                        <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="px-3 py-1 bg-surface-raised border border-line rounded text-fg-subtle hover:bg-line disabled:opacity-50 disabled:cursor-not-allowed">Last</button>
-                    </div>
-                </div>
-            )}
-        </div>
+            </div>
+        </ListPageTemplate>
     );
 };
 
