@@ -6,6 +6,7 @@ import { useBusinessSettings } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Heart, Mail, Tag, ChevronRight } from 'lucide-react';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -84,12 +85,11 @@ const MarketingOverviewPage: React.FC = () => {
   const inactive = Array.isArray(data?.inactive?.data) ? data.inactive.data : [];
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">CRM Marketing Overview</h1>
-        <p className="text-fg-subtle">DailyStore marketing and customer intelligence in CRM.</p>
-      </div>
-      <MarketingStorePicker storeId={storeId} onChange={applyStore} />
+    <DashboardPageTemplate
+      title="CRM Marketing Overview"
+      description="DailyStore marketing and customer intelligence in CRM."
+      filters={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
+    >
 
       {!storeId && <p className="text-warning text-sm">Select a store to load insights.</p>}
       {loading && <p className="text-fg-subtle">Loading...</p>}
@@ -108,9 +108,9 @@ const MarketingOverviewPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Link to="/crm/marketing/reviews" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/reviews" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-warning">
+                <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
                   <MessageSquare size={16} />
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Customer Reviews</span>
@@ -121,9 +121,9 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/wishlist" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/wishlist" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-danger">
+                <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center text-danger">
                   <Heart size={16} />
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Wishlist Feed</span>
@@ -134,9 +134,9 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/newsletter" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/newsletter" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                   <Mail size={16} />
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Newsletter Audience</span>
@@ -147,9 +147,9 @@ const MarketingOverviewPage: React.FC = () => {
               </div>
             </Link>
 
-            <Link to="/crm/marketing/coupons" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-blue-500/50 hover:bg-surface-high transition-all group">
+            <Link to="/crm/marketing/coupons" className="bg-surface-sunken border border-line rounded-xl p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-success">
+                <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success">
                   <Tag size={16} />
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest text-fg-subtle">Discount Coupons</span>
@@ -218,7 +218,7 @@ const MarketingOverviewPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-fg-subtle font-medium">Purchases</span>
-                  <span className="text-blue-400 font-bold">{data.funnel?.funnel?.purchases || 0}</span>
+                  <span className="text-primary font-bold">{data.funnel?.funnel?.purchases || 0}</span>
                 </div>
               </div>
             </div>
@@ -237,7 +237,7 @@ const MarketingOverviewPage: React.FC = () => {
                           {name} • {formatters.formatDate(row.created_at)}
                         </p>
                       </div>
-                      <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20 font-bold">
+                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded border border-primary/20 font-bold">
                         Search
                       </span>
                     </div>
@@ -251,7 +251,7 @@ const MarketingOverviewPage: React.FC = () => {
           </div>
         </>
       )}
-    </div>
+    </DashboardPageTemplate>
   );
 };
 

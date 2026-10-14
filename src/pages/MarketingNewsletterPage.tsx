@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, MailX, Search, Mail, Loader2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, useConfirm } from '@so360/design-system';
+import { toast, useConfirm, ListPageTemplate } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -79,12 +79,11 @@ const MarketingNewsletterPage: React.FC = () => {
     : subscribers;
 
   return (
-    <div className="p-8">
+    <ListPageTemplate
+      title="Newsletter Subscribers"
+      description="Manage storefront newsletter audience"
+    >
       {confirmDialog}
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-fg tracking-tight uppercase">Newsletter Subscribers</h1>
-        <p className="text-fg-muted font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage storefront newsletter audience</p>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
@@ -112,7 +111,7 @@ const MarketingNewsletterPage: React.FC = () => {
               {canCreateMarketing && <button
                 onClick={handleAdd}
                 disabled={!email || !storeId}
-                className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
+                className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:hover:bg-primary/90 text-primary-fg font-black text-[10px] uppercase tracking-widest py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
               >
                 <Plus size={14} /> Add Subscriber
               </button>}
@@ -153,13 +152,13 @@ const MarketingNewsletterPage: React.FC = () => {
                   {filtered.map((s) => (
                     <div key={s.id} className="flex items-center justify-between p-4 bg-bg border border-line rounded-xl group hover:border-line transition-all">
                       <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${s.unsubscribed_at ? 'bg-surface border-line text-fg-muted' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${s.unsubscribed_at ? 'bg-surface border-line text-fg-muted' : 'bg-primary/10 border-primary/20 text-primary'}`}>
                           <Mail size={18} />
                         </div>
                         <div>
                           <p className={`text-sm font-bold ${s.unsubscribed_at ? 'text-fg-muted line-through' : 'text-fg'}`}>{s.email}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${s.unsubscribed_at ? 'bg-rose-500/10 text-danger border-rose-500/20' : 'bg-emerald-500/10 text-success border-emerald-500/20'}`}>
+                            <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border ${s.unsubscribed_at ? 'bg-danger/10 text-danger border-danger/20' : 'bg-success/10 text-success border-success/20'}`}>
                               {s.unsubscribed_at ? 'Unsubscribed' : 'Active'}
                             </span>
                             <span className="text-[8px] text-fg-muted font-bold uppercase tracking-widest">• {s.source || 'Manual'}</span>
@@ -171,7 +170,7 @@ const MarketingNewsletterPage: React.FC = () => {
                         {!s.unsubscribed_at && (
                           <button
                             onClick={() => handleUnsubscribe(s.id)}
-                            className="p-2 text-fg-muted hover:text-warning hover:bg-amber-400/10 rounded-lg transition-all"
+                            className="p-2 text-fg-muted hover:text-warning hover:bg-warning/10 rounded-lg transition-all"
                             title="Unsubscribe"
                           >
                             <MailX size={16} />
@@ -179,7 +178,7 @@ const MarketingNewsletterPage: React.FC = () => {
                         )}
                         {canCreateMarketing && <button
                           onClick={() => handleDelete(s.id)}
-                          className="p-2 text-fg-muted hover:text-danger hover:bg-rose-500/10 rounded-lg transition-all"
+                          className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -193,7 +192,7 @@ const MarketingNewsletterPage: React.FC = () => {
           </section>
         </div>
       </div>
-    </div>
+    </ListPageTemplate>
   );
 };
 

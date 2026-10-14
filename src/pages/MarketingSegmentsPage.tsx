@@ -4,7 +4,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings, useShell, useShellBridge } from '@so360/shell-context';
-import { Button } from '@so360/design-system';
+import { Button, ListPageTemplate } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -238,18 +238,17 @@ const MarketingSegmentsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Customer Segments</h1>
-        <p className="text-fg-subtle">Create CRM segments for leads/customers. Storefront segments are read-only.</p>
-      </div>
+    <ListPageTemplate
+      title="Customer Segments"
+      description="Create CRM segments for leads/customers. Storefront segments are read-only."
+    >
 
       <div className="mb-6">
         {dailystoreEnabled && <MarketingStorePicker storeId={storeId} onChange={applyStore} />}
       </div>
       {loading && <p className="text-fg-subtle text-sm mb-4">Loading Storefront insights...</p>}
       {manualLoading && <p className="text-fg-subtle text-sm mb-4">Loading CRM segments...</p>}
-      {error && <p className="text-danger mb-4 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-sm">{error}</p>}
+      {error && <p className="text-danger mb-4 bg-danger/10 border border-danger/20 p-3 rounded-lg text-sm">{error}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-surface-sunken border border-line rounded-xl p-6 lg:col-span-3">
@@ -439,7 +438,7 @@ const MarketingSegmentsPage: React.FC = () => {
               />
             </div>
 
-            {membersLoading && <div className="flex items-center justify-center p-4"><div className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div></div>}
+            {membersLoading && <div className="flex items-center justify-center p-4"><div className="w-6 h-6 border-2 border-primary/30 border-t-indigo-500 rounded-full animate-spin"></div></div>}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-surface p-5 border border-line rounded-xl">
@@ -607,7 +606,7 @@ const MarketingSegmentsPage: React.FC = () => {
           </>
         )}
       </div>
-    </div>
+    </ListPageTemplate>
   );
 };
 

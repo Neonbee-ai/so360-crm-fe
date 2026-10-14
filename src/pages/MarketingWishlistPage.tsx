@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Heart, Package, User, Clock, ExternalLink, Loader2 } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast } from '@so360/design-system';
+import { toast, ListPageTemplate } from '@so360/design-system';
 import { Link } from 'react-router-dom';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -47,11 +47,10 @@ const MarketingWishlistPage: React.FC = () => {
   });
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-fg tracking-tight uppercase">Customer Wishlists</h1>
-        <p className="text-fg-muted font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Track high-intent items across storefront customers</p>
-      </div>
+    <ListPageTemplate
+      title="Customer Wishlists"
+      description="Track high-intent items across storefront customers"
+    >
 
       <div className="grid grid-cols-1 gap-8">
         <section className="bg-surface border border-line rounded-2xl p-6">
@@ -111,13 +110,13 @@ const MarketingWishlistPage: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex justify-between items-start mb-1">
                           <p className="text-sm font-black text-fg truncate uppercase tracking-tight">{item.items?.name || 'Unknown Item'}</p>
-                          <Heart size={12} className="text-danger fill-rose-500/20" />
+                          <Heart size={12} className="text-danger fill-danger/20" />
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <User className="w-3 h-3 text-fg-muted" />
                             {crmLeadId ? (
-                              <Link to={`/crm/leads/${crmLeadId}`} className="text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1 truncate">
+                              <Link to={`/crm/leads/${crmLeadId}`} className="text-[10px] font-black text-primary hover:text-primary uppercase tracking-widest flex items-center gap-1 truncate">
                                 {customerName} <ExternalLink size={8} />
                               </Link>
                             ) : (
@@ -138,7 +137,7 @@ const MarketingWishlistPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ListPageTemplate>
   );
 };
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Star, Package, User, Clock, ShieldCheck, ExternalLink, MessageSquare, Loader2, Filter } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast } from '@so360/design-system';
+import { toast, ListPageTemplate } from '@so360/design-system';
 import { Link } from 'react-router-dom';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -55,11 +55,10 @@ const MarketingReviewsPage: React.FC = () => {
   });
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-fg tracking-tight uppercase">Customer Reviews</h1>
-        <p className="text-fg-muted font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Monitor and moderate storefront product feedback</p>
-      </div>
+    <ListPageTemplate
+      title="Customer Reviews"
+      description="Monitor and moderate storefront product feedback"
+    >
 
       <div className="grid grid-cols-1 gap-8">
         <section className="bg-surface border border-line rounded-2xl p-6">
@@ -88,7 +87,7 @@ const MarketingReviewsPage: React.FC = () => {
                   <button
                     key={s}
                     onClick={() => setStatusFilter(s)}
-                    className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === s ? 'bg-primary text-white shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${statusFilter === s ? 'bg-primary text-primary-fg shadow-lg' : 'text-fg-muted hover:text-fg-subtle'}`}
                   >
                     {s}
                   </button>
@@ -128,7 +127,7 @@ const MarketingReviewsPage: React.FC = () => {
                         </div>
                         <h3 className="text-sm font-black text-fg uppercase tracking-tight">{rev.title || 'Untitled Review'}</h3>
                       </div>
-                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded border ${rev.is_approved ? 'bg-emerald-500/10 text-success border-emerald-500/20' : 'bg-amber-500/10 text-warning border-amber-500/20'}`}>
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded border ${rev.is_approved ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-warning border-warning/20'}`}>
                         {rev.is_approved ? 'Approved' : 'Pending Approval'}
                       </span>
                     </div>
@@ -142,7 +141,7 @@ const MarketingReviewsPage: React.FC = () => {
                         <User className="w-3 h-3 text-fg-muted" />
                         <span className="text-[10px] font-black text-fg-muted uppercase tracking-widest">By</span>
                         {crmLeadId ? (
-                          <Link to={`/crm/leads/${crmLeadId}`} className="text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest flex items-center gap-1">
+                          <Link to={`/crm/leads/${crmLeadId}`} className="text-[10px] font-black text-primary hover:text-primary uppercase tracking-widest flex items-center gap-1">
                             {customerName} <ExternalLink size={10} />
                           </Link>
                         ) : (
@@ -178,7 +177,7 @@ const MarketingReviewsPage: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </ListPageTemplate>
   );
 };
 

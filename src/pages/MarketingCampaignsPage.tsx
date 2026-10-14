@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, mapCampaign } from './marketing/marketingMappers';
-import { Button } from '@so360/design-system';
+import { Button, ListPageTemplate } from '@so360/design-system';
 import CampaignTemplateEditor from '../components/CampaignTemplateEditor';
 import { useShellBridge } from '@so360/shell-context';
 
@@ -72,22 +72,16 @@ const MarketingCampaignsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-fg mb-2">Campaigns</h1>
-          <p className="text-fg-subtle">Create, send, and manage marketing campaigns from CRM.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <MarketingStorePicker storeId={storeId} onChange={applyStore} />
-          {canCreateMarketing && <Button
-            variant="primary"
-            onClick={() => setShowCreate((v) => !v)}
-          >
-            {showCreate ? 'Close Form' : 'New Campaign'}
-          </Button>}
-        </div>
-      </div>
+    <ListPageTemplate
+      title="Campaigns"
+      description="Create, send, and manage marketing campaigns from CRM."
+      primaryAction={canCreateMarketing ? (
+        <Button variant="primary" onClick={() => setShowCreate((v) => !v)}>
+          {showCreate ? 'Close Form' : 'New Campaign'}
+        </Button>
+      ) : undefined}
+      filters={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
+    >
 
       {showCreate && (
         <div className="bg-surface-sunken border border-line rounded-xl p-6 mb-8">
@@ -170,11 +164,11 @@ const MarketingCampaignsPage: React.FC = () => {
                   <td className="px-4 py-3">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-medium ${row.status === 'sent'
-                        ? 'bg-emerald-500/10 text-success'
+                        ? 'bg-success/10 text-success'
                         : row.status === 'paused'
-                          ? 'bg-amber-500/10 text-warning'
+                          ? 'bg-warning/10 text-warning'
                           : row.status === 'sending'
-                            ? 'bg-blue-500/10 text-blue-400'
+                            ? 'bg-primary/10 text-primary'
                             : 'bg-surface-raised text-fg-subtle'
                         }`}
                     >
@@ -237,7 +231,7 @@ const MarketingCampaignsPage: React.FC = () => {
           </table>
         </div>
       </div>
-    </div>
+    </ListPageTemplate>
   );
 };
 

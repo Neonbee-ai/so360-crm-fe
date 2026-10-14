@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Percent, Clock } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, useConfirm } from '@so360/design-system';
+import { toast, useConfirm, ListPageTemplate, Button } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
@@ -144,20 +144,16 @@ const MarketingCouponsPage: React.FC = () => {
     : coupons;
 
   return (
-    <div className="p-8">
+    <ListPageTemplate
+      title="Discount Coupons"
+      description="Manage promotional codes and offers"
+      primaryAction={canCreateMarketing ? (
+        <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => { resetForm(); setShowForm(true); }}>
+          Create Coupon
+        </Button>
+      ) : undefined}
+    >
       {confirmDialog}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-fg tracking-tight uppercase">Discount Coupons</h1>
-          <p className="text-fg-muted font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Manage promotional codes and offers</p>
-        </div>
-        {canCreateMarketing && <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
-        >
-          <Plus size={16} /> Create Coupon
-        </button>}
-      </div>
 
       <div className="grid grid-cols-1 gap-8">
         <section className="bg-surface border border-line rounded-2xl p-4">
@@ -178,7 +174,7 @@ const MarketingCouponsPage: React.FC = () => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="w-full bg-bg border border-line text-fg pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Search by coupon code..."
               />
             </div>
@@ -186,9 +182,9 @@ const MarketingCouponsPage: React.FC = () => {
         </section>
 
         {showForm && (
-          <section className="bg-surface border border-blue-500/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
-            <div className="p-6 border-b border-line flex justify-between items-center bg-blue-500/5">
-              <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
+          <section className="bg-surface border border-primary/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
+            <div className="p-6 border-b border-line flex justify-between items-center bg-primary/5">
+              <h3 className="text-[10px] font-black text-primary uppercase tracking-widest">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
               <button onClick={() => setShowForm(false)} className="text-fg-muted hover:text-fg transition-colors">
                 <X size={20} />
               </button>
@@ -303,7 +299,7 @@ const MarketingCouponsPage: React.FC = () => {
                 <button 
                   onClick={handleSave} 
                   disabled={saving} 
-                  className="bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
+                  className="bg-primary hover:bg-primary/90 text-primary-fg font-black text-[10px] uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Coupon' : 'Create Coupon'}
@@ -352,7 +348,7 @@ const MarketingCouponsPage: React.FC = () => {
                     <tr key={coupon.id} className="group hover:bg-surface-high transition-all">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${coupon.is_active ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-surface-raised border-line text-fg-muted'}`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${coupon.is_active ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-surface-raised border-line text-fg-muted'}`}>
                             <Tag size={18} />
                           </div>
                           <div>
@@ -396,13 +392,13 @@ const MarketingCouponsPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           {canCreateMarketing && <button
                             onClick={() => handleEdit(coupon)}
-                            className="p-2 text-fg-muted hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                            className="p-2 text-fg-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                           >
                             <Pencil size={16} />
                           </button>}
                           {canCreateMarketing && <button
                             onClick={() => handleDelete(coupon)}
-                            className="p-2 text-fg-muted hover:text-danger hover:bg-rose-400/10 rounded-lg transition-all"
+                            className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
                           >
                             <Trash2 size={16} />
                           </button>}
@@ -416,7 +412,7 @@ const MarketingCouponsPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </ListPageTemplate>
   );
 };
 

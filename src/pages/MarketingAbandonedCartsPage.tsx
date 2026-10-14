@@ -4,7 +4,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney, mapAbandonedCart } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
-import { Button } from '@so360/design-system';
+import { Button, ListPageTemplate } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -58,12 +58,11 @@ const MarketingAbandonedCartsPage: React.FC = () => {
   }, [stats, currencyCode, locale]);
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-fg mb-2">Abandoned Carts</h1>
-        <p className="text-fg-subtle">Managed from CRM, sourced from Storefront.</p>
-      </div>
-      <MarketingStorePicker storeId={storeId} onChange={applyStore} />
+    <ListPageTemplate
+      title="Abandoned Carts"
+      description="Managed from CRM, sourced from Storefront."
+      filters={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
+    >
 
       <div className="flex items-center gap-3 mb-6 bg-surface-sunken p-3 rounded-xl border border-line w-fit">
         <label className="text-fg-subtle text-sm font-medium">Status Filter</label>
@@ -118,11 +117,11 @@ const MarketingAbandonedCartsPage: React.FC = () => {
                   <td className="px-4 py-3">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-medium ${row.status === 'recovered'
-                        ? 'bg-emerald-500/10 text-success'
+                        ? 'bg-success/10 text-success'
                         : row.status === 'pending'
-                          ? 'bg-amber-500/10 text-warning'
+                          ? 'bg-warning/10 text-warning'
                           : row.status === 'email_sent'
-                            ? 'bg-blue-500/10 text-blue-400'
+                            ? 'bg-primary/10 text-primary'
                             : 'bg-surface-raised text-fg-subtle'
                         }`}
                     >
@@ -174,7 +173,7 @@ const MarketingAbandonedCartsPage: React.FC = () => {
           </table>
         </div>
       </div>
-    </div>
+    </ListPageTemplate>
   );
 };
 
