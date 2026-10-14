@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { EmptyState, Panel, formatPct, formatValue } from './targetUi';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 /**
  * Past-period performance.
@@ -45,14 +46,14 @@ export default function PerformanceHistoryPage() {
   }, [load]);
 
   if (loading) {
-    return <div className="p-6 text-sm text-fg-subtle">Loading history…</div>;
+    return <div className="text-sm text-fg-subtle">Loading history…</div>;
   }
   if (error) {
-    return <div className="p-6 text-sm text-rose-300">{error}</div>;
+    return <div className="text-sm text-danger">{error}</div>;
   }
   if (!data?.periods?.length) {
     return (
-      <div className="p-6">
+      <div>
         <EmptyState message="No completed periods yet. History appears once a target period closes." />
       </div>
     );
@@ -69,10 +70,8 @@ export default function PerformanceHistoryPage() {
   );
 
   return (
-    <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-fg">
-        Performance History
-      </h1>
+    <DashboardPageTemplate title="Performance History">
+    <div className="space-y-5">
 
       <Panel title="By period">
         <div className="overflow-x-auto">
@@ -140,5 +139,6 @@ export default function PerformanceHistoryPage() {
         </div>
       </Panel>
     </div>
+    </DashboardPageTemplate>
   );
 }

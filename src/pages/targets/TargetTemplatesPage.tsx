@@ -3,6 +3,7 @@ import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
 import { EmptyState, Panel, PersonPicker } from './targetUi';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 /**
  * Reusable target templates.
@@ -88,15 +89,15 @@ export default function TargetTemplatesPage() {
     taskTypes.find((t) => t.id === id)?.name ?? 'Metric';
 
   if (loading) {
-    return <div className="p-6 text-sm text-fg-subtle">Loading templates…</div>;
+    return <div className="text-sm text-fg-subtle">Loading templates…</div>;
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <h1 className="text-lg font-semibold text-fg">Target Templates</h1>
+    <DashboardPageTemplate title="Target Templates">
+    <div className="space-y-5">
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
-      {notice && <div className="text-sm text-emerald-300">{notice}</div>}
+      {error && <div className="text-sm text-danger">{error}</div>}
+      {notice && <div className="text-sm text-success">{notice}</div>}
 
       {!templates.length ? (
         <EmptyState message="No templates yet. A template captures a role's standard metrics and ramp so a new hire can be set up in one step." />
@@ -212,5 +213,6 @@ export default function TargetTemplatesPage() {
         </Panel>
       )}
     </div>
+    </DashboardPageTemplate>
   );
 }

@@ -9,6 +9,7 @@ import {
   type IncentiveRuleForm,
   type IncentiveRuleType,
 } from './incentiveRule';
+import { DashboardPageTemplate } from '@so360/design-system';
 
 /**
  * Incentive and commission review.
@@ -122,15 +123,13 @@ export default function CompensationPage() {
   };
 
   return (
-    <div className="p-6 space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-fg">Compensation</h1>
-        <div className="mt-1 text-xs text-amber-300">
-          ⚠ For manager review only. No payroll or payment action is taken.
-        </div>
-      </div>
+    <DashboardPageTemplate
+      title="Compensation"
+      meta={<span className="text-xs text-warning">⚠ For manager review only. No payroll or payment action is taken.</span>}
+    >
+    <div className="space-y-5">
 
-      {error && <div className="text-sm text-rose-300">{error}</div>}
+      {error && <div className="text-sm text-danger">{error}</div>}
 
       <Panel title="Calculate">
         <div className="flex flex-wrap items-end gap-3">
@@ -206,7 +205,7 @@ export default function CompensationPage() {
               </tbody>
             </table>
           </div>
-          <div className="mt-3 text-[11px] text-amber-300">
+          <div className="mt-3 text-[11px] text-warning">
             {calc.advisory_notice}
           </div>
         </Panel>
@@ -530,5 +529,6 @@ export default function CompensationPage() {
         </Panel>
       )}
     </div>
+    </DashboardPageTemplate>
   );
 }
