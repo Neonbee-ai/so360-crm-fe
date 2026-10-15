@@ -5,7 +5,7 @@ import {
     AlertCircle, ArrowLeft, Briefcase, Building2, CheckCircle2, ChevronRight, Download,
     ExternalLink, Loader2, Package, UploadCloud, UserCheck, Users,
 } from 'lucide-react';
-import { Button, Select, Grid } from '@so360/design-system';
+import { Button, Select, Grid, FileUpload } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { ImportLeadsWizard } from '../leads/ImportLeadsWizard';
 import { describeImportError } from '../../services/leadImportService';
@@ -203,22 +203,15 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
             {step === 'upload' && (
                 <div className="space-y-3">
                     <p className="text-xs text-fg-subtle">{config.hint}</p>
-                    <label
-                        htmlFor="record-import-file"
-                        className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-xl p-8 text-fg-subtle hover:border-primary cursor-pointer"
-                    >
-                        {busy ? <Loader2 size={24} className="animate-spin" /> : <UploadCloud size={24} />}
-                        <span className="text-sm font-semibold">{busy ? 'Reading file…' : 'Choose a .csv file'}</span>
-                        <span className="text-xs text-fg-muted">First row = column headers · up to 2,000 rows · 5 MB · from Excel use Save As → CSV</span>
-                    </label>
-                    <input
-                        id="record-import-file"
+                    <FileUpload
+                        name="record-import-file"
                         aria-label="Import file"
-                        type="file"
+                        prompt={busy ? 'Reading file…' : 'Choose a .csv file'}
+                        hint="First row = column headers · up to 2,000 rows · 5 MB · from Excel use Save As → CSV"
                         accept={ACCEPTED_CSV_TYPES}
-                        className="sr-only"
                         disabled={busy}
-                        onChange={(e) => readFile(e.target.files?.[0] ?? null)}
+                        value={[]}
+                        onChange={(files) => readFile(files[0] ?? null)}
                     />
                     <div className="flex justify-between">
                         <Button type="button" variant="secondary" onClick={onBack} disabled={busy}>

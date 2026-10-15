@@ -1,4 +1,4 @@
-import { Button, TextField, Select, Card } from '@so360/design-system';
+import { Button, TextField, Select, Drawer } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import { planPeriods } from './planShape';
@@ -117,12 +117,7 @@ export default function EditPlanPanel({
   const periods = planPeriods(plan);
 
   return (
-    <Card
-      title={plan ? `Edit · ${plan.name}` : 'Edit plan'}
-      actions={
-        <Button variant="secondary" size="sm"
-          onClick={onClose}
-        >
+    <Drawer isOpen onClose={onClose} size="lg" title={plan ? `Edit · ${plan.name}` : 'Edit plan'}>
           Close
         </Button>
       }
@@ -265,6 +260,6 @@ export default function EditPlanPanel({
           </div>
         </div>
       )}
-    </Card>
+    </Drawer>
   );
 }

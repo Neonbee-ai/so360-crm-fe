@@ -19,7 +19,7 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
-import { PeopleSelector, ListPageTemplate, SearchInput, Grid, GridItem, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Card , Modal } from '@so360/design-system';
+import { PeopleSelector, ListPageTemplate, SearchInput, Grid, GridItem, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Card , Modal, Drawer } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
@@ -439,9 +439,7 @@ export default function TargetPlansPage() {
       search={<SearchInput value={search} onChange={setSearch} placeholder="Search plans…" />}
       loading={loading}
       primaryAction={canCreatePlan(shell) ? (
-        <Button onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Cancel' : 'New plan'}
-        </Button>
+        <Button onClick={() => setShowForm(true)}>New plan</Button>
       ) : undefined}
     >
     <div className="space-y-5">
@@ -486,7 +484,7 @@ export default function TargetPlansPage() {
       )}
 
       {showForm && (
-        <Card title="New target plan">
+        <Drawer isOpen onClose={() => setShowForm(false)} size="lg" title="New target plan">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-4">
               <div className="grow basis-64">
@@ -638,7 +636,7 @@ export default function TargetPlansPage() {
               </Button>
             </div>
           </div>
-        </Card>
+        </Drawer>
       )}
 
       {loading ? null : !plans.length ? (

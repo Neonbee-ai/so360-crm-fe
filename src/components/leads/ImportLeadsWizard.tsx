@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Button, Select, RadioGroup, DataTable, Grid } from '@so360/design-system';
+import { Button, Select, RadioGroup, DataTable, Grid, FileUpload } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import {
     leadImportService,
@@ -132,22 +132,15 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
                 {step === 'upload' && (
                     <div className="space-y-3">
-                        <label
-                            htmlFor="lead-import-file"
-                            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-line rounded-xl p-8 text-fg-subtle hover:border-primary cursor-pointer"
-                        >
-                            {busy ? <Loader2 size={24} className="animate-spin" /> : <UploadCloud size={24} />}
-                            <span className="text-sm font-semibold">{busy ? 'Reading file…' : 'Choose a .csv or .xlsx file'}</span>
-                            <span className="text-xs text-fg-muted">First row = column headers · up to 5,000 rows · 10 MB</span>
-                        </label>
-                        <input
-                            id="lead-import-file"
+                        <FileUpload
+                            name="lead-import-file"
                             aria-label="Import file"
-                            type="file"
+                            prompt={busy ? 'Reading file…' : 'Choose a .csv or .xlsx file'}
+                            hint="First row = column headers · up to 5,000 rows · 10 MB"
                             accept={ACCEPTED_IMPORT_TYPES}
-                            className="sr-only"
                             disabled={busy}
-                            onChange={(e) => readFile(e.target.files?.[0] ?? null)}
+                            value={[]}
+                            onChange={(files) => readFile(files[0] ?? null)}
                         />
                     </div>
                 )}

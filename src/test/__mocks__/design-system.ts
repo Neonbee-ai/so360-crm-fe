@@ -30,12 +30,14 @@ export const Select = ({ value, onChange, options = [], placeholder, label, hint
 };
 export const Modal = ({ open, onClose, title, description, footer, children, dismissible = true, 'data-testid': testId }: any) =>
   open
-    ? React.createElement('div', { role: 'dialog', 'aria-modal': 'true', 'data-testid': testId },
+    ? React.createElement(React.Fragment, null,
+      React.createElement('div', { 'data-testid': 'modal-overlay', className: 'fixed inset-0 bg-overlay/70', onClick: dismissible ? onClose : undefined }),
+      React.createElement('div', { role: 'dialog', 'aria-modal': 'true', 'data-testid': testId, className: 'relative flex max-h-[90vh] flex-col' },
         React.createElement('h2', null, title),
         description ? React.createElement('div', null, description) : null,
         React.createElement('button', { type: 'button', 'aria-label': 'Close', disabled: !dismissible, onClick: dismissible ? onClose : undefined }, 'x'),
         React.createElement('div', null, children),
-        footer ? React.createElement('div', null, footer) : null)
+        footer ? React.createElement('div', null, footer) : null))
     : null;
 export const Drawer = ({ isOpen, onClose, title, subtitle, footer, toolbar, children, name, 'data-testid': testId }: any) => {
   React.useEffect(() => {
@@ -374,3 +376,5 @@ export { Sparkline } from '@ds-real/components/Sparkline';
 export { TrendIndicator } from '@ds-real/components/TrendIndicator';
 // @ts-ignore -- resolved by the vitest '@ds-real' alias
 export { StatusLegend } from '@ds-real/components/StatusLegend';
+export const FileUpload = ({ name, 'aria-label': ariaLabel, accept, disabled, multiple, onChange, 'data-testid': testId }: any) =>
+  React.createElement('input', { type: 'file', name, 'aria-label': ariaLabel, accept, disabled, multiple, 'data-testid': testId, onChange: (e: any) => onChange?.(Array.from(e.target.files ?? [])) });

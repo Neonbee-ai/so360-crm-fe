@@ -20,7 +20,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, Grid, GridItem } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, FileUpload, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -261,7 +261,7 @@ const LeadDetailPage = () => {
     // view and, where a composer exists, opens/focuses it.
     const workspaceRef = useRef<HTMLDivElement>(null);
     const noteComposerRef = useRef<HTMLDivElement>(null);
-    const documentInputRef = useRef<HTMLInputElement>(null);
+    const documentInputRef = useRef<HTMLDivElement>(null);
 
     const openWorkspaceTab = useCallback((tab: TabType) => {
         setActiveTab(tab);
@@ -439,12 +439,12 @@ const LeadDetailPage = () => {
 
     const getScoreCategory = () => {
         const defaultCategories = [
-            { label: 'Cold',      min_score: 0,   max_score: 30,  color: '#6b7280' },
-            { label: 'Warm',      min_score: 31,  max_score: 60,  color: '#f59e0b' },
-            { label: 'Hot',       min_score: 61,  max_score: 100, color: '#f97316' },
-            { label: 'Qualified', min_score: 101, max_score: null, color: '#22c55e' },
-        ];
-        const cats = scoreCategories.length > 0 ? scoreCategories : defaultCategories;
+            { label: 'Cold',      min_score: 0,   max_score: 30,  color: undefined, tone: 'text-fg-muted bg-surface-raised', bar: 'bg-fg-muted' },
+            { label: 'Warm',      min_score: 31,  max_score: 60,  color: undefined, tone: 'text-warning bg-warning/10', bar: 'bg-warning' },
+            { label: 'Hot',       min_score: 61,  max_score: 100, color: undefined, tone: 'text-danger bg-danger/10', bar: 'bg-danger' },
+            { label: 'Qualified', min_score: 101, max_score: null, color: undefined, tone: 'text-success bg-success/10', bar: 'bg-success' },
+        ] as Array<{ label: string; min_score: number; max_score: number | null; color?: string; tone?: string; bar?: string }>;
+        const cats: Array<{ label: string; min_score: number; max_score: number | null; color?: string; tone?: string; bar?: string }> = scoreCategories.length > 0 ? scoreCategories : defaultCategories;
         return cats.find(c => score >= c.min_score && (c.max_score === null || score <= c.max_score))
             || cats[0];
     };
@@ -874,16 +874,16 @@ const LeadDetailPage = () => {
                                         <span className="text-3xl font-semibold text-fg">{score}</span>
                                         <span className="text-xs text-fg-muted">Score</span>
                                         <span
-                                            className="ml-auto rounded-nb px-2 py-0.5 text-xs font-medium"
-                                            style={{ color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` }}
+                                            className={`ml-auto rounded-nb px-2 py-0.5 text-xs font-medium ${scoreCategory.tone ?? ''}`}
+                                            style={scoreCategory.color ? { color: scoreCategory.color, backgroundColor: `${scoreCategory.color}20` } : undefined}
                                         >
                                             {scoreCategory.label}
                                         </span>
                                     </div>
                                     <div className="mt-nb-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
                                         <div
-                                            className="h-full transition-all"
-                                            style={{ width: `${Math.min(100, (score / 150) * 100)}%`, backgroundColor: scoreCategory.color }}
+                                            className={`h-full transition-all ${scoreCategory.bar ?? ''}`}
+                                            style={{ width: `${Math.min(100, (score / 150) * 100)}%`, ...(scoreCategory.color ? { backgroundColor: scoreCategory.color } : {}) }}
                                         />
                                     </div>
                                     <div className="mt-nb-3 border-t border-line pt-nb-3">
@@ -1024,7 +1024,7 @@ const LeadDetailPage = () => {
                     openWorkspaceTab('documents');
                     // Open the OS file dialog directly rather than only revealing
                     // the tab that contains the (hidden) file input.
-                    window.setTimeout(() => documentInputRef.current?.click(), 350);
+                    window.setTimeout(() => documentInputRef.current?.querySelector<HTMLElement>('[role="button"]')?.click(), 350);
                 }}
                 canAddNote={canAddNote}
                 canSendEmail={canSendEmail}
@@ -1760,39 +1760,36 @@ const LeadDetailPage = () => {
                             )}
 
                             {activeTab === 'documents' && (
-                                <Card title="Documents" actions={
-<label className={`inline-flex items-center gap-nb-2 h-nb-control-md px-nb-3 rounded-nb border border-line text-sm font-medium cursor-pointer transition-colors ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-surface text-fg hover:bg-surface-raised'}`}>
-                                            {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
-                                            {isUploading ? 'Uploading…' : 'Upload document'}
-                                            <input
-                                                ref={documentInputRef}
-                                                type="file"
-                                                className="hidden"
-                                                disabled={isUploading}
-                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.png,.jpg,.jpeg,.svg,.webp,.gif"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file && lead) {
-                                                        setIsUploading(true);
-                                                        try {
-                                                            const newDoc = await crmService.uploadDocument(lead.id, file);
-                                                            setLead({
-                                                                ...lead,
-                                                                documents: [...(lead.documents || []), newDoc]
-                                                            });
-                                                            publishLeadDocumentsChanged(lead.id);
-                                                        } catch (err) {
-                                                            const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
-                                                            toast.error(msg);
-                                                        } finally {
-                                                            setIsUploading(false);
-                                                            e.target.value = '';
-                                                        }
+                                <Card title="Documents">
+                                    <div ref={documentInputRef} className="mb-nb-4">
+                                        <FileUpload
+                                            name="lead-document"
+                                            aria-label="Upload document"
+                                            prompt={isUploading ? 'Uploading…' : 'Upload document'}
+                                            disabled={isUploading}
+                                            value={[]}
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.png,.jpg,.jpeg,.svg,.webp,.gif"
+                                            onChange={async (files) => {
+                                                const file = files[0];
+                                                if (file && lead) {
+                                                    setIsUploading(true);
+                                                    try {
+                                                        const newDoc = await crmService.uploadDocument(lead.id, file);
+                                                        setLead({
+                                                            ...lead,
+                                                            documents: [...(lead.documents || []), newDoc]
+                                                        });
+                                                        publishLeadDocumentsChanged(lead.id);
+                                                    } catch (err) {
+                                                        const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.';
+                                                        toast.error(msg);
+                                                    } finally {
+                                                        setIsUploading(false);
                                                     }
-                                                }}
-                                            />
-                                        </label>
-                                }>
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                     {(!lead.documents || lead.documents.length === 0) ? (
                                         <EmptyState icon={FileIcon} title="No documents attached" description="Centralize proposals, contracts, and requirement docs here." />
                                     ) : (

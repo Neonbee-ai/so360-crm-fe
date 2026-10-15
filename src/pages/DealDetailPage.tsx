@@ -16,7 +16,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem, FileUpload } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
@@ -1157,13 +1157,16 @@ const DealDetailPage = () => {
                             {/* DOCUMENTS TAB */}
                             {activeTab === 'documents' && (
                                 <div className="space-y-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <p className="text-xs font-semibold text-fg-muted">Attachments & Contracts</p>
-                                        <label className={`flex items-center gap-2 px-4 py-2 rounded-nb-lg text-xs font-semibold cursor-pointer transition-all ${isUploading ? 'bg-surface-raised text-fg-muted' : 'bg-primary hover:bg-primary/90 text-fg shadow-lg active:scale-95'}`}>
-                                            {isUploading ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
-                                            {isUploading ? 'Uploading...' : 'Upload File'}
-                                            <input type="file" className="hidden" disabled={isUploading} onChange={async (e) => {
-                                                const file = e.target.files?.[0];
+                                    <div>
+                                        <p className="text-xs font-semibold text-fg-muted mb-nb-3">Attachments & Contracts</p>
+                                        <FileUpload
+                                            name="deal-document"
+                                            aria-label="Upload file"
+                                            prompt={isUploading ? 'Uploading...' : 'Upload File'}
+                                            disabled={isUploading}
+                                            value={[]}
+                                            onChange={async (files) => {
+                                                const file = files[0];
                                                 if (file) {
                                                     setIsUploading(true);
                                                     try {
@@ -1172,8 +1175,8 @@ const DealDetailPage = () => {
                                                         fetchData();
                                                     } finally { setIsUploading(false); }
                                                 }
-                                            }} />
-                                        </label>
+                                            }}
+                                        />
                                     </div>
                                     <Grid gap="md">
                                         {(deal.documents || []).map(doc => (

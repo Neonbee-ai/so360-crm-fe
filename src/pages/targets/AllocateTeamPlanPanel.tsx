@@ -1,4 +1,4 @@
-import { PeopleSelector, Button, TextField, Select, Card } from '@so360/design-system';
+import { PeopleSelector, Button, TextField, Select, Drawer } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import {
@@ -91,12 +91,7 @@ export default function AllocateTeamPlanPanel({
   };
 
   return (
-    <Card
-      title={plan ? `Allocate · ${plan.name}` : 'Allocate'}
-      actions={
-        <Button variant="secondary" size="sm"
-          onClick={onClose}
-        >
+    <Drawer isOpen onClose={onClose} size="lg" title={plan ? `Allocate · ${plan.name}` : 'Allocate'}>
           Close
         </Button>
       }
@@ -220,6 +215,6 @@ export default function AllocateTeamPlanPanel({
           </div>
         </div>
       )}
-    </Card>
+    </Drawer>
   );
 }
