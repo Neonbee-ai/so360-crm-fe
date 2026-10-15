@@ -4,7 +4,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings, useShell, useShellBridge } from '@so360/shell-context';
-import { Button, ListPageTemplate } from '@so360/design-system';
+import { Button, ListPageTemplate, Menu } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -247,10 +247,10 @@ const MarketingSegmentsPage: React.FC = () => {
       {manualLoading && <p className="text-fg-subtle text-sm mb-4">Loading CRM segments...</p>}
       {error && <p className="text-danger mb-4 bg-danger/10 border border-danger/20 p-3 rounded-lg text-sm">{error}</p>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-surface-sunken border border-line rounded-xl p-6 lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-nb-4">
+        <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-fg font-bold text-lg">Segments</h3>
+            <h3 className="text-sm font-semibold text-fg">Segments</h3>
             {canCreateMarketing && <Button
               variant="primary"
               onClick={() => setShowCreate((v) => !v)}
@@ -260,7 +260,7 @@ const MarketingSegmentsPage: React.FC = () => {
           </div>
 
           {showCreate && (
-            <div className="mb-6 border border-line rounded-xl p-5 bg-surface-sunken">
+            <div className="mb-nb-4 rounded-nb p-nb-4 bg-surface-sunken">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
@@ -367,21 +367,24 @@ const MarketingSegmentsPage: React.FC = () => {
                           >
                             Customers
                           </Button>
-                          {canCreateMarketing && <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={async () => {
-                              await crmService.deleteCustomerSegment(row.id);
-                              setManualSegments((prev) => prev.filter((seg) => seg.id !== row.id));
-                              if (activeSegment?.id === row.id) {
-                                setActiveSegment(null);
-                                setSegmentMembers([]);
-                                setMemberCandidates([]);
-                              }
-                            }}
-                          >
-                            Delete
-                          </Button>}
+                          {canCreateMarketing && (
+                            <Menu
+                              trigger={<Button variant="secondary" size="sm" aria-label="Row actions">&#8942;</Button>}
+                              items={[{
+                                label: 'Delete',
+                                danger: true,
+                                onSelect: async () => {
+                                  await crmService.deleteCustomerSegment(row.id);
+                                  setManualSegments((prev) => prev.filter((seg) => seg.id !== row.id));
+                                  if (activeSegment?.id === row.id) {
+                                    setActiveSegment(null);
+                                    setSegmentMembers([]);
+                                    setMemberCandidates([]);
+                                  }
+                                },
+                              }]}
+                            />
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -396,9 +399,9 @@ const MarketingSegmentsPage: React.FC = () => {
         </div>
 
         {activeSegment && (
-          <div className="bg-surface-sunken border border-line rounded-xl p-6 lg:col-span-3">
+          <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
             <div className="flex items-center justify-between mb-5 gap-2 flex-wrap pb-4 border-b border-line">
-              <h3 className="text-fg font-bold text-lg">
+              <h3 className="text-sm font-semibold text-fg">
                 Manage Members: <span className="text-fg-subtle font-normal">{activeSegment.name}</span>
               </h3>
               <Button
@@ -435,11 +438,11 @@ const MarketingSegmentsPage: React.FC = () => {
               />
             </div>
 
-            {membersLoading && <div className="flex items-center justify-center p-4"><div className="w-6 h-6 border-2 border-primary/30 border-t-indigo-500 rounded-full animate-spin"></div></div>}
+            {membersLoading && <div className="flex items-center justify-center p-4"><div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div></div>}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-surface p-5 border border-line rounded-xl">
-                <h4 className="text-fg font-bold mb-4">Current Members</h4>
+                <h4 className="text-sm font-semibold text-fg mb-nb-3">Current Members</h4>
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                   {segmentMembers.map((member: any) => {
                     const row = member.lead_record;
@@ -450,7 +453,7 @@ const MarketingSegmentsPage: React.FC = () => {
                           <p className="text-fg-muted text-xs truncate mt-0.5">{row?.email || row?.phone || '-'}</p>
                         </div>
                         <Button
-                          variant="danger"
+                          variant="secondary"
                           size="sm"
                           className="shrink-0"
                           onClick={() => removeMember(row?.id || member.id)}
@@ -465,7 +468,7 @@ const MarketingSegmentsPage: React.FC = () => {
               </div>
 
               <div className="bg-surface p-5 border border-line rounded-xl">
-                <h4 className="text-fg font-bold mb-4">Add {memberType === 'customer' ? 'Customers' : 'Leads'}</h4>
+                <h4 className="text-sm font-semibold text-fg mb-nb-3">Add {memberType === 'customer' ? 'Customers' : 'Leads'}</h4>
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                   {memberCandidates.map((candidate: any) => {
                     const id = candidate.id;
@@ -497,8 +500,8 @@ const MarketingSegmentsPage: React.FC = () => {
 
         {dailystoreEnabled && (
           <>
-            <div className="bg-surface-sunken border border-line rounded-xl p-6 h-fit">
-              <h3 className="text-fg font-bold mb-4">Storefront Summary</h3>
+            <div className="bg-surface border border-line rounded-nb-lg p-nb-4 h-fit">
+              <h3 className="text-sm font-semibold text-fg mb-nb-3">Storefront Summary</h3>
               <div className="space-y-2">
                 {mappedSummarySegments.map((entry) => (
                   <button
@@ -519,8 +522,8 @@ const MarketingSegmentsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface-sunken border border-line rounded-xl p-6 lg:col-span-2">
-              <h3 className="text-fg font-bold mb-4">Top Buyers</h3>
+            <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-2">
+              <h3 className="text-sm font-semibold text-fg mb-nb-3">Top Buyers</h3>
               <div className="bg-surface rounded-xl border border-line overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
@@ -559,8 +562,8 @@ const MarketingSegmentsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-surface-sunken border border-line rounded-xl p-6 lg:col-span-3">
-              <h3 className="text-fg font-bold mb-4">Inactive Customers</h3>
+            <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
+              <h3 className="text-sm font-semibold text-fg mb-nb-3">Inactive Customers</h3>
               <div className="bg-surface rounded-xl border border-line overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">

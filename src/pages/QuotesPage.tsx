@@ -13,9 +13,10 @@ import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { Table } from '../components/common/Table';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination, Menu } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
+import ExportMenu from '../components/ExportMenu';
 import { crmPortalRoot } from '../utils/crmScope';
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
@@ -170,9 +171,6 @@ const QuotesPage = () => {
     const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
 
     // Row action popup menu state
-    const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
-    const [actionMenuStyle, setActionMenuStyle] = useState<React.CSSProperties>({});
-    const actionMenuRef = useRef<HTMLDivElement>(null);
 
     // View mode: 'all' = All Quotes, 'approvals' = Approvals Inbox
     const [activeTab, setActiveTab] = usePersistedState<'all' | 'approvals'>('quotes.activeTab', 'all');
@@ -249,17 +247,6 @@ const QuotesPage = () => {
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [statusDropdownOpen]);
-
-    useEffect(() => {
-        if (!activeActionMenuId) return;
-        const handler = (e: MouseEvent) => {
-            if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
-                setActiveActionMenuId(null);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [activeActionMenuId]);
 
     // Reset pagination when filter changes
     useEffect(() => {
@@ -554,23 +541,6 @@ const QuotesPage = () => {
     const formatCurrency = (value: number) => formatters.formatCurrency(value);
     const formatDate = (dateString: string) => formatters.formatDate(dateString, { year: 'numeric', month: 'short', day: 'numeric' });
 
-    // Open row action menu portal
-    const handleOpenActionMenu = (e: React.MouseEvent<HTMLButtonElement>, quoteId: string) => {
-        e.stopPropagation();
-        if (activeActionMenuId === quoteId) {
-            setActiveActionMenuId(null);
-            return;
-        }
-        const rect = e.currentTarget.getBoundingClientRect();
-        setActionMenuStyle({
-            position: 'fixed',
-            top: rect.bottom + 4,
-            right: window.innerWidth - rect.right,
-            zIndex: 9999,
-        });
-        setActiveActionMenuId(quoteId);
-    };
-
     const columns = [
         {
             key: 'select',
@@ -623,7 +593,7 @@ const QuotesPage = () => {
                         {quote.title || 'Untitled Quote'}
                     </span>
                     {quote.customer_reference && (
-                        <span className="text-[11px] text-fg-muted truncate" title={`Buyer Reference: ${quote.customer_reference}`}>
+                        <span className="text-xs text-fg-muted truncate" title={`Buyer Reference: ${quote.customer_reference}`}>
                             Ref: {quote.customer_reference}
                         </span>
                     )}
@@ -642,7 +612,7 @@ const QuotesPage = () => {
                             {customer.name}
                         </span>
                         {customer.isLead && (
-                            <span className="shrink-0 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-success/10 text-success border border-success/20">
+                            <span className="shrink-0 px-1.5 py-0.2 rounded text-xs font-semibold bg-success/10 text-success border border-success/20">
                                 Lead
                             </span>
                         )}
@@ -701,7 +671,7 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-danger/80 line-through text-xs">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold  bg-danger/10 text-danger border border-danger/20">
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold  bg-danger/10 text-danger border border-danger/20">
                                 Expired
                             </span>
                         </div>
@@ -711,7 +681,7 @@ const QuotesPage = () => {
                     return (
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="text-warning text-xs font-medium">{formatDate(quote.valid_until)}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold  bg-warning/10 text-warning border border-warning/20">
+                            <span className="px-1.5 py-0.5 rounded text-xs font-bold  bg-warning/10 text-warning border border-warning/20">
                                 Soon
                             </span>
                         </div>
@@ -733,33 +703,35 @@ const QuotesPage = () => {
             key: 'actions',
             header: <span className="sr-only">Actions</span>,
             accessor: (quote: Quote) => (
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); openQuote(quote.id); }}
-                        className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded transition-colors"
-                        title="View"
-                    >
-                        <FileText className="w-4 h-4" />
-                    </button>
-                    {canCreateQuote && quote.status === 'draft' && (
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(quote.id); }}
-                            className="p-1.5 text-fg-subtle hover:text-danger hover:bg-surface-raised rounded transition-colors"
-                            title="Delete"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={(e) => handleOpenActionMenu(e, quote.id)}
-                        className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded transition-colors"
-                        title="More actions"
-                    >
-                        <MoreVertical className="w-4 h-4" />
-                    </button>
+                <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                    <Menu
+                        name={`quote-actions-${quote.id}`}
+                        trigger={
+                            <button
+                                type="button"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
+                                title="More actions"
+                                aria-label="More actions"
+                            >
+                                <MoreVertical className="w-4 h-4" />
+                            </button>
+                        }
+                        items={[
+                            { label: 'View Quote Details', icon: <Eye className="w-3.5 h-3.5" />, onSelect: () => openQuote(quote.id) },
+                            ...(quote.status === 'draft' ? [
+                                { label: 'Edit Quote', icon: <FileText className="w-3.5 h-3.5" />, onSelect: () => navigate(`/crm/quotes/${quote.id}?edit=true`) },
+                                { label: 'Submit for Approval', icon: <Send className="w-3.5 h-3.5" />, onSelect: () => handleStatusAction(quote, 'submit') },
+                            ] : []),
+                            ...(quote.status === 'approved' ? [
+                                { label: 'Convert to Order', icon: <Check className="w-3.5 h-3.5" />, onSelect: () => handleStatusAction(quote, 'convert') },
+                            ] : []),
+                            { label: 'Print Quote', icon: <Printer className="w-3.5 h-3.5" />, onSelect: () => handlePrintQuote(quote) },
+                            ...(canCreateQuote && quote.status === 'draft' ? [
+                                { label: 'Delete Quote', icon: <Trash2 className="w-3.5 h-3.5" />, danger: true, onSelect: () => setShowDeleteConfirm(quote.id) },
+                            ] : []),
+                        ]}
+                    />
                 </div>
             ),
             className: 'w-24 text-right pr-4',
@@ -865,10 +837,10 @@ const QuotesPage = () => {
                             return (
                                 <span
                                     key={o.id || idx}
-                                    className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border ${badgeColor}`}
+                                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${badgeColor}`}
                                 >
                                     <span>{o.approver_name || o.approver_email || 'Approver'}</span>
-                                    <span className="text-[9px] uppercase font-bold opacity-75">({o.status})</span>
+                                    <span className="text-xs font-bold opacity-75">({o.status})</span>
                                 </span>
                             );
                         })}
@@ -948,9 +920,6 @@ const QuotesPage = () => {
     };
 
     // Find quote for the active 3-dots action menu
-    const activeMenuQuote = useMemo(() => {
-        return quotes.find(q => q.id === activeActionMenuId);
-    }, [quotes, activeActionMenuId]);
 
     const searchNode = (
                             <div className="relative w-full wc-medium:w-72">
@@ -1126,9 +1095,14 @@ const QuotesPage = () => {
             title="Quotes"
             description="Manage sales quotes and proposals"
             headerSecondaryActions={[
-                <Button key="export" variant="secondary" onClick={handleExportSelected} title="Export quotes to CSV"><Download className="w-4 h-4" />
-                    Export
-                </Button>,
+                <ExportMenu
+                    key="export"
+                    label="Export quotes"
+                    onExport={async (format) => {
+                        if (format !== 'csv') throw new Error('Only CSV export is available for quotes.');
+                        handleExportSelected();
+                    }}
+                />,
             ]}
             primaryAction={canCreateQuote ? (
                 <QuotaGate
@@ -1201,7 +1175,7 @@ const QuotesPage = () => {
                                 <Icon className={`w-4 h-4 ${stat.color} shrink-0 opacity-80`} />
                             </div>
                             <div className="mt-2 flex items-baseline justify-between">
-                                <span className="text-2xl font-bold text-fg font-mono tracking-tight">
+                                <span className="text-2xl font-bold text-fg font-mono">
                                     {stat.count}
                                 </span>
                                 {isActive && (
@@ -1305,7 +1279,7 @@ const QuotesPage = () => {
                                     }`}
                                 >
                                     <span>{subtab.label}</span>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
                                         approvalsStatusFilter === subtab.id
                                             ? 'bg-primary-hover text-primary'
                                             : 'bg-surface-raised text-fg-subtle'
@@ -1350,86 +1324,6 @@ const QuotesPage = () => {
             )}
 
             {/* Portal Row Action Menu (⋮) */}
-            {activeActionMenuId && activeMenuQuote && createPortal(
-                <div
-                    ref={actionMenuRef}
-                    style={actionMenuStyle}
-                    className="w-52 bg-surface border border-line rounded-lg shadow-2xl overflow-hidden py-1 text-xs animate-in fade-in duration-100"
-                >
-                    <div className="px-3 py-1.5 border-b border-line text-[11px] text-fg-subtle font-mono font-semibold">
-                        {activeMenuQuote.quote_number}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => { setActiveActionMenuId(null); openQuote(activeMenuQuote.id); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
-                    >
-                        <Eye className="w-3.5 h-3.5 text-fg-subtle" />
-                        View Quote Details
-                    </button>
-                    {activeMenuQuote.status === 'draft' && (
-                        <button
-                            type="button"
-                            onClick={() => { setActiveActionMenuId(null); navigate(`/crm/quotes/${activeMenuQuote.id}?edit=true`); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
-                        >
-                            <FileText className="w-3.5 h-3.5 text-fg-subtle" />
-                            Edit Quote
-                        </button>
-                    )}
-                    {activeMenuQuote.status === 'draft' && (
-                        <button
-                            type="button"
-                            onClick={() => { setActiveActionMenuId(null); handleStatusAction(activeMenuQuote, 'submit'); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-warning hover:bg-warning/10 transition-colors text-left"
-                        >
-                            <Send className="w-3.5 h-3.5 text-warning" />
-                            Submit for Approval
-                        </button>
-                    )}
-                    {activeMenuQuote.status === 'approved' && (
-                        <button
-                            type="button"
-                            onClick={() => { setActiveActionMenuId(null); handleStatusAction(activeMenuQuote, 'convert'); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-primary hover:bg-primary/10 transition-colors text-left"
-                        >
-                            <Check className="w-3.5 h-3.5 text-primary" />
-                            Convert to Order
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => { setActiveActionMenuId(null); handlePrintQuote(activeMenuQuote); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
-                    >
-                        <Printer className="w-3.5 h-3.5 text-fg-subtle" />
-                        Print Quote
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => { setActiveActionMenuId(null); openQuote(activeMenuQuote.id); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-fg hover:bg-surface-raised hover:text-fg transition-colors text-left"
-                    >
-                        <Send className="w-3.5 h-3.5 text-fg-subtle" />
-                        Email to Customer
-                    </button>
-                    {canCreateQuote && activeMenuQuote.status === 'draft' && (
-                        <>
-                            <div className="my-1 border-t border-line" />
-                            <button
-                                type="button"
-                                onClick={() => { setActiveActionMenuId(null); setShowDeleteConfirm(activeMenuQuote.id); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-danger hover:bg-danger/10 transition-colors text-left"
-                            >
-                                <Trash2 className="w-3.5 h-3.5 text-danger" />
-                                Delete Quote
-                            </button>
-                        </>
-                    )}
-                </div>,
-                crmPortalRoot()
-            )}
-
             {/* Create Quote Modal */}
             {isCreateModalOpen && createPortal(
                 <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">

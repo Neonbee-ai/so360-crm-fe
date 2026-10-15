@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
+import { Card, EmptyState } from '@so360/design-system';
 import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
@@ -64,9 +65,9 @@ const TASK_STATUS_OPTIONS: Array<{ value: Task['status']; label: string }> = [
 
 const TASK_STATUS_STYLES: Record<string, string> = {
   OPEN: 'bg-surface-high text-fg-subtle',
-  IN_PROGRESS: 'bg-blue-500/15 text-blue-400',
-  DONE: 'bg-emerald-500/15 text-success',
-  ON_HOLD: 'bg-orange-500/15 text-warning',
+  IN_PROGRESS: 'bg-info/15 text-primary',
+  DONE: 'bg-success/15 text-success',
+  ON_HOLD: 'bg-warning/15 text-warning',
   CANCELLED: 'bg-surface-raised text-fg-muted',
 };
 
@@ -86,24 +87,24 @@ function overdueDays(task: Task): number | null {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  New: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  Contacted: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-  Qualified: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  'Proposal Sent': 'bg-amber-500/10 text-warning border-amber-500/20',
-  Negotiation: 'bg-orange-500/10 text-warning border-orange-500/20',
-  Converted: 'bg-emerald-500/10 text-success border-emerald-500/20',
-  Lost: 'bg-rose-500/10 text-danger border-rose-500/20',
+  New: 'bg-info/10 text-primary border-primary/20',
+  Contacted: 'bg-info/10 text-info border-info/20',
+  Qualified: 'bg-primary/10 text-primary border-primary/20',
+  'Proposal Sent': 'bg-warning/10 text-warning border-warning/20',
+  Negotiation: 'bg-warning/10 text-warning border-warning/20',
+  Converted: 'bg-success/10 text-success border-success/20',
+  Lost: 'bg-danger/10 text-danger border-danger/20',
 };
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   CALL: <Phone size={14} className="text-success" />,
-  MEETING: <Calendar size={14} className="text-blue-400" />,
+  MEETING: <Calendar size={14} className="text-primary" />,
   EMAIL: <Mail size={14} className="text-warning" />,
   NOTE: <FileText size={14} className="text-fg-subtle" />,
-  STATUS_CHANGE: <TrendingUp size={14} className="text-purple-400" />,
-  OWNER_CHANGE: <User size={14} className="text-cyan-400" />,
+  STATUS_CHANGE: <TrendingUp size={14} className="text-primary" />,
+  OWNER_CHANGE: <User size={14} className="text-info" />,
   PROFILE_UPDATE: <Star size={14} className="text-warning" />,
-  TASK: <CheckSquare size={14} className="text-indigo-400" />,
+  TASK: <CheckSquare size={14} className="text-primary" />,
 };
 
 function initials(name: string) {
@@ -132,7 +133,7 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
     <div className="flex items-start gap-3 py-2.5 border-b border-line last:border-0">
       <div className="mt-0.5 text-fg-muted shrink-0">{icon}</div>
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-fg-muted mb-0.5">
+        <div className="text-xs font-semibold text-fg-muted mb-0.5">
           {label}
         </div>
         <div className="text-sm text-fg break-words">{value}</div>
@@ -338,7 +339,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
             <div className="px-5 pt-5 pb-4 border-b border-line">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary text-primary-fg flex items-center justify-center text-sm font-bold shrink-0">
                     {contactName ? initials(contactName) : initials(lead.company_name)}
                   </div>
                   <div className="min-w-0">
@@ -405,7 +406,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               )}
               <button
                 onClick={() => onNavigate(lead)}
-                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
               >
                 View full profile
                 <ChevronRight size={13} />
@@ -418,9 +419,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`shrink-0 px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  className={`shrink-0 px-3.5 py-2.5 text-xs font-semibold transition-colors ${
                     tab === t.key
-                      ? 'text-blue-400 border-b-2 border-primary -mb-px'
+                      ? 'text-primary border-b-2 border-primary -mb-px'
                       : 'text-fg-muted hover:text-fg-subtle'
                   }`}
                 >
@@ -434,10 +435,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               {/* Overview */}
               {tab === 'overview' && (
                 <div className="px-5 py-1">
-                  <div className="mb-4 mt-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-fg-muted mb-2">
-                      Contact Information
-                    </p>
+                  <Card title="Contact Information" className="mb-3">
                     {lead.contact_email && (
                       <InfoRow
                         icon={<Mail size={14} />}
@@ -445,7 +443,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                         value={
                           <a
                             href={`mailto:${lead.contact_email}`}
-                            className="text-blue-400 hover:underline"
+                            className="text-primary hover:underline"
                           >
                             {lead.contact_email}
                           </a>
@@ -472,19 +470,16 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                             href={lead.custom_fields.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-400 hover:underline truncate block"
+                            className="text-primary hover:underline truncate block"
                           >
                             {lead.custom_fields.website}
                           </a>
                         }
                       />
                     )}
-                  </div>
+                  </Card>
 
-                  <div className="mb-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-fg-muted mb-2">
-                      Company Information
-                    </p>
+                  <Card title="Company Information" className="mb-3">
                     <InfoRow
                       icon={<Building2 size={14} />}
                       label="Company"
@@ -506,12 +501,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                           .join(', ')}
                       />
                     )}
-                  </div>
+                  </Card>
 
-                  <div className="mb-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-fg-muted mb-2">
-                      Lead Details
-                    </p>
+                  <Card title="Lead Details" className="mb-3">
                     <InfoRow
                       icon={<User size={14} />}
                       label="Owner"
@@ -536,24 +528,21 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                         value={referredByName}
                       />
                     )}
-                  </div>
+                  </Card>
 
                   {/* Merge provenance — resolved to a name and linked, never the
                       raw UUID/ISO pair that used to fall out of the generic dump. */}
                   {mergedInto && (
-                    <div className="mb-4">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-fg-muted mb-2">
-                        Merge History
-                      </p>
+                    <Card title="Merge History" className="mb-3">
                       <div className="flex items-start gap-2 py-1.5">
                         <span className="text-fg-muted mt-0.5"><ShieldCheck size={14} /></span>
                         <div className="min-w-0">
-                          <p className="text-[11px] text-fg-muted">Merged Into</p>
+                          <p className="text-xs text-fg-muted">Merged Into</p>
                           {mergedIntoLead ? (
                             <button
                               type="button"
                               onClick={() => onNavigate(mergedIntoLead)}
-                              className="text-sm font-semibold text-blue-400 hover:text-blue-300 hover:underline text-left transition-colors"
+                              className="text-sm font-semibold text-primary hover:text-primary hover:underline text-left transition-colors"
                             >
                               {mergedIntoName}
                             </button>
@@ -565,19 +554,16 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                       {mergedAtDisplay !== EMPTY_VALUE && (
                         <InfoRow icon={<Clock size={14} />} label="Merged At" value={mergedAtDisplay} />
                       )}
-                    </div>
+                    </Card>
                   )}
 
                   {/* Custom fields */}
                   {additionalFields.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-fg-muted mb-2">
-                        Additional Fields
-                      </p>
+                    <Card title="Additional Fields" className="mb-3">
                       {additionalFields.map(({ key, label, value }) => (
                         <InfoRow key={key} icon={<Star size={14} />} label={label} value={value} />
                       ))}
-                    </div>
+                    </Card>
                   )}
                 </div>
               )}
@@ -585,43 +571,32 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               {/* Timeline */}
               {tab === 'timeline' && (
                 <div className="px-5 py-4">
+<Card title="Activity">
                   {timeline.loading ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
                     </div>
                   ) : timeline.error ? (
                     /* A failed load must never masquerade as "no activity". */
-                    <div className="flex flex-col items-center py-10 text-fg-muted">
-                      <Activity size={28} className="mb-2 opacity-40" />
-                      <p className="text-sm text-center">Couldn't load activity.</p>
-                      <button
-                        onClick={() => timeline.refetch()}
-                        className="mt-3 px-3 py-1.5 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
-                      >
-                        Retry
-                      </button>
-                    </div>
+                    <EmptyState icon={Activity} title="Couldn't load activity." action={{ label: 'Retry', onClick: () => timeline.refetch() }} />
                   ) : timeline.events.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 text-fg-muted">
-                      <Activity size={32} className="mb-2 opacity-40" />
-                      <p className="text-sm">No activity recorded yet</p>
-                    </div>
+                    <EmptyState icon={Activity} title="No activity recorded yet" />
                   ) : (
                     <>
                       <div className="relative">
                         <div className="absolute left-4 top-0 bottom-0 w-px bg-surface-raised" />
-                        <div className="space-y-4 pl-10">
+                        <div className="divide-y divide-line pl-10">
                           {timeline.events.map((event) => (
                             <div key={event.id} className="relative">
                               <div className="absolute -left-6 w-5 h-5 rounded-full bg-surface border border-line flex items-center justify-center">
                                 <Activity size={10} className="text-fg-subtle" />
                               </div>
-                              <div className="bg-surface-sunken border border-line rounded-lg p-3">
+                              <div className="py-3">
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                   <span className="text-xs font-semibold text-fg-subtle">
                                     {event.title}
                                   </span>
-                                  <span className="text-[10px] text-fg-muted shrink-0">
+                                  <span className="text-xs text-fg-muted shrink-0">
                                     {formatters.formatDate(event.created_at)}
                                   </span>
                                 </div>
@@ -632,12 +607,12 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                 )}
                                 <div className="flex items-center gap-2 mt-1">
                                   {event.module && (
-                                    <span className="text-[10px] uppercase tracking-wider text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
+                                    <span className="text-xs text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
                                       {event.module}
                                     </span>
                                   )}
                                   {event.actor_name && (
-                                    <span className="text-[10px] text-fg-muted">by {event.actor_name}</span>
+                                    <span className="text-xs text-fg-muted">by {event.actor_name}</span>
                                   )}
                                 </div>
                               </div>
@@ -650,7 +625,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                       {timeline.hasMore && (
                         <button
                           onClick={() => onNavigate(lead)}
-                          className="w-full mt-4 py-2 rounded-lg text-xs font-medium text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 transition-colors"
+                          className="w-full mt-4 py-2 rounded-lg text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
                         >
                           View full history
                         </button>
@@ -663,22 +638,20 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               {/* Sales — linked deals */}
               {tab === 'sales' && (
                 <div className="px-5 py-4">
+<Card title="Deals">
                   {dealsLoading || deals === null ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
                     </div>
                   ) : deals.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 text-fg-muted">
-                      <Briefcase size={32} className="mb-2 opacity-40" />
-                      <p className="text-sm">No deals linked to this lead</p>
-                    </div>
+                    <EmptyState icon={Briefcase} title="No deals linked to this lead" />
                   ) : (
-                    <div className="space-y-2.5">
+                    <div className="divide-y divide-line">
                       {deals.map((deal) => (
                         <button
                           key={deal.id}
                           onClick={() => onNavigateDeal(deal)}
-                          className="w-full text-left bg-surface-sunken border border-line rounded-lg p-3 hover:border-line transition-colors"
+                          className="w-full text-left py-3 hover:bg-surface-sunken transition-colors"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm font-semibold text-fg truncate">{deal.name}</span>
@@ -687,41 +660,39 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] uppercase tracking-wider text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
+                            <span className="text-xs text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
                               {deal.stage}
                             </span>
                             {deal.expected_close_date && (
-                              <span className="text-[10px] text-fg-muted">
+                              <span className="text-xs text-fg-muted">
                                 Close {formatters.formatDate(deal.expected_close_date)}
                               </span>
                             )}
                             {deal.invoice_number && (
-                              <span className="text-[10px] text-fg-muted">· {deal.invoice_number}</span>
+                              <span className="text-xs text-fg-muted">· {deal.invoice_number}</span>
                             )}
                           </div>
                         </button>
                       ))}
                     </div>
                   )}
-                </div>
+                </Card></div>
               )}
 
               {/* Tasks — linked tasks */}
               {tab === 'tasks' && (
                 <div className="px-5 py-4">
+<Card title="Tasks">
                   {tasksLoading || tasks === null ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
                     </div>
                   ) : tasks.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 text-fg-muted">
-                      <CheckSquare size={32} className="mb-2 opacity-40" />
-                      <p className="text-sm">No tasks for this lead</p>
-                    </div>
+                    <EmptyState icon={CheckSquare} title="No tasks for this lead" />
                   ) : (
-                    <div className="space-y-2">
+                    <div className="divide-y divide-line">
                       {taskError && (
-                        <p className="text-[11px] text-danger mb-1">{taskError}</p>
+                        <p className="text-xs text-danger mb-1">{taskError}</p>
                       )}
                       {tasks.map((task) => {
                         const overdue = overdueDays(task);
@@ -737,9 +708,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                 onNavigateTask(task);
                               }
                             }}
-                            className={`flex items-start gap-2.5 bg-surface-sunken border rounded-lg p-3 transition-colors ${
-                              overdue ? 'border-rose-500/40' : 'border-line'
-                            } ${onNavigateTask ? 'cursor-pointer hover:border-line' : ''}`}
+                            className={`flex items-start gap-2.5 py-3 transition-colors ${onNavigateTask ? 'cursor-pointer hover:bg-surface-sunken' : ''}`}
                           >
                             <CheckSquare
                               size={14}
@@ -751,7 +720,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                   {task.title}
                                 </p>
                                 {overdue !== null && (
-                                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-danger bg-rose-500/10 border border-rose-500/20 rounded px-1.5 py-0.5">
+                                  <span className="shrink-0 text-xs font-semibold text-danger bg-danger/10 border border-danger/20 rounded px-1.5 py-0.5">
                                     Overdue {overdue}d
                                   </span>
                                 )}
@@ -759,24 +728,24 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
 
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 {task.due_date && (
-                                  <span className={`text-[11px] ${overdue !== null ? 'text-danger' : 'text-fg-subtle'}`}>
+                                  <span className={`text-xs ${overdue !== null ? 'text-danger' : 'text-fg-subtle'}`}>
                                     Due {formatters.formatDate(task.due_date)}
                                   </span>
                                 )}
                                 {task.priority && (
-                                  <span className={`text-[10px] font-semibold uppercase tracking-wider rounded px-1.5 py-0.5 ${
+                                  <span className={`text-xs font-semibold rounded px-1.5 py-0.5 ${
                                     TASK_PRIORITY_STYLES[task.priority] ?? 'bg-surface-raised text-fg-subtle'
                                   }`}>
                                     {task.priority}
                                   </span>
                                 )}
                                 {task.type && (
-                                  <span className="text-[10px] uppercase tracking-wider text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
+                                  <span className="text-xs text-fg-muted bg-surface-raised rounded px-1.5 py-0.5">
                                     {String(task.type).replace(/_/g, ' ').toLowerCase()}
                                   </span>
                                 )}
                                 {task.assigned_to?.full_name && (
-                                  <span className="text-[10px] text-fg-muted">{task.assigned_to.full_name}</span>
+                                  <span className="text-xs text-fg-muted">{task.assigned_to.full_name}</span>
                                 )}
                               </div>
 
@@ -811,7 +780,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                                       setTaskUpdatingId(null);
                                     }
                                   }}
-                                  className={`appearance-none text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded border-0 cursor-pointer focus:outline-none disabled:opacity-50 ${
+                                  className={`appearance-none text-xs font-semibold px-2 py-1 rounded border-0 cursor-pointer focus:outline-none disabled:opacity-50 ${
                                     TASK_STATUS_STYLES[task.status] ?? 'bg-surface-raised text-fg-subtle'
                                   }`}
                                 >
@@ -826,16 +795,13 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                       })}
                     </div>
                   )}
-                </div>
+                </Card></div>
               )}
 
               {/* Marketing — attribution from the lead record (no fetch) */}
               {tab === 'marketing' && (
                 <div className="px-5 py-1">
-                  <div className="mb-4 mt-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-fg-muted mb-2">
-                      Attribution
-                    </p>
+                  <Card title="Attribution" className="mb-3">
                     <InfoRow icon={<Megaphone size={14} />} label="Source" value={sourceLabel || '—'} />
                     {lead.acquisition_source && (
                       <InfoRow icon={<TrendingUp size={14} />} label="Acquisition Source" value={lead.acquisition_source} />
@@ -852,7 +818,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                     {lead.first_order_at && (
                       <InfoRow icon={<Calendar size={14} />} label="First Order" value={formatters.formatDate(lead.first_order_at)} />
                     )}
-                  </div>
+                  </Card>
                   {!lead.acquisition_source && !lead.channel && !lead.custom_fields?.campaign && !lead.referred_by && (
                     <p className="text-xs text-fg-muted px-1">No additional marketing attribution recorded.</p>
                   )}
@@ -862,19 +828,17 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               {/* Audit — system/state-change events */}
               {tab === 'audit' && (
                 <div className="px-5 py-4">
+<Card title="Audit trail">
                   {activitiesLoading || activities === null ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
                     </div>
                   ) : auditActivities.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 text-fg-muted">
-                      <ShieldCheck size={32} className="mb-2 opacity-40" />
-                      <p className="text-sm">No audit events recorded</p>
-                    </div>
+                    <EmptyState icon={ShieldCheck} title="No audit events recorded" />
                   ) : (
-                    <div className="space-y-2">
+                    <div className="divide-y divide-line">
                       {auditActivities.map((activity: ActivityType) => (
-                        <div key={activity.id} className="flex items-start gap-2.5 bg-surface-sunken border border-line rounded-lg p-3">
+                        <div key={activity.id} className="flex items-start gap-2.5 py-3">
                           <div className="mt-0.5 shrink-0">
                             {ACTIVITY_ICONS[activity.type] ?? <Activity size={12} className="text-fg-subtle" />}
                           </div>
@@ -883,7 +847,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                               <span className="text-xs font-semibold text-fg-subtle capitalize">
                                 {activity.type.replace(/_/g, ' ').toLowerCase()}
                               </span>
-                              <span className="text-[10px] text-fg-muted shrink-0">
+                              <span className="text-xs text-fg-muted shrink-0">
                                 {formatters.formatDate(activity.created_at)}
                               </span>
                             </div>
@@ -891,16 +855,16 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                               <p className="text-xs text-fg-subtle mt-0.5">{activity.notes}</p>
                             )}
                             {activity.author && (
-                              <p className="text-[10px] text-fg-muted mt-0.5">by {activity.author.full_name}</p>
+                              <p className="text-xs text-fg-muted mt-0.5">by {activity.author.full_name}</p>
                             )}
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
+                </Card></div>
               )}
-            </div>
+            </Card></div>
 
             {/* Footer */}
             {onDelete && (

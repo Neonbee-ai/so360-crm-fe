@@ -284,7 +284,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                 <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
                     {/* Sticky header */}
                     <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0 rounded-t-3xl">
-                        <h2 className="text-xl font-semibold text-fg tracking-tight flex items-center gap-2">
+                        <h2 className="text-xl font-semibold text-fg flex items-center gap-2">
                             <Briefcase className="text-primary" size={24} />
                             New Deal
                         </h2>
@@ -442,7 +442,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             {/* Sales Rep */}
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-fg-muted">
-                                    Sales Rep <span className="text-fg normal-case font-bold tracking-normal">(optional)</span>
+                                    Sales Rep <span className="text-fg font-bold">(optional)</span>
                                 </label>
                                 {salesReps.length > 8 && (
                                     <div className="relative">
@@ -515,7 +515,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-nb-lg text-xs font-semibold transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+                                className="px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-nb-lg text-xs font-semibold transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
                             >
                                 {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                                 Create Deal

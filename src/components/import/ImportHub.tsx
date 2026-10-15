@@ -188,7 +188,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                         <li
                             key={s.key}
                             aria-current={i === stepIndex ? 'step' : undefined}
-                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-primary text-primary-fg border-primary' : i < stepIndex ? 'text-blue-400 border-blue-500/30' : 'text-fg-muted border-line'}`}
+                            className={`px-2.5 py-1 rounded-full border ${i === stepIndex ? 'bg-primary text-primary-fg border-primary' : i < stepIndex ? 'text-primary border-primary/30' : 'text-fg-muted border-line'}`}
                         >
                             {i + 1}. {s.label}
                         </li>
@@ -229,7 +229,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                         <a
                             href={templateHref(config.fields)}
                             download={`${kind}-import-template.csv`}
-                            className="flex items-center gap-1.5 text-sm font-semibold text-blue-400 hover:text-blue-300"
+                            className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary"
                         >
                             <Download size={14} /> Template
                         </a>
@@ -382,7 +382,7 @@ export const ImportHub: React.FC<Props> = ({ isOpen, onClose, onImported }) => {
                     <p className="text-sm text-fg-subtle mb-3">What are you importing?</p>
                     {options.filter((o) => o.show).map((o) => (
                         <button key={o.key} type="button" className={OPTION_BTN} onClick={() => pick(o.key)}>
-                            <span className="text-blue-400">{o.icon}</span>
+                            <span className="text-primary">{o.icon}</span>
                             <span className="flex-1 min-w-0">
                                 <span className="block text-sm font-semibold text-fg">{o.label}</span>
                                 <span className="block text-xs text-fg-muted">{o.hint}</span>

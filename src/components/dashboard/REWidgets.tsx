@@ -86,7 +86,7 @@ const REWidgetsInner: React.FC = () => {
                         {data.source_performance.slice(0, MAX_ROWS).map((s) => (
                             <li key={s.source} className="flex items-center justify-between gap-2 text-sm">
                                 <span className="text-fg truncate">{s.source}</span>
-                                <span className="text-xs font-bold text-blue-300 whitespace-nowrap" title={`${s.won} won of ${s.leads} leads`}>
+                                <span className="text-xs font-bold text-primary whitespace-nowrap" title={`${s.won} won of ${s.leads} leads`}>
                                     {s.rate}%
                                 </span>
                             </li>
@@ -107,7 +107,7 @@ const REWidgetsInner: React.FC = () => {
                                 <span className="flex items-center gap-3 text-xs font-bold whitespace-nowrap">
                                     <span className="text-fg-subtle" title="Leads">{a.leads} leads</span>
                                     <span className="text-success" title="Deals won">{a.deals_won} won</span>
-                                    <span className="text-blue-300" title="Lead → won conversion">{a.conversion_rate}%</span>
+                                    <span className="text-primary" title="Lead → won conversion">{a.conversion_rate}%</span>
                                     <span className="text-fg text-sm">{formatCurrency(a.won_value)}</span>
                                 </span>
                             </li>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { eventBus } from '@so360/event-bus';
+import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useActivity, useShell } from '@so360/shell-context';
 import {
     Calendar, DollarSign, Clock, MessageSquare,
@@ -113,7 +114,9 @@ const DealDetailPage = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [signOpen, setSignOpen] = useState(false);
-    const { isModuleEnabled, hasPermission, permissionsLoaded } = useShell();
+    const shellCtx = useShell() as any;
+    const { isModuleEnabled, hasPermission, permissionsLoaded } = shellCtx;
+    const canUseNeuraAi = (shellCtx?.effectiveFlagsLoaded !== false) && (shellCtx?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     // Destructive action — gate on deals.delete, fail closed. Backend already enforces it.
     const canDeleteDeal = permissionsLoaded === true && (hasPermission?.('deals.delete') ?? false);
     // Stage changes mutate the deal — gate on deals.update, fail closed. Backend already enforces it.
@@ -790,6 +793,16 @@ const DealDetailPage = () => {
                                 </div>
                     </Card>
 
+                    {/* 4. Neura summary */}
+                    {canUseNeuraAi && (
+                        <NeuraAiSummaryCard
+                            leadId={deal.id}
+                            leadLabel={deal.name}
+                            isInboxEnabled={false}
+                            entity="deals"
+                        />
+                    )}
+
                     {/* Cross-module linked records */}
                     {(deal.invoice_id || deal.project_id || fulfillmentOrder?.id) && (
                         <Card title="Linked Records">
@@ -1043,7 +1056,7 @@ const DealDetailPage = () => {
                                                     <p className="text-fg-subtle text-sm leading-relaxed">{ev.description}</p>
                                                     {ev.author && (
                                                         <div className="mt-4 flex items-center gap-2">
-                                                            <div className="w-5 h-5 rounded-full bg-surface-raised flex items-center justify-center text-[8px] font-semibold overflow-hidden border border-line">
+                                                            <div className="w-5 h-5 rounded-full bg-surface-raised flex items-center justify-center text-xs font-semibold overflow-hidden border border-line">
                                                                 {ev.author.avatar_url ? <img src={ev.author.avatar_url} /> : ev.author.full_name?.charAt(0)}
                                                             </div>
                                                             <span className="text-xs font-bold text-fg-muted">{ev.author.full_name}</span>

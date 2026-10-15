@@ -57,8 +57,8 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60">
-            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-sm shadow-2xl">
+        <div className="fixed inset-0 z-dialog flex items-center justify-center bg-overlay">
+            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-sm shadow-overlay">
                 <h2 className="text-base font-semibold text-fg mb-4">Mark Royalty as Paid</h2>
                 {error && <p className="text-danger text-sm mb-3">{error}</p>}
                 <form onSubmit={handleSubmit} className="space-y-4">

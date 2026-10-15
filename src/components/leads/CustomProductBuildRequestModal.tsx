@@ -135,15 +135,15 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Custom Product Build Request" size="lg">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex items-center gap-2 p-3 bg-blue-950/40 border border-blue-800/40 rounded-xl text-blue-300 text-xs">
-                    <Sparkles className="w-4 h-4 flex-shrink-0 text-blue-400" />
+                <div className="flex items-center gap-2 p-3 bg-info/10 border border-info/20 rounded-xl text-info text-xs">
+                    <Sparkles className="w-4 h-4 flex-shrink-0 text-primary" />
                     <span>
                         Configure a custom build request for non-catalog items. Category selection from the master is required.
                     </span>
                 </div>
 
                 {error && (
-                    <div className="flex items-center gap-2 p-3 bg-rose-950/50 border border-rose-800/50 rounded-xl text-rose-300 text-xs">
+                    <div className="flex items-center gap-2 p-3 bg-danger/10 border border-danger/20 rounded-xl text-danger text-xs">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         <span>{error}</span>
                     </div>
@@ -173,7 +173,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                             Product Category <RequiredMark />
                         </label>
                         {loadingCategories && (
-                            <span className="text-[11px] text-fg-subtle flex items-center gap-1">
+                            <span className="text-xs text-fg-subtle flex items-center gap-1">
                                 <Loader2 className="w-3 h-3 animate-spin" /> Loading categories...
                             </span>
                         )}
@@ -193,7 +193,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                         ))}
                     </select>
                     {categories.length === 0 && !loadingCategories && (
-                        <p className="text-[11px] text-amber-400/90 mt-1">
+                        <p className="text-xs text-warning/90 mt-1">
                             No categories found in Inventory. Please ensure categories are configured in Inventory Settings.
                         </p>
                     )}
@@ -260,7 +260,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                     <button
                         type="submit"
                         disabled={submitting || !name.trim() || !categoryId}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-blue-600/20"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-fg rounded-xl text-xs font-semibold transition-all shadow-lg shadow-primary/20"
                     >
                         {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         <span>Submit Build Request</span>

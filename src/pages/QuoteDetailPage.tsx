@@ -6,7 +6,7 @@ import { goBackFrom } from '../components/common/DetailBackLink';
 import { EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS, EDITABLE_FIELD_SM_NUMERIC_CLASS } from '../components/common/fieldStyles';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, type BadgeTone } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, type BadgeTone } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -603,56 +603,39 @@ const QuoteDetailPage = () => {
 
             {/* Approval in Progress Banner */}
             {quote.status === 'pending_approval' && (
-                <div className="mb-6 p-5 rounded-xl border border-warning/30 bg-warning/10 space-y-3">
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <Clock className="w-5 h-5 text-warning" />
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-fg text-base">
-                                        Approval in Progress
-                                    </span>
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning font-semibold border border-warning/30">
-                                        Locked
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <p className="text-sm text-fg-subtle leading-relaxed">
-                        This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.
-                        {isSubmitter && !isAuthorizedApprover && (
-                            <span className="block mt-1 text-xs text-warning font-medium">
-                                You submitted this quote. Self-review is not permitted.
-                            </span>
-                        )}
-                        {isAuthorizedApprover && (
-                            <span className="block mt-1 text-xs text-success font-medium">
-                                You are an assigned reviewer for this quote. Please examine the commercial terms using the action buttons above.
-                            </span>
-                        )}
-                    </p>
-                    {currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0 && (
-                        <div className="pt-3 border-t border-warning/20 flex flex-wrap gap-2 items-center">
-                            <span className="text-xs font-semibold text-fg-subtle">Required Approvers:</span>
-                            {currentApprovalRequest.approvers.map((a: any, idx: number) => (
-                                <span
-                                    key={a.id || idx}
-                                    className={`text-xs px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
-                                        a.status === 'approved'
-                                            ? 'bg-success/10 border-success/30 text-success'
-                                            : a.status === 'rejected'
-                                            ? 'bg-danger/10 border-danger/30 text-danger'
-                                            : 'bg-surface-high border-line text-fg-subtle'
-                                    }`}
-                                >
-                                    <span className="font-medium text-fg">{a.approver_name || a.approver_email || 'Approver'}</span>
-                                    <span className="text-[10px] uppercase font-bold opacity-80">({a.status})</span>
+                <Alert variant="warning" title="Approval in Progress" className="mb-nb-3">
+                    <div className="flex flex-col gap-nb-2">
+                        <p className="text-sm text-fg-muted">
+                            <Badge size="sm" tone="warning">Locked</Badge>{' '}
+                            This quote is currently undergoing approval review. Material details and line items cannot be modified until a decision is reached or the request is withdrawn.
+                            {isSubmitter && !isAuthorizedApprover && (
+                                <span className="block mt-1 text-xs text-warning font-medium">
+                                    You submitted this quote. Self-review is not permitted.
                                 </span>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            )}
+                            {isAuthorizedApprover && (
+                                <span className="block mt-1 text-xs text-success font-medium">
+                                    You are an assigned reviewer for this quote. Please examine the commercial terms using the action buttons above.
+                                </span>
+                            )}
+                        </p>
+                        {currentApprovalRequest?.approvers && currentApprovalRequest.approvers.length > 0 && (
+                            <div className="flex flex-wrap gap-nb-2 items-center">
+                                <span className="text-xs font-semibold text-fg-muted">Required Approvers:</span>
+                                {currentApprovalRequest.approvers.map((a: any, idx: number) => (
+                                    <Badge
+                                        key={a.id || idx}
+                                        size="sm"
+                                        tone={a.status === 'approved' ? 'success' : a.status === 'rejected' ? 'danger' : 'neutral'}
+                                    >
+                                        <span className="font-medium">{a.approver_name || a.approver_email || 'Approver'}</span>{' '}
+                                        <span>({a.status})</span>
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </Alert>
             )}
 
             {/* Quote Details */}

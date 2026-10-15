@@ -6,7 +6,7 @@ import {
     Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -172,90 +172,46 @@ const DashboardPage = () => {
         kpis: (
             <>
             {/* KPI Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-nb-3">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
-                <div className="bg-surface border border-line p-6 rounded-2xl">
-                    <div className="relative">
-                        <div className="flex items-center gap-3 mb-4 text-primary">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <DollarSign size={20} />
-                            </div>
-                            <span className="text-xs font-semibold text-fg-muted">Deal Revenue</span>
-                        </div>
-                        <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-semibold text-fg">{formatCurrency(financials.totalRevenue)}</h3>
-                            <span className="text-success flex items-center text-xs font-bold mb-1.5">
-                                <ArrowUpRight size={14} /> +12.5%
-                            </span>
-                        </div>
-                        {financials.accountingRevenue != null ? (
-                            <p className="text-xs mt-2 font-medium">
-                                <span className="text-fg-muted">Booked: </span>
-                                <span className="text-success">{formatCurrency(financials.accountingRevenue)}</span>
-                            </p>
-                        ) : (
-                            <p className="text-xs text-fg-muted mt-2 font-medium">From won deals</p>
-                        )}
-                    </div>
-                </div>
+                    <KpiCard
+                        label="Deal Revenue"
+                        icon={DollarSign}
+                        value={<>{formatCurrency(financials.totalRevenue)}
+                            {financials.accountingRevenue != null ? (
+                                <span className="block mt-1 text-xs font-normal"><span className="text-fg-muted">Booked: </span><span className="text-success">{formatCurrency(financials.accountingRevenue)}</span></span>
+                            ) : (
+                                <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
+                            )}</>}
+                    />
                 )}
 
                 {showPipeline && (
-                <div className="bg-surface border border-line p-6 rounded-2xl">
-                    <div className="relative">
-                        <div className="flex items-center gap-3 mb-4 text-primary">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <TrendingUp size={20} />
-                            </div>
-                            <span className="text-xs font-semibold text-fg-muted">Pipeline Value</span>
-                        </div>
-                        <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-semibold text-fg">{formatCurrency(financials.pipelineValue)}</h3>
-                            <span className="text-fg-muted text-xs font-bold mb-1.5">
-                                {counts.deals} Active Deals
-                            </span>
-                        </div>
-                        <p className="text-xs text-fg-muted mt-2 font-medium">Projected revenue</p>
-                    </div>
-                </div>
+                    <KpiCard
+                        label="Pipeline Value"
+                        icon={TrendingUp}
+                        value={<>{formatCurrency(financials.pipelineValue)}
+                            <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
+                    />
                 )}
 
                 {showPipeline && (
-                <div className="bg-surface border border-line p-6 rounded-2xl">
-                    <div className="relative">
-                        <div className="flex items-center gap-3 mb-4 text-success">
-                            <div className="p-2 bg-success/10 rounded-lg">
-                                <BarChart3 size={20} />
-                            </div>
-                            <span className="text-xs font-semibold text-fg-muted">Win Rate</span>
-                        </div>
-                        <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-semibold text-fg">{financials.winRate.toFixed(1)}%</h3>
-                            <span className="text-success flex items-center text-xs font-bold mb-1.5">
-                                <ArrowUpRight size={14} /> +2.4%
-                            </span>
-                        </div>
-                        <p className="text-xs text-fg-muted mt-2 font-medium">AVG Deal Closure</p>
-                    </div>
-                </div>
+                    <KpiCard
+                        label="Win Rate"
+                        icon={BarChart3}
+                        value={<>{financials.winRate.toFixed(1)}%
+                            <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
+                    />
                 )}
 
                 {showPipeline && (
-                <div className="bg-surface border border-line p-6 rounded-2xl">
-                    <div className="relative">
-                        <div className="flex items-center gap-3 mb-4 text-warning">
-                            <div className="p-2 bg-warning/10 rounded-lg">
-                                <Briefcase size={20} />
-                            </div>
-                            <span className="text-xs font-semibold text-fg-muted">Avg Deal Size</span>
-                        </div>
-                        <div className="flex items-end gap-3">
-                            <h3 className="text-3xl font-semibold text-fg">{formatCurrency(financials.avgDealSize)}</h3>
-                        </div>
-                        <p className="text-xs text-fg-muted mt-2 font-medium">Per closed-won deal</p>
-                    </div>
-                </div>
+                    <KpiCard
+                        label="Avg Deal Size"
+                        icon={Briefcase}
+                        value={<>{formatCurrency(financials.avgDealSize)}
+                            <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
+                    />
                 )}
             </div>
             </>
@@ -264,12 +220,12 @@ const DashboardPage = () => {
             <>
             {/* Commerce Performance — DailyStore gated */}
             {isDailyStoreEnabled && (
-                <section className="bg-surface border border-line rounded-2xl p-6">
+                <Card className="min-w-0">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2 bg-primary/10 rounded-lg">
                             <ShoppingBag size={16} className="text-primary" />
                         </div>
-                        <h2 className="text-xs font-semibold tracking-[0.2em] text-fg-subtle">
+                        <h2 className="text-xs font-semibold text-fg-subtle">
                             Commerce Performance
                         </h2>
                         <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">
@@ -310,8 +266,8 @@ const DashboardPage = () => {
                         {/* 3. AOV */}
                         <div className="border-l border-line pl-4">
                             <div className="relative">
-                                <div className="flex items-center gap-2 mb-3 text-violet-400">
-                                    <div className="p-1.5 bg-violet-500/10 rounded-lg"><BarChart3 size={16} /></div>
+                                <div className="flex items-center gap-2 mb-3 text-primary">
+                                    <div className="p-1.5 bg-primary/10 rounded-lg"><BarChart3 size={16} /></div>
                                     <span className="text-xs font-semibold text-fg-muted">AOV</span>
                                 </div>
                                 <h3 className="text-2xl font-semibold text-fg">
@@ -339,7 +295,7 @@ const DashboardPage = () => {
                         <div className="border-l border-line pl-4">
                             <div className="relative">
                                 <div className="flex items-center gap-2 mb-3 text-danger">
-                                    <div className="p-1.5 bg-rose-500/10 rounded-lg"><TrendingUp size={16} className="rotate-180" /></div>
+                                    <div className="p-1.5 bg-danger/10 rounded-lg"><TrendingUp size={16} className="rotate-180" /></div>
                                     <span className="text-xs font-semibold text-fg-muted">Refund</span>
                                 </div>
                                 <h3 className="text-2xl font-semibold text-fg">
@@ -377,7 +333,7 @@ const DashboardPage = () => {
                                     return (
                                         <div key={idx} className="flex-1 flex flex-col justify-end group relative z-10 h-full">
                                             <div
-                                                className="w-full bg-info/20 border-t-2 border-info rounded-t-sm hover:bg-info/40 transition-all relative group-hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+                                                className="w-full bg-info/20 border-t-2 border-info rounded-t-sm hover:bg-info/40 transition-all relative group-hover:"
                                                 style={{ height: `${heightPct}%` }}
                                             >
                                                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-fg/90 text-primary-fg text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
@@ -393,7 +349,7 @@ const DashboardPage = () => {
                             </div>
                         </div>
                     )}
-                </section>
+                </Card>
             )}
             </>
         ),
@@ -407,9 +363,8 @@ const DashboardPage = () => {
             <>
             {/* Active Reminders Row */}
             {showTasks && (
-            <section className="bg-surface border border-line rounded-2xl p-6">
+            <Card title="Active Reminders">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-fg">Active Reminders</h3>
                     <Link to="../tasks" className="text-xs font-semibold text-primary hover:text-primary transition-colors">View All Tasks</Link>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
@@ -417,7 +372,7 @@ const DashboardPage = () => {
                         <div key={task.id} className="flex-shrink-0 w-72 flex flex-col gap-2">
                         <Link
                             to={`../tasks/${task.id}`}
-                            className="bg-surface border border-line p-4 rounded-xl hover:border-primary/50 transition-all group shadow-sm"
+                            className="bg-surface-sunken p-4 rounded-nb hover:bg-surface-raised transition-all group"
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
@@ -455,12 +410,12 @@ const DashboardPage = () => {
                         )}
                         </div>
                     )) : (
-                        <div className="w-full py-8 text-center bg-surface-sunken border border-line rounded-2xl">
+                        <div className="w-full py-8 text-center bg-surface-sunken border border-line rounded-nb">
                             <p className="text-xs text-fg-muted font-bold">No active reminders</p>
                         </div>
                     )}
                 </div>
-            </section>
+            </Card>
             )}
             </>
         ),
@@ -468,10 +423,9 @@ const DashboardPage = () => {
             <>
             <div className={`grid grid-cols-1 ${showLeads ? 'lg:grid-cols-12' : ''} gap-nb-3`}>
                 {/* Revenue Chart */}
-                <div className={`${showLeads ? 'lg:col-span-8' : ''} bg-surface border border-line rounded-2xl p-6 shadow-sm`}>
+                <Card title="Revenue Performance" className={`${showLeads ? 'lg:col-span-8' : ''} min-w-0`}>
                     <div className="flex justify-between items-center mb-8">
                         <div>
-                            <h3 className="text-lg font-semibold text-fg">Revenue Performance</h3>
                             <p className="text-xs text-fg-muted font-bold mt-1">Monthly Revenue Distribution</p>
                         </div>
                         <div className="flex items-center gap-2 text-xs font-bold text-fg-subtle">
@@ -496,7 +450,7 @@ const DashboardPage = () => {
                             return (
                                 <div key={idx} className="flex-1 flex flex-col justify-end group relative z-10 h-full">
                                     <div
-                                        className="w-full bg-primary/20 border-t-2 border-primary rounded-t-sm hover:bg-primary/40 transition-all relative group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+                                        className="w-full bg-primary/20 border-t-2 border-primary rounded-t-sm hover:bg-primary/40 transition-all relative group-hover:"
                                         style={{ height: `${heightPercentage}%` }}
                                     >
                                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-fg/90 text-primary-fg text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
@@ -508,11 +462,10 @@ const DashboardPage = () => {
                             );
                         })}
                     </div>
-                </div>
+                </Card>
 
                 {/* Team Leaderboard */}
-                {showLeads && <div className="lg:col-span-4 bg-surface border border-line rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col">
-                    <h3 className="text-lg font-semibold text-fg mb-1">Top Performers</h3>
+                {showLeads && <Card title="Top Performers" className="lg:col-span-4 min-w-0 overflow-hidden flex flex-col">
                     <p className="text-xs text-fg-muted font-bold mb-4">Revenue Leaders</p>
 
                     <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
@@ -525,8 +478,8 @@ const DashboardPage = () => {
                             </div>
                         )}
                         {teamStats.map((stat: any, index: number) => (
-                            <div key={stat.user.id} className="flex items-center gap-4 p-3 rounded-xl bg-bg border border-line hover:border-line transition-all group shadow-sm">
-                                <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg shadow-lg shadow-amber-500/20' :
+                            <div key={stat.user.id} className="flex items-center gap-4 p-3 rounded-nb bg-surface-sunken hover:bg-surface-raised transition-all group">
+                                <div className={`w-8 h-8 flex items-center justify-center rounded-lg font-semibold text-xs ${index === 0 ? 'bg-warning text-primary-fg shadow-lg shadow-warning/20' :
                                     index === 1 ? 'bg-fg-muted/40 text-fg-subtle' :
                                         index === 2 ? 'bg-fg-muted/25 text-fg-subtle' :
                                             'bg-transparent text-fg-subtle'
@@ -557,7 +510,7 @@ const DashboardPage = () => {
                             </div>
                         ))}
                     </div>
-                </div>}
+                </Card>}
             </div>
             </>
         ),
@@ -566,11 +519,10 @@ const DashboardPage = () => {
             {/* Employee Performance Visualization — a per-rep breakdown has nothing
                 to say without reps, so it stays hidden rather than reserving a
                 full-width band of empty cards. */}
-            {showPipeline && teamStats.length > 0 && <section className="bg-surface border border-line rounded-3xl p-6 relative overflow-hidden shadow-sm">
+            {showPipeline && teamStats.length > 0 && <Card title="Performance Analytics" className="relative overflow-hidden">
                 <div className="relative z-10">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h3 className="text-xl font-semibold text-fg">Performance Analytics</h3>
                             <p className="text-xs text-fg-muted font-bold mt-1">Activity vs. Conversion Efficiency</p>
                         </div>
                     </div>
@@ -596,7 +548,7 @@ const DashboardPage = () => {
                                         </div>
                                         <div className="h-1.5 bg-fg-muted/25 rounded-full overflow-hidden">
                                             <div
-                                                className="h-full bg-gradient-to-r from-primary to-primary rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all duration-1000"
+                                                className="h-full bg-gradient-to-r from-primary to-primary rounded-full transition-all duration-1000"
                                                 style={{ width: `${(stat.activityCount / maxActivity) * 100}%` }}
                                             />
                                         </div>
@@ -609,7 +561,7 @@ const DashboardPage = () => {
                                         </div>
                                         <div className="h-1.5 bg-fg-muted/25 rounded-full overflow-hidden">
                                             <div
-                                                className="h-full bg-gradient-to-r from-success to-success rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-1000"
+                                                className="h-full bg-gradient-to-r from-success to-success rounded-full transition-all duration-1000"
                                                 style={{ width: `${Math.min(stat.conversionRate * 2, 100)}%` }} // Scaling for visual impact
                                             />
                                         </div>
@@ -630,7 +582,7 @@ const DashboardPage = () => {
                         ))}
                     </div>
                 </div>
-            </section>}
+            </Card>}
             </>
         ),
     };

@@ -199,9 +199,9 @@ function GroupBlock({
             <button
               key={c}
               type="button"
-              className={`px-2.5 py-1 uppercase tracking-wide font-medium transition-colors ${
+              className={`px-2.5 py-1 font-medium transition-colors ${
                 group.combinator === c
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-primary-fg'
                   : 'bg-surface-raised text-fg-subtle hover:text-fg'
               }`}
               onClick={() => onSetCombinator(path, c)}
@@ -246,7 +246,7 @@ function GroupBlock({
       <div className="flex items-center gap-3 text-xs">
         <button
           type="button"
-          className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+          className="inline-flex items-center gap-1 text-primary hover:text-primary transition-colors"
           onClick={() => onAddRule(path)}
         >
           <Plus size={13} /> Add condition
@@ -274,10 +274,10 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
     <div className="w-full max-w-2xl bg-surface border border-line rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2 text-fg font-semibold">
-          <FilterIcon size={16} className="text-blue-400" />
+          <FilterIcon size={16} className="text-primary" />
           Advanced Filters
           {activeCount > 0 && (
-            <span className="text-xs bg-primary text-white rounded-full px-2 py-0.5">{activeCount}</span>
+            <span className="text-xs bg-primary text-primary-fg rounded-full px-2 py-0.5">{activeCount}</span>
           )}
         </div>
         <button
@@ -317,14 +317,14 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 text-sm text-fg-subtle hover:text-white transition-colors"
+            className="px-3 py-1.5 text-sm text-fg-subtle hover:text-primary-fg transition-colors"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="px-4 py-1.5 text-sm bg-primary hover:bg-primary/90 text-white rounded-md font-medium transition-colors"
+            className="px-4 py-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-fg rounded-md font-medium transition-colors"
             onClick={() => onApply(serializeFilter(tree))}
           >
             Apply{activeCount > 0 ? ` (${activeCount})` : ''}

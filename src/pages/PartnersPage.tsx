@@ -31,8 +31,8 @@ type SortDirection = 'asc' | 'desc' | null;
 
 const GRADING_CONFIG: Record<string, { label: string; color: string }> = {
     low:  { label: 'Low',  color: 'bg-fg-muted/10 text-fg-subtle border-line' },
-    mid:  { label: 'Mid',  color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-    high: { label: 'High', color: 'bg-emerald-500/10 text-success border-emerald-500/20' },
+    mid:  { label: 'Mid',  color: 'bg-info/10 text-info border-info/20' },
+    high: { label: 'High', color: 'bg-success/10 text-success border-success/20' },
 };
 
 const AREA_OPTIONS = ['South India', 'North India', 'Central India', 'East India', 'West India'];
@@ -146,12 +146,12 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         }
     };
 
-    const inputCls = 'w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-blue-500/50';
+    const inputCls = 'w-full bg-bg border border-line rounded-nb px-nb-3 py-nb-2 text-sm text-fg focus:outline-none focus:ring-2 ring-focus';
     const labelCls = 'text-xs text-fg-subtle mb-1 block';
 
     return createPortal(
-        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 p-4">
-            <div className="bg-surface border border-line rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-dialog flex items-center justify-center bg-overlay p-nb-4">
+            <div className="bg-surface-raised border border-line rounded-nb-lg w-full max-w-lg shadow-overlay flex flex-col max-h-[90vh] overflow-hidden">
 
                 {/* Sticky header — never scrolls */}
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-line shrink-0">
@@ -252,7 +252,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                             }))}
                                             className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                                                 selected
-                                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                                    ? 'bg-primary/10 text-primary border-primary/40'
                                                     : 'bg-surface-raised text-fg-subtle border-line hover:border-line'
                                             }`}
                                         >
@@ -275,7 +275,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 <label className={labelCls}>Phone</label>
                                 <input type="tel" value={form.phone} maxLength={20}
                                     onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                    className={`${inputCls}${phoneError ? ' border-rose-500/60 focus:ring-rose-500/50' : ''}`} placeholder="+91 98765 43210" />
+                                    className={`${inputCls}${phoneError ? ' border-danger/60 focus:ring-danger/50' : ''}`} placeholder="+91 98765 43210" />
                                 {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
                             </div>
                         </div>
@@ -285,7 +285,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             <label className={labelCls}>Alt. Phone</label>
                             <input type="tel" value={form.alt_phone} maxLength={20}
                                 onChange={e => { setForm(f => ({ ...f, alt_phone: e.target.value })); setAltPhoneError(validatePhone(e.target.value)); }}
-                                className={`${inputCls}${altPhoneError ? ' border-rose-500/60 focus:ring-rose-500/50' : ''}`} placeholder="+91 98765 43211" />
+                                className={`${inputCls}${altPhoneError ? ' border-danger/60 focus:ring-danger/50' : ''}`} placeholder="+91 98765 43211" />
                             {altPhoneError && <p className="text-danger text-xs mt-1">{altPhoneError}</p>}
                         </div>
 
@@ -433,12 +433,12 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 </form>
 
                 {/* Sticky footer — never scrolls */}
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-line shrink-0">
+                <div className="flex justify-end gap-nb-3 px-6 py-4 border-t border-line shrink-0">
                     <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-fg-subtle hover:text-fg transition-colors">
                         Cancel
                     </button>
                     <button type="submit" form="create-partner-form" disabled={saving}
-                        className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-white rounded-lg font-medium disabled:opacity-50 transition-colors">
+                        className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-fg rounded-nb font-medium disabled:opacity-50 transition-colors">
                         {saving ? 'Creating...' : 'Create Partner'}
                     </button>
                 </div>
@@ -505,8 +505,8 @@ const PartnersPage = () => {
 
     const SortIcon = ({ field }: { field: SortField }) => {
         if (sortField !== field) return <ChevronsUpDown size={14} className="text-fg-muted" />;
-        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-blue-400" />;
-        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-blue-400" />;
+        if (sortDirection === 'asc') return <ChevronUp size={14} className="text-primary" />;
+        if (sortDirection === 'desc') return <ChevronDown size={14} className="text-primary" />;
         return <ChevronsUpDown size={14} className="text-fg-muted" />;
     };
 
@@ -582,7 +582,7 @@ const PartnersPage = () => {
         {
             header: <SortableHeader label="Type" field="partner_type" />,
             accessor: (p: any) => (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border bg-info/10 text-info border-info/20">
                     {getPartnerTypeLabel(p.partner_type)}
                 </span>
             ),

@@ -76,7 +76,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                 aria-haspopup="listbox"
                 onClick={handleOpen}
                 className={`flex items-center gap-2 w-full bg-bg border rounded-lg px-3 py-2 cursor-pointer transition-all
-                    ${isOpen ? 'border-blue-500/50 ring-2 ring-blue-500/20' : 'border-line hover:border-line'}
+                    ${isOpen ? 'border-primary/50 ring-2 ring-primary/20' : 'border-line hover:border-line'}
                     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                     ${inputClassName}`}
             >
@@ -147,7 +147,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
                                     onClick={() => handleSelect(p.id)}
                                     className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between
                                         ${p.id === value
-                                            ? 'bg-blue-600/20 text-blue-400'
+                                            ? 'bg-primary/10 text-primary'
                                             : 'text-fg hover:bg-surface-raised'}`}
                                     data-testid={`partner-option-${p.id}`}
                                 >

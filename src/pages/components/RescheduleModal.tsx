@@ -55,7 +55,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                     </div>
                     <div className="space-y-2">
                         <label htmlFor="reschedule-time" className="text-xs font-bold text-fg-subtle">
-                            New Due Time <span className="normal-case text-fg-muted">(optional)</span>
+                            New Due Time <span className=" text-fg-muted">(optional)</span>
                         </label>
                         <div className="flex gap-2">
                             <div className="relative flex-1">

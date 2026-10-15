@@ -173,8 +173,8 @@ describe('MarketingSegmentsPage', () => {
       const user = userEvent.setup();
       render(<MarketingSegmentsPage />);
       await waitFor(() => expect(screen.getByText('VIP Customers')).toBeInTheDocument());
-      const deleteButtons = screen.getAllByText('Delete');
-      await user.click(deleteButtons[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Row actions' })[0]);
+      await user.click(await screen.findByText('Delete'));
       await waitFor(() => expect(mockDeleteCustomerSegment).toHaveBeenCalledWith('seg1'));
     });
   });

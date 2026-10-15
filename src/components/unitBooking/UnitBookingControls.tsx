@@ -53,7 +53,7 @@ export function UnitBookingControls({
                     type="checkbox"
                     checked={onlyAvailable}
                     onChange={e => onOnlyAvailableChange(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded accent-blue-500"
+                    className="w-3.5 h-3.5 rounded accent-primary"
                 />
                 Only available
             </label>

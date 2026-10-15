@@ -36,7 +36,7 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="p-3 bg-bg border border-line rounded-lg">
                     <p className="text-sm text-fg-subtle">
-                        Moving <span className="text-fg font-bold">{deal.name}</span> to the <span className="text-blue-400 font-bold">{newStage}</span> stage.
+                        Moving <span className="text-fg font-bold">{deal.name}</span> to the <span className="text-primary font-bold">{newStage}</span> stage.
                     </p>
                 </div>
 
@@ -51,7 +51,7 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder={`Please provide a brief reason for marking this deal as ${newStage}...`}
-                            className="w-full bg-bg border border-line rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none h-24"
+                            className="w-full bg-bg border border-line rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none h-24"
                         />
                     </div>
                 )}

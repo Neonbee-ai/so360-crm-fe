@@ -12,8 +12,8 @@ interface StatusOption {
 
 const STATUS_OPTIONS: StatusOption[] = [
     { value: 'OPEN', label: 'OPEN', dotClassName: 'bg-fg-subtle', collapsedTextClassName: 'text-fg-subtle border-line' },
-    { value: 'WON', label: 'WON', dotClassName: 'bg-emerald-400', collapsedTextClassName: 'text-success border-emerald-500/30' },
-    { value: 'LOST', label: 'LOST', dotClassName: 'bg-rose-400', collapsedTextClassName: 'text-danger border-rose-500/30' },
+    { value: 'WON', label: 'WON', dotClassName: 'bg-success', collapsedTextClassName: 'text-success border-success/30' },
+    { value: 'LOST', label: 'LOST', dotClassName: 'bg-danger', collapsedTextClassName: 'text-danger border-danger/30' },
 ];
 
 interface StageStatusSelectProps {

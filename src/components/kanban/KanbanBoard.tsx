@@ -183,7 +183,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, stage.id)}
                             className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 rounded-2xl p-3 pipeline-scrollbar transition-all duration-200 ${isOver
-                                ? 'bg-blue-600/10 ring-2 ring-blue-500/50 ring-dashed border-transparent'
+                                ? 'bg-primary/10 ring-2 ring-primary/50 ring-dashed border-transparent'
                                 : 'bg-surface-sunken border border-line shadow-sm'
                                 }`}
                             style={!isOver ? { borderTopColor: accentColor, borderTopWidth: '3px', borderTopStyle: 'solid' } : undefined}
@@ -196,12 +196,12 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                     onDragEnd={handleDragEnd}
                                     onClick={() => onDealClick(deal)}
                                     className={`bg-surface-raised border-2 p-4 rounded-xl shadow-md transition-all cursor-grab active:cursor-grabbing group ${draggedDealId === deal.id
-                                        ? 'border-blue-500/50 scale-95'
-                                        : 'border-line hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-900/20'
+                                        ? 'border-primary/50 scale-95'
+                                        : 'border-line hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20'
                                         }`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-sm text-fg group-hover:text-blue-400 transition-colors truncate">
+                                        <h4 className="font-bold text-sm text-fg group-hover:text-primary transition-colors truncate">
                                             {deal.name}
                                         </h4>
                                     </div>

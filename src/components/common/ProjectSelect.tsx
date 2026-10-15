@@ -233,7 +233,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
         <div ref={containerRef} onBlur={handleBlur} className={`relative ${className}`} data-testid="project-select">
             {isOpen ? (
                 <div
-                    className={`flex items-center gap-2 w-full bg-bg border rounded-xl px-4 py-3 transition-all border-primary ring-2 ring-blue-500/20 ${inputClassName}`}
+                    className={`flex items-center gap-2 w-full bg-bg border rounded-xl px-4 py-3 transition-all border-primary ring-2 ring-primary/20 ${inputClassName}`}
                 >
                     <Search size={14} className="text-fg-muted shrink-0" />
                     <input
@@ -269,7 +269,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         disabled={disabled}
                         onClick={() => { if (!disabled) setIsOpen(true); }}
                         onKeyDown={handleTriggerKeyDown}
-                        className={`flex items-center gap-2 w-full text-left bg-bg border rounded-xl px-4 py-3 cursor-pointer transition-all border-line hover:border-line focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-blue-500/20
+                        className={`flex items-center gap-2 w-full text-left bg-bg border rounded-xl px-4 py-3 cursor-pointer transition-all border-line hover:border-line focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20
                             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
                             ${inputClassName}`}
                     >
@@ -328,7 +328,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                                 aria-selected={p.id === value}
                                 onClick={() => select(p.id)}
                                 className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between
-                                    ${p.id === value ? 'bg-blue-600/20 text-blue-400' : 'text-fg'}
+                                    ${p.id === value ? 'bg-primary/10 text-primary' : 'text-fg'}
                                     ${activeIndex === i + 1 ? 'bg-surface-raised' : 'hover:bg-surface-raised'}`}
                                 data-testid={`project-option-${p.id}`}
                             >
@@ -358,7 +358,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                             <button
                                 type="button"
                                 onClick={() => load(term, page + 1)}
-                                className="w-full px-3 py-2 text-xs font-bold text-blue-400 hover:bg-surface-raised transition-colors"
+                                className="w-full px-3 py-2 text-xs font-bold text-primary hover:bg-surface-raised transition-colors"
                                 data-testid="project-select-more"
                             >
                                 Load more

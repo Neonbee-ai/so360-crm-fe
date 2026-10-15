@@ -295,7 +295,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
             <button
               key={v}
               onClick={() => navigator.clipboard.writeText(`{{${v}}}`)}
-              className="block w-full text-left px-2 py-1 rounded text-xs text-blue-400 hover:bg-surface-raised transition-colors"
+              className="block w-full text-left px-2 py-1 rounded text-xs text-primary hover:bg-surface-raised transition-colors"
               title={`Copy {{${v}}} to clipboard`}
             >
               {`{{${v}}}`}
@@ -353,7 +353,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                   selectedId === block.id
                     ? 'border-primary bg-surface-sunken'
                     : 'border-line bg-surface-sunken hover:border-line'
-                } ${dragOverIdx === idx ? 'border-t-2 border-t-blue-400' : ''}`}
+                } ${dragOverIdx === idx ? 'border-t-2 border-t-primary' : ''}`}
               >
                 {/* Block header */}
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-line">
@@ -377,7 +377,7 @@ const CampaignTemplateEditor: React.FC<CampaignTemplateEditorProps> = ({ value, 
                     >⧉</button>
                     <button
                       onClick={e => { e.stopPropagation(); removeBlock(block.id); }}
-                      className="p-1 text-rose-500/70 hover:text-danger text-xs"
+                      className="p-1 text-danger/70 hover:text-danger text-xs"
                       title="Delete"
                     >✕</button>
                   </div>

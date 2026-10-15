@@ -271,7 +271,7 @@ const TasksPage = () => {
                         {hasTimeComponent(task.due_date) && (
                             <span className="text-fg-subtle">{formatters.formatDate(task.due_date, { hour: 'numeric', minute: '2-digit' })}</span>
                         )}
-                        {isOverdue && <span className="uppercase text-[9px] font-semibold tracking-tighter">Overdue</span>}
+                        {isOverdue && <span className=" text-xs font-semibolder">Overdue</span>}
                     </div>
                 );
             }
@@ -294,8 +294,8 @@ const TasksPage = () => {
                         <Building2 size={13} className={entity.type === 'deal' ? 'text-primary shrink-0' : 'text-primary shrink-0'} />
                         <div className="flex flex-col gap-0.5 min-w-0">
                             <span className="text-sm text-fg truncate">{entity.label}</span>
-                            {entity.sub && <span className="text-[11px] text-fg-subtle truncate">{entity.sub}</span>}
-                            <span className={`text-[9px] font-semibold  ${entity.type === 'deal' ? 'text-primary' : 'text-primary'}`}>
+                            {entity.sub && <span className="text-xs text-fg-subtle truncate">{entity.sub}</span>}
+                            <span className={`text-xs font-semibold  ${entity.type === 'deal' ? 'text-primary' : 'text-primary'}`}>
                                 {entity.type}
                             </span>
                         </div>
@@ -348,7 +348,7 @@ const TasksPage = () => {
                     <select
                         value={task.status}
                         onChange={(e) => handleStatusChange(task, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-[10px] font-semibold  border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface ${task.status === 'DONE'
+                        className={`px-2 py-1 rounded-full text-xs font-semibold  border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface ${task.status === 'DONE'
                             ? 'bg-success/10 text-success border-success/20 focus:ring-success'
                             : task.status === 'IN_PROGRESS'
                             ? 'bg-warning/10 text-warning border-warning/20 focus:ring-warning'

@@ -56,7 +56,7 @@ export default function LeadCardList({
             data-testid={`lead-card-${lead.id}`}
             onClick={() => onRowClick(lead)}
             className={`rounded-xl border p-3.5 transition-colors ${
-              isSelected ? 'border-blue-500/50 bg-blue-600/10' : 'border-line bg-surface-sunken active:bg-surface-high'
+              isSelected ? 'border-primary/50 bg-primary/10' : 'border-line bg-surface-sunken active:bg-surface-high'
             }`}
           >
             <div className="flex items-start gap-3">
@@ -67,7 +67,7 @@ export default function LeadCardList({
                   isSelected ? 'bg-primary border-primary' : 'border-line'
                 }`}
               >
-                {isSelected && <Check size={12} className="text-white" />}
+                {isSelected && <Check size={12} className="text-primary-fg" />}
               </button>
 
               <div className="min-w-0 flex-1">
@@ -82,7 +82,7 @@ export default function LeadCardList({
                     <a
                       href={`mailto:${lead.contact_email}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs text-fg-subtle hover:text-blue-400 truncate"
+                      className="flex items-center gap-1 text-xs text-fg-subtle hover:text-primary truncate"
                     >
                       <Mail size={12} className="shrink-0" />
                       <span className="truncate">{lead.contact_email}</span>
@@ -101,12 +101,12 @@ export default function LeadCardList({
                 </div>
 
                 <div className="flex items-center gap-2 mt-2.5">
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface-raised text-fg-subtle border border-line">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-surface-raised text-fg-subtle border border-line">
                     {lead.status}
                   </span>
-                  {lead.source && <span className="text-[11px] text-fg-muted">{lead.source}</span>}
+                  {lead.source && <span className="text-xs text-fg-muted">{lead.source}</span>}
                   {lead.owner?.full_name && (
-                    <span className="ml-auto text-[11px] text-fg-muted truncate">{lead.owner.full_name}</span>
+                    <span className="ml-auto text-xs text-fg-muted truncate">{lead.owner.full_name}</span>
                   )}
                 </div>
               </div>

@@ -105,12 +105,12 @@ export interface LeadsDataGridProps {
 
 const STATUS_COLORS: Record<string, string> = {
   New: 'bg-primary/10 text-primary border-primary/20',
-  Contacted: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-  Qualified: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  'Proposal Sent': 'bg-amber-500/10 text-warning border-amber-500/20',
-  Negotiation: 'bg-orange-500/10 text-warning border-orange-500/20',
-  Converted: 'bg-emerald-500/10 text-success border-emerald-500/20',
-  Lost: 'bg-rose-500/10 text-danger border-rose-500/20',
+  Contacted: 'bg-info/10 text-info border-info/20',
+  Qualified: 'bg-primary/10 text-primary border-primary/20',
+  'Proposal Sent': 'bg-warning/10 text-warning border-warning/20',
+  Negotiation: 'bg-warning/10 text-warning border-warning/20',
+  Converted: 'bg-success/10 text-success border-success/20',
+  Lost: 'bg-danger/10 text-danger border-danger/20',
 };
 
 function statusColor(status: string) {
@@ -182,7 +182,7 @@ const COL_DEFS: ColDef[] = [
       return (
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className="w-7 h-7 rounded-full bg-primary text-primary-fg flex items-center justify-center text-[10px] font-bold shrink-0"
+            className="w-7 h-7 rounded-full bg-primary text-primary-fg flex items-center justify-center text-xs font-bold shrink-0"
             title={name}
           >
             {name !== '—' ? initials(name) : '?'}
@@ -283,7 +283,7 @@ const COL_DEFS: ColDef[] = [
               className="w-6 h-6 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-line text-fg-subtle flex items-center justify-center text-[10px] font-bold shrink-0">
+            <div className="w-6 h-6 rounded-full bg-line text-fg-subtle flex items-center justify-center text-xs font-bold shrink-0">
               {ownerName !== '—' ? initials(ownerName) : '?'}
             </div>
           )}
@@ -351,7 +351,7 @@ const COL_DEFS: ColDef[] = [
       <div className="flex flex-col gap-0.5">
         <span className="text-fg-subtle text-xs">{fmt(lead.created_at)}</span>
         {lead.creator && (
-          <span className="text-fg-muted text-[10px] truncate">{lead.creator.full_name}</span>
+          <span className="text-fg-muted text-xs truncate">{lead.creator.full_name}</span>
         )}
       </div>
     ),
@@ -514,13 +514,13 @@ const COL_DEFS: ColDef[] = [
           {tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-line text-fg-subtle"
+              className="px-1.5 py-0.5 rounded text-xs font-medium bg-line text-fg-subtle"
             >
               {tag}
             </span>
           ))}
           {tags.length > 3 && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-raised text-fg-subtle">
+            <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-surface-raised text-fg-subtle">
               +{tags.length - 3}
             </span>
           )}
@@ -538,15 +538,15 @@ const COL_DEFS: ColDef[] = [
     render: (lead) => {
       const h = computeLeadHealth(lead);
       const pill: Record<string, string> = {
-        hot: 'bg-emerald-500/15 text-success',
-        warm: 'bg-amber-500/15 text-warning',
-        cold: 'bg-rose-500/15 text-danger',
+        hot: 'bg-success/15 text-success',
+        warm: 'bg-warning/15 text-warning',
+        cold: 'bg-danger/15 text-danger',
       };
       const dot: Record<string, string> = {
-        hot: 'bg-emerald-400', warm: 'bg-amber-400', cold: 'bg-rose-400',
+        hot: 'bg-success', warm: 'bg-warning', cold: 'bg-danger',
       };
       return (
-        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${pill[h.level]}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${pill[h.level]}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${dot[h.level]}`} />
           {h.label}
         </span>
@@ -579,7 +579,7 @@ const COL_DEFS: ColDef[] = [
     sortKey: 'last_activity_at',
     render: (lead) => {
       const a = describeLastActivity(lead);
-      return <span className={`text-xs ${a.stale ? 'text-rose-400/80' : 'text-fg-subtle'}`}>{a.label}</span>;
+      return <span className={`text-xs ${a.stale ? 'text-danger/80' : 'text-fg-subtle'}`}>{a.label}</span>;
     },
   },
 ];
@@ -753,7 +753,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 action.variant === 'danger'
-                  ? 'text-danger hover:bg-rose-500/10'
+                  ? 'text-danger hover:bg-danger/10'
                   : 'text-fg-subtle hover:bg-line'
               }`}
             >

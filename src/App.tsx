@@ -45,7 +45,7 @@ const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
     if (!isSynced) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] text-fg-subtle gap-4">
-                <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
                 <p className="text-sm font-medium animate-pulse">Connecting to shell context...</p>
             </div>
         );

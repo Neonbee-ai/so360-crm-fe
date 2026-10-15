@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, Card } from '@so360/design-system';
 import SalesFiltersBar from './components/SalesFiltersBar';
 import {
     salesReportService,
@@ -33,8 +33,7 @@ export const isEmptyReport = (r: CommissionReport): boolean =>
     && TOTAL_CARDS.every((c) => r.totals[c.key] === 0);
 
 const BucketTable: React.FC<{ title: string; nameHeader: string; rows: CommissionBucket[]; money: (n: number) => string }> = ({ title, nameHeader, rows, money }) => (
-    <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-        <h2 className="px-4 py-3 text-xs font-semibold text-fg-subtle border-b border-line">{title}</h2>
+    <Card title={title} padding="none">
         {rows.length === 0 ? (
             <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
         ) : (
@@ -63,7 +62,7 @@ const BucketTable: React.FC<{ title: string; nameHeader: string; rows: Commissio
                 </table>
             </div>
         )}
-    </section>
+    </Card>
 );
 
 /**
@@ -134,12 +133,12 @@ const CommissionReportPage: React.FC = () => {
     } else if (report) {
         body = (
             <>
-                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 wc-medium:grid-cols-4 lg:grid-cols-7 gap-nb-3">
                     {TOTAL_CARDS.map((c) => (
-                        <div key={c.key} className="bg-surface border border-line rounded-nb-lg p-4">
-                            <p className="text-xs font-semibold text-fg-muted">{c.label}</p>
+                        <Card key={c.key}>
+                            <p className="text-xs text-fg-muted">{c.label}</p>
                             <p className="mt-1 text-lg font-semibold text-fg" data-testid={`cr-total-${c.key}`}>{money(report.totals[c.key])}</p>
-                        </div>
+                        </Card>
                     ))}
                 </div>
                 <BucketTable title="By project" nameHeader="Project" rows={report.by_project} money={money} />
@@ -153,13 +152,17 @@ const CommissionReportPage: React.FC = () => {
         <DashboardPageTemplate
             title="Commission report"
             description="Commission earned across projects, agents and months."
-            primaryAction={canExport && !forbidden ? (
-                <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
-            ) : undefined}
             /* The report carries no developer list, so the developer filter is not offered here. */
-            filters={<SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />}
+            filters={(
+                <div className="flex w-full flex-wrap items-center justify-between gap-nb-3">
+                    <SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />
+                    {canExport && !forbidden ? (
+                        <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
+                    ) : null}
+                </div>
+            )}
         >
-            <div className="space-y-6">{body}</div>
+            <div className="flex flex-col gap-nb-4">{body}</div>
         </DashboardPageTemplate>
     );
 };

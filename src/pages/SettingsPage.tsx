@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { toast, SettingsPageTemplate, Button } from '@so360/design-system';
+import { toast, SettingsPageTemplate, Button, Card } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -504,6 +504,9 @@ const SettingsPage = () => {
                             Unsaved changes
                         </span>
                     )}
+                    {isDirty && !isSaving && (
+                        <Button variant="secondary" onClick={() => { if (savedSnapshotRef.current) setSettings(JSON.parse(savedSnapshotRef.current)); }}>Cancel</Button>
+                    )}
                     <Button onClick={handleSave} disabled={isSaving || !isDirty}><Save size={16} />
                         {isSaving ? 'Saving...' : 'Save Configuration'}
                     </Button>
@@ -522,21 +525,17 @@ const SettingsPage = () => {
             activeSection={activeTab}
             onSectionChange={(id) => setActiveTab(id as SettingsTab)}
         >
-            <div className="space-y-10">
+            <div className="flex flex-col gap-nb-4">
                 {activeTab === 'pipeline' && (
-                    <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-                        <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
-                            <div>
-                                <h3 className="font-semibold text-fg text-xs">Deal Pipeline Stages</h3>
-                                <p className="text-xs text-fg-muted mt-1">The order defines your sales funnel</p>
-                            </div>
-                            <button
+                    <Card title="Deal Pipeline Stages" padding="none" actions={(
+                        <button
                                 onClick={addStage}
                                 className="text-xs bg-primary hover:bg-primary/90 text-primary-fg px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all active:scale-95"
                             >
                                 <Plus size={12} /> ADD STAGE
                             </button>
-                        </div>
+                    )}>
+                        <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">The order defines your sales funnel</p>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.deal_stages.map((stage, idx) => (
@@ -567,7 +566,7 @@ const SettingsPage = () => {
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => removeStage(stage.id)}
-                                                className="p-2 hover:bg-rose-500/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
+                                                className="p-2 hover:bg-danger/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
                                                 title="Remove Stage"
                                             >
                                                 <Trash2 size={16} />
@@ -577,15 +576,12 @@ const SettingsPage = () => {
                                 ))}
                             </div>
                         </div>
-                    </section>
+                    </Card>
                 )}
 
                 {activeTab === 'lead-stages' && (
-                    <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-                        <div className="p-6 border-b border-line bg-surface-sunken">
-                            <h3 className="font-semibold text-fg text-xs">Lead Lifecycle Stages</h3>
-                            <p className="text-xs text-fg-muted mt-1">Managed in the Flow module — edit the CRM lead workflow to change these stages</p>
-                        </div>
+                    <Card title="Lead Lifecycle Stages" padding="none">
+                        <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">Managed in the Flow module — edit the CRM lead workflow to change these stages</p>
                         <div className="p-6">
                             <div className="space-y-3">
                                 {settings.lead_stages.map((stage, idx) => (
@@ -600,18 +596,14 @@ const SettingsPage = () => {
                                 ))}
                             </div>
                         </div>
-                    </section>
+                    </Card>
                 )}
 
                 {activeTab === 'custom-fields' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-nb-4">
                         {/* Lead Custom Fields */}
-                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden h-fit">
-                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
-                                <div>
-                                    <h3 className="font-semibold text-fg text-xs">Lead Fields</h3>
-                                </div>
-                                <button
+                        <Card title="Lead Fields" padding="none" className="h-fit" actions={(
+                            <button
                                     onClick={() => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, lead_custom_fields: [...settings.lead_custom_fields, newField] });
@@ -620,7 +612,7 @@ const SettingsPage = () => {
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
-                            </div>
+                        )}>
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.lead_custom_fields.map((field, idx) => (
@@ -660,7 +652,7 @@ const SettingsPage = () => {
                                                             lead_custom_fields: settings.lead_custom_fields.filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
+                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -690,7 +682,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
                                                                         setSettings({ ...settings, lead_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-rose-500/10 rounded text-fg-muted hover:text-danger transition-all"
+                                                                    className="p-1 hover:bg-danger/10 rounded text-fg-muted hover:text-danger transition-all"
                                                                 ><X size={12} /></button>
                                                             </div>
                                                         ))}
@@ -710,15 +702,11 @@ const SettingsPage = () => {
                                     ))}
                                 </div>
                             </div>
-                        </section>
+                        </Card>
 
                         {/* Deal Custom Fields */}
-                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden h-fit">
-                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
-                                <div>
-                                    <h3 className="font-semibold text-fg text-xs">Deal Fields</h3>
-                                </div>
-                                <button
+                        <Card title="Deal Fields" padding="none" className="h-fit" actions={(
+                            <button
                                     onClick={() => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, deal_custom_fields: [...settings.deal_custom_fields, newField] });
@@ -727,7 +715,7 @@ const SettingsPage = () => {
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
-                            </div>
+                        )}>
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {settings.deal_custom_fields.map((field, idx) => (
@@ -767,7 +755,7 @@ const SettingsPage = () => {
                                                             deal_custom_fields: settings.deal_custom_fields.filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
+                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -797,7 +785,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: ((newFields[idx] as any).options || []).filter((_: any, i: number) => i !== optIdx) } as any;
                                                                         setSettings({ ...settings, deal_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-rose-500/10 rounded text-fg-muted hover:text-danger transition-all"
+                                                                    className="p-1 hover:bg-danger/10 rounded text-fg-muted hover:text-danger transition-all"
                                                                 ><X size={12} /></button>
                                                             </div>
                                                         ))}
@@ -817,15 +805,11 @@ const SettingsPage = () => {
                                     ))}
                                 </div>
                             </div>
-                        </section>
+                        </Card>
 
                         {/* Partner Custom Fields */}
-                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden h-fit">
-                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
-                                <div>
-                                    <h3 className="font-semibold text-fg text-xs">Partner Fields</h3>
-                                </div>
-                                <button
+                        <Card title="Partner Fields" padding="none" className="h-fit" actions={(
+                            <button
                                     onClick={() => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
@@ -834,7 +818,7 @@ const SettingsPage = () => {
                                 >
                                     <Plus size={12} /> ADD
                                 </button>
-                            </div>
+                        )}>
                             <div className="p-6">
                                 <div className="space-y-3">
                                     {(settings.partner_custom_fields || []).map((field, idx) => (
@@ -874,7 +858,7 @@ const SettingsPage = () => {
                                                             partner_custom_fields: (settings.partner_custom_fields || []).filter(f => f.id !== field.id)
                                                         });
                                                     }}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
+                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-muted hover:text-danger transition-all opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -904,7 +888,7 @@ const SettingsPage = () => {
                                                                         newFields[idx] = { ...newFields[idx], options: (newFields[idx].options || []).filter((_: any, i: number) => i !== optIdx) };
                                                                         setSettings({ ...settings, partner_custom_fields: newFields });
                                                                     }}
-                                                                    className="p-1 hover:bg-rose-500/10 rounded text-fg-muted hover:text-danger transition-all"
+                                                                    className="p-1 hover:bg-danger/10 rounded text-fg-muted hover:text-danger transition-all"
                                                                 ><X size={12} /></button>
                                                             </div>
                                                         ))}
@@ -927,16 +911,13 @@ const SettingsPage = () => {
                                     )}
                                 </div>
                             </div>
-                        </section>
+                        </Card>
                     </div>
                 )}
 
                 {activeTab === 'sources' && (
-                    <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-                        <div className="p-6 border-b border-line bg-surface-sunken">
-                            <h3 className="font-semibold text-fg text-xs">Lead Source Types</h3>
-                            <p className="text-xs text-fg-muted mt-1">Where do your leads come from? system types cannot be deleted.</p>
-                        </div>
+                    <Card title="Lead Source Types" padding="none">
+                        <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">Where do your leads come from? system types cannot be deleted.</p>
                         <div className="p-6 space-y-4">
                             <div className="space-y-2">
                                 {sourceTypes.map(option => (
@@ -960,7 +941,7 @@ const SettingsPage = () => {
                                                 {!option.is_system && (
                                                     <button
                                                         onClick={() => handleDeleteSourceType(option.id)}
-                                                        className="p-1.5 rounded-lg text-fg-muted hover:text-danger hover:bg-rose-500/10 transition-all"
+                                                        className="p-1.5 rounded-lg text-fg-muted hover:text-danger hover:bg-danger/10 transition-all"
                                                         title="Delete"
                                                     >
                                                         <Trash2 size={16} />
@@ -991,21 +972,13 @@ const SettingsPage = () => {
                                 </div>
                             )}
                         </div>
-                    </section>
+                    </Card>
                 )}
                 {activeTab === 'scoring' && (
-                    <div className="space-y-6">
+                    <div className="flex flex-col gap-nb-4">
                         {/* ── Rules Section ── */}
-                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-                            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
-                                <div>
-                                    <h3 className="font-semibold text-fg text-xs flex items-center gap-2">
-                                        <Trophy size={14} className="text-warning" />
-                                        Lead Scoring Rules
-                                    </h3>
-                                    <p className="text-xs text-fg-muted mt-1">Rule-based auto-scoring engine</p>
-                                </div>
-                                <div className="flex items-center gap-2">
+                        <Card title="Lead Scoring Rules" padding="none" actions={(
+                            <div className="flex items-center gap-2">
                                     <button
                                         onClick={handleRecalculateScores}
                                         disabled={isRecalculating}
@@ -1025,7 +998,8 @@ const SettingsPage = () => {
                                         </button>
                                     )}
                                 </div>
-                            </div>
+                        )}>
+                            <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">Rule-based auto-scoring engine</p>
                             <div className="p-6 space-y-3">
                                 {/* Add-rule form */}
                                 {isAddingRule && (
@@ -1074,7 +1048,7 @@ const SettingsPage = () => {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span className="text-sm font-bold text-fg truncate">{rule.name}</span>
-                                                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${rule.rule_type === 'source' ? 'bg-primary/10 text-primary' : rule.rule_type === 'activity' ? 'bg-info/10 text-info' : 'bg-teal-500/20 text-teal-400'}`}>
+                                                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${rule.rule_type === 'source' ? 'bg-primary/10 text-primary' : rule.rule_type === 'activity' ? 'bg-info/10 text-info' : 'bg-warning/10 text-warning'}`}>
                                                         {rule.rule_type === 'source' ? 'Source' : rule.rule_type === 'activity' ? 'Activity' : 'Field'}
                                                     </span>
                                                 </div>
@@ -1084,7 +1058,7 @@ const SettingsPage = () => {
                                             </div>
 
                                             {/* Score badge */}
-                                            <div className={`text-sm font-semibold px-2 py-1 rounded-lg shrink-0 ${rule.score_points >= 0 ? 'text-success bg-success/10' : 'text-danger bg-rose-500/10'}`}>
+                                            <div className={`text-sm font-semibold px-2 py-1 rounded-lg shrink-0 ${rule.score_points >= 0 ? 'text-success bg-success/10' : 'text-danger bg-danger/10'}`}>
                                                 {rule.score_points >= 0 ? '+' : ''}{rule.score_points}
                                             </div>
 
@@ -1110,7 +1084,7 @@ const SettingsPage = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteRule(rule.id)}
-                                                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
+                                                    className="p-1.5 hover:bg-danger/10 rounded-lg text-fg-subtle hover:text-danger transition-all"
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -1119,17 +1093,11 @@ const SettingsPage = () => {
                                     )
                                 ))}
                             </div>
-                        </section>
+                        </Card>
 
                         {/* ── Score Bands Section ── */}
-                        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-                            <div className="p-6 border-b border-line bg-surface-sunken">
-                                <h3 className="font-semibold text-fg text-xs flex items-center gap-2">
-                                    <ShieldCheck size={14} className="text-success" />
-                                    Score Bands
-                                </h3>
-                                <p className="text-xs text-fg-muted mt-1">Define what each score range means</p>
-                            </div>
+                        <Card title="Score Bands" padding="none">
+                            <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">Define what each score range means</p>
                             <div className="p-6 space-y-2">
                                 {scoreCategories.map(cat => (
                                     <div key={cat.id} className="flex items-center gap-4 bg-surface-sunken border border-line p-3 rounded-nb">
@@ -1175,7 +1143,7 @@ const SettingsPage = () => {
                                     </div>
                                 ))}
                             </div>
-                        </section>
+                        </Card>
                     </div>
                 )}
 

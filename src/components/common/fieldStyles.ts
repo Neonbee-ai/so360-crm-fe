@@ -14,13 +14,13 @@
  */
 export const EDITABLE_FIELD_CLASS =
     'w-full px-4 py-2 bg-bg border border-line rounded-lg text-fg placeholder:text-fg-muted ' +
-    'hover:border-line focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-colors ' +
+    'hover:border-line focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors ' +
     'disabled:bg-surface-raised disabled:text-fg-subtle disabled:border-line disabled:cursor-not-allowed disabled:hover:border-line';
 
 /** Same language, sized for the dense line-item grid. */
 export const EDITABLE_FIELD_SM_CLASS =
     'w-full px-3 py-1.5 bg-bg border border-line rounded text-fg text-sm placeholder:text-fg-muted ' +
-    'hover:border-line focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-primary transition-colors ' +
+    'hover:border-line focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors ' +
     'disabled:bg-surface-raised disabled:text-fg-subtle disabled:border-line disabled:cursor-not-allowed disabled:hover:border-line';
 
 /** Right-aligned variant for numeric line-item cells (qty, price, discount, tax). */

@@ -62,13 +62,14 @@ beforeEach(async () => {
 });
 
 describe('QuotesPage — delete action (real Table)', () => {
-  describe('Given a draft quote row with a Delete icon', () => {
+  describe('Given a draft quote row with a Delete menu item', () => {
     it('When Delete is clicked / Then it opens the confirm dialog instead of navigating to Quote Detail', async () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
 
-      await user.click(screen.getByTitle('Delete'));
+      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
 
       expect(mockNavigate).not.toHaveBeenCalled();
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
@@ -78,7 +79,8 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getByTitle('Delete'));
+      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => {
         // The number now appears twice — in the table row it was clicked from,
         // and again in the dialog identifying what is about to be deleted. That
@@ -93,7 +95,8 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getByTitle('Delete'));
+      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -108,7 +111,8 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getByTitle('Delete'));
+      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: 'Delete Quote' }));
@@ -124,7 +128,8 @@ describe('QuotesPage — delete action (real Table)', () => {
       mockDeleteQuote.mockReturnValueOnce(new Promise((resolve) => { resolveDelete = resolve; }));
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getByTitle('Delete'));
+      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
       const confirmBtn = screen.getByRole('button', { name: 'Delete Quote' });
@@ -140,7 +145,8 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      await user.click(screen.getByTitle('Delete'));
+      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
       await waitFor(() => expect(screen.getByText('Delete Quote?')).toBeInTheDocument());
 
       await user.click(screen.getByRole('button', { name: 'Delete Quote' }));
@@ -151,11 +157,15 @@ describe('QuotesPage — delete action (real Table)', () => {
   });
 
   describe('Given a non-draft quote row', () => {
-    it('When rendered / Then no Delete icon is shown', async () => {
+    it('When rendered / Then no Delete menu item is shown', async () => {
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00023')).toBeInTheDocument());
       // only the draft quote (q1) exposes delete
-      expect(screen.getAllByTitle('Delete')).toHaveLength(1);
+      // only the draft quote (q1) exposes delete in its kebab menu
+      const user = userEvent.setup();
+      await user.click(screen.getAllByTitle('More actions')[1]);
+      await screen.findByRole('menuitem', { name: /View Quote Details/ });
+      expect(screen.queryByRole('menuitem', { name: /Delete Quote/ })).not.toBeInTheDocument();
     });
   });
 
@@ -164,8 +174,8 @@ describe('QuotesPage — delete action (real Table)', () => {
       const user = userEvent.setup();
       render(<QuotesPage />);
       await waitFor(() => expect(screen.getByText('QT-2026-00022')).toBeInTheDocument());
-      const viewButtons = screen.getAllByTitle('View');
-      await user.click(viewButtons[0]);
+      await user.click(screen.getAllByTitle('More actions')[0]);
+      await user.click(await screen.findByRole('menuitem', { name: /View Quote Details/ }));
       // The list records where the reader came from, so Quote Detail's Back
       // control returns here rather than falling through to the linked deal.
       expect(mockNavigate).toHaveBeenCalledWith('/crm/quotes/q1', { state: { from: '/crm/quotes' } });

@@ -22,9 +22,9 @@ const PALETTE = [
     { bar: 'bg-primary', dot: 'bg-primary' },
     { bar: 'bg-success', dot: 'bg-success' },
     { bar: 'bg-warning', dot: 'bg-warning' },
-    { bar: 'bg-purple-500', dot: 'bg-purple-500' },
-    { bar: 'bg-pink-500', dot: 'bg-pink-500' },
-    { bar: 'bg-teal-500', dot: 'bg-teal-500' },
+    { bar: 'bg-info', dot: 'bg-info' },
+    { bar: 'bg-danger', dot: 'bg-danger' },
+    { bar: 'bg-fg-muted', dot: 'bg-fg-muted' },
 ];
 const FALLBACK_COLOR = { bar: 'bg-fg-subtle', dot: 'bg-fg-subtle' };
 

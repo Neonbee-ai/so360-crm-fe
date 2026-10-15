@@ -142,13 +142,13 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                             <span>
                                 Merging <strong className="text-fg">{leadDisplayName(other)}</strong> into this lead. It will be removed afterwards.
                             </span>
-                            <button type="button" onClick={() => setOther(null)} className="text-blue-400 hover:underline shrink-0 ml-2">
+                            <button type="button" onClick={() => setOther(null)} className="text-primary hover:underline shrink-0 ml-2">
                                 Change
                             </button>
                         </div>
                         <table className="w-full text-sm" data-testid="merge-field-chooser">
                             <thead>
-                                <tr className="text-[10px] uppercase tracking-widest text-fg-muted">
+                                <tr className="text-xs text-fg-muted">
                                     <th className="text-left py-1 font-bold">Field</th>
                                     <th className="text-left py-1 font-bold">This lead</th>
                                     <th className="text-left py-1 font-bold">Other lead</th>
@@ -192,7 +192,7 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                     type="button"
                     onClick={handleMerge}
                     disabled={!other || merging}
-                    className="px-4 py-2 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg text-sm font-bold bg-primary text-primary-fg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
                 >
                     {merging && <Loader2 size={14} className="animate-spin" />}
                     Merge

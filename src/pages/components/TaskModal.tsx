@@ -227,7 +227,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
             <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0">
-                    <h2 className="text-xl font-semibold text-fg tracking-tight flex items-center gap-2">
+                    <h2 className="text-xl font-semibold text-fg flex items-center gap-2">
                         <CheckCircle2 className={isEditing ? "text-primary" : "text-success"} size={24} />
                         {isEditing ? 'Edit Task' : 'New Task'}
                     </h2>
@@ -335,7 +335,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                             date — no invented 9am, no invented midnight. */}
                         <div className="space-y-2">
                             <label htmlFor="task-due-time" className="text-xs font-semibold text-fg-muted">
-                                Due Time {type === 'REMINDER' ? <span className="text-danger">*</span> : <span className="text-fg-muted normal-case tracking-normal font-bold">(optional)</span>}
+                                Due Time {type === 'REMINDER' ? <span className="text-danger">*</span> : <span className="text-fg-muted font-bold">(optional)</span>}
                             </label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
@@ -419,7 +419,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-fg-muted flex items-center gap-1.5">
                                 <Link2 size={12} />
-                                Project <span className="text-fg-muted normal-case tracking-normal font-bold">(optional)</span>
+                                Project <span className="text-fg-muted font-bold">(optional)</span>
                             </label>
                             <ProjectSelect value={projectId} onChange={setProjectId} />
                             {projectId && (
@@ -506,7 +506,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`px-8 py-3 text-white rounded-nb-lg text-xs font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-blue-500/20' : 'bg-success hover:bg-success/90 shadow-emerald-500/20'}`}
+                            className={`px-8 py-3 text-white rounded-nb-lg text-xs font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-primary/20' : 'bg-success hover:bg-success/90 shadow-success/20'}`}
                         >
                             {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                             {isEditing ? 'Save Changes' : 'Create Task'}

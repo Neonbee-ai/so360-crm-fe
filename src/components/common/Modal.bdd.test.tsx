@@ -163,9 +163,9 @@ describe('Modal', () => {
       expect(document.body.querySelector('[class*="fixed inset-0"]')).toBeTruthy();
     });
 
-    it('When the modal is open / Then the overlay has z-[600] to sit above the Shell NavBar (z-500)', () => {
+    it('When the modal is open / Then the overlay uses the z-dialog token to sit above the Shell chrome', () => {
       render(<Modal isOpen={true} onClose={vi.fn()} title="Z-index Test"><p>content</p></Modal>);
-      const overlay = document.body.querySelector('[class*="z-\\[600\\]"]');
+      const overlay = document.body.querySelector('[class*="z-dialog"]');
       expect(overlay).toBeTruthy();
     });
 

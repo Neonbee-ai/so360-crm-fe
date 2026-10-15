@@ -285,15 +285,15 @@ describe('Given QuotesPage — delete quote', () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
     // The delete button appears only for draft quotes (q1 is draft)
-    const deleteButtons = screen.getAllByTitle('Delete');
-    expect(deleteButtons.length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(screen.getAllByTitle('More actions')[0]);
+    expect(await screen.findByRole('menuitem', { name: /Delete Quote/ })).toBeInTheDocument();
   });
 
   it('When action / Then clicking delete shows confirmation dialog', async () => {
     render(<QuotesPage />);
     await waitFor(() => screen.getAllByTestId('table-row'));
-    const deleteButtons = screen.getAllByTitle('Delete');
-    fireEvent.click(deleteButtons[0]);
+    fireEvent.click(screen.getAllByTitle('More actions')[0]);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Delete Quote/ }));
     await waitFor(() => {
       expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
     });
