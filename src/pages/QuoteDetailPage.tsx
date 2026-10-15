@@ -16,6 +16,7 @@ import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
+import { crmPortalRoot } from '../utils/crmScope';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string; tone: BadgeTone }> = {
     draft: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Draft', tone: 'neutral' },
@@ -1052,7 +1053,7 @@ const QuoteDetailPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Convert Modal */}
@@ -1079,7 +1080,7 @@ const QuoteDetailPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             <Modal
@@ -1186,7 +1187,7 @@ const QuoteDetailPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Quote Approval Modal (Approver Selection & Submission) */}

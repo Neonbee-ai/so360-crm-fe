@@ -17,6 +17,7 @@ import { goBackFrom } from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
+import { crmPortalRoot } from '../utils/crmScope';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
@@ -577,7 +578,7 @@ const TaskDetailPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Delete Note Confirmation Modal */}
@@ -621,7 +622,7 @@ const TaskDetailPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Disconnect from Project Confirmation Modal */}
@@ -686,7 +687,7 @@ const TaskDetailPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Delete Confirmation Dialog */}
@@ -713,7 +714,7 @@ const TaskDetailPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
         </DetailPageTemplate>
     );

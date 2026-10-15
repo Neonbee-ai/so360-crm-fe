@@ -12,6 +12,7 @@ import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOve
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 import TaskModal from './components/TaskModal';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
+import { crmPortalRoot } from '../utils/crmScope';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
@@ -509,7 +510,7 @@ const TasksPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
         </ListPageTemplate>
     );

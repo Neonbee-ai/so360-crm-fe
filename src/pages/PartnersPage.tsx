@@ -24,6 +24,7 @@ import {
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
+import { crmPortalRoot } from '../utils/crmScope';
 
 type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value';
 type SortDirection = 'asc' | 'desc' | null;
@@ -444,7 +445,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
             </div>
         </div>,
-        document.body
+        crmPortalRoot()
     );
 };
 

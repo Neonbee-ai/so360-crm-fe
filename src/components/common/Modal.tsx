@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { crmPortalRoot } from '../../utils/crmScope';
 
 const sizeClasses = { md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' };
 
@@ -43,6 +44,6 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'lg' }: ModalPr
                 </div>
             </div>
         </div>,
-        document.body
+        crmPortalRoot()
     );
 };

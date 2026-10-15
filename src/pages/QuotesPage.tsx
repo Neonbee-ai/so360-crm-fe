@@ -16,6 +16,7 @@ import { useFormatters } from '@so360/formatters';
 import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
+import { crmPortalRoot } from '../utils/crmScope';
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
     draft: { bg: 'bg-fg-muted/10', text: 'text-fg-subtle', label: 'Draft', border: 'border-line' },
@@ -100,7 +101,7 @@ export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActio
                         ))}
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
         </div>
     );
@@ -1426,7 +1427,7 @@ const QuotesPage = () => {
                         </>
                     )}
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Create Quote Modal */}
@@ -1548,7 +1549,7 @@ const QuotesPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Reject Reason Modal */}
@@ -1600,7 +1601,7 @@ const QuotesPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
 
             {/* Delete Confirm Dialog */}
@@ -1636,7 +1637,7 @@ const QuotesPage = () => {
                         </div>
                     </div>
                 </div>,
-                document.body
+                crmPortalRoot()
             )}
             </div>
         </ListPageTemplate>

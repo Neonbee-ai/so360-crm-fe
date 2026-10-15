@@ -5,6 +5,7 @@ import { FeatureRoute } from '@so360/design-system';
 import { CrossLinkProvider } from '@so360/cross-link';
 import { crmService } from './services/crmService';
 import { salesTargetService } from './services/salesTargetService';
+import { CrmScope } from './utils/crmScope';
 
 // Synchronizes Shell Context with CRM Service
 const CrmShellInitializer = ({ children }: { children: React.ReactNode }) => {
@@ -200,13 +201,15 @@ const SalesAnalyticsPage = lazy(() => import('./pages/SalesAnalyticsPage'));
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
-        <div className="min-h-full bg-bg text-fg">
-            <main className="w-full">
-                <Suspense fallback={<div className="p-8 text-fg-subtle">Loading module...</div>}>
-                    {children}
-                </Suspense>
-            </main>
-        </div>
+        <CrmScope>
+            <div className="min-h-full bg-bg text-fg">
+                <main className="w-full">
+                    <Suspense fallback={<div className="p-8 text-fg-subtle">Loading module...</div>}>
+                        {children}
+                    </Suspense>
+                </main>
+            </div>
+        </CrmScope>
     );
 };
 

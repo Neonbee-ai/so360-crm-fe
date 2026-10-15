@@ -13,6 +13,7 @@ import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState } from '@so360/design-system';
+import { crmPortalRoot } from '../utils/crmScope';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -80,7 +81,7 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
                 </form>
             </div>
         </div>,
-        document.body
+        crmPortalRoot()
     );
 };
 
