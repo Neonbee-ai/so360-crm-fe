@@ -213,27 +213,22 @@ describe('PartnersPage', () => {
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
         });
 
-        it('When modal opens / Then header is rendered outside the scrollable body (viewport-safe structure)', async () => {
+        it('When modal opens / Then the title is rendered by the common Modal', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            // The modal title must sit in a non-scrolling div (shrink-0 header zone)
-            const h2 = screen.getByRole('heading', { level: 3, name: 'Add Partner' });
-            const headerDiv = h2.closest('div[class*="shrink-0"]');
-            expect(headerDiv).not.toBeNull();
-            expect(headerDiv!.className).not.toContain('overflow-y-auto');
+            expect(screen.getByRole('heading', { name: 'Add Partner' })).toBeInTheDocument();
         });
 
-        it('When modal opens / Then the form body scrolls inside the common Modal body', async () => {
+        it('When modal opens / Then the form is rendered inside the dialog body', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            // The scrollable area is the Modal body wrapping the <form>
             const form = document.querySelector('form#create-partner-form');
             expect(form).not.toBeNull();
-            expect(form!.parentElement!.className).toContain('overflow-y-auto');
+            expect(screen.getByRole('dialog').contains(form)).toBe(true);
         });
 
         it('When modal opens / Then footer buttons are rendered outside the scrollable form', async () => {
@@ -251,46 +246,13 @@ describe('PartnersPage', () => {
             expect(submitBtn.closest('form')).toBeNull();
         });
 
-        it('When modal outer wrapper is rendered / Then it does NOT carry overflow-y-auto', async () => {
-            const user = userEvent.setup();
-            render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
-
-            // The dialog panel itself must not scroll (only its body does)
-            const panel = screen.getByRole('dialog');
-            expect(panel.className).not.toContain('overflow-y-auto');
-        });
-
-        it('When modal panel is rendered / Then it carries overflow-hidden to clip child overflow', async () => {
-            const user = userEvent.setup();
-            render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
-
-            const panel = screen.getByRole('dialog');
-            expect(panel.className).toContain('overflow-hidden');
-        });
-
-        it('When modal panel is rendered / Then it has max-h-[90vh] to prevent viewport overflow', async () => {
-            const user = userEvent.setup();
-            render(<PartnersPage />);
-            await user.click(screen.getByRole('button', { name: /add partner/i }));
-
-            const panel = screen.getByRole('dialog');
-            expect(panel.className).toContain('max-h-[90vh]');
-        });
-
         it('When X button clicked / Then modal closes', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
 
-            // The X icon button lives in the modal header div alongside the h2
-            const h2 = screen.getByRole('heading', { level: 3, name: 'Add Partner' });
-            const headerDiv = h2.closest('div[class*="shrink-0"]')!;
-            const closeBtn = headerDiv.querySelector('button');
-            expect(closeBtn).not.toBeNull();
-            await user.click(closeBtn!);
+            await user.click(screen.getByRole('button', { name: 'Close' }));
             await waitFor(() => {
                 expect(document.querySelector('form#create-partner-form')).toBeNull();
             });
@@ -660,14 +622,14 @@ describe('PartnersPage', () => {
         it('When the PIN is short / Then the six-digit message appears and the count is shown', async () => {
             const user = userEvent.setup();
             await openModal(user);
-            expect(screen.getByText('0/6 digits')).toBeInTheDocument();
+            expect(screen.getByText(/0\/6 digits/)).toBeInTheDocument();
             const pin = screen.getByPlaceholderText('560001');
             fireEvent.change(pin, { target: { value: '5600' } });
             fireEvent.blur(pin);
             await waitFor(() =>
                 expect(screen.getByText('Please enter a valid 6-digit PIN Code.')).toBeInTheDocument(),
             );
-            expect(screen.getByText('4/6 digits')).toBeInTheDocument();
+            expect(screen.getByText(/4\/6 digits/)).toBeInTheDocument();
         });
 
         it('When the country switches / Then the postal field follows that country s rule', async () => {

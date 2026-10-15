@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { TextField, Textarea, Select, NumberInput, IconButton } from '@so360/design-system';
+import { TextField, Textarea, Select, NumberInput, IconButton, ColorPicker, Slider } from '@so360/design-system';
 
 interface Block {
   id: string;
@@ -113,7 +113,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
           {tf('text', 'Button text')}
           {tf('url', 'Button URL')}
           <div className="flex gap-2 items-center">
-            <input type="color" value={c.color || '#2563eb'} onChange={e => update('color', e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
+            <ColorPicker name={`block-${block.id}-color`} aria-label="Colour" value={c.color || '#2563eb'} onChange={(v: string) => update('color', v)} />
             {alignSelect}
           </div>
         </div>
@@ -121,7 +121,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
     case 'divider':
       return (
         <div className="flex gap-2 items-center">
-          <input type="color" value={c.color || '#334155'} onChange={e => update('color', e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
+          <ColorPicker name={`block-${block.id}-color`} aria-label="Colour" value={c.color || '#334155'} onChange={(v: string) => update('color', v)} />
           <div className="w-28"><NumberInput name={`block-${block.id}-thickness`} aria-label="Thickness" size="sm" min={1} max={4} value={c.thickness} onChange={(v: number | null) => update('thickness', v ?? 0)} /></div>
           <span className="text-xs text-fg-muted">px</span>
         </div>
@@ -129,7 +129,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
     case 'spacer':
       return (
         <div className="flex gap-2 items-center">
-          <input type="range" min={8} max={64} value={c.height} onChange={e => update('height', Number(e.target.value))} className="flex-1" />
+          <div className="flex-1"><Slider name={`block-${block.id}-height`} aria-label="Height" min={8} max={64} value={Number(c.height)} onChange={(v: number) => update('height', v)} showValue={false} /></div>
           <span className="text-xs text-fg-subtle w-10">{c.height}px</span>
         </div>
       );

@@ -336,7 +336,7 @@ const DashboardPage = () => {
                                                 className="w-full bg-info/20 border-t-2 border-info rounded-t-sm hover:bg-info/40 transition-all relative group-hover:"
                                                 style={{ height: `${heightPct}%` }}
                                             >
-                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-fg/90 text-primary-fg text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
+                                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-fg/90 text-primary-fg text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-menu pointer-events-none">
                                                     {val} orders
                                                 </div>
                                             </div>
@@ -453,7 +453,7 @@ const DashboardPage = () => {
                                         className="w-full bg-primary/20 border-t-2 border-primary rounded-t-sm hover:bg-primary/40 transition-all relative group-hover:"
                                         style={{ height: `${heightPercentage}%` }}
                                     >
-                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-fg/90 text-primary-fg text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-fg/90 text-primary-fg text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-menu pointer-events-none">
                                             {formatCurrency(val)}
                                         </div>
                                     </div>

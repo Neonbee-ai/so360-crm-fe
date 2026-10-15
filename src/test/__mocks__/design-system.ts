@@ -23,7 +23,7 @@ export const Textarea = ({ label, hint, error, required, name, id, size: _s, 'da
     React.createElement('textarea', { ...rest, id: fid, name, required, 'data-testid': testId, 'aria-invalid': error ? true : undefined }));
 };
 export const Select = ({ value, onChange, options = [], placeholder, label, hint: _h, error, size: _sz, required, name, className: _c, ...rest }: any) => {
-  const el = React.createElement('select', { id: rest.id ?? (label ? `f-${name}` : undefined), name, required, disabled: rest.disabled, value: value ?? '', onChange: (e: any) => onChange?.(e), 'aria-label': rest['aria-label'] ?? (label ? undefined : placeholder), 'data-testid': rest['data-testid'] },
+  const el = React.createElement('select', { id: rest.id ?? (label ? `f-${name}` : undefined), name, required, disabled: rest.disabled, title: rest.title, multiple: rest.multiple, value: value ?? '', onChange: (e: any) => { onChange?.(e); rest.onValueChange?.(e.target.value); }, 'aria-label': rest['aria-label'] ?? (label ? undefined : placeholder), 'data-testid': rest['data-testid'] },
     placeholder ? React.createElement('option', { key: '__ph', value: '', disabled: true }, placeholder) : null,
     options.map((o: any) => React.createElement('option', { key: String(o.value), value: o.value, disabled: o.disabled }, o.label)));
   return label || error ? React.createElement('div', null, label ? React.createElement('label', { htmlFor: el?.props?.id ?? `f-${name}` }, label) : null, el, error ? React.createElement('p', { role: 'alert' }, error) : null) : el;
@@ -37,9 +37,15 @@ export const Modal = ({ open, onClose, title, description, footer, children, dis
         React.createElement('div', null, children),
         footer ? React.createElement('div', null, footer) : null)
     : null;
-export const Drawer = ({ isOpen, onClose, title, subtitle, footer, toolbar, children, 'data-testid': testId }: any) =>
-  isOpen
-    ? React.createElement('aside', { role: 'dialog', 'aria-label': typeof title === 'string' ? title : undefined, 'data-testid': testId },
+export const Drawer = ({ isOpen, onClose, title, subtitle, footer, toolbar, children, name, 'data-testid': testId }: any) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [isOpen, onClose]);
+  return isOpen
+    ? React.createElement('aside', { role: 'dialog', 'aria-label': typeof title === 'string' ? title : undefined, 'data-testid': testId ?? (name ? `drawer-${name}` : undefined) },
         React.createElement('h2', null, title),
         subtitle ? React.createElement('p', null, subtitle) : null,
         React.createElement('button', { type: 'button', 'aria-label': 'Close', onClick: onClose }, 'x'),
@@ -47,6 +53,11 @@ export const Drawer = ({ isOpen, onClose, title, subtitle, footer, toolbar, chil
         React.createElement('div', null, children),
         footer ? React.createElement('div', null, footer) : null)
     : null;
+};
+export const ColorPicker = ({ value, onChange, name, 'aria-label': ariaLabel, 'data-testid': testId }: any) =>
+  React.createElement('input', { type: 'color', name, value, 'aria-label': ariaLabel, 'data-testid': testId, onChange: (e: any) => onChange?.(e.target.value) });
+export const Slider = ({ value, onChange, min = 0, max = 100, step = 1, name, 'aria-label': ariaLabel, 'data-testid': testId }: any) =>
+  React.createElement('input', { type: 'range', name, min, max, step, value, 'aria-label': ariaLabel, 'data-testid': testId, onChange: (e: any) => onChange?.(Number(e.target.value)) });
 export const PortalProvider = ({ children }: any) => React.createElement(React.Fragment, null, children);
 export const usePortalContainer = () => (typeof document !== 'undefined' ? document.body : null);
 export const Card = ({ title, actions, footer, children, 'data-testid': testId }: any) =>
@@ -239,6 +250,12 @@ const slugifyId = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, '-').rep
 export const Menu = ({ trigger, items = [], name, 'data-testid': testId }: any) => {
     const [open, setOpen] = React.useState(false);
     const id = testId ?? (name ? name : 'menu');
+    React.useEffect(() => {
+        if (!open) return;
+        const h = (e: any) => { if (!e.target?.closest?.('[role="menu"],[aria-haspopup="menu"]')) setOpen(false); };
+        document.addEventListener('mousedown', h);
+        return () => document.removeEventListener('mousedown', h);
+    }, [open]);
     const trig = React.cloneElement(trigger, {
         onClick: (e: any) => { trigger.props?.onClick?.(e); setOpen((o: boolean) => !o); },
         'aria-haspopup': 'menu', 'aria-expanded': open,

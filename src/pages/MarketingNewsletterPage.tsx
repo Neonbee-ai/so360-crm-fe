@@ -146,6 +146,7 @@ const MarketingNewsletterPage: React.FC = () => {
           <Card title="Add Subscriber">
             <div className="space-y-nb-3">
               <TextField
+                name="subscriber-email"
                 type="email"
                 label="Email Address"
                 value={email}

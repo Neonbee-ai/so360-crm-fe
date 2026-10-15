@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, ListFilters } from '@so360/design-system';
+import { DashboardPageTemplate, ListFilters, DataTable, Select } from '@so360/design-system';
 import { useSalesFilterConfig, type FilterOption } from './components/SalesFiltersBar';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { validateDateRange, type SalesFilters } from '../services/salesReportService';
@@ -14,8 +14,6 @@ import {
 import { useCRMFormatters } from '../utils/formatters';
 import { describeApiError } from '../utils/apiErrorMessage';
 
-const TH = 'px-4 py-3 text-left text-xs font-semibold text-fg-muted whitespace-nowrap';
-const TD = 'px-4 py-3 text-xs font-bold text-fg-subtle whitespace-nowrap';
 
 const PERIOD_LABELS: Record<ReportPeriod, string> = { month: 'Monthly', quarter: 'Quarterly', year: 'Yearly' };
 
@@ -217,26 +215,19 @@ const SalesAnalyticsPage: React.FC = () => {
                         {s.rows.length === 0 ? (
                             <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table aria-label={s.title} className="w-full">
-                                    <thead>
-                                        <tr>
-                                            {s.header.map((h) => (
-                                                <th key={h.label} className={`${TH}${h.numeric ? ' text-right' : ''}`}>{h.label}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-line">
-                                        {s.rows.map((r) => (
-                                            <tr key={r.key}>
-                                                {r.cells.map((c, i) => (
-                                                    <td key={i} className={`${TD}${c.numeric ? ' text-right' : ''}`}>{c.value}</td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <DataTable
+                                name={`sa-table-${s.section}`}
+                                data-testid={`sa-table-${s.section}`}
+                                density="compact"
+                                columns={s.header.map((h, ci) => ({
+                                    key: `c${ci}`,
+                                    header: h.label,
+                                    align: h.numeric ? 'right' as const : undefined,
+                                    render: (r: (typeof s.rows)[number]) => r.cells[ci]?.value,
+                                }))}
+                                rows={s.rows}
+                                rowKey={(r) => r.key}
+                            />
                         )}
                     </section>
                 ))}
@@ -250,17 +241,14 @@ const SalesAnalyticsPage: React.FC = () => {
             description="Bookings, lead sources, lost reasons, reservations and agent performance."
             filters={(
                 <div className="space-y-4">
-            <label className="flex flex-col gap-1 text-xs font-semibold text-fg-muted">
-                Period
-                <select
-                    aria-label="Report period"
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-                    className="bg-bg border border-line text-fg rounded-nb px-3 py-2 outline-none focus:border-primary font-bold text-xs"
-                >
-                    {REPORT_PERIODS.map((p) => <option key={p} value={p}>{PERIOD_LABELS[p]}</option>)}
-                </select>
-            </label>
+            <Select
+                name="sales-report-period"
+                label="Period"
+                aria-label="Report period"
+                value={period}
+                onValueChange={(v) => setPeriod(v as ReportPeriod)}
+                options={REPORT_PERIODS.map((p) => ({ value: p, label: PERIOD_LABELS[p] }))}
+            />
                     <ListFilters {...filterConfig} />
                 </div>
             )}

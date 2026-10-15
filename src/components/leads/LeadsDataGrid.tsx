@@ -33,7 +33,7 @@ import {
   TrendingUp,
   Layers,
 } from 'lucide-react';
-import { Button } from '@so360/design-system';
+import { Button, Select, TextField } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { Lead, User } from '../../types/crm';
 import {
@@ -248,17 +248,15 @@ const COL_DEFS: ColDef[] = [
       return (
         <div onClick={(e) => e.stopPropagation()}>
           {ctx.canUpdate ? (
-            <select
+            <Select
+              name={`lead-status-${lead.id}`}
+              aria-label="Status"
+              size="sm"
               value={currentStageId}
-              onChange={(e) => ctx.onStatusChange(lead, e.target.value)}
-              className={`px-2 py-1 rounded-full text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-focus ${color}`}
-            >
-              {ctx.leadStages.map((stage) => (
-                <option key={stage.id} value={stage.id} className="bg-surface text-fg-subtle">
-                  {stage.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => ctx.onStatusChange(lead, v)}
+              className={`rounded-full text-xs font-medium cursor-pointer ${color}`}
+              options={ctx.leadStages.map((stage) => ({ value: stage.id, label: stage.name }))}
+            />
           ) : (
             <span className={`px-2 py-1 rounded-full text-xs font-medium border ${color}`}>
               {lead.status}
@@ -290,17 +288,15 @@ const COL_DEFS: ColDef[] = [
             </div>
           )}
           {ctx.canUpdate ? (
-            <select
+            <Select
+              name={`lead-owner-${lead.id}`}
+              aria-label="Owner"
+              size="sm"
               value={lead.owner?.id || ''}
-              onChange={(e) => ctx.onOwnerChange(lead, e.target.value)}
-              className="bg-transparent text-fg-subtle text-sm focus:outline-none cursor-pointer hover:text-fg transition-colors truncate max-w-24"
-            >
-              {ctx.users.map((u) => (
-                <option key={u.id} value={u.id} className="bg-surface text-fg-subtle">
-                  {u.full_name}
-                </option>
-              ))}
-            </select>
+              onValueChange={(v) => ctx.onOwnerChange(lead, v)}
+              className="max-w-40 truncate"
+              options={ctx.users.map((u) => ({ value: u.id, label: u.full_name }))}
+            />
           ) : (
             <span className="text-fg-subtle text-sm truncate">{ownerName}</span>
           )}
@@ -690,10 +686,12 @@ function InlineCellEditor({ initial, type, onCommit, onCancel }: InlineCellEdito
   };
 
   return (
-    <input
+    <TextField
       autoFocus
+      name="edit-cell"
       type={type}
       aria-label="Edit cell"
+      size="sm"
       value={value}
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => setValue(e.target.value)}
@@ -703,7 +701,6 @@ function InlineCellEditor({ initial, type, onCommit, onCancel }: InlineCellEdito
         if (e.key === 'Enter') { e.preventDefault(); commit(); }
         else if (e.key === 'Escape') { committed.current = true; onCancel(); }
       }}
-      className="w-full bg-surface-raised border border-primary rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-1 focus:ring-focus"
     />
   );
 }
@@ -1195,7 +1192,7 @@ export function LeadsDataGrid({
             return (
               <div
                 key="select"
-                className={`flex items-center justify-center shrink-0 sticky z-10 ${cellPy} ${
+                className={`flex items-center justify-center shrink-0 sticky ${cellPy} ${
                   isSelected ? 'bg-primary/10' : isHovered ? 'bg-surface-high' : 'bg-bg'
                 }`}
                 style={{ width: col.width, left: colLeftOffsets['select'] }}
@@ -1244,7 +1241,7 @@ export function LeadsDataGrid({
                 canEditCell ? 'cursor-text' : ''
               } ${
                 isSticky
-                  ? `sticky z-10 ${isSelected ? 'bg-primary/10' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
+                  ? `sticky ${isSelected ? 'bg-primary/10' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
                   : ''
               }`}
               style={{
@@ -1407,7 +1404,7 @@ export function LeadsDataGrid({
         <div style={{ minWidth: `${totalWidth}px` }}>
           {/* Header */}
           <div
-            className="flex sticky top-0 z-20 bg-surface border-b border-line"
+            className="flex sticky top-0 z-toolbar bg-surface border-b border-line"
             style={{ minWidth: `${totalWidth}px` }}
           >
             {orderedCols.map((col) => {
@@ -1419,7 +1416,7 @@ export function LeadsDataGrid({
                 return (
                   <div
                     key="select"
-                    className="flex items-center justify-center shrink-0 sticky bg-surface z-30"
+                    className="flex items-center justify-center shrink-0 sticky bg-surface z-toolbar"
                     style={{ width: col.width, left: colLeftOffsets['select'] }}
                   >
                     <button
@@ -1449,7 +1446,7 @@ export function LeadsDataGrid({
                 <div
                   key={col.key}
                   className={`relative flex items-center group px-3 text-xs font-medium text-fg-muted select-none shrink-0 py-3 ${
-                    col.pinned ? 'sticky z-30 bg-surface' : ''
+                    col.pinned ? 'sticky z-toolbar bg-surface' : ''
                   }`}
                   style={{
                     width: col.width,

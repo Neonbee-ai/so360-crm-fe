@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, Card, ListFilters } from '@so360/design-system';
+import { DashboardPageTemplate, Card, ListFilters, DataTable } from '@so360/design-system';
 import { useSalesFilterConfig } from './components/SalesFiltersBar';
 import {
     salesReportService,
@@ -25,8 +25,6 @@ export const TOTAL_CARDS: Array<{ key: keyof CommissionTotals; label: string }> 
     { key: 'paid', label: 'Paid' },
 ];
 
-const TH = 'px-4 py-3 text-left text-xs font-semibold text-fg-muted whitespace-nowrap';
-const TD = 'px-4 py-3 text-xs font-bold text-fg-subtle whitespace-nowrap';
 
 export const isEmptyReport = (r: CommissionReport): boolean =>
     r.by_project.length === 0 && r.by_agent.length === 0 && r.by_month.length === 0
@@ -37,30 +35,20 @@ const BucketTable: React.FC<{ title: string; nameHeader: string; rows: Commissio
         {rows.length === 0 ? (
             <p className="px-4 py-6 text-xs text-fg-muted">Nothing to show.</p>
         ) : (
-            <div className="overflow-x-auto">
-                <table aria-label={title} className="w-full">
-                    <thead>
-                        <tr>
-                            <th className={TH}>{nameHeader}</th>
-                            <th className={`${TH} text-right`}>Deals</th>
-                            <th className={`${TH} text-right`}>Gross</th>
-                            <th className={`${TH} text-right`}>Agent</th>
-                            <th className={`${TH} text-right`}>Company</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line">
-                        {rows.map((b, i) => (
-                            <tr key={b.key || `row-${i}`}>
-                                <td className={TD}>{b.label}</td>
-                                <td className={`${TD} text-right`}>{b.count ?? '—'}</td>
-                                <td className={`${TD} text-right`}>{money(b.gross)}</td>
-                                <td className={`${TD} text-right`}>{money(b.agent)}</td>
-                                <td className={`${TD} text-right`}>{money(b.company)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <DataTable
+                name={`commission-table-${title.toLowerCase().replace(/\s+/g, '-')}`}
+                data-testid={`commission-table-${title.toLowerCase().replace(/\s+/g, '-')}`}
+                density="compact"
+                columns={[
+                    { key: 'label', header: nameHeader, render: (b: CommissionBucket) => b.label },
+                    { key: 'count', header: 'Deals', align: 'right' as const, render: (b: CommissionBucket) => b.count ?? '—' },
+                    { key: 'gross', header: 'Gross', align: 'right' as const, render: (b: CommissionBucket) => money(b.gross) },
+                    { key: 'agent', header: 'Agent', align: 'right' as const, render: (b: CommissionBucket) => money(b.agent) },
+                    { key: 'company', header: 'Company', align: 'right' as const, render: (b: CommissionBucket) => money(b.company) },
+                ]}
+                rows={rows}
+                rowKey={(b) => b.key || `row-${rows.indexOf(b)}`}
+            />
         )}
     </Card>
 );

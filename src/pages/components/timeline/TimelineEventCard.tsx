@@ -73,7 +73,7 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
 
     return (
         <div className="relative pl-9 group">
-            <div className="absolute left-0 top-1.5 w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center z-10">
+            <div className="absolute left-0 top-1.5 w-7 h-7 rounded-full bg-surface-raised border border-line flex items-center justify-center">
                 {getEventIcon(event)}
             </div>
             <div className="bg-surface border border-line p-3 rounded-nb hover:border-line transition-colors">

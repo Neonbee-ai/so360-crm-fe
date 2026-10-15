@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { crmService } from '../../services/crmService';
 import { User, DealFilters as Filters } from '../../types/crm';
 import { X, Calendar, Search, Filter } from 'lucide-react';
+import { Select, TextField } from '@so360/design-system';
 import type { ListFilterConfig, FilterValues } from '@so360/design-system';
 
 const DATE_RANGE_OPTIONS = [
@@ -105,63 +106,63 @@ export const DealFilters: React.FC<DealFiltersProps> = ({ filters, onChange }) =
         <div className="flex flex-wrap items-center gap-nb-2">
             <div className="relative">
                 <Calendar className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
-                <select
+                <Select
+                    name="deal-filter-date-range"
                     aria-label="Date range"
                     value={filters.date_range || ''}
-                    onChange={(e) => handleChange('date_range', e.target.value)}
-                    className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary pl-9 min-w-[10rem]"
-                >
-                    <option value="">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="yesterday">Yesterday</option>
-                    <option value="this_week">This Week</option>
-                    <option value="last_week">Last Week</option>
-                    <option value="this_month">This Month</option>
-                    <option value="last_month">Last Month</option>
-                    <option value="this_year">This Year</option>
-                    <option value="custom">Custom Range</option>
-                </select>
+                    onValueChange={(v) => handleChange('date_range', v)}
+                    className="pl-9 min-w-40"
+                    options={[
+                        { value: '', label: 'All Time' },
+                        { value: 'today', label: 'Today' },
+                        { value: 'yesterday', label: 'Yesterday' },
+                        { value: 'this_week', label: 'This Week' },
+                        { value: 'last_week', label: 'Last Week' },
+                        { value: 'this_month', label: 'This Month' },
+                        { value: 'last_month', label: 'Last Month' },
+                        { value: 'this_year', label: 'This Year' },
+                        { value: 'custom', label: 'Custom Range' },
+                    ]}
+                />
             </div>
 
             {showCustomDate && (
                 <>
-                    <input
+                    <TextField
+                        name="deal-filter-start"
                         type="date"
                         aria-label="Start date"
                         value={filters.start_date || ''}
                         onChange={(e) => handleChange('start_date', e.target.value)}
-                        className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary"
                     />
-                    <input
+                    <TextField
+                        name="deal-filter-end"
                         type="date"
                         aria-label="End date"
                         value={filters.end_date || ''}
                         onChange={(e) => handleChange('end_date', e.target.value)}
-                        className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary"
                     />
                 </>
             )}
 
-            <select
+            <Select
+                name="deal-filter-owner"
                 aria-label="Owner"
                 value={filters.owner_id || ''}
-                onChange={(e) => handleChange('owner_id', e.target.value)}
-                className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary min-w-[9rem]"
-            >
-                <option value="">All Owners</option>
-                {users.map(u => (
-                    <option key={u.id} value={u.id}>{u.full_name}</option>
-                ))}
-            </select>
+                onValueChange={(v) => handleChange('owner_id', v)}
+                className="min-w-36"
+                options={[{ value: '', label: 'All Owners' }, ...users.map(u => ({ value: u.id, label: u.full_name }))]}
+            />
 
             <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={14} />
-                <input
+                <TextField
+                    name="deal-filter-company"
                     type="text"
                     placeholder="Search company..."
                     value={filters.company_name || ''}
                     onChange={(e) => handleChange('company_name', e.target.value)}
-                    className="h-nb-control-md rounded-nb border border-line bg-surface text-sm text-fg px-3 outline-none focus:border-primary pl-9 w-full wc-medium:w-56"
+                    className="pl-9 w-full wc-medium:w-56"
                 />
             </div>
 

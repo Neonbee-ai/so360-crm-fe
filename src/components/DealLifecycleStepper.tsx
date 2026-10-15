@@ -58,7 +58,7 @@ export const DealLifecycleStepper: React.FC<DealLifecycleStepperProps> = ({ stag
                     <React.Fragment key={stage.id}>
                         <div className="flex flex-col items-center">
                             <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
-                                isCompleted ? (isTerminalWon ? 'bg-success text-white' : 'bg-info text-white') :
+                                isCompleted ? (isTerminalWon ? 'bg-success text-primary-fg' : 'bg-info text-primary-fg') :
                                 isCurrent ? (isWonType(stage) ? 'bg-success/20 border-2 border-success text-success' : 'bg-info/20 border-2 border-info text-info') :
                                 'bg-fg-muted/10 border border-line-strong text-fg-subtle'
                             }`}>

@@ -63,9 +63,9 @@ describe('Given the merge panel for a kept lead', () => {
             render(<MergeLeadPanel keepLead={keep} onClose={vi.fn()} onMerged={vi.fn()} />);
             await pickOther();
             expect(screen.getByTestId('merge-field-chooser')).toBeInTheDocument();
-            expect(screen.getByLabelText('Email from this lead')).toBeChecked();
-            expect(screen.getByLabelText('Email from other lead')).not.toBeDisabled();
-            expect(screen.getByLabelText('Phone from other lead')).toBeDisabled();
+            expect(screen.getByTestId('radio-merge-contact_email-this')).toBeChecked();
+            expect(screen.getByTestId('radio-merge-contact_email-other')).not.toBeDisabled();
+            expect(screen.getByTestId('radio-merge-phone-other')).toBeDisabled();
         });
 
         it('Then Merge sends the chosen field values and reports the absorbed id', async () => {
@@ -73,7 +73,7 @@ describe('Given the merge panel for a kept lead', () => {
             const success = vi.spyOn(toast, 'success');
             render(<MergeLeadPanel keepLead={keep} onClose={vi.fn()} onMerged={onMerged} />);
             await pickOther();
-            fireEvent.click(screen.getByLabelText('Email from other lead'));
+            fireEvent.click(screen.getByTestId('radio-merge-contact_email-other'));
             fireEvent.click(screen.getByRole('button', { name: 'Merge' }));
             await waitFor(() => expect(onMerged).toHaveBeenCalledWith('o'));
             const [keepId, mergeId, choices] = mocks.merge.mock.calls[0];
@@ -226,14 +226,14 @@ describe('Given a picked lead in the field chooser', () => {
         it('Then the search view returns and re-picking resets the field choices', async () => {
             render(<MergeLeadPanel keepLead={keep} onClose={vi.fn()} onMerged={vi.fn()} />);
             await pickOther();
-            fireEvent.click(screen.getByLabelText('Email from other lead'));
-            expect(screen.getByLabelText('Email from other lead')).toBeChecked();
+            fireEvent.click(screen.getByTestId('radio-merge-contact_email-other'));
+            expect(screen.getByTestId('radio-merge-contact_email-other')).toBeChecked();
             fireEvent.click(screen.getByRole('button', { name: 'Change' }));
             expect(screen.queryByTestId('merge-field-chooser')).not.toBeInTheDocument();
             expect(screen.getByRole('button', { name: 'Merge' })).toBeDisabled();
             fireEvent.click(await screen.findByRole('option', { name: /Acme Inc/ }));
-            expect(screen.getByLabelText('Email from this lead')).toBeChecked();
-            expect(screen.getByLabelText('Email from other lead')).not.toBeChecked();
+            expect(screen.getByTestId('radio-merge-contact_email-this')).toBeChecked();
+            expect(screen.getByTestId('radio-merge-contact_email-other')).not.toBeChecked();
         });
     });
 
@@ -241,8 +241,8 @@ describe('Given a picked lead in the field chooser', () => {
         it('Then the kept value is sent', async () => {
             render(<MergeLeadPanel keepLead={keep} onClose={vi.fn()} onMerged={vi.fn()} />);
             await pickOther();
-            fireEvent.click(screen.getByLabelText('Source from other lead'));
-            fireEvent.click(screen.getByLabelText('Source from this lead'));
+            fireEvent.click(screen.getByTestId('radio-merge-source-other'));
+            fireEvent.click(screen.getByTestId('radio-merge-source-this'));
             fireEvent.click(screen.getByRole('button', { name: 'Merge' }));
             await waitFor(() => expect(mocks.merge).toHaveBeenCalled());
             expect(mocks.merge.mock.calls[0][2].source).toBe('k');

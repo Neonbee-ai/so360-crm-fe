@@ -1,5 +1,5 @@
 import React from 'react';
-import { EmptyState as DsEmptyState, DatePicker, Button } from '@so360/design-system';
+import { EmptyState as DsEmptyState, DatePicker, Button, TextField } from '@so360/design-system';
 import type { TargetStatus, TrendPoint } from '../../services/targetPlanService';
 
 /**
@@ -380,8 +380,9 @@ export function PersonPicker({
 
   return (
     <div className="relative" ref={boxRef}>
-      <input
-        className="w-full rounded bg-surface-raised px-2 py-1.5 text-sm text-fg outline-none"
+      <TextField
+        name="target-person-query"
+        size="sm"
         value={query}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
@@ -396,7 +397,7 @@ export function PersonPicker({
         aria-label="Person"
       />
       {open && !loading && !failed ? (
-        <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-line bg-surface py-1 text-sm">
+        <ul className="absolute z-menu mt-1 max-h-60 w-full overflow-auto rounded border border-line bg-surface py-1 text-sm">
           {matches.length === 0 ? (
             <li className="px-2 py-1.5 text-fg-muted">No matching people</li>
           ) : (

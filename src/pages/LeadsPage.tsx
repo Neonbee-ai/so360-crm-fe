@@ -38,7 +38,7 @@ import { publishLeadsChanged } from '../utils/leadEvents';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { exportService } from '../services/exportService';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { QuotaGate, toast, ListPageTemplate, Button, Badge, SearchInput, EmptyState, Pagination, ConfirmDialog } from '@so360/design-system';
+import { QuotaGate, toast, ListPageTemplate, Button, Badge, SearchInput, EmptyState, Pagination, ConfirmDialog, TextField } from '@so360/design-system';
 import type { FilterValues, ListFilterConfig } from '@so360/design-system';
 
 // ─── Saved views (lightweight local version) ──────────────────────────────────
@@ -828,9 +828,10 @@ const LeadsPage = () => {
                   <div key={view.id} className="group" data-testid={`saved-view-${view.id}`}>
                     {renamingViewId === view.id ? (
                       <div className="flex items-center gap-2 px-3 py-2">
-                        <input
+                        <TextField
                           autoFocus
-                          type="text"
+                          name="rename-view"
+                          size="sm"
                           aria-label="Rename view"
                           value={renameValue}
                           onChange={(e) => setRenameValue(e.target.value)}
@@ -838,7 +839,7 @@ const LeadsPage = () => {
                             if (e.key === 'Enter') { handleRenameView(view.id, renameValue); setRenamingViewId(null); }
                             if (e.key === 'Escape') setRenamingViewId(null);
                           }}
-                          className="flex-1 bg-surface-raised border border-line text-fg px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-focus"
+                          className="flex-1"
                         />
                         <button
                           onClick={() => { handleRenameView(view.id, renameValue); setRenamingViewId(null); }}
@@ -905,14 +906,15 @@ const LeadsPage = () => {
                 <div className="border-t border-line mt-1 pt-1">
                   {showSaveViewInput ? (
                     <div className="flex items-center gap-2 px-3 py-2">
-                      <input
+                      <TextField
                         autoFocus
-                        type="text"
+                        name="save-view-name"
+                        size="sm"
                         placeholder="View name..."
                         value={saveViewName}
                         onChange={(e) => setSaveViewName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleSaveView(); if (e.key === 'Escape') setShowSaveViewInput(false); }}
-                        className="flex-1 bg-surface-raised border border-line text-fg px-2 py-1 rounded text-xs focus:outline-none focus:ring-1 focus:ring-focus"
+                        className="flex-1"
                       />
                       <button onClick={handleSaveView} className="text-primary hover:text-primary text-xs font-semibold">Save</button>
                     </div>

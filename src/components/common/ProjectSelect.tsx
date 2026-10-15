@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useId, useMemo } from 'react';
 import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
+import { TextField } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 
 // Projects that can no longer take work. Hidden from the picker, but a task
@@ -236,7 +237,9 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                     className={`flex items-center gap-2 w-full bg-bg border rounded-xl px-4 py-3 transition-all border-primary ring-2 ring-primary/20 ${inputClassName}`}
                 >
                     <Search size={14} className="text-fg-muted shrink-0" />
-                    <input
+                    <div className="flex-1 min-w-0">
+                    <TextField
+                        name="project-select-query"
                         autoFocus
                         type="text"
                         role="combobox"
@@ -250,9 +253,11 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         aria-autocomplete="list"
                         aria-controls={listId}
                         aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
-                        className="flex-1 bg-transparent font-bold text-fg outline-none placeholder:text-fg-muted min-w-0"
+                        size="sm"
+                        className="border-0 bg-transparent px-0 font-bold shadow-none focus:ring-0"
                         data-testid="project-select-input"
                     />
+                    </div>
                     <ChevronDown size={14} className="text-fg-muted shrink-0 transition-transform rotate-180" />
                 </div>
             ) : (

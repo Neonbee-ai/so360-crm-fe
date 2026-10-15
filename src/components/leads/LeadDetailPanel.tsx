@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  X,
   Phone,
   Mail,
   Globe,
@@ -21,7 +20,7 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { Card, EmptyState, Tabs, Button, IconButton, Select } from '@so360/design-system';
+import { Card, EmptyState, Tabs, Button, Drawer, Select } from '@so360/design-system';
 import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
@@ -98,15 +97,6 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   PROFILE_UPDATE: <Star size={14} className="text-warning" />,
   TASK: <CheckSquare size={14} className="text-primary" />,
 };
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-}
 
 function scoreColor(score: number) {
   if (score >= 70) return { bar: 'bg-success', text: 'text-success' };
@@ -270,15 +260,6 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, lead?.id]);
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-
   const contactName = lead
     ? lead.first_name
       ? [lead.first_name, lead.last_name].filter(Boolean).join(' ')
@@ -310,45 +291,19 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
   const auditActivities = sortedActivities.filter((a) => AUDIT_TYPES.has(a.type));
 
   return (
-    <>
-      {/* Backdrop — only dims, doesn't block grid interaction */}
-      <div
-        className={`fixed inset-0 z-drawer transition-opacity duration-200 pointer-events-none ${
-          lead ? 'opacity-100' : 'opacity-0'
-        }`}
-      />
-
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        className={`fixed right-0 top-0 bottom-0 z-drawer w-full max-w-md bg-bg border-l border-line shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
-          lead ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
+    <Drawer
+      isOpen={!!lead}
+      onClose={onClose}
+      title={lead?.company_name ?? ''}
+      subtitle={contactName || undefined}
+      size="md"
+      name="lead-detail-panel"
+    >
+      <div ref={panelRef}>
         {!lead ? null : (
           <>
-            {/* Header */}
-            <div className="px-5 pt-5 pb-4 border-b border-line">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-primary text-primary-fg flex items-center justify-center text-sm font-bold shrink-0">
-                    {contactName ? initials(contactName) : initials(lead.company_name)}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-base font-bold text-fg truncate leading-tight">
-                      {lead.company_name}
-                    </h2>
-                    {contactName && (
-                      <p className="text-sm text-fg-subtle truncate">{contactName}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <IconButton label="Close" icon={<X size={15} />} onClick={onClose} />
-                </div>
-              </div>
-
-              {/* Status + score row */}
+            <div className="pb-4 border-b border-line">
+            {/* Status + score row */}
               <div className="flex items-center gap-3">
                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColor}`}>
                   {lead.status}
@@ -846,6 +801,6 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
           </>
         )}
       </div>
-    </>
+    </Drawer>
   );
 }

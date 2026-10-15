@@ -123,6 +123,8 @@ export default function AdminTaskTypesPage() {
     { key: 'industries', header: 'Industries', render: (tt) => <span className="text-fg-subtle text-xs">{(tt.industry_tags ?? []).join(', ') || '—'}</span> },
     { key: 'status', header: 'Status', render: (tt) => (
       <Switch
+        name={`task-type-active-${tt.id}`}
+        label="Active"
         aria-label={`Toggle ${tt.name}`}
         checked={!!tt.active}
         onCheckedChange={() => handleToggleActive(tt)}
@@ -252,6 +254,7 @@ export default function AdminTaskTypesPage() {
                   {INDUSTRY_OPTIONS.filter(i => i !== 'all').map(ind => (
                     <Checkbox
                       key={ind}
+                      name={`industry-${ind}`}
                       label={ind.replace(/_/g, ' ')}
                       checked={form.industry_tags.includes(ind)}
                       onChange={(e: any) => setForm(f => ({

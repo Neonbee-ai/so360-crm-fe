@@ -390,7 +390,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         <ChevronDown size={10} />
                     </button>
                     {showFilterDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-nb z-10 min-w-max">
+                        <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-nb z-menu min-w-max">
                             {(['all', 'activity', 'note', 'task', 'document'] as const).map(
                                 (type) => (
                                     <button
@@ -430,7 +430,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         <ChevronDown size={10} />
                     </button>
                     {showSortDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-nb z-10 min-w-max">
+                        <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-nb z-menu min-w-max">
                             {(['newest', 'oldest'] as const).map((order) => (
                                 <button
                                     key={order}
@@ -477,7 +477,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                             data-testid={`timeline-item-${item.type}-${item.id}`}
                         >
                             {/* Dot */}
-                            <div className="w-12 h-12 rounded-full bg-surface border-2 border-line flex items-center justify-center shrink-0 mt-1 relative z-10">
+                            <div className="w-12 h-12 rounded-full bg-surface border-2 border-line flex items-center justify-center shrink-0 mt-1 relative">
                                 {getItemIcon(item.type)}
                             </div>
 

@@ -13,6 +13,7 @@
  */
 import { useState } from 'react';
 import { Plus, Trash2, X, FolderPlus, Filter as FilterIcon } from 'lucide-react';
+import { Select, TextField } from '@so360/design-system';
 import {
   FILTERABLE_FIELDS,
   getField,
@@ -58,39 +59,33 @@ function RuleRow({
 
   return (
     <div className="flex items-center gap-2 flex-wrap" data-testid="filter-rule">
-      <select
+      <Select
+        name="filter-field"
         aria-label="Field"
-        className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+        size="sm"
         value={rule.field}
-        onChange={(e) => onChange(path, { field: e.target.value })}
-      >
-        {FILTERABLE_FIELDS.map((f) => (
-          <option key={f.key} value={f.key}>
-            {f.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={(v) => onChange(path, { field: v })}
+        options={FILTERABLE_FIELDS.map((f) => ({ value: f.key, label: f.label }))}
+      />
 
-      <select
+      <Select
+        name="filter-operator"
         aria-label="Operator"
-        className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+        size="sm"
         value={rule.op}
-        onChange={(e) => onChange(path, { op: e.target.value as FilterRule['op'] })}
-      >
-        {ops.map((o) => (
-          <option key={o.op} value={o.op}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={(v) => onChange(path, { op: v as FilterRule['op'] })}
+        options={ops.map((o) => ({ value: o.op, label: o.label }))}
+      />
 
       {/* Value input(s) — shape depends on the operator's arity. */}
       {operatorTakesNoValue(rule.op) ? null : operatorTakesTwoValues(rule.op) ? (
         <div className="flex items-center gap-1">
-          <input
+          <TextField
+            name="filter-from"
             aria-label="From"
             type={inputType}
-            className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg w-24 focus:outline-none focus:ring-2 focus:ring-focus"
+            size="sm"
+            className="w-24"
             value={Array.isArray(rule.value) ? (rule.value[0] ?? '') : ''}
             onChange={(e) =>
               onChange(path, {
@@ -99,10 +94,12 @@ function RuleRow({
             }
           />
           <span className="text-fg-muted text-xs">and</span>
-          <input
+          <TextField
+            name="filter-to"
             aria-label="To"
             type={inputType}
-            className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg w-24 focus:outline-none focus:ring-2 focus:ring-focus"
+            size="sm"
+            className="w-24"
             value={Array.isArray(rule.value) ? (rule.value[1] ?? '') : ''}
             onChange={(e) =>
               onChange(path, {
@@ -112,42 +109,36 @@ function RuleRow({
           />
         </div>
       ) : operatorTakesList(rule.op) && field?.options ? (
-        <select
+        <Select
+          name="filter-values"
           aria-label="Values"
           multiple
-          className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg min-w-[10rem] focus:outline-none focus:ring-2 focus:ring-focus"
+          size="sm"
+          className="min-w-40"
           value={Array.isArray(rule.value) ? rule.value : []}
           onChange={(e) =>
             onChange(path, {
               value: Array.from(e.target.selectedOptions).map((o) => o.value),
             })
           }
-        >
-          {field.options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={field.options.map((o) => ({ value: o.value, label: o.label }))}
+        />
       ) : field?.type === 'enum' && field.options ? (
-        <select
+        <Select
+          name="filter-value"
           aria-label="Value"
-          className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+          size="sm"
+          placeholder="Select…"
           value={typeof rule.value === 'string' ? rule.value : ''}
-          onChange={(e) => onChange(path, { value: e.target.value })}
-        >
-          <option value="">Select…</option>
-          {field.options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          onValueChange={(v) => onChange(path, { value: v })}
+          options={field.options.map((o) => ({ value: o.value, label: o.label }))}
+        />
       ) : (
-        <input
+        <TextField
+          name="filter-value-text"
           aria-label="Value"
           type={inputType}
-          className="bg-surface-raised border border-line rounded px-2 py-1 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
+          size="sm"
           value={typeof rule.value === 'string' || typeof rule.value === 'number' ? rule.value : ''}
           onChange={(e) => onChange(path, { value: e.target.value })}
         />

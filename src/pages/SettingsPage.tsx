@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card } from '@so360/design-system';
+import { toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -1061,13 +1061,14 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                                 )}
                                             </div>
                                         </div>
-                                        <input
-                                            type="color"
+                                        <ColorPicker
+                                            name={`score-category-color-${cat.id}`}
+                                            aria-label="Pick color"
                                             value={cat.color}
-                                            onChange={e => setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, color: e.target.value } : c))}
-                                            onBlur={e => handleUpdateCategory(cat, { color: e.target.value })}
-                                            className="w-7 h-7 rounded cursor-pointer bg-transparent border-none"
-                                            title="Pick color"
+                                            onChange={(color) => {
+                                                setScoreCategories(prev => prev.map(c => c.id === cat.id ? { ...c, color } : c));
+                                                handleUpdateCategory(cat, { color });
+                                            }}
                                         />
                                     </div>
                                 ))}

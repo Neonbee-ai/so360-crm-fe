@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, ChevronDown } from 'lucide-react';
+import { TextField } from '@so360/design-system';
 
 interface Partner {
     id: string;
@@ -82,16 +83,20 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
             >
                 <Search size={14} className="text-fg-muted shrink-0" />
                 {isOpen ? (
-                    <input
+                    <div className="flex-1 min-w-0">
+                    <TextField
+                        name="partner-search-query"
                         autoFocus
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder={selected ? getPrimaryName(selected) : placeholder}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-muted min-w-0"
+                        size="sm"
+                        className="border-0 bg-transparent px-0 shadow-none focus:ring-0"
                         data-testid="partner-search-input"
                     />
+                    </div>
                 ) : (
                     <span className={`flex-1 text-sm truncate ${selected ? 'text-fg' : 'text-fg-muted'}`}>
                         {selected
@@ -120,7 +125,7 @@ export const PartnerSearchDropdown: React.FC<PartnerSearchDropdownProps> = ({
             {isOpen && (
                 <div
                     role="listbox"
-                    className="absolute z-50 top-full mt-1 w-full bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
+                    className="absolute z-menu top-full mt-1 w-full bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
                     data-testid="partner-dropdown-list"
                 >
                     <div className="max-h-48 overflow-y-auto">

@@ -330,12 +330,14 @@ const MarketingSegmentsPage: React.FC = () => {
             <div className="mb-nb-4 rounded-nb p-nb-4 bg-surface-sunken">
               <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                 <TextField
+                  name="segment-name"
                   aria-label="Segment name"
                   placeholder="Segment name"
                   value={segmentForm.name}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, name: e.target.value }))}
                 />
                 <TextField
+                  name="segment-description"
                   aria-label="Description"
                   placeholder="Description (optional)"
                   value={segmentForm.description}
@@ -343,19 +345,22 @@ const MarketingSegmentsPage: React.FC = () => {
                 />
                 <div className="wc-medium:col-span-2">
                   <TextField
-                    aria-label="Search query"
+                    name="segment-query"
+                  aria-label="Search query"
                     placeholder="Search query (name/email/phone/company)"
                     value={segmentForm.q}
                     onChange={(e) => setSegmentForm((prev) => ({ ...prev, q: e.target.value }))}
                   />
                 </div>
                 <Select
+                  name="segment-channel"
                   aria-label="Channel"
                   options={FORM_CHANNEL_OPTIONS}
                   value={segmentForm.channel}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, channel: e.target.value }))}
                 />
                 <Select
+                  name="segment-category"
                   aria-label="Category"
                   options={FORM_CATEGORY_OPTIONS}
                   value={segmentForm.category}
@@ -363,7 +368,8 @@ const MarketingSegmentsPage: React.FC = () => {
                 />
                 <div className="wc-medium:col-span-2">
                   <Select
-                    aria-label="Preset"
+                    name="segment-preset"
+                  aria-label="Preset"
                     options={PRESET_OPTIONS}
                     value={segmentForm.preset}
                     onChange={(e) => setSegmentForm((prev) => ({ ...prev, preset: e.target.value }))}

@@ -70,10 +70,10 @@ describe('Feature: Sales reports page', () => {
             for (const s of ['by_agent', 'by_project', 'by_developer', 'by_period', 'by_source', 'lost_reasons', 'reservations', 'agent_performance']) {
                 expect(screen.getByTestId(`sa-section-${s}`)).toBeInTheDocument();
             }
-            const perf = within(screen.getByRole('table', { name: 'Agent performance' }));
+            const perf = within(screen.getByTestId('sa-table-agent_performance'));
             expect(perf.getByText('40%')).toBeInTheDocument();
             expect(perf.getByText('7')).toBeInTheDocument();
-            expect(within(screen.getByRole('table', { name: 'Lost deals by reason' })).getByText('Price')).toBeInTheDocument();
+            expect(within(screen.getByTestId('sa-table-lost_reasons')).getByText('Price')).toBeInTheDocument();
         });
 
         it('When developers appear in the data / Then they become a Developer filter option', async () => {
@@ -149,7 +149,7 @@ describe('Feature: Sales reports page', () => {
             renderPage();
             const section = await screen.findByTestId('sa-section-by_project');
             expect(within(section).getByText('Nothing to show.')).toBeInTheDocument();
-            expect(within(section).queryByRole('table')).toBeNull();
+            expect(within(section).queryByTestId('sa-table-by_project')).toBeNull();
         });
     });
 

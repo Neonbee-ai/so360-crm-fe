@@ -129,6 +129,8 @@ export default function TouchpointChannelsPage() {
     header,
     render: (c) => (
       <Checkbox
+        name={`${field}-${c.id}`}
+        label={header}
         aria-label={`${header} ${c.label}`}
         checked={!!c[field]}
         disabled={busy}

@@ -79,7 +79,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
     }, [isOpen]);
 
     // Same hierarchy Inventory owns — parent immediately followed by its
-    // children, depth-first, so the flat <select> still reads as a tree via
+    // children, depth-first, so the flat select still reads as a tree via
     // indentation instead of an alphabetical dump with no structure.
     const hierarchicalCategories = useMemo(
         () => flattenCategoryTree(buildCategoryTree(categories)),

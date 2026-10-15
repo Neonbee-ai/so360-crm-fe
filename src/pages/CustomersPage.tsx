@@ -237,7 +237,7 @@ const CustomersPage = () => {
                 </div>
             ),
         },
-        ...(categoryFilter !== 'b2c' ? [
+        ...(categoryFilter !== 'b2c' ? ([
             {
                 key: 'tax_id', header: 'Tax ID',
                 render: (c: any) =>
@@ -266,7 +266,7 @@ const CustomersPage = () => {
                     );
                 },
             },
-        ] : []),
+        ] as DataTableColumn<any>[]) : []),
         {
             key: 'channel', header: 'Channel', sortable: true,
             render: (c: any) => <ChannelBadge channel={c.channel} />,

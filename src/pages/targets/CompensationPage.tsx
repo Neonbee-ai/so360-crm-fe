@@ -265,7 +265,6 @@ export default function CompensationPage() {
                   onChange={(e: any) => setForm({ ...form, attainment_threshold_pct: e.target.value })}
                 />
               )}
-              )}
             </div>
 
             {form.rule_type === 'deal_commission' && (
@@ -292,7 +291,7 @@ export default function CompensationPage() {
                     ))}
                     {form.bands.length > 1 && (
                       <Button
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
                         aria-label={`Remove band ${i + 1}`}
                         onClick={() =>

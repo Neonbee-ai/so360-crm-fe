@@ -359,11 +359,9 @@ describe('CustomersPage', () => {
     it('When sort by contact_name / Then reorders customers alphabetically', async () => {
       render(<CustomersPage />);
       await waitFor(() => expect(screen.getByTestId('customer-row-c1')).toBeInTheDocument());
-      const nameHeader = tableProps.columns[0].header;
-      const { container } = render(nameHeader);
-      const btn = container.querySelector('button');
-      expect(btn).toBeTruthy();
-      expect(btn!.textContent).toContain('Name');
+      const nameCol = tableProps.columns[0];
+      expect(nameCol.header).toContain('Name');
+      expect(nameCol.sortable).toBe(true);
     });
   });
 

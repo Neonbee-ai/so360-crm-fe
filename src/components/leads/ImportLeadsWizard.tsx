@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Button, Select, RadioGroup } from '@so360/design-system';
+import { Button, Select, RadioGroup, DataTable } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import {
     leadImportService,
@@ -183,22 +183,19 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
 
                 {step === 'review' && preview && (
                     <div className="space-y-4">
-                        <div className="overflow-x-auto border border-line rounded-lg">
-                            <table className="w-full text-xs" aria-label="Import preview">
-                                <thead>
-                                    <tr className="bg-bg text-fg-subtle">
-                                        {mappedHeaders.map((h) => <th key={h} className="px-3 py-2 text-left font-semibold whitespace-nowrap">{fieldLabel(mapping[h])}</th>)}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {preview.sample_rows.map((row, i) => (
-                                        <tr key={i} className="border-t border-line text-fg">
-                                            {mappedHeaders.map((h) => <td key={h} className="px-3 py-2 whitespace-nowrap">{row[h] ?? ''}</td>)}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <DataTable
+                            name="import-preview"
+                            data-testid="import-preview-table"
+                            density="compact"
+                            columns={mappedHeaders.map((h) => ({
+                                key: h,
+                                header: fieldLabel(mapping[h]),
+                                render: (r: { row: Record<string, string> }) => <span className="whitespace-nowrap">{r.row[h] ?? ''}</span>,
+                            }))}
+                            rows={preview.sample_rows.map((row, i) => ({ i, row }))}
+                            rowKey={(r) => String(r.i)}
+                            emptyState={<p className="text-xs text-fg-muted" data-testid="import-preview-empty">No sample rows.</p>}
+                        />
                         <p className="text-xs text-fg-muted">
                             Showing {preview.sample_rows.length} of {preview.total_rows} rows. Leads with no owner column go through your assignment rules.
                         </p>

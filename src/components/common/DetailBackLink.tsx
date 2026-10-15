@@ -133,7 +133,7 @@ export const DetailBackLink: React.FC<DetailBackLinkProps> = ({ fallbackTo, labe
                 aria-label={label}
                 title={label}
                 data-testid="detail-back-floating"
-                className={`fixed left-6 bottom-6 z-40 flex items-center gap-2 rounded-full border border-line bg-surface-sunken px-4 py-3 text-xs font-bold text-fg shadow-xl backdrop-blur transition-all hover:border-primary/60 hover:text-fg ${
+                className={`fixed left-6 bottom-6 z-chrome flex items-center gap-2 rounded-full border border-line bg-surface-sunken px-4 py-3 text-xs font-bold text-fg shadow-xl backdrop-blur transition-all hover:border-primary/60 hover:text-fg ${
                     showFloating ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-2'
                 }`}
             >

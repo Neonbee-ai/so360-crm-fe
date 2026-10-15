@@ -1690,7 +1690,7 @@ const LeadDetailPage = () => {
                                             <Badge size="sm" tone={task.status === 'DONE' ? 'success' : task.status === 'IN_PROGRESS' ? 'info' : 'neutral'}>{task.status}</Badge>
                                         </button>
                                                                         {expandedStatusDropdown === task.id && (
-                                                                            <div className="absolute top-full mt-1 right-0 z-10 bg-surface border border-line rounded-nb" data-testid={`status-dropdown-${task.id}`}>
+                                                                            <div className="absolute top-full mt-1 right-0 z-menu bg-surface border border-line rounded-nb" data-testid={`status-dropdown-${task.id}`}>
                                                                                 {['OPEN', 'IN_PROGRESS', 'DONE'].map((status) => (
                                                                                     <button
                                                                                         key={status}

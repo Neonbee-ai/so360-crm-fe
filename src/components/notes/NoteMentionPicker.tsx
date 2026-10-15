@@ -46,7 +46,7 @@ const NoteMentionPicker: React.FC<Props> = ({ query, people, onPick, onClose }) 
     if (candidates.length === 0) return null;
 
     return (
-        <div role="listbox" className="absolute bottom-full mb-2 left-0 z-20 w-64 max-h-56 overflow-y-auto bg-surface border border-line rounded-nb">
+        <div role="listbox" className="absolute bottom-full mb-2 left-0 z-menu w-64 max-h-56 overflow-y-auto bg-surface border border-line rounded-nb">
             {candidates.map((p, i) => (
                 <button
                     key={p.id}

@@ -365,7 +365,7 @@ export default function SalesReviewsPage() {
                       (k) => (
                         <Button
                           key={k}
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
                           onClick={() => addActionItem(k)}
                         >

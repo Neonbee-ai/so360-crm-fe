@@ -392,6 +392,8 @@ export default function TargetPlansPage() {
     } },
     { key: 'ramp', header: 'Ramp', render: (l) => (
       <Checkbox
+        name={`ramp-${l.key}`}
+        label="Ramp"
         aria-label="Enable stepped ramp curve"
         title="Enable stepped ramp curve"
         checked={l.useRamp}

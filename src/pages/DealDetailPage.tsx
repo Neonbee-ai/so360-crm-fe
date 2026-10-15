@@ -630,7 +630,7 @@ const DealDetailPage = () => {
                                                     aria-selected={isCurrent}
                                                     onClick={() => handleSelectStage(s.id)}
                                                     className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-xs font-medium transition-colors ${
-                                                        isCurrent ? 'bg-primary text-white' : 'text-fg-subtle hover:bg-surface-raised'
+                                                        isCurrent ? 'bg-primary text-primary-fg' : 'text-fg-subtle hover:bg-surface-raised'
                                                     }`}
                                                     data-testid={`deal-stage-option-${s.id}`}
                                                 >
@@ -1003,7 +1003,7 @@ const DealDetailPage = () => {
                                     ) : (
                                         getAggregatedTimeline().map((ev) => (
                                             <div key={ev.id} className="relative pl-10">
-                                                <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-surface-raised border-2 border-line flex items-center justify-center z-10">
+                                                <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-surface-raised border-2 border-line flex items-center justify-center">
                                                     {(ev.type === 'Activity' && ev.subType === 'CALL') && <Phone size={14} className="text-info" />}
                                                     {(ev.type === 'Activity' && ev.subType === 'MEETING') && <Users size={14} className="text-primary" />}
                                                     {(ev.type === 'Activity' && ev.subType === 'EMAIL') && <AtSign size={14} className="text-success" />}

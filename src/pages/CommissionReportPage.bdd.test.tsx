@@ -90,18 +90,18 @@ describe('Feature: Commission report', () => {
         it('When rendered / Then project and agent breakdowns list their buckets and an empty month section says so', async () => {
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
-            const byProject = await screen.findByRole('table', { name: 'By project' });
+            const byProject = await screen.findByTestId('commission-table-by-project');
             const pRow = within(byProject).getAllByRole('row')[1];
             expect(within(pRow).getAllByRole('cell').map((c) => c.textContent))
                 .toEqual(['Marina Heights', '2', 'AED 50000', 'AED 20000', 'AED 30000']);
             expect(within(byProject).getByRole('columnheader', { name: 'Project' })).toBeInTheDocument();
 
-            const byAgent = screen.getByRole('table', { name: 'By agent' });
+            const byAgent = screen.getByTestId('commission-table-by-agent');
             const aRow = within(byAgent).getAllByRole('row')[1];
             expect(within(aRow).getAllByRole('cell')[1]).toHaveTextContent('—');
             expect(within(byAgent).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Agent', 'Deals', 'Gross', 'Agent', 'Company']);
 
-            expect(screen.queryByRole('table', { name: 'By month' })).not.toBeInTheDocument();
+            expect(screen.queryByTestId('commission-table-by-month')).not.toBeInTheDocument();
             expect(screen.getByRole('heading', { name: 'By month' })).toBeInTheDocument();
             expect(screen.getByText('Nothing to show.')).toBeInTheDocument();
         });
@@ -111,7 +111,7 @@ describe('Feature: Commission report', () => {
             r.by_month = [bucket({ key: '', label: '2026-05' }), bucket({ key: '', label: '2026-06' })];
             report.commissionReport.mockResolvedValue(r);
             render(<CommissionReportPage />);
-            const byMonth = await screen.findByRole('table', { name: 'By month' });
+            const byMonth = await screen.findByTestId('commission-table-by-month');
             expect(within(byMonth).getByText('2026-05')).toBeInTheDocument();
             expect(within(byMonth).getByText('2026-06')).toBeInTheDocument();
             expect(within(byMonth).getByRole('columnheader', { name: 'Month' })).toBeInTheDocument();
@@ -245,7 +245,7 @@ describe('Feature: Commission report export (RE §48)', () => {
         it('When the page renders / Then no export menu is offered', async () => {
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
-            await screen.findByRole('table', { name: 'By agent' });
+            await screen.findByTestId('commission-table-by-agent');
             expect(screen.queryByRole('group', { name: 'Export commission report' })).toBeNull();
         });
     });

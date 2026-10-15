@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
-import { toast, Button, Drawer, TextField } from '@so360/design-system';
+import { toast, Button, Drawer, TextField, DataTable, RadioGroup } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import {
     leadDedupService,
@@ -146,40 +146,36 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                                 Change
                             </button>
                         </div>
-                        <table className="w-full text-sm" data-testid="merge-field-chooser">
-                            <thead>
-                                <tr className="text-xs text-fg-muted">
-                                    <th className="text-left py-1 font-bold">Field</th>
-                                    <th className="text-left py-1 font-bold">This lead</th>
-                                    <th className="text-left py-1 font-bold">Other lead</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {MERGE_FIELDS.map(f => {
-                                    const same = !differing.includes(f);
-                                    return (
-                                        <tr key={f.key} className="border-t border-line">
-                                            <td className="py-2 pr-2 text-fg-subtle">{f.label}</td>
-                                            {[keepLead, other].map((src, i) => (
-                                                <td key={src.id} className="py-2 pr-2">
-                                                    <label className={`flex items-center gap-2 ${same ? 'text-fg-muted' : 'text-fg'}`}>
-                                                        <input
-                                                            type="radio"
-                                                            name={`merge-${f.key}`}
-                                                            aria-label={`${f.label} from ${i === 0 ? 'this lead' : 'other lead'}`}
-                                                            checked={choices[f.key] === src.id}
-                                                            disabled={same}
-                                                            onChange={() => setChoices(prev => ({ ...prev, [f.key]: src.id }))}
-                                                        />
-                                                        <span className="truncate">{displayFieldValue(src, f.key)}</span>
-                                                    </label>
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                        <DataTable
+                            name="merge-field-chooser"
+                            data-testid="merge-field-chooser"
+                            density="compact"
+                            columns={[
+                                {
+                                    key: 'field',
+                                    header: 'Field and value to keep',
+                                    render: (f: (typeof MERGE_FIELDS)[number]) => {
+                                        const same = !differing.includes(f);
+                                        return (
+                                            <RadioGroup
+                                                name={`merge-${f.key}`}
+                                                label={f.label}
+                                                orientation="horizontal"
+                                                disabled={same}
+                                                value={choices[f.key] === other.id ? 'other' : 'this'}
+                                                onChange={(v: string) => setChoices(prev => ({ ...prev, [f.key]: v === 'other' ? other.id : keepLead.id }))}
+                                                options={[
+                                                    { value: 'this', label: `This lead: ${displayFieldValue(keepLead, f.key) || '—'}` },
+                                                    { value: 'other', label: `Other lead: ${displayFieldValue(other, f.key) || '—'}` },
+                                                ]}
+                                            />
+                                        );
+                                    },
+                                },
+                            ]}
+                            rows={[...MERGE_FIELDS]}
+                            rowKey={(f) => f.key}
+                        />
                     </div>
                 )}
             </div>

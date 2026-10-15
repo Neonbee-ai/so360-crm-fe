@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Plus, FileText, Search, CheckCircle, XCircle, Clock, Send, ChevronDown, Eye, User, Inbox, Check, X,
@@ -11,11 +10,11 @@ import { usePersistedState, useListScrollRestore } from '../hooks/useListViewSta
 import { Quote, QuoteStatus, Deal } from '../types/crm';
 import { useBusinessSettings, useActivity, useShellBridge, useQuota, useSandboxLimit } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
-import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { QuotaGate, CrossLinkChip, toast, ListPageTemplate, Button, Pagination, DataTable, SearchInput, Menu, TextField, Textarea, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
-import { crmPortalRoot } from '../utils/crmScope';
+import { CrmScope } from '../utils/crmScope';
 import { Modal } from '../components/common/Modal';
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
@@ -44,65 +43,35 @@ interface QuoteStatusCellProps {
 }
 
 export const QuoteStatusCell: React.FC<QuoteStatusCellProps> = ({ quote, isActionLoading, onAction }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
-    const btnRef = useRef<HTMLButtonElement>(null);
     const transitions = STATUS_TRANSITIONS[quote.status] ?? [];
     const status = statusColors[quote.status] || statusColors.draft;
 
-    const openDropdown = useCallback(() => {
-        if (transitions.length === 0) return;
-        const rect = btnRef.current?.getBoundingClientRect();
-        if (rect) {
-            setDropdownStyle({
-                position: 'fixed',
-                top: rect.bottom + 4,
-                left: rect.left,
-                zIndex: 9999,
-                minWidth: rect.width,
-            });
-        }
-        setIsOpen(true);
-    }, [transitions.length]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const close = (e: MouseEvent) => {
-            if (btnRef.current && !btnRef.current.contains(e.target as Node)) setIsOpen(false);
-        };
-        document.addEventListener('mousedown', close);
-        return () => document.removeEventListener('mousedown', close);
-    }, [isOpen]);
+    const badge = (
+        <button
+            type="button"
+            disabled={isActionLoading}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${status.bg} ${status.text} ${status.border} ${transitions.length > 0 ? 'cursor-pointer hover:brightness-125' : 'cursor-default'} disabled:opacity-50`}
+            title={transitions.length > 0 ? 'Click to update status' : status.label}
+        >
+            <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-success' : quote.status === 'pending_approval' ? 'bg-warning' : quote.status === 'rejected' ? 'bg-danger' : quote.status === 'converted' ? 'bg-primary' : 'bg-fg-subtle'}`} />
+            <span>{status.label}</span>
+            {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />}
+        </button>
+    );
 
     return (
         <div onClick={(e) => e.stopPropagation()} className="inline-block">
-            <button
-                ref={btnRef}
-                onClick={openDropdown}
-                disabled={isActionLoading}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${status.bg} ${status.text} ${status.border} ${transitions.length > 0 ? 'cursor-pointer hover:brightness-125' : 'cursor-default'} disabled:opacity-50`}
-                title={transitions.length > 0 ? 'Click to update status' : status.label}
-            >
-                <span className={`w-1.5 h-1.5 rounded-full ${quote.status === 'approved' ? 'bg-success' : quote.status === 'pending_approval' ? 'bg-warning' : quote.status === 'rejected' ? 'bg-danger' : quote.status === 'converted' ? 'bg-primary' : 'bg-fg-subtle'}`} />
-                <span>{status.label}</span>
-                {transitions.length > 0 && <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />}
-            </button>
-            {isOpen && transitions.length > 0 && createPortal(
-                <div style={dropdownStyle} className="bg-surface border border-line rounded-lg shadow-xl overflow-hidden w-48">
-                    <div className="py-1">
-                        {transitions.map(t => (
-                            <button
-                                key={t.action}
-                                onMouseDown={(e) => { e.stopPropagation(); setIsOpen(false); onAction(quote, t.action); }}
-                                className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors ${t.color}`}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>,
-                crmPortalRoot()
-            )}
+            {transitions.length > 0 ? (
+                <Menu
+                    name={`quote-status-${quote.id}`}
+                    trigger={badge}
+                    items={transitions.map((t) => ({
+                        label: t.label,
+                        danger: t.action === 'reject',
+                        onSelect: () => onAction(quote, t.action),
+                    }))}
+                />
+            ) : badge}
         </div>
     );
 };
@@ -666,11 +635,11 @@ const QuotesPage = () => {
         });
     }, [approvals, approvalsStatusFilter, approvalsSearchTerm]);
 
-    const approvalColumns = [
+    const approvalColumns: DataTableColumn<any>[] = [
         {
             key: 'quote_number',
             header: 'Quote #',
-            accessor: (item: any) => (
+            render: (item: any) => (
                 <button
                     onClick={(e) => { e.stopPropagation(); openQuote(item.quote_id); }}
                     className="font-mono text-sm font-semibold text-primary hover:text-primary text-left whitespace-nowrap"
@@ -682,42 +651,42 @@ const QuotesPage = () => {
         {
             key: 'title',
             header: 'Title',
-            accessor: (item: any) => (
+            render: (item: any) => (
                 <span className="text-fg font-medium truncate max-w-xs block">{item.title || 'Untitled Quote'}</span>
             ),
         },
         {
             key: 'customer',
             header: 'Customer',
-            accessor: (item: any) => (
+            render: (item: any) => (
                 <span className="text-fg-subtle text-sm">{item.customer_name || '—'}</span>
             ),
         },
         {
             key: 'amount',
             header: 'Amount',
-            accessor: (item: any) => (
+            render: (item: any) => (
                 <span className="text-fg font-medium font-mono">{formatCurrency(Number(item.total_amount || 0))}</span>
             ),
         },
         {
             key: 'requested_by',
             header: 'Submitted By',
-            accessor: (item: any) => (
+            render: (item: any) => (
                 <span className="text-fg-subtle text-xs">{item.requested_by || 'Unknown'}</span>
             ),
         },
         {
             key: 'requested_at',
             header: 'Submitted At',
-            accessor: (item: any) => (
+            render: (item: any) => (
                 <span className="text-fg-subtle text-xs">{item.requested_at ? formatDate(item.requested_at) : '—'}</span>
             ),
         },
         {
             key: 'other_approvers',
             header: 'Reviewers',
-            accessor: (item: any) => {
+            render: (item: any) => {
                 const others = item.all_approvers || [];
                 if (others.length === 0) return <span className="text-fg-muted text-xs">—</span>;
                 return (
@@ -746,7 +715,7 @@ const QuotesPage = () => {
         {
             key: 'status',
             header: 'Your Decision',
-            accessor: (item: any) => {
+            render: (item: any) => {
                 if (item.approver_status === 'approved') {
                     return (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success border border-success/30">
@@ -774,7 +743,7 @@ const QuotesPage = () => {
         {
             key: 'actions',
             header: 'Actions',
-            accessor: (item: any) => (
+            render: (item: any) => (
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {item.approver_status === 'pending' && (
                         <>
@@ -1103,12 +1072,11 @@ const QuotesPage = () => {
 
                         <div className="relative w-full sm:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
-                            <input
-                                type="text"
+                            <SearchInput
+                                name="approvals-search"
                                 placeholder="Search approvals..."
                                 value={approvalsSearchTerm}
-                                onChange={(e) => setApprovalsSearchTerm(e.target.value)}
-                                className="w-full pl-9 pr-4 py-1.5 bg-surface border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-primary/50 text-xs"
+                                onChange={(v) => setApprovalsSearchTerm(v)}
                             />
                         </div>
                     </div>
@@ -1125,10 +1093,12 @@ const QuotesPage = () => {
                             </p>
                         </div>
                     ) : (
-                        <Table
-                            data={filteredApprovals}
+                        <DataTable
+                            name="quote-approvals"
+                            rows={filteredApprovals}
                             columns={approvalColumns}
-                            onRowClick={(item) => openQuote(item.quote_id)}
+                            rowKey={(item: any) => String(item.id ?? item.quote_id)}
+                            onRowClick={(item: any) => openQuote(item.quote_id)}
                         />
                     )}
                 </div>
@@ -1202,14 +1172,18 @@ const QuotesPage = () => {
                                                 <div className="p-2 border-b border-line">
                                                     <div className="relative">
                                                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-fg-muted" />
-                                                        <input
+<CrmScope>
+                                                        <TextField
                                                             autoFocus
+                                                            name="deal-search"
                                                             type="text"
+                                                            size="sm"
                                                             placeholder="Search deals..."
                                                             value={dealSearchTerm}
                                                             onChange={e => setDealSearchTerm(e.target.value)}
-                                                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface border border-line rounded text-fg placeholder-fg-subtle focus:outline-none focus:ring-1 focus:ring-focus"
+                                                            className="pl-8"
                                                         />
+</CrmScope>
                                                     </div>
                                                 </div>
                                                 <ul className="max-h-52 overflow-y-auto py-1">
@@ -1249,15 +1223,17 @@ const QuotesPage = () => {
                                         <label htmlFor="manual-quote-number" className="block text-sm font-medium text-fg-subtle mb-2">
                                             Quote Number (manual) *
                                         </label>
-                                        <input
+<CrmScope>
+                                        <TextField
                                             id="manual-quote-number"
+                                            name="manual-quote-number"
                                             type="text"
                                             maxLength={50}
                                             value={manualQuoteNumber}
                                             onChange={e => setManualQuoteNumber(e.target.value)}
                                             placeholder="e.g. QT-501"
-                                            className="w-full px-4 py-2 bg-surface-raised border border-line rounded-lg text-sm text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-focus"
                                         />
+</CrmScope>
                                         <p className="mt-1.5 text-xs text-fg-subtle">
                                             Auto-numbering for quotes is turned off in Settings → Documents → Numbering. Use letters, digits and - / _ . only; the number must be unique.
                                         </p>
@@ -1311,13 +1287,15 @@ const QuotesPage = () => {
                     <p className="text-xs text-fg-subtle mb-3">
                         Please provide a reason for rejecting this quote. Rejection reasons are mandatory.
                     </p>
-                        <textarea
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="Reason for rejection (mandatory) *"
-                            rows={3}
-                            className="w-full px-3 py-2 bg-surface-raised border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-danger resize-none"
-                        />
+                        <CrmScope>
+                            <Textarea
+                                name="reject-reason"
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="Reason for rejection (mandatory) *"
+                                rows={3}
+                            />
+                        </CrmScope>
                 </Modal>
             )}
 

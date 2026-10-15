@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
-import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { PartnerStatusOverview } from '../components/partners/PartnerStatusOverview';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
@@ -144,7 +144,6 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
         }
     };
 
-    const inputCls = 'w-full bg-bg border border-line rounded-nb px-nb-3 py-nb-2 text-sm text-fg focus:outline-none focus:ring-2 ring-focus';
     const labelCls = 'text-xs text-fg-subtle mb-1 block';
 
     return (
@@ -169,73 +168,43 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                 <form id="create-partner-form" onSubmit={handleSubmit}>
                     {error && <p className="text-danger text-sm mb-3">{error}</p>}
                     <div className="space-y-4">
-
                         {/* First Name + Last Name */}
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <div>
-                                <label className={labelCls}>First Name *</label>
-                                <input type="text" required value={form.first_name}
-                                    onChange={e => { setForm(f => ({ ...f, first_name: e.target.value })); setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) })); }}
-                                    onBlur={e => setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) }))}
-                                    aria-invalid={!!fieldErrors.first_name}
-                                    className={inputCls} placeholder="Dhanooj" />
-                                {fieldErrors.first_name && <p className="text-danger text-xs mt-1">{fieldErrors.first_name}</p>}
-                            </div>
-                            <div>
-                                <label className={labelCls}>Last Name *</label>
-                                <input type="text" required value={form.last_name}
-                                    onChange={e => { setForm(f => ({ ...f, last_name: e.target.value })); setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) })); }}
-                                    onBlur={e => setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) }))}
-                                    aria-invalid={!!fieldErrors.last_name}
-                                    className={inputCls} placeholder="B S" />
-                                {fieldErrors.last_name && <p className="text-danger text-xs mt-1">{fieldErrors.last_name}</p>}
-                            </div>
+                            <TextField name="first_name" label="First Name" required value={form.first_name}
+                                onChange={e => { setForm(f => ({ ...f, first_name: e.target.value })); setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) }))}
+                                error={fieldErrors.first_name || undefined} placeholder="Dhanooj" />
+                            <TextField name="last_name" label="Last Name" required value={form.last_name}
+                                onChange={e => { setForm(f => ({ ...f, last_name: e.target.value })); setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) }))}
+                                error={fieldErrors.last_name || undefined} placeholder="B S" />
                         </div>
 
                         {/* Company Name */}
-                        <div>
-                            <label className={labelCls}>Company Name</label>
-                            <input type="text" value={form.company_name}
-                                onChange={e => { setForm(f => ({ ...f, company_name: e.target.value })); setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) })); }}
-                                onBlur={e => setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) }))}
-                                aria-invalid={!!fieldErrors.company_name}
-                                className={inputCls} placeholder="Moonhive Pvt Ltd" />
-                            {fieldErrors.company_name && <p className="text-danger text-xs mt-1">{fieldErrors.company_name}</p>}
-                        </div>
+                        <TextField name="company_name" label="Company Name" value={form.company_name}
+                            onChange={e => { setForm(f => ({ ...f, company_name: e.target.value })); setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) })); }}
+                            onBlur={e => setFieldErrors(p => ({ ...p, company_name: validateCompanyName(e.target.value) }))}
+                            error={fieldErrors.company_name || undefined} placeholder="Moonhive Pvt Ltd" />
 
                         {/* Partner Type */}
-                        <div>
-                            <label className={labelCls}>Partner Type *</label>
-                            <select required value={form.partner_type}
-                                onChange={e => setForm(f => ({ ...f, partner_type: e.target.value }))}
-                                className={inputCls}>
-                                <option value="">Select type...</option>
-                                {partnerTypes.map(pt => (
-                                    <option key={pt.value} value={pt.value}>{pt.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select name="partner_type" label="Partner Type" required value={form.partner_type}
+                            onChange={e => setForm(f => ({ ...f, partner_type: e.target.value }))}
+                            options={[{ value: '', label: 'Select type...' }, ...partnerTypes.map(pt => ({ value: pt.value, label: pt.label }))]} />
 
                         {/* Architect Grading + Commission Rate */}
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <div>
-                                <label className={labelCls}>Architect Grading</label>
-                                <select value={form.grading}
-                                    onChange={e => setForm(f => ({ ...f, grading: e.target.value }))}
-                                    className={inputCls}>
-                                    <option value="">Select grading...</option>
-                                    <option value="low">Low</option>
-                                    <option value="mid">Mid</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Royalty Rate (%)</label>
-                                <input type="number" min="0" max="100" step="0.5"
-                                    value={form.commission_rate}
-                                    onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
-                                    className={inputCls} placeholder="0" />
-                            </div>
+                            <Select name="grading" label="Architect Grading" value={form.grading}
+                                onChange={e => setForm(f => ({ ...f, grading: e.target.value }))}
+                                options={[
+                                    { value: '', label: 'Select grading...' },
+                                    { value: 'low', label: 'Low' },
+                                    { value: 'mid', label: 'Mid' },
+                                    { value: 'high', label: 'High' },
+                                ]} />
+                            <TextField name="commission_rate" label="Royalty Rate (%)" type="number" min="0" max="100" step="0.5"
+                                value={form.commission_rate}
+                                onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
+                                placeholder="0" />
                         </div>
 
                         {/* Area Served */}
@@ -269,137 +238,73 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
                         {/* Email + Phone */}
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <div>
-                                <label className={labelCls}>Email</label>
-                                <input type="email" value={form.email}
-                                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                                    className={inputCls} placeholder="email@example.com" />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Phone</label>
-                                <input type="tel" value={form.phone} maxLength={20}
-                                    onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                    className={`${inputCls}${phoneError ? ' border-danger/60 focus:ring-danger/50' : ''}`} placeholder="+91 98765 43210" />
-                                {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
-                            </div>
+                            <TextField name="email" label="Email" type="email" value={form.email}
+                                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                                placeholder="email@example.com" />
+                            <TextField name="phone" label="Phone" type="tel" value={form.phone} maxLength={20}
+                                onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
+                                error={phoneError || undefined} placeholder="+91 98765 43210" />
                         </div>
 
                         {/* Alt Phone */}
-                        <div>
-                            <label className={labelCls}>Alt. Phone</label>
-                            <input type="tel" value={form.alt_phone} maxLength={20}
-                                onChange={e => { setForm(f => ({ ...f, alt_phone: e.target.value })); setAltPhoneError(validatePhone(e.target.value)); }}
-                                className={`${inputCls}${altPhoneError ? ' border-danger/60 focus:ring-danger/50' : ''}`} placeholder="+91 98765 43211" />
-                            {altPhoneError && <p className="text-danger text-xs mt-1">{altPhoneError}</p>}
-                        </div>
+                        <TextField name="alt_phone" label="Alt. Phone" type="tel" value={form.alt_phone} maxLength={20}
+                            onChange={e => { setForm(f => ({ ...f, alt_phone: e.target.value })); setAltPhoneError(validatePhone(e.target.value)); }}
+                            error={altPhoneError || undefined} placeholder="+91 98765 43211" />
 
                         {/* Address */}
-                        <div>
-                            <label className={labelCls}>Address</label>
-                            <input type="text" value={form.address}
-                                onChange={e => { setForm(f => ({ ...f, address: e.target.value })); setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) })); }}
-                                onBlur={e => setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) }))}
-                                aria-invalid={!!fieldErrors.address}
-                                className={inputCls} placeholder="Street / area" />
-                            {fieldErrors.address && <p className="text-danger text-xs mt-1">{fieldErrors.address}</p>}
-                        </div>
+                        <TextField name="address" label="Address" value={form.address}
+                            onChange={e => { setForm(f => ({ ...f, address: e.target.value })); setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) })); }}
+                            onBlur={e => setFieldErrors(p => ({ ...p, address: validateAddress(e.target.value) }))}
+                            error={fieldErrors.address || undefined} placeholder="Street / area" />
 
                         {/* Country */}
-                        <div>
-                            <label className={labelCls}>Country</label>
-                            <select value={form.country}
-                                onChange={e => { const country = e.target.value; setForm(f => ({ ...f, country })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(form.pin_code, country) })); }}
-                                className={inputCls}>
-                                {countryOptions().map(c => (
-                                    <option key={c.code} value={c.code}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select name="country" label="Country" value={form.country}
+                            onChange={e => { const country = e.target.value; setForm(f => ({ ...f, country })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(form.pin_code, country) })); }}
+                            options={countryOptions().map(c => ({ value: c.code, label: c.name }))} />
 
                         {/* City + Pin Code */}
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <div>
-                                <label className={labelCls}>City</label>
-                                <input type="text" value={form.city}
-                                    onChange={e => { setForm(f => ({ ...f, city: e.target.value })); setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) })); }}
-                                    onBlur={e => setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) }))}
-                                    aria-invalid={!!fieldErrors.city}
-                                    className={inputCls} placeholder="Bangalore" />
-                                {fieldErrors.city && <p className="text-danger text-xs mt-1">{fieldErrors.city}</p>}
-                            </div>
-                            <div>
-                                <label className={labelCls}>
-                                    {postalRule.label}
-                                    {postalRule.digits && (
-                                        <span className="ml-2 text-xs font-normal text-fg-muted normal-case">
-                                            {form.pin_code.replace(/\D/g, '').length}/{postalRule.digits} digits
-                                        </span>
-                                    )}
-                                    {!postalRule.pattern && (
-                                        <span className="ml-2 text-xs font-normal text-fg-muted normal-case">not used in {postalRule.name}</span>
-                                    )}
-                                </label>
-                                <input type="text" inputMode={postalRule.numericOnly ? 'numeric' : 'text'} maxLength={postalRule.maxLength} value={form.pin_code}
-                                    onChange={e => { const v = postalRule.numericOnly ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength) : e.target.value; setForm(f => ({ ...f, pin_code: v })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(v, form.country) })); }}
-                                    onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(e.target.value, form.country) }))}
-                                    aria-invalid={!!fieldErrors.pin_code}
-                                    className={inputCls} placeholder={postalRule.example} />
-                                {fieldErrors.pin_code && <p className="text-danger text-xs mt-1">{fieldErrors.pin_code}</p>}
-                            </div>
+                            <TextField name="city" label="City" value={form.city}
+                                onChange={e => { setForm(f => ({ ...f, city: e.target.value })); setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) }))}
+                                error={fieldErrors.city || undefined} placeholder="Bangalore" />
+                            <TextField name="pin_code"
+                                label={`${postalRule.label}${postalRule.digits ? ` (${form.pin_code.replace(/\D/g, '').length}/${postalRule.digits} digits)` : ''}${!postalRule.pattern ? ` (not used in ${postalRule.name})` : ''}`}
+                                inputMode={postalRule.numericOnly ? 'numeric' : 'text'} maxLength={postalRule.maxLength} value={form.pin_code}
+                                onChange={e => { const v = postalRule.numericOnly ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength) : e.target.value; setForm(f => ({ ...f, pin_code: v })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(v, form.country) })); }}
+                                onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(e.target.value, form.country) }))}
+                                error={fieldErrors.pin_code || undefined} placeholder={postalRule.example} />
                         </div>
 
                         {/* Relationship Manager */}
-                        <div>
-                            <label className={labelCls}>Relationship Manager</label>
-                            <select value={form.owner_person_id}
-                                onChange={e => setForm(f => ({ ...f, owner_person_id: e.target.value }))}
-                                className={inputCls}>
-                                <option value="">— Assign RM —</option>
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.full_name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select name="owner_person_id" label="Relationship Manager" value={form.owner_person_id}
+                            onChange={e => setForm(f => ({ ...f, owner_person_id: e.target.value }))}
+                            options={[{ value: '', label: '— Assign RM —' }, ...users.map(u => ({ value: u.id, label: u.full_name }))]} />
 
                         {/* POC Primary + Secondary */}
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <div>
-                                <label className={labelCls}>1st POC</label>
-                                <input type="text" value={form.poc_primary}
-                                    onChange={e => setForm(f => ({ ...f, poc_primary: e.target.value }))}
-                                    className={inputCls} placeholder="Primary contact" />
-                            </div>
-                            <div>
-                                <label className={labelCls}>2nd POC</label>
-                                <input type="text" value={form.poc_secondary}
-                                    onChange={e => setForm(f => ({ ...f, poc_secondary: e.target.value }))}
-                                    className={inputCls} placeholder="Secondary contact" />
-                            </div>
+                            <TextField name="poc_primary" label="1st POC" value={form.poc_primary}
+                                onChange={e => setForm(f => ({ ...f, poc_primary: e.target.value }))}
+                                placeholder="Primary contact" />
+                            <TextField name="poc_secondary" label="2nd POC" value={form.poc_secondary}
+                                onChange={e => setForm(f => ({ ...f, poc_secondary: e.target.value }))}
+                                placeholder="Secondary contact" />
                         </div>
 
                         {/* Customers Connected + Value of Purchase */}
                         <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <div>
-                                <label className={labelCls}>Customers Connected</label>
-                                <input type="number" min="0" step="1" value={form.customers_connected}
-                                    onChange={e => setForm(f => ({ ...f, customers_connected: e.target.value }))}
-                                    className={inputCls} placeholder="0" />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Value of Purchase</label>
-                                <input type="number" min="0" step="0.01" value={form.value_of_purchase}
-                                    onChange={e => setForm(f => ({ ...f, value_of_purchase: e.target.value }))}
-                                    className={inputCls} placeholder="0" />
-                            </div>
+                            <TextField name="customers_connected" label="Customers Connected" type="number" min="0" step="1" value={form.customers_connected}
+                                onChange={e => setForm(f => ({ ...f, customers_connected: e.target.value }))}
+                                placeholder="0" />
+                            <TextField name="value_of_purchase" label="Value of Purchase" type="number" min="0" step="0.01" value={form.value_of_purchase}
+                                onChange={e => setForm(f => ({ ...f, value_of_purchase: e.target.value }))}
+                                placeholder="0" />
                         </div>
 
                         {/* Total Purchase Till Date */}
-                        <div>
-                            <label className={labelCls}>Total Purchase Till Date</label>
-                            <input type="number" min="0" step="0.01" value={form.total_purchase_till_date}
-                                onChange={e => setForm(f => ({ ...f, total_purchase_till_date: e.target.value }))}
-                                className={inputCls} placeholder="0" />
-                        </div>
+                        <TextField name="total_purchase_till_date" label="Total Purchase Till Date" type="number" min="0" step="0.01" value={form.total_purchase_till_date}
+                            onChange={e => setForm(f => ({ ...f, total_purchase_till_date: e.target.value }))}
+                            placeholder="0" />
 
                         {/* Custom Fields */}
                         {customFieldDefs.length > 0 && (
@@ -407,27 +312,17 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                                 <p className="text-xs font-semibold text-fg-muted">Additional Details</p>
                                 <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     {customFieldDefs.map(field => (
-                                        <div key={field.id} className="space-y-1">
-                                            <label className={labelCls}>{field.label}{field.is_required ? ' *' : ''}</label>
-                                            {field.field_type === 'SELECT' ? (
-                                                <select required={field.is_required}
-                                                    value={form.custom_fields[field.id] || ''}
-                                                    onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))}
-                                                    className={inputCls}>
-                                                    <option value="">— Select —</option>
-                                                    {(field.options || []).map((opt: string) => (
-                                                        <option key={opt} value={opt}>{opt}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <input
-                                                    required={field.is_required}
-                                                    type={field.field_type === 'NUMBER' ? 'number' : field.field_type === 'DATE' ? 'date' : 'text'}
-                                                    value={form.custom_fields[field.id] || ''}
-                                                    onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))}
-                                                    className={inputCls} />
-                                            )}
-                                        </div>
+                                        field.field_type === 'SELECT' ? (
+                                            <Select key={field.id} name={`custom_${field.id}`} label={field.label} required={!!field.is_required}
+                                                value={form.custom_fields[field.id] || ''}
+                                                onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))}
+                                                options={[{ value: '', label: '— Select —' }, ...(field.options || []).map((opt: string) => ({ value: opt, label: opt }))]} />
+                                        ) : (
+                                            <TextField key={field.id} name={`custom_${field.id}`} label={field.label} required={!!field.is_required}
+                                                type={field.field_type === 'NUMBER' ? 'number' : field.field_type === 'DATE' ? 'date' : 'text'}
+                                                value={form.custom_fields[field.id] || ''}
+                                                onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))} />
+                                        )
                                     ))}
                                 </div>
                             </div>

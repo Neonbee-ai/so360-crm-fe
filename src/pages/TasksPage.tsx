@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, AlertCircle, Calendar, Trash2, UserPlus, Building2, Plus } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { ListPageTemplate, Pagination, Button, Tabs, DataTable, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, Tabs, DataTable, Select, SearchInput, toast, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -285,20 +285,17 @@ const TasksPage = () => {
             sortable: true,
             render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
-                    <select
+                    <Select
+                        name={`task-assignee-${task.id}`}
+                        aria-label="Assigned to"
+                        size="sm"
                         value={task.assigned_to.id}
-                        onChange={(e) => handleAssigneeChange(task, e.target.value)}
+                        onValueChange={(v) => handleAssigneeChange(task, v)}
                         disabled={isTaskLocked(task.status)}
                         title={isTaskLocked(task.status) ? TASK_LOCKED_HINT : undefined}
-                        className="flex-1 bg-transparent text-fg-subtle text-sm focus:outline-none cursor-pointer hover:text-fg transition-colors py-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {users.map(user => (
-                            <option key={user.id} value={user.id} className="bg-surface text-fg-subtle">
-                                {user.full_name}
-                                {user.id === currentUserId ? ' (You)' : ''}
-                            </option>
-                        ))}
-                    </select>
+                        className="flex-1"
+                        options={users.map(user => ({ value: user.id, label: `${user.full_name}${user.id === currentUserId ? ' (You)' : ''}` }))}
+                    />
 
                     {!isTaskAssignedToUser(task, currentUserId) && (
                         <button
@@ -325,26 +322,29 @@ const TasksPage = () => {
             sortable: true,
             render: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
-                    <select
+                    <Select
+                        name={`task-status-${task.id}`}
+                        aria-label="Status"
+                        size="sm"
                         value={task.status}
-                        onChange={(e) => handleStatusChange(task, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-xs font-semibold  border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-surface ${task.status === 'DONE'
-                            ? 'bg-success/10 text-success border-success/20 focus:ring-success'
-                            : task.status === 'IN_PROGRESS'
-                            ? 'bg-warning/10 text-warning border-warning/20 focus:ring-warning'
-                            : task.status === 'ON_HOLD'
-                            ? 'bg-warning/10 text-warning border-warning/20 focus:ring-warning'
-                            : task.status === 'CANCELLED'
-                            ? 'bg-danger/10 text-danger border-danger/20 focus:ring-danger'
-                            : 'bg-surface-raised text-fg-subtle border-line focus:ring-line-strong'
-                            }`}
-                    >
-                        <option value="OPEN" className="bg-surface text-fg-subtle">OPEN</option>
-                        <option value="IN_PROGRESS" className="bg-surface text-fg-subtle">IN PROGRESS</option>
-                        <option value="DONE" className="bg-surface text-fg-subtle">DONE</option>
-                        <option value="ON_HOLD" className="bg-surface text-fg-subtle">ON HOLD</option>
-                        <option value="CANCELLED" className="bg-surface text-fg-subtle">CANCELLED</option>
-                    </select>
+                        onValueChange={(v) => handleStatusChange(task, v)}
+                        className={`rounded-full text-xs font-semibold cursor-pointer ${
+                            task.status === 'DONE'
+                                ? 'bg-success/10 text-success border-success/20'
+                                : task.status === 'IN_PROGRESS' || task.status === 'ON_HOLD'
+                                ? 'bg-warning/10 text-warning border-warning/20'
+                                : task.status === 'CANCELLED'
+                                ? 'bg-danger/10 text-danger border-danger/20'
+                                : 'bg-surface-raised text-fg-subtle border-line'
+                        }`}
+                        options={[
+                            { value: 'OPEN', label: 'OPEN' },
+                            { value: 'IN_PROGRESS', label: 'IN PROGRESS' },
+                            { value: 'DONE', label: 'DONE' },
+                            { value: 'ON_HOLD', label: 'ON HOLD' },
+                            { value: 'CANCELLED', label: 'CANCELLED' },
+                        ]}
+                    />
                 </div>
             )
         },

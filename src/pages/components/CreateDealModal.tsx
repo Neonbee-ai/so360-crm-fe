@@ -459,7 +459,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     ]}
                                 />
                                 {/* Never fail silently: an empty registry and a failed
-                                    fetch look identical in a bare <select>. */}
+                                    fetch look identical in a bare native select. */}
                                 {salesRepsLoading ? (
                                     <p className="text-xs font-bold text-fg-muted flex items-center gap-1.5">
                                         <Loader2 size={10} className="animate-spin" />

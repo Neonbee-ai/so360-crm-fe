@@ -11,7 +11,8 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
-import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert, IconButton, Textarea } from '@so360/design-system';
+import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert, IconButton, Textarea, RadioGroup } from '@so360/design-system';
+import { CrmScope } from '../utils/crmScope';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
@@ -580,32 +581,18 @@ const TaskDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     <p className="text-sm text-fg-subtle">Choose what happens to the linked Project task.</p>
                     <div className="flex flex-col gap-nb-2">
-                        <label className="flex items-start gap-nb-3 p-nb-3 rounded-nb border border-line hover:bg-surface-sunken cursor-pointer">
-                            <input
-                                type="radio"
+                        <CrmScope>
+                            <RadioGroup
                                 name="disconnect-mode"
-                                checked={disconnectMode === 'keep_but_disconnect'}
-                                onChange={() => setDisconnectMode('keep_but_disconnect')}
-                                className="mt-1"
+                                label="Disconnect mode"
+                                value={disconnectMode}
+                                onChange={(v: string) => setDisconnectMode(v as typeof disconnectMode)}
+                                options={[
+                                    { value: 'keep_but_disconnect', label: 'Keep Project task, just disconnect', description: 'The Project task stays as-is; this CRM task stops syncing with it.' },
+                                    { value: 'remove_project_task', label: 'Remove the Project task too', description: 'Deletes the connected task on the Project side as well.' },
+                                ]}
                             />
-                            <span>
-                                <span className="block text-sm font-bold text-fg">Keep Project task, just disconnect</span>
-                                <span className="block text-xs text-fg-muted">The Project task stays as-is; this CRM task stops syncing with it.</span>
-                            </span>
-                        </label>
-                        <label className="flex items-start gap-nb-3 p-nb-3 rounded-nb border border-line hover:bg-surface-sunken cursor-pointer">
-                            <input
-                                type="radio"
-                                name="disconnect-mode"
-                                checked={disconnectMode === 'remove_project_task'}
-                                onChange={() => setDisconnectMode('remove_project_task')}
-                                className="mt-1"
-                            />
-                            <span>
-                                <span className="block text-sm font-bold text-fg">Remove the Project task too</span>
-                                <span className="block text-xs text-fg-muted">Deletes the connected task on the Project side as well.</span>
-                            </span>
-                        </label>
+                        </CrmScope>
                     </div>
                     <div className="flex gap-nb-2 justify-end">
                         <Button variant="secondary" onClick={() => setShowDisconnectConfirm(false)} disabled={isDisconnecting}>Cancel</Button>
