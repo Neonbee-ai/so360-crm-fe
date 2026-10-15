@@ -380,7 +380,7 @@ describe('UnifiedTimelinePanel', () => {
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
                 // Check for yellow badge color classes
-                const badges = item?.querySelectorAll('[class*="bg-yellow"]');
+                const badges = item?.querySelectorAll('[class*="bg-warning"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
 
@@ -401,7 +401,7 @@ describe('UnifiedTimelinePanel', () => {
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
                 // Check for green badge color classes
-                const badges = item?.querySelectorAll('[class*="emerald"]');
+                const badges = item?.querySelectorAll('[class*="bg-success"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
 
@@ -422,7 +422,7 @@ describe('UnifiedTimelinePanel', () => {
                 const item = container.querySelector('[data-testid*="task-task-1"]');
                 expect(item).toBeInTheDocument();
                 // Check for blue badge color classes
-                const badges = item?.querySelectorAll('[class*="blue"]');
+                const badges = item?.querySelectorAll('[class*="bg-primary"]');
                 expect(badges && badges.length > 0).toBe(true);
             });
         });

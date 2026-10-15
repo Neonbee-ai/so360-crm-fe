@@ -9,11 +9,12 @@ interface Props {
     /** Org has the Inbox module enabled — gates the Inbox-communications fetch. */
     isInboxEnabled: boolean;
     /** CRM entity being summarised. Defaults to a lead; a deal reuses the same card. */
-    entity?: 'leads' | 'deals';
+    entity?: 'leads' | 'deals' | 'partners';
 }
 
 const conversationStorageKey = (leadId: string) => `neura_ai_conversation:${leadId}`;
 const summaryCacheKey = (leadId: string) => `neura_ai_summary:${leadId}`;
+const PARTNER_SUMMARY_PROMPT = 'Summarize this partner for me: type, status, contact details, linked deals and commissions, recent activity, and any risks or next steps I should be aware of. Be concise.';
 const DEAL_SUMMARY_PROMPT = 'Summarize this deal for me: current stage, value, linked customer, recent activity, and any risks or next steps I should be aware of. Be concise.';
 /** A summary is reused for this long on revisits — every page mount used to
  *  fire a fresh identical LLM call (audited: 11 byte-identical asks in 5h). */
@@ -46,6 +47,7 @@ async function buildInboxContext(leadId: string): Promise<string | null> {
 
 const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled, entity = 'leads' }) => {
     const isDeal = entity === 'deals';
+    const isPartner = entity === 'partners';
     const [summary, setSummary] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -80,13 +82,13 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
                 localStorage.getItem(conversationStorageKey(leadId)) ||
                 sessionStorage.getItem(conversationStorageKey(leadId));
             if (!conversationId) {
-                const conversation = await neuraAiService.createConversation(`Neura AI · ${isDeal ? 'Deal' : 'Lead'} ${leadLabel || leadId}`);
+                const conversation = await neuraAiService.createConversation(`Neura AI · ${isDeal ? 'Deal' : isPartner ? 'Partner' : 'Lead'} ${leadLabel || leadId}`);
                 conversationId = conversation.id;
                 localStorage.setItem(conversationStorageKey(leadId), conversationId);
             }
 
-            const inboxContext = isInboxEnabled && !isDeal ? await buildInboxContext(leadId) : null;
-            const basePrompt = isDeal ? DEAL_SUMMARY_PROMPT : SUMMARY_PROMPT;
+            const inboxContext = isInboxEnabled && !isDeal && !isPartner ? await buildInboxContext(leadId) : null;
+            const basePrompt = isDeal ? DEAL_SUMMARY_PROMPT : isPartner ? PARTNER_SUMMARY_PROMPT : SUMMARY_PROMPT;
             const prompt = inboxContext ? `${basePrompt}\n\n${inboxContext}` : basePrompt;
 
             const result = await neuraAiService.sendMessage(conversationId, prompt, entityRef);
@@ -132,7 +134,7 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
             {isLoading && !summary ? (
                 <div className="flex items-center gap-2 text-fg-muted py-4">
                     <Loader2 size={14} className="animate-spin" />
-                    <span className="text-xs">Neura AI is reviewing this {isDeal ? 'deal' : 'lead'}…</span>
+                    <span className="text-xs">Neura AI is reviewing this {isDeal ? 'deal' : isPartner ? 'partner' : 'lead'}…</span>
                 </div>
             ) : error && !summary ? (
                 <div className="flex items-center gap-2 text-danger py-2">

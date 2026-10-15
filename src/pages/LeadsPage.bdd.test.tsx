@@ -389,7 +389,7 @@ describe('LeadsPage', () => {
       mockGetLeads.mockResolvedValue([]);
       render(<LeadsPage />);
       await waitFor(() => {
-        expect(screen.getByTestId('leads-grid')).toHaveTextContent('No leads found');
+        expect(screen.getByText('No leads yet')).toBeInTheDocument();
       });
     });
   });
@@ -525,9 +525,9 @@ describe('LeadsPage', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       await user.click(screen.getByText('More Filters'));
-      expect(screen.getByText('Created By')).toBeInTheDocument();
+      expect(screen.getByText('Created by')).toBeInTheDocument();
       await user.click(screen.getByText('Views'));
-      expect(screen.queryByText('Created By')).not.toBeInTheDocument();
+      expect(screen.queryByText('Created by')).not.toBeInTheDocument();
       expect(screen.getByText('Save current view')).toBeInTheDocument();
     });
 
@@ -539,7 +539,7 @@ describe('LeadsPage', () => {
       expect(screen.getByText('Save current view')).toBeInTheDocument();
       await user.click(screen.getByText('More Filters'));
       expect(screen.queryByText('Save current view')).not.toBeInTheDocument();
-      expect(screen.getByText('Created By')).toBeInTheDocument();
+      expect(screen.getByText('Created by')).toBeInTheDocument();
     });
 
     it('When More Filters is open and an outside click occurs / Then it closes', async () => {
@@ -547,9 +547,9 @@ describe('LeadsPage', () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
       await user.click(screen.getByText('More Filters'));
-      expect(screen.getByText('Created By')).toBeInTheDocument();
+      expect(screen.getByText('Created by')).toBeInTheDocument();
       fireEvent.mouseDown(document.body);
-      await waitFor(() => expect(screen.queryByText('Created By')).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.queryByText('Created by')).not.toBeInTheDocument());
     });
   });
 });
@@ -948,7 +948,8 @@ describe('LeadsPage — export (RE §48)', () => {
     it('When CSV is clicked / Then leads are exported for the current status filter', async () => {
       render(<LeadsPage />);
       await waitFor(() => expect(screen.getByTestId('lead-row-l1')).toBeInTheDocument());
-      fireEvent.click(screen.getByRole('button', { name: 'Export leads as CSV' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Export leads' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'CSV' }));
       await waitFor(() => expect(mockExportLeads).toHaveBeenCalledWith({ status: 'All' }, 'csv'));
     });
   });

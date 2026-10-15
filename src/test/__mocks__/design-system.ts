@@ -4,7 +4,7 @@ export const Button = ({ children, onClick, type, disabled, leftIcon: _l, rightI
   React.createElement('button', { onClick, type, disabled, ...rest }, children);
 export const Input = (props: any) => props;
 export const Select = ({ value, onChange, options = [], placeholder, ...rest }: any) =>
-  React.createElement('select', { value: value ?? '', onChange: (e: any) => onChange?.(e.target.value), 'aria-label': rest['aria-label'] ?? placeholder, 'data-testid': rest['data-testid'] },
+  React.createElement('select', { value: value ?? '', onChange: (e: any) => onChange?.(e), 'aria-label': rest['aria-label'] ?? placeholder, 'data-testid': rest['data-testid'] },
     options.map((o: any) => React.createElement('option', { key: String(o.value), value: o.value }, o.label)));
 export const Modal = (props: any) => props;
 export const Card = ({ title, actions, footer, children, 'data-testid': testId }: any) =>
@@ -16,8 +16,15 @@ export const Tooltip = (props: any) => props;
 export const QuotaGate = ({ children }: any) => React.createElement(React.Fragment, null, children);
 export const QuotaBar = ({ used, limit, isUnlimited, label }: any) =>
   React.createElement('div', { 'data-testid': 'quota-bar', 'data-used': String(used ?? 0), 'data-unlimited': String(!!isUnlimited) }, `${label ?? ''}: ${used ?? 0}`);
-export const Pagination = ({ page, currentPage, pageSize, total, totalItems }: any) =>
-  React.createElement('nav', { 'data-testid': 'pagination', 'data-page': String(page ?? currentPage ?? ''), 'data-size': String(pageSize ?? ''), 'data-total': String(total ?? totalItems ?? '') });
+export const Pagination = ({ page, currentPage, pageSize, pageSizeOptions, onPageSizeChange, total, totalItems, totalPages, onPageChange }: any) => {
+  const cur = Number(page ?? currentPage ?? 1);
+  const pages = totalPages ?? 1;
+  return React.createElement('nav', { 'data-testid': 'pagination', 'data-page': String(page ?? currentPage ?? ''), 'data-size': String(pageSize ?? ''), 'data-total': String(total ?? totalItems ?? '') },
+    onPageChange ? React.createElement('button', { type: 'button', disabled: cur <= 1, onClick: () => onPageChange(cur - 1) }, 'Previous') : null,
+    onPageChange ? React.createElement('span', null, `Page ${cur} of ${pages}`) : null,
+    onPageChange ? React.createElement('button', { type: 'button', disabled: cur >= pages, onClick: () => onPageChange(cur + 1) }, 'Next') : null,
+    onPageSizeChange && pageSizeOptions ? React.createElement('select', { 'aria-label': 'Rows per page', value: String(pageSize), onChange: (e: any) => onPageSizeChange(Number(e.target.value)) }, ...pageSizeOptions.map((o: number) => React.createElement('option', { key: o, value: String(o) }, String(o)))) : null);
+};
 export const DeleteConfirmDialog = () => null;
 export const CrossLinkChip = ({ label, id }: any) =>
   React.createElement('span', { 'data-testid': 'cross-link-chip' }, label ?? id ?? '');
@@ -167,3 +174,16 @@ export const StatusBadge = ({ status, 'data-testid': testId }: any) => React.cre
 export const Alert = ({ title, children, variant, action, 'data-testid': testId }: any) =>
     React.createElement('div', { role: 'alert', 'data-variant': variant, 'data-testid': testId }, title ? React.createElement('p', null, title) : null, children,
         action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);
+
+export const SegmentedControl = ({ options = [], value, onChange, 'data-testid': testId, 'aria-label': ariaLabel }: any) =>
+  React.createElement(
+    'div',
+    { role: 'radiogroup', 'aria-label': ariaLabel, 'data-testid': testId },
+    options.map((o: any) =>
+      React.createElement(
+        'button',
+        { key: o.value, type: 'button', role: 'radio', 'aria-checked': value === o.value, 'aria-pressed': value === o.value, disabled: o.disabled, onClick: () => onChange?.(o.value) },
+        o.label,
+      ),
+    ),
+  );

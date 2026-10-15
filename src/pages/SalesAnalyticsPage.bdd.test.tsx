@@ -98,7 +98,8 @@ describe('Feature: Sales reports page', () => {
             svc.get.mockResolvedValue(data);
             renderPage();
             await screen.findByTestId('sa-total-bookings');
-            fireEvent.click(screen.getByRole('button', { name: 'Export Sales by project as Excel' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Export Sales by project' }));
+            fireEvent.click(screen.getByRole('menuitem', { name: 'Excel' }));
             await waitFor(() => expect(svc.exportSection).toHaveBeenCalledWith({}, 'month', 'by_project', 'xlsx'));
         });
     });

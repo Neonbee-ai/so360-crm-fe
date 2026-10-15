@@ -6,7 +6,7 @@ import {
     Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -620,44 +620,18 @@ const DashboardPage = () => {
                             <LayoutDashboard size={14} /> Customize
                         </button>
                     )}
-                <div className="flex gap-2 bg-surface p-1 rounded-nb border border-line">
-                    <button
-                        onClick={() => setPeriod('yearly')}
-                        className={`px-4 py-1.5 ${period === 'yearly'
-                            ? 'bg-line text-fg'
-                            : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-nb text-xs font-semibold transition-all`}
-                    >
-                        Yearly
-                    </button>
-                    <button
-                        onClick={() => setPeriod('quarterly')}
-                        className={`px-4 py-1.5 ${period === 'quarterly'
-                            ? 'bg-line text-fg'
-                            : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-nb text-xs font-semibold transition-all`}
-                    >
-                        Quarterly
-                    </button>
-                    <button
-                        onClick={() => setPeriod('monthly')}
-                        className={`px-4 py-1.5 ${period === 'monthly'
-                            ? 'bg-line text-fg'
-                            : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-nb text-xs font-semibold transition-all`}
-                    >
-                        Monthly
-                    </button>
-                    <button
-                        onClick={() => setPeriod('weekly')}
-                        className={`px-4 py-1.5 ${period === 'weekly'
-                            ? 'bg-line text-fg'
-                            : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-nb text-xs font-semibold transition-all`}
-                    >
-                        Weekly
-                    </button>
-                </div>
+                <SegmentedControl
+                    aria-label="Dashboard period"
+                    size="sm"
+                    value={period}
+                    onChange={(v) => setPeriod(v as typeof period)}
+                    options={[
+                        { value: 'yearly', label: 'Yearly' },
+                        { value: 'quarterly', label: 'Quarterly' },
+                        { value: 'monthly', label: 'Monthly' },
+                        { value: 'weekly', label: 'Weekly' },
+                    ]}
+                />
                 </>
             }
             primary={

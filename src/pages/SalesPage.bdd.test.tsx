@@ -253,7 +253,8 @@ describe('Feature: Sales register export (RE §48)', () => {
             bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
             report.listSales.mockResolvedValue({ rows: [row()], total: 1 });
             renderPage();
-            fireEvent.click(await screen.findByRole('button', { name: 'Export sales as Excel' }));
+            fireEvent.click(await screen.findByRole('button', { name: 'Export sales' }));
+            fireEvent.click(await screen.findByRole('menuitem', { name: 'Excel' }));
             await waitFor(() => expect(exp.sales).toHaveBeenCalledWith({}, 'xlsx'));
         });
     });

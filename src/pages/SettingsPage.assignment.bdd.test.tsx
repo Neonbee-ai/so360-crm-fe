@@ -86,13 +86,13 @@ describe('Given CRM Settings', () => {
             render(<SettingsPage />);
             await waitFor(() => screen.getByText('CRM Settings'));
             const tab = screen.getByRole('tab', { name: /^assignment$/i });
-            expect(tab.className).toMatch(/text-fg-subtle/);
+            expect(tab).toHaveAttribute('aria-selected', 'false');
             fireEvent.click(tab);
             await screen.findByTestId('assignment-tab');
-            expect(tab.className).toMatch(/bg-primary(\s|$)/);
-            fireEvent.click(screen.getByRole('button', { name: /^pipeline$/i }));
+            expect(tab).toHaveAttribute('aria-selected', 'true');
+            fireEvent.click(screen.getByRole('tab', { name: /^pipeline$/i }));
             await waitFor(() => expect(screen.queryByTestId('assignment-tab')).not.toBeInTheDocument());
-            expect(tab.className).not.toMatch(/bg-primary(\s|$)/);
+            expect(tab).toHaveAttribute('aria-selected', 'false');
         });
     });
 

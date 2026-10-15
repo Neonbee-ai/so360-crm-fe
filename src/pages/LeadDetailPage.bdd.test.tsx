@@ -403,7 +403,7 @@ describe('LeadDetailPage', () => {
       }));
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('Outbound call logged')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getAllByText('Outbound call logged').length).toBeGreaterThan(0));
       expect(screen.getByText('Intro call completed')).toBeInTheDocument();
     });
 
@@ -467,8 +467,8 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText('Notes'));
       await waitFor(() => expect(screen.getByText('Hot lead from conference')).toBeInTheDocument());
-      const noteOneCard = screen.getByText('Hot lead from conference').closest('div.bg-surface-sunken');
-      const noteTwoCard = screen.getByText('Needs follow up').closest('div.bg-surface-sunken');
+      const noteOneCard = screen.getByText('Hot lead from conference').closest('div[class*="group/note"]');
+      const noteTwoCard = screen.getByText('Needs follow up').closest('div[class*="group/note"]');
       expect(noteOneCard).not.toBeNull();
       expect(noteTwoCard).not.toBeNull();
       expect(noteOneCard).not.toBe(noteTwoCard);
@@ -536,7 +536,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('First reply')).toBeInTheDocument());
       expect(screen.getByText('Second reply')).toBeInTheDocument();
       // "Test Owner" appears once for the note itself, and once for the grouped reply run (not once per reply)
-      const noteCard = screen.getByText('Hot lead from conference').closest('div.bg-surface-sunken') as HTMLElement;
+      const noteCard = screen.getByText('Hot lead from conference').closest('div[class*="group/note"]') as HTMLElement;
       expect(within(noteCard).getAllByText('Test Owner')).toHaveLength(2);
     });
 
@@ -823,7 +823,7 @@ describe('LeadDetailPage', () => {
       mockGetDocumentsByLeadId.mockResolvedValue([]);
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('No activities logged yet')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getAllByText('No activities logged yet').length).toBeGreaterThan(0));
     });
   });
 
@@ -848,15 +848,15 @@ describe('LeadDetailPage', () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
       await waitFor(() => {
-        expect(screen.getAllByLabelText('Back to Leads')[0]).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'Back to Leads' })[0]).toBeInTheDocument();
       });
     });
 
     it('When Back to Leads is clicked / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockGetLeadById.mockResolvedValue(null);
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByLabelText('Back to Leads')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByLabelText('Back to Leads')[0]);
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'Back to Leads' })[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByRole('button', { name: 'Back to Leads' })[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
   });
@@ -865,16 +865,16 @@ describe('LeadDetailPage', () => {
     it('When the header Back is clicked from /crm/leads/:id / Then it navigates to /crm/leads, not the dashboard', async () => {
       mockPathname = '/crm/leads/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back')[0]);
+      await waitFor(() => expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByLabelText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/leads');
     });
 
     it('When the header Back is clicked from /crm/customers/:id / Then it navigates to /crm/customers, not the dashboard', async () => {
       mockPathname = '/crm/customers/lead-1';
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getAllByText('Back')[0]).toBeInTheDocument());
-      fireEvent.click(screen.getAllByText('Back')[0]);
+      await waitFor(() => expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument());
+      fireEvent.click(screen.getAllByLabelText('Back')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('/crm/customers');
     });
   });
@@ -1196,14 +1196,16 @@ describe('LeadDetailPage', () => {
     it('When events are loaded / Then shows "Showing latest N"', async () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [sampleEvent('e1'), sampleEvent('e2')] }));
       render(<LeadDetailPage />);
-      await waitFor(() => expect(screen.getByText(/Showing latest 2/)).toBeInTheDocument());
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
+      await waitFor(() => expect(screen.getAllByText('Event e1').length).toBeGreaterThan(0));
+      expect(screen.getAllByText('Event e2').length).toBeGreaterThan(0);
     });
 
     it('When no events are loaded / Then shows the empty timeline message', async () => {
       mockUseEntityTimeline.mockReturnValue(makeTimelineState({ events: [] }));
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-      await waitFor(() => expect(screen.getByText('No activities logged yet')).toBeInTheDocument());
+      await waitFor(() => expect(within(screen.getByRole('main')).getByText('No activities logged yet')).toBeInTheDocument());
     });
 
     it('When the timeline is loading / Then shows a spinner instead of the empty state', async () => {
@@ -1211,7 +1213,7 @@ describe('LeadDetailPage', () => {
       render(<LeadDetailPage />);
       fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
-      expect(screen.queryByText('No activities logged yet')).not.toBeInTheDocument();
+      expect(within(screen.getByRole('main')).queryByText('No activities logged yet')).not.toBeInTheDocument();
     });
 
     it('When View All History is clicked / Then opens ActivityHistoryDrawer', async () => {
@@ -1259,64 +1261,46 @@ describe('LeadDetailPage', () => {
         },
       }));
       render(<LeadDetailPage />);
+      fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
       await waitFor(() => expect(screen.getByText('Healthy')).toBeInTheDocument());
     });
   });
 
-  // Regression: the detail cards must be split across a two-column grid (main
-  // workspace + context sidebar). Before the fix the page rendered only the
-  // `lg:col-span-2` main column, leaving the third grid track empty so every
-  // card stacked into a single column. The Deal detail page never regressed.
+  // Regression: the detail cards must be split across main workspace + context
+  // rail (Comb DetailPageTemplate slots) so cards do not stack in one column.
   describe('Given the detail page layout', () => {
-    // Returns the outer grid that wraps the detail cards (parent of col-span-2).
-    const getDetailGrid = (container: HTMLElement): HTMLElement => {
-      const mainColumn = container.querySelector('.lg\\:col-span-2');
-      expect(mainColumn).not.toBeNull();
-      return mainColumn!.parentElement as HTMLElement;
-    };
-
-    it('When the lead loads / Then the cards are wrapped in a 3-track responsive grid', async () => {
-      const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      expect(getDetailGrid(container).className).toContain('lg:grid-cols-3');
+    const slots = (container: HTMLElement) => ({
+      main: container.querySelector('[data-slot="main"]') as HTMLElement | null,
+      rail: container.querySelector('[data-slot="rail"]') as HTMLElement | null,
     });
 
-    it('When the lead loads / Then the grid renders TWO columns (main + sidebar), not one', async () => {
+    it('When the lead loads / Then it renders the Comb detail template', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      // Pre-fix this was 1 (single column); the fix adds the sidebar sibling.
-      expect(getDetailGrid(container).children.length).toBe(2);
+      await waitFor(() => expect(container.querySelector('[data-template="detail"]')).not.toBeNull());
     });
 
-    it('When the lead loads / Then the first column is the main col-span-2 workspace', async () => {
+    it('When the lead loads / Then it renders TWO regions (main + rail), not one', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const grid = getDetailGrid(container);
-      expect((grid.children[0] as HTMLElement).className).toContain('lg:col-span-2');
+      await waitFor(() => expect(slots(container).main).not.toBeNull());
+      expect(slots(container).rail).not.toBeNull();
     });
 
-    it('When the lead loads / Then the second column is the context sidebar (not col-span-2)', async () => {
+    it('When the lead loads / Then the main region holds the tab workspace, not the rail cards', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const sidebar = getDetailGrid(container).children[1] as HTMLElement;
-      expect(sidebar.className).toContain('space-y-8');
-      expect(sidebar.className).not.toContain('lg:col-span-2');
+      await waitFor(() => expect(slots(container).main).not.toBeNull());
+      expect(slots(container).main!.textContent).not.toContain('Assigned owner');
     });
 
-    it('When the lead loads / Then context cards (Assigned Owner) live in the sidebar, not the main column', async () => {
+    it('When the lead loads / Then context cards (Assigned Owner) live in the rail, not the main column', async () => {
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const sidebar = getDetailGrid(container).children[1] as HTMLElement;
-      expect(sidebar.textContent).toContain('Assigned Owner');
+      await waitFor(() => expect(slots(container).rail?.textContent).toContain('Assigned owner'));
     });
 
-    it('When viewed as a customer route (same component) / Then it also renders the two-column grid', async () => {
+    it('When viewed as a customer route (same component) / Then it also renders main + rail', async () => {
       mockPathname = '/crm/customers/lead-1';
       const { container } = render(<LeadDetailPage />);
-      await waitFor(() => expect(container.querySelector('.lg\\:col-span-2')).not.toBeNull());
-      const grid = getDetailGrid(container);
-      expect(grid.className).toContain('lg:grid-cols-3');
-      expect(grid.children.length).toBe(2);
+      await waitFor(() => expect(slots(container).main).not.toBeNull());
+      expect(slots(container).rail).not.toBeNull();
     });
   });
 
@@ -1427,15 +1411,15 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Acme Corp')).toBeInTheDocument());
 
       fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
-      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
+      expect(await screen.findByRole('dialog', { name: /schedule meeting/i })).toBeInTheDocument();
 
       // Close, then ask again. The old flag-based wiring was already `true`,
       // so the second click silently did nothing at all.
       fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
-      await waitFor(() => expect(screen.queryByText(/schedule meeting/i, { selector: 'p' })).toBeNull());
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: /schedule meeting/i })).toBeNull());
 
       fireEvent.click(screen.getByRole('button', { name: /Schedule Meeting/i }));
-      expect(await screen.findByText(/schedule meeting/i, { selector: 'p' })).toBeInTheDocument();
+      expect(await screen.findByRole('dialog', { name: /schedule meeting/i })).toBeInTheDocument();
     });
   });
 });

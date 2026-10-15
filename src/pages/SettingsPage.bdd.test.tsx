@@ -165,7 +165,7 @@ describe('SettingsPage BDD', () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('CRM Settings')).toBeInTheDocument());
 
-      await user.click(screen.getByRole('button', { name: /^pipeline$/i }));
+      await user.click(screen.getByRole('tab', { name: /^pipeline$/i }));
       await waitFor(() => {
         // Pipeline stage names visible in default tab
         expect(screen.getByDisplayValue('New')).toBeInTheDocument();
@@ -527,14 +527,14 @@ describe('SettingsPage BDD', () => {
     const renderScoring = async () => {
       render(<SettingsPage />);
       await waitFor(() => expect(screen.getByText('Lead Scoring Rules')).toBeFalsy().catch(() => {}));
-      const scoringBtn = await screen.findByRole('button', { name: /scoring/i });
+      const scoringBtn = await screen.findByRole('tab', { name: /scoring/i });
       await userEvent.click(scoringBtn);
     };
 
     it('When scoring tab is opened / Then shows Lead Scoring Rules heading', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => {
@@ -545,7 +545,7 @@ describe('SettingsPage BDD', () => {
     it('When scoring tab is opened / Then shows existing rule', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => {
@@ -556,7 +556,7 @@ describe('SettingsPage BDD', () => {
     it('When scoring tab is opened / Then shows Score Bands section', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => {
@@ -567,7 +567,7 @@ describe('SettingsPage BDD', () => {
     it('When ADD RULE is clicked / Then shows rule creation form', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));
@@ -582,7 +582,7 @@ describe('SettingsPage BDD', () => {
       const { settingsApi: sApi } = await import('../services/crmService');
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Referral Source'));
@@ -594,7 +594,7 @@ describe('SettingsPage BDD', () => {
     it('When ADD RULE is clicked with Source rule type / Then the redundant Value input is hidden (Source dropdown is the value)', async () => {
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));
@@ -608,7 +608,7 @@ describe('SettingsPage BDD', () => {
       const { settingsApi: sApi } = await import('../services/crmService');
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));
@@ -626,7 +626,7 @@ describe('SettingsPage BDD', () => {
       (sApi.scoringRules.recalculate as any).mockRejectedValueOnce(new Error('boom'));
       render(<SettingsPage />);
       await waitFor(() => screen.getByText('CRM Settings'));
-      const tabs = screen.getAllByRole('button');
+      const tabs = screen.getAllByRole('tab');
       const scoringTab = tabs.find(b => b.textContent?.match(/scoring/i));
       if (scoringTab) await userEvent.click(scoringTab);
       await waitFor(() => screen.getByText('Lead Scoring Rules'));

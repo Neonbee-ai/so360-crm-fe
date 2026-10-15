@@ -110,7 +110,7 @@ describe('Given LeadsPage', () => {
   it('When no leads / Then shows empty state', async () => {
     render(<LeadsPage />);
     await waitFor(() => {
-      expect(screen.getByTestId('leads-grid')).toHaveTextContent('No leads found');
+      expect(screen.getByText('No leads yet')).toBeInTheDocument();
     });
   });
 

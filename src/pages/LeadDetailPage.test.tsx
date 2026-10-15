@@ -195,7 +195,7 @@ describe('Given LeadDetailPage', () => {
     render(<LeadDetailPage />);
     await waitFor(() => screen.getByText('Acme'));
     fireEvent.click(await screen.findByRole('tab', { name: 'Activity' }));
-    expect(screen.getByText(/call logged/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/call logged/i).length).toBeGreaterThan(0);
   });
 
   it('When action / Then switches to notes tab', async () => {
@@ -243,7 +243,7 @@ describe('Given LeadDetailPage', () => {
   it('When action / Then displays back to leads link', async () => {
     render(<LeadDetailPage />);
     await waitFor(() => {
-      expect(screen.getAllByText('Back')[0]).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Back')[0]).toBeInTheDocument();
     });
   });
 });

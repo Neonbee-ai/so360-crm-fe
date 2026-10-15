@@ -36,7 +36,8 @@ vi.mock('@so360/shell-context', () => ({
   useBusinessSettings: () => ({ settings: {}, isLoading: false }),
 }));
 
-vi.mock('@so360/design-system', () => ({
+vi.mock('@so360/design-system', async () => ({
+  ...(await import('../test/__mocks__/design-system')),
   CrossLinkChip: ({ children }: any) => <span>{children}</span>,
   DashboardPageTemplate: ({ title, description, filters, primary, children }: any) => (
     <div><h1>{title}</h1><p>{description}</p>{filters}{primary}{children}</div>

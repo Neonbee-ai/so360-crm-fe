@@ -379,7 +379,8 @@ describe('PipelinePage — export (RE §48)', () => {
       render(<PipelinePage />);
       await waitFor(() => expect(screen.getByTestId('stage-new')).toBeInTheDocument());
       await user.click(screen.getByTestId('apply-owner-filter'));
-      await user.click(screen.getByRole('button', { name: 'Export deals as PDF' }));
+      await user.click(screen.getByRole('button', { name: 'Export deals' }));
+      await user.click(screen.getByRole('menuitem', { name: 'PDF' }));
       await waitFor(() => expect(mockExportDeals).toHaveBeenCalledWith(expect.objectContaining({ owner_id: 'u1' }), 'pdf'));
     });
   });

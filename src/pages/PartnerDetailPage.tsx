@@ -8,7 +8,8 @@ import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
 import { toast } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
-import { useBusinessSettings } from '@so360/shell-context';
+import { useBusinessSettings, useShell } from '@so360/shell-context';
+import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import { useFormatters } from '@so360/formatters';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState } from '@so360/design-system';
@@ -97,6 +98,8 @@ const PartnerDetailPage = () => {
     const [users, setUsers] = useState<any[]>([]);
     const [deals, setDeals] = useState<any>(null);
     const [commissions, setCommissions] = useState<any>(null);
+    const shellCtx = useShell() as any;
+    const canUseNeuraAi = (shellCtx?.effectiveFlagsLoaded !== false) && (shellCtx?.isFeatureEnabled?.('submodule:crm:neura_ai_copilot') ?? false);
     const [activities, setActivities] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [isLoading, setIsLoading] = useState(true);
@@ -383,13 +386,23 @@ const PartnerDetailPage = () => {
                         </dl>
                     </Card>
 
-                    {/* 4. Neura: NeuraAiSummaryCard supports leads and deals only, so partners skip it. */}
+                    {/* 4. Neura summary */}
+                    {canUseNeuraAi && (
+                        <NeuraAiSummaryCard
+                            leadId={partner.id}
+                            leadLabel={partner.company_name || [partner.first_name, partner.last_name].filter(Boolean).join(' ') || partner.id}
+                            isInboxEnabled={false}
+                            entity="partners"
+                        />
+                    )}
 
                     {/* 5. Recent activity */}
-                    <Card title="Recent activity" padding="none">
-                        {activities.length === 0 ? (
-                            <EmptyState title="No activity recorded yet." />
-                        ) : (
+                    {activities.length > 0 && (
+                        <Card
+                            title="Recent activity"
+                            padding="none"
+                            actions={<Button variant="secondary" size="sm" onClick={() => setActiveTab('activity')}>View all</Button>}
+                        >
                             <div className="divide-y divide-line">
                                 {activities.slice(0, 5).map((a: any) => (
                                     <div key={a.id} className="p-nb-3">
@@ -398,8 +411,8 @@ const PartnerDetailPage = () => {
                                     </div>
                                 ))}
                             </div>
-                        )}
-                    </Card>
+                        </Card>
+                    )}
                 </div>
             }
         >

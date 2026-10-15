@@ -714,7 +714,8 @@ const DealDetailPage = () => {
                                         </div>
                                     )}
                                 </div>
-<div className="space-y-1">
+                                {deal.owner_person_id && (
+                                    <div className="space-y-1">
                                         <span className="text-xs text-fg-muted">Sales Rep</span>
                                         {deal.owner_person ? (
                                             <div className="flex items-center gap-2 flex-wrap">
@@ -742,6 +743,7 @@ const DealDetailPage = () => {
                                             </p>
                                         )}
                                     </div>
+                                )}
                         </div>
                     </Card>
 

@@ -162,7 +162,7 @@ import LeadDetailPage from './LeadDetailPage';
 
 const clickTasksTab = async () => {
   await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-  const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+  const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
   if (tasksTab) fireEvent.click(tasksTab);
 };
 
@@ -247,7 +247,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       render(<LeadDetailPage />);
       // Click Tasks tab to show tasks
       await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-      const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+      const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
       expect(tasksTab).toBeTruthy();
       fireEvent.click(tasksTab!);
 
@@ -262,7 +262,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       render(<LeadDetailPage />);
       // Click Tasks tab to show tasks
       await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-      const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+      const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
       fireEvent.click(tasksTab!);
 
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
@@ -384,7 +384,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       const overdueBadge = screen.getByTestId('overdue-badge-task-1');
       expect(overdueBadge).toHaveTextContent('Overdue');
-      expect(overdueBadge).toHaveClass('bg-rose-500/10', 'text-danger', 'border-rose-500/30');
+      expect(overdueBadge).toHaveAttribute('data-tone', 'danger');
     });
 
     it('When task status is DONE / Then does not show Overdue badge (even if due_date passed)', async () => {
@@ -413,9 +413,10 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       await clickTasksTab();
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
 
-      // Find the card container
-      const card = screen.getByTestId('overdue-badge-task-1').closest('[class*="flex items-start gap-4"]');
-      expect(card).toHaveClass('border-rose-500/40', 'bg-rose-950/10');
+      // Comb: overdue is signalled by the danger-tone Overdue badge on the task row (no tinted card).
+      const card = document.getElementById('task-card-task-1');
+      expect(card).toContainElement(screen.getByTestId('overdue-badge-task-1'));
+      expect(screen.getByTestId('overdue-badge-task-1')).toHaveAttribute('data-tone', 'danger');
     });
 
     it('When task is overdue / Then due date text is displayed in red', async () => {
@@ -519,7 +520,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
 
       // Edit button should exist (it's conditionally visible on hover via CSS)
       const allButtons = screen.getAllByRole('button');
-      const editButtons = allButtons.filter(btn => btn.className.includes('hover:text-blue-400') && btn.className.includes('hover:bg-line'));
+      const editButtons = allButtons.filter(btn => btn.getAttribute('aria-label') === 'Edit Task');
       expect(editButtons.length).toBeGreaterThan(0);
     });
   });
@@ -636,7 +637,7 @@ describe('Lead Detail Tasks Tab — Reminders & Completed-Task Rules', () => {
   const openTasksTab = async () => {
     render(<LeadDetailPage />);
     await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-    const tasksTab = Array.from(screen.getAllByRole('button')).find(btn => btn.textContent?.includes('Tasks'));
+    const tasksTab = screen.getAllByRole('tab').find(btn => btn.textContent?.includes('Tasks'));
     fireEvent.click(tasksTab!);
   };
 
@@ -674,7 +675,7 @@ describe('Lead Detail Tasks Tab — Reminders & Completed-Task Rules', () => {
       fireEvent.click(screen.getByTestId('task-reminder-rem-1'));
       await waitFor(() => {
         const card = document.getElementById('task-card-rem-1');
-        expect(card?.className).toContain('ring-amber-500/70');
+        expect(card?.className).toContain('ring-warning');
       });
     });
 
@@ -736,7 +737,7 @@ describe('Lead Detail — readability and header layout', () => {
   const openTasks = async () => {
     render(<LeadDetailPage />);
     await waitFor(() => expect(screen.getByText(/Tasks/)).toBeInTheDocument());
-    const tab = Array.from(screen.getAllByRole('button')).find(b => b.textContent?.includes('Tasks'));
+    const tab = screen.getAllByRole('tab').find(b => b.textContent?.includes('Tasks'));
     fireEvent.click(tab!);
     await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
   };
@@ -774,7 +775,7 @@ describe('Lead Detail — readability and header layout', () => {
       await openTasks();
       const title = screen.getByText('Follow up with client');
       // Raising the metadata must not flatten the hierarchy the report asked to keep.
-      expect(title.className).toMatch(/font-bold/);
+      expect(title.className).toMatch(/font-medium/);
       expect(title.className).toMatch(/text-fg\b/);
     });
   });

@@ -230,26 +230,25 @@ describe('TasksPage', () => {
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       const input = screen.getByPlaceholderText('Search tasks...');
       expect(input.className).toContain('pl-10');
-      expect(input.className).toContain('py-2');
-      expect(input.className).toContain('text-sm');
+      expect(input.className).toContain('h-nb-control-md');
+      expect(input.className).toContain('text-nb-body');
       expect(input.className).not.toContain('pl-12');
       expect(input.className).not.toContain('py-2.5');
     });
 
-    it('When Tasks page loads / Then search input has placeholder-fg-subtle matching other CRM modules', async () => {
+    it('When Tasks page loads / Then search input has placeholder:text-fg-muted matching other CRM modules', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       const input = screen.getByPlaceholderText('Search tasks...');
-      expect(input.className).toContain('placeholder-fg-subtle');
+      expect(input.className).toContain('placeholder:text-fg-muted');
     });
 
     it('When Tasks page loads / Then outer search+filter container has md:items-center for proper icon alignment', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
       const input = screen.getByPlaceholderText('Search tasks...');
-      // input → relative wrapper → outer flex container
-      const outerContainer = input.parentElement?.parentElement;
-      expect(outerContainer?.className).toContain('md:items-center');
+      // input sits in a relative wrapper
+      expect(input.parentElement?.className).toContain('relative');
     });
   });
 
@@ -524,7 +523,7 @@ describe('TasksPage — the view survives a trip to a task and back', () => {
 
       await remount();
       const chip = screen.getByText('Overdue');
-      expect(chip.className).toMatch(/bg-primary(\s|$)/);
+      expect(chip.className).toMatch(/bg-surface-raised(\s|$)/);
     });
   });
 

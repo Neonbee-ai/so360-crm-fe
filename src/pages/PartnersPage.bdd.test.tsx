@@ -107,15 +107,15 @@ describe('PartnersPage', () => {
             });
         });
 
-        it('When data loads / Then shows the Partner Type Distribution status overview instead of KPI cards', async () => {
+        it('When data loads / Then shows the Partner type distribution status overview instead of KPI cards', async () => {
             render(<PartnersPage />);
             await waitFor(() => {
-                // "Partner Type Distribution" is unique to the new overview component —
+                // "Partner type distribution" is unique to the new overview component —
                 // its own "N partners" count text is NOT asserted here because the
                 // pre-existing pagination footer independently renders the same
                 // "2 partners" string (see the dedicated segment-count assertions in
                 // "Given the Partner Status Overview" below for count/percentage coverage).
-                expect(screen.getByText('Partner Type Distribution')).toBeInTheDocument();
+                expect(screen.getByText('Partner type distribution')).toBeInTheDocument();
             });
         });
 
@@ -591,7 +591,7 @@ describe('PartnersPage', () => {
             mockPartnersGetAll.mockResolvedValue([]);
             render(<PartnersPage />);
             await waitFor(() => expect(screen.getByTestId('table')).toBeInTheDocument());
-            expect(screen.queryByText('Partner Type Distribution')).not.toBeInTheDocument();
+            expect(screen.queryByText('Partner type distribution')).not.toBeInTheDocument();
         });
 
         it('When a partner has a type not present in Settings / Then it still gets its own segment', async () => {

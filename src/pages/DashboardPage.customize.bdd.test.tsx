@@ -156,11 +156,11 @@ describe('Given the dashboard header period switcher', () => {
         it('Then stats are refetched for the monthly and then the yearly period', async () => {
             render(<DashboardPage />);
             await ready();
-            fireEvent.click(screen.getByRole('button', { name: 'Monthly' }));
+            fireEvent.click(screen.getByRole('radio', { name: 'Monthly' }));
             await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'monthly' })));
-            fireEvent.click(screen.getByRole('button', { name: 'Yearly' }));
+            fireEvent.click(screen.getByRole('radio', { name: 'Yearly' }));
             await waitFor(() => expect(mockGetDashboardStats).toHaveBeenLastCalledWith(expect.objectContaining({ period: 'yearly' })));
-            expect(screen.getByRole('button', { name: 'Yearly' }).className).toContain('bg-line');
+            expect(screen.getByRole('radio', { name: 'Yearly' })).toHaveAttribute('aria-checked', 'true');
         });
     });
 });

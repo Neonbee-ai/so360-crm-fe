@@ -226,7 +226,8 @@ describe('Feature: Commission report export (RE §48)', () => {
             bridge.value = { permissionsLoaded: true, hasPermission: (p: string) => p === 'deals.export', isFeatureEnabled: () => true };
             report.commissionReport.mockResolvedValue(fullReport());
             render(<CommissionReportPage />);
-            fireEvent.click(await screen.findByRole('button', { name: 'Export commission report as CSV' }));
+            fireEvent.click(await screen.findByRole('button', { name: 'Export commission report' }));
+            fireEvent.click(await screen.findByRole('menuitem', { name: 'CSV' }));
             await waitFor(() => expect(exp.commission).toHaveBeenCalledWith({}, 'csv'));
         });
 
