@@ -24,12 +24,14 @@ function formatDate(iso: unknown): string | null {
 export default function IcpFitCard({ meta }: { meta?: Record<string, any> | null }) {
   const enabled = useCrmFeatureFlag(ICP_FLAG);
   const raw = meta?.icp_score;
-  const score = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
-  if (!enabled || !Number.isFinite(score)) return null;
+  const parsed = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+  if (!enabled || !Number.isFinite(parsed)) return null;
+  // Clamp + round once so the displayed score and its band always agree.
+  const score = Math.min(100, Math.max(0, Math.round(parsed)));
 
   const band = fitBand(score);
   const criteria = parseIcpCriteria(meta?.icp_criteria);
-  const date = formatDate(meta?.last_synced_at ?? meta?.synced_at);
+  const date = formatDate(meta?.last_synced_at) ?? formatDate(meta?.synced_at);
 
   return (
     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm" data-testid="icp-fit-card">
@@ -39,7 +41,7 @@ export default function IcpFitCard({ meta }: { meta?: Record<string, any> | null
           {FIT_BAND_LABELS[band]}
         </span>
       </div>
-      <p className="text-3xl font-black text-slate-50" data-testid="icp-fit-score">{`${Math.round(score)} / 100`}</p>
+      <p className="text-3xl font-black text-slate-50" data-testid="icp-fit-score">{`${score} / 100`}</p>
       {meta?.icp_name && <p className="mt-1 text-xs font-medium text-slate-400" data-testid="icp-fit-name">{String(meta.icp_name)}</p>}
       {criteria.length > 0 && (
         <ul className="mt-4 space-y-2 border-t border-slate-800/50 pt-4" data-testid="icp-fit-criteria">

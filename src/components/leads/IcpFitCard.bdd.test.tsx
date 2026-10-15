@@ -176,36 +176,28 @@ describe('Feature: score parsing', () => {
       expect(score()).toBe(text);
     });
 
-  it('Given a negative score When rendered Then it shows the raw rounded value as Not a fit (current behaviour)', () => {
+  it('Given a negative score When rendered Then it is clamped to 0 / 100 as Not a fit', () => {
     render(<IcpFitCard meta={{ icp_score: -5 }} />);
-    expect(score()).toBe('-5 / 100');
+    expect(score()).toBe('0 / 100');
     expect(screen.getByTestId('icp-fit-band').textContent).toBe('Not a fit');
   });
 
-  it('Given a score above 100 When rendered Then it shows the raw value as Excellent (current behaviour)', () => {
+  it('Given a score above 100 When rendered Then it is clamped to 100 / 100 as Excellent', () => {
     render(<IcpFitCard meta={{ icp_score: 150 }} />);
-    expect(score()).toBe('150 / 100');
+    expect(score()).toBe('100 / 100');
     expect(screen.getByTestId('icp-fit-band').textContent).toBe('Excellent fit');
   });
 
-  // BUG: out-of-range scores should be clamped to 0..100 so the card never shows "150 / 100".
-  it.skip('Given a score above 100 When rendered Then it is clamped to 100 / 100', () => {
-    render(<IcpFitCard meta={{ icp_score: 150 }} />);
-    expect(score()).toBe('100 / 100');
-  });
-
-  // BUG: band is computed from the unrounded score but the label shows the rounded one,
-  // so 59.5 renders "60 / 100" with "Fair fit" (60 is "Good fit" everywhere else).
-  it.skip('Given 59.5 When rendered Then displayed score and band agree', () => {
+  it('Given 59.5 When rendered Then displayed score and band agree (rounded before banding)', () => {
     render(<IcpFitCard meta={{ icp_score: 59.5 }} />);
     expect(score()).toBe('60 / 100');
     expect(screen.getByTestId('icp-fit-band').textContent).toBe('Good fit');
   });
 
-  it('Given 59.5 When rendered Then band follows the unrounded score (current behaviour)', () => {
-    render(<IcpFitCard meta={{ icp_score: 59.5 }} />);
-    expect(score()).toBe('60 / 100');
-    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Fair fit');
+  it('Given 79.4 When rendered Then it rounds down and stays Good fit', () => {
+    render(<IcpFitCard meta={{ icp_score: 79.4 }} />);
+    expect(score()).toBe('79 / 100');
+    expect(screen.getByTestId('icp-fit-band').textContent).toBe('Good fit');
   });
 });
 
@@ -353,13 +345,12 @@ describe('Feature: sync date footer', () => {
     expect(screen.queryByTestId('icp-fit-source')).toBeNull();
   });
 
-  it('Given an invalid last_synced_at and valid synced_at When rendered Then footer is absent (?? only skips nullish)', () => {
+  it('Given an invalid last_synced_at and valid synced_at When rendered Then footer falls back to synced_at', () => {
     render(<IcpFitCard meta={{ icp_score: 50, last_synced_at: 'garbage', synced_at: '2026-10-01T10:00:00Z' }} />);
-    expect(screen.queryByTestId('icp-fit-source')).toBeNull();
+    expect(screen.getByTestId('icp-fit-source').textContent).toContain('1 Oct 2026');
   });
 
-  // BUG: an unusable last_synced_at ('' or garbage) should fall back to a valid synced_at.
-  it.skip('Given an empty last_synced_at and valid synced_at When rendered Then footer uses synced_at', () => {
+  it('Given an empty last_synced_at and valid synced_at When rendered Then footer uses synced_at', () => {
     render(<IcpFitCard meta={{ icp_score: 50, last_synced_at: '', synced_at: '2026-10-01T10:00:00Z' }} />);
     expect(screen.getByTestId('icp-fit-source').textContent).toContain('1 Oct 2026');
   });
