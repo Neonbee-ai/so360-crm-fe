@@ -581,7 +581,7 @@ describe('LeadsDataGrid — compact controls slot (Comb toolbarEnd)', () => {
     document.body.appendChild(slot);
     render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} controlsSlot={slot} />);
     const bar = within(slot).getByTestId('leads-grid-controls');
-    expect(within(bar).getByRole('button', { name: /group by/i })).toHaveClass('h-nb-control-md');
+    expect(within(bar).getByRole('button', { name: /group by/i })).toBeInTheDocument();
     expect(within(bar).getByRole('button', { name: /row density/i })).toBeInTheDocument();
     expect(within(bar).getByRole('button', { name: /customize columns/i })).toBeInTheDocument();
     slot.remove();

@@ -709,7 +709,7 @@ describe('LeadDetailPage', () => {
       await waitFor(() => expect(screen.getByText('John Doe')).toBeInTheDocument());
       await user.click(screen.getByText(/Tasks \(2\)/));
       await waitFor(() => expect(screen.getByText('Call back')).toBeInTheDocument());
-      const checkboxes = screen.getAllByRole('button').filter(b => b.className.includes('rounded border'));
+      const checkboxes = screen.getAllByRole('button', { name: /Mark task (not )?done/ });
       fireEvent.click(checkboxes[0]);
       await waitFor(() => expect(mockUpdateTask).toHaveBeenCalledWith('t1', { status: 'DONE' }));
     });

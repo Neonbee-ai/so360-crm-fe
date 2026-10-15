@@ -503,7 +503,7 @@ describe('Lead Detail Tasks Tab — Quick View Enhancements', () => {
       await waitFor(() => expect(screen.getByTestId('status-button-task-1')).toBeInTheDocument());
 
       // Find checkbox button (before the title)
-      const checkboxes = screen.getAllByRole('button').filter(btn => btn.className.includes('w-5 h-5 rounded border'));
+      const checkboxes = screen.getAllByRole('button', { name: /Mark task (not )?done/ });
       expect(checkboxes.length).toBeGreaterThan(0);
 
       fireEvent.click(checkboxes[0]);
