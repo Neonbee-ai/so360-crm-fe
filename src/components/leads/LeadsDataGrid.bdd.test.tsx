@@ -592,3 +592,21 @@ describe('LeadsDataGrid — compact controls slot (Comb toolbarEnd)', () => {
     expect(screen.queryByTestId('leads-grid-controls')).not.toBeInTheDocument();
   });
 });
+
+describe('LeadsDataGrid — header and inline editors (Comb M3)', () => {
+  it('Given sortable columns / When rendered / Then headers are quiet text buttons, not bordered Button pills', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    const sort = screen.getByTestId('sort-company_name');
+    expect(sort.className).not.toMatch(/\bborder\b/);
+    expect(sort.className).not.toContain('font-bold');
+    expect(sort.className).toContain('text-nb-title-sm');
+    expect(sort.className).toContain('hover:bg-fg/state-hover');
+    expect(sort).toHaveAttribute('aria-sort', 'none');
+  });
+
+  it('Given a sortable header / When clicked / Then aria-sort reflects the direction', () => {
+    render(<LeadsDataGrid leads={[makeLead()]} context={buildContext()} onRowClick={vi.fn()} />);
+    fireEvent.click(screen.getByTestId('sort-company_name'));
+    expect(screen.getByTestId('sort-company_name')).toHaveAttribute('aria-sort', 'ascending');
+  });
+});

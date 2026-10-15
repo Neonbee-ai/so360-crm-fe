@@ -255,9 +255,10 @@ const COL_DEFS: ColDef[] = [
               name={`lead-status-${lead.id}`}
               aria-label="Status"
               size="sm"
+              variant="inline"
               value={currentStageId}
               onValueChange={(v) => ctx.onStatusChange(lead, v)}
-              className={`rounded-full text-xs font-medium cursor-pointer ${color}`}
+              className={`rounded-full font-medium cursor-pointer ${color.replace(/\bborder-\S+/g, '').trim()}`}
               options={ctx.leadStages.map((stage) => ({ value: stage.id, label: stage.name }))}
             />
           ) : (
@@ -295,6 +296,7 @@ const COL_DEFS: ColDef[] = [
               name={`lead-owner-${lead.id}`}
               aria-label="Owner"
               size="sm"
+              variant="inline"
               value={lead.owner?.id || ''}
               onValueChange={(v) => ctx.onOwnerChange(lead, v)}
               className="max-w-40 truncate"
@@ -1146,7 +1148,7 @@ export function LeadsDataGrid({
         className={`flex border-b border-line cursor-pointer transition-colors group/row ${
           virtualize && !grouped ? 'overflow-hidden' : ''
         } ${
-          isFocused ? 'ring-1 ring-inset ring-primary/70 bg-primary/10' : isSelected ? 'bg-primary/8' : isHovered ? 'bg-surface-high' : 'hover:bg-surface-high'
+          isFocused ? 'ring-1 ring-inset ring-focus bg-primary-container' : isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'hover:bg-surface-high active:bg-surface-raised'
         }`}
         style={{ minWidth: `${totalWidth}px`, ...(virtualize && !grouped ? { height: rowH } : {}) }}
         onClick={() => onRowClick(lead)}
@@ -1166,7 +1168,7 @@ export function LeadsDataGrid({
               <div
                 key="select"
                 className={`flex items-center justify-center shrink-0 sticky ${cellPy} ${
-                  isSelected ? 'bg-primary/10' : isHovered ? 'bg-surface-high' : 'bg-bg'
+                  isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'
                 }`}
                 style={{ width: col.width, left: colLeftOffsets['select'] }}
                 onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
@@ -1209,7 +1211,7 @@ export function LeadsDataGrid({
                 canEditCell ? 'cursor-text' : ''
               } ${
                 isSticky
-                  ? `sticky ${isSelected ? 'bg-primary/10' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
+                  ? `sticky ${isSelected ? 'bg-primary-container' : isHovered ? 'bg-surface-high' : 'bg-bg'}`
                   : ''
               }`}
               style={{
@@ -1428,7 +1430,7 @@ export function LeadsDataGrid({
               return (
                 <div
                   key={col.key}
-                  className={`relative flex items-center group px-3 text-xs font-medium text-fg-muted select-none shrink-0 py-3 ${
+                  className={`relative flex items-center group px-3 text-nb-title-sm text-fg-muted select-none shrink-0 py-3 ${
                     col.pinned ? 'sticky z-toolbar bg-surface' : ''
                   }`}
                   style={{
@@ -1446,18 +1448,20 @@ export function LeadsDataGrid({
                   }}
                 >
                   {sortKey ? (
-                    <Button variant="secondary" size="sm" onClick={() => toggleSort(sortKey)}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSort(sortKey)}
+                      aria-sort={sortState ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                      data-testid={`sort-${sortKey}`}
+                      className={`group/sort -mx-nb-2 inline-flex items-center gap-nb-1 rounded-nb px-nb-2 py-nb-1 text-nb-title-sm transition-colors hover:bg-fg/state-hover hover:text-fg active:bg-fg/state-pressed focus:outline-none focus-visible:bg-fg/state-focus focus-visible:ring-2 focus-visible:ring-focus ${sortState ? 'text-fg' : ''}`}
+                    >
                       {def?.label ?? col.key}
                       {sortState ? (
-                        sortState.direction === 'asc' ? (
-                          <ChevronUp size={12} className="text-primary" />
-                        ) : (
-                          <ChevronDown size={12} className="text-primary" />
-                        )
+                        sortState.direction === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
                       ) : (
-                        <ChevronsUpDown size={12} className="opacity-0 group-hover:opacity-100" />
+                        <ChevronsUpDown size={14} className="opacity-0 group-hover/sort:opacity-100 group-focus-visible/sort:opacity-100" />
                       )}
-                    </Button>
+                    </button>
                   ) : (
                     <span>{def?.label ?? col.key}</span>
                   )}
