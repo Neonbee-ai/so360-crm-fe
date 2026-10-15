@@ -1,6 +1,7 @@
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType, Lead, DealFilters, CRMSettings, InventoryItem, SalesRep, LeadProduct, DealProduct, LeadScoringRule, ScoreCategory, Stakeholder, StakeholderActivitySummary, Meeting, DealNamingConfig, DEFAULT_DEAL_NAMING_CONFIG } from '../types/crm';
 import { createRequestCache } from './requestCache';
 import { notifyQuotaExceeded } from './quotaExceeded';
+import { plainErrorText } from '../utils/apiErrorMessage';
 
 // Lead/Deal detail pages and the dashboard each fetch CRM settings (8 parallel
 // requests) and the user list on mount. Both are org-static within a session,
@@ -302,7 +303,7 @@ class ApiClient {
                         errorMessage = errorJson.error;
                     }
                 } catch (e) {
-                    errorMessage = text || errorMessage;
+                    errorMessage = plainErrorText(text, errorMessage);
                 }
                 // Carry the status on the Error. Without it every failure looked
                 // identical to callers, so a 403 was indistinguishable from a
@@ -379,7 +380,7 @@ class ApiClient {
                 errorMessage = Array.isArray(errorJson.message)
                     ? errorJson.message.join(', ')
                     : (errorJson.message || errorJson.error || errorMessage);
-            } catch { errorMessage = text || errorMessage; }
+            } catch { errorMessage = plainErrorText(text, errorMessage); }
             throw new Error(errorMessage);
         }
         const rawTotal = response.headers.get('X-Total-Count');

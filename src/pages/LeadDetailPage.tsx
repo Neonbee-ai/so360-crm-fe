@@ -22,7 +22,7 @@ import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
 import { toast, useConfirm, DetailPageTemplate, Button, IconButton, Tabs, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
-import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
+import { Trophy, Zap, Info, TrendingUp, RefreshCw, Check } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
 import TaskModal from './components/TaskModal';
 import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
@@ -620,41 +620,47 @@ const LeadDetailPage = () => {
                             }
                         >
                             {isChangingOwner ? (
-                                <div className="flex max-h-48 flex-col gap-nb-1 overflow-y-auto">
-                                    {allUsers.map(user => (
-                                        <Button variant={lead.owner && user.id === lead.owner.id ? 'primary' : 'secondary'}
-                                            type="button"
-                                            key={user.id}
-                                            onClick={async (e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                try {
-                                                    // Field-diff history (old/new owner, actor, timestamp)
-                                                    // is now captured server-side by the leads audit
-                                                    // trigger (Task 7) — see the Audit History tab.
-                                                    await crmService.updateLead(lead.id, { owner: user });
-                                                    await fetchLeadData();
-                                                    setIsChangingOwner(false);
-                                                } catch (error) {
-                                                    console.error('Failed to update owner:', error);
-                                                    toast.error('Failed to update owner.');
-                                                }
-                                            }}
-                                            className="w-full justify-start text-left"
-                                        >
-                                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-xs font-medium text-fg">
-                                                {user.avatar_url ? (
-                                                    <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
-                                                ) : (
-                                                    user.full_name?.charAt(0)
-                                                )}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-medium text-fg">{user.full_name}</p>
-                                                <p className="truncate text-xs text-fg-muted">{user.email}</p>
-                                            </div>
-                                        </Button>
-                                    ))}
+                                <div role="listbox" aria-label="Assign owner" className="flex max-h-48 flex-col gap-nb-1 overflow-y-auto">
+                                    {allUsers.map(user => {
+                                        const selected = !!lead.owner && user.id === lead.owner.id;
+                                        return (
+                                            <button
+                                                type="button"
+                                                role="option"
+                                                aria-selected={selected}
+                                                key={user.id}
+                                                onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    try {
+                                                        // Field-diff history (old/new owner, actor, timestamp)
+                                                        // is now captured server-side by the leads audit
+                                                        // trigger (Task 7) — see the Audit History tab.
+                                                        await crmService.updateLead(lead.id, { owner: user });
+                                                        await fetchLeadData();
+                                                        setIsChangingOwner(false);
+                                                    } catch (error) {
+                                                        console.error('Failed to update owner:', error);
+                                                        toast.error('Failed to update owner.');
+                                                    }
+                                                }}
+                                                className={`flex w-full items-center gap-nb-3 rounded-nb px-nb-2 py-nb-2 text-left text-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus ${selected ? 'bg-primary/10' : 'hover:bg-surface-high'}`}
+                                            >
+                                                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-high text-xs font-medium uppercase text-fg">
+                                                    {user.avatar_url ? (
+                                                        <img src={user.avatar_url} alt={user.full_name} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        user.full_name?.charAt(0)
+                                                    )}
+                                                </span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-sm font-medium text-fg">{user.full_name}</span>
+                                                    <span className="block truncate text-xs text-fg-muted">{user.email}</span>
+                                                </span>
+                                                {selected && <Check size={14} className="flex-shrink-0 text-primary" aria-hidden="true" />}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             ) : lead.owner ? (
                                 <div className="flex items-center gap-nb-3">

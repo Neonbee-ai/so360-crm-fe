@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Badge, EmptyState, DataTable, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
-import { Loader2, Download, Filter, ShieldCheck } from 'lucide-react';
+import { Loader2, Filter, ShieldCheck } from 'lucide-react';
+import ExportMenu from '../../components/ExportMenu';
 import { auditTrailApi, AuditTrailEntry, AuditTrailFilters } from '../../services/crmService';
 
 interface Props {
@@ -44,7 +45,6 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
     const [sourceFilter, setSourceFilter] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [exporting, setExporting] = useState<'csv' | 'xlsx' | 'pdf' | null>(null);
 
     const buildFilters = useCallback((pageOffset: number): AuditTrailFilters => ({
         search: search || undefined,
@@ -76,22 +76,15 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
     }, [entityType, entityId, search, sourceFilter, startDate, endDate]);
 
     const handleExport = async (format: 'csv' | 'xlsx' | 'pdf') => {
-        setExporting(format);
-        try {
-            const { blob, filename } = await auditTrailApi.exportAuditTrail(entityType, entityId, format, buildFilters(0));
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename || `audit-trail_${entityType}_${entityId}.${format}`;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (err: any) {
-            setError(err.message || 'Export failed');
-        } finally {
-            setExporting(null);
-        }
+        const { blob, filename } = await auditTrailApi.exportAuditTrail(entityType, entityId, format, buildFilters(0));
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || `audit-trail_${entityType}_${entityId}.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
     };
 
     const filterConfig: ListFilterConfig = {
@@ -140,19 +133,7 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                     />
                 </div>
                 <ListFilters {...filterConfig} />
-                <div className="flex items-center gap-1 ml-auto">
-                    {(['csv', 'xlsx', 'pdf'] as const).map((format) => (
-                        <Button
-                            key={format}
-                            variant="secondary"
-                            onClick={() => handleExport(format)}
-                            disabled={exporting !== null}
-                        >
-                            {exporting === format ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-                            {format.toUpperCase()}
-                        </Button>
-                    ))}
-                </div>
+                <ExportMenu className="ml-auto" label="Export audit history" onExport={handleExport} />
             </div>
 
             {error && (
@@ -171,7 +152,7 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                 <DataTable
                     name="audit-history"
                     columns={[
-                        { key: 'field', header: 'Field or event', render: (entry: AuditTrailEntry) => (
+                        { key: 'field', header: 'Field or event', widthClassName: 'min-w-48', render: (entry: AuditTrailEntry) => (
                             <div className="text-fg font-semibold">
                                 {entry.kind === 'field_change' ? fieldLabel(entry.field_name) : (entry.description || 'Event')}
                                 {entry.change_reason && (
@@ -182,7 +163,7 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
                         { key: 'old_value', header: 'Previous value', render: (entry: AuditTrailEntry) => <span className="text-fg-subtle">{entry.old_value ?? '—'}</span> },
                         { key: 'new_value', header: 'New value', render: (entry: AuditTrailEntry) => <span className="text-fg">{entry.new_value ?? '—'}</span> },
                         { key: 'changed_by', header: 'Modified by', render: (entry: AuditTrailEntry) => <span className="text-fg-subtle">{entry.changed_by_name || 'System'}</span> },
-                        { key: 'created_at', header: 'Date and time', render: (entry: AuditTrailEntry) => <span className="text-fg-subtle">{formatDateTime(entry.created_at)}</span> },
+                        { key: 'created_at', header: 'Date and time', widthClassName: 'whitespace-nowrap min-w-44', render: (entry: AuditTrailEntry) => <span className="whitespace-nowrap text-fg-subtle">{formatDateTime(entry.created_at)}</span> },
                         { key: 'source', header: 'Source', render: (entry: AuditTrailEntry) => (
                             <Badge size="sm" tone={SOURCE_TONE[entry.source || 'manual'] ?? 'neutral'}>{entry.source || 'manual'}</Badge>
                         ) },

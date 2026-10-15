@@ -3,6 +3,7 @@ import { Button, Badge, EmptyState, IconButton, TextField, NumberInput, Select }
 import { Modal } from '../../components/common/Modal';
 import { Package, Plus, Trash2, Loader2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { crmService } from '../../services/crmService';
+import { describeApiError } from '../../utils/apiErrorMessage';
 import { LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
 import { useCRMFormatters } from '../../utils/formatters';
 import { CustomProductBuildRequestModal } from '../../components/leads/CustomProductBuildRequestModal';
@@ -79,7 +80,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
         } catch (e: any) {
             setItems([]);
             setHasMore(false);
-            setError(e?.message || 'Could not load products.');
+            setError(describeApiError(e, "Couldn't load products. Try again."));
         } finally {
             setLoading(false);
         }
@@ -96,7 +97,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
             setItems(prev => [...prev, ...(result.items ?? [])]);
             setHasMore(result.has_more);
         } catch (e: any) {
-            setError(e?.message || 'Could not load more products.');
+            setError(describeApiError(e, "Couldn't load more products. Try again."));
             setHasMore(false);
         } finally {
             setLoadingMore(false);
@@ -247,16 +248,19 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
     const [showCustomBuildModal, setShowCustomBuildModal] = useState(false);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [addError, setAddError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
+        setLoadError(null);
         try {
             const data = await crmService.getLeadProducts(leadId);
             setProducts(data);
             const totalValue = data.reduce((s, p) => s + p.quantity * p.unit_price, 0);
             onStatsChange?.(data.length, totalValue);
-        } catch {
+        } catch (e) {
             setProducts([]);
+            setLoadError(describeApiError(e, "Couldn't load products. Try again."));
         } finally {
             setLoading(false);
         }
@@ -378,6 +382,12 @@ export default function LeadProductsTab({ leadId, onStatsChange }: Props) {
             {loading ? (
                 <div className="flex justify-center py-12">
                     <Loader2 size={24} className="animate-spin text-primary" />
+                </div>
+            ) : loadError ? (
+                <div role="alert" className="flex flex-col items-center gap-3 py-8 text-center">
+                    <AlertCircle size={24} className="text-danger" />
+                    <p className="text-xs text-fg-subtle max-w-xs">{loadError}</p>
+                    <Button variant="secondary" size="sm" type="button" onClick={() => { void load(); }}>Retry</Button>
                 </div>
             ) : products.length === 0 ? (
                 <EmptyState icon={Package} title="No products added yet" description="Add products from inventory or create a custom build request." />
