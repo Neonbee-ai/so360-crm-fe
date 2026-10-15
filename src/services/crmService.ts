@@ -522,6 +522,8 @@ const projectsClient = new ApiClient(PROJECTS_API_ORIGIN, TENANT_ID);
  * tenant/org/user/token wiring above.
  */
 export { coreClient as crmCoreClient, inventoryClient as crmInventoryClient };
+/** Neura AI client (bare routes, no CRM BE involved) — ICP drafting. */
+export { neuraClient as crmNeuraClient };
 
 // Type Definitions for API Responses
 interface LeadStatsResponse {
