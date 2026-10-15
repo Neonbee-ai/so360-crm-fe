@@ -32,6 +32,7 @@ import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
+import IcpFitCard from '../components/leads/IcpFitCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab, { LogCallModal } from './components/CallsTab';
 import AuditHistoryTab from './components/AuditHistoryTab';
@@ -1838,6 +1839,7 @@ const LeadDetailPage = () => {
                             </>
                         )}
                     </section>
+                    {!isCustomerDetailRoute && <IcpFitCard meta={lead.custom_fields} />}
                     {/* Assigned Owner & Engagement Suite Combined */}
                     <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm overflow-visible relative">
                         <div className="pb-6 border-b border-slate-800/50">
