@@ -1,6 +1,6 @@
 import React from 'react';
 import { Star, Mail, Phone, Link2, XCircle, MailX, Edit2, Trash2 } from 'lucide-react';
-import { IconButton } from '@so360/design-system';
+import { IconButton, Button } from '@so360/design-system';
 import { Stakeholder } from '../../types/crm';
 import { ROLE_LABELS } from './StakeholderRolesEditor';
 
@@ -31,8 +31,8 @@ const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpe
     return (
         <div className="bg-surface-sunken border border-line rounded-nb p-4 hover:border-line transition-all group">
             <div className="flex items-start justify-between gap-2">
-                <button className="flex items-center gap-2 text-left" onClick={() => onOpenQuickActions(stakeholder)}>
-                    <div className="w-9 h-9 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium text-fg-subtle shrink-0">
+                <Button variant="secondary" size="sm" className="text-left w-full h-auto justify-start" onClick={() => onOpenQuickActions(stakeholder)}>
+                    <div className="size-9 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium text-fg-subtle shrink-0">
                         {(stakeholder.full_name || '?').charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -45,7 +45,7 @@ const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpe
                             {[stakeholder.job_title, stakeholder.department].filter(Boolean).join(' · ') || '—'}
                         </p>
                     </div>
-                </button>
+                </Button>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                     <IconButton label="Edit stakeholder" size="sm" icon={<Edit2 size={12} />} onClick={() => onEdit(stakeholder)} />
                     <IconButton label="Delete stakeholder" size="sm" variant="danger" icon={<Trash2 size={12} />} onClick={() => onDelete(stakeholder)} />

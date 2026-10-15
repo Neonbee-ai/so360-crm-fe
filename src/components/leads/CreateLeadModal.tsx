@@ -32,6 +32,7 @@ import { describeApiError } from '../../utils/apiErrorMessage';
 import { isWonLeadStage } from '../../utils/leadStages';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../../services/leadDedupService';
 import { DuplicateLeadWarning } from './DuplicateLeadWarning';
+import { CombGrid } from '../../pages/components/CombGrid';
 
 /**
  * One rule per field, so the blur handler, the submit guard and the
@@ -626,7 +627,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 ] as Array<{ id: string; title: string; content: React.ReactNode }>).map((sec) => (
                     <section key={sec.id} aria-labelledby={`form-section-${sec.id}`} data-slot="section" data-section-id={sec.id} className="flex flex-col gap-nb-3">
                         <h2 id={`form-section-${sec.id}`} className="text-sm font-semibold text-fg">{sec.title}</h2>
-                        <div data-slot="fields" className="grid grid-cols-1 gap-nb-4 md:grid-cols-2">{sec.content}</div>
+                        <CombGrid cols="pair" data-slot="fields">{sec.content}</CombGrid>
                     </section>
                 ))}
             </form>

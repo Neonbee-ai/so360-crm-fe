@@ -470,13 +470,9 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                         <div className="min-w-0">
                           <p className="text-xs text-fg-muted">Merged Into</p>
                           {mergedIntoLead ? (
-                            <button
-                              type="button"
-                              onClick={() => onNavigate(mergedIntoLead)}
-                              className="text-sm font-semibold text-primary hover:text-primary hover:underline text-left transition-colors"
-                            >
+                            <Button variant="secondary" size="sm" className="text-left" type="button" onClick={() => onNavigate(mergedIntoLead)}>
                               {mergedIntoName}
-                            </button>
+                            </Button>
                           ) : (
                             <p className="text-sm font-semibold text-fg">{mergedIntoName}</p>
                           )}
@@ -577,11 +573,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                   ) : (
                     <div className="divide-y divide-line">
                       {deals.map((deal) => (
-                        <button
-                          key={deal.id}
-                          onClick={() => onNavigateDeal(deal)}
-                          className="w-full text-left py-3 hover:bg-surface-sunken transition-colors"
-                        >
+                        <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={deal.id} onClick={() => onNavigateDeal(deal)}>
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm font-semibold text-fg truncate">{deal.name}</span>
                             <span className="text-sm font-bold text-success shrink-0">
@@ -601,7 +593,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                               <span className="text-xs text-fg-muted">· {deal.invoice_number}</span>
                             )}
                           </div>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}

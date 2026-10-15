@@ -6,6 +6,7 @@ import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
 import { useActivity } from '@so360/shell-context';
 import { goBackFrom } from '../components/common/DetailBackLink';
+import { CombGrid } from './components/CombGrid';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -84,7 +85,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
 
       {campaign && (
         <div className="flex flex-col gap-nb-3">
-          <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
+          <CombGrid cols="quad-wide">
             {[
               { label: 'Open Rate', value: `${Math.round((campaign.open_rate || 0) * 100)}%` },
               { label: 'Click Rate', value: `${Math.round((campaign.click_rate || 0) * 100)}%` },
@@ -97,7 +98,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
             ].map(({ label, value }) => (
               <KpiCard key={label} label={label} value={value} />
             ))}
-          </div>
+          </CombGrid>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
             <div className="lg:col-span-6"><Card title="Test Send">

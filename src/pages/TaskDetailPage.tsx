@@ -249,7 +249,7 @@ const TaskDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     <Card title="Assignee">
                         <div className="flex items-center gap-nb-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-surface-raised text-fg">
+                            <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-surface-raised text-fg">
                                 {task.assigned_to.avatar_url ? <img src={task.assigned_to.avatar_url} alt={task.assigned_to.full_name} /> : task.assigned_to.full_name.charAt(0)}
                             </div>
                             <div className="min-w-0">
@@ -310,7 +310,7 @@ const TaskDetailPage = () => {
                                 absent/undefined means unaffected behavior, no UI at all. */}
                             {task.sync_status === 'connected' && (
                                 <div className="flex items-center gap-4" data-testid="project-sync-connected">
-                                    <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0">
+                                    <div className="size-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0">
                                         <Link2 size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -335,7 +335,7 @@ const TaskDetailPage = () => {
 
                             {task.sync_status === 'sync_failed' && (
                                 <div className="flex items-center gap-4" data-testid="project-sync-failed">
-                                    <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center text-danger shrink-0">
+                                    <div className="size-10 rounded-xl bg-danger/10 flex items-center justify-center text-danger shrink-0">
                                         <AlertCircle size={20} />
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -386,14 +386,14 @@ const TaskDetailPage = () => {
                         {/* Collapsed state: a compact input that expands into the full
                             editor on click, so the section stays quiet when idle. */}
                         {canCreateTask && !notesError && !isAddingNote && (
-                            <button
+                            <Button variant="secondary"
                                 type="button"
                                 onClick={() => setIsAddingNote(true)}
                                 data-testid="note-composer-trigger"
-                                className="mb-nb-3 w-full rounded-nb border border-line bg-bg px-nb-3 py-nb-2 text-left text-sm text-fg-muted hover:bg-surface-raised"
+                                className="w-full justify-start text-left"
                             >
                                 Add a note or comment...
-                            </button>
+                            </Button>
                         )}
 
                         {isAddingNote && (

@@ -16,6 +16,7 @@ import {
 import { salesSettingsService } from '../../services/salesSettingsService';
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
+import { CombGrid } from './CombGrid';
 
 
 const STATUS_CHIP: Record<CommissionStatus, string> = {
@@ -172,12 +173,12 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                         {COMMISSION_STATUS_LABELS[l.status]}
                                     </span>
                                 </div>
-                                <dl className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3 text-xs">
+                                <CombGrid cols="quad-wide" as="dl" className="text-xs">
                                     <div><dt className="text-fg-muted">Basis</dt><dd className="font-bold text-fg">{money(l.basis_amount)}</dd></div>
                                     <div><dt className="text-fg-muted">Rate</dt><dd className="font-bold text-fg">{l.percent === null ? '—' : `${l.percent}%`}</dd></div>
                                     <div><dt className="text-fg-muted">Amount</dt><dd className="font-bold text-fg" data-testid={`commission-amount-${l.id}`}>{money(l.amount)}</dd></div>
                                     <div><dt className="text-fg-muted">VAT</dt><dd className="font-bold text-fg">{money(l.vat_amount)}</dd></div>
-                                </dl>
+                                </CombGrid>
                                 {l.override_reason && <p className="text-xs text-fg-subtle">Overridden: {l.override_reason}</p>}
 
                                 {act?.kind === 'override' && (

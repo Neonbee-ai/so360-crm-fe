@@ -13,6 +13,7 @@ import {
     checkMapping,
     describeImportError,
 } from '../../services/leadImportService';
+import { CombGrid } from '../../pages/components/CombGrid';
 
 type Step = 'upload' | 'map' | 'review' | 'done';
 
@@ -159,7 +160,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         </p>
                         <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
                             {preview.headers.map((header) => (
-                                <div key={header} className="grid grid-cols-2 gap-3 items-center" data-testid="import-mapping-row">
+                                <CombGrid cols="pair-fixed" className="items-center" key={header}  data-testid="import-mapping-row">
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold text-fg truncate">{header}</p>
                                         <p className="text-xs text-fg-muted truncate">{preview.sample_rows[0]?.[header] ?? ''}</p>
@@ -171,7 +172,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
                                         options={[{ value: '', label: "Don't import" }, ...preview.available_fields.map((f) => ({ value: f.key, label: f.custom ? `${f.label} (custom)` : f.label }))]}
                                     />
-                                </div>
+                                </CombGrid>
                             ))}
                         </div>
                         <div className="flex justify-between">

@@ -8,7 +8,7 @@ import StakeholderHierarchyTree from './StakeholderHierarchyTree';
 import StakeholderQuickActions from './StakeholderQuickActions';
 import StakeholderActivitySummary from './StakeholderActivitySummary';
 import StakeholderDealLinker from './StakeholderDealLinker';
-import { useConfirm, Button, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
+import { useConfirm, Button, SearchInput, ListFilters, type ListFilterConfig, type FilterValues, IconButton } from '@so360/design-system';
 
 interface Props {
     leadId: string;
@@ -84,8 +84,8 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
                 </div>
                 <ListFilters {...filterConfig} />
                 <div className="flex items-center gap-1 bg-surface border border-line rounded-nb p-1">
-                    <button onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><List size={14} /></button>
-                    <button onClick={() => setView('hierarchy')} className={`p-1.5 rounded ${view === 'hierarchy' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><SlidersHorizontal size={14} /></button>
+                    <IconButton label="List view" icon={<List size={14} />} onClick={() => setView('list')} aria-pressed={view === 'list'} />
+                    <IconButton label="Hierarchy view" icon={<SlidersHorizontal size={14} />} onClick={() => setView('hierarchy')} aria-pressed={view === 'hierarchy'} />
                 </div>
                 <Button type="button" size="sm" onClick={() => setEditingStakeholder(null)}>
                     <Plus size={14} /> Add Stakeholder
@@ -111,12 +111,9 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
                                 onDelete={handleDelete}
                                 onOpenQuickActions={setQuickActionsFor}
                             />
-                            <button
-                                onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
-                                className="text-xs text-fg-muted hover:text-primary font-medium mt-1 ml-1"
-                            >
+                            <Button variant="secondary" size="sm" className="mt-1 ml-1" onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}>
                                 {expandedId === s.id ? 'Hide activity' : 'Show activity'}
-                            </button>
+                            </Button>
                             {expandedId === s.id && (
                                 <div className="mt-2 ml-1 space-y-3">
                                     <StakeholderActivitySummary stakeholderId={s.id} />

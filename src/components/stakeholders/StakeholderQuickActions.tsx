@@ -3,6 +3,7 @@ import { Phone, Mail, CalendarPlus, CheckSquare, FileEdit, Users } from 'lucide-
 import { Modal } from '../common/Modal';
 import { Stakeholder } from '../../types/crm';
 import TaskModal from '../../pages/components/TaskModal';
+import { Button } from '@so360/design-system';
 
 interface Props {
     leadId: string;
@@ -65,7 +66,7 @@ const ActionButton: React.FC<{ icon: React.ReactNode; label: string; disabled?: 
     if (href && !disabled) {
         return <a href={href} className={className}>{icon}{label}</a>;
     }
-    return <button onClick={onClick} disabled={disabled} className={className}>{icon}{label}</button>;
+    return <Button variant="secondary" size="sm" className="w-full justify-start" onClick={onClick} disabled={disabled}>{icon}{label}</Button>;
 };
 
 export default StakeholderQuickActions;

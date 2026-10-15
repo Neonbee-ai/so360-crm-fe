@@ -4,6 +4,7 @@ import { Button, TextField, Select, NumberInput, Textarea } from '@so360/design-
 import { crmService } from '../../services/crmService';
 import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { buildCategoryTree, flattenCategoryTree, indentLabel } from '../../utils/categoryTree';
+import { CombGrid } from '../../pages/components/CombGrid';
 
 interface CategoryOption {
     id: string;
@@ -186,7 +187,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                 </div>
 
                 {/* Quantity & Target Unit Price */}
-                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                <CombGrid cols="pair">
                     <NumberInput
                         name="quantity"
                         label="Quantity"
@@ -206,7 +207,7 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                         placeholder="0.00"
                         disabled={submitting}
                     />
-                </div>
+                </CombGrid>
 
                 {/* Specifications / Notes */}
                 <Textarea

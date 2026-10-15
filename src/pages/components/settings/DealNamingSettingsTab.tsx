@@ -4,6 +4,7 @@ import { crmService } from '../../../services/crmService';
 import { DealNamingConfig, DealNamingResetMode, DEFAULT_DEAL_NAMING_CONFIG } from '../../../types/crm';
 import { Card, Button, TextField, NumberInput, Select } from '@so360/design-system';
 import { DEAL_NAME_TOKENS } from '../../../utils/dealNamingTokens';
+import { CombGrid } from '../CombGrid';
 
 interface DealNamingSettingsTabProps {
     initialConfig: DealNamingConfig | null;
@@ -118,7 +119,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </p>
                 )}
 
-                <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
+                <CombGrid cols="trio">
                     <div>
                         <TextField name="deal-prefix" label="Prefix" value={config.prefix} onChange={e => setConfig(prev => ({ ...prev, prefix: e.target.value }))} placeholder="DEAL" />
                     </div>
@@ -140,7 +141,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                             onChange={e => setConfig(prev => ({ ...prev, separator: e.target.value }))}
                         />
                     </div>
-                </div>
+                </CombGrid>
 
                 <div>
                     <TextField
@@ -169,7 +170,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
 
                 <div className="border-t border-line pt-nb-4">
                     <h4 className="text-xs font-semibold text-fg-muted mb-3">Running Number</h4>
-                    <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3 items-end">
+                    <CombGrid cols="trio" className="items-end">
                         <div>
                             <Select
                                 name="deal-reset-mode"
@@ -195,7 +196,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                         <Button variant="secondary" size="sm" type="button" onClick={() => insertToken('{seq}')}>
                             Insert {'{seq}'} Token
                         </Button>
-                    </div>
+                    </CombGrid>
                 </div>
 
                 <div className="border-t border-line pt-nb-4">

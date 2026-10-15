@@ -51,6 +51,7 @@ import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
+import { CombGrid } from './components/CombGrid';
 
 type TabType = 'overview' | 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
@@ -622,7 +623,7 @@ const LeadDetailPage = () => {
                             {isChangingOwner ? (
                                 <div className="flex max-h-48 flex-col gap-nb-1 overflow-y-auto">
                                     {allUsers.map(user => (
-                                        <button
+                                        <Button variant={lead.owner && user.id === lead.owner.id ? 'primary' : 'secondary'}
                                             type="button"
                                             key={user.id}
                                             onClick={async (e) => {
@@ -640,7 +641,7 @@ const LeadDetailPage = () => {
                                                     toast.error('Failed to update owner.');
                                                 }
                                             }}
-                                            className={`flex w-full items-center gap-nb-3 rounded-nb border p-2 text-left transition-colors ${lead.owner && user.id === lead.owner.id ? 'border-primary bg-primary/10' : 'border-line bg-surface hover:bg-surface-raised'}`}
+                                            className="w-full justify-start text-left"
                                         >
                                             <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-xs font-medium text-fg">
                                                 {user.avatar_url ? (
@@ -653,12 +654,12 @@ const LeadDetailPage = () => {
                                                 <p className="truncate text-sm font-medium text-fg">{user.full_name}</p>
                                                 <p className="truncate text-xs text-fg-muted">{user.email}</p>
                                             </div>
-                                        </button>
+                                        </Button>
                                     ))}
                                 </div>
                             ) : lead.owner ? (
                                 <div className="flex items-center gap-nb-3">
-                                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-sm font-medium text-fg">
+                                    <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-surface-raised text-sm font-medium text-fg">
                                         {lead.owner.avatar_url ? (
                                             <img src={lead.owner.avatar_url} alt={lead.owner.full_name} className="h-full w-full object-cover" />
                                         ) : (
@@ -698,7 +699,7 @@ const LeadDetailPage = () => {
                             ) : isChangingStage ? (
                                 <div className="flex flex-col gap-nb-1">
                                     {leadStages.map(stage => (
-                                        <button
+                                        <Button variant={stage.name === lead.status ? 'primary' : 'secondary'}
                                             type="button"
                                             key={stage.id}
                                             onClick={async (e) => {
@@ -716,14 +717,11 @@ const LeadDetailPage = () => {
                                                     toast.error(error.message || 'Failed to update stage. Please try again.');
                                                 }
                                             }}
-                                            className={`flex w-full items-center justify-between rounded-nb border px-3 py-2 text-sm transition-colors ${stage.name === lead.status
- ? 'border-primary bg-primary/10 text-primary'
- : 'border-line bg-surface text-fg hover:bg-surface-raised'
- }`}
+                                            className="w-full justify-between text-left"
                                         >
                                             <span>{stage.name}</span>
                                             {stage.name === lead.status && <CheckCircle2 size={14} />}
-                                        </button>
+                                        </Button>
                                     ))}
                                 </div>
                             ) : (
@@ -749,7 +747,7 @@ const LeadDetailPage = () => {
 
                         {/* 3. Value / revenue */}
                         <Card title="Revenue intelligence">
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                            <CombGrid cols="pair">
                                 <div>
                                     <span className="block text-xs text-fg-muted">Earned</span>
                                     <span className="text-lg font-semibold text-fg">{formatters.formatCurrency(earned)}</span>
@@ -758,7 +756,7 @@ const LeadDetailPage = () => {
                                     <span className="block text-xs text-fg-muted">Pipeline</span>
                                     <span className="text-lg font-semibold text-fg">{formatters.formatCurrency(pipeline)}</span>
                                 </div>
-                            </div>
+                            </CombGrid>
                             <div className="mt-nb-3">
                                 <div className="mb-1 flex justify-between text-xs">
                                     <span className="text-fg-muted">Revenue contribution</span>
@@ -769,7 +767,7 @@ const LeadDetailPage = () => {
                                     <div className="h-full bg-primary/40" style={{ width: `${totalValue > 0 ? (pipeline / totalValue) * 100 : 0}%` }} />
                                 </div>
                             </div>
-                            <dl className="mt-nb-3 grid grid-cols-2 gap-nb-3 border-t border-line pt-nb-3">
+                            <CombGrid cols="pair-fixed" as="dl" className="mt-nb-3 border-t border-line pt-nb-3">
                                 <div>
                                     <dt className="text-xs text-fg-muted">Active deals</dt>
                                     <dd className="text-sm font-medium text-fg">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</dd>
@@ -790,7 +788,7 @@ const LeadDetailPage = () => {
                                         </div>
                                     </>
                                 )}
-                            </dl>
+                            </CombGrid>
                         </Card>
 
                         {/* 4. Neura summary */}
@@ -801,27 +799,6 @@ const LeadDetailPage = () => {
                                 isInboxEnabled={isInboxEnabled}
                             />
                         )}
-
-                        {/* 5. Recent activity */}
-                        <div data-testid="recent-activity-rail">
-                            <Card
-                                title="Recent activity"
-                                actions={<Button variant="secondary" onClick={() => setActiveTab('activity')}>View all</Button>}
-                            >
-                                {recentActivity.length === 0 ? (
-                                    <EmptyState icon={Clock} title="No activities logged yet" />
-                                ) : (
-                                    <ul className="divide-y divide-line">
-                                        {recentActivity.map((event) => (
-                                            <li key={event.id} className="py-2 text-sm text-fg first:pt-0 last:pb-0">
-                                                <span className="block truncate">{event.title}</span>
-                                                <span className="text-xs text-fg-muted">{formatters.formatDate(event.created_at)}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </Card>
-                        </div>
 
                         {/* Potential score */}
                         <Card
@@ -966,6 +943,27 @@ const LeadDetailPage = () => {
                                 </ul>
                             )}
                         </Card>
+
+                        {/* 5. Recent activity */}
+                        <div data-testid="recent-activity-rail">
+                            <Card
+                                title="Recent activity"
+                                actions={<Button variant="secondary" onClick={() => setActiveTab('activity')}>View all</Button>}
+                            >
+                                {recentActivity.length === 0 ? (
+                                    <EmptyState icon={Clock} title="No activities logged yet" />
+                                ) : (
+                                    <ul className="divide-y divide-line">
+                                        {recentActivity.map((event) => (
+                                            <li key={event.id} className="py-2 text-sm text-fg first:pt-0 last:pb-0">
+                                                <span className="block truncate">{event.title}</span>
+                                                <span className="text-xs text-fg-muted">{formatters.formatDate(event.created_at)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </Card>
+                        </div>
                     </div>
                 }
             >
@@ -1039,26 +1037,26 @@ const LeadDetailPage = () => {
                     {/* Lead Information Tabs Card */}
                     <Card padding="none" className="overflow-hidden">
                         <div className="flex border-b border-line bg-surface">
-                            <button
+                            <Button variant={infoTab === 'profile' ? 'primary' : 'secondary'} size="sm"
                                 onClick={() => setInfoTab('profile')}
-                                className={`flex items-center gap-2 px-4 py-3 text-xs font-medium transition-all ${infoTab === 'profile' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                               
                             >
                                 <Users size={14} /> Full Profile
-                            </button>
+                            </Button>
                             {customFieldDefs.length > 0 && (
-                                <button
+                                <Button variant={infoTab === 'additional' ? 'primary' : 'secondary'} size="sm"
                                     onClick={() => setInfoTab('additional')}
-                                    className={`flex items-center gap-2 px-4 py-3 text-xs font-medium transition-all ${infoTab === 'additional' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                                   
                                 >
                                     <Info size={14} /> Additional Info
-                                </button>
+                                </Button>
                             )}
-                            <button
+                            <Button variant={infoTab === 'business' ? 'primary' : 'secondary'} size="sm"
                                 onClick={() => setInfoTab('business')}
-                                className={`flex items-center gap-2 px-4 py-3 text-xs font-medium transition-all ${infoTab === 'business' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-fg-muted hover:text-fg-subtle'}`}
+                               
                             >
                                 <Building2 size={14} /> Business Profile
-                            </button>
+                            </Button>
                             <div className="ml-auto flex items-center px-4">
                                 <IconButton
                                     label={isSavingInfo ? 'Saving…' : isEditingInfo ? "Save Changes" : "Edit Intelligence"}
@@ -1126,10 +1124,10 @@ const LeadDetailPage = () => {
 
                         <div className="p-4">
                             {infoTab === 'profile' && (
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <CombGrid cols="pair">
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -1153,7 +1151,7 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -1177,7 +1175,7 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Mail size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -1204,7 +1202,7 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Phone size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -1239,7 +1237,7 @@ const LeadDetailPage = () => {
                                     </div>
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-success">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-success">
                                                 <Tag size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -1260,7 +1258,7 @@ const LeadDetailPage = () => {
                                         </div>
 
                                         <div className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                 <Users size={18} />
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -1283,7 +1281,7 @@ const LeadDetailPage = () => {
 
                                         {isEditingInfo && (
                                             <div className="flex items-center gap-4 text-fg-subtle">
-                                                <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
+                                                <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary">
                                                     <Users size={18} />
                                                 </div>
                                                 <div className="flex flex-col flex-1">
@@ -1294,7 +1292,7 @@ const LeadDetailPage = () => {
                                         )}
 
                                         <div className="flex items-center gap-4 text-fg-subtle text-opacity-50">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-warning opacity-50">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-warning opacity-50">
                                                 <Calendar size={18} />
                                             </div>
                                             <div className="flex flex-col">
@@ -1303,14 +1301,14 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </CombGrid>
                             )}
 
                             {infoTab === 'additional' && (
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <CombGrid cols="pair">
                                     {customFieldDefs.map(field => (
                                         <div key={field.id} className="flex items-center gap-4 text-fg-subtle">
-                                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-muted">
+                                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-muted">
                                                 {field.type === 'date' ? <Calendar size={18} /> : field.type === 'boolean' ? <CheckCircle2 size={18} /> : <Tag size={18} />}
                                             </div>
                                             <div className="flex flex-col flex-1">
@@ -1340,7 +1338,7 @@ const LeadDetailPage = () => {
                                             </div>
                                         </div>
                                     ))}
-                                </div>
+                                </CombGrid>
                             )}
                             {infoTab === 'business' && (
                                 <CustomerDetailsPanel
@@ -1387,17 +1385,17 @@ const LeadDetailPage = () => {
                                                 <p className="px-3 py-2 text-sm text-fg-muted">No matches.</p>
                                             ) : (
                                                 commSearchResults.map((r) => (
-                                                    <button
+                                                    <Button variant="secondary"
                                                         key={r.id}
                                                         onClick={() => { setActiveTab(r.tab); setCommSearchQuery(''); }}
-                                                        className="w-full px-3 py-2 text-left transition-colors hover:bg-surface-raised"
+                                                        className="w-full justify-start text-left"
                                                     >
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-xs font-medium text-fg-muted">{r.kind}</span>
                                                             <span className="text-xs text-fg-muted">{formatters.formatDate(r.date)}</span>
                                                         </div>
                                                         <p className="truncate text-sm text-fg">{r.title}</p>
-                                                    </button>
+                                                    </Button>
                                                 ))
                                             )}
                                         </div>
@@ -1553,14 +1551,14 @@ const LeadDetailPage = () => {
                                                                     }}
                                                                 />
                                                             ) : (
-                                                                <button
+                                                                <Button variant="secondary" size="sm"
                                                                     type="button"
                                                                     data-testid={`open-reply-${note.id}`}
                                                                     onClick={() => setOpenReplyNoteId(note.id)}
-                                                                    className="flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-primary transition-colors"
+                                                                   
                                                                 >
                                                                     <MessageSquare size={11} /> Reply
-                                                                </button>
+                                                                </Button>
                                                             )}
                                                         </div>
                                                     </div>
@@ -1632,12 +1630,12 @@ const LeadDetailPage = () => {
                                                     .map(task => {
                                                         const reminderOverdue = new Date(task.due_date) < new Date();
                                                         return (
-                                                            <button
+                                                            <Button variant="secondary"
                                                                 key={task.id}
                                                                 type="button"
                                                                 onClick={() => focusTaskInList(task.id)}
                                                                 data-testid={`task-reminder-${task.id}`}
-                                                                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-warning/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-warning"
+                                                                className="w-full justify-start text-left"
                                                             >
                                                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${reminderOverdue ? 'bg-danger animate-pulse' : 'bg-warning'}`} />
                                                                 <span className="text-xs font-semibold text-fg-subtle truncate">{task.title}</span>
@@ -1647,7 +1645,7 @@ const LeadDetailPage = () => {
                                                                 <span className="ml-auto text-xs font-medium text-warning shrink-0">
                                                                     View task
                                                                 </span>
-                                                            </button>
+                                                            </Button>
                                                         );
                                                     })}
                                             </div>
@@ -1661,12 +1659,12 @@ const LeadDetailPage = () => {
                                                 const overdue = isTaskOverdue(task.due_date) && task.status !== 'DONE';
                                                 return (
                                                 <div key={task.id} id={`task-card-${task.id}`} className={`flex items-start gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group relative transition-all ${highlightedTaskId === task.id ? 'ring-2 ring-warning rounded-nb' : ''} ${task.status === 'DONE' ? 'opacity-60' : ''}`}>
-                                                    <button
+                                                    <IconButton
+                                                        label={task.status === 'DONE' ? 'Mark task not done' : 'Mark task done'}
+                                                        size="sm"
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors shrink-0 flex items-center justify-center ${task.status === 'DONE' ? 'bg-success/10 border-success text-success' : 'border-line group-hover:border-primary'}`}
-                                                    >
-                                                        <CheckCircle2 size={12} className={`transition-opacity ${task.status === 'DONE' ? 'opacity-100' : 'opacity-0 group-hover:opacity-20 text-primary'}`} />
-                                                    </button>
+                                                        icon={<CheckCircle2 size={12} className={task.status === 'DONE' ? 'text-success' : 'text-fg-subtle'} />}
+                                                    />
                                                     <div className="flex-1 min-w-0">
                                                         <Link to={`/crm/tasks/${task.id}`} className="block group/link">
                                                             <div className="flex justify-between items-start gap-2">
@@ -1678,21 +1676,21 @@ const LeadDetailPage = () => {
                                                                         <Badge tone="danger" size="sm" data-testid={`overdue-badge-${task.id}`}>Overdue</Badge>
                                                                     )}
                                                                     <div className="relative">
-                                                                        <button
+                                                                        <Button variant="secondary" size="sm"
                                                                             onClick={(e) => {
                                                                                 e.preventDefault();
                                                                                 e.stopPropagation();
                                                                                 setExpandedStatusDropdown(expandedStatusDropdown === task.id ? null : task.id);
                                                                             }}
-                                                                            className="cursor-pointer"
+                                                                           
                                                                             data-testid={`status-button-${task.id}`}
                                                                         >
                                             <Badge size="sm" tone={task.status === 'DONE' ? 'success' : task.status === 'IN_PROGRESS' ? 'info' : 'neutral'}>{task.status}</Badge>
-                                        </button>
+                                        </Button>
                                                                         {expandedStatusDropdown === task.id && (
                                                                             <div className="absolute top-full mt-1 right-0 z-menu bg-surface border border-line rounded-nb" data-testid={`status-dropdown-${task.id}`}>
                                                                                 {['OPEN', 'IN_PROGRESS', 'DONE'].map((status) => (
-                                                                                    <button
+                                                                                    <Button variant={task.status === status ? 'primary' : 'secondary'} size="sm"
                                                                                         key={status}
                                                                                         onClick={(e) => {
                                                                                             e.preventDefault();
@@ -1708,11 +1706,11 @@ const LeadDetailPage = () => {
                                                                                                     toast.error('Failed to update task status');
                                                                                                 });
                                                                                         }}
-                                                                                        className={`w-full text-left px-3 py-1.5 text-xs font-medium transition-colors ${task.status === status ? 'bg-primary/20 text-primary border-b border-primary/20' : 'hover:bg-surface-raised text-fg-subtle'}`}
+                                                                                        className="w-full justify-start"
                                                                                         data-testid={`status-option-${task.id}-${status}`}
                                                                                     >
                                                                                         {status}
-                                                                                    </button>
+                                                                                    </Button>
                                                                                 ))}
                                                                             </div>
                                                                         )}
@@ -1806,7 +1804,7 @@ const LeadDetailPage = () => {
                                         <div className="divide-y divide-line">
                                             {lead.documents.map(doc => (
                                                 <div key={doc.id} className="flex items-center gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group">
-                                                    <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary shrink-0">
+                                                    <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary shrink-0">
                                                         <File size={20} />
                                                     </div>
                                                     <div className="flex-1 min-w-0">

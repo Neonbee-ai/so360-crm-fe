@@ -118,18 +118,12 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                 {/* Tabs */}
                 {leadId && (
                     <div className="flex gap-1 mb-4 bg-surface-high rounded-nb-lg p-1">
-                        <button
-                            onClick={() => setTab('from-lead')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'from-lead' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                        >
+                        <Button variant={tab === 'from-lead' ? 'primary' : 'secondary'} size="sm" className="flex-1" onClick={() => setTab('from-lead')}>
                             <Copy size={10} className="inline mr-1" />From Lead
-                        </button>
-                        <button
-                            onClick={() => setTab('search')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'search' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                        >
+                        </Button>
+                        <Button variant={tab === 'search' ? 'primary' : 'secondary'} size="sm" className="flex-1" onClick={() => setTab('search')}>
                             <Search size={10} className="inline mr-1" />Search Inventory
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -198,7 +192,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 )}
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {visibleItems.map(item => (
-                                        <button key={item.id} onClick={() => setSelected(item)} className="w-full text-left p-3 bg-surface-raised border border-line hover:border-info/50 rounded-nb-lg transition-all group">
+                                        <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={item.id} onClick={() => setSelected(item)}>
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-xs font-bold text-fg group-hover:text-info transition-colors">{item.name}</p>
@@ -206,7 +200,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                                 </div>
                                                 {item.price > 0 && <span className="text-xs font-semibold text-success">₹{item.price.toLocaleString()}</span>}
                                             </div>
-                                        </button>
+                                        </Button>
                                     ))}
                                 </div>
                             </>

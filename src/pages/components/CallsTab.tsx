@@ -6,6 +6,7 @@ import {
 import { crmService } from '../../services/crmService';
 import { useConfirm, Button, Badge, EmptyState, IconButton, Select, DateTimePicker, NumberInput, TextField, Textarea } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
+import { CombGrid } from './CombGrid';
 
 interface Props {
     leadId?: string;
@@ -151,7 +152,7 @@ export function UploadCallForm({ onClose, onUpload, asModal = false }: UploadFor
                 />
             </div>
 
-            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+            <CombGrid cols="pair">
                 <Select
                     name="call-direction"
                     label="Direction"
@@ -180,7 +181,7 @@ export function UploadCallForm({ onClose, onUpload, asModal = false }: UploadFor
                     onChange={e => setPhoneNumber(e.target.value)}
                     placeholder="+1 555 000 0000"
                 />
-            </div>
+            </CombGrid>
 
             <Textarea
                 name="call-transcript"
@@ -343,7 +344,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
                                 key={call.id}
                                 className="flex items-start gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group"
                             >
-                                <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary flex-shrink-0">
+                                <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary flex-shrink-0">
                                     <DirectionIcon size={18} />
                                 </div>
 

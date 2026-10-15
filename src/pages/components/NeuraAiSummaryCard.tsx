@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card } from '@so360/design-system';
+import { Card, IconButton } from '@so360/design-system';
 import { RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import { neuraAiService, inboxIntegrationApi, NeuraEntityRef } from '../../services/crmService';
 
@@ -120,15 +120,7 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
             padding="sm"
             title="Neura AI summary"
             actions={
-                <button
-                    onClick={() => fetchSummary(true)}
-                    disabled={isLoading}
-                    title="Refresh summary"
-                    aria-label="Refresh summary"
-                    className="p-1.5 rounded-nb text-fg-muted hover:text-fg hover:bg-surface-raised transition-colors disabled:opacity-40"
-                >
-                    <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
-                </button>
+                <IconButton label="Refresh summary" title="Refresh summary" icon={<RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />} onClick={() => fetchSummary(true)} disabled={isLoading} />
             }
         >
             {isLoading && !summary ? (

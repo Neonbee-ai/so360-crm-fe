@@ -122,16 +122,10 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                         <ul className="divide-y divide-line" role="listbox" aria-label="Matching leads">
                             {results.map(l => (
                                 <li key={l.id}>
-                                    <button
-                                        type="button"
-                                        role="option"
-                                        aria-selected={false}
-                                        onClick={() => pick(l)}
-                                        className="w-full text-left px-2 py-2 hover:bg-surface-raised rounded-lg"
-                                    >
+                                    <Button variant="secondary" size="sm" className="w-full text-left justify-start" type="button" role="option" aria-selected={false} onClick={() => pick(l)}>
                                         <span className="block text-sm text-fg">{leadDisplayName(l)}</span>
                                         <span className="block text-xs text-fg-muted">{l.contact_email || l.phone || ''}</span>
-                                    </button>
+                                    </Button>
                                 </li>
                             ))}
                         </ul>
@@ -142,9 +136,9 @@ export const MergeLeadPanel: React.FC<Props> = ({ keepLead, onClose, onMerged })
                             <span>
                                 Merging <strong className="text-fg">{leadDisplayName(other)}</strong> into this lead. It will be removed afterwards.
                             </span>
-                            <button type="button" onClick={() => setOther(null)} className="text-primary hover:underline shrink-0 ml-2">
+                            <Button variant="secondary" size="sm" className="shrink-0 ml-2" type="button" onClick={() => setOther(null)}>
                                 Change
-                            </button>
+                            </Button>
                         </div>
                         <DataTable
                             name="merge-field-chooser"

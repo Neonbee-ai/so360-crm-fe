@@ -23,6 +23,7 @@ import {
 } from '../../services/paymentScheduleService';
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
+import { CombGrid } from './CombGrid';
 
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
@@ -430,14 +431,14 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
+            <CombGrid cols="trio">
                 {([['Total', totals.total], ['Paid', totals.paid], ['Outstanding', totals.outstanding]] as const).map(([label, v]) => (
                     <div key={label} className="bg-surface-sunken border border-line rounded-nb-lg p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
                         <p className="text-xs font-semibold text-fg-muted">{label}</p>
                         <p className="text-lg font-semibold text-fg mt-1">{fmt.formatCurrency(v)}</p>
                     </div>
                 ))}
-            </div>
+            </CombGrid>
 
             <DataTable<PaymentScheduleLine>
                 name="pp-instalments"

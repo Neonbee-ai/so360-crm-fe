@@ -13,7 +13,7 @@
  */
 import { useState } from 'react';
 import { Plus, Trash2, X, FolderPlus, Filter as FilterIcon } from 'lucide-react';
-import { Select, TextField } from '@so360/design-system';
+import { Select, TextField, Button, IconButton } from '@so360/design-system';
 import {
   FILTERABLE_FIELDS,
   getField,
@@ -144,14 +144,7 @@ function RuleRow({
         />
       )}
 
-      <button
-        type="button"
-        aria-label="Remove rule"
-        className="text-fg-muted hover:text-danger transition-colors ml-auto"
-        onClick={() => onRemove(path)}
-      >
-        <Trash2 size={15} />
-      </button>
+      <IconButton label="Remove rule" icon={<Trash2 size={15} />} onClick={() => onRemove(path)} />
     </div>
   );
 }
@@ -187,32 +180,16 @@ function GroupBlock({
       <div className="flex items-center gap-2">
         <div className="inline-flex rounded-md overflow-hidden border border-line text-xs">
           {(['and', 'or'] as const).map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`px-2.5 py-1 font-medium transition-colors ${
-                group.combinator === c
-                  ? 'bg-primary text-primary-fg'
-                  : 'bg-surface-raised text-fg-subtle hover:text-fg'
-              }`}
-              onClick={() => onSetCombinator(path, c)}
-            >
+            <Button variant={group.combinator === c ? "primary" : "secondary"} size="sm" key={c} type="button" onClick={() => onSetCombinator(path, c)}>
               {c}
-            </button>
+            </Button>
           ))}
         </div>
         <span className="text-xs text-fg-muted">
           {group.combinator === 'and' ? 'Match all of' : 'Match any of'}
         </span>
         {depth > 0 && (
-          <button
-            type="button"
-            aria-label="Remove group"
-            className="text-fg-muted hover:text-danger transition-colors ml-auto"
-            onClick={() => onRemove(path)}
-          >
-            <X size={15} />
-          </button>
+          <IconButton label="Remove group" icon={<X size={15} />} onClick={() => onRemove(path)} />
         )}
       </div>
 
@@ -235,21 +212,13 @@ function GroupBlock({
       )}
 
       <div className="flex items-center gap-3 text-xs">
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 text-primary hover:text-primary transition-colors"
-          onClick={() => onAddRule(path)}
-        >
+        <Button variant="secondary" size="sm" type="button" onClick={() => onAddRule(path)}>
           <Plus size={13} /> Add condition
-        </button>
+        </Button>
         {depth < 3 && (
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 text-fg-subtle hover:text-fg transition-colors"
-            onClick={() => onAddGroup(path)}
-          >
+          <Button variant="secondary" size="sm" type="button" onClick={() => onAddGroup(path)}>
             <FolderPlus size={13} /> Add group
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -271,14 +240,7 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
             <span className="text-xs bg-primary text-primary-fg rounded-full px-2 py-0.5">{activeCount}</span>
           )}
         </div>
-        <button
-          type="button"
-          aria-label="Close"
-          className="text-fg-subtle hover:text-fg transition-colors"
-          onClick={onClose}
-        >
-          <X size={18} />
-        </button>
+        <IconButton label="Close" icon={<X size={18} />} onClick={onClose} />
       </div>
 
       <div className="px-4 py-4 overflow-y-auto flex-1">
@@ -298,28 +260,16 @@ export default function LeadFilterBuilder({ value, onApply, onClose }: LeadFilte
       </div>
 
       <div className="flex items-center justify-between px-4 py-3 border-t border-line">
-        <button
-          type="button"
-          className="text-sm text-fg-subtle hover:text-fg transition-colors"
-          onClick={() => setTree(emptyFilter())}
-        >
+        <Button variant="secondary" size="sm" type="button" onClick={() => setTree(emptyFilter())}>
           Clear all
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="px-3 py-1.5 text-sm text-fg-subtle hover:text-primary-fg transition-colors"
-            onClick={onClose}
-          >
+          <Button variant="secondary" size="sm" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="px-4 py-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-fg rounded-md font-medium transition-colors"
-            onClick={() => onApply(serializeFilter(tree))}
-          >
+          </Button>
+          <Button variant="primary" size="sm" type="button" onClick={() => onApply(serializeFilter(tree))}>
             Apply{activeCount > 0 ? ` (${activeCount})` : ''}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

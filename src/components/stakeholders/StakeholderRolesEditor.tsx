@@ -1,5 +1,6 @@
 import React from 'react';
 import { StakeholderRole } from '../../types/crm';
+import { Button } from '@so360/design-system';
 
 export const ROLE_LABELS: Record<StakeholderRole, string> = {
     decision_maker: 'Decision Maker',
@@ -34,19 +35,9 @@ const StakeholderRolesEditor: React.FC<Props> = ({ value, onChange, readOnly }) 
             {ALL_ROLES.map((role) => {
                 const active = value.includes(role);
                 return (
-                    <button
-                        key={role}
-                        type="button"
-                        onClick={() => toggle(role)}
-                        disabled={readOnly}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
- active
- ? 'bg-primary border-primary text-primary-fg'
- : 'bg-surface border-line text-fg-subtle hover:border-line'
- } ${readOnly ? 'cursor-default' : 'cursor-pointer'}`}
-                    >
+                    <Button variant={active ? "primary" : "secondary"} size="sm" key={role} type="button" onClick={() => toggle(role)} disabled={readOnly}>
                         {ROLE_LABELS[role]}
-                    </button>
+                    </Button>
                 );
             })}
         </div>

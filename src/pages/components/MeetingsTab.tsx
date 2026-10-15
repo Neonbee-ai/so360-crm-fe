@@ -3,7 +3,7 @@ import { Calendar, Plus, Loader2, MapPin, CheckCircle2, XCircle, Clock } from 'l
 import { meetingsApi } from '../../services/crmService';
 import { Meeting } from '../../types/crm';
 import MeetingModal from './MeetingModal';
-import { useConfirm, Button, Badge, EmptyState } from '@so360/design-system';
+import { useConfirm, Button, Badge, EmptyState, IconButton } from '@so360/design-system';
 
 interface Props {
     leadId?: string;
@@ -93,12 +93,8 @@ const MeetingsTab: React.FC<Props> = ({ leadId, dealId }) => {
                                 </div>
                                 {m.status === 'upcoming' && (
                                     <div className="flex items-center gap-1 shrink-0">
-                                        <button onClick={() => handleComplete(m)} disabled={completingId === m.id} className="p-1.5 text-fg-muted hover:text-success transition-colors" title="Mark completed">
-                                            <CheckCircle2 size={14} />
-                                        </button>
-                                        <button onClick={() => handleCancel(m)} className="p-1.5 text-fg-muted hover:text-danger transition-colors" title="Cancel">
-                                            <XCircle size={14} />
-                                        </button>
+                                        <IconButton label="Mark completed" title="Mark completed" icon={<CheckCircle2 size={14} />} onClick={() => handleComplete(m)} disabled={completingId === m.id} />
+                                        <IconButton label="Cancel" title="Cancel" icon={<XCircle size={14} />} onClick={() => handleCancel(m)} />
                                     </div>
                                 )}
                             </div>

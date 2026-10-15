@@ -14,6 +14,7 @@ import { useFormatters } from '@so360/formatters';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, NumberInput, Select } from '@so360/design-system';
 import { Modal } from '../components/common/Modal';
+import { CombGrid } from './components/CombGrid';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -418,7 +419,7 @@ const PartnerDetailPage = () => {
                     {isEditing ? (
                         <Card title="Partner information" actions={overviewActions}>
                         <div className="space-y-6">
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                            <CombGrid cols="pair">
                                 <TextField name="first-name" label="First Name" placeholder="Dhanooj" value={editForm.first_name}
                                     onChange={e => setEditForm((f: any) => ({ ...f, first_name: e.target.value }))} />
                                 <TextField name="last-name" label="Last Name" placeholder="B S" value={editForm.last_name}
@@ -452,14 +453,14 @@ const PartnerDetailPage = () => {
                                     onChange={e => setEditForm((f: any) => ({ ...f, poc_primary: e.target.value }))} />
                                 <TextField name="poc-secondary" label="2nd POC" placeholder="Secondary contact" value={editForm.poc_secondary}
                                     onChange={e => setEditForm((f: any) => ({ ...f, poc_secondary: e.target.value }))} />
-                            </div>
+                            </CombGrid>
                             <div>
                                 <p className="text-xs text-fg-subtle mb-1">Area Served</p>
                                 <div className="flex flex-wrap gap-2">
                                     {AREA_OPTIONS.map(area => {
                                         const selected = (editForm.area_served || []).includes(area);
                                         return (
-                                            <button
+                                            <Button variant={selected ? 'primary' : 'secondary'} size="sm"
                                                 key={area}
                                                 type="button"
                                                 onClick={() => {
@@ -470,14 +471,10 @@ const PartnerDetailPage = () => {
                                                             : [...(f.area_served || []), area],
                                                     }));
                                                 }}
-                                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                                    selected
-                                                        ? 'bg-primary/10 text-primary border-primary/40'
-                                                        : 'bg-surface-raised text-fg-subtle border-line hover:border-line'
-                                                }`}
+                                               
                                             >
                                                 {area}
-                                            </button>
+                                            </Button>
                                         );
                                     })}
                                 </div>
@@ -487,7 +484,7 @@ const PartnerDetailPage = () => {
                     ) : (
                         <>
                             <Card title="Partner details" actions={overviewActions}>
-                                <dl className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <CombGrid cols="pair" as="dl">
                                     <div>
                                         <dt className={fieldLabelCls}>Partner type</dt>
                                         <dd className="mt-1">
@@ -520,7 +517,7 @@ const PartnerDetailPage = () => {
                                                 : <span className="text-fg-muted">—</span>}
                                         </dd>
                                     </div>
-                                </dl>
+                                </CombGrid>
                             </Card>
 
                             <Card title="Geographic coverage">
@@ -540,7 +537,7 @@ const PartnerDetailPage = () => {
                             </Card>
 
                             <Card title="Contact information">
-                                <dl className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <CombGrid cols="pair" as="dl">
                                     {partner.company_name && (
                                         <div className="sm:col-span-2">
                                             <dt className={fieldLabelCls}>Company name</dt>
@@ -579,7 +576,7 @@ const PartnerDetailPage = () => {
                                                 : <span className="text-fg-muted">—</span>}
                                         </dd>
                                     </div>
-                                </dl>
+                                </CombGrid>
                             </Card>
                         </>
                     )}
@@ -591,12 +588,12 @@ const PartnerDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     {deals ? (
                         <>
-                            <div className="grid grid-cols-2 wc-medium:grid-cols-3 lg:grid-cols-4 gap-nb-3">
+                            <CombGrid cols="quad">
                                 <KpiCard label="Total deals" value={deals.summary.total_count} />
                                 <KpiCard label="Total value" value={formatters.formatCurrency(deals.summary.total_value || 0)} />
                                 <KpiCard label="Won deals" value={deals.summary.won_count} />
                                 <KpiCard label="Won value" value={formatters.formatCurrency(deals.summary.won_value || 0)} />
-                            </div>
+                            </CombGrid>
                             <Card title="Referred deals" padding="none">
                                 {deals.deals.length > 0 ? (
                                     <DataTable
@@ -632,11 +629,11 @@ const PartnerDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     {commissions ? (
                         <>
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-3 gap-nb-3">
+                            <CombGrid cols="triple">
                                 <KpiCard label="Total earned" value={formatters.formatCurrency(commissions.summary.total_earned || 0)} />
                                 <KpiCard label="Pending" value={formatters.formatCurrency(commissions.summary.pending || 0)} />
                                 <KpiCard label="Paid" value={formatters.formatCurrency(commissions.summary.paid || 0)} />
-                            </div>
+                            </CombGrid>
                             <Card title="Royalties" padding="none">
                                 {commissions.commissions.length > 0 ? (
                                     <DataTable

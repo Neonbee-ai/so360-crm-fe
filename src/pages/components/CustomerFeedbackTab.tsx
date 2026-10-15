@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Badge, EmptyState } from '@so360/design-system';
+import { Button, Badge, EmptyState, IconButton } from '@so360/design-system';
 import {
     MessageSquare, Loader2, ChevronDown, ExternalLink,
     Calendar, Star, FileText, AlertCircle,
@@ -124,7 +124,7 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
                             className="flex items-start gap-nb-3 py-nb-3 first:pt-0 last:pb-0 group"
                         >
                             {/* Icon */}
-                            <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary flex-shrink-0">
+                            <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-primary flex-shrink-0">
                                 <FileText size={18} />
                             </div>
 
@@ -164,13 +164,7 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
                             </div>
 
                             {/* View button */}
-                            <button
-                                onClick={() => setSelected(sub)}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-fg-muted hover:text-primary hover:bg-surface-raised rounded-nb flex-shrink-0"
-                                title="View full response"
-                            >
-                                <ExternalLink size={14} />
-                            </button>
+                            <IconButton label="View full response" title="View full response" icon={<ExternalLink size={14} />} onClick={() => setSelected(sub)} />
                         </div>
                     );
                 })}

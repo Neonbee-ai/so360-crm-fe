@@ -186,17 +186,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 const alreadyAdded = existingItemIds.has(item.id);
                                 const stock = item.available_stock;
                                 return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => !alreadyAdded && setSelected(item)}
-                                        disabled={alreadyAdded}
-                                        title={alreadyAdded ? 'Already added to this record' : undefined}
-                                        className={`w-full text-left p-3 bg-surface-raised border rounded-nb transition-all group ${
- alreadyAdded
- ? 'border-line opacity-50 cursor-not-allowed'
- : 'border-line hover:border-primary/50'
- }`}
-                                    >
+                                    <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={item.id} onClick={() => !alreadyAdded && setSelected(item)} disabled={alreadyAdded} title={alreadyAdded ? 'Already added to this record' : undefined}>
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="min-w-0">
                                                 <p className="text-xs font-medium text-fg group-hover:text-primary transition-colors truncate">{item.name}</p>
@@ -216,7 +206,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                                 {alreadyAdded && <Check size={12} className="text-fg-muted" />}
                                             </div>
                                         </div>
-                                    </button>
+                                    </Button>
                                 );
                             })}
                             {loadingMore && (

@@ -9,6 +9,7 @@ import { useCRMFormatters } from '../utils/formatters';
 import { parseUtcDate } from '../utils/datetime';
 import { useBusinessSettings } from '@so360/shell-context';
 import { Button, TextField, Select, Textarea, Checkbox } from '@so360/design-system';
+import { CombGrid } from '../pages/components/CombGrid';
 
 interface Partner {
     id: string;
@@ -541,7 +542,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 ) : (
                     /* ── Edit mode ── */
                     <div className="space-y-3">
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                        <CombGrid cols="pair">
                             <div className="col-span-2">
                                 <label className="text-xs text-fg-muted mb-1 block">Business Name</label>
                                 <TextField name="business-name" value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} />
@@ -555,19 +556,19 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                                 <label className="text-xs text-fg-muted mb-1 block">Business Type</label>
                                 <TextField name="business-type" value={draft.business_type || ''} onChange={e => setDraftField({ business_type: e.target.value })} placeholder="e.g. Private Limited" />
                             </div>
-                        </div>
+                        </CombGrid>
 
                         {/* Billing Address */}
                         <div>
                             <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Billing Address</div>
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                            <CombGrid cols="pair">
                                 <TextField name="billing-address-street" value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2" />
                                 <TextField name="billing-address-street2" value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2" />
                                 <TextField name="billing-address-city" value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" />
                                 <TextField name="billing-address-state" value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State / Province" />
                                 <TextField name="billing-address-postal-code" value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="Postal Code" />
                                 <TextField name="billing-address-country" value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" />
-                            </div>
+                            </CombGrid>
                         </div>
 
                         <Checkbox name="shipping-same" label="Shipping same as Billing" checked={shippingSame} onChange={e => setShippingSame(e.target.checked)} />
@@ -575,14 +576,14 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         {!shippingSame && (
                             <div>
                                 <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Shipping Address</div>
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <CombGrid cols="pair">
                                     <TextField name="shipping-address-street" value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2" />
                                     <TextField name="shipping-address-street2" value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2" />
                                     <TextField name="shipping-address-city" value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" />
                                     <TextField name="shipping-address-state" value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State / Province" />
                                     <TextField name="shipping-address-postal-code" value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="Postal Code" />
                                     <TextField name="shipping-address-country" value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" />
-                                </div>
+                                </CombGrid>
                             </div>
                         )}
 
@@ -591,7 +592,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <div className="text-xs font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <DollarSign size={11} /> Accounting Preferences
                             </div>
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                            <CombGrid cols="pair">
                                 <div>
                                     <label className="text-xs text-fg-muted mb-1 block">Payment Terms</label>
                                     <Select name="payment-terms" value={draft.payment_terms || ''} onChange={e => setDraftField({ payment_terms: e.target.value })} options={[{ value: '', label: 'Select…' }, ...PAYMENT_TERMS_OPTIONS]} />
@@ -604,7 +605,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                                     <label className="text-xs text-fg-muted mb-1 block">Preferred Tax Group</label>
                                     <TextField name="preferred-tax-group" value={draft.preferred_tax_group || ''} onChange={e => setDraftField({ preferred_tax_group: e.target.value })} placeholder="e.g. Standard GST 18%" />
                                 </div>
-                            </div>
+                            </CombGrid>
                         </div>
 
                         {/* Internal Notes */}
@@ -663,7 +664,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     <div className="text-xs text-fg-muted">No invoices for this customer yet.</div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 mb-3">
+                        <CombGrid cols="pair" className="mb-3">
                             <div className="bg-surface-sunken border border-line rounded-nb p-3">
                                 <div className="text-xs text-fg-muted">Invoice Count</div>
                                 <div className="text-lg font-semibold text-fg">{invoiceCount}</div>
@@ -672,7 +673,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                                 <div className="text-xs text-fg-muted">Total Purchase Value</div>
                                 <div className="text-lg font-semibold text-success">{formatters.formatCurrency(totalPurchaseValue)}</div>
                             </div>
-                        </div>
+                        </CombGrid>
                         <div className="space-y-1.5">
                             <div className="text-xs font-semibold text-fg-subtle">Recent Invoices</div>
                             {recentInvoices.map((inv) => (

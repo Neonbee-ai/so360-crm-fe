@@ -7,6 +7,7 @@ import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal }
 import { toast, Button, TextField, Textarea, Select, DatePicker, TimePicker } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { useShell, useActivity } from '@so360/shell-context';
+import { CombGrid } from './CombGrid';
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -298,7 +299,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 { value: 'REMINDER', label: 'Reminder' },
                             ]}
                         />
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                        <CombGrid cols="pair">
                             <DatePicker
                                 name="task-start-date"
                                 label="Start Date"
@@ -313,7 +314,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 min={todayDate}
                                 required
                             />
-                        </div>
+                        </CombGrid>
 
                         {/* Due time is optional for every kind except Reminder, which
                             is an alarm. Left blank the task stays a plain calendar
@@ -401,7 +402,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <Link2 size={12} />
                                     Associate With
                                 </label>
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <CombGrid cols="pair">
                                     <Select
                                         name="task-associate-type"
                                         aria-label="Associate type"
@@ -427,7 +428,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                             ]}
                                         />
                                     )}
-                                </div>
+                                </CombGrid>
                             </div>
                         )}
 

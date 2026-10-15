@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { EntityTimelineEvent } from '../../../services/crmService';
 import { useCRMFormatters } from '../../../utils/formatters';
+import { IconButton } from '@so360/design-system';
 
 interface Props {
     event: EntityTimelineEvent;
@@ -81,23 +82,13 @@ const TimelineEventCard: React.FC<Props> = ({ event, isPinned, onTogglePin, onEd
                 {(onTogglePin || canManage) && (
                     <div className="mt-2 pt-2 border-t border-line flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {onTogglePin && (
-                            <button
-                                onClick={() => onTogglePin(event.id)}
-                                className="p-1 text-fg-muted hover:text-warning transition-colors"
-                                title={isPinned ? 'Unpin' : 'Pin'}
-                            >
-                                <Bookmark size={12} fill={isPinned ? 'currentColor' : 'none'} />
-                            </button>
+                            <IconButton label={isPinned ? 'Unpin' : 'Pin'} title={isPinned ? 'Unpin' : 'Pin'} icon={<Bookmark size={12} fill={isPinned ? 'currentColor' : 'none'} />} onClick={() => onTogglePin(event.id)} />
                         )}
                         {canManage && onEdit && (
-                            <button onClick={() => onEdit(event)} className="p-1 text-fg-muted hover:text-primary transition-colors" title="Edit">
-                                <Edit2 size={12} />
-                            </button>
+                            <IconButton label="Edit" title="Edit" icon={<Edit2 size={12} />} onClick={() => onEdit(event)} />
                         )}
                         {canManage && onDelete && (
-                            <button onClick={() => onDelete(event)} className="p-1 text-fg-muted hover:text-danger transition-colors" title="Delete">
-                                <Trash2 size={12} />
-                            </button>
+                            <IconButton label="Delete" title="Delete" icon={<Trash2 size={12} />} onClick={() => onDelete(event)} />
                         )}
                     </div>
                 )}

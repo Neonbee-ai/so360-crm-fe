@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { DuplicateLeadInfo } from '../../services/leadDedupService';
+import { Button } from '@so360/design-system';
 
 interface Props {
     duplicate: DuplicateLeadInfo;
@@ -31,13 +32,9 @@ export const DuplicateLeadWarning: React.FC<Props> = ({ duplicate, onCancel }) =
                 >
                     Open existing
                 </a>
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-3 py-1.5 rounded-lg text-fg-subtle hover:bg-surface-raised font-medium"
-                >
+                <Button variant="secondary" size="sm" type="button" onClick={onCancel}>
                     Cancel
-                </button>
+                </Button>
             </div>
         </div>
     </div>

@@ -8,6 +8,7 @@
  */
 import { Check, Mail, Phone } from 'lucide-react';
 import type { Lead } from '../../types/crm';
+import { IconButton } from '@so360/design-system';
 
 interface LeadCardListProps {
   leads: Lead[];
@@ -60,15 +61,7 @@ export default function LeadCardList({
             }`}
           >
             <div className="flex items-start gap-3">
-              <button
-                aria-label="Select lead"
-                onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id); }}
-                className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                  isSelected ? 'bg-primary border-primary' : 'border-line'
-                }`}
-              >
-                {isSelected && <Check size={12} className="text-primary-fg" />}
-              </button>
+              <IconButton label="Select lead" icon={<Check size={12} className={isSelected ? 'text-primary' : 'opacity-0'} />} onClick={(e) => { e.stopPropagation(); onToggleSelect(lead.id); }} />
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">

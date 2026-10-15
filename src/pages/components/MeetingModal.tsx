@@ -4,6 +4,7 @@ import { meetingsApi } from '../../services/crmService';
 import { Button, TextField, Textarea, NumberInput, DateTimePicker } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { Meeting } from '../../types/crm';
+import { CombGrid } from './CombGrid';
 
 interface Props {
     leadId?: string;
@@ -59,10 +60,10 @@ const MeetingModal: React.FC<Props> = ({ leadId, dealId, stakeholderId, meeting,
             <div className="space-y-3">
                 {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-lg px-3 py-2">{error}</div>}
                 <TextField name="meeting-title" label="Title" value={title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)} />
-                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                <CombGrid cols="pair">
                     <DateTimePicker name="meeting-scheduled-at" label="Date & Time" value={scheduledAt} onChange={(v: string) => setScheduledAt(v)} />
                     <NumberInput name="meeting-duration" label="Duration (min)" min={5} value={durationMinutes} onChange={(v: number | null) => setDurationMinutes(v ?? 0)} />
-                </div>
+                </CombGrid>
                 <TextField name="meeting-location" label="Location / Link" value={location} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)} />
                 <Textarea name="meeting-agenda" label="Agenda" value={agenda} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAgenda(e.target.value)} rows={3} />
             </div>

@@ -34,7 +34,7 @@ import {
   TrendingUp,
   Layers,
 } from 'lucide-react';
-import { Button, Select, TextField } from '@so360/design-system';
+import { Button, IconButton, Select, TextField } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { Lead, User } from '../../types/crm';
 import {
@@ -631,22 +631,13 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
                 onDrop={() => { if (dragging.current && dragging.current !== col.key) onReorder(dragging.current, col.key); dragging.current = null; }}
               >
                 <GripVertical size={14} className="text-fg-muted group-hover:text-fg-subtle cursor-grab" />
-                <button
-                  onClick={() => onToggle(col.key, !col.visible)}
-                  className={`w-4 h-4 rounded border transition-colors shrink-0 flex items-center justify-center ${col.visible ? 'bg-primary border-primary' : 'border-line hover:border-line-strong'}`}
-                >
-                  {col.visible && <Check size={10} className="text-primary-fg" />}
-                </button>
+                <IconButton label={`Toggle ${def?.label ?? col.key}`} icon={<Check size={10} className={col.visible ? 'text-primary' : 'opacity-0'} />} onClick={() => onToggle(col.key, !col.visible)} />
                 <span className="text-sm text-fg-subtle flex-1 select-none">
                   {def?.label ?? col.key}
                 </span>
-                <button
-                  onClick={() => onPin(col.key, !col.pinned)}
-                  title={col.pinned ? 'Unpin column' : 'Pin column to left'}
-                  className={`text-xs px-2 py-0.5 rounded transition-colors ${col.pinned ? 'text-primary bg-primary/10' : 'text-fg-muted hover:text-fg-subtle'}`}
-                >
+                <Button variant={col.pinned ? 'primary' : 'secondary'} size="sm" onClick={() => onPin(col.key, !col.pinned)} title={col.pinned ? 'Unpin column' : 'Pin column to left'}>
                   {col.pinned ? 'Pinned' : 'Pin'}
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -729,34 +720,23 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
         const hasMenu = !!action.options?.length;
         return (
           <div key={action.label} className="relative" ref={openMenu === action.label ? menuRef : undefined}>
-            <button
-              onClick={() => {
+            <Button variant={action.variant === 'danger' ? 'danger' : 'secondary'} size="sm" onClick={() => {
                 if (hasMenu) setOpenMenu((m) => (m === action.label ? null : action.label));
                 else action.onClick?.(selectedIds);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                action.variant === 'danger'
-                  ? 'text-danger hover:bg-danger/10'
-                  : 'text-fg-subtle hover:bg-line'
-              }`}
-            >
+              }}>
               {action.icon}
               {action.label}
               {hasMenu && <ChevronDown size={13} className="opacity-60" />}
-            </button>
+            </Button>
             {hasMenu && openMenu === action.label && (
               <div
                 data-testid={`bulk-menu-${action.label}`}
                 className="absolute bottom-full mb-2 left-0 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-44 max-h-64 overflow-y-auto"
               >
                 {action.options!.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => { action.onSelect?.(selectedIds, opt.value); setOpenMenu(null); }}
-                    className="w-full text-left px-4 py-2 text-sm text-fg-subtle hover:bg-surface-raised transition-colors"
-                  >
+                  <Button variant="secondary" size="sm" className="w-full text-left justify-start" key={opt.value} onClick={() => { action.onSelect?.(selectedIds, opt.value); setOpenMenu(null); }}>
                     {opt.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -764,12 +744,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
         );
       })}
       <div className="w-px h-5 bg-surface-high" />
-      <button
-        onClick={onClear}
-        className="p-1.5 text-fg-subtle hover:text-fg transition-colors rounded-lg hover:bg-line"
-      >
-        <X size={14} />
-      </button>
+      <IconButton label="Clear selection" icon={<X size={14} />} onClick={onClear} />
     </div>
   );
 }
@@ -817,16 +792,10 @@ function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavig
       style={{ left: Math.min(x, window.innerWidth - 200), top: Math.min(y, window.innerHeight - 300) }}
     >
       {menuItems.map((item) => (
-        <button
-          key={item.label}
-          onClick={item.onClick}
-          className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors hover:bg-surface-raised ${
-            'danger' in item && item.danger ? 'text-danger' : 'text-fg-subtle'
-          }`}
-        >
+        <Button variant={'danger' in item && item.danger ? 'danger' : 'secondary'} size="sm" className="w-full justify-start" key={item.label} onClick={item.onClick}>
           {item.icon}
           {item.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -1221,15 +1190,10 @@ export function LeadsDataGrid({
                 style={{ width: col.width }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button
-                  onClick={(e) => {
+                <IconButton label="Row actions" icon={<MoreHorizontal size={16} />} onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     setContextMenu({ lead, x: e.clientX, y: e.clientY });
-                  }}
-                  className="p-1.5 text-fg-muted hover:text-fg-subtle hover:bg-line rounded-lg transition-colors opacity-0 group-hover/row:opacity-100"
-                >
-                  <MoreHorizontal size={16} />
-                </button>
+                  }} />
               </div>
             );
           }
@@ -1302,35 +1266,20 @@ export function LeadsDataGrid({
         <div className="flex items-center gap-1" data-testid="leads-grid-controls">
           {/* Group by */}
           <div className="relative" ref={groupMenuRef}>
-            <button
-              onClick={() => setShowGroupMenu((v) => !v)}
-              className={`flex h-nb-control-md items-center gap-1.5 px-2 rounded-nb text-nb-body transition-colors border ${
-                grouped
-                  ? 'text-primary bg-primary/10 border-primary/40'
-                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
-              }`}
-              title="Group by"
-              aria-label="Group by"
-            >
+            <Button variant={grouped ? 'primary' : 'secondary'} size="sm" onClick={() => setShowGroupMenu((v) => !v)} title="Group by" aria-label="Group by">
               <Layers size={14} />
               {grouped && <span>{GROUP_BY_OPTIONS.find((o) => o.key === groupBy)?.label}</span>}
-            </button>
+            </Button>
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
                 className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
-                  <button
-                    key={o.key}
-                    onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                      groupBy === o.key ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
-                    }`}
-                  >
+                  <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
                     {groupBy === o.key && <Check size={12} />}
                     <span className={groupBy === o.key ? '' : 'ml-4'}>{o.label}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -1338,89 +1287,56 @@ export function LeadsDataGrid({
 
           {/* Density picker */}
           <div className="relative" ref={densityMenuRef}>
-            <button
-              onClick={() => setShowDensityMenu((v) => !v)}
-              className="flex h-nb-control-md items-center gap-1.5 px-2 rounded-nb text-nb-body text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
-              title="Row density"
-              aria-label="Row density"
-            >
+            <Button variant="secondary" size="sm" onClick={() => setShowDensityMenu((v) => !v)} title="Row density" aria-label="Row density">
               <AlignJustify size={14} />
               <span className="sr-only capitalize">{density}</span>
-            </button>
+            </Button>
             {showDensityMenu && (
               <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => { setDensity(d); setShowDensityMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors capitalize ${
-                      density === d ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
-                    }`}
-                  >
+                  <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}
                     <span className={density === d ? '' : 'ml-4'}>{d}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
           </div>
 
           {/* Column manager */}
-          <button
-            onClick={() => setShowColumnManager(true)}
-            className="flex h-nb-control-md items-center gap-1.5 px-2 rounded-nb text-nb-body text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
-            title="Customize columns"
-            aria-label="Customize columns"
-          >
+          <Button variant="secondary" size="sm" onClick={() => setShowColumnManager(true)} title="Customize columns" aria-label="Customize columns">
             <Settings2 size={14} />
             <span className="sr-only">Columns</span>
-          </button>
+          </Button>
         </div>
       , controlsSlot) : null}
       {(!controlsSlot || sorts.length > 0) && (
       <div className="flex w-full min-w-0 items-center justify-between mb-2">
         <span className="text-sm text-fg-muted">
           {sorts.length > 0 && (
-            <button
-              onClick={() => setSorts([])}
-              className="text-xs text-primary hover:underline"
-            >
+            <Button variant="secondary" size="sm" onClick={() => setSorts([])}>
               Clear sort
-            </button>
+            </Button>
           )}
         </span>
         {!controlsSlot && (
         <div className="flex items-center gap-2">
           {/* Group by */}
           <div className="relative" ref={groupMenuRef}>
-            <button
-              onClick={() => setShowGroupMenu((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors border ${
-                grouped
-                  ? 'text-primary bg-primary/10 border-primary/40'
-                  : 'text-fg-subtle hover:text-fg hover:bg-surface-raised border-line'
-              }`}
-              title="Group by"
-            >
+            <Button variant={grouped ? 'primary' : 'secondary'} size="sm" onClick={() => setShowGroupMenu((v) => !v)} title="Group by">
               <Layers size={14} />
               <span>{GROUP_BY_OPTIONS.find((o) => o.key === groupBy)?.label ?? 'Group'}</span>
-            </button>
+            </Button>
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
                 className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
-                  <button
-                    key={o.key}
-                    onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                      groupBy === o.key ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
-                    }`}
-                  >
+                  <Button variant={groupBy === o.key ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={o.key} onClick={() => { setGroupBy(o.key); setCollapsedGroups(new Set()); setShowGroupMenu(false); }}>
                     {groupBy === o.key && <Check size={12} />}
                     <span className={groupBy === o.key ? '' : 'ml-4'}>{o.label}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -1428,41 +1344,27 @@ export function LeadsDataGrid({
 
           {/* Density picker */}
           <div className="relative" ref={densityMenuRef}>
-            <button
-              onClick={() => setShowDensityMenu((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
-              title="Row density"
-            >
+            <Button variant="secondary" size="sm" onClick={() => setShowDensityMenu((v) => !v)} title="Row density">
               <AlignJustify size={14} />
               <span className="capitalize">{density}</span>
-            </button>
+            </Button>
             {showDensityMenu && (
               <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => { setDensity(d); setShowDensityMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors capitalize ${
-                      density === d ? 'text-primary bg-primary/10' : 'text-fg-subtle hover:bg-surface-raised'
-                    }`}
-                  >
+                  <Button variant={density === d ? 'primary' : 'secondary'} size="sm" className="w-full justify-start" key={d} onClick={() => { setDensity(d); setShowDensityMenu(false); }}>
                     {density === d && <Check size={12} />}
                     <span className={density === d ? '' : 'ml-4'}>{d}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
           </div>
 
           {/* Column manager */}
-          <button
-            onClick={() => setShowColumnManager(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-fg-subtle hover:text-fg hover:bg-surface-raised transition-colors border border-line"
-            title="Customize columns"
-          >
+          <Button variant="secondary" size="sm" onClick={() => setShowColumnManager(true)} title="Customize columns">
             <Settings2 size={14} />
             Columns
-          </button>
+          </Button>
         </div>
         )}
       </div>
@@ -1506,19 +1408,13 @@ export function LeadsDataGrid({
                     className="flex items-center justify-center shrink-0 sticky bg-surface z-toolbar"
                     style={{ width: col.width, left: colLeftOffsets['select'] }}
                   >
-                    <button
-                      data-testid="bulk-select-all"
-                      onClick={toggleSelectAll}
-                      className="text-fg-subtle hover:text-fg transition-colors"
-                    >
-                      {allSelected ? (
+                    <IconButton label="Select all" data-testid="bulk-select-all" onClick={toggleSelectAll} icon={allSelected ? (
                         <CheckSquare2 size={16} className="text-primary" />
                       ) : someSelected ? (
                         <MinusSquare size={16} className="text-primary" />
                       ) : (
                         <Square2 size={16} />
-                      )}
-                    </button>
+                      )} />
                   </div>
                 );
               }
@@ -1550,10 +1446,7 @@ export function LeadsDataGrid({
                   }}
                 >
                   {sortKey ? (
-                    <button
-                      onClick={() => toggleSort(sortKey)}
-                      className="flex items-center gap-1 hover:text-fg transition-colors"
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => toggleSort(sortKey)}>
                       {def?.label ?? col.key}
                       {sortState ? (
                         sortState.direction === 'asc' ? (
@@ -1564,7 +1457,7 @@ export function LeadsDataGrid({
                       ) : (
                         <ChevronsUpDown size={12} className="opacity-0 group-hover:opacity-100" />
                       )}
-                    </button>
+                    </Button>
                   ) : (
                     <span>{def?.label ?? col.key}</span>
                   )}
@@ -1592,12 +1485,7 @@ export function LeadsDataGrid({
                 const isCollapsed = collapsedGroups.has(g.key);
                 return (
                   <div key={g.key} data-testid={`lead-group-${g.key}`}>
-                    <button
-                      type="button"
-                      onClick={() => toggleGroup(g.key)}
-                      className="flex items-center gap-2 w-full sticky left-0 px-3 py-2 bg-surface-sunken border-b border-line text-sm text-fg hover:bg-surface-high transition-colors"
-                      style={{ minWidth: `${totalWidth}px` }}
-                    >
+                    <Button variant="secondary" size="sm" className="w-full justify-start" type="button" onClick={() => toggleGroup(g.key)} style={{ minWidth: `${totalWidth}px` }}>
                       {isCollapsed ? (
                         <ChevronDown size={14} className="-rotate-90 text-fg-subtle" />
                       ) : (
@@ -1607,7 +1495,7 @@ export function LeadsDataGrid({
                       <span className="text-xs text-fg-muted bg-surface-raised rounded-full px-2 py-0.5">
                         {g.count}
                       </span>
-                    </button>
+                    </Button>
                     {!isCollapsed && g.leads.map((l) => renderRow(l))}
                   </div>
                 );

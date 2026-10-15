@@ -28,6 +28,7 @@ import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { ProjectSelect } from '../components/common/ProjectSelect';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import { CombGrid } from './components/CombGrid';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
 
@@ -542,11 +543,11 @@ const DealDetailPage = () => {
                         </div>
                         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div className="space-y-2">
-                                <div className="h-9 bg-surface-raised rounded w-64" />
+                                <div className="h-8 bg-surface-raised rounded w-64" />
                                 <div className="h-4 bg-surface-raised rounded w-40" />
                             </div>
                             <div className="flex flex-wrap gap-3">
-                                <div className="h-10 w-10 bg-surface-raised rounded-nb-lg" />
+                                <div className="size-10 bg-surface-raised rounded-nb-lg" />
                                 <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
                                 <div className="h-10 w-36 bg-surface-raised rounded-nb-lg" />
                             </div>
@@ -599,7 +600,9 @@ const DealDetailPage = () => {
             backLabel="Back"
             status={(
                             <div className="relative" ref={stageDropdownRef}>
-                                <button
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
                                     type="button"
                                     role="combobox"
                                     aria-expanded={isChangingStage}
@@ -607,12 +610,12 @@ const DealDetailPage = () => {
                                     disabled={!canEditDeal}
                                     onClick={() => { if (canEditDeal) setIsChangingStage(o => !o); }}
                                     title={canEditDeal ? 'Change stage' : undefined}
-                                    className={`group flex items-center gap-1.5 px-2 py-0.5 rounded-nb text-xs font-medium border bg-info/10 text-info border-info/20 transition-colors outline-none ${canEditDeal ? 'cursor-pointer hover:bg-info/20' : 'cursor-default'}`}
+                                    className="group gap-1.5"
                                     data-testid="deal-stage-trigger"
                                 >
                                     {deal.stage}
                                     {canEditDeal && <Edit2 size={12} className="text-info opacity-0 group-hover:opacity-100 transition-opacity" />}
-                                </button>
+                                </Button>
 
                                 {isChangingStage && canEditDeal && (
                                     <div
@@ -623,20 +626,20 @@ const DealDetailPage = () => {
                                         {dealStages.map(s => {
                                             const isCurrent = s.id === (deal.stage_id || deal.stage);
                                             return (
-                                                <button
+                                                <Button
+                                                    variant={isCurrent ? 'primary' : 'secondary'}
+                                                    size="sm"
                                                     key={s.id}
                                                     type="button"
                                                     role="option"
                                                     aria-selected={isCurrent}
                                                     onClick={() => handleSelectStage(s.id)}
-                                                    className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-xs font-medium transition-colors ${
-                                                        isCurrent ? 'bg-primary text-primary-fg' : 'text-fg-subtle hover:bg-surface-raised'
-                                                    }`}
+                                                    className="w-full justify-between text-left"
                                                     data-testid={`deal-stage-option-${s.id}`}
                                                 >
                                                     {s.name}
                                                     {isCurrent && <Check size={12} />}
-                                                </button>
+                                                </Button>
                                             );
                                         })}
                                     </div>
@@ -912,7 +915,7 @@ const DealDetailPage = () => {
 
                                 <a
                                     href="/accounting/invoices"
-                                    className="mt-2 flex items-center justify-center gap-2 w-full py-2.5 bg-surface-raised hover:bg-line text-fg rounded-nb-lg text-xs font-medium  transition-all border border-line"
+                                    className="mt-2 flex items-center justify-center gap-2 w-full h-nb-control-md bg-surface-raised hover:bg-line text-fg rounded-nb-lg text-xs font-medium  transition-all border border-line"
                                 >
                                     <ExternalLink size={12} /> View in Accounting
                                 </a>
@@ -1118,12 +1121,12 @@ const DealDetailPage = () => {
                                         ) : (
                                             tasks.map(task => (
                                                 <div key={task.id} className={`flex items-start gap-4 p-4 bg-bg border rounded-nb-lg group relative transition-all ${task.status === 'DONE' ? 'border-success/10 opacity-60' : 'border-line hover:border-info/50'}`}>
-                                                    <button
+                                                    <IconButton
+                                                        label={task.status === 'DONE' ? 'Mark task not done' : 'Mark task done'}
+                                                        icon={task.status === 'DONE' ? <CheckCircle2 size={12} /> : null}
+                                                        size="sm"
                                                         onClick={() => handleTaskToggle(task)}
-                                                        className={`mt-1 w-5 h-5 rounded border transition-colors flex items-center justify-center ${task.status === 'DONE' ? 'bg-success/10 border-success text-success' : 'border-line'}`}
-                                                    >
-                                                        {task.status === 'DONE' && <CheckCircle2 size={12} />}
-                                                    </button>
+                                                     />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
                                                             <h4 className={`text-sm font-bold text-fg truncate ${task.status === 'DONE' ? 'line-through text-fg-muted' : ''}`}>
@@ -1173,7 +1176,7 @@ const DealDetailPage = () => {
                                             }} />
                                         </label>
                                     </div>
-                                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-4">
+                                    <CombGrid cols="pair">
                                         {(deal.documents || []).map(doc => (
                                             <div key={doc.id} className="flex items-center justify-between p-4 bg-bg border border-line rounded-nb-lg group hover:border-line">
                                                 <div className="flex items-center gap-3">
@@ -1199,13 +1202,13 @@ const DealDetailPage = () => {
                                                 </div>
                                             </div>
                                         ))}
-                                    </div>
+                                    </CombGrid>
                                 </div>
                             )}
 
                             {/* CUSTOM FIELDS TAB */}
                             {activeTab === 'custom' && (
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <CombGrid cols="pair">
                                     {customFieldDefs.length === 0 ? (
                                         <p className="text-fg-muted italic text-sm col-span-2">No additional fields configured in Deals settings.</p>
                                     ) : (
@@ -1222,7 +1225,7 @@ const DealDetailPage = () => {
                                             </div>
                                         ))
                                     )}
-                                </div>
+                                </CombGrid>
                             )}
 
                             {activeTab === 'products' && (

@@ -17,6 +17,7 @@ import {
 } from '../../../services/assignmentRulesService';
 import { crmService } from '../../../services/crmService';
 import { describeApiError } from '../../../utils/apiErrorMessage';
+import { CombGrid } from '../CombGrid';
 
 const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
 
@@ -288,32 +289,18 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     {(['users', 'department'] as const).map((t) => {
                         const on = draft.pool_source !== 'project_assigned' && draft.target_type === t;
                         return (
-                            <button
-                                key={t}
-                                type="button"
-                                role="radio"
-                                aria-checked={on}
-                                // Leaving the project pool writes null so the server clears it.
-                                onClick={() => setDraft((d) => ({
+                            <Button variant={on ? "primary" : "secondary"} size="sm" key={t} type="button" role="radio" aria-checked={on} onClick={() => setDraft((d) => ({
                                     ...d,
                                     target_type: t,
                                     ...(d.pool_source === 'project_assigned' ? { pool_source: null } : {}),
-                                }))}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${on ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                            >
+                                }))}>
                                 {t === 'users' ? 'People' : 'Department'}
-                            </button>
+                            </Button>
                         );
                     })}
-                    <button
-                        type="button"
-                        role="radio"
-                        aria-checked={draft.pool_source === 'project_assigned'}
-                        onClick={() => setDraft((d) => ({ ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }))}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${draft.pool_source === 'project_assigned' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                    >
+                    <Button variant={draft.pool_source === 'project_assigned' ? 'primary' : 'secondary'} size="sm" type="button" role="radio" aria-checked={draft.pool_source === 'project_assigned'} onClick={() => setDraft((d) => ({ ...d, pool_source: 'project_assigned', target_type: 'users', target_user_ids: [] }))}>
                         Project agents
-                    </button>
+                    </Button>
                 </div>
                 {draft.pool_source === 'project_assigned' ? (
                     <p className="text-xs text-fg-subtle">The pool is the agents (and team members) allocated to the lead's project.</p>
@@ -339,7 +326,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 )}
             </div>
 
-            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 items-end">
+            <CombGrid cols="pair" className="items-end">
                 <div>
                     <Select
                         id="assignment-rule-method"
@@ -356,9 +343,9 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     checked={draft.skip_inactive}
                     onChange={(e) => setDraft((d) => ({ ...d, skip_inactive: e.target.checked }))}
                 />
-            </div>
+            </CombGrid>
 
-            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 items-end">
+            <CombGrid cols="pair" className="items-end">
                 <div>
                     <NumberInput
                         id="assignment-rule-reassign"
@@ -378,7 +365,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     checked={draft.skip_on_leave !== false}
                     onChange={(e) => setDraft((d) => ({ ...d, skip_on_leave: e.target.checked }))}
                 />
-            </div>
+            </CombGrid>
 
             {draftError && <p role="alert" className="text-xs font-bold text-danger">{draftError}</p>}
 
@@ -448,7 +435,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             <Card title="Test a lead">
               <div className="space-y-4">
                 <p className="text-xs text-fg-muted">See who a lead would go to. nothing is saved.</p>
-                <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
+                <CombGrid cols="quad-wide">
                     {CONDITION_FIELDS.map((f) => (
                         <div key={f.value}>
                             <label htmlFor={`assignment-test-${f.value}`} className={LABEL_CLS}>{f.label}</label>
@@ -460,7 +447,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                             />
                         </div>
                     ))}
-                </div>
+                </CombGrid>
                 <div className="flex items-center gap-4">
                     <Button type="button" variant="secondary" onClick={runTest} disabled={testing}>
                         {testing && <Loader2 size={14} className="animate-spin" />}

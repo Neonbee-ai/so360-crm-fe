@@ -6,6 +6,7 @@ import { toast, Button, TextField, Select, NumberInput, DatePicker, Checkbox } f
 import { Modal } from '../../components/common/Modal';
 import { useActivity } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
+import { CombGrid } from './CombGrid';
 
 interface CreateDealModalProps {
     leadId?: string;
@@ -344,10 +345,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     {customerDropdownOpen && customerResults.length > 0 && (
                                         <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-nb-lg shadow-xl z-menu overflow-hidden">
                                             {customerResults.map(c => (
-                                                <button
-                                                    key={c.id}
-                                                    type="button"
-                                                    onClick={() => {
+                                                <Button variant="secondary" size="sm" className="w-full text-left h-auto justify-start" key={c.id} type="button" onClick={() => {
                                                         const selectedName = c.company_name || c.contact_name || c.name || '';
                                                         setSelectedCompanyName(selectedName);
                                                         setSelectedLeadId(c.id);
@@ -356,12 +354,10 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                                         setCompanyError('');
                                                         // Auto-generate effect re-fires from the effectiveCompany/
                                                         // effectiveLeadId change above — no manual fallback needed here.
-                                                    }}
-                                                    className="w-full text-left px-4 py-2.5 hover:bg-surface-raised transition-colors border-b border-line last:border-0"
-                                                >
+                                                    }}>
                                                     <div className="text-sm font-bold text-fg">{c.company_name || c.contact_name || c.name}</div>
                                                     {c.contact_email && <div className="text-xs text-fg-muted">{c.contact_email}</div>}
-                                                </button>
+                                                </Button>
                                             ))}
                                         </div>
                                     )}
@@ -383,7 +379,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             />
 
                             {/* Value + Stage */}
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                            <CombGrid cols="pair">
                                 <div className="flex items-end gap-nb-2">
                                     <span className="pb-3 text-fg-muted text-xs font-bold select-none">{currencySymbol}</span>
                                     <div className="flex-1 min-w-0">
@@ -404,10 +400,10 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStage(e.target.value as DealStage)}
                                     options={settings.map(s => ({ value: s.name, label: s.name }))}
                                 />
-                            </div>
+                            </CombGrid>
 
                             {/* Dates */}
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                            <CombGrid cols="pair">
                                 <DatePicker
                                     name="deal-start-date"
                                     label="Start Date"
@@ -420,7 +416,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                     value={expectedClose}
                                     onChange={(v: string) => setExpectedClose(v)}
                                 />
-                            </div>
+                            </CombGrid>
 
                             {/* Owner */}
                             <Select
@@ -468,9 +464,9 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                 ) : salesRepsError ? (
                                     <p className="text-xs font-bold text-danger">
                                         Could not load employees from People Connect.{' '}
-                                        <button type="button" onClick={loadSalesReps} className="underline hover:text-danger-300">
+                                        <Button variant="secondary" size="sm" type="button" onClick={loadSalesReps}>
                                             Retry
-                                        </button>
+                                        </Button>
                                     </p>
                                 ) : salesReps.length === 0 ? (
                                     <p className="text-xs font-bold text-fg-muted">

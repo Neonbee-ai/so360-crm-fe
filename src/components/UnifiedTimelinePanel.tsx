@@ -5,7 +5,7 @@ import {
     FileIcon, ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { EmptyState, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
+import { EmptyState, ListFilters, type ListFilterConfig, type FilterValues, Button, IconButton } from '@so360/design-system';
 import { Activity, Note, Task, Attachment } from '../types/crm';
 import { useCRMFormatters } from '../utils/formatters';
 import { useConfirm } from '@so360/design-system';
@@ -222,26 +222,14 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         </p>
                         <div className="flex gap-2 mt-2 opacity-0 group-hover/note:opacity-100 transition-opacity">
                             {onNoteEdit && (
-                                <button
-                                    onClick={() => onNoteEdit(note)}
-                                    className="p-1 text-fg-muted hover:text-primary transition-colors"
-                                    title="Edit note"
-                                >
-                                    <Edit2 size={12} />
-                                </button>
+                                <IconButton label="Edit note" title="Edit note" icon={<Edit2 size={12} />} onClick={() => onNoteEdit(note)} />
                             )}
                             {onNoteDelete && (
-                                <button
-                                    onClick={async () => {
+                                <IconButton label="Delete note" title="Delete note" icon={<Trash2 size={12} />} onClick={async () => {
                                         if (await confirm({ title: 'Delete?', message: 'Delete this note?', intent: 'danger', confirmLabel: 'Delete' })) {
                                             onNoteDelete(note.id);
                                         }
-                                    }}
-                                    className="p-1 text-fg-muted hover:text-danger transition-colors"
-                                    title="Delete note"
-                                >
-                                    <Trash2 size={12} />
-                                </button>
+                                    }} />
                             )}
                         </div>
                     </div>
@@ -256,26 +244,14 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         className="block group/task hover:bg-surface-high rounded-nb transition-colors p-2 -mx-2"
                     >
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={(e) => {
+                            <IconButton
+                                label="Toggle task"
+                                icon={<CheckCircle2 size={14} className={task.status === 'DONE' ? 'text-success' : 'text-fg-muted'} />}
+                                onClick={(e: React.MouseEvent) => {
                                     e.preventDefault();
                                     onTaskToggle?.(task);
                                 }}
-                                className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
- task.status === 'DONE'
- ? 'bg-success/10 border-success'
- : 'border-line group-hover/task:border-primary'
- }`}
-                            >
-                                <CheckCircle2
-                                    size={10}
-                                    className={`transition-opacity ${
- task.status === 'DONE'
- ? 'opacity-100 text-success'
- : 'opacity-0 group-hover/task:opacity-20 text-primary'
- }`}
-                                />
-                            </button>
+                            />
                             <div className="flex-1 min-w-0">
                                 <p
                                     className={`text-sm font-medium group-hover/task:text-primary transition-colors ${
@@ -321,35 +297,17 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover/doc:opacity-100 transition-opacity">
                             {onDocumentView && (
-                                <button
-                                    onClick={() => onDocumentView(doc)}
-                                    className="p-1.5 text-fg-muted hover:text-primary hover:bg-surface-raised rounded transition-all"
-                                    title="View"
-                                >
-                                    <Eye size={12} />
-                                </button>
+                                <IconButton label="View" title="View" icon={<Eye size={12} />} onClick={() => onDocumentView(doc)} />
                             )}
                             {onDocumentDownload && (
-                                <button
-                                    onClick={() => onDocumentDownload(doc)}
-                                    className="p-1.5 text-fg-muted hover:text-fg hover:bg-surface-raised rounded transition-all"
-                                    title="Download"
-                                >
-                                    <Download size={12} />
-                                </button>
+                                <IconButton label="Download" title="Download" icon={<Download size={12} />} onClick={() => onDocumentDownload(doc)} />
                             )}
                             {onDocumentDelete && (
-                                <button
-                                    onClick={async () => {
+                                <IconButton label="Delete" title="Delete" icon={<Trash2 size={12} />} onClick={async () => {
                                         if (await confirm({ title: 'Delete?', message: 'Delete this document?', intent: 'danger', confirmLabel: 'Delete' })) {
                                             onDocumentDelete(doc.id);
                                         }
-                                    }}
-                                    className="p-1.5 text-fg-muted hover:text-danger hover:bg-danger/10 rounded transition-all"
-                                    title="Delete"
-                                >
-                                    <Trash2 size={12} />
-                                </button>
+                                    }} />
                             )}
                         </div>
                     </div>
@@ -391,10 +349,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
 
                 {/* Sort Dropdown */}
                 <div className="relative">
-                    <button
-                        onClick={() => setShowSortDropdown(!showSortDropdown)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-line rounded-nb text-xs font-medium text-fg-subtle hover:border-line transition-colors"
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => setShowSortDropdown(!showSortDropdown)}>
                         <span>Sort:</span>
                         <span className="text-primary">
                             {sortOrder === 'newest'
@@ -402,26 +357,18 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                                 : 'Oldest First'}
                         </span>
                         <ChevronDown size={10} />
-                    </button>
+                    </Button>
                     {showSortDropdown && (
                         <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-nb z-menu min-w-max">
                             {(['newest', 'oldest'] as const).map((order) => (
-                                <button
-                                    key={order}
-                                    onClick={() => {
+                                <Button variant={sortOrder === order ? 'primary' : 'secondary'} size="sm" className="w-full text-left justify-start" key={order} onClick={() => {
                                         setSortOrder(order);
                                         setShowSortDropdown(false);
-                                    }}
-                                    className={`block w-full text-left px-4 py-2 text-xs font-medium transition-colors ${
- sortOrder === order
- ? 'bg-primary/20 text-primary'
- : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
- }`}
-                                >
+                                    }}>
                                     {order === 'newest'
                                         ? 'Newest First'
                                         : 'Oldest First'}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     )}
@@ -451,7 +398,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                             data-testid={`timeline-item-${item.type}-${item.id}`}
                         >
                             {/* Dot */}
-                            <div className="w-12 h-12 rounded-full bg-surface border-2 border-line flex items-center justify-center shrink-0 mt-1 relative">
+                            <div className="size-12 rounded-full bg-surface border-2 border-line flex items-center justify-center shrink-0 mt-1 relative">
                                 {getItemIcon(item.type)}
                             </div>
 

@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { FileEdit, Mail, Phone, CalendarPlus, CheckSquare, UploadCloud } from 'lucide-react';
+import { Button } from '@so360/design-system';
 
 interface Props {
     onAddNote: () => void;
@@ -63,14 +64,9 @@ const QuickActionBar: React.FC<Props> = ({
     return (
         <div className="flex flex-wrap items-center gap-2 mb-6">
             {actions.map((a) => (
-                <button
-                    key={a.label}
-                    type="button"
-                    onClick={guard(a.label, a.onClick)}
-                    className="flex items-center gap-1.5 bg-surface hover:bg-surface-raised border border-line text-fg-subtle hover:text-fg px-3 py-1.5 rounded-nb text-xs font-medium transition-all"
-                >
+                <Button variant="secondary" size="sm" key={a.label} type="button" onClick={guard(a.label, a.onClick)}>
                     {a.icon} {a.label}
-                </button>
+                </Button>
             ))}
         </div>
     );

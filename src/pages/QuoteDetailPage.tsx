@@ -14,6 +14,7 @@ import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
+import { CombGrid } from './components/CombGrid';
 
 type QuoteLineRow = { line: QuoteLine; index: number };
 
@@ -514,7 +515,7 @@ const QuoteDetailPage = () => {
                                     <span className="text-sm text-fg-subtle">Grand Total</span>
                                     <p className="text-2xl font-bold text-fg">{formatCurrency(totals.grandTotal)}</p>
                                 </div>
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 pt-4 border-t border-line">
+                                <CombGrid cols="pair" className="pt-4 border-t border-line">
                                     <div>
                                         <span className="text-sm text-fg-subtle">Items</span>
                                         <p className="text-lg font-semibold text-fg">{lines.length}</p>
@@ -523,7 +524,7 @@ const QuoteDetailPage = () => {
                                         <span className="text-sm text-fg-subtle">Status</span>
                                         <p className={`text-lg font-semibold ${status.text}`}>{status.label}</p>
                                     </div>
-                                </div>
+                                </CombGrid>
                             </div>
                         </Card>
     
@@ -533,9 +534,10 @@ const QuoteDetailPage = () => {
                             its own divergent copy. */}
                         {customer && (
                             <Card title="Customer">
-                                <button
+                                <Button
+                                    variant="secondary"
                                     onClick={() => navigate(`/crm/customers/${customer.id}`)}
-                                    className="w-full text-left rounded-nb hover:bg-surface-raised transition-colors"
+                                    className="w-full justify-start text-left"
                                 >
                                     <p className="font-medium text-fg">
                                         {customer.company_name || customer.contact_name || '—'}
@@ -543,7 +545,7 @@ const QuoteDetailPage = () => {
                                     {customer.company_name && customer.contact_name && (
                                         <p className="text-sm text-fg-subtle">{customer.contact_name}</p>
                                     )}
-                                </button>
+                                </Button>
                                 <div className="mt-4 space-y-2 text-sm">
                                     {customer.contact_email && (
                                         <div className="flex justify-between gap-3">
@@ -569,13 +571,14 @@ const QuoteDetailPage = () => {
     
                         {quote.deal && (
                             <Card title="Related Deal">
-                                <button
+                                <Button
+                                    variant="secondary"
                                     onClick={() => navigate(`/crm/deal/${quote.deal_id}`)}
-                                    className="w-full text-left rounded-nb hover:bg-surface-raised transition-colors"
+                                    className="w-full text-left justify-start"
                                 >
                                     <p className="font-medium text-fg">{quote.deal.name}</p>
                                     <p className="text-sm text-fg-subtle">{quote.deal.company_name}</p>
-                                </button>
+                                </Button>
                             </Card>
                         )}
     
@@ -686,10 +689,11 @@ const QuoteDetailPage = () => {
                                     render: ({ line, index }) => isEditing ? (
                                         <div className="space-y-1.5">
                                             {/* Product selector button */}
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="secondary"
                                                 onClick={() => setPickerLineIndex(index)}
-                                                className="w-full flex items-center gap-2 px-3 py-1.5 bg-surface border border-line hover:border-primary/50 rounded text-sm transition-colors text-left"
+                                                className="w-full justify-start text-left"
                                             >
                                                 {line.item_image_url ? (
                                                     <img src={line.item_image_url} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
@@ -709,7 +713,7 @@ const QuoteDetailPage = () => {
                                                 ) : (
                                                     <span className="text-fg-muted">Select product...</span>
                                                 )}
-                                            </button>
+                                            </Button>
                                             {/* Free-text description */}
                                             <TextField
                                                 name={`quote-line-${index}-description`}
@@ -889,7 +893,7 @@ const QuoteDetailPage = () => {
                                     <p className="text-fg-subtle">{quote.notes || 'No notes'}</p>
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                            <CombGrid cols="pair">
                                 <div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Payment Terms</label>
                                     {isEditing ? (
@@ -949,7 +953,7 @@ const QuoteDetailPage = () => {
                                         </p>
                                     )}
                                 </div>
-                            </div>
+                            </CombGrid>
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Terms & Conditions</label>
                                 {isEditing ? (

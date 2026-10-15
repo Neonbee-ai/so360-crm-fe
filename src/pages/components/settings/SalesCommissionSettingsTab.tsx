@@ -15,6 +15,7 @@ import {
 } from '../../../services/salesSettingsService';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../../hooks/useCrmFeatureFlag';
 import { describeApiError } from '../../../utils/apiErrorMessage';
+import { CombGrid } from '../CombGrid';
 
 const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
 const CARD_BODY_CLS = 'space-y-5';
@@ -217,7 +218,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
             {commissionsOn && (
                 <Card title="Commission">
                   <div className={CARD_BODY_CLS}>
-                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                    <CombGrid cols="pair">
                         <div>
                             <Select
                                 id="sales-earn-trigger"
@@ -271,7 +272,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 onChange={(v) => set({ team_leader_override_percent: fromPct(v) })}
                             />
                         </div>
-                    </div>
+                    </CombGrid>
                     <Checkbox
                         name="sales-approval-required"
                         label="Commission needs manager approval before it becomes payable"
@@ -311,17 +312,9 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                   <div className={CARD_BODY_CLS}>
                     <div className="flex gap-1 bg-surface-sunken p-1 rounded-nb border border-line w-fit" role="radiogroup" aria-label="Agents can book">
                         {([['all', 'Any available unit'], ['assigned_only', 'Only units allocated to them']] as const).map(([v, label]) => (
-                            <button
-                                key={v}
-                                type="button"
-                                role="radio"
-                                aria-checked={draft.unit_visibility === v}
-                                disabled={ro}
-                                onClick={() => set({ unit_visibility: v as UnitVisibility })}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-60 ${draft.unit_visibility === v ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
-                            >
+                            <Button variant={draft.unit_visibility === v ? "primary" : "secondary"} size="sm" key={v} type="button" role="radio" aria-checked={draft.unit_visibility === v} disabled={ro} onClick={() => set({ unit_visibility: v as UnitVisibility })}>
                                 {label}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                     <p className="text-xs text-fg-muted">Managers can always see and book every unit.</p>
