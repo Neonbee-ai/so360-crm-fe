@@ -78,7 +78,7 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                 <div className="p-5 space-y-4">
                     {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-nb px-3 py-2">{error}</div>}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                         <Field label="First Name"><input value={form.first_name} onChange={(e) => set('first_name', e.target.value)} className="input" /></Field>
                         <Field label="Last Name"><input value={form.last_name} onChange={(e) => set('last_name', e.target.value)} className="input" /></Field>
                         <Field label="Job Title"><input value={form.job_title} onChange={(e) => set('job_title', e.target.value)} className="input" /></Field>
@@ -95,7 +95,7 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                         <StakeholderRolesEditor value={roles} onChange={setRoles} />
                     </Field>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                         <Field label="Buying Committee">
                             <select value={form.buying_committee_role} onChange={(e) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} className="input">
                                 {COMMITTEE_OPTIONS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}

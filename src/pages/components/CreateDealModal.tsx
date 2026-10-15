@@ -280,7 +280,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-dialog flex items-center justify-center p-4">
                 <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
                     {/* Sticky header */}
                     <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0 rounded-t-3xl">
@@ -320,7 +320,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                             className="w-full bg-bg border border-line text-fg rounded-nb-lg pl-9 pr-4 py-3 outline-none focus:border-primary transition-all font-bold"
                                         />
                                         {customerDropdownOpen && customerResults.length > 0 && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-nb-lg shadow-xl z-20 overflow-hidden">
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-line rounded-nb-lg shadow-xl z-menu overflow-hidden">
                                                 {customerResults.map(c => (
                                                     <button
                                                         key={c.id}
@@ -365,7 +365,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             </div>
 
                             {/* Value + Stage */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-fg-muted">Value</label>
                                     <div className="relative">
@@ -397,7 +397,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             </div>
 
                             {/* Dates */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-fg-muted">Start Date</label>
                                     <div className="relative">
@@ -515,7 +515,7 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="px-8 py-3 bg-primary hover:bg-primary/90 text-white rounded-nb-lg text-xs font-semibold transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+                                className="px-8 py-3 bg-primary hover:bg-primary/90 text-primary-fg rounded-nb-lg text-xs font-semibold transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
                             >
                                 {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                                 Create Deal

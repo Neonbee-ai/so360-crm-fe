@@ -860,7 +860,7 @@ const LeadsPage = () => {
           </button>
 
           {openDropdown === 'moreFilters' && (
-            <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl min-w-[220px] p-3">
+            <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl min-w-56 p-3">
               <label className="block text-xs text-fg-muted mb-1.5">Created by</label>
               <select
                 value={filters.creator}
@@ -899,7 +899,7 @@ const LeadsPage = () => {
             </button>
 
             {openDropdown === 'views' && (
-              <div className="absolute left-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl min-w-[300px] py-1.5">
+              <div className="absolute left-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl min-w-72 py-1.5">
                 {savedViews.length === 0 && (
                   <p className="px-4 py-2 text-xs text-fg-muted">No saved views yet</p>
                 )}
@@ -1029,7 +1029,7 @@ const LeadsPage = () => {
             </button>
 
             {showAdvancedFilters && (
-              <div className="absolute right-0 top-full mt-1.5 z-50">
+              <div className="absolute right-0 top-full mt-1.5 z-menu">
                 <LeadFilterBuilder
                   value={advancedFilter}
                   onApply={handleApplyAdvancedFilter}

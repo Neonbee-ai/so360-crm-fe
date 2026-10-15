@@ -53,12 +53,12 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
             {confirmDialog}
             {/* Overlay */}
             <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                className="fixed inset-0 bg-overlay backdrop-blur-sm z-drawer"
                 onClick={onClose}
             />
 
             {/* Drawer — starts below the shell's fixed 56px (h-14) glass-nav header so the title/close controls are never clipped */}
-            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:w-[480px] lg:w-[520px] bg-bg border-l border-line z-50 flex flex-col">
+            <div className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] w-full sm:max-w-md lg:max-w-lg bg-bg border-l border-line z-menu flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
                     <div>

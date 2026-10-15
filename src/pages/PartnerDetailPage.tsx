@@ -327,7 +327,7 @@ const PartnerDetailPage = () => {
                     {isEditing ? (
                         <Card title="Partner information" actions={overviewActions}>
                         <div className="space-y-6">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <div>
                                     <label className={editLabelCls}>First Name</label>
                                     <input value={editForm.first_name}
@@ -463,7 +463,7 @@ const PartnerDetailPage = () => {
                     ) : (
                         <>
                             <Card title="Partner details" actions={overviewActions}>
-                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-nb-3">
+                                <dl className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     <div>
                                         <dt className={fieldLabelCls}>Partner type</dt>
                                         <dd className="mt-1">
@@ -515,14 +515,14 @@ const PartnerDetailPage = () => {
                                 </dl>
                             </Card>
 
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-3 gap-nb-3">
                                 <KpiCard label="Customers connected" value={partner.customers_connected != null ? partner.customers_connected : '—'} />
                                 <KpiCard label="Value of purchase" value={partner.value_of_purchase != null ? formatters.formatCurrency(partner.value_of_purchase) : '—'} />
                                 <KpiCard label="Total purchase till date" value={partner.total_purchase_till_date != null ? formatters.formatCurrency(partner.total_purchase_till_date) : '—'} />
                             </div>
 
                             <Card title="Contact information">
-                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-nb-3">
+                                <dl className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     {partner.company_name && (
                                         <div className="sm:col-span-2">
                                             <dt className={fieldLabelCls}>Company name</dt>
@@ -573,7 +573,7 @@ const PartnerDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     {deals ? (
                         <>
-                            <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
+                            <div className="grid grid-cols-2 wc-medium:grid-cols-3 lg:grid-cols-4 gap-nb-3">
                                 <KpiCard label="Total deals" value={deals.summary.total_count} />
                                 <KpiCard label="Total value" value={formatters.formatCurrency(deals.summary.total_value || 0)} />
                                 <KpiCard label="Won deals" value={deals.summary.won_count} />
@@ -629,7 +629,7 @@ const PartnerDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     {commissions ? (
                         <>
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-3 gap-nb-3">
                                 <KpiCard label="Total earned" value={formatters.formatCurrency(commissions.summary.total_earned || 0)} />
                                 <KpiCard label="Pending" value={formatters.formatCurrency(commissions.summary.pending || 0)} />
                                 <KpiCard label="Paid" value={formatters.formatCurrency(commissions.summary.paid || 0)} />

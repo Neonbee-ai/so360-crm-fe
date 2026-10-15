@@ -607,7 +607,7 @@ const QuotesPage = () => {
                 const customer = resolveCustomer(quote);
                 if (!customer) return <span className="text-fg-muted text-xs">—</span>;
                 return (
-                    <div className="flex items-center gap-1.5 min-w-0 max-w-[180px]">
+                    <div className="flex items-center gap-1.5 min-w-0 max-w-44">
                         <span className="text-fg-subtle font-normal truncate" title={customer.name}>
                             {customer.name}
                         </span>
@@ -627,7 +627,7 @@ const QuotesPage = () => {
                 const deal = resolveDeal(quote);
                 if (!deal || !deal.id) return <span className="text-fg-muted text-xs">—</span>;
                 return (
-                    <div className="min-w-0 max-w-[160px] truncate" title={deal.name}>
+                    <div className="min-w-0 max-w-40 truncate" title={deal.name}>
                         <CrossLinkChip type="crm.deal" id={deal.id} label={deal.name} compact />
                     </div>
                 );
@@ -966,7 +966,7 @@ const QuotesPage = () => {
                                     <ChevronDown className={`w-3.5 h-3.5 text-fg-subtle transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {statusDropdownOpen && (
-                                    <div className="absolute left-0 top-full mt-1 z-30 w-52 bg-surface border border-line rounded-lg shadow-xl overflow-hidden">
+                                    <div className="absolute left-0 top-full mt-1 z-menu w-52 bg-surface border border-line rounded-lg shadow-xl overflow-hidden">
                                         <div className="py-1">
                                             <button
                                                 type="button"
@@ -1326,7 +1326,7 @@ const QuotesPage = () => {
             {/* Portal Row Action Menu (⋮) */}
             {/* Create Quote Modal */}
             {isCreateModalOpen && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md">
                         <div className="px-6 pt-6 pb-2">
                             <h2 className="text-xl font-semibold text-fg mb-4">Create New Quote</h2>
@@ -1353,7 +1353,7 @@ const QuotesPage = () => {
                                             <ChevronDown className={`ml-2 h-4 w-4 text-fg-subtle shrink-0 transition-transform ${dealDropdownOpen ? 'rotate-180' : ''}`} />
                                         </button>
                                         {dealDropdownOpen && (
-                                            <div className="absolute z-10 mt-1 w-full bg-surface-raised border border-line rounded-lg shadow-xl overflow-hidden">
+                                            <div className="absolute z-menu mt-1 w-full bg-surface-raised border border-line rounded-lg shadow-xl overflow-hidden">
                                                 <div className="p-2 border-b border-line">
                                                     <div className="relative">
                                                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-fg-muted" />
@@ -1448,7 +1448,7 @@ const QuotesPage = () => {
 
             {/* Reject Reason Modal */}
             {rejectTarget && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-lg font-semibold text-fg mb-2">Reject Quote</h2>
                         <p className="text-xs text-fg-subtle mb-3">
@@ -1500,7 +1500,7 @@ const QuotesPage = () => {
 
             {/* Delete Confirm Dialog */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-2">Delete Quote?</h2>
                         <p className="text-fg-subtle mb-6">

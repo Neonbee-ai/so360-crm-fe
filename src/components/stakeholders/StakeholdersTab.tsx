@@ -61,7 +61,7 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
         <div className="space-y-4">
             {confirmDialog}
             <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 min-w-[180px]">
+                <div className="relative flex-1 min-w-44">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
                     <input
                         value={search}

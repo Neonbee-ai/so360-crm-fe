@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     CheckCircle2, Circle, Calendar,
@@ -12,12 +11,12 @@ import { Loader2 } from 'lucide-react';
 import TaskModal from './components/TaskModal';
 import { RescheduleModal } from './components/RescheduleModal';
 import { ShellContext, useActivity, useShellBridge } from '@so360/shell-context';
-import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState } from '@so360/design-system';
+import { toast, getErrorMessage, CrossLinkChip, DetailPageTemplate, Button, Card, Badge, StatusBadge, EmptyState, Alert } from '@so360/design-system';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { useCRMFormatters } from '../utils/formatters';
 import { isTaskLocked, canRescheduleTask, canEditTask, isTaskOverdue, TASK_LOCKED_HINT } from '../utils/taskUtils';
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
-import { crmPortalRoot } from '../utils/crmScope';
+import { Modal } from '../components/common/Modal';
 
 const TaskDetailPage = () => {
     const { id = '' } = useParams<{ id: string }>();
@@ -377,16 +376,16 @@ const TaskDetailPage = () => {
                     ) : undefined}
                 >
                         {notesError && (
-                            <div className="bg-surface-high border border-line rounded-lg p-3 mb-4 flex items-center justify-between gap-3">
-                                <p className="text-xs text-fg-subtle">{notesError}</p>
-                                <button
-                                    onClick={handleRetryNotes}
-                                    disabled={isRetryingNotes}
-                                    className="text-xs text-primary hover:text-primary font-bold shrink-0 disabled:opacity-50"
-                                >
-                                    {isRetryingNotes ? 'Retrying…' : 'Retry'}
-                                </button>
-                            </div>
+                            <Alert
+                                variant="warning"
+                                className="mb-nb-3"
+                                action={{
+                                    label: isRetryingNotes ? 'Retrying…' : 'Retry',
+                                    onClick: () => { if (!isRetryingNotes) handleRetryNotes(); },
+                                }}
+                            >
+                                {notesError}
+                            </Alert>
                         )}
 
                         {/* Collapsed state: a compact input that expands into the full
@@ -528,34 +527,20 @@ const TaskDetailPage = () => {
             )}
 
             {/* Edit Note Modal */}
-            {editingNote && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-dialog">
-                    <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                <Edit2 className="text-primary" size={20} />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-bold text-fg mb-1">Edit Note</h3>
-                                <p className="text-sm text-fg-subtle">
-                                    Update your note content below.
-                                </p>
-                            </div>
-                        </div>
+            <Modal isOpen={!!editingNote} onClose={() => setEditingNote(null)} title="Edit Note" size="md">
+                {editingNote && (
+                    <div className="flex flex-col gap-nb-3">
+                        <p className="text-sm text-fg-subtle">Update your note content below.</p>
                         <textarea
                             value={editingNote.content}
                             onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
-                            className="w-full bg-bg border border-line text-fg rounded-lg px-4 py-3 outline-none focus:border-primary resize-none h-32 mb-4"
+                            className="w-full bg-bg border border-line text-fg rounded-nb px-nb-3 py-nb-2 outline-none focus:border-primary resize-none h-32"
                             placeholder="Note content..."
                         />
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setEditingNote(null)}
-                                className="px-4 py-2 bg-surface-high hover:bg-surface-high text-fg rounded-lg font-bold text-sm transition-all border border-line"
-                            >
-                                Cancel
-                            </button>
-                            <button
+                        <div className="flex gap-nb-2 justify-end">
+                            <Button variant="secondary" onClick={() => setEditingNote(null)}>Cancel</Button>
+                            <Button
+                                variant="primary"
                                 onClick={async () => {
                                     if (!editingNote.content.trim()) {
                                         toast.warning('Note content cannot be empty.');
@@ -571,39 +556,25 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to update note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-fg rounded-lg font-bold text-sm transition-all shadow-lg shadow-primary/20 active:scale-95"
                             >
                                 Save Changes
-                            </button>
+                            </Button>
                         </div>
                     </div>
-                </div>,
-                crmPortalRoot()
-            )}
+                )}
+            </Modal>
 
             {/* Delete Note Confirmation Modal */}
-            {deleteNoteId && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-dialog">
-                    <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center shrink-0">
-                                <Trash2 className="text-danger" size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-fg mb-1">Delete Note</h3>
-                                <p className="text-sm text-fg-subtle">
-                                    Are you sure you want to delete this note? This action cannot be undone.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setDeleteNoteId(null)}
-                                className="px-4 py-2 bg-surface-high hover:bg-surface-high text-fg rounded-lg font-bold text-sm transition-all border border-line"
-                            >
-                                Cancel
-                            </button>
-                            <button
+            <Modal isOpen={!!deleteNoteId} onClose={() => setDeleteNoteId(null)} title="Delete Note" size="md">
+                {deleteNoteId && (
+                    <div className="flex flex-col gap-nb-3">
+                        <p className="text-sm text-fg-subtle">
+                            Are you sure you want to delete this note? This action cannot be undone.
+                        </p>
+                        <div className="flex gap-nb-2 justify-end">
+                            <Button variant="secondary" onClick={() => setDeleteNoteId(null)}>Cancel</Button>
+                            <Button
+                                variant="danger"
                                 onClick={async () => {
                                     try {
                                         await crmService.deleteNote(deleteNoteId);
@@ -615,107 +586,68 @@ const TaskDetailPage = () => {
                                         toast.error(getErrorMessage(error, 'Failed to delete note. Please try again.'));
                                     }
                                 }}
-                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-danger-fg rounded-lg font-bold text-sm transition-all shadow-lg shadow-danger/20 active:scale-95"
                             >
                                 Delete Note
-                            </button>
+                            </Button>
                         </div>
                     </div>
-                </div>,
-                crmPortalRoot()
-            )}
+                )}
+            </Modal>
 
             {/* Disconnect from Project Confirmation Modal */}
-            {showDisconnectConfirm && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-dialog">
-                    <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                        <div className="flex items-start gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center shrink-0">
-                                <Unlink className="text-danger" size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-fg mb-1">Disconnect from Project</h3>
-                                <p className="text-sm text-fg-subtle">
-                                    Choose what happens to the linked Project task.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="space-y-2 mb-4">
-                            <label className="flex items-start gap-3 p-3 rounded-xl border border-line hover:border-line cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="disconnect-mode"
-                                    checked={disconnectMode === 'keep_but_disconnect'}
-                                    onChange={() => setDisconnectMode('keep_but_disconnect')}
-                                    className="mt-1"
-                                />
-                                <span>
-                                    <span className="block text-sm font-bold text-fg">Keep Project task, just disconnect</span>
-                                    <span className="block text-xs text-fg-muted">The Project task stays as-is; this CRM task stops syncing with it.</span>
-                                </span>
-                            </label>
-                            <label className="flex items-start gap-3 p-3 rounded-xl border border-line hover:border-line cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="disconnect-mode"
-                                    checked={disconnectMode === 'remove_project_task'}
-                                    onChange={() => setDisconnectMode('remove_project_task')}
-                                    className="mt-1"
-                                />
-                                <span>
-                                    <span className="block text-sm font-bold text-fg">Remove the Project task too</span>
-                                    <span className="block text-xs text-fg-muted">Deletes the connected task on the Project side as well.</span>
-                                </span>
-                            </label>
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setShowDisconnectConfirm(false)}
-                                disabled={isDisconnecting}
-                                className="px-4 py-2 bg-surface-high hover:bg-surface-high text-fg rounded-lg font-bold text-sm transition-all border border-line disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDisconnect}
-                                disabled={isDisconnecting}
-                                className="px-4 py-2 bg-danger hover:bg-danger/90 text-danger-fg rounded-lg font-bold text-sm transition-all shadow-lg shadow-danger/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
-                            >
-                                {isDisconnecting && <Loader2 size={12} className="animate-spin" />}
-                                Disconnect
-                            </button>
-                        </div>
+            <Modal isOpen={showDisconnectConfirm} onClose={() => setShowDisconnectConfirm(false)} title="Disconnect from Project" size="md">
+                <div className="flex flex-col gap-nb-3">
+                    <p className="text-sm text-fg-subtle">Choose what happens to the linked Project task.</p>
+                    <div className="flex flex-col gap-nb-2">
+                        <label className="flex items-start gap-nb-3 p-nb-3 rounded-nb border border-line hover:bg-surface-sunken cursor-pointer">
+                            <input
+                                type="radio"
+                                name="disconnect-mode"
+                                checked={disconnectMode === 'keep_but_disconnect'}
+                                onChange={() => setDisconnectMode('keep_but_disconnect')}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm font-bold text-fg">Keep Project task, just disconnect</span>
+                                <span className="block text-xs text-fg-muted">The Project task stays as-is; this CRM task stops syncing with it.</span>
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-nb-3 p-nb-3 rounded-nb border border-line hover:bg-surface-sunken cursor-pointer">
+                            <input
+                                type="radio"
+                                name="disconnect-mode"
+                                checked={disconnectMode === 'remove_project_task'}
+                                onChange={() => setDisconnectMode('remove_project_task')}
+                                className="mt-1"
+                            />
+                            <span>
+                                <span className="block text-sm font-bold text-fg">Remove the Project task too</span>
+                                <span className="block text-xs text-fg-muted">Deletes the connected task on the Project side as well.</span>
+                            </span>
+                        </label>
                     </div>
-                </div>,
-                crmPortalRoot()
-            )}
+                    <div className="flex gap-nb-2 justify-end">
+                        <Button variant="secondary" onClick={() => setShowDisconnectConfirm(false)} disabled={isDisconnecting}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDisconnect} disabled={isDisconnecting}>
+                            {isDisconnecting && <Loader2 size={12} className="animate-spin" />}
+                            Disconnect
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Delete Confirmation Dialog */}
-            {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-dialog flex items-center justify-center p-4">
-                    <div className="bg-surface border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl">
-                        <h3 className="text-lg font-bold text-fg mb-2">Delete Task</h3>
-                        <p className="text-fg-subtle mb-6">
-                            Are you sure you want to delete this task? This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="px-6 py-2 bg-danger hover:bg-danger-hover text-danger-fg rounded-xl font-bold"
-                            >
-                                Delete
-                            </button>
-                        </div>
+            <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Task" size="md">
+                <div className="flex flex-col gap-nb-3">
+                    <p className="text-fg-subtle">
+                        Are you sure you want to delete this task? This action cannot be undone.
+                    </p>
+                    <div className="flex justify-end gap-nb-2">
+                        <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDelete}>Delete</Button>
                     </div>
-                </div>,
-                crmPortalRoot()
-            )}
+                </div>
+            </Modal>
         </DetailPageTemplate>
     );
 };

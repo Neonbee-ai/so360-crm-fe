@@ -228,17 +228,16 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
       const search = screen.getByPlaceholderText(/search by coupon code/i);
-      expect(search).toHaveClass('pl-10', 'pr-4', 'py-2', 'rounded-lg');
+      expect(search).toHaveClass('h-nb-control-md', 'w-full', 'rounded-nb');
     });
 
-    it('When rendered / Then the store picker and search input remain in the same flex row with the same-breakpoint direction/alignment pairing intact', async () => {
+    it('When rendered / Then the store picker and search input share the single list toolbar', async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
       const storePicker = screen.getByTestId('store-picker');
-      const row = storePicker.closest('.flex');
-      expect(row).toHaveClass('md:flex-row', 'md:items-end');
-      // Same element also contains the search input, confirming they're still siblings in one row.
-      expect(row?.contains(screen.getByPlaceholderText(/search by coupon code/i))).toBe(true);
+      const toolbar = storePicker.closest('[data-slot="toolbar"]');
+      expect(toolbar).not.toBeNull();
+      expect(toolbar?.contains(screen.getByPlaceholderText(/search by coupon code/i))).toBe(true);
     });
   });
 

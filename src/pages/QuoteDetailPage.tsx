@@ -518,7 +518,7 @@ const QuoteDetailPage = () => {
                                     <span className="text-sm text-fg-subtle">Grand Total</span>
                                     <p className="text-2xl font-bold text-fg">{formatCurrency(totals.grandTotal)}</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-line">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 pt-4 border-t border-line">
                                     <div>
                                         <span className="text-sm text-fg-subtle">Items</span>
                                         <p className="text-lg font-semibold text-fg">{lines.length}</p>
@@ -896,7 +896,7 @@ const QuoteDetailPage = () => {
                                     <p className="text-fg-subtle">{quote.notes || 'No notes'}</p>
                                 )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Payment Terms</label>
                                     {isEditing ? (
@@ -1001,7 +1001,7 @@ const QuoteDetailPage = () => {
 
             {/* Reject Modal */}
             {showRejectModal && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-4">Reject Quote</h2>
                         <div className="mb-4">
@@ -1041,7 +1041,7 @@ const QuoteDetailPage = () => {
 
             {/* Convert Modal */}
             {showConvertModal && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-4">Convert to Sales Order</h2>
                         <p className="text-fg-subtle mb-6">
@@ -1127,7 +1127,7 @@ const QuoteDetailPage = () => {
 
             {/* Withdraw Modal */}
             {showWithdrawModal && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
                     <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md p-6">
                         <div className="flex items-center gap-2 mb-2 text-warning">
                             <RotateCcw className="w-5 h-5" />

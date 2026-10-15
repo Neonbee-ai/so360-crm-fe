@@ -141,7 +141,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
       );
     case 'columns':
       return (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-2">
           <textarea className={`${inputClass} resize-y`} rows={2} value={c.left} onChange={e => update('left', e.target.value)} placeholder="Left column" />
           <textarea className={`${inputClass} resize-y`} rows={2} value={c.right} onChange={e => update('right', e.target.value)} placeholder="Right column" />
         </div>

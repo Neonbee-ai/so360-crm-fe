@@ -167,7 +167,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                     <div className="space-y-4">
 
                         {/* First Name + Last Name */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div>
                                 <label className={labelCls}>First Name *</label>
                                 <input type="text" required value={form.first_name}
@@ -213,7 +213,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </div>
 
                         {/* Architect Grading + Commission Rate */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div>
                                 <label className={labelCls}>Architect Grading</label>
                                 <select value={form.grading}
@@ -264,7 +264,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </div>
 
                         {/* Email + Phone */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div>
                                 <label className={labelCls}>Email</label>
                                 <input type="email" value={form.email}
@@ -313,7 +313,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </div>
 
                         {/* City + Pin Code */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div>
                                 <label className={labelCls}>City</label>
                                 <input type="text" value={form.city}
@@ -358,7 +358,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </div>
 
                         {/* POC Primary + Secondary */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div>
                                 <label className={labelCls}>1st POC</label>
                                 <input type="text" value={form.poc_primary}
@@ -374,7 +374,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </div>
 
                         {/* Customers Connected + Value of Purchase */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div>
                                 <label className={labelCls}>Customers Connected</label>
                                 <input type="number" min="0" step="1" value={form.customers_connected}
@@ -401,7 +401,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         {customFieldDefs.length > 0 && (
                             <div className="pt-4 border-t border-line space-y-4">
                                 <p className="text-xs font-semibold text-fg-muted">Additional Details</p>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     {customFieldDefs.map(field => (
                                         <div key={field.id} className="space-y-1">
                                             <label className={labelCls}>{field.label}{field.is_required ? ' *' : ''}</label>

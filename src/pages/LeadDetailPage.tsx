@@ -555,8 +555,8 @@ const LeadDetailPage = () => {
                                     </select>
     ) : (
         <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsChangingStatus(true)}>
-            <Badge tone={statusTone}>{lead.status}</Badge>
-            {lead.type === 'partner' && <Badge tone="primary">Partner</Badge>}
+            <Badge size="sm" tone={statusTone}>{lead.status}</Badge>
+            {lead.type === 'partner' && <Badge size="sm" tone="primary">Partner</Badge>}
             <Edit2 size={12} className="text-fg-subtle opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
@@ -751,7 +751,7 @@ const LeadDetailPage = () => {
 
                         {/* 3. Value / revenue */}
                         <Card title="Revenue intelligence">
-                            <div className="grid grid-cols-2 gap-nb-3">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <div>
                                     <span className="block text-xs text-fg-muted">Earned</span>
                                     <span className="text-lg font-semibold text-fg">{formatters.formatCurrency(earned)}</span>
@@ -1129,7 +1129,7 @@ const LeadDetailPage = () => {
 
                         <div className="p-4">
                             {infoTab === 'profile' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-4 text-fg-subtle">
                                             <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
@@ -1326,7 +1326,7 @@ const LeadDetailPage = () => {
                             )}
 
                             {infoTab === 'additional' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     {customFieldDefs.map(field => (
                                         <div key={field.id} className="flex items-center gap-4 text-fg-subtle">
                                             <div className="w-10 h-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-muted">

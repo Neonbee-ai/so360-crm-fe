@@ -124,7 +124,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
     );
 
     return (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-dialog flex items-center justify-center bg-overlay backdrop-blur-sm">
             <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-5">
                     <h3 className="text-sm font-medium text-fg">Add Product</h3>

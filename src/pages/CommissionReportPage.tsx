@@ -153,14 +153,10 @@ const CommissionReportPage: React.FC = () => {
             title="Commission report"
             description="Commission earned across projects, agents and months."
             /* The report carries no developer list, so the developer filter is not offered here. */
-            filters={(
-                <div className="flex w-full flex-wrap items-center justify-between gap-nb-3">
-                    <SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />
-                    {canExport && !forbidden ? (
-                        <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
-                    ) : null}
-                </div>
-            )}
+            filters={<SalesFiltersBar value={filters} onChange={setFilters} developers={[]} />}
+            secondaryActions={canExport && !forbidden ? (
+                <ExportMenu label="Export commission report" onExport={(format) => exportService.commission(filters, format)} />
+            ) : undefined}
         >
             <div className="flex flex-col gap-nb-4">{body}</div>
         </DashboardPageTemplate>

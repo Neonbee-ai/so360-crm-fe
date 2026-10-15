@@ -24,7 +24,7 @@ import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
 const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb-lg px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-nb-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold disabled:opacity-60';
+const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-nb-lg bg-primary hover:bg-primary/90 text-primary-fg text-xs font-semibold disabled:opacity-60';
 const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg';
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
@@ -251,7 +251,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                 {manual !== null && (
                     <div className="space-y-3" aria-label="Manual instalments">
                         {manual.map((r, i) => (
-                            <div key={i} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
+                            <div key={i} className="grid grid-cols-1 wc-medium:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
                                 <input aria-label={`Instalment ${i + 1} label`} placeholder="Label, e.g. Booking" className={FIELD_CLS} value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} />
                                 <input aria-label={`Instalment ${i + 1} amount`} type="number" min={0} placeholder="Amount" className={FIELD_CLS} value={r.amount} onChange={(e) => setRow(i, { amount: e.target.value })} />
                                 <input aria-label={`Instalment ${i + 1} due date`} type="date" className={FIELD_CLS} value={r.due_date} onChange={(e) => setRow(i, { due_date: e.target.value })} />
@@ -309,7 +309,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
                 {([['Total', totals.total], ['Paid', totals.paid], ['Outstanding', totals.outstanding]] as const).map(([label, v]) => (
                     <div key={label} className="bg-surface-sunken border border-line rounded-nb-lg p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
                         <p className="text-xs font-semibold text-fg-muted">{label}</p>

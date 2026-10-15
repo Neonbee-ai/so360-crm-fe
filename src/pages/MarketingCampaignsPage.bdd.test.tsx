@@ -71,7 +71,8 @@ vi.mock('./marketing/marketingMappers', () => ({
   }),
 }));
 
-vi.mock('@so360/design-system', () => ({
+vi.mock('@so360/design-system', async () => ({
+  ...(await import('../test/__mocks__/design-system')),
   Card: ({ title, children }: any) => (<section>{title && <h3>{title}</h3>}{children}</section>),
   Button: ({ children, onClick, disabled }: any) => (
     <button onClick={onClick} disabled={disabled}>

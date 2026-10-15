@@ -579,7 +579,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 ) : (
                     /* ── Edit mode ── */
                     <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div className="col-span-2">
                                 <label className="text-xs text-fg-muted mb-1 block">Business Name</label>
                                 <input value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} className={FIELD_CLS} />
@@ -598,7 +598,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         {/* Billing Address */}
                         <div>
                             <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Billing Address</div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <input value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" className={`col-span-2 ${FIELD_CLS}`} />
                                 <input value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" className={`col-span-2 ${FIELD_CLS}`} />
                                 <input value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" className={FIELD_CLS} />
@@ -616,7 +616,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         {!shippingSame && (
                             <div>
                                 <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Shipping Address</div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     <input value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" className={`col-span-2 ${FIELD_CLS}`} />
                                     <input value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" className={`col-span-2 ${FIELD_CLS}`} />
                                     <input value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" className={FIELD_CLS} />
@@ -632,7 +632,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <div className="text-xs font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <DollarSign size={11} /> Accounting Preferences
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                 <div>
                                     <label className="text-xs text-fg-muted mb-1 block">Payment Terms</label>
                                     <select value={draft.payment_terms || ''} onChange={e => setDraftField({ payment_terms: e.target.value })} className={FIELD_CLS}>
@@ -707,7 +707,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     <div className="text-xs text-fg-muted">No invoices for this customer yet.</div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 mb-3">
                             <div className="bg-surface-sunken border border-line rounded-nb p-3">
                                 <div className="text-xs text-fg-muted">Invoice Count</div>
                                 <div className="text-lg font-semibold text-fg">{invoiceCount}</div>

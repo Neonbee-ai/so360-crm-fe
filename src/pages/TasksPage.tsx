@@ -485,7 +485,7 @@ const TasksPage = () => {
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
                     <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
                         <h2 className="text-xl font-semibold text-fg mb-2">Delete Task</h2>
                         <p className="text-fg-subtle mb-6">

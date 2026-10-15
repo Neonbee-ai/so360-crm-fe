@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { meetingsApi } from '../../services/crmService';
+import { Modal } from '../../components/common/Modal';
 import { Meeting } from '../../types/crm';
 
 interface Props {
@@ -53,52 +54,44 @@ const MeetingModal: React.FC<Props> = ({ leadId, dealId, stakeholderId, meeting,
     };
 
     return (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-bg border border-line rounded-nb-lg w-full max-w-md shadow-2xl">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-                    <p className="text-xs font-semibold text-fg">
-                        {isEditing ? 'Edit Meeting' : 'Schedule Meeting'}
-                    </p>
-                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-lg hover:bg-surface-raised"><X size={16} /></button>
-                </div>
-                <div className="p-5 space-y-3">
-                    {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-lg px-3 py-2">{error}</div>}
+        <Modal isOpen onClose={onClose} title={isEditing ? 'Edit Meeting' : 'Schedule Meeting'} size="md">
+            <div className="space-y-3">
+                {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-lg px-3 py-2">{error}</div>}
+                <label className="block">
+                    <span className="block text-xs font-semibold text-fg-muted mb-1">Title</span>
+                    <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
+                </label>
+                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                     <label className="block">
-                        <span className="block text-xs font-semibold text-fg-muted mb-1">Title</span>
-                        <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <label className="block">
-                            <span className="block text-xs font-semibold text-fg-muted mb-1">Date &amp; Time</span>
-                            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                        </label>
-                        <label className="block">
-                            <span className="block text-xs font-semibold text-fg-muted mb-1">Duration (min)</span>
-                            <input type="number" min={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
-                        </label>
-                    </div>
-                    <label className="block">
-                        <span className="block text-xs font-semibold text-fg-muted mb-1">Location / Link</span>
-                        <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
+                        <span className="block text-xs font-semibold text-fg-muted mb-1">Date &amp; Time</span>
+                        <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                     </label>
                     <label className="block">
-                        <span className="block text-xs font-semibold text-fg-muted mb-1">Agenda</span>
-                        <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} rows={3} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
+                        <span className="block text-xs font-semibold text-fg-muted mb-1">Duration (min)</span>
+                        <input type="number" min={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
                     </label>
                 </div>
-                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">
-                    <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-fg-subtle hover:text-fg">Cancel</button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
-                    >
-                        {saving && <Loader2 size={12} className="animate-spin" />}
-                        {isEditing ? 'Save Changes' : 'Schedule'}
-                    </button>
-                </div>
+                <label className="block">
+                    <span className="block text-xs font-semibold text-fg-muted mb-1">Location / Link</span>
+                    <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
+                </label>
+                <label className="block">
+                    <span className="block text-xs font-semibold text-fg-muted mb-1">Agenda</span>
+                    <textarea value={agenda} onChange={(e) => setAgenda(e.target.value)} rows={3} className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-xs text-fg outline-none" />
+                </label>
             </div>
-        </div>
+            <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-line">
+                <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-fg-subtle hover:text-fg">Cancel</button>
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
+                >
+                    {saving && <Loader2 size={12} className="animate-spin" />}
+                    {isEditing ? 'Save Changes' : 'Schedule'}
+                </button>
+            </div>
+        </Modal>
     );
 };
 

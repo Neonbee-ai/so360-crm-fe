@@ -279,7 +279,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                         </span>
                         {/* The clear button overlays this slot when a project is selected. */}
                         {value
-                            ? <span className="w-[14px] shrink-0" aria-hidden="true" />
+                            ? <span className="w-3.5 shrink-0" aria-hidden="true" />
                             : <ChevronDown size={14} className="text-fg-muted shrink-0" />}
                     </button>
                     {value && (
@@ -301,7 +301,7 @@ export const ProjectSelect: React.FC<ProjectSelectProps> = ({
                     role="listbox"
                     id={listId}
                     aria-label="Projects"
-                    className="absolute z-50 top-full mt-1 w-full bg-surface border border-line rounded-xl shadow-xl overflow-hidden"
+                    className="absolute z-menu top-full mt-1 w-full bg-surface border border-line rounded-xl shadow-xl overflow-hidden"
                     data-testid="project-select-list"
                 >
                     <div className="max-h-56 overflow-y-auto">

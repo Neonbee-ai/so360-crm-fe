@@ -139,7 +139,7 @@ export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                 <div>
                     <label className="block text-xs font-medium text-fg-muted mb-2">Direction</label>
                     <select
@@ -238,7 +238,7 @@ export function LogCallModal({ leadId, dealId, onClose, onSuccess }: {
         onClose();
     };
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-dialog flex items-center justify-center p-4">
             <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
                 <UploadCallForm onClose={onClose} onUpload={handleUpload} />
             </div>
@@ -420,7 +420,7 @@ export default function CallsTab({ leadId, dealId }: Props) {
 
             {selected && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    className="fixed inset-0 z-menu flex items-center justify-center p-4"
                     onClick={() => setSelected(null)}
                 >
                     <div className="absolute inset-0 bg-surface-sunken backdrop-blur-sm" />

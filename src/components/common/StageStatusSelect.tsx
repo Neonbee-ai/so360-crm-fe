@@ -72,7 +72,7 @@ export const StageStatusSelect: React.FC<StageStatusSelectProps> = ({ value, onC
             {isOpen && (
                 <div
                     role="listbox"
-                    className="absolute z-50 top-full right-0 mt-1 min-w-[100px] bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
+                    className="absolute z-menu top-full right-0 mt-1 min-w-24 bg-surface border border-line rounded-lg shadow-xl overflow-hidden"
                     data-testid="stage-status-list"
                 >
                     {STATUS_OPTIONS.map(opt => (

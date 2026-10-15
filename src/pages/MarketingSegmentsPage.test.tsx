@@ -48,7 +48,8 @@ vi.mock('@so360/shell-context', () => ({
 
   useQuota: () => ({ quotas: [], isLoading: false, error: null, isExceeded: () => false, getQuota: () => null, getPercentage: () => 0, refresh: async () => {} }),}));
 
-vi.mock('@so360/design-system', () => ({
+vi.mock('@so360/design-system', async () => ({
+  ...(await import('../test/__mocks__/design-system')),
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
 }));
 

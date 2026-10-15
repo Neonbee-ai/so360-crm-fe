@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   Loader2,
 } from 'lucide-react';
-import { Card, EmptyState } from '@so360/design-system';
+import { Card, EmptyState, Tabs } from '@so360/design-system';
 import { Lead, Activity as ActivityType, Deal, Task, TASK_PRIORITY_STYLES, User as CrmUser, SourceTypeOption, CustomFieldDefinition } from '../../types/crm';
 import { crmService, settingsApi } from '../../services/crmService';
 import { useEntityTimeline } from '../../pages/components/timeline/useEntityTimeline';
@@ -321,7 +321,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
     <>
       {/* Backdrop — only dims, doesn't block grid interaction */}
       <div
-        className={`fixed inset-0 z-[450] transition-opacity duration-200 pointer-events-none ${
+        className={`fixed inset-0 z-drawer transition-opacity duration-200 pointer-events-none ${
           lead ? 'opacity-100' : 'opacity-0'
         }`}
       />
@@ -329,7 +329,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 bottom-0 z-[500] w-[420px] max-w-[95vw] bg-bg border-l border-line shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-drawer w-full max-w-md bg-bg border-l border-line shadow-2xl flex flex-col transition-transform duration-250 ease-out ${
           lead ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -414,20 +414,13 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-line overflow-x-auto scrollbar-none">
-              {PANEL_TABS.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`shrink-0 px-3.5 py-2.5 text-xs font-semibold transition-colors ${
-                    tab === t.key
-                      ? 'text-primary border-b-2 border-primary -mb-px'
-                      : 'text-fg-muted hover:text-fg-subtle'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+            <div className="px-nb-3 overflow-x-auto">
+              <Tabs
+                name="lead-panel"
+                items={PANEL_TABS.map((t) => ({ id: t.key, label: t.label }))}
+                value={tab}
+                onChange={(id) => setTab(id as PanelTab)}
+              />
             </div>
 
             {/* Tab content */}

@@ -133,7 +133,8 @@ export const DashboardPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'dashboard' },
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement('h1', null, p.title), p.description ? React.createElement('p', null, p.description) : null,
-      slot('meta', p.meta), slot('filters', p.filters), slot('primary-action', p.primaryAction)),
+      slot('meta', p.meta), slot('secondary-actions', p.secondaryActions), slot('primary-action', p.primaryAction)),
+    slot('filters', p.filters), slot('toolbar-end', p.toolbarEnd),
     slot('kpis', p.kpis), slot('primary', p.primary), slot('secondary', p.secondary), slot('bottom', p.bottom), p.children);
 export const SettingsPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'settings' },
@@ -159,8 +160,10 @@ export const Menu = ({ trigger, items = [], name, 'data-testid': testId }: any) 
             onClick: (e: any) => { e.stopPropagation(); if (it.disabled) return; it.onSelect(); setOpen(false); },
         }, it.label))) : null);
 };
-export const KpiCard = ({ label, value, onClick, 'data-testid': testId }: any) =>
-    React.createElement('div', { 'data-testid': testId, onClick }, React.createElement('span', null, label), React.createElement('span', null, value));
+export const KpiCard = ({ label, value, hint, onClick, 'data-testid': testId }: any) =>
+    React.createElement('div', { 'data-testid': testId, onClick }, React.createElement('span', null, label), React.createElement('span', null, value),
+        hint != null && hint !== false ? React.createElement('span', { 'data-slot': 'kpi-hint' }, hint) : null);
 export const StatusBadge = ({ status, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId }, status);
-export const Alert = ({ title, children, variant, 'data-testid': testId }: any) =>
-    React.createElement('div', { role: 'alert', 'data-variant': variant, 'data-testid': testId }, title ? React.createElement('p', null, title) : null, children);
+export const Alert = ({ title, children, variant, action, 'data-testid': testId }: any) =>
+    React.createElement('div', { role: 'alert', 'data-variant': variant, 'data-testid': testId }, title ? React.createElement('p', null, title) : null, children,
+        action ? React.createElement('button', { type: 'button', onClick: action.onClick }, action.label) : null);

@@ -46,13 +46,14 @@ describe('RescheduleModal', () => {
   });
 
   describe('Given modal size constraint', () => {
-    it('When rendered / Then modal panel has max-h-[90vh] and overflow-y-auto', () => {
+    it('When rendered / Then modal panel has max-h-[90vh] with a scrolling body', () => {
       render(<RescheduleModal currentDate="2024-06-15T00:00:00Z" onClose={vi.fn()} onConfirm={vi.fn()} />);
       const panels = Array.from(document.querySelectorAll('div')).filter(
         el => el.className.includes('max-h-[90vh]'),
       );
       expect(panels.length).toBeGreaterThan(0);
-      expect(panels[0].className).toContain('overflow-y-auto');
+      // Shared Modal: the panel is height-capped and its body is the scroll region.
+      expect(panels[0].querySelector('.overflow-y-auto')).not.toBeNull();
     });
   });
 

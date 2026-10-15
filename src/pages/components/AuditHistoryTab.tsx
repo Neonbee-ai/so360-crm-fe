@@ -102,7 +102,7 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 min-w-[200px]">
+                <div className="relative flex-1 min-w-48">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
                     <input
                         type="text"

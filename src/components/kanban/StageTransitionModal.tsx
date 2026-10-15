@@ -72,9 +72,9 @@ export const StageTransitionModal = ({ isOpen, onClose, onConfirm, deal, newStag
                     </button>
                     <button
                         type="submit"
-                        className={`flex-1 px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-sm ${newStage === 'Won' ? 'bg-success hover:bg-success/90 text-white' :
-                                newStage === 'Lost' ? 'bg-danger hover:bg-danger/90 text-white' :
-                                    'bg-primary hover:bg-primary/90 text-white'
+                        className={`flex-1 px-4 py-2 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-sm ${newStage === 'Won' ? 'bg-success hover:bg-success/90 text-primary-fg' :
+                                newStage === 'Lost' ? 'bg-danger hover:bg-danger/90 text-primary-fg' :
+                                    'bg-primary hover:bg-primary/90 text-primary-fg'
                             }`}
                     >
                         Confirm Transition

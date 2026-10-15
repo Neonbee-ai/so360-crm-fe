@@ -18,7 +18,7 @@ import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
 
 const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb-lg px-3 py-2 outline-none focus:border-primary transition-all font-bold text-xs';
-const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-nb-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold disabled:opacity-60';
+const BTN_PRIMARY = 'flex items-center gap-2 px-4 py-2 rounded-nb-lg bg-primary hover:bg-primary/90 text-primary-fg text-xs font-semibold disabled:opacity-60';
 const BTN_GHOST = 'flex items-center gap-1 px-3 py-2 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg disabled:opacity-60';
 
 const STATUS_CHIP: Record<CommissionStatus, string> = {
@@ -175,7 +175,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                         {COMMISSION_STATUS_LABELS[l.status]}
                                     </span>
                                 </div>
-                                <dl className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                <dl className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3 text-xs">
                                     <div><dt className="text-fg-muted">Basis</dt><dd className="font-bold text-fg">{money(l.basis_amount)}</dd></div>
                                     <div><dt className="text-fg-muted">Rate</dt><dd className="font-bold text-fg">{l.percent === null ? '—' : `${l.percent}%`}</dd></div>
                                     <div><dt className="text-fg-muted">Amount</dt><dd className="font-bold text-fg" data-testid={`commission-amount-${l.id}`}>{money(l.amount)}</dd></div>
@@ -184,7 +184,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                 {l.override_reason && <p className="text-xs text-fg-subtle">Overridden: {l.override_reason}</p>}
 
                                 {act?.kind === 'override' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-2 items-center">
+                                    <div className="grid grid-cols-1 wc-medium:grid-cols-[1fr_2fr_auto] gap-2 items-center">
                                         <input aria-label={`New amount for ${l.name}`} type="number" min={0} className={FIELD_CLS} value={act.amount} onChange={(e) => patchAction({ amount: e.target.value })} />
                                         <input aria-label={`Reason for ${l.name}`} placeholder="Reason (required)" className={FIELD_CLS} value={act.reason} onChange={(e) => patchAction({ reason: e.target.value })} />
                                         <div className="flex gap-1">
@@ -194,7 +194,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                     </div>
                                 )}
                                 {act?.kind === 'transition' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-[2fr_auto] gap-2 items-center">
+                                    <div className="grid grid-cols-1 wc-medium:grid-cols-[2fr_auto] gap-2 items-center">
                                         <input aria-label={`Note for ${l.name}`} placeholder="Note (optional)" className={FIELD_CLS} value={act.note} onChange={(e) => patchAction({ note: e.target.value })} />
                                         <div className="flex gap-1">
                                             <button type="button" className={BTN_PRIMARY} disabled={busy} onClick={() => void confirmTransition(l, act)}>

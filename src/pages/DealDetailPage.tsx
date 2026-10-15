@@ -556,12 +556,12 @@ const DealDetailPage = () => {
                     <div data-testid="deal-detail-skeleton-lifecycle" className="bg-surface border border-line rounded-nb-lg p-6 h-28" />
 
                     {/* Two-column grid region */}
-                    <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-8">
+                    <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
+                        <div className="lg:col-span-8 space-y-nb-3">
                             <div className="bg-surface border border-line rounded-nb-lg h-40" />
                             <div data-testid="deal-detail-skeleton-tabs" className="bg-surface border border-line rounded-nb-lg h-96" />
                         </div>
-                        <div className="space-y-8">
+                        <div className="lg:col-span-4 space-y-nb-3">
                             <div className="bg-surface border border-line rounded-nb-lg h-64" />
                         </div>
                     </div>
@@ -617,7 +617,7 @@ const DealDetailPage = () => {
                                     <div
                                         role="listbox"
                                         data-testid="deal-stage-list"
-                                        className="absolute z-50 top-full left-0 mt-1 min-w-[160px] bg-surface border border-line rounded-nb shadow-xl overflow-hidden"
+                                        className="absolute z-menu top-full left-0 mt-1 min-w-40 bg-surface border border-line rounded-nb shadow-xl overflow-hidden"
                                     >
                                         {dealStages.map(s => {
                                             const isCurrent = s.id === (deal.stage_id || deal.stage);
@@ -1198,13 +1198,13 @@ const DealDetailPage = () => {
                                             }} />
                                         </label>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-4">
                                         {(deal.documents || []).map(doc => (
                                             <div key={doc.id} className="flex items-center justify-between p-4 bg-bg border border-line rounded-nb-lg group hover:border-line">
                                                 <div className="flex items-center gap-3">
                                                     <div className="bg-surface-raised p-2 rounded-lg text-info"><FileIcon size={20} /></div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-fg truncate max-w-[150px]">{doc.name}</p>
+                                                        <p className="text-sm font-bold text-fg truncate max-w-36">{doc.name}</p>
                                                         <p className="text-xs font-semibold text-fg-muted">{(doc.size / 1024).toFixed(1)} KB</p>
                                                     </div>
                                                 </div>
@@ -1237,7 +1237,7 @@ const DealDetailPage = () => {
 
                             {/* CUSTOM FIELDS TAB */}
                             {activeTab === 'custom' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     {customFieldDefs.length === 0 ? (
                                         <p className="text-fg-muted italic text-sm col-span-2">No additional fields configured in Deals settings.</p>
                                     ) : (
@@ -1292,7 +1292,7 @@ const DealDetailPage = () => {
 
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-dialog flex items-center justify-center p-4">
                     <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <div className="p-6 border-b border-line flex items-center justify-between bg-surface-sunken">
                             <h3 className="text-fg font-semibold text-xs flex items-center gap-2">
@@ -1310,7 +1310,7 @@ const DealDetailPage = () => {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-info transition-colors">Create New Project</h4>
-                                        <p className="text-fg-muted text-xs leading-relaxed max-w-[200px]">
+                                        <p className="text-fg-muted text-xs leading-relaxed max-w-48">
                                             Open the Projects module with deal info pre-filled to create and configure a new project.
                                         </p>
                                     </div>
@@ -1425,7 +1425,7 @@ const DealDetailPage = () => {
 
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-sm">
+                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-sm">
                     <div className="bg-surface border border-line rounded-nb-lg shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
                         <h2 className="text-xl font-bold text-fg mb-2">Delete Deal</h2>
                         <p className="text-fg-subtle mb-6">

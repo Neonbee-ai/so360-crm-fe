@@ -141,7 +141,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
   const quoteTotal = Number(quote.total_amount || quote.grand_total || 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-surface border border-line rounded-nb-lg shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-line">
@@ -176,7 +176,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-fg-subtle">Customer:</span>
-              <span className="font-medium text-fg truncate max-w-[260px]">
+              <span className="font-medium text-fg truncate max-w-64">
                 {quote.customer_name || quote.deal?.company_name || 'Customer'}
               </span>
             </div>
@@ -237,7 +237,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
 
             {/* Candidate Dropdown */}
             {dropdownOpen && (
-              <div className="bg-bg border border-line rounded-lg shadow-xl max-h-52 overflow-y-auto z-20 mt-1 divide-y divide-line">
+              <div className="bg-bg border border-line rounded-lg shadow-xl max-h-52 overflow-y-auto z-menu mt-1 divide-y divide-line">
                 {isLoading ? (
                   <div className="p-4 flex items-center justify-center gap-2 text-fg-subtle text-sm">
                     <Loader2 className="w-4 h-4 animate-spin text-warning" />
@@ -319,7 +319,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
             type="button"
             onClick={handleSend}
             disabled={isSubmitting || selectedApprovers.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-warning text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-warning text-primary-fg rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {isSubmitting ? (
               <>

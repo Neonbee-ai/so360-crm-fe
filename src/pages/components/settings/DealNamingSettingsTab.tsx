@@ -117,7 +117,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </p>
                 )}
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3">
                     <div>
                         <label className="text-xs font-semibold text-fg-muted mb-2 block">Prefix</label>
                         <input className={FIELD_CLS} value={config.prefix} onChange={e => setConfig(prev => ({ ...prev, prefix: e.target.value }))} placeholder="DEAL" />
@@ -164,7 +164,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
 
                 <div className="border-t border-line pt-nb-4">
                     <h4 className="text-xs font-semibold text-fg-muted mb-3">Running Number</h4>
-                    <div className="grid grid-cols-3 gap-4 items-end">
+                    <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-3 items-end">
                         <div>
                             <label className="text-xs font-semibold text-fg-muted mb-2 block">Reset Mode</label>
                             <select

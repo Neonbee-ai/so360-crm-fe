@@ -152,9 +152,9 @@ export const TASK_PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
 
 export const TASK_PRIORITY_STYLES: Record<TaskPriority, string> = {
     LOW: 'bg-surface-high text-fg-subtle',
-    MEDIUM: 'bg-sky-500/15 text-sky-400',
-    HIGH: 'bg-amber-500/15 text-warning',
-    CRITICAL: 'bg-rose-500/15 text-danger',
+    MEDIUM: 'bg-info/15 text-info',
+    HIGH: 'bg-warning/15 text-warning',
+    CRITICAL: 'bg-danger/15 text-danger',
 };
 
 export interface Task {

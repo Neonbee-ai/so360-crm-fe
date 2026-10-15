@@ -29,7 +29,7 @@ interface Props {
 
 const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, onMove, onReset, onClose, labels = SECTION_LABELS, title = 'Layout Settings' }) => {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+        <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay backdrop-blur-sm" onClick={onClose}>
             <div role="dialog" aria-label={title} className="bg-bg border border-line rounded-nb-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-line">
                     <p className="text-xs font-medium text-fg">{title}</p>

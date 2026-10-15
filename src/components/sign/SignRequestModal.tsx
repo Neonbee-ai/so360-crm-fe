@@ -95,7 +95,7 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
     const busy = phase === 'loading' || phase === 'sending';
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-[600] flex items-center justify-center p-4"
+        <div className="fixed inset-0 bg-overlay z-dialog flex items-center justify-center p-4"
             onClick={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
             <div className="bg-surface-raised rounded-lg w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
                 <header className="flex items-center justify-between px-5 py-4 border-b">
@@ -157,7 +157,7 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
                     <button type="button" onClick={onClose} disabled={busy}
                         className="px-3 py-2 text-sm text-fg-muted hover:text-fg">Cancel</button>
                     <button type="button" onClick={handleSend} disabled={busy || !valid}
-                        className="flex items-center gap-2 bg-primary hover:bg-primary-hover disabled:bg-line-strong text-white rounded-md px-4 py-2 text-sm font-medium">
+                        className="flex items-center gap-2 bg-primary hover:bg-primary-hover disabled:bg-line-strong text-primary-fg rounded-md px-4 py-2 text-sm font-medium">
                         {phase === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
                         {phase === 'done' ? 'Sent ✓' : phase === 'sending' ? 'Sending…' : 'Send for signature'}
                     </button>

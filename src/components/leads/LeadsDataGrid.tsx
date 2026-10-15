@@ -291,7 +291,7 @@ const COL_DEFS: ColDef[] = [
             <select
               value={lead.owner?.id || ''}
               onChange={(e) => ctx.onOwnerChange(lead, e.target.value)}
-              className="bg-transparent text-fg-subtle text-sm focus:outline-none cursor-pointer hover:text-fg transition-colors truncate max-w-[100px]"
+              className="bg-transparent text-fg-subtle text-sm focus:outline-none cursor-pointer hover:text-fg transition-colors truncate max-w-24"
             >
               {ctx.users.map((u) => (
                 <option key={u.id} value={u.id} className="bg-surface text-fg-subtle">
@@ -605,7 +605,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay backdrop-blur-sm">
       <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-line">
           <div className="flex items-center gap-2">
@@ -739,7 +739,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
   }, [openMenu]);
 
   return (
-    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-2xl shadow-black/40">
+    <div data-testid="bulk-actions-bar" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-menu flex items-center gap-3 px-5 py-3 bg-surface-raised border border-line rounded-2xl shadow-2xl shadow-black/40">
       <span className="text-sm text-fg font-semibold">{count} selected</span>
       <div className="w-px h-5 bg-surface-high" />
       {actions.map((action) => {
@@ -764,7 +764,7 @@ function BulkActionsBar({ count, actions, selectedIds, onClear }: BulkActionsBar
             {hasMenu && openMenu === action.label && (
               <div
                 data-testid={`bulk-menu-${action.label}`}
-                className="absolute bottom-full mb-2 left-0 z-50 bg-surface border border-line rounded-xl shadow-xl py-1 min-w-[180px] max-h-64 overflow-y-auto"
+                className="absolute bottom-full mb-2 left-0 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-44 max-h-64 overflow-y-auto"
               >
                 {action.options!.map((opt) => (
                   <button
@@ -830,7 +830,7 @@ function ContextMenu({ lead, x, y, canDelete, onOpen, onDelete, onClose, onNavig
   return (
     <div
       ref={ref}
-      className="fixed z-[800] bg-surface border border-line rounded-xl shadow-2xl py-1.5 min-w-[180px]"
+      className="fixed z-menu bg-surface border border-line rounded-xl shadow-2xl py-1.5 min-w-44"
       style={{ left: Math.min(x, window.innerWidth - 200), top: Math.min(y, window.innerHeight - 300) }}
     >
       {menuItems.map((item) => (
@@ -1343,7 +1343,7 @@ export function LeadsDataGrid({
             {showGroupMenu && (
               <div
                 data-testid="group-by-menu"
-                className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl py-1 min-w-[160px]"
+                className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-40"
               >
                 {GROUP_BY_OPTIONS.map((o) => (
                   <button
@@ -1372,7 +1372,7 @@ export function LeadsDataGrid({
               <span className="capitalize">{density}</span>
             </button>
             {showDensityMenu && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 bg-surface border border-line rounded-xl shadow-xl py-1 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1.5 z-menu bg-surface border border-line rounded-xl shadow-xl py-1 min-w-36">
                 {(['compact', 'comfortable', 'spacious'] as GridDensity[]).map((d) => (
                   <button
                     key={d}

@@ -345,7 +345,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 items-end">
                 <div>
                     <label htmlFor="assignment-rule-method" className={LABEL_CLS}>Method</label>
                     <select
@@ -367,7 +367,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3 items-end">
                 <div>
                     <label htmlFor="assignment-rule-reassign" className={LABEL_CLS}>Reassign if not contacted within (minutes)</label>
                     <input
@@ -472,7 +472,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             <Card title="Test a lead">
               <div className="space-y-4">
                 <p className="text-xs text-fg-muted">See who a lead would go to. nothing is saved.</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-3">
                     {CONDITION_FIELDS.map((f) => (
                         <div key={f.value}>
                             <label htmlFor={`assignment-test-${f.value}`} className={LABEL_CLS}>{f.label}</label>

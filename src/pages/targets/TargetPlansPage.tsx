@@ -509,11 +509,11 @@ export default function TargetPlansPage() {
                     <thead>
                       <tr className="border-b border-line bg-surface-high text-fg-subtle font-semibold text-xs">
                         <th className="py-2.5 px-3 w-10 text-center">#</th>
-                        <th className="py-2.5 px-3 min-w-[200px]">Metric</th>
+                        <th className="py-2.5 px-3 min-w-48">Metric</th>
                         <th className="py-2.5 px-3 w-28">Unit</th>
                         <th className="py-2.5 px-3 w-32 text-right">Target Value</th>
                         <th className="py-2.5 px-3 w-32 text-right">Weight (%)</th>
-                        <th className="py-2.5 px-3 min-w-[170px]">Channel / Dimension</th>
+                        <th className="py-2.5 px-3 min-w-40">Channel / Dimension</th>
                         <th className="py-2.5 px-3 w-16 text-center">Ramp</th>
                         <th className="py-2.5 px-3 w-20 text-right">Actions</th>
                       </tr>
@@ -819,7 +819,7 @@ export default function TargetPlansPage() {
               <label className="block text-xs font-medium text-fg-subtle mb-1">
                 Metric Type / Kind
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-2">
                 {[
                   { value: 'COUNT', label: 'Count', desc: 'Number of occurrences' },
                   { value: 'SUM', label: 'Sum / Value', desc: 'Financial or numeric total' },

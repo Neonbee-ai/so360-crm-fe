@@ -234,7 +234,7 @@ const DashboardPage = () => {
                         {isCommerceLoading && <Loader2 size={12} className="animate-spin text-fg-muted ml-auto" />}
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 wc-medium:grid-cols-3 lg:grid-cols-5 gap-nb-3">
                         {/* 1. Ecommerce Revenue */}
                         <div className="border-l border-line pl-4">
                             <div className="relative">
@@ -321,7 +321,7 @@ const DashboardPage = () => {
 
                             <div className="h-48 flex items-end justify-between gap-2 px-4 relative">
                                 {/* Grid lines */}
-                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40 z-0">
+                                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40">
                                     <div className="w-full h-px bg-fg-muted/40 border-t border-dashed border-line" />
                                     <div className="w-full h-px bg-fg-muted/40 border-t border-dashed border-line" />
                                     <div className="w-full h-px bg-fg-muted/40 border-t border-dashed border-line" />
@@ -331,7 +331,7 @@ const DashboardPage = () => {
                                 {commerceKPIs.orderChartData.values.map((val: number, idx: number) => {
                                     const heightPct = Math.max((val / maxOrders) * 100, 4);
                                     return (
-                                        <div key={idx} className="flex-1 flex flex-col justify-end group relative z-10 h-full">
+                                        <div key={idx} className="flex-1 flex flex-col justify-end group relative h-full">
                                             <div
                                                 className="w-full bg-info/20 border-t-2 border-info rounded-t-sm hover:bg-info/40 transition-all relative group-hover:"
                                                 style={{ height: `${heightPct}%` }}
@@ -437,7 +437,7 @@ const DashboardPage = () => {
 
                     <div className="h-64 flex items-end justify-between gap-2 px-4 relative">
                         {/* Grid lines */}
-                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 z-0">
+                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
                             <div className="w-full h-px bg-line border-t border-dashed" />
                             <div className="w-full h-px bg-line border-t border-dashed" />
                             <div className="w-full h-px bg-line border-t border-dashed" />
@@ -448,7 +448,7 @@ const DashboardPage = () => {
                             const heightPercentage = Math.max((val / maxRevenue) * 100, 4);
 
                             return (
-                                <div key={idx} className="flex-1 flex flex-col justify-end group relative z-10 h-full">
+                                <div key={idx} className="flex-1 flex flex-col justify-end group relative h-full">
                                     <div
                                         className="w-full bg-primary/20 border-t-2 border-primary rounded-t-sm hover:bg-primary/40 transition-all relative group-hover:"
                                         style={{ height: `${heightPercentage}%` }}
@@ -520,14 +520,14 @@ const DashboardPage = () => {
                 to say without reps, so it stays hidden rather than reserving a
                 full-width band of empty cards. */}
             {showPipeline && teamStats.length > 0 && <Card title="Performance Analytics" className="relative overflow-hidden">
-                <div className="relative z-10">
+                <div className="relative">
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <p className="text-xs text-fg-muted font-bold mt-1">Activity vs. Conversion Efficiency</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-5">
                         {teamStats.slice(0, 4).map((stat: any) => (
                             <div key={stat.user.id} className="border-t border-line pt-4 hover:border-line transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
@@ -568,7 +568,7 @@ const DashboardPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 mt-6">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-2 mt-6">
                                     <div className="bg-fg-muted/10 p-2 rounded-lg text-center">
                                         <div className="text-xs font-semibold text-fg-muted mb-0.5">Won</div>
                                         <div className="text-sm font-semibold text-fg">{stat.dealCount}</div>

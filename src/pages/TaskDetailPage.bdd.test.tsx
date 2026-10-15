@@ -196,8 +196,7 @@ describe('TaskDetailPage', () => {
       await waitFor(() => expect(screen.getByText('Follow up with client')).toBeInTheDocument());
       fireEvent.click(screen.getByRole('button', { name: 'Delete Task' }));
       await waitFor(() => expect(screen.getByText(/cannot be undone/)).toBeInTheDocument());
-      const deleteConfirmBtn = screen.getAllByText('Delete').find(el => el.closest('button')?.className.includes('bg-danger'));
-      fireEvent.click(deleteConfirmBtn!);
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('task-1'));
       expect(mockNavigate).toHaveBeenCalledWith('/crm/tasks');
     });

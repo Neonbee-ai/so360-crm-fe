@@ -148,14 +148,14 @@ describe('TaskModal', () => {
   // ── Desktop layout: overlay must stack above the shell NavBar ──────────────
   // Regression: the New Task modal was clipped under the global header because
   // its overlay sat at z-50, below the sticky shell NavBar (.glass-nav, z-500).
-  // The overlay must paint on top of the header — z-[600] — and stay centered.
+  // The overlay must paint on top of the header — z-dialog — and stay centered.
   describe('Given a desktop viewport (overlay stacking)', () => {
-    it('When rendered / Then the overlay paints above the NavBar (z-[600], not z-50)', async () => {
+    it('When rendered / Then the overlay paints above the NavBar (z-dialog, not z-50)', async () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => expect(screen.getByText('New Task')).toBeInTheDocument());
       const overlay = document.querySelector('div.fixed.inset-0') as HTMLElement;
       expect(overlay).toBeTruthy();
-      expect(overlay.className).toContain('z-[600]');
+      expect(overlay.className).toContain('z-dialog');
       expect(overlay.className).not.toContain('z-50');
     });
 

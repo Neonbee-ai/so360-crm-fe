@@ -224,7 +224,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-dialog flex items-center justify-center p-4">
             <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0">
                     <h2 className="text-xl font-semibold text-fg flex items-center gap-2">
@@ -298,7 +298,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" size={16} />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-fg-muted">Start Date</label>
                                 <div className="relative">
@@ -435,7 +435,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <Link2 size={12} />
                                     Associate With
                                 </label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                                     <div className="relative">
                                         <select
                                             value={associateType}
@@ -506,7 +506,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`px-8 py-3 text-white rounded-nb-lg text-xs font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-primary/20' : 'bg-success hover:bg-success/90 shadow-success/20'}`}
+                            className={`px-8 py-3 text-primary-fg rounded-nb-lg text-xs font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-primary/20' : 'bg-success hover:bg-success/90 shadow-success/20'}`}
                         >
                             {isSubmitting && <Loader2 size={12} className="animate-spin" />}
                             {isEditing ? 'Save Changes' : 'Create Task'}

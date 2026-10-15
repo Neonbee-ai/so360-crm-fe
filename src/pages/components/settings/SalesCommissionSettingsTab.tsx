@@ -130,7 +130,7 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
             {commissionsOn && (
                 <Card title="Commission">
                   <div className={CARD_BODY_CLS}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                         <div>
                             <label htmlFor="sales-earn-trigger" className={LABEL_CLS}>Commission is earned</label>
                             <select

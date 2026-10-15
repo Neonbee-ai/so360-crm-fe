@@ -97,17 +97,13 @@ const MarketingOverviewPage: React.FC = () => {
     <DashboardPageTemplate
       title="CRM Marketing Overview"
       description="DailyStore marketing and customer intelligence in CRM."
-      filters={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
+      toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
       kpis={data ? kpis.map((kpi) => (
         <KpiCard
           key={kpi.label}
           label={kpi.label}
-          value={kpi.hint ? (
-            <>
-              {kpi.value}
-              <span className="block text-xs font-normal text-fg-muted mt-1">{kpi.hint}</span>
-            </>
-          ) : kpi.value}
+          value={kpi.value}
+          hint={kpi.hint}
         />
       )) : undefined}
     >

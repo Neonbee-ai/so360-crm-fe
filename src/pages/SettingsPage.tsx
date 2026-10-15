@@ -1216,7 +1216,7 @@ function ScoringRuleForm({
             </div>
 
             {/* Row 2: Type + Target + Condition + Value */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-3">
                 <div>
                     <label className={labelCls}>Rule Type</label>
                     <select

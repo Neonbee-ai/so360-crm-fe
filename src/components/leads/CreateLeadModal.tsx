@@ -269,7 +269,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
 
     return (
         isOpen ? (
-        <div className="fixed inset-0 z-[600] overflow-y-auto bg-bg" data-testid="create-lead-form-page">
+        <div className="fixed inset-0 z-dialog overflow-y-auto bg-bg" data-testid="create-lead-form-page">
             <form onSubmit={handleSubmit}>
                 <FormPageTemplate
                     title="Create New Lead"
