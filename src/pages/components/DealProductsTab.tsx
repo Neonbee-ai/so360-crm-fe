@@ -137,7 +137,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                         ) : (
                             <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
                                 {leadProducts.map(lp => (
-                                    <div key={lp.id} className="flex items-center gap-3 p-3 bg-surface-raised border border-line rounded-nb-lg hover:border-info/50 transition-all">
+                                    <div key={lp.id} className="flex items-center gap-3 p-3 bg-surface border border-line rounded-nb-lg hover:border-info/50 transition-all">
                                         <Checkbox
                                             name={`lead-product-${lp.id}`}
                                             label={lp.item_name}
@@ -206,7 +206,7 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                             </>
                         ) : (
                             <div className="space-y-4">
-                                <div className="p-4 bg-surface-raised border border-line rounded-nb-lg">
+                                <div className="p-4 bg-surface border border-line rounded-nb-lg">
                                     <p className="text-xs font-bold text-fg">{selected.name}</p>
                                     {selected.sku && <p className="text-xs text-fg-muted font-bold mt-0.5">SKU: {selected.sku}</p>}
                                     <Button variant="secondary" size="sm" type="button" onClick={() => setSelected(null)}>← Change</Button>

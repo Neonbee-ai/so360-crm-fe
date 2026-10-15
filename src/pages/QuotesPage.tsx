@@ -913,7 +913,7 @@ const QuotesPage = () => {
 
                     {/* Table View */}
                     {paginatedQuotes.length === 0 ? (
-                        <div className="text-center py-16 bg-surface-sunken border border-line rounded-lg">
+                        <div className="text-center py-16 bg-surface border border-line rounded-lg">
                             <FileText className="w-12 h-12 mx-auto text-fg-muted mb-4" />
                             <h3 className="text-lg font-medium text-fg-subtle mb-2">No quotes found</h3>
                             <p className="text-fg-subtle mb-4 text-sm">
@@ -961,7 +961,7 @@ const QuotesPage = () => {
                 <div className="space-y-4">
                     {/* Approvals Table */}
                     {filteredApprovals.length === 0 ? (
-                        <div className="text-center py-16 bg-surface-sunken border border-line rounded-lg">
+                        <div className="text-center py-16 bg-surface border border-line rounded-lg">
                             <CheckCircle className="w-12 h-12 mx-auto text-fg-muted mb-4" />
                             <h3 className="text-lg font-medium text-fg-subtle mb-2">No approval requests found</h3>
                             <p className="text-fg-subtle text-sm">

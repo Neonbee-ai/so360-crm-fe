@@ -218,7 +218,7 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                     </>
                 ) : (
                     <div className="space-y-4">
-                        <div className="p-4 bg-surface-raised border border-line rounded-nb">
+                        <div className="p-4 bg-surface border border-line rounded-nb">
                             <p className="text-xs font-medium text-fg">{selected.name}</p>
                             {selected.sku && <p className="text-xs text-fg-muted font-medium mt-0.5">SKU: {selected.sku}</p>}
                             <Button variant="secondary" size="sm" type="button" onClick={() => setSelected(null)}>← Change Product</Button>

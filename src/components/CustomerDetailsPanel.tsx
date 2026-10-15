@@ -383,7 +383,7 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="bg-surface-sunken border border-line rounded-nb p-5 space-y-5">
+        <div className="bg-surface border border-line rounded-nb p-5 space-y-5">
             <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
                 <Building2 size={16} className="text-success" />
                 Customer Details

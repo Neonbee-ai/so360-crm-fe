@@ -1279,7 +1279,7 @@ const DealDetailPage = () => {
                 >
                     <div className="flex flex-col gap-nb-4">
                         {/* CREATE OPTION */}
-                        <div className="bg-surface-sunken border border-line rounded-nb-lg p-nb-4 hover:border-info/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
+                        <div className="bg-surface border border-line rounded-nb-lg p-nb-4 hover:border-info/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
                             <div className="flex items-start justify-between gap-nb-3">
                                 <div className="min-w-0">
                                     <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-info transition-colors">Create New Project</h4>

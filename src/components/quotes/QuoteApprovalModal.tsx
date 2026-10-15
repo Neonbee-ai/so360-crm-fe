@@ -190,7 +190,7 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
           )}
 
           {/* Quote summary card */}
-          <div className="bg-surface-high border border-line rounded-lg p-4 space-y-2">
+          <div className="bg-surface-sunken border border-line rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-fg-subtle">Quote:</span>
               <span className="font-semibold text-fg">

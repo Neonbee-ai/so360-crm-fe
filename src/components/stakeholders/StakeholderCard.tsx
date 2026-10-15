@@ -29,7 +29,7 @@ interface Props {
 
 const StakeholderCard: React.FC<Props> = ({ stakeholder, onEdit, onDelete, onOpenQuickActions }) => {
     return (
-        <div className="bg-surface-sunken border border-line rounded-nb p-4 hover:border-line transition-all group">
+        <div className="bg-surface border border-line rounded-nb p-4 hover:border-line transition-all group">
             <div className="flex items-start justify-between gap-2">
                 <Button variant="secondary" size="sm" className="text-left w-full h-auto justify-start" onClick={() => onOpenQuickActions(stakeholder)}>
                     <div className="size-9 rounded-full bg-surface-raised flex items-center justify-center text-xs font-medium text-fg-subtle shrink-0">

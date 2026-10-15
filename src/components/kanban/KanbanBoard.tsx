@@ -195,7 +195,7 @@ export const KanbanBoard = ({ deals, stages, onDealClick, onStageChange }: Kanba
                                     onDragStart={(e) => handleDragStart(e, deal)}
                                     onDragEnd={handleDragEnd}
                                     onClick={() => onDealClick(deal)}
-                                    className={`bg-surface-raised border-2 p-4 rounded-xl shadow-md transition-all cursor-grab active:cursor-grabbing group ${draggedDealId === deal.id
+                                    className={`bg-surface border-2 p-4 rounded-xl shadow-md transition-all cursor-grab active:cursor-grabbing group ${draggedDealId === deal.id
                                         ? 'border-primary/50 scale-95'
                                         : 'border-line hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20'
                                         }`}

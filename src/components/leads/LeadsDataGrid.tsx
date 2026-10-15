@@ -1243,7 +1243,7 @@ export function LeadsDataGrid({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-line bg-surface-sunken overflow-hidden">
+      <div className="rounded-xl border border-line bg-surface overflow-hidden">
         <div className="flex items-center gap-4 px-4 py-3 border-b border-line bg-surface-sunken">
           <div className="h-4 w-24 bg-line rounded animate-pulse" />
           <div className="h-4 w-32 bg-line rounded animate-pulse" />

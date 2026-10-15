@@ -8,7 +8,7 @@ interface Props {
 
 const TimelineSummaryBanner: React.FC<Props> = ({ summary }) => {
     return (
-        <div className="bg-surface-sunken border border-line rounded-nb p-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="bg-surface border border-line rounded-nb p-4 flex flex-wrap items-center gap-x-6 gap-y-2">
             <CustomerHealthBadge status={summary.health_status} />
 
             {summary.last_interaction_at && (
