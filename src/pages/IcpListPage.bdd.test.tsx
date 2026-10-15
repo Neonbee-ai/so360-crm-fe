@@ -15,7 +15,7 @@ vi.mock('@so360/shell-context', () => ({ useShellBridge: () => shell.value }));
 vi.mock('@so360/design-system', async () => await import('../test/icpDsMock'));
 
 import IcpListPage from './IcpListPage';
-import { confirmResult, toast } from '../test/icpDsMock';
+import { toast } from '../test/icpDsMock';
 
 const icps = [
   { id: 'i1', name: 'Enterprise CTOs', is_default: true, auto_segment_id: 's1', auto_segment_min_score: 80,
@@ -26,7 +26,6 @@ const icps = [
 beforeEach(() => {
   vi.clearAllMocks();
   shell.value = { hasPermission: () => true };
-  confirmResult.value = true;
   svc.list.mockResolvedValue(icps);
   svc.segments.mockResolvedValue([{ id: 's1', name: 'Hot LinkedIn leads' }]);
   svc.archive.mockResolvedValue({});
@@ -99,6 +98,7 @@ describe('Given the ideal customer profiles list', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
       fireEvent.click(screen.getAllByText('Archive')[0]);
+      fireEvent.click(screen.getByTestId('confirm-yes'));
       await waitFor(() => expect(svc.archive).toHaveBeenCalledWith('i1'));
       await waitFor(() => expect(svc.list).toHaveBeenCalledTimes(2));
     });
@@ -106,10 +106,10 @@ describe('Given the ideal customer profiles list', () => {
 
   describe('When Archive is declined', () => {
     it('Then nothing is archived', async () => {
-      confirmResult.value = false;
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
       fireEvent.click(screen.getAllByText('Archive')[0]);
+      fireEvent.click(screen.getByTestId('confirm-no'));
       await new Promise((r) => setTimeout(r, 10));
       expect(svc.archive).not.toHaveBeenCalled();
     });
@@ -121,6 +121,7 @@ describe('Given the ideal customer profiles list', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
       fireEvent.click(screen.getAllByText('Archive')[0]);
+      fireEvent.click(screen.getByTestId('confirm-yes'));
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith('nope'));
     });
   });
@@ -258,6 +259,7 @@ describe('Given set-default and archive outcomes', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
       fireEvent.click(screen.getAllByText('Archive')[1]);
+      fireEvent.click(screen.getByTestId('confirm-yes'));
       await waitFor(() => expect(svc.archive).toHaveBeenCalledWith('i2'));
       expect(toast.success).toHaveBeenCalledWith('Profile archived');
     });
@@ -268,6 +270,7 @@ describe('Given set-default and archive outcomes', () => {
       render(<IcpListPage />);
       await screen.findByTestId('icp-row-i1');
       fireEvent.click(screen.getAllByText('Archive')[0]);
+      fireEvent.click(screen.getByTestId('confirm-yes'));
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Could not archive profile'));
       expect(svc.list).toHaveBeenCalledTimes(1);
     });
