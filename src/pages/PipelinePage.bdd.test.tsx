@@ -74,13 +74,19 @@ vi.mock('../components/kanban/StageTransitionModal', () => ({
 }));
 
 vi.mock('./components/DealFilters', () => ({
-  DealFilters: ({ filters, onChange }: any) => (
-    <div data-testid="deal-filters">
-      <button data-testid="apply-owner-filter" onClick={() => onChange({ owner_id: 'u1' })}>
-        Filter by owner
-      </button>
-    </div>
-  ),
+  useDealFilterConfig: (_filters: any, onChange: (f: any) => void) => ({
+    fields: [{
+      key: 'deal-filters', label: 'Deals', type: 'custom', quick: true,
+      render: () => (
+        <div data-testid="deal-filters">
+          <button data-testid="apply-owner-filter" onClick={() => onChange({ owner_id: 'u1' })}>
+            Filter by owner
+          </button>
+        </div>
+      ),
+    }],
+    values: {}, onChange: () => undefined, onClear: () => undefined,
+  }),
 }));
 
 import PipelinePage from './PipelinePage';

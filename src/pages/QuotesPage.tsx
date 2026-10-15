@@ -803,6 +803,20 @@ const QuotesPage = () => {
         },
         onClear: resetFilters,
     };
+    const approvalsFilterConfig: ListFilterConfig = {
+        fields: [
+            {
+                key: 'status', label: 'Status', type: 'select', quick: true,
+                options: (['pending', 'approved', 'rejected'] as const).map((id) => ({
+                    value: id,
+                    label: `${id.charAt(0).toUpperCase()}${id.slice(1)} (${approvals.filter((a) => a.approver_status === id).length})`,
+                })),
+            },
+        ],
+        values: (approvalsStatusFilter !== 'all' ? { status: approvalsStatusFilter } : {}) as FilterValues,
+        onChange: (next: FilterValues) => setApprovalsStatusFilter(((next.status as string) || 'all') as 'all' | 'pending' | 'approved' | 'rejected'),
+        onClear: () => { setApprovalsStatusFilter('all'); setApprovalsSearchTerm(''); },
+    };
     const bulkNode = selectedQuoteIds.length > 0 ? (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/30 rounded-lg text-xs animate-in fade-in">
                                 <span className="font-semibold text-primary">
@@ -960,8 +974,10 @@ const QuotesPage = () => {
             filters={viewTabsNode}
             search={activeTab === 'all' ? (
                 <SearchInput placeholder="Search quotes..." value={searchTerm} onChange={setSearchTerm} />
-            ) : undefined}
-            filterConfig={activeTab === 'all' ? filterConfig : undefined}
+            ) : (
+                <SearchInput name="approvals-search" placeholder="Search approvals..." value={approvalsSearchTerm} onChange={setApprovalsSearchTerm} />
+            )}
+            filterConfig={activeTab === 'all' ? filterConfig : approvalsFilterConfig}
             toolbarEnd={activeTab === 'all' ? bulkNode : undefined}
             pagination={activeTab === 'all' && paginatedQuotes.length > 0 && effectiveQuotes.length > 0 ? (
                 <Pagination
@@ -1040,47 +1056,6 @@ const QuotesPage = () => {
 
             {activeTab === 'approvals' && (
                 <div className="space-y-4">
-                    {/* Approvals Filters & Search */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-line">
-                            {[
-                                { id: 'pending', label: 'Pending', count: approvals.filter(a => a.approver_status === 'pending').length },
-                                { id: 'approved', label: 'Approved', count: approvals.filter(a => a.approver_status === 'approved').length },
-                                { id: 'rejected', label: 'Rejected', count: approvals.filter(a => a.approver_status === 'rejected').length },
-                                { id: 'all', label: 'All', count: approvals.length },
-                            ].map((subtab) => (
-                                <button
-                                    key={subtab.id}
-                                    onClick={() => setApprovalsStatusFilter(subtab.id as any)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                                        approvalsStatusFilter === subtab.id
-                                            ? 'bg-primary text-primary-fg shadow-sm'
-                                            : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
-                                    }`}
-                                >
-                                    <span>{subtab.label}</span>
-                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                                        approvalsStatusFilter === subtab.id
-                                            ? 'bg-primary-hover text-primary'
-                                            : 'bg-surface-raised text-fg-subtle'
-                                    }`}>
-                                        {subtab.count}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="relative w-full sm:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
-                            <SearchInput
-                                name="approvals-search"
-                                placeholder="Search approvals..."
-                                value={approvalsSearchTerm}
-                                onChange={(v) => setApprovalsSearchTerm(v)}
-                            />
-                        </div>
-                    </div>
-
                     {/* Approvals Table */}
                     {filteredApprovals.length === 0 ? (
                         <div className="text-center py-16 bg-surface-sunken border border-line rounded-lg">

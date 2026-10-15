@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, SlidersHorizontal, List, Loader2, Users } from 'lucide-react';
+import { Plus, SlidersHorizontal, List, Loader2, Users } from 'lucide-react';
 import { stakeholderApi } from '../../services/crmService';
 import { Stakeholder, Deal } from '../../types/crm';
 import StakeholderCard from './StakeholderCard';
@@ -8,7 +8,7 @@ import StakeholderHierarchyTree from './StakeholderHierarchyTree';
 import StakeholderQuickActions from './StakeholderQuickActions';
 import StakeholderActivitySummary from './StakeholderActivitySummary';
 import StakeholderDealLinker from './StakeholderDealLinker';
-import { useConfirm, Button, TextField, Select } from '@so360/design-system';
+import { useConfirm, Button, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
 
 interface Props {
     leadId: string;
@@ -57,32 +57,32 @@ const StakeholdersTab: React.FC<Props> = ({ leadId, deals, onSwitchToNotes, onSw
         load();
     };
 
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            {
+                key: 'strength', label: 'Relationship strength', type: 'select', quick: true,
+                options: ['very_strong', 'strong', 'moderate', 'weak', 'no_relationship'].map((st) => ({ value: st, label: st.replace(/_/g, ' ') })),
+            },
+        ],
+        values: (strengthFilter ? { strength: strengthFilter } : {}) as FilterValues,
+        onChange: (next: FilterValues) => setStrengthFilter((next.strength as string) || ''),
+        onClear: () => setStrengthFilter(''),
+    };
+
     return (
         <div className="space-y-4">
             {confirmDialog}
             <div className="flex flex-wrap items-center gap-2">
                 <div className="flex-1 min-w-44">
-                    <TextField
+                    <SearchInput
                         name="stakeholder-search"
                         aria-label="Search stakeholders"
-                        size="sm"
-                        leadingIcon={Search}
                         value={search}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                        onChange={setSearch}
                         placeholder="Search stakeholders…"
                     />
                 </div>
-                <Select
-                    name="stakeholder-strength-filter"
-                    aria-label="Relationship strength"
-                    size="sm"
-                    value={strengthFilter}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStrengthFilter(e.target.value)}
-                    options={[
-                        { value: '', label: 'All Relationship Strengths' },
-                        ...['very_strong', 'strong', 'moderate', 'weak', 'no_relationship'].map((s) => ({ value: s, label: s.replace(/_/g, ' ') })),
-                    ]}
-                />
+                <ListFilters {...filterConfig} />
                 <div className="flex items-center gap-1 bg-surface border border-line rounded-nb p-1">
                     <button onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><List size={14} /></button>
                     <button onClick={() => setView('hierarchy')} className={`p-1.5 rounded ${view === 'hierarchy' ? 'bg-primary text-primary-fg' : 'text-fg-muted'}`}><SlidersHorizontal size={14} /></button>

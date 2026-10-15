@@ -4,7 +4,7 @@ import { useEntityTimeline } from './timeline/useEntityTimeline';
 import TimelineEventCard from './timeline/TimelineEventCard';
 import TimelineSummaryBanner from './timeline/TimelineSummaryBanner';
 import { activitiesApi } from '../../services/crmService';
-import { useConfirm, Button, Drawer, TextField } from '@so360/design-system';
+import { useConfirm, Button, Drawer, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
 
 interface Props {
     isOpen: boolean;
@@ -48,6 +48,28 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
 
     if (!isOpen) return null;
 
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            { key: 'module', label: 'Module', type: 'select', quick: true, options: MODULE_FILTERS.filter((m) => m.key).map((m) => ({ value: m.key, label: m.label })) },
+            {
+                key: 'types', label: 'Interaction type', type: 'multiselect',
+                options: TYPE_FILTERS.map((t) => {
+                    const count = timeline.summary?.type_counts?.[t.key];
+                    return { value: t.key, label: count !== undefined ? `${t.label} (${count})` : t.label };
+                }),
+            },
+        ],
+        values: {
+            ...(timeline.moduleFilter ? { module: timeline.moduleFilter } : {}),
+            ...(timeline.typeFilter.length > 0 ? { types: timeline.typeFilter } : {}),
+        } as FilterValues,
+        onChange: (next: FilterValues) => {
+            timeline.setModuleFilter((next.module as string) || '');
+            timeline.setTypeFilter(Array.isArray(next.types) ? (next.types as string[]) : []);
+        },
+        onClear: () => { timeline.setModuleFilter(''); timeline.setTypeFilter([]); },
+    };
+
     return (
         <>
             {confirmDialog}
@@ -60,75 +82,17 @@ const ActivityHistoryDrawer: React.FC<Props> = ({ isOpen, onClose, entityType, e
                 data-testid="activity-history-drawer"
             >
               <div className="-mx-6 -my-5">
-                {/* Search */}
-                <div className="px-4 py-3 border-b border-line shrink-0">
-                    <TextField
+                {/* Search + Comb filters (module quick; interaction types in the drawer) */}
+                <div className="px-4 py-3 border-b border-line shrink-0 flex flex-col gap-nb-2">
+                    <SearchInput
                         name="activity-search"
                         aria-label="Search activities"
-                        type="text"
-                        size="sm"
-                        leadingIcon={Search}
                         placeholder="Search activities…"
                         value={timeline.search}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => timeline.setSearch(e.target.value)}
+                        onChange={timeline.setSearch}
                     />
-                </div>
-
-                {/* Filters */}
-                <div className="px-4 py-2.5 border-b border-line shrink-0 overflow-x-auto">
-                    <div className="flex gap-1.5 min-w-max">
-                        {MODULE_FILTERS.map(f => (
-                            <button
-                                key={f.key}
-                                onClick={() => timeline.setModuleFilter(f.key)}
-                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
- timeline.moduleFilter === f.key
- ? 'bg-primary text-primary-fg'
- : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
- }`}
-                            >
-                                {f.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* G8 Client 360: interaction-type chips */}
-                <div className="px-4 py-2.5 border-b border-line shrink-0 overflow-x-auto" role="group" aria-label="Filter by interaction type">
-                    <div className="flex gap-1.5 min-w-max">
-                        <button
-                            type="button"
-                            aria-pressed={timeline.typeFilter.length === 0}
-                            onClick={() => timeline.setTypeFilter([])}
-                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
- timeline.typeFilter.length === 0
- ? 'bg-primary text-primary-fg'
- : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
- }`}
-                        >
-                            All types
-                        </button>
-                        {TYPE_FILTERS.map(t => {
-                            const active = timeline.typeFilter.includes(t.key);
-                            const count = timeline.summary?.type_counts?.[t.key];
-                            return (
-                                <button
-                                    key={t.key}
-                                    type="button"
-                                    aria-pressed={active}
-                                    data-testid={`type-chip-${t.key}`}
-                                    onClick={() => timeline.toggleType(t.key)}
-                                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
- active
- ? 'bg-primary text-primary-fg'
- : 'bg-surface-raised text-fg-subtle hover:text-fg hover:bg-line'
- }`}
-                                >
-                                    {t.label}
-                                    {count !== undefined && <span className="ml-1 opacity-70">({count})</span>}
-                                </button>
-                            );
-                        })}
+                    <div className="flex flex-wrap items-center gap-nb-2">
+                        <ListFilters {...filterConfig} />
                     </div>
                 </div>
 

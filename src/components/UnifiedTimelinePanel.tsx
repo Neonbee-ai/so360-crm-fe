@@ -5,7 +5,7 @@ import {
     FileIcon, ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { EmptyState } from '@so360/design-system';
+import { EmptyState, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
 import { Activity, Note, Task, Attachment } from '../types/crm';
 import { useCRMFormatters } from '../utils/formatters';
 import { useConfirm } from '@so360/design-system';
@@ -59,7 +59,6 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
     const [filterType, setFilterType] = useState<'all' | TimelineItemType>('all');
     const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
     const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
-    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
     const [showSortDropdown, setShowSortDropdown] = useState(false);
 
     // Build unified timeline items
@@ -367,6 +366,20 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
         );
     }
 
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            {
+                key: 'type', label: 'Type', type: 'select', quick: true,
+                options: (['activity', 'note', 'task', 'document'] as const).map((t) => ({
+                    value: t, label: t.charAt(0).toUpperCase() + t.slice(1) + 's',
+                })),
+            },
+        ],
+        values: (filterType === 'all' ? {} : { type: filterType }) as FilterValues,
+        onChange: (next: FilterValues) => setFilterType(((next.type as string) || 'all') as 'all' | TimelineItemType),
+        onClear: () => setFilterType('all'),
+    };
+
     const isEmpty = allItems.length === 0;
 
     return (
@@ -374,46 +387,7 @@ const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
             {confirmDialog}
             {/* Controls */}
             <div className="flex items-center gap-4 flex-wrap">
-                {/* Filter Dropdown */}
-                <div className="relative">
-                    <button
-                        onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-line rounded-nb text-xs font-medium text-fg-subtle hover:border-line transition-colors"
-                    >
-                        <span>Filter:</span>
-                        <span className="text-primary">
-                            {filterType === 'all'
-                                ? 'All'
-                                : filterType.charAt(0).toUpperCase() +
-                                  filterType.slice(1)}
-                        </span>
-                        <ChevronDown size={10} />
-                    </button>
-                    {showFilterDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-surface border border-line rounded-nb z-menu min-w-max">
-                            {(['all', 'activity', 'note', 'task', 'document'] as const).map(
-                                (type) => (
-                                    <button
-                                        key={type}
-                                        onClick={() => {
-                                            setFilterType(type);
-                                            setShowFilterDropdown(false);
-                                        }}
-                                        className={`block w-full text-left px-4 py-2 text-xs font-medium transition-colors ${
- filterType === type
- ? 'bg-primary/20 text-primary'
- : 'text-fg-subtle hover:text-fg hover:bg-surface-raised'
- }`}
-                                    >
-                                        {type === 'all'
-                                            ? 'All Items'
-                                            : type.charAt(0).toUpperCase() + type.slice(1) + 's'}
-                                    </button>
-                                )
-                            )}
-                        </div>
-                    )}
-                </div>
+                <ListFilters {...filterConfig} />
 
                 {/* Sort Dropdown */}
                 <div className="relative">

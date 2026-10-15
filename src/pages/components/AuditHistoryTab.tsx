@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Badge, EmptyState, DataTable, TextField, Select, DatePicker } from '@so360/design-system';
-import { Loader2, Download, Search, Filter, ShieldCheck } from 'lucide-react';
+import { Button, Badge, EmptyState, DataTable, SearchInput, ListFilters, type ListFilterConfig, type FilterValues } from '@so360/design-system';
+import { Loader2, Download, Filter, ShieldCheck } from 'lucide-react';
 import { auditTrailApi, AuditTrailEntry, AuditTrailFilters } from '../../services/crmService';
 
 interface Props {
@@ -94,6 +94,34 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
         }
     };
 
+    const filterConfig: ListFilterConfig = {
+        fields: [
+            {
+                key: 'source', label: 'Source', type: 'select', quick: true,
+                options: [
+                    { value: 'manual', label: 'Manual' },
+                    { value: 'api', label: 'API' },
+                    { value: 'workflow', label: 'Workflow' },
+                    { value: 'import', label: 'Import' },
+                    { value: 'ai', label: 'AI' },
+                    { value: 'scheduled_job', label: 'Scheduled Job' },
+                ],
+            },
+            { key: 'range', label: 'Date range', type: 'daterange' },
+        ],
+        values: {
+            ...(sourceFilter ? { source: sourceFilter } : {}),
+            ...(startDate || endDate ? { range: { start: startDate, end: endDate } } : {}),
+        } as FilterValues,
+        onChange: (next: FilterValues) => {
+            const r = next.range as { start?: string; end?: string } | undefined;
+            setSourceFilter((next.source as string) || '');
+            setStartDate(r?.start ?? '');
+            setEndDate(r?.end ?? '');
+        },
+        onClear: () => { setSourceFilter(''); setStartDate(''); setEndDate(''); },
+    };
+
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-2 text-fg-muted">
@@ -103,33 +131,15 @@ export default function AuditHistoryTab({ entityType, entityId }: Props) {
 
             <div className="flex flex-wrap items-center gap-2">
                 <div className="flex-1 min-w-48">
-                    <TextField
+                    <SearchInput
                         name="audit-search"
                         aria-label="Search audit history"
-                        type="text"
-                        leadingIcon={Search}
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={setSearch}
                         placeholder="Search field, value, or description..."
                     />
                 </div>
-                <Select
-                    name="audit-source"
-                    aria-label="Source"
-                    value={sourceFilter}
-                    onChange={(e) => setSourceFilter(e.target.value)}
-                    options={[
-                        { value: '', label: 'All Sources' },
-                        { value: 'manual', label: 'Manual' },
-                        { value: 'api', label: 'API' },
-                        { value: 'workflow', label: 'Workflow' },
-                        { value: 'import', label: 'Import' },
-                        { value: 'ai', label: 'AI' },
-                        { value: 'scheduled_job', label: 'Scheduled Job' },
-                    ]}
-                />
-                <DatePicker name="audit-start-date" aria-label="Start date" value={startDate} onChange={setStartDate} />
-                <DatePicker name="audit-end-date" aria-label="End date" value={endDate} onChange={setEndDate} />
+                <ListFilters {...filterConfig} />
                 <div className="flex items-center gap-1 ml-auto">
                     {(['csv', 'xlsx', 'pdf'] as const).map((format) => (
                         <Button

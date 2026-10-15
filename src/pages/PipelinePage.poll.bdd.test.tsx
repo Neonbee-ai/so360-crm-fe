@@ -35,7 +35,10 @@ vi.mock('../components/kanban/StageTransitionModal', () => ({
 }));
 
 vi.mock('./components/DealFilters', () => ({
-  DealFilters: () => <div data-testid="deal-filters" />,
+  useDealFilterConfig: () => ({
+    fields: [{ key: 'deal-filters', label: 'Deals', type: 'custom', quick: true, render: () => <div data-testid="deal-filters" /> }],
+    values: {}, onChange: () => undefined, onClear: () => undefined,
+  }),
 }));
 
 import PipelinePage from './PipelinePage';

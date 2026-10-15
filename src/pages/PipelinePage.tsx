@@ -9,7 +9,7 @@ import { StageTransitionModal } from '../components/kanban/StageTransitionModal'
 import { toast, ListPageTemplate, Button } from '@so360/design-system';
 import CreateDealModal from '../pages/components/CreateDealModal';
 
-import { DealFilters } from '../pages/components/DealFilters';
+import { useDealFilterConfig } from '../pages/components/DealFilters';
 import { DealFilters as Filters } from '../types/crm';
 import { useNotify, useActivity, useShellBridge } from '@so360/shell-context';
 import { useFillViewportHeight } from '../hooks/useFillViewportHeight';
@@ -33,6 +33,7 @@ const PipelinePage = () => {
     const [isFiltering, setIsFiltering] = useState(false);
     // Filters survive a trip to a deal's detail page and back.
     const [filters, setFilters] = usePersistedState<Filters>('pipeline.filters', {});
+    const filterConfig = useDealFilterConfig(filters, setFilters);
     const [pollTick, setPollTick] = useState(0);
 
     const [transitionModal, setTransitionModal] = useState<{
@@ -150,7 +151,7 @@ const PipelinePage = () => {
             headerSecondaryActions={canExportDeals ? [
                 <ExportMenu key="export" label="Export deals" onExport={(format) => exportService.deals(filters, format)} />,
             ] : undefined}
-            filters={<DealFilters filters={filters} onChange={setFilters} />}
+            filterConfig={filterConfig}
             toolbarEnd={isFiltering ? (
                 <div className="flex items-center gap-2 text-info h-nb-control-md px-3">
                     <Loader2 className="animate-spin" size={14} />

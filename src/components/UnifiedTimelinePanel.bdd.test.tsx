@@ -189,21 +189,10 @@ describe('UnifiedTimelinePanel', () => {
                     </Wrapper>
                 );
 
-                // Click filter dropdown (find the button with "Filter:" text and click)
-                const filterButtons = screen.getAllByRole('button');
-                const filterButton = filterButtons.find(
-                    (btn) =>
-                        btn.textContent?.includes('Filter') &&
-                        btn.textContent?.includes('All')
-                );
-                expect(filterButton).toBeDefined();
-
-                // The dropdown in this simple implementation is shown via group-hover
-                // For testing purposes, we'll interact via the component state
-                // This test documents the expected behavior
-
-                // For now, let's verify the filter controls exist
-                expect(screen.getByText('Filter:')).toBeInTheDocument();
+                const select = screen.getByTestId('filter-type');
+                await user.selectOptions(select, 'activity');
+                expect((select as HTMLSelectElement).value).toBe('activity');
+                expect(screen.getAllByTestId(/^timeline-item-activity-/)).toHaveLength(1);
                 expect(screen.getByText('Sort:')).toBeInTheDocument();
             });
 
@@ -724,7 +713,7 @@ describe('UnifiedTimelinePanel', () => {
 
                 // When no items match the current filter type
                 // Then should show "No items match your filter"
-                expect(screen.getByText('Filter:')).toBeInTheDocument();
+                expect(screen.getByTestId('filter-type')).toBeInTheDocument();
             });
         });
 
