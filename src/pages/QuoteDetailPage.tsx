@@ -4,7 +4,7 @@ import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Packag
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { Modal } from '../components/common/Modal';
 import { crmService } from '../services/crmService';
-import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone } from '@so360/design-system';
+import { toast, getErrorMessage, useConfirm, DetailPageTemplate, Button, Card, Badge, Alert, TextField, Textarea, Select, DataTable, IconButton, type DataTableColumn, type BadgeTone, Grid, GridItem } from '@so360/design-system';
 import { Quote, QuoteLine, QuoteStatus, ProductPickerSelection, Lead } from '../types/crm';
 import { INCOTERMS_2020, INCOTERM_LABELS } from '../utils/incoterms';
 import { useBusinessSettings, useActivity, useShellBridge, useOrganization } from '@so360/shell-context';
@@ -14,7 +14,6 @@ import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
-import { CombGrid } from './components/CombGrid';
 
 type QuoteLineRow = { line: QuoteLine; index: number };
 
@@ -515,16 +514,16 @@ const QuoteDetailPage = () => {
                                     <span className="text-sm text-fg-subtle">Grand Total</span>
                                     <p className="text-2xl font-bold text-fg">{formatCurrency(totals.grandTotal)}</p>
                                 </div>
-                                <CombGrid cols="pair" className="pt-4 border-t border-line">
-                                    <div>
+                                <Grid gap="md" className="pt-4 border-t border-line">
+                                    <GridItem span={{ md: 4, lg: 6 }}><div>
                                         <span className="text-sm text-fg-subtle">Items</span>
                                         <p className="text-lg font-semibold text-fg">{lines.length}</p>
-                                    </div>
-                                    <div>
+                                    </div></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><div>
                                         <span className="text-sm text-fg-subtle">Status</span>
                                         <p className={`text-lg font-semibold ${status.text}`}>{status.label}</p>
-                                    </div>
-                                </CombGrid>
+                                    </div></GridItem>
+                                </Grid>
                             </div>
                         </Card>
     
@@ -893,8 +892,8 @@ const QuoteDetailPage = () => {
                                     <p className="text-fg-subtle">{quote.notes || 'No notes'}</p>
                                 )}
                             </div>
-                            <CombGrid cols="pair">
-                                <div>
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Payment Terms</label>
                                     {isEditing ? (
                                         <TextField
@@ -906,8 +905,8 @@ const QuoteDetailPage = () => {
                                     ) : (
                                         <p className="text-fg-subtle">{quote.payment_terms || '—'}</p>
                                     )}
-                                </div>
-                                <div>
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Customer Reference</label>
                                     {isEditing ? (
                                         <TextField
@@ -919,8 +918,8 @@ const QuoteDetailPage = () => {
                                     ) : (
                                         <p className="text-fg-subtle">{quote.customer_reference || '—'}</p>
                                     )}
-                                </div>
-                                <div>
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">Delivery Terms</label>
                                     {isEditing ? (
                                         <TextField
@@ -932,8 +931,8 @@ const QuoteDetailPage = () => {
                                     ) : (
                                         <p className="text-fg-subtle">{quote.delivery_terms || '—'}</p>
                                     )}
-                                </div>
-                                <div>
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-1">
                                         Incoterm <span className="text-fg-muted font-normal">(Incoterms&reg; 2020)</span>
                                     </label>
@@ -952,8 +951,8 @@ const QuoteDetailPage = () => {
                                                 : '—'}
                                         </p>
                                     )}
-                                </div>
-                            </CombGrid>
+                                </div></GridItem>
+                            </Grid>
                             <div>
                                 <label className="block text-sm font-medium text-fg-subtle mb-1">Terms & Conditions</label>
                                 {isEditing ? (

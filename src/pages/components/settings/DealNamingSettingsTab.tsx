@@ -2,9 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { crmService } from '../../../services/crmService';
 import { DealNamingConfig, DealNamingResetMode, DEFAULT_DEAL_NAMING_CONFIG } from '../../../types/crm';
-import { Card, Button, TextField, NumberInput, Select } from '@so360/design-system';
+import { Card, Button, TextField, NumberInput, Select, Grid, GridItem } from '@so360/design-system';
 import { DEAL_NAME_TOKENS } from '../../../utils/dealNamingTokens';
-import { CombGrid } from '../CombGrid';
 
 interface DealNamingSettingsTabProps {
     initialConfig: DealNamingConfig | null;
@@ -119,14 +118,14 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </p>
                 )}
 
-                <CombGrid cols="trio">
-                    <div>
+                <Grid gap="md">
+                    <GridItem span={4}><div>
                         <TextField name="deal-prefix" label="Prefix" value={config.prefix} onChange={e => setConfig(prev => ({ ...prev, prefix: e.target.value }))} placeholder="DEAL" />
-                    </div>
-                    <div>
+                    </div></GridItem>
+                    <GridItem span={4}><div>
                         <TextField name="deal-suffix" label="Suffix" value={config.suffix} onChange={e => setConfig(prev => ({ ...prev, suffix: e.target.value }))} placeholder="2026" />
-                    </div>
-                    <div>
+                    </div></GridItem>
+                    <GridItem span={4}><div>
                         <Select
                             name="deal-separator"
                             label="Separator"
@@ -140,8 +139,8 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                             ]}
                             onChange={e => setConfig(prev => ({ ...prev, separator: e.target.value }))}
                         />
-                    </div>
-                </CombGrid>
+                    </div></GridItem>
+                </Grid>
 
                 <div>
                     <TextField
@@ -170,8 +169,8 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
 
                 <div className="border-t border-line pt-nb-4">
                     <h4 className="text-xs font-semibold text-fg-muted mb-3">Running Number</h4>
-                    <CombGrid cols="trio" className="items-end">
-                        <div>
+                    <Grid gap="md" className="items-end">
+                        <GridItem span={4}><div>
                             <Select
                                 name="deal-reset-mode"
                                 label="Reset Mode"
@@ -182,8 +181,8 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                                     sequence: { ...prev.sequence, enabled: e.target.value !== 'none', reset_mode: e.target.value as DealNamingResetMode },
                                 }))}
                             />
-                        </div>
-                        <div>
+                        </div></GridItem>
+                        <GridItem span={4}><div>
                             <NumberInput
                                 name="deal-padding"
                                 label="Padding"
@@ -192,11 +191,11 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                                 value={config.sequence.padding}
                                 onChange={v => setConfig(prev => ({ ...prev, sequence: { ...prev.sequence, padding: Math.floor(v || 1) } }))}
                             />
-                        </div>
-                        <Button variant="secondary" size="sm" type="button" onClick={() => insertToken('{seq}')}>
+                        </div></GridItem>
+                        <GridItem span={4}><Button variant="secondary" size="sm" type="button" onClick={() => insertToken('{seq}')}>
                             Insert {'{seq}'} Token
-                        </Button>
-                    </CombGrid>
+                        </Button></GridItem>
+                    </Grid>
                 </div>
 
                 <div className="border-t border-line pt-nb-4">

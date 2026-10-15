@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../common/Modal';
-import { Button, TextField, Select, NumberInput, Textarea } from '@so360/design-system';
+import { Button, TextField, Select, NumberInput, Textarea, Grid, GridItem } from '@so360/design-system';
 import { crmService } from '../../services/crmService';
 import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { buildCategoryTree, flattenCategoryTree, indentLabel } from '../../utils/categoryTree';
-import { CombGrid } from '../../pages/components/CombGrid';
 
 interface CategoryOption {
     id: string;
@@ -187,8 +186,8 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                 </div>
 
                 {/* Quantity & Target Unit Price */}
-                <CombGrid cols="pair">
-                    <NumberInput
+                <Grid gap="md">
+                    <GridItem span={{ md: 4, lg: 6 }}><NumberInput
                         name="quantity"
                         label="Quantity"
                         min={1}
@@ -196,8 +195,8 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                         value={quantity}
                         onChange={v => setQuantity(Math.max(1, Math.trunc(v ?? 0) || 1))}
                         disabled={submitting}
-                    />
-                    <NumberInput
+                    /></GridItem>
+                    <GridItem span={{ md: 4, lg: 6 }}><NumberInput
                         name="unit_price"
                         label="Est. Target Unit Price"
                         min={0}
@@ -206,8 +205,8 @@ export const CustomProductBuildRequestModal: React.FC<CustomProductBuildRequestM
                         onChange={v => setUnitPrice(v === null ? '' : String(v))}
                         placeholder="0.00"
                         disabled={submitting}
-                    />
-                </CombGrid>
+                    /></GridItem>
+                </Grid>
 
                 {/* Specifications / Notes */}
                 <Textarea

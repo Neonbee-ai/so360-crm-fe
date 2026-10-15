@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Pencil, Tag, X, Loader2, Calendar, Clock } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, useConfirm, ListPageTemplate, Button, Card, EmptyState, DataTable, DatePicker, IconButton, NumberInput, SearchInput, Select, TextField, Textarea } from '@so360/design-system';
+import { toast, useConfirm, ListPageTemplate, Button, Card, EmptyState, DataTable, DatePicker, IconButton, NumberInput, SearchInput, Select, TextField, Textarea, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn, FilterValues, MenuItem } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
@@ -266,8 +266,8 @@ const MarketingCouponsPage: React.FC = () => {
               <IconButton label="Close form" icon={<X size={20} />} variant="ghost" onClick={() => setShowForm(false)} />
             }
           >
-              <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-nb-6">
-                <div className="lg:col-span-2">
+              <Grid gap="lg">
+                <GridItem span="full"><div>
                   <TextField
                     name="coupon_code"
                     label="Coupon Code *"
@@ -276,51 +276,51 @@ const MarketingCouponsPage: React.FC = () => {
                     placeholder="WELCOME20"
                     error={fieldErrors.code}
                   />
-                </div>
-                <Select
+                </div></GridItem>
+                <GridItem span={{ md: 4, lg: 3 }}><Select
                   name="coupon_type"
                   label="Type"
                   options={DISCOUNT_TYPE_OPTIONS}
                   value={form.discount_type}
                   onChange={(e) => setForm({ ...form, discount_type: e.target.value as 'percentage' | 'fixed' })}
-                />
-                <NumberInput
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 3 }}><NumberInput
                   name="coupon_discount_value"
                   label="Value"
                   data-testid="coupon-discount-value"
                   value={form.discount_value}
                   onChange={(v) => setForm({ ...form, discount_value: v ?? 0 })}
                   error={fieldErrors.discount_value}
-                />
-                <NumberInput
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 3 }}><NumberInput
                   name="coupon_min_order"
                   label="Min Order"
                   value={form.min_order_amount}
                   onChange={(v) => setForm({ ...form, min_order_amount: v ?? 0 })}
                   error={fieldErrors.min_order_amount}
-                />
-                <NumberInput
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 3 }}><NumberInput
                   name="coupon_usage_limit"
                   label="Usage Limit"
                   value={form.usage_limit}
                   onChange={(v) => setForm({ ...form, usage_limit: Math.trunc(v ?? 0) })}
                   placeholder="0 = Unlimited"
                   error={fieldErrors.usage_limit}
-                />
-                <DatePicker
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 3 }}><DatePicker
                   name="coupon_valid_from"
                   label="Valid From"
                   value={form.valid_from}
                   onChange={(iso: string) => setForm({ ...form, valid_from: iso })}
-                />
-                <DatePicker
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 3 }}><DatePicker
                   name="coupon_valid_until"
                   label="Valid Until"
                   value={form.valid_until}
                   onChange={(iso: string) => setForm({ ...form, valid_until: iso })}
                   error={fieldErrors.valid_until}
-                />
-                <div className="lg:col-span-4">
+                /></GridItem>
+                <GridItem span="full"><div>
                   <Textarea
                     name="coupon_description"
                     label="Description"
@@ -329,8 +329,8 @@ const MarketingCouponsPage: React.FC = () => {
                     placeholder="Describe the offer..."
                     rows={3}
                   />
-                </div>
-              </div>
+                </div></GridItem>
+              </Grid>
               <div className="flex justify-end gap-nb-2 mt-nb-6 pt-nb-4 border-t border-line">
                 <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
                 <Button variant="primary" onClick={handleSave} disabled={saving}>

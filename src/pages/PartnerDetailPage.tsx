@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { validatePhone } from '../utils/phoneValidation';
-import { toast } from '@so360/design-system';
+import { toast, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
@@ -14,7 +14,6 @@ import { useFormatters } from '@so360/formatters';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, NumberInput, Select } from '@so360/design-system';
 import { Modal } from '../components/common/Modal';
-import { CombGrid } from './components/CombGrid';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -419,41 +418,41 @@ const PartnerDetailPage = () => {
                     {isEditing ? (
                         <Card title="Partner information" actions={overviewActions}>
                         <div className="space-y-6">
-                            <CombGrid cols="pair">
-                                <TextField name="first-name" label="First Name" placeholder="Dhanooj" value={editForm.first_name}
-                                    onChange={e => setEditForm((f: any) => ({ ...f, first_name: e.target.value }))} />
-                                <TextField name="last-name" label="Last Name" placeholder="B S" value={editForm.last_name}
-                                    onChange={e => setEditForm((f: any) => ({ ...f, last_name: e.target.value }))} />
-                                <div className="sm:col-span-2">
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="first-name" label="First Name" placeholder="Dhanooj" value={editForm.first_name}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, first_name: e.target.value }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="last-name" label="Last Name" placeholder="B S" value={editForm.last_name}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, last_name: e.target.value }))} /></GridItem>
+                                <GridItem span="full"><div>
                                     <TextField name="company-name" label="Company Name" placeholder="Moonhive Pvt Ltd" value={editForm.company_name}
                                     onChange={e => setEditForm((f: any) => ({ ...f, company_name: e.target.value }))} />
-                                </div>
-                                <Select name="partner-type" label="Partner Type" placeholder="Select..." value={editForm.partner_type}
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><Select name="partner-type" label="Partner Type" placeholder="Select..." value={editForm.partner_type}
                                     onChange={e => setEditForm((f: any) => ({ ...f, partner_type: e.target.value }))}
-                                    options={partnerTypes.map(pt => ({ value: pt.value, label: pt.label }))} />
-                                <TextField name="email" label="Email" type="email" value={editForm.email}
-                                    onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))} />
-                                <TextField name="phone" label="Phone" type="tel" maxLength={20} value={editForm.phone} error={phoneError || undefined}
-                                    onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }} />
-                                <Select name="grading" label="Architect Grading" placeholder="Select..." value={editForm.grading}
+                                    options={partnerTypes.map(pt => ({ value: pt.value, label: pt.label }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="email" label="Email" type="email" value={editForm.email}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="phone" label="Phone" type="tel" maxLength={20} value={editForm.phone} error={phoneError || undefined}
+                                    onChange={e => { setEditForm((f: any) => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><Select name="grading" label="Architect Grading" placeholder="Select..." value={editForm.grading}
                                     onChange={e => setEditForm((f: any) => ({ ...f, grading: e.target.value }))}
-                                    options={[{ value: 'low', label: 'Low' }, { value: 'mid', label: 'Mid' }, { value: 'high', label: 'High' }]} />
-                                <NumberInput name="commission-rate" label="Royalty Rate (%)" min={0} max={100} step={0.5} value={editForm.commission_rate === '' || editForm.commission_rate == null ? null : Number(editForm.commission_rate)}
-                                    onChange={v => setEditForm((f: any) => ({ ...f, commission_rate: v == null ? '' : String(v) }))} />
-                                <Select name="owner-person" label="Relationship Manager" placeholder="— Assign RM —" value={editForm.owner_person_id}
+                                    options={[{ value: 'low', label: 'Low' }, { value: 'mid', label: 'Mid' }, { value: 'high', label: 'High' }]} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><NumberInput name="commission-rate" label="Royalty Rate (%)" min={0} max={100} step={0.5} value={editForm.commission_rate === '' || editForm.commission_rate == null ? null : Number(editForm.commission_rate)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, commission_rate: v == null ? '' : String(v) }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><Select name="owner-person" label="Relationship Manager" placeholder="— Assign RM —" value={editForm.owner_person_id}
                                     onChange={e => setEditForm((f: any) => ({ ...f, owner_person_id: e.target.value }))}
-                                    options={users.map(u => ({ value: u.id, label: u.full_name }))} />
-                                <NumberInput name="customers-connected" label="Customers Connected" min={0} step={1} value={editForm.customers_connected === '' || editForm.customers_connected == null ? null : Number(editForm.customers_connected)}
-                                    onChange={v => setEditForm((f: any) => ({ ...f, customers_connected: v == null ? '' : String(v) }))} />
-                                <NumberInput name="value-of-purchase" label="Value of Purchase" min={0} step={0.01} value={editForm.value_of_purchase === '' || editForm.value_of_purchase == null ? null : Number(editForm.value_of_purchase)}
-                                    onChange={v => setEditForm((f: any) => ({ ...f, value_of_purchase: v == null ? '' : String(v) }))} />
-                                <NumberInput name="total-purchase" label="Total Purchase Till Date" min={0} step={0.01} value={editForm.total_purchase_till_date === '' || editForm.total_purchase_till_date == null ? null : Number(editForm.total_purchase_till_date)}
-                                    onChange={v => setEditForm((f: any) => ({ ...f, total_purchase_till_date: v == null ? '' : String(v) }))} />
-                                <TextField name="poc-primary" label="1st POC" placeholder="Primary contact" value={editForm.poc_primary}
-                                    onChange={e => setEditForm((f: any) => ({ ...f, poc_primary: e.target.value }))} />
-                                <TextField name="poc-secondary" label="2nd POC" placeholder="Secondary contact" value={editForm.poc_secondary}
-                                    onChange={e => setEditForm((f: any) => ({ ...f, poc_secondary: e.target.value }))} />
-                            </CombGrid>
+                                    options={users.map(u => ({ value: u.id, label: u.full_name }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><NumberInput name="customers-connected" label="Customers Connected" min={0} step={1} value={editForm.customers_connected === '' || editForm.customers_connected == null ? null : Number(editForm.customers_connected)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, customers_connected: v == null ? '' : String(v) }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><NumberInput name="value-of-purchase" label="Value of Purchase" min={0} step={0.01} value={editForm.value_of_purchase === '' || editForm.value_of_purchase == null ? null : Number(editForm.value_of_purchase)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, value_of_purchase: v == null ? '' : String(v) }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><NumberInput name="total-purchase" label="Total Purchase Till Date" min={0} step={0.01} value={editForm.total_purchase_till_date === '' || editForm.total_purchase_till_date == null ? null : Number(editForm.total_purchase_till_date)}
+                                    onChange={v => setEditForm((f: any) => ({ ...f, total_purchase_till_date: v == null ? '' : String(v) }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="poc-primary" label="1st POC" placeholder="Primary contact" value={editForm.poc_primary}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, poc_primary: e.target.value }))} /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="poc-secondary" label="2nd POC" placeholder="Secondary contact" value={editForm.poc_secondary}
+                                    onChange={e => setEditForm((f: any) => ({ ...f, poc_secondary: e.target.value }))} /></GridItem>
+                            </Grid>
                             <div>
                                 <p className="text-xs text-fg-subtle mb-1">Area Served</p>
                                 <div className="flex flex-wrap gap-2">
@@ -484,14 +483,14 @@ const PartnerDetailPage = () => {
                     ) : (
                         <>
                             <Card title="Partner details" actions={overviewActions}>
-                                <CombGrid cols="pair" as="dl">
-                                    <div>
+                                <Grid gap="md">
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>Partner type</dt>
                                         <dd className="mt-1">
                                             <Badge size="sm" tone="info">{getTypeLabel(partner.partner_type)}</Badge>
                                         </dd>
-                                    </div>
-                                    <div>
+                                    </dl></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>Architect grading</dt>
                                         <dd className="mt-1">
                                             {gradingCfg ? (
@@ -500,24 +499,24 @@ const PartnerDetailPage = () => {
                                                 </span>
                                             ) : <span className="text-fg-muted text-sm">—</span>}
                                         </dd>
-                                    </div>
-                                    <div>
+                                    </dl></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>Royalty rate</dt>
                                         <dd className="text-sm text-fg mt-1 flex items-center gap-1.5">
                                             {partner.commission_rate > 0
                                                 ? <><Percent size={13} className="text-fg-subtle" /><span>{partner.commission_rate}%</span></>
                                                 : <span className="text-fg-muted">—</span>}
                                         </dd>
-                                    </div>
-                                    <div>
+                                    </dl></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>Relationship manager</dt>
                                         <dd className="text-sm text-fg mt-1 flex items-center gap-1.5">
                                             {getUserName(partner.owner_person_id)
                                                 ? <><User size={13} className="text-fg-subtle" /><span>{getUserName(partner.owner_person_id)}</span></>
                                                 : <span className="text-fg-muted">—</span>}
                                         </dd>
-                                    </div>
-                                </CombGrid>
+                                    </dl></GridItem>
+                                </Grid>
                             </Card>
 
                             <Card title="Geographic coverage">
@@ -537,46 +536,46 @@ const PartnerDetailPage = () => {
                             </Card>
 
                             <Card title="Contact information">
-                                <CombGrid cols="pair" as="dl">
+                                <Grid gap="md">
                                     {partner.company_name && (
-                                        <div className="sm:col-span-2">
+                                        <GridItem span="full"><dl>
                                             <dt className={fieldLabelCls}>Company name</dt>
                                             <dd className="text-sm text-fg mt-1">{partner.company_name}</dd>
-                                        </div>
+                                        </dl></GridItem>
                                     )}
-                                    <div>
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>1st POC</dt>
                                         <dd className="text-sm text-fg mt-1 flex items-center gap-1.5">
                                             {partner.poc_primary
                                                 ? <><User size={13} className="text-fg-muted" />{partner.poc_primary}</>
                                                 : <span className="text-fg-muted">—</span>}
                                         </dd>
-                                    </div>
-                                    <div>
+                                    </dl></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>2nd POC</dt>
                                         <dd className="text-sm text-fg mt-1 flex items-center gap-1.5">
                                             {partner.poc_secondary
                                                 ? <><User size={13} className="text-fg-muted" />{partner.poc_secondary}</>
                                                 : <span className="text-fg-muted">—</span>}
                                         </dd>
-                                    </div>
-                                    <div>
+                                    </dl></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>Email</dt>
                                         <dd className="mt-1">
                                             {partner.email
                                                 ? <a href={`mailto:${partner.email}`} className="text-sm text-primary hover:underline flex items-center gap-1.5 transition-colors"><Mail size={13} />{partner.email}</a>
                                                 : <span className="text-fg-muted text-sm">—</span>}
                                         </dd>
-                                    </div>
-                                    <div>
+                                    </dl></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><dl>
                                         <dt className={fieldLabelCls}>Phone</dt>
                                         <dd className="text-sm text-fg mt-1 flex items-center gap-1.5">
                                             {partner.phone
                                                 ? <><Phone size={13} className="text-fg-muted" />{partner.phone}</>
                                                 : <span className="text-fg-muted">—</span>}
                                         </dd>
-                                    </div>
-                                </CombGrid>
+                                    </dl></GridItem>
+                                </Grid>
                             </Card>
                         </>
                     )}
@@ -588,12 +587,12 @@ const PartnerDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     {deals ? (
                         <>
-                            <CombGrid cols="quad">
-                                <KpiCard label="Total deals" value={deals.summary.total_count} />
-                                <KpiCard label="Total value" value={formatters.formatCurrency(deals.summary.total_value || 0)} />
-                                <KpiCard label="Won deals" value={deals.summary.won_count} />
-                                <KpiCard label="Won value" value={formatters.formatCurrency(deals.summary.won_value || 0)} />
-                            </CombGrid>
+                            <Grid gap="md">
+                                <GridItem span={3}><KpiCard label="Total deals" value={deals.summary.total_count} /></GridItem>
+                                <GridItem span={3}><KpiCard label="Total value" value={formatters.formatCurrency(deals.summary.total_value || 0)} /></GridItem>
+                                <GridItem span={3}><KpiCard label="Won deals" value={deals.summary.won_count} /></GridItem>
+                                <GridItem span={3}><KpiCard label="Won value" value={formatters.formatCurrency(deals.summary.won_value || 0)} /></GridItem>
+                            </Grid>
                             <Card title="Referred deals" padding="none">
                                 {deals.deals.length > 0 ? (
                                     <DataTable
@@ -629,11 +628,11 @@ const PartnerDetailPage = () => {
                 <div className="flex flex-col gap-nb-3">
                     {commissions ? (
                         <>
-                            <CombGrid cols="triple">
-                                <KpiCard label="Total earned" value={formatters.formatCurrency(commissions.summary.total_earned || 0)} />
-                                <KpiCard label="Pending" value={formatters.formatCurrency(commissions.summary.pending || 0)} />
-                                <KpiCard label="Paid" value={formatters.formatCurrency(commissions.summary.paid || 0)} />
-                            </CombGrid>
+                            <Grid gap="md">
+                                <GridItem span={4}><KpiCard label="Total earned" value={formatters.formatCurrency(commissions.summary.total_earned || 0)} /></GridItem>
+                                <GridItem span={4}><KpiCard label="Pending" value={formatters.formatCurrency(commissions.summary.pending || 0)} /></GridItem>
+                                <GridItem span={4}><KpiCard label="Paid" value={formatters.formatCurrency(commissions.summary.paid || 0)} /></GridItem>
+                            </Grid>
                             <Card title="Royalties" padding="none">
                                 {commissions.commissions.length > 0 ? (
                                     <DataTable

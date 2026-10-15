@@ -6,7 +6,7 @@ import {
     Calendar, User as UserIcon, Loader2, ShoppingBag, Package, LayoutDashboard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl } from '@so360/design-system';
+import { CrossLinkChip, DashboardPageTemplate, KpiCard, Card, SegmentedControl, Grid, GridItem } from '@so360/design-system';
 import { useBusinessSettings, useShell } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import REWidgets from '../components/dashboard/REWidgets';
@@ -172,10 +172,10 @@ const DashboardPage = () => {
         kpis: (
             <>
             {/* KPI Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-nb-3">
+            <Grid gap="md">
                 {/* Deal Revenue — gated: deals are a B2B/Both concept */}
                 {showPipeline && (
-                    <KpiCard
+                    <GridItem span={3}><KpiCard
                         label="Deal Revenue"
                         icon={DollarSign}
                         value={<>{formatCurrency(financials.totalRevenue)}
@@ -184,36 +184,36 @@ const DashboardPage = () => {
                             ) : (
                                 <span className="block mt-1 text-xs font-normal text-fg-muted">From won deals</span>
                             )}</>}
-                    />
+                    /></GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
+                    <GridItem span={3}><KpiCard
                         label="Pipeline Value"
                         icon={TrendingUp}
                         value={<>{formatCurrency(financials.pipelineValue)}
                             <span className="block mt-1 text-xs font-normal text-fg-muted">{counts.deals} Active Deals · Projected revenue</span></>}
-                    />
+                    /></GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
+                    <GridItem span={3}><KpiCard
                         label="Win Rate"
                         icon={BarChart3}
                         value={<>{financials.winRate.toFixed(1)}%
                             <span className="block mt-1 text-xs font-normal text-fg-muted">AVG Deal Closure</span></>}
-                    />
+                    /></GridItem>
                 )}
 
                 {showPipeline && (
-                    <KpiCard
+                    <GridItem span={3}><KpiCard
                         label="Avg Deal Size"
                         icon={Briefcase}
                         value={<>{formatCurrency(financials.avgDealSize)}
                             <span className="block mt-1 text-xs font-normal text-fg-muted">Per closed-won deal</span></>}
-                    />
+                    /></GridItem>
                 )}
-            </div>
+            </Grid>
             </>
         ),
         commerce: (
@@ -421,9 +421,10 @@ const DashboardPage = () => {
         ),
         revenue: (
             <>
-            <div className={`grid grid-cols-1 ${showLeads ? 'lg:grid-cols-12' : ''} gap-nb-3`}>
+            <Grid gap="md">
                 {/* Revenue Chart */}
-                <Card title="Revenue Performance" className={`${showLeads ? 'lg:col-span-8' : ''} min-w-0`}>
+                <GridItem span={showLeads ? { lg: 8 } : 'full'}>
+                <Card title="Revenue Performance" className="min-w-0">
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <p className="text-xs text-fg-muted font-bold mt-1">Monthly Revenue Distribution</p>
@@ -463,9 +464,10 @@ const DashboardPage = () => {
                         })}
                     </div>
                 </Card>
+                </GridItem>
 
                 {/* Team Leaderboard */}
-                {showLeads && <Card title="Top Performers" className="lg:col-span-4 min-w-0 overflow-hidden flex flex-col">
+                {showLeads && <GridItem span={{ lg: 4 }}><Card title="Top Performers" className="min-w-0 overflow-hidden flex flex-col">
                     <p className="text-xs text-fg-muted font-bold mb-4">Revenue Leaders</p>
 
                     <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
@@ -510,8 +512,8 @@ const DashboardPage = () => {
                             </div>
                         ))}
                     </div>
-                </Card>}
-            </div>
+                </Card></GridItem>}
+            </Grid>
             </>
         ),
         performance: (
@@ -527,9 +529,10 @@ const DashboardPage = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-nb-3">
+                    <Grid gap="md">
                         {teamStats.slice(0, 4).map((stat: any) => (
-                            <div key={stat.user.id} className="border-t border-line pt-4 hover:border-line transition-all shadow-sm">
+                          <GridItem key={stat.user.id} span={{ md: 4, lg: 3 }}>
+                            <div className="border-t border-line pt-4 hover:border-line transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-8 h-8 rounded-full bg-fg-muted/30 flex items-center justify-center overflow-hidden">
                                         {stat.user.avatar_url ? <img src={stat.user.avatar_url} /> : stat.user.full_name.charAt(0)}
@@ -568,19 +571,20 @@ const DashboardPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-2 mt-6">
-                                    <div className="bg-fg-muted/10 p-2 rounded-lg text-center">
+                                <Grid gap="sm" className="mt-6">
+                                    <GridItem span={{ md: 4, lg: 6 }}><div className="bg-fg-muted/10 p-2 rounded-lg text-center">
                                         <div className="text-xs font-semibold text-fg-muted mb-0.5">Won</div>
                                         <div className="text-sm font-semibold text-fg">{stat.dealCount}</div>
-                                    </div>
-                                    <div className="bg-fg-muted/10 p-2 rounded-lg text-center">
+                                    </div></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><div className="bg-fg-muted/10 p-2 rounded-lg text-center">
                                         <div className="text-xs font-semibold text-fg-muted mb-0.5">Leads</div>
                                         <div className="text-sm font-semibold text-fg">{stat.activeLeads}</div>
-                                    </div>
-                                </div>
+                                    </div></GridItem>
+                                </Grid>
                             </div>
+                          </GridItem>
                         ))}
-                    </div>
+                    </Grid>
                 </div>
             </Card>}
             </>
@@ -636,11 +640,11 @@ const DashboardPage = () => {
             }
             primary={
                 <>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
+            <Grid gap="md">
             {visibleWidgets(dashLayout.layout).map((key) => (
-                <div key={key} className="min-w-0 lg:col-span-12 flex flex-col gap-nb-3">{widgetNodes[key]}</div>
+                <GridItem key={key} span="full"><div className="min-w-0 flex flex-col gap-nb-3">{widgetNodes[key]}</div></GridItem>
             ))}
-            </div>
+            </Grid>
 
                 </>
             }

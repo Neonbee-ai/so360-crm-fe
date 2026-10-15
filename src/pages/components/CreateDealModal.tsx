@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2, Briefcase, Search } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User, SalesRep } from '../../types/crm';
-import { toast, Button, TextField, Select, NumberInput, DatePicker, Checkbox } from '@so360/design-system';
+import { toast, Button, TextField, Select, NumberInput, DatePicker, Checkbox, Grid, GridItem } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { useActivity } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
-import { CombGrid } from './CombGrid';
 
 interface CreateDealModalProps {
     leadId?: string;
@@ -379,8 +378,8 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             />
 
                             {/* Value + Stage */}
-                            <CombGrid cols="pair">
-                                <div className="flex items-end gap-nb-2">
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><div className="flex items-end gap-nb-2">
                                     <span className="pb-3 text-fg-muted text-xs font-bold select-none">{currencySymbol}</span>
                                     <div className="flex-1 min-w-0">
                                         <NumberInput
@@ -392,31 +391,31 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                                             min={0}
                                         />
                                     </div>
-                                </div>
-                                <Select
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><Select
                                     name="deal-stage"
                                     label="Stage"
                                     value={stage}
                                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStage(e.target.value as DealStage)}
                                     options={settings.map(s => ({ value: s.name, label: s.name }))}
-                                />
-                            </CombGrid>
+                                /></GridItem>
+                            </Grid>
 
                             {/* Dates */}
-                            <CombGrid cols="pair">
-                                <DatePicker
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><DatePicker
                                     name="deal-start-date"
                                     label="Start Date"
                                     value={startDate}
                                     onChange={(v: string) => setStartDate(v)}
-                                />
-                                <DatePicker
+                                /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><DatePicker
                                     name="deal-close-date"
                                     label="Close Date"
                                     value={expectedClose}
                                     onChange={(v: string) => setExpectedClose(v)}
-                                />
-                            </CombGrid>
+                                /></GridItem>
+                            </Grid>
 
                             {/* Owner */}
                             <Select

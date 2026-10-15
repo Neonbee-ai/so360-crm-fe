@@ -14,7 +14,7 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
-import { DashboardPageTemplate, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState } from '@so360/design-system';
+import { DashboardPageTemplate, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
@@ -667,14 +667,13 @@ export default function TargetPlansPage() {
               <label className="block text-xs font-medium text-fg-subtle mb-1">
                 Metric Type / Kind
               </label>
-              <div className="grid grid-cols-1 wc-medium:grid-cols-3 gap-nb-2">
+              <Grid gap="sm">
                 {[
                   { value: 'COUNT', label: 'Count', desc: 'Number of occurrences' },
                   { value: 'SUM', label: 'Sum / Value', desc: 'Financial or numeric total' },
                   { value: 'TOUCHPOINT', label: 'Touchpoint', desc: 'Multi-channel interactions' },
                 ].map((k) => (
-                  <Button
-                    key={k.value}
+<GridItem key={k.value} span={4}>                  <Button
                     type="button"
                     variant={customMetricKind === k.value ? 'primary' : 'secondary'}
                     onClick={() => {
@@ -685,9 +684,9 @@ export default function TargetPlansPage() {
                     }}
                   >
                     {k.label} — {k.desc}
-                  </Button>
+                  </Button></GridItem>
                 ))}
-              </div>
+              </Grid>
             </div>
 
             <TextField

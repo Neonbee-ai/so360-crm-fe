@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { stakeholderApi } from '../../services/crmService';
 import { StakeholderActivitySummary as SummaryType } from '../../types/crm';
-import { CombGrid } from '../../pages/components/CombGrid';
+import { Grid } from '@so360/design-system';
 
 interface Props {
     stakeholderId: string;
@@ -34,7 +34,7 @@ const StakeholderActivitySummary: React.FC<Props> = ({ stakeholderId }) => {
 
     return (
         <div className="space-y-3">
-            <CombGrid cols="pair-fixed" className="text-xs">
+            <Grid columns={2} gap="md" className="text-xs">
                 <div className="bg-surface-sunken border border-line rounded-nb p-2.5">
                     <p className="text-fg-muted font-medium">Last Call</p>
                     <p className="text-fg mt-0.5">{formatDate(summary.last_call)}</p>
@@ -51,7 +51,7 @@ const StakeholderActivitySummary: React.FC<Props> = ({ stakeholderId }) => {
                     <p className="text-fg-muted font-medium">Open Tasks</p>
                     <p className="text-fg mt-0.5">{summary.open_tasks}</p>
                 </div>
-            </CombGrid>
+            </Grid>
 
             {summary.associated_deals.length > 0 && (
                 <div>

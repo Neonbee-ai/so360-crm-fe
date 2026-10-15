@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, BarChart3, Clock, PieChart, Trophy } from 'lucide-react';
+import { Grid, GridItem } from '@so360/design-system';
 import { useCRMFormatters } from '../../utils/formatters';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../hooks/useCrmFeatureFlag';
 import { reWidgetsService, REWidgetsData, isREWidgetsEmpty } from '../../services/reWidgetsService';
@@ -34,8 +35,8 @@ const REWidgetsInner: React.FC = () => {
     if (!enabled || !data || isREWidgetsEmpty(data)) return null;
 
     return (
-        <section aria-label="Real estate overview" data-testid="re-widgets" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <Card title="Inventory by project" icon={<Building2 size={12} />} testId="re-widget-inventory">
+        <section aria-label="Real estate overview" data-testid="re-widgets"><Grid gap="md">
+            <GridItem span={3}><Card title="Inventory by project" icon={<Building2 size={12} />} testId="re-widget-inventory">
                 {data.inventory_by_project.length === 0 ? <p className={EMPTY}>No units yet</p> : (
                     <ul className="space-y-1.5">
                         {data.inventory_by_project.slice(0, MAX_ROWS).map((r) => (
@@ -50,9 +51,9 @@ const REWidgetsInner: React.FC = () => {
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Pipeline by project" icon={<BarChart3 size={12} />} testId="re-widget-pipeline">
+            <GridItem span={3}><Card title="Pipeline by project" icon={<BarChart3 size={12} />} testId="re-widget-pipeline">
                 {data.pipeline_by_project.length === 0 ? <p className={EMPTY}>No open deals</p> : (
                     <ul className="space-y-1.5">
                         {data.pipeline_by_project.slice(0, MAX_ROWS).map((r) => (
@@ -63,9 +64,9 @@ const REWidgetsInner: React.FC = () => {
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Holds expiring in 24h" icon={<Clock size={12} />} testId="re-widget-holds">
+            <GridItem span={3}><Card title="Holds expiring in 24h" icon={<Clock size={12} />} testId="re-widget-holds">
                 {data.holds_expiring.length === 0 ? <p className={EMPTY}>No holds expiring</p> : (
                     <ul className="space-y-1.5">
                         {data.holds_expiring.slice(0, MAX_ROWS).map((h) => (
@@ -78,9 +79,9 @@ const REWidgetsInner: React.FC = () => {
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Source performance" icon={<PieChart size={12} />} testId="re-widget-sources">
+            <GridItem span={3}><Card title="Source performance" icon={<PieChart size={12} />} testId="re-widget-sources">
                 {data.source_performance.length === 0 ? <p className={EMPTY}>No leads yet</p> : (
                     <ul className="space-y-1.5">
                         {data.source_performance.slice(0, MAX_ROWS).map((s) => (
@@ -93,9 +94,9 @@ const REWidgetsInner: React.FC = () => {
                         ))}
                     </ul>
                 )}
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Top agents" icon={<Trophy size={12} />} testId="re-widget-agents" className="md:col-span-2 xl:col-span-4">
+            <GridItem span="full"><Card title="Top agents" icon={<Trophy size={12} />} testId="re-widget-agents">
                 {data.agent_leaderboard.length === 0 ? <p className={EMPTY}>No agent activity yet</p> : (
                     <ul className="space-y-1.5">
                         {data.agent_leaderboard.slice(0, MAX_ROWS).map((a, i) => (
@@ -114,8 +115,8 @@ const REWidgetsInner: React.FC = () => {
                         ))}
                     </ul>
                 )}
-            </Card>
-        </section>
+            </Card></GridItem>
+        </Grid></section>
     );
 };
 

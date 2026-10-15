@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox } from '@so360/design-system';
+import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, Grid, GridItem } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     assignmentRulesService,
@@ -17,7 +17,6 @@ import {
 } from '../../../services/assignmentRulesService';
 import { crmService } from '../../../services/crmService';
 import { describeApiError } from '../../../utils/apiErrorMessage';
-import { CombGrid } from '../CombGrid';
 
 const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
 
@@ -326,8 +325,8 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                 )}
             </div>
 
-            <CombGrid cols="pair" className="items-end">
-                <div>
+            <Grid gap="md" className="items-end">
+                <GridItem span={{ md: 4, lg: 6 }}><div>
                     <Select
                         id="assignment-rule-method"
                         name="assignment-rule-method"
@@ -336,17 +335,17 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         options={ASSIGNMENT_METHODS.map((m) => ({ value: m.value, label: m.label }))}
                         onChange={(e) => setDraft((d) => ({ ...d, method: e.target.value as any }))}
                     />
-                </div>
-                <Checkbox
+                </div></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><Checkbox
                     name="assignment-skip-inactive"
                     label="Skip people who are inactive"
                     checked={draft.skip_inactive}
                     onChange={(e) => setDraft((d) => ({ ...d, skip_inactive: e.target.checked }))}
-                />
-            </CombGrid>
+                /></GridItem>
+            </Grid>
 
-            <CombGrid cols="pair" className="items-end">
-                <div>
+            <Grid gap="md" className="items-end">
+                <GridItem span={{ md: 4, lg: 6 }}><div>
                     <NumberInput
                         id="assignment-rule-reassign"
                         name="assignment-rule-reassign"
@@ -358,14 +357,14 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         value={draft.reassign_after_minutes ?? null}
                         onChange={(v) => setDraft((d) => ({ ...d, reassign_after_minutes: v }))}
                     />
-                </div>
-                <Checkbox
+                </div></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><Checkbox
                     name="assignment-skip-on-leave"
                     label="Skip people on leave today"
                     checked={draft.skip_on_leave !== false}
                     onChange={(e) => setDraft((d) => ({ ...d, skip_on_leave: e.target.checked }))}
-                />
-            </CombGrid>
+                /></GridItem>
+            </Grid>
 
             {draftError && <p role="alert" className="text-xs font-bold text-danger">{draftError}</p>}
 
@@ -435,9 +434,9 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             <Card title="Test a lead">
               <div className="space-y-4">
                 <p className="text-xs text-fg-muted">See who a lead would go to. nothing is saved.</p>
-                <CombGrid cols="quad-wide">
+                <Grid gap="md">
                     {CONDITION_FIELDS.map((f) => (
-                        <div key={f.value}>
+                        <GridItem key={f.value} span={3}>                        <div>
                             <label htmlFor={`assignment-test-${f.value}`} className={LABEL_CLS}>{f.label}</label>
                             <TextField
                                 id={`assignment-test-${f.value}`}
@@ -445,9 +444,9 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 value={sample[f.value] ?? ''}
                                 onChange={(e) => setSample((s) => ({ ...s, [f.value]: e.target.value }))}
                             />
-                        </div>
+                        </div></GridItem>
                     ))}
-                </CombGrid>
+                </Grid>
                 <div className="flex items-center gap-4">
                     <Button type="button" variant="secondary" onClick={runTest} disabled={testing}>
                         {testing && <Loader2 size={14} className="animate-spin" />}

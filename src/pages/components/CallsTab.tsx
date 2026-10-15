@@ -4,9 +4,8 @@ import {
     Trash2, FileText, Clock,
 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
-import { useConfirm, Button, Badge, EmptyState, IconButton, Select, DateTimePicker, NumberInput, TextField, Textarea } from '@so360/design-system';
+import { useConfirm, Button, Badge, EmptyState, IconButton, Select, DateTimePicker, NumberInput, TextField, Textarea, FileUpload, Grid, GridItem } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
-import { CombGrid } from './CombGrid';
 
 interface Props {
     leadId?: string;
@@ -85,8 +84,8 @@ export function UploadCallForm({ onClose, onUpload, asModal = false }: UploadFor
     const [sentiment, setSentiment] = useState<'' | 'positive' | 'neutral' | 'negative' | 'mixed'>('');
     const [submitting, setSubmitting] = useState(false);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0] ?? null;
+    const handleFileChange = (files: File[]) => {
+        const selectedFile = files[0] ?? null;
         setFile(selectedFile);
         // Best-effort auto-fill of duration from audio metadata — not all
         // environments (or file types) support this, so failures are silent
@@ -143,45 +142,39 @@ export function UploadCallForm({ onClose, onUpload, asModal = false }: UploadFor
             )}
 
             <div>
-                <label className="block text-xs font-medium text-fg-muted mb-2">Audio File</label>
-                <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={handleFileChange}
-                    className="w-full text-xs text-fg-subtle file:mr-3 file:py-2 file:px-4 file:rounded-nb file:border-0 file:text-xs file:font-medium file:bg-surface-raised file:text-fg hover:file:bg-line"
-                />
+                <FileUpload name="call-audio-file" label="Audio File" accept="audio/*" onChange={handleFileChange} />
             </div>
 
-            <CombGrid cols="pair">
-                <Select
+            <Grid gap="md">
+                <GridItem span={{ md: 4, lg: 6 }}><Select
                     name="call-direction"
                     label="Direction"
                     value={direction}
                     onChange={e => setDirection(e.target.value as 'inbound' | 'outbound')}
                     options={[{ value: 'outbound', label: 'Outbound' }, { value: 'inbound', label: 'Inbound' }]}
-                />
-                <DateTimePicker
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><DateTimePicker
                     name="call-occurred-at"
                     label="Occurred At"
                     value={occurredAt}
                     onChange={setOccurredAt}
-                />
-                <NumberInput
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><NumberInput
                     name="call-duration"
                     label="Duration (seconds)"
                     min={0}
                     value={durationSeconds === '' ? null : durationSeconds}
                     onChange={v => setDurationSeconds(v == null ? '' : Math.trunc(v) || 0)}
-                />
-                <TextField
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><TextField
                     name="call-phone"
                     label="Phone Number"
                     type="text"
                     value={phoneNumber}
                     onChange={e => setPhoneNumber(e.target.value)}
                     placeholder="+1 555 000 0000"
-                />
-            </CombGrid>
+                /></GridItem>
+            </Grid>
 
             <Textarea
                 name="call-transcript"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, TextField, Select, Checkbox, NumberInput, DatePicker } from '@so360/design-system';
+import { Button, TextField, Select, Checkbox, NumberInput, DatePicker, Grid, GridItem } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { PartnerSearchDropdown } from '../common/PartnerSearchDropdown';
 import { crmService, settingsApi } from '../../services/crmService';
@@ -32,7 +32,6 @@ import { describeApiError } from '../../utils/apiErrorMessage';
 import { isWonLeadStage } from '../../utils/leadStages';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../../services/leadDedupService';
 import { DuplicateLeadWarning } from './DuplicateLeadWarning';
-import { CombGrid } from '../../pages/components/CombGrid';
 
 /**
  * One rule per field, so the blur handler, the submit guard and the
@@ -298,7 +297,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             title: 'Contact',
                             content: (
                                 <>
-                                <div className="md:col-span-2 space-y-3">
+                                <GridItem span="full"><div className="space-y-3">
                                                 {isDuplicate && (
                                                     <div className="flex items-start gap-3 p-3 bg-warning/10 border border-warning/30 rounded-lg text-warning text-sm">
                                                         <AlertCircle size={18} className="shrink-0" />
@@ -327,8 +326,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         </div>
                                                     </div>
                                                 )}
-                                </div>
-                                                <TextField
+                                </div></GridItem>
+                                                <GridItem span={{ md: 4, lg: 6 }}><TextField
                                                     name="company_name"
                                                     label="Company Name"
                                                     ref={(el: HTMLInputElement | null) => { fieldRefs.current.company_name = el; }}
@@ -338,10 +337,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                     onBlur={(e) => validateField('company_name', e.target.value)}
                                                     placeholder="e.g. Acme Corp"
                                                     error={errors.company_name || undefined}
-                                                />
+                                                /></GridItem>
 
                                                 <div className="contents">
-                                                    <TextField
+                                                    <GridItem span={{ md: 4, lg: 6 }}><TextField
                                                         name="first_name"
                                                         label="First Name"
                                                         required
@@ -352,8 +351,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         onBlur={(e) => validateField('first_name', e.target.value)}
                                                         placeholder="e.g. John"
                                                         error={errors.first_name || undefined}
-                                                    />
-                                                    <TextField
+                                                    /></GridItem>
+                                                    <GridItem span={{ md: 4, lg: 6 }}><TextField
                                                         name="last_name"
                                                         label="Last Name"
                                                         ref={(el: HTMLInputElement | null) => { fieldRefs.current.last_name = el; }}
@@ -363,7 +362,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         onBlur={(e) => validateField('last_name', e.target.value)}
                                                         placeholder="e.g. Doe"
                                                         error={errors.last_name || undefined}
-                                                    />
+                                                    /></GridItem>
                                                 </div>
 
                                                 <div className="contents">
@@ -371,7 +370,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         ("Please enter a part following '@'") pre-empted the
                                                         inline message and looked nothing like the rest of
                                                         the form. Validation is the app's job here. */}
-                                                    <TextField
+                                                    <GridItem span={{ md: 4, lg: 6 }}><TextField
                                                         name="contact_email"
                                                         label="Contact Email"
                                                         required
@@ -387,8 +386,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         onBlur={(e) => setErrors(prev => ({ ...prev, contact_email: validateEmail(e.target.value) }))}
                                                         placeholder="name@company.com"
                                                         error={emailError || undefined}
-                                                    />
-                                                    <TextField
+                                                    /></GridItem>
+                                                    <GridItem span={{ md: 4, lg: 6 }}><TextField
                                                         name="phone"
                                                         label="Phone"
                                                         required
@@ -404,11 +403,11 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         onBlur={(e) => validateField('phone', e.target.value)}
                                                         placeholder="+91 98765 43210"
                                                         error={phoneError || undefined}
-                                                    />
+                                                    /></GridItem>
                                                 </div>
 
                                                 <div className="contents">
-                                                    <TextField
+                                                    <GridItem span={{ md: 4, lg: 6 }}><TextField
                                                         name="alt_phone"
                                                         label="Alt. Phone"
                                                         hint={phoneCountLabel(formData.alt_phone) || undefined}
@@ -419,7 +418,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         onBlur={(e) => validateField('alt_phone', e.target.value)}
                                                         placeholder="+91 98765 43211"
                                                         error={errors.alt_phone || undefined}
-                                                    />
+                                                    /></GridItem>
                                                 </div>
                                 </>
                             ),
@@ -429,7 +428,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             title: 'Address',
                             content: (
                                 <>
-                                    <div className="md:col-span-2">
+                                    <GridItem span="full"><div>
                                         <TextField
                                             name="address"
                                             label="Address"
@@ -441,9 +440,9 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                             placeholder="Street / area"
                                             error={errors.address || undefined}
                                         />
-                                    </div>
+                                    </div></GridItem>
 
-                                    <Select
+                                    <GridItem span={{ md: 4, lg: 6 }}><Select
                                         name="country"
                                         label="Country"
                                         value={formData.country}
@@ -456,10 +455,10 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                             setErrors(prev => ({ ...prev, pin_code: validatePostalCode(formData.pin_code, country) }));
                                         }}
                                         options={countryOptions().map(c => ({ value: c.code, label: c.name }))}
-                                    />
+                                    /></GridItem>
 
                                     <div className="contents">
-                                        <TextField
+                                        <GridItem span={{ md: 4, lg: 6 }}><TextField
                                             name="city"
                                             label="City"
                                             ref={(el: HTMLInputElement | null) => { fieldRefs.current.city = el; }}
@@ -469,8 +468,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                             onBlur={(e) => validateField('city', e.target.value)}
                                             placeholder="Bangalore"
                                             error={errors.city || undefined}
-                                        />
-                                        <TextField
+                                        /></GridItem>
+                                        <GridItem span={{ md: 4, lg: 6 }}><TextField
                                             name="pin_code"
                                             label={postalRule.label}
                                             hint={[
@@ -495,7 +494,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                             onBlur={(e) => validateField('pin_code', e.target.value)}
                                             placeholder={postalRule.example}
                                             error={errors.pin_code || undefined}
-                                        />
+                                        /></GridItem>
                                     </div>
                                 </>
                             ),
@@ -506,23 +505,23 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                             content: (
                                 <>
                                     <div className="contents">
-                                        <Select
+                                        <GridItem span={{ md: 4, lg: 6 }}><Select
                                             name="source"
                                             label="Lead Source"
                                             value={formData.source}
                                             onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                                             options={[{ value: '', label: '— Select source —' }, ...sourceTypes.map(opt => ({ value: opt.value, label: opt.label }))]}
-                                        />
-                                        <Select
+                                        /></GridItem>
+                                        <GridItem span={{ md: 4, lg: 6 }}><Select
                                             name="status"
                                             label="Lead Stage"
                                             value={formData.status}
                                             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                             options={leadStages.map(stage => ({ value: stage.name, label: stage.name }))}
-                                        />
+                                        /></GridItem>
                                     </div>
 
-                                    <div className="space-y-1.5">
+                                    <GridItem span={{ md: 4, lg: 6 }}><div className="space-y-1.5">
                                         <label className="text-sm font-medium text-fg-subtle">Referred By</label>
                                         <PartnerSearchDropdown
                                             partners={partners}
@@ -530,9 +529,9 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                             onChange={(id) => setFormData({ ...formData, referred_by: id })}
                                             placeholder="Search and select partner..."
                                         />
-                                    </div>
+                                    </div></GridItem>
 
-                                    <Select
+                                    <GridItem span={{ md: 4, lg: 6 }}><Select
                                         name="owner_id"
                                         label="Owner"
                                         value={formData.owner_id}
@@ -540,7 +539,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                         options={users.length === 0
                                             ? [{ value: '', label: 'Loading...' }]
                                             : users.map(u => ({ value: u.id, label: u.full_name }))}
-                                    />
+                                    /></GridItem>
                                 </>
                             ),
                         },
@@ -552,6 +551,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                     <>
                                         <div className="contents">
                                             {customFieldDefs.map(field => {
+                                                const cell = ((): React.ReactNode => {
                                                 const setCustom = (v: unknown) => setFormData({
                                                     ...formData,
                                                     custom_fields: { ...formData.custom_fields, [field.id]: v },
@@ -618,6 +618,8 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                                         onChange={(e) => setCustom(e.target.value)}
                                                     />
                                                 );
+                                                })();
+                                                return <GridItem key={field.id} span={{ md: 4, lg: 6 }}>{cell}</GridItem>;
                                             })}
                                         </div>
                                     </>
@@ -627,7 +629,7 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                 ] as Array<{ id: string; title: string; content: React.ReactNode }>).map((sec) => (
                     <section key={sec.id} aria-labelledby={`form-section-${sec.id}`} data-slot="section" data-section-id={sec.id} className="flex flex-col gap-nb-3">
                         <h2 id={`form-section-${sec.id}`} className="text-sm font-semibold text-fg">{sec.title}</h2>
-                        <CombGrid cols="pair" data-slot="fields">{sec.content}</CombGrid>
+                        <Grid gap="md">{sec.content}</Grid>
                     </section>
                 ))}
             </form>

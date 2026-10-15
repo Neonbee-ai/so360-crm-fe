@@ -5,7 +5,7 @@ import {
     AlertCircle, ArrowLeft, Briefcase, Building2, CheckCircle2, ChevronRight, Download,
     ExternalLink, Loader2, Package, UploadCloud, UserCheck, Users,
 } from 'lucide-react';
-import { Button, Select } from '@so360/design-system';
+import { Button, Select, Grid } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { ImportLeadsWizard } from '../leads/ImportLeadsWizard';
 import { describeImportError } from '../../services/leadImportService';
@@ -242,7 +242,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                     </p>
                     <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
                         {parsed.headers.map((header) => (
-                            <div key={header} className="grid grid-cols-2 gap-3 items-center" data-testid="import-mapping-row">
+                            <Grid key={header} columns={2} gap="md" className="items-center" data-testid="import-mapping-row">
                                 <div className="min-w-0">
                                     <p className="text-sm font-semibold text-fg truncate">{header}</p>
                                     <p className="text-xs text-fg-muted truncate">{parsed.rows[0][header]}</p>
@@ -254,7 +254,7 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
                                     options={[{ value: '', label: "Don't import" }, ...config.fields.map((f) => ({ value: f.key, label: f.required ? `${f.label} *` : f.label }))]}
                                 />
-                            </div>
+                            </Grid>
                         ))}
                     </div>
                     <div className="flex justify-between">
@@ -288,14 +288,14 @@ const RecordImportFlow: React.FC<FlowProps> = ({ kind, onBack, onClose, onImport
                     <p className="flex items-center gap-2 text-sm font-semibold text-success">
                         <CheckCircle2 size={16} /> Import finished
                     </p>
-                    <dl className="grid grid-cols-3 gap-3 text-center">
+                    <Grid columns={3} gap="md" className="text-center">
                         {([['Created', result.created], ['Updated', result.updated], ['Already there', result.skipped]] as const).map(([label, n]) => (
                             <div key={label} className="bg-bg border border-line rounded-lg p-3">
                                 <dt className="text-xs text-fg-muted">{label}</dt>
                                 <dd className="text-xl font-bold text-fg">{n}</dd>
                             </div>
                         ))}
-                    </dl>
+                    </Grid>
                     {result.problems.length > 0 && <ProblemList problems={result.problems} label="Import errors" />}
                     <div className="flex justify-between">
                         <Button type="button" variant="secondary" onClick={restart}>Import another file</Button>

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, History, Loader2, Pencil, RefreshCw, Save, X } from 'lucide-react';
-import { toast, Button, TextField, NumberInput } from '@so360/design-system';
+import { toast, Button, TextField, NumberInput, Grid, GridItem } from '@so360/design-system';
 import {
     commissionsService,
     legalTransitions,
@@ -16,7 +16,6 @@ import {
 import { salesSettingsService } from '../../services/salesSettingsService';
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
-import { CombGrid } from './CombGrid';
 
 
 const STATUS_CHIP: Record<CommissionStatus, string> = {
@@ -173,12 +172,12 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                         {COMMISSION_STATUS_LABELS[l.status]}
                                     </span>
                                 </div>
-                                <CombGrid cols="quad-wide" as="dl" className="text-xs">
-                                    <div><dt className="text-fg-muted">Basis</dt><dd className="font-bold text-fg">{money(l.basis_amount)}</dd></div>
-                                    <div><dt className="text-fg-muted">Rate</dt><dd className="font-bold text-fg">{l.percent === null ? '—' : `${l.percent}%`}</dd></div>
-                                    <div><dt className="text-fg-muted">Amount</dt><dd className="font-bold text-fg" data-testid={`commission-amount-${l.id}`}>{money(l.amount)}</dd></div>
-                                    <div><dt className="text-fg-muted">VAT</dt><dd className="font-bold text-fg">{money(l.vat_amount)}</dd></div>
-                                </CombGrid>
+                                <Grid gap="md" className="text-xs">
+                                    <GridItem span={3}><dl><dt className="text-fg-muted">Basis</dt><dd className="font-bold text-fg">{money(l.basis_amount)}</dd></dl></GridItem>
+                                    <GridItem span={3}><dl><dt className="text-fg-muted">Rate</dt><dd className="font-bold text-fg">{l.percent === null ? '—' : `${l.percent}%`}</dd></dl></GridItem>
+                                    <GridItem span={3}><dl><dt className="text-fg-muted">Amount</dt><dd className="font-bold text-fg" data-testid={`commission-amount-${l.id}`}>{money(l.amount)}</dd></dl></GridItem>
+                                    <GridItem span={3}><dl><dt className="text-fg-muted">VAT</dt><dd className="font-bold text-fg">{money(l.vat_amount)}</dd></dl></GridItem>
+                                </Grid>
                                 {l.override_reason && <p className="text-xs text-fg-subtle">Overridden: {l.override_reason}</p>}
 
                                 {act?.kind === 'override' && (

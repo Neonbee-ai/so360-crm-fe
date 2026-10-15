@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, DateTimePicker } from '@so360/design-system';
+import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState, DataTable, TextField, DateTimePicker, Grid, GridItem } from '@so360/design-system';
 import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatDateTime } from './marketing/marketingMappers';
 import { useActivity } from '@so360/shell-context';
 import { goBackFrom } from '../components/common/DetailBackLink';
-import { CombGrid } from './components/CombGrid';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -85,7 +84,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
 
       {campaign && (
         <div className="flex flex-col gap-nb-3">
-          <CombGrid cols="quad-wide">
+          <Grid gap="md">
             {[
               { label: 'Open Rate', value: `${Math.round((campaign.open_rate || 0) * 100)}%` },
               { label: 'Click Rate', value: `${Math.round((campaign.click_rate || 0) * 100)}%` },
@@ -96,12 +95,12 @@ const MarketingCampaignDetailPage: React.FC = () => {
               { label: 'Clicks', value: String(campaign.clicks || 0) },
               ...(campaign.segment ? [{ label: 'Segment', value: campaign.segment }] : []),
             ].map(({ label, value }) => (
-              <KpiCard key={label} label={label} value={value} />
+                <GridItem key={label} span={3}><KpiCard label={label} value={value} /></GridItem>
             ))}
-          </CombGrid>
+          </Grid>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
-            <div className="lg:col-span-6"><Card title="Test Send">
+          <Grid gap="md">
+            <GridItem span={{ lg: 6 }}><div><Card title="Test Send">
               <div className="flex gap-nb-2">
                 <div className="flex-1">
                   <TextField
@@ -121,9 +120,9 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   Send Test
                 </Button>
               </div>
-            </Card></div>
+            </Card></div></GridItem>
 
-            <div className="lg:col-span-6"><Card title="Schedule">
+            <GridItem span={{ lg: 6 }}><div><Card title="Schedule">
               <div className="flex gap-nb-2">
                 <div className="flex-1">
                   <DateTimePicker
@@ -145,8 +144,8 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   Schedule
                 </Button>
               </div>
-            </Card></div>
-          </div>
+            </Card></div></GridItem>
+          </Grid>
 
           <Card title="Recipients" padding="none">
             {recipients.length === 0 ? (

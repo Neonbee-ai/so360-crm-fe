@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
-import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, DataTable, SearchInput, TextField, Select, type DataTableColumn, type FilterValues, type ListFilterConfig, Grid, GridItem } from '@so360/design-system';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
 import { validatePhone } from '../utils/phoneValidation';
 import {
@@ -168,16 +168,16 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                     {error && <p className="text-danger text-sm mb-3">{error}</p>}
                     <div className="space-y-4">
                         {/* First Name + Last Name */}
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <TextField name="first_name" label="First Name" required value={form.first_name}
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="first_name" label="First Name" required value={form.first_name}
                                 onChange={e => { setForm(f => ({ ...f, first_name: e.target.value })); setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) })); }}
                                 onBlur={e => setFieldErrors(p => ({ ...p, first_name: validateFirstNameRequired(e.target.value) }))}
-                                error={fieldErrors.first_name || undefined} placeholder="Dhanooj" />
-                            <TextField name="last_name" label="Last Name" required value={form.last_name}
+                                error={fieldErrors.first_name || undefined} placeholder="Dhanooj" /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="last_name" label="Last Name" required value={form.last_name}
                                 onChange={e => { setForm(f => ({ ...f, last_name: e.target.value })); setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) })); }}
                                 onBlur={e => setFieldErrors(p => ({ ...p, last_name: validateLastName(e.target.value) }))}
-                                error={fieldErrors.last_name || undefined} placeholder="B S" />
-                        </div>
+                                error={fieldErrors.last_name || undefined} placeholder="B S" /></GridItem>
+                        </Grid>
 
                         {/* Company Name */}
                         <TextField name="company_name" label="Company Name" value={form.company_name}
@@ -191,20 +191,20 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             options={[{ value: '', label: 'Select type...' }, ...partnerTypes.map(pt => ({ value: pt.value, label: pt.label }))]} />
 
                         {/* Architect Grading + Commission Rate */}
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <Select name="grading" label="Architect Grading" value={form.grading}
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><Select name="grading" label="Architect Grading" value={form.grading}
                                 onChange={e => setForm(f => ({ ...f, grading: e.target.value }))}
                                 options={[
                                     { value: '', label: 'Select grading...' },
                                     { value: 'low', label: 'Low' },
                                     { value: 'mid', label: 'Mid' },
                                     { value: 'high', label: 'High' },
-                                ]} />
-                            <TextField name="commission_rate" label="Royalty Rate (%)" type="number" min="0" max="100" step="0.5"
+                                ]} /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="commission_rate" label="Royalty Rate (%)" type="number" min="0" max="100" step="0.5"
                                 value={form.commission_rate}
                                 onChange={e => setForm(f => ({ ...f, commission_rate: e.target.value }))}
-                                placeholder="0" />
-                        </div>
+                                placeholder="0" /></GridItem>
+                        </Grid>
 
                         {/* Area Served */}
                         <div>
@@ -236,14 +236,14 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         </div>
 
                         {/* Email + Phone */}
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <TextField name="email" label="Email" type="email" value={form.email}
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="email" label="Email" type="email" value={form.email}
                                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                                placeholder="email@example.com" />
-                            <TextField name="phone" label="Phone" type="tel" value={form.phone} maxLength={20}
+                                placeholder="email@example.com" /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="phone" label="Phone" type="tel" value={form.phone} maxLength={20}
                                 onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError(validatePhone(e.target.value)); }}
-                                error={phoneError || undefined} placeholder="+91 98765 43210" />
-                        </div>
+                                error={phoneError || undefined} placeholder="+91 98765 43210" /></GridItem>
+                        </Grid>
 
                         {/* Alt Phone */}
                         <TextField name="alt_phone" label="Alt. Phone" type="tel" value={form.alt_phone} maxLength={20}
@@ -262,18 +262,18 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             options={countryOptions().map(c => ({ value: c.code, label: c.name }))} />
 
                         {/* City + Pin Code */}
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <TextField name="city" label="City" value={form.city}
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="city" label="City" value={form.city}
                                 onChange={e => { setForm(f => ({ ...f, city: e.target.value })); setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) })); }}
                                 onBlur={e => setFieldErrors(p => ({ ...p, city: validateCity(e.target.value) }))}
-                                error={fieldErrors.city || undefined} placeholder="Bangalore" />
-                            <TextField name="pin_code"
+                                error={fieldErrors.city || undefined} placeholder="Bangalore" /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="pin_code"
                                 label={`${postalRule.label}${postalRule.digits ? ` (${form.pin_code.replace(/\D/g, '').length}/${postalRule.digits} digits)` : ''}${!postalRule.pattern ? ` (not used in ${postalRule.name})` : ''}`}
                                 inputMode={postalRule.numericOnly ? 'numeric' : 'text'} maxLength={postalRule.maxLength} value={form.pin_code}
                                 onChange={e => { const v = postalRule.numericOnly ? e.target.value.replace(/\D/g, '').slice(0, postalRule.maxLength) : e.target.value; setForm(f => ({ ...f, pin_code: v })); setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(v, form.country) })); }}
                                 onBlur={e => setFieldErrors(p => ({ ...p, pin_code: validatePostalCode(e.target.value, form.country) }))}
-                                error={fieldErrors.pin_code || undefined} placeholder={postalRule.example} />
-                        </div>
+                                error={fieldErrors.pin_code || undefined} placeholder={postalRule.example} /></GridItem>
+                        </Grid>
 
                         {/* Relationship Manager */}
                         <Select name="owner_person_id" label="Relationship Manager" value={form.owner_person_id}
@@ -281,24 +281,24 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                             options={[{ value: '', label: '— Assign RM —' }, ...users.map(u => ({ value: u.id, label: u.full_name }))]} />
 
                         {/* POC Primary + Secondary */}
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <TextField name="poc_primary" label="1st POC" value={form.poc_primary}
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="poc_primary" label="1st POC" value={form.poc_primary}
                                 onChange={e => setForm(f => ({ ...f, poc_primary: e.target.value }))}
-                                placeholder="Primary contact" />
-                            <TextField name="poc_secondary" label="2nd POC" value={form.poc_secondary}
+                                placeholder="Primary contact" /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="poc_secondary" label="2nd POC" value={form.poc_secondary}
                                 onChange={e => setForm(f => ({ ...f, poc_secondary: e.target.value }))}
-                                placeholder="Secondary contact" />
-                        </div>
+                                placeholder="Secondary contact" /></GridItem>
+                        </Grid>
 
                         {/* Customers Connected + Value of Purchase */}
-                        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                            <TextField name="customers_connected" label="Customers Connected" type="number" min="0" step="1" value={form.customers_connected}
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="customers_connected" label="Customers Connected" type="number" min="0" step="1" value={form.customers_connected}
                                 onChange={e => setForm(f => ({ ...f, customers_connected: e.target.value }))}
-                                placeholder="0" />
-                            <TextField name="value_of_purchase" label="Value of Purchase" type="number" min="0" step="0.01" value={form.value_of_purchase}
+                                placeholder="0" /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><TextField name="value_of_purchase" label="Value of Purchase" type="number" min="0" step="0.01" value={form.value_of_purchase}
                                 onChange={e => setForm(f => ({ ...f, value_of_purchase: e.target.value }))}
-                                placeholder="0" />
-                        </div>
+                                placeholder="0" /></GridItem>
+                        </Grid>
 
                         {/* Total Purchase Till Date */}
                         <TextField name="total_purchase_till_date" label="Total Purchase Till Date" type="number" min="0" step="0.01" value={form.total_purchase_till_date}
@@ -309,21 +309,23 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
                         {customFieldDefs.length > 0 && (
                             <div className="pt-4 border-t border-line space-y-4">
                                 <p className="text-xs font-semibold text-fg-muted">Additional Details</p>
-                                <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+                                <Grid gap="md">
                                     {customFieldDefs.map(field => (
+                                      <GridItem key={field.id} span={{ md: 4, lg: 6 }}>
                                         field.field_type === 'SELECT' ? (
-                                            <Select key={field.id} name={`custom_${field.id}`} label={field.label} required={!!field.is_required}
+                                            <Select name={`custom_${field.id}`} label={field.label} required={!!field.is_required}
                                                 value={form.custom_fields[field.id] || ''}
                                                 onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))}
                                                 options={[{ value: '', label: '— Select —' }, ...(field.options || []).map((opt: string) => ({ value: opt, label: opt }))]} />
                                         ) : (
-                                            <TextField key={field.id} name={`custom_${field.id}`} label={field.label} required={!!field.is_required}
+                                            <TextField name={`custom_${field.id}`} label={field.label} required={!!field.is_required}
                                                 type={field.field_type === 'NUMBER' ? 'number' : field.field_type === 'DATE' ? 'date' : 'text'}
                                                 value={form.custom_fields[field.id] || ''}
                                                 onChange={e => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [field.id]: e.target.value } }))} />
                                         )
+                                      </GridItem>
                                     ))}
-                                </div>
+                                </Grid>
                             </div>
                         )}
 

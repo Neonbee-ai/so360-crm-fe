@@ -4,7 +4,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney, mapAbandonedCart } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
-import { Badge, DataTable, EmptyState, KpiCard, ListPageTemplate, SearchInput } from '@so360/design-system';
+import { Badge, DataTable, EmptyState, KpiCard, ListPageTemplate, SearchInput, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
@@ -107,11 +107,13 @@ const MarketingAbandonedCartsPage: React.FC = () => {
       {error && <p className="text-danger mb-nb-3">{error}</p>}
 
       {cards.length > 0 && (
-        <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3 mb-nb-3">
+        <Grid gap="md" className="mb-nb-3">
           {cards.map((card) => (
-            <KpiCard key={card.label} label={card.label} value={card.value} />
+            <GridItem key={card.label} span={3}>
+            <KpiCard label={card.label} value={card.value} />
+            </GridItem>
           ))}
-        </div>
+        </Grid>
       )}
 
       <DataTable

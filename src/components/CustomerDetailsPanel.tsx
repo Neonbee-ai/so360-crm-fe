@@ -8,8 +8,7 @@ import { crmService } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { parseUtcDate } from '../utils/datetime';
 import { useBusinessSettings } from '@so360/shell-context';
-import { Button, TextField, Select, Textarea, Checkbox } from '@so360/design-system';
-import { CombGrid } from '../pages/components/CombGrid';
+import { Button, TextField, Select, Textarea, Checkbox, Grid, GridItem } from '@so360/design-system';
 
 interface Partner {
     id: string;
@@ -542,33 +541,33 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                 ) : (
                     /* ── Edit mode ── */
                     <div className="space-y-3">
-                        <CombGrid cols="pair">
-                            <div className="col-span-2">
+                        <Grid gap="md">
+                            <GridItem span="full"><div>
                                 <label className="text-xs text-fg-muted mb-1 block">Business Name</label>
                                 <TextField name="business-name" value={draft.business_name || ''} onChange={e => setDraftField({ business_name: e.target.value })} />
-                            </div>
-                            <div className="col-span-2">
+                            </div></GridItem>
+                            <GridItem span="full"><div>
                                 <label className="text-xs text-fg-muted mb-1 block">Legal Entity Name</label>
                                 <TextField name="legal-entity-name" value={draft.legal_entity_name || ''} onChange={e => setDraftField({ legal_entity_name: e.target.value })} placeholder="Registered legal name (if different)" />
-                            </div>
-                            {renderTaxEdit()}
-                            <div className="col-span-2">
+                            </div></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}>{renderTaxEdit()}</GridItem>
+                            <GridItem span="full"><div>
                                 <label className="text-xs text-fg-muted mb-1 block">Business Type</label>
                                 <TextField name="business-type" value={draft.business_type || ''} onChange={e => setDraftField({ business_type: e.target.value })} placeholder="e.g. Private Limited" />
-                            </div>
-                        </CombGrid>
+                            </div></GridItem>
+                        </Grid>
 
                         {/* Billing Address */}
                         <div>
                             <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Billing Address</div>
-                            <CombGrid cols="pair">
-                                <TextField name="billing-address-street" value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2" />
-                                <TextField name="billing-address-street2" value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2" />
-                                <TextField name="billing-address-city" value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" />
-                                <TextField name="billing-address-state" value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State / Province" />
-                                <TextField name="billing-address-postal-code" value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="Postal Code" />
-                                <TextField name="billing-address-country" value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" />
-                            </CombGrid>
+                            <Grid gap="md">
+                                <GridItem span="full"><TextField name="billing-address-street" value={draft.billing_address?.street || ''} onChange={e => setDraftBilling({ street: e.target.value })} placeholder="Address Line 1" /></GridItem>
+                                <GridItem span="full"><TextField name="billing-address-street2" value={draft.billing_address?.street2 || ''} onChange={e => setDraftBilling({ street2: e.target.value })} placeholder="Address Line 2" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-city" value={draft.billing_address?.city || ''} onChange={e => setDraftBilling({ city: e.target.value })} placeholder="City" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-state" value={draft.billing_address?.state || ''} onChange={e => setDraftBilling({ state: e.target.value })} placeholder="State / Province" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-postal-code" value={draft.billing_address?.postal_code || ''} onChange={e => setDraftBilling({ postal_code: e.target.value })} placeholder="Postal Code" /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField name="billing-address-country" value={draft.billing_address?.country || ''} onChange={e => setDraftBilling({ country: e.target.value })} placeholder="Country" /></GridItem>
+                            </Grid>
                         </div>
 
                         <Checkbox name="shipping-same" label="Shipping same as Billing" checked={shippingSame} onChange={e => setShippingSame(e.target.checked)} />
@@ -576,14 +575,14 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                         {!shippingSame && (
                             <div>
                                 <div className="text-xs font-semibold text-fg-subtle mb-1.5 flex items-center gap-1"><MapPin size={11} /> Shipping Address</div>
-                                <CombGrid cols="pair">
-                                    <TextField name="shipping-address-street" value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" className="col-span-2" />
-                                    <TextField name="shipping-address-street2" value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" className="col-span-2" />
-                                    <TextField name="shipping-address-city" value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" />
-                                    <TextField name="shipping-address-state" value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State / Province" />
-                                    <TextField name="shipping-address-postal-code" value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="Postal Code" />
-                                    <TextField name="shipping-address-country" value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" />
-                                </CombGrid>
+                                <Grid gap="md">
+                                    <GridItem span="full"><TextField name="shipping-address-street" value={draft.shipping_address?.street || ''} onChange={e => setDraftShipping({ street: e.target.value })} placeholder="Address Line 1" /></GridItem>
+                                    <GridItem span="full"><TextField name="shipping-address-street2" value={draft.shipping_address?.street2 || ''} onChange={e => setDraftShipping({ street2: e.target.value })} placeholder="Address Line 2" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-city" value={draft.shipping_address?.city || ''} onChange={e => setDraftShipping({ city: e.target.value })} placeholder="City" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-state" value={draft.shipping_address?.state || ''} onChange={e => setDraftShipping({ state: e.target.value })} placeholder="State / Province" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-postal-code" value={draft.shipping_address?.postal_code || ''} onChange={e => setDraftShipping({ postal_code: e.target.value })} placeholder="Postal Code" /></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><TextField name="shipping-address-country" value={draft.shipping_address?.country || ''} onChange={e => setDraftShipping({ country: e.target.value })} placeholder="Country" /></GridItem>
+                                </Grid>
                             </div>
                         )}
 
@@ -592,20 +591,20 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                             <div className="text-xs font-semibold text-fg-subtle mb-2 flex items-center gap-1">
                                 <DollarSign size={11} /> Accounting Preferences
                             </div>
-                            <CombGrid cols="pair">
-                                <div>
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <label className="text-xs text-fg-muted mb-1 block">Payment Terms</label>
                                     <Select name="payment-terms" value={draft.payment_terms || ''} onChange={e => setDraftField({ payment_terms: e.target.value })} options={[{ value: '', label: 'Select…' }, ...PAYMENT_TERMS_OPTIONS]} />
-                                </div>
-                                <div>
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <label className="text-xs text-fg-muted mb-1 block">Customer Currency</label>
                                     <TextField name="customer-currency" value={draft.customer_currency || ''} onChange={e => setDraftField({ customer_currency: e.target.value.toUpperCase() })} placeholder={bizSettings?.base_currency || 'e.g. USD'} maxLength={3} className="font-mono" />
-                                </div>
-                                <div className="col-span-2">
+                                </div></GridItem>
+                                <GridItem span="full"><div>
                                     <label className="text-xs text-fg-muted mb-1 block">Preferred Tax Group</label>
                                     <TextField name="preferred-tax-group" value={draft.preferred_tax_group || ''} onChange={e => setDraftField({ preferred_tax_group: e.target.value })} placeholder="e.g. Standard GST 18%" />
-                                </div>
-                            </CombGrid>
+                                </div></GridItem>
+                            </Grid>
                         </div>
 
                         {/* Internal Notes */}
@@ -664,16 +663,16 @@ const CustomerDetailsPanel: React.FC<CustomerDetailsPanelProps> = ({ lead, onUpd
                     <div className="text-xs text-fg-muted">No invoices for this customer yet.</div>
                 ) : (
                     <>
-                        <CombGrid cols="pair" className="mb-3">
-                            <div className="bg-surface-sunken border border-line rounded-nb p-3">
+                        <Grid gap="md" className="mb-3">
+                            <GridItem span={{ md: 4, lg: 6 }}><div className="bg-surface-sunken border border-line rounded-nb p-3">
                                 <div className="text-xs text-fg-muted">Invoice Count</div>
                                 <div className="text-lg font-semibold text-fg">{invoiceCount}</div>
-                            </div>
-                            <div className="bg-surface-sunken border border-line rounded-nb p-3">
+                            </div></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><div className="bg-surface-sunken border border-line rounded-nb p-3">
                                 <div className="text-xs text-fg-muted">Total Purchase Value</div>
                                 <div className="text-lg font-semibold text-success">{formatters.formatCurrency(totalPurchaseValue)}</div>
-                            </div>
-                        </CombGrid>
+                            </div></GridItem>
+                        </Grid>
                         <div className="space-y-1.5">
                             <div className="text-xs font-semibold text-fg-subtle">Recent Invoices</div>
                             {recentInvoices.map((inv) => (

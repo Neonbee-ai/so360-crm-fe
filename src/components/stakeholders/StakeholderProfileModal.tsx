@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Button, TextField, Select, Checkbox } from '@so360/design-system';
+import { Button, TextField, Select, Checkbox, Grid, GridItem } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import { stakeholderApi } from '../../services/crmService';
 import { Stakeholder, StakeholderRole, BuyingCommitteeRole, RelationshipStrength } from '../../types/crm';
 import StakeholderRolesEditor from './StakeholderRolesEditor';
-import { CombGrid } from '../../pages/components/CombGrid';
 
 interface Props {
     leadId: string;
@@ -87,30 +86,30 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                 <div className="space-y-4">
                     {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-nb px-3 py-2">{error}</div>}
 
-                    <CombGrid cols="pair">
-                        <TextField name="first_name" label="First Name" value={form.first_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('first_name', e.target.value)} />
-                        <TextField name="last_name" label="Last Name" value={form.last_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('last_name', e.target.value)} />
-                        <TextField name="job_title" label="Job Title" value={form.job_title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('job_title', e.target.value)} />
-                        <TextField name="department" label="Department" value={form.department} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('department', e.target.value)} />
-                        <TextField name="company_name" label="Company" value={form.company_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('company_name', e.target.value)} />
-                        <TextField name="time_zone" label="Time Zone" value={form.time_zone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('time_zone', e.target.value)} />
-                        <TextField name="email" label="Email" type="email" value={form.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('email', e.target.value)} />
-                        <TextField name="phone" label="Phone" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('phone', e.target.value)} />
-                        <TextField name="mobile_phone" label="Mobile" value={form.mobile_phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('mobile_phone', e.target.value)} />
-                        <TextField name="linkedin_url" label="LinkedIn URL" value={form.linkedin_url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('linkedin_url', e.target.value)} />
-                    </CombGrid>
+                    <Grid gap="md">
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="first_name" label="First Name" value={form.first_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('first_name', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="last_name" label="Last Name" value={form.last_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('last_name', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="job_title" label="Job Title" value={form.job_title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('job_title', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="department" label="Department" value={form.department} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('department', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="company_name" label="Company" value={form.company_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('company_name', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="time_zone" label="Time Zone" value={form.time_zone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('time_zone', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="email" label="Email" type="email" value={form.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('email', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="phone" label="Phone" value={form.phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('phone', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="mobile_phone" label="Mobile" value={form.mobile_phone} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('mobile_phone', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="linkedin_url" label="LinkedIn URL" value={form.linkedin_url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('linkedin_url', e.target.value)} /></GridItem>
+                    </Grid>
 
                     <Field label="Roles">
                         <StakeholderRolesEditor value={roles} onChange={setRoles} />
                     </Field>
 
-                    <CombGrid cols="pair">
-                        <Select name="buying_committee_role" label="Buying Committee" value={form.buying_committee_role} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} options={COMMITTEE_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} />
-                        <Select name="relationship_strength" label="Relationship Strength" value={form.relationship_strength} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('relationship_strength', e.target.value as RelationshipStrength)} options={STRENGTH_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} />
-                        <Select name="preferred_communication_method" label="Preferred Contact Method" value={form.preferred_communication_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('preferred_communication_method', e.target.value)} options={[{ value: '', label: '—' }, ...['email', 'phone', 'mobile', 'linkedin', 'sms', 'other'].map((o) => ({ value: o, label: o }))]} />
-                        <TextField name="preferred_contact_time" label="Preferred Contact Time" value={form.preferred_contact_time} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_contact_time', e.target.value)} />
-                        <TextField name="preferred_language" label="Preferred Language" value={form.preferred_language} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_language', e.target.value)} />
-                    </CombGrid>
+                    <Grid gap="md">
+                        <GridItem span={{ md: 4, lg: 6 }}><Select name="buying_committee_role" label="Buying Committee" value={form.buying_committee_role} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} options={COMMITTEE_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><Select name="relationship_strength" label="Relationship Strength" value={form.relationship_strength} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('relationship_strength', e.target.value as RelationshipStrength)} options={STRENGTH_OPTIONS.map((o) => ({ value: o, label: o.replace(/_/g, ' ') }))} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><Select name="preferred_communication_method" label="Preferred Contact Method" value={form.preferred_communication_method} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('preferred_communication_method', e.target.value)} options={[{ value: '', label: '—' }, ...['email', 'phone', 'mobile', 'linkedin', 'sms', 'other'].map((o) => ({ value: o, label: o }))]} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="preferred_contact_time" label="Preferred Contact Time" value={form.preferred_contact_time} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_contact_time', e.target.value)} /></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><TextField name="preferred_language" label="Preferred Language" value={form.preferred_language} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('preferred_language', e.target.value)} /></GridItem>
+                    </Grid>
 
                     <div className="flex flex-wrap items-center gap-4 pt-1">
                         <Checkbox name="is_active" label="Active" checked={form.is_active} onChange={(e: React.ChangeEvent<HTMLInputElement>) => set('is_active', e.target.checked)} />

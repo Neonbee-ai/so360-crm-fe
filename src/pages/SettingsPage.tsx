@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { crmService, settingsApi } from '../services/crmService';
 import { CRMSettings, SourceTypeOption, LeadScoringRule, ScoreCategory } from '../types/crm';
 import { Save, AlertCircle, Edit2, Archive, Plus, Trash2, Loader2, Zap, Trophy, ShieldCheck, ToggleLeft, ToggleRight, X, Check, RefreshCw } from 'lucide-react';
-import { toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker } from '@so360/design-system';
+import { toast, SettingsPageTemplate, Button, IconButton, TextField, Select, Card, ColorPicker, Grid, GridItem } from '@so360/design-system';
 import { StageStatusSelect } from '../components/common/StageStatusSelect';
 import { useShellBridge } from '@so360/shell-context';
 import DealNamingSettingsTab from './components/settings/DealNamingSettingsTab';
@@ -599,9 +599,9 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                 )}
 
                 {activeTab === 'custom-fields' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
+                    <Grid gap="md">
                         {/* Lead Custom Fields */}
-                        <Card title="Lead Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
+                        <GridItem span={{ lg: 4 }}><Card title="Lead Fields" padding="none" className="h-fit min-w-0" actions={(
                             <Button variant="secondary" onClick={() => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, lead_custom_fields: [...settings.lead_custom_fields, newField] });
@@ -687,10 +687,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                     ))}
                                 </div>
                             </div>
-                        </Card>
+                        </Card></GridItem>
 
                         {/* Deal Custom Fields */}
-                        <Card title="Deal Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
+                        <GridItem span={{ lg: 4 }}><Card title="Deal Fields" padding="none" className="h-fit min-w-0" actions={(
                             <Button variant="secondary" onClick={() => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, deal_custom_fields: [...settings.deal_custom_fields, newField] });
@@ -776,10 +776,10 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                     ))}
                                 </div>
                             </div>
-                        </Card>
+                        </Card></GridItem>
 
                         {/* Partner Custom Fields */}
-                        <Card title="Partner Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
+                        <GridItem span={{ lg: 4 }}><Card title="Partner Fields" padding="none" className="h-fit min-w-0" actions={(
                             <Button variant="secondary" onClick={() => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
                                         setSettings({ ...settings, partner_custom_fields: [...(settings.partner_custom_fields || []), newField] });
@@ -868,8 +868,8 @@ const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
                                     )}
                                 </div>
                             </div>
-                        </Card>
-                    </div>
+                        </Card></GridItem>
+                    </Grid>
                 )}
 
                 {activeTab === 'sources' && (
@@ -1145,8 +1145,8 @@ function ScoringRuleForm({
             </div>
 
             {/* Row 2: Type + Target + Condition + Value */}
-            <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
-                <div>
+            <Grid gap="md">
+                <GridItem span={3}><div>
                     <label className={labelCls}>Rule Type</label>
                     <Select
                         name="settings-field-16"
@@ -1154,9 +1154,9 @@ function ScoringRuleForm({
                         onChange={e => onChange({ ...draft, rule_type: e.target.value as any, target_field: '', condition: 'equals', value: '' })}
                         options={[{ value: 'source', label: 'Source' }, { value: 'activity', label: 'Activity' }, { value: 'field', label: 'Data Field' }]}
                     />
-                </div>
+                </div></GridItem>
 
-                <div>
+                <GridItem span={3}><div>
                     <label className={labelCls}>{ruleType === 'source' ? 'Source' : ruleType === 'activity' ? 'Activity' : 'Field'}</label>
                     <Select
                         name="settings-field-17"
@@ -1164,9 +1164,9 @@ function ScoringRuleForm({
                         onChange={e => onChange({ ...draft, target_field: e.target.value, condition: conditions[0]?.value as any || 'equals', value: '' })}
                         options={[{ value: '', label: 'Select…' }, ...getTargetOptions().map(o => ({ value: o.value, label: o.label }))]}
                     />
-                </div>
+                </div></GridItem>
 
-                <div>
+                <GridItem span={3}><div>
                     <label className={labelCls}>Condition</label>
                     <Select
                         name="settings-field-18"
@@ -1174,10 +1174,10 @@ function ScoringRuleForm({
                         onChange={e => onChange({ ...draft, condition: e.target.value as any })}
                         options={[...conditions.map(c => ({ value: c.value, label: c.label }))]}
                     />
-                </div>
+                </div></GridItem>
 
                 {!hideValue && (
-                    <div>
+                    <GridItem span={3}><div>
                         <label className={labelCls}>Value</label>
                         <TextField
                             name="settings-field-19"
@@ -1186,9 +1186,9 @@ function ScoringRuleForm({
                             onChange={e => onChange({ ...draft, value: e.target.value })}
                             placeholder="Compare value"
                         />
-                    </div>
+                    </div></GridItem>
                 )}
-            </div>
+            </Grid>
 
             {/* Row 3: Points + Active + Actions */}
             <div className="flex items-end gap-4">

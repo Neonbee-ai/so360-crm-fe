@@ -20,7 +20,7 @@ import { validatePhone } from '../utils/phoneValidation';
 import { validateFirstNameRequired, validateLastName } from '../utils/leadFieldValidation';
 import { describeApiError } from '../utils/apiErrorMessage';
 import { Lead, Deal, Task, Activity, ActivityType, CustomFieldDefinition, LeadScoringRule, User, Attachment, Note, SourceTypeOption } from '../types/crm';
-import { toast, useConfirm, DetailPageTemplate, Button, IconButton, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState } from '@so360/design-system';
+import { toast, useConfirm, DetailPageTemplate, Button, IconButton, TextField, Select, Checkbox, Badge, Card, ConfirmDialog, EmptyState, Grid, GridItem } from '@so360/design-system';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import { Trophy, Zap, Info, TrendingUp, RefreshCw } from 'lucide-react';
 import CreateDealModal from './components/CreateDealModal';
@@ -51,7 +51,6 @@ import { ExecutiveSummaryPanel } from '../components/ExecutiveSummaryPanel';
 import { MergeLeadPanel } from '../components/leads/MergeLeadPanel';
 import { DuplicateLeadWarning } from '../components/leads/DuplicateLeadWarning';
 import { parseDuplicateLead, type DuplicateLeadInfo } from '../services/leadDedupService';
-import { CombGrid } from './components/CombGrid';
 
 type TabType = 'overview' | 'activity' | 'notes' | 'tasks' | 'documents' | 'products' | 'feedback' | 'calls' | 'audit' | 'stakeholders' | 'emails' | 'meetings';
 
@@ -747,16 +746,16 @@ const LeadDetailPage = () => {
 
                         {/* 3. Value / revenue */}
                         <Card title="Revenue intelligence">
-                            <CombGrid cols="pair">
-                                <div>
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <span className="block text-xs text-fg-muted">Earned</span>
                                     <span className="text-lg font-semibold text-fg">{formatters.formatCurrency(earned)}</span>
-                                </div>
-                                <div>
+                                </div></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><div>
                                     <span className="block text-xs text-fg-muted">Pipeline</span>
                                     <span className="text-lg font-semibold text-fg">{formatters.formatCurrency(pipeline)}</span>
-                                </div>
-                            </CombGrid>
+                                </div></GridItem>
+                            </Grid>
                             <div className="mt-nb-3">
                                 <div className="mb-1 flex justify-between text-xs">
                                     <span className="text-fg-muted">Revenue contribution</span>
@@ -767,15 +766,15 @@ const LeadDetailPage = () => {
                                     <div className="h-full bg-primary/40" style={{ width: `${totalValue > 0 ? (pipeline / totalValue) * 100 : 0}%` }} />
                                 </div>
                             </div>
-                            <CombGrid cols="pair-fixed" as="dl" className="mt-nb-3 border-t border-line pt-nb-3">
-                                <div>
+                            <Grid columns={2} gap="md" className="mt-nb-3 border-t border-line pt-nb-3">
+                                <dl>
                                     <dt className="text-xs text-fg-muted">Active deals</dt>
                                     <dd className="text-sm font-medium text-fg">{associatedDeals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length}</dd>
-                                </div>
-                                <div>
+                                </dl>
+                                <dl>
                                     <dt className="text-xs text-fg-muted">Total LTV</dt>
                                     <dd className="text-sm font-medium text-fg">{formatters.formatCurrency(totalValue)}</dd>
-                                </div>
+                                </dl>
                                 {productCount > 0 && (
                                     <>
                                         <div>
@@ -788,7 +787,7 @@ const LeadDetailPage = () => {
                                         </div>
                                     </>
                                 )}
-                            </CombGrid>
+                            </Grid>
                         </Card>
 
                         {/* 4. Neura summary */}
@@ -1124,8 +1123,8 @@ const LeadDetailPage = () => {
 
                         <div className="p-4">
                             {infoTab === 'profile' && (
-                                <CombGrid cols="pair">
-                                    <div className="space-y-6">
+                                <Grid gap="md">
+                                    <GridItem span={{ md: 4, lg: 6 }}><div className="space-y-6">
                                         <div className="flex items-center gap-4 text-fg-subtle">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-subtle">
                                                 <Users size={18} />
@@ -1234,8 +1233,8 @@ const LeadDetailPage = () => {
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="space-y-6">
+                                    </div></GridItem>
+                                    <GridItem span={{ md: 4, lg: 6 }}><div className="space-y-6">
                                         <div className="flex items-center gap-4 text-fg-subtle">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-success">
                                                 <Tag size={18} />
@@ -1300,14 +1299,14 @@ const LeadDetailPage = () => {
                                                 <span className="text-sm font-medium">{formatters.formatDate(lead.created_at)}</span>
                                             </div>
                                         </div>
-                                    </div>
-                                </CombGrid>
+                                    </div></GridItem>
+                                </Grid>
                             )}
 
                             {infoTab === 'additional' && (
-                                <CombGrid cols="pair">
+                                <Grid gap="md">
                                     {customFieldDefs.map(field => (
-                                        <div key={field.id} className="flex items-center gap-4 text-fg-subtle">
+                                        <GridItem key={field.id} span={{ md: 4, lg: 6 }}>                                        <div className="flex items-center gap-4 text-fg-subtle">
                                             <div className="size-10 rounded-nb bg-surface-raised flex items-center justify-center text-fg-muted">
                                                 {field.type === 'date' ? <Calendar size={18} /> : field.type === 'boolean' ? <CheckCircle2 size={18} /> : <Tag size={18} />}
                                             </div>
@@ -1336,9 +1335,9 @@ const LeadDetailPage = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                        </div>
+                                        </div></GridItem>
                                     ))}
-                                </CombGrid>
+                                </Grid>
                             )}
                             {infoTab === 'business' && (
                                 <CustomerDetailsPanel

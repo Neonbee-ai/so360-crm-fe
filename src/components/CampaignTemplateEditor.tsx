@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { TextField, Textarea, Select, NumberInput, IconButton, ColorPicker, Slider, Button } from '@so360/design-system';
+import { TextField, Textarea, Select, NumberInput, IconButton, ColorPicker, Slider, Button, Grid, GridItem } from '@so360/design-system';
 
 interface Block {
   id: string;
@@ -135,10 +135,10 @@ const BlockEditor: React.FC<BlockEditorProps> = ({ block, onUpdate }) => {
       );
     case 'columns':
       return (
-        <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-2">
-          {ta('left', 'Left column', 2)}
-          {ta('right', 'Right column', 2)}
-        </div>
+        <Grid gap="sm">
+          <GridItem span={{ md: 4, lg: 6 }}>{ta('left', 'Left column', 2)}</GridItem>
+          <GridItem span={{ md: 4, lg: 6 }}>{ta('right', 'Right column', 2)}</GridItem>
+        </Grid>
       );
     default:
       return null;

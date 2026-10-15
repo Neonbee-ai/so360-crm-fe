@@ -6,7 +6,7 @@ import { useBusinessSettings } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Heart, Mail, Tag, ChevronRight } from 'lucide-react';
-import { DashboardPageTemplate, KpiCard, Card, Badge } from '@so360/design-system';
+import { DashboardPageTemplate, KpiCard, Card, Badge, Grid, GridItem } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -115,9 +115,10 @@ const MarketingOverviewPage: React.FC = () => {
       {data && (
         <div className="flex flex-col gap-nb-3">
           <Card title="Marketing tools">
-            <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-nb-3">
+            <Grid gap="md">
               {quickLinks.map(({ to, icon: Icon, tone, label, cta }) => (
-                <Link key={to} to={to} className="rounded-nb p-nb-2 hover:bg-surface-raised transition-colors group">
+                <GridItem key={to} span={{ md: 4, lg: 3 }}>
+                <Link to={to} className="rounded-nb p-nb-2 hover:bg-surface-raised transition-colors group">
                   <div className="flex items-center gap-nb-2 mb-1">
                     <Icon size={16} className={tone} />
                     <span className="text-xs font-semibold text-fg-subtle">{label}</span>
@@ -127,12 +128,13 @@ const MarketingOverviewPage: React.FC = () => {
                     <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
+                </GridItem>
               ))}
-            </div>
+            </Grid>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
-            <Card title="Top Selling Products" className="lg:col-span-6">
+          <Grid gap="md">
+            <GridItem span={{ lg: 6 }}><Card title="Top Selling Products">
               <div className="divide-y divide-line">
                 {bestSelling.map((row: any) => (
                   <div key={row.itemId} className={rowCls}>
@@ -142,9 +144,9 @@ const MarketingOverviewPage: React.FC = () => {
                 ))}
                 {bestSelling.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No sales data directly available.</p>}
               </div>
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Top Buyers" className="lg:col-span-6">
+            <GridItem span={{ lg: 6 }}><Card title="Top Buyers">
               <div className="divide-y divide-line">
                 {topBuyers.map((row: any) => (
                   <div key={row.customerId} className={rowCls}>
@@ -154,9 +156,9 @@ const MarketingOverviewPage: React.FC = () => {
                 ))}
                 {topBuyers.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No buyer data available.</p>}
               </div>
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Inactive Customers" className="lg:col-span-6">
+            <GridItem span={{ lg: 6 }}><Card title="Inactive Customers">
               <div className="divide-y divide-line">
                 {inactive.map((row: any) => (
                   <div key={row.customerId} className={rowCls}>
@@ -166,9 +168,9 @@ const MarketingOverviewPage: React.FC = () => {
                 ))}
                 {inactive.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No inactive customers identified.</p>}
               </div>
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Conversion Funnel" className="lg:col-span-6">
+            <GridItem span={{ lg: 6 }}><Card title="Conversion Funnel">
               <div className="divide-y divide-line text-sm">
                 <div className={rowCls}>
                   <span className="text-fg-subtle">Product Views</span>
@@ -187,15 +189,15 @@ const MarketingOverviewPage: React.FC = () => {
                   <span className="text-primary font-semibold">{data.funnel?.funnel?.purchases || 0}</span>
                 </div>
               </div>
-            </Card>
+            </Card></GridItem>
 
-            <Card title="Recent Storefront Searches" className="lg:col-span-12">
-              <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
+            <GridItem span={{ lg: 12 }}><Card title="Recent Storefront Searches">
+              <Grid gap="md">
                 {data.searchLogs?.map((row: any) => {
                   const customer = row.storefront_customers;
                   const name = customer ? `${customer.first_name} ${customer.last_name || ''}`.trim() : 'Anonymous';
                   return (
-                    <div key={row.id} className="flex items-center justify-between gap-nb-3 py-nb-2 border-b border-line">
+                    <GridItem key={row.id} span="full"><div className="flex items-center justify-between gap-nb-3 py-nb-2 border-b border-line">
                       <div className="min-w-0">
                         <p className="text-fg font-semibold text-sm truncate">"{row.search_query}"</p>
                         <p className="text-fg-muted text-xs mt-1">
@@ -203,15 +205,15 @@ const MarketingOverviewPage: React.FC = () => {
                         </p>
                       </div>
                       <Badge tone="primary" size="sm">Search</Badge>
-                    </div>
+                    </div></GridItem>
                   );
                 })}
                 {(!data.searchLogs || data.searchLogs.length === 0) && (
-                  <p className="text-fg-muted text-sm py-4 text-center wc-medium:col-span-2">No recent search activity found.</p>
+                  <GridItem span="full"><p className="text-fg-muted text-sm py-4 text-center">No recent search activity found.</p></GridItem>
                 )}
-              </div>
-            </Card>
-          </div>
+              </Grid>
+            </Card></GridItem>
+          </Grid>
         </div>
       )}
     </DashboardPageTemplate>

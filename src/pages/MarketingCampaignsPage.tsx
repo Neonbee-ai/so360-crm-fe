@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, mapCampaign } from './marketing/marketingMappers';
-import { Badge, Button, Card, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, TextField, Textarea } from '@so360/design-system';
+import { Badge, Button, Card, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, TextField, Textarea, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn, FilterValues, MenuItem } from '@so360/design-system';
 import CampaignTemplateEditor from '../components/CampaignTemplateEditor';
 import { useShellBridge } from '@so360/shell-context';
@@ -129,22 +129,22 @@ const MarketingCampaignsPage: React.FC = () => {
 
       {showCreate && (
         <Card title="Create Campaign" className="mb-nb-3">
-          <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-4">
-            <TextField
+          <Grid gap="md">
+            <GridItem span={{ md: 4, lg: 6 }}><TextField
               name="campaign_name"
               aria-label="Campaign name"
               placeholder="Campaign name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-            <Select
+            /></GridItem>
+            <GridItem span={{ md: 4, lg: 6 }}><Select
               name="campaign_type"
               aria-label="Campaign type"
               options={CAMPAIGN_TYPE_OPTIONS}
               value={form.campaignType}
               onChange={(e) => setForm({ ...form, campaignType: e.target.value })}
-            />
-          </div>
+            /></GridItem>
+          </Grid>
           <div className="mt-nb-4">
             <TextField
               name="campaign_description"

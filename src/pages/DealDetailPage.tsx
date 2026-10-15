@@ -16,7 +16,7 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, IconButton, Card, EmptyState, Badge, Select, DatePicker, NumberInput, Textarea, Grid, GridItem } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
@@ -28,7 +28,6 @@ import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { ProjectSelect } from '../components/common/ProjectSelect';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
-import { CombGrid } from './components/CombGrid';
 
 type TabType = 'activity' | 'notes' | 'tasks' | 'documents' | 'custom' | 'products' | 'calls' | 'payment-plan' | 'commission';
 
@@ -558,15 +557,15 @@ const DealDetailPage = () => {
                     <div data-testid="deal-detail-skeleton-lifecycle" className="bg-surface border border-line rounded-nb-lg p-6 h-28" />
 
                     {/* Two-column grid region */}
-                    <div data-testid="deal-detail-skeleton-grid" className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
-                        <div className="lg:col-span-8 space-y-nb-3">
+                    <Grid data-testid="deal-detail-skeleton-grid" gap="md">
+                        <GridItem span={{ lg: 8 }}><div className="space-y-nb-3">
                             <div className="bg-surface border border-line rounded-nb-lg h-40" />
                             <div data-testid="deal-detail-skeleton-tabs" className="bg-surface border border-line rounded-nb-lg h-96" />
-                        </div>
-                        <div className="lg:col-span-4 space-y-nb-3">
+                        </div></GridItem>
+                        <GridItem span={{ lg: 4 }}><div className="space-y-nb-3">
                             <div className="bg-surface border border-line rounded-nb-lg h-64" />
-                        </div>
-                    </div>
+                        </div></GridItem>
+                    </Grid>
                 </div>
             </div>
         );
@@ -1176,9 +1175,9 @@ const DealDetailPage = () => {
                                             }} />
                                         </label>
                                     </div>
-                                    <CombGrid cols="pair">
+                                    <Grid gap="md">
                                         {(deal.documents || []).map(doc => (
-                                            <div key={doc.id} className="flex items-center justify-between p-4 bg-bg border border-line rounded-nb-lg group hover:border-line">
+                                            <GridItem key={doc.id} span={{ md: 4, lg: 6 }}>                                            <div className="flex items-center justify-between p-4 bg-bg border border-line rounded-nb-lg group hover:border-line">
                                                 <div className="flex items-center gap-3">
                                                     <div className="bg-surface-raised p-2 rounded-lg text-info"><FileIcon size={20} /></div>
                                                     <div>
@@ -1200,20 +1199,20 @@ const DealDetailPage = () => {
                                                             }
                                                         }} />
                                                 </div>
-                                            </div>
+                                            </div></GridItem>
                                         ))}
-                                    </CombGrid>
+                                    </Grid>
                                 </div>
                             )}
 
                             {/* CUSTOM FIELDS TAB */}
                             {activeTab === 'custom' && (
-                                <CombGrid cols="pair">
+                                <Grid gap="md">
                                     {customFieldDefs.length === 0 ? (
-                                        <p className="text-fg-muted italic text-sm col-span-2">No additional fields configured in Deals settings.</p>
+                                        <GridItem span="full"><p className="text-fg-muted italic text-sm">No additional fields configured in Deals settings.</p></GridItem>
                                     ) : (
                                         customFieldDefs.map(field => (
-                                            <div key={field.id} className="flex flex-col gap-1.5">
+                                            <GridItem key={field.id} span={{ md: 4, lg: 6 }}><div className="flex flex-col gap-1.5">
                                                 <span className="text-xs font-semibold text-fg-muted">{field.label}</span>
                                                 <p className="text-sm font-bold text-fg border-l-2 border-line pl-3 py-1">
                                                     {field.type === 'boolean'
@@ -1222,10 +1221,10 @@ const DealDetailPage = () => {
                                                             ? formatters.formatDate(deal.custom_fields[field.id])
                                                             : deal.custom_fields?.[field.id] || '—'}
                                                 </p>
-                                            </div>
+                                            </div></GridItem>
                                         ))
                                     )}
-                                </CombGrid>
+                                </Grid>
                             )}
 
                             {activeTab === 'products' && (

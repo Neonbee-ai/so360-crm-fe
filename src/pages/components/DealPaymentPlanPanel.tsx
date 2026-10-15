@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Edit2, Loader2, Plus, Receipt, Save, Trash2, X } from 'lucide-react';
-import { toast, Button, IconButton, TextField, NumberInput, DatePicker, Select, DataTable } from '@so360/design-system';
+import { toast, Button, IconButton, TextField, NumberInput, DatePicker, Select, DataTable, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 import {
     paymentScheduleService,
@@ -23,7 +23,6 @@ import {
 } from '../../services/paymentScheduleService';
 import { useCRMFormatters } from '../../utils/formatters';
 import { describeApiError } from '../../utils/apiErrorMessage';
-import { CombGrid } from './CombGrid';
 
 
 export const BILLING_MODE_LABELS: Record<BillingMode, string> = {
@@ -431,14 +430,14 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                 </div>
             </div>
 
-            <CombGrid cols="trio">
+            <Grid gap="md">
                 {([['Total', totals.total], ['Paid', totals.paid], ['Outstanding', totals.outstanding]] as const).map(([label, v]) => (
-                    <div key={label} className="bg-surface-sunken border border-line rounded-nb-lg p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
+                    <GridItem key={label} span={4}>                    <div className="bg-surface-sunken border border-line rounded-nb-lg p-4" data-testid={`pp-total-${label.toLowerCase()}`}>
                         <p className="text-xs font-semibold text-fg-muted">{label}</p>
                         <p className="text-lg font-semibold text-fg mt-1">{fmt.formatCurrency(v)}</p>
-                    </div>
+                    </div></GridItem>
                 ))}
-            </CombGrid>
+            </Grid>
 
             <DataTable<PaymentScheduleLine>
                 name="pp-instalments"

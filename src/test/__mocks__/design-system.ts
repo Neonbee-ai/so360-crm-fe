@@ -340,3 +340,21 @@ export const DataTable = ({ columns = [], rows = [], rowKey, loading, emptyState
 };
 export const DateTimePicker = ({ label, hint: _h, error, name, onChange, defaultTime: _dt, minDate: _mi, maxDate: _ma, format: _f, step: _st, today: _t, ...rest }: any) =>
   fieldWrap(name, label, error, React.createElement('input', { id: rest.id ?? (label ? `f-${name}` : undefined), name, type: 'datetime-local', onChange: (e: any) => onChange?.(e.target.value), ...rest }));
+
+// ---- Comb layout primitives: passthrough wrappers carrying data-testid / className ----
+const passthrough = (defaultTestId: string, tag = 'div') => ({ children, className, 'data-testid': testId, as, ...rest }: any) =>
+  React.createElement(as || tag, { className, 'data-testid': testId ?? defaultTestId, ...(rest['aria-label'] ? { 'aria-label': rest['aria-label'] } : {}) }, children);
+export const GridItem = passthrough('grid-item');
+export const Grid: any = passthrough('grid');
+Grid.Item = GridItem;
+export const Stack = passthrough('stack');
+export const Region = ({ title, description, actions, children, 'data-testid': testId }: any) =>
+  React.createElement('section', { 'data-testid': testId ?? 'region' },
+    title ? React.createElement('h2', null, title) : null,
+    description ? React.createElement('p', null, description) : null,
+    actions ?? null,
+    children);
+export const Split = ({ rail, children, 'data-testid': testId }: any) =>
+  React.createElement('div', { 'data-testid': testId ?? 'split' },
+    React.createElement('div', { 'data-testid': 'split-main' }, children),
+    rail ? React.createElement('aside', { 'data-testid': 'split-rail' }, rail) : null);

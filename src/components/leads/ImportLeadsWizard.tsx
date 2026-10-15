@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Button, Select, RadioGroup, DataTable } from '@so360/design-system';
+import { Button, Select, RadioGroup, DataTable, Grid } from '@so360/design-system';
 import { Modal } from '../common/Modal';
 import {
     leadImportService,
@@ -13,7 +13,6 @@ import {
     checkMapping,
     describeImportError,
 } from '../../services/leadImportService';
-import { CombGrid } from '../../pages/components/CombGrid';
 
 type Step = 'upload' | 'map' | 'review' | 'done';
 
@@ -160,7 +159,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         </p>
                         <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
                             {preview.headers.map((header) => (
-                                <CombGrid cols="pair-fixed" className="items-center" key={header}  data-testid="import-mapping-row">
+                                <Grid columns={2} gap="md" className="items-center" key={header}  data-testid="import-mapping-row">
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold text-fg truncate">{header}</p>
                                         <p className="text-xs text-fg-muted truncate">{preview.sample_rows[0]?.[header] ?? ''}</p>
@@ -172,7 +171,7 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMapping((m) => ({ ...m, [header]: e.target.value || null }))}
                                         options={[{ value: '', label: "Don't import" }, ...preview.available_fields.map((f) => ({ value: f.key, label: f.custom ? `${f.label} (custom)` : f.label }))]}
                                     />
-                                </CombGrid>
+                                </Grid>
                             ))}
                         </div>
                         <div className="flex justify-between">
@@ -224,14 +223,14 @@ export const ImportLeadsWizard: React.FC<Props> = ({ isOpen, onClose, onImported
                         <p className="flex items-center gap-2 text-sm font-semibold text-success">
                             <CheckCircle2 size={16} /> Import finished
                         </p>
-                        <dl className="grid grid-cols-3 gap-3 text-center">
+                        <Grid columns={3} gap="md" className="text-center">
                             {([['Created', result.created], ['Updated', result.updated], ['Skipped', result.skipped]] as const).map(([label, n]) => (
                                 <div key={label} className="bg-bg border border-line rounded-lg p-3">
                                     <dt className="text-xs text-fg-muted">{label}</dt>
                                     <dd className="text-xl font-bold text-fg">{n ?? 0}</dd>
                                 </div>
                             ))}
-                        </dl>
+                        </Grid>
                         {result.errors?.length > 0 && (
                             <div>
                                 <p className="text-sm font-semibold text-warning mb-1.5">{result.errors.length} row{result.errors.length === 1 ? '' : 's'} not imported</p>

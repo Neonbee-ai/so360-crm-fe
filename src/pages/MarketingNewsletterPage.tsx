@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Trash2, MailX, Mail } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, useConfirm, ListPageTemplate, Card, Button, Badge, DataTable, EmptyState, SearchInput, TextField } from '@so360/design-system';
+import { toast, useConfirm, ListPageTemplate, Card, Button, Badge, DataTable, EmptyState, SearchInput, TextField, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
@@ -141,8 +141,8 @@ const MarketingNewsletterPage: React.FC = () => {
     >
       {confirmDialog}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
-        <div className="lg:col-span-4">
+      <Grid gap="md">
+        <GridItem span={{ lg: 4 }}><div>
           <Card title="Add Subscriber">
             <div className="space-y-nb-3">
               <TextField
@@ -160,9 +160,9 @@ const MarketingNewsletterPage: React.FC = () => {
               )}
             </div>
           </Card>
-        </div>
+        </div></GridItem>
 
-        <div className="lg:col-span-8">
+        <GridItem span={{ lg: 8 }}><div>
           <DataTable
             columns={columns}
             rows={filtered}
@@ -178,8 +178,8 @@ const MarketingNewsletterPage: React.FC = () => {
               />
             }
           />
-        </div>
-      </div>
+        </div></GridItem>
+      </Grid>
     </ListPageTemplate>
   );
 };

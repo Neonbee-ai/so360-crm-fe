@@ -5,7 +5,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings, useShell, useShellBridge } from '@so360/shell-context';
-import { Button, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, Tabs, TextField } from '@so360/design-system';
+import { Button, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, Tabs, TextField, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
@@ -343,27 +343,27 @@ const MarketingSegmentsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-nb-4">
+      <Grid gap="md">
         {(!hasStores || view === 'segments') && (
-        <div className="lg:col-span-3">
+        <GridItem span="full">
           {showCreate && (
             <div className="mb-nb-4 rounded-nb p-nb-4 bg-surface-sunken">
-              <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                <TextField
+              <Grid gap="md">
+                <GridItem span={{ md: 4, lg: 6 }}><TextField
                   name="segment-name"
                   aria-label="Segment name"
                   placeholder="Segment name"
                   value={segmentForm.name}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, name: e.target.value }))}
-                />
-                <TextField
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><TextField
                   name="segment-description"
                   aria-label="Description"
                   placeholder="Description (optional)"
                   value={segmentForm.description}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, description: e.target.value }))}
-                />
-                <div className="wc-medium:col-span-2">
+                /></GridItem>
+                <GridItem span="full"><div>
                   <TextField
                     name="segment-query"
                   aria-label="Search query"
@@ -371,22 +371,22 @@ const MarketingSegmentsPage: React.FC = () => {
                     value={segmentForm.q}
                     onChange={(e) => setSegmentForm((prev) => ({ ...prev, q: e.target.value }))}
                   />
-                </div>
-                <Select
+                </div></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><Select
                   name="segment-channel"
                   aria-label="Channel"
                   options={FORM_CHANNEL_OPTIONS}
                   value={segmentForm.channel}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, channel: e.target.value }))}
-                />
-                <Select
+                /></GridItem>
+                <GridItem span={{ md: 4, lg: 6 }}><Select
                   name="segment-category"
                   aria-label="Category"
                   options={FORM_CATEGORY_OPTIONS}
                   value={segmentForm.category}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, category: e.target.value }))}
-                />
-                <div className="wc-medium:col-span-2">
+                /></GridItem>
+                <GridItem span="full"><div>
                   <Select
                     name="segment-preset"
                   aria-label="Preset"
@@ -395,8 +395,8 @@ const MarketingSegmentsPage: React.FC = () => {
                     onChange={(e) => setSegmentForm((prev) => ({ ...prev, preset: e.target.value }))}
                     disabled={!dailystoreEnabled}
                   />
-                </div>
-              </div>
+                </div></GridItem>
+              </Grid>
               <div className="mt-nb-4 flex justify-end">
                 <Button
                   variant="primary"
@@ -430,11 +430,11 @@ const MarketingSegmentsPage: React.FC = () => {
               />
             }
           />
-        </div>
+        </GridItem>
         )}
 
         {activeSegment && (!hasStores || view === 'segments') && (
-          <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
+          <GridItem span="full"><div className="bg-surface border border-line rounded-nb-lg p-nb-4">
             <div className="flex items-center justify-between mb-nb-4 gap-nb-2 flex-wrap pb-nb-4 border-b border-line">
               <h3 className="text-sm font-semibold text-fg">
                 Manage Members: <span className="text-fg-subtle font-normal">{activeSegment.name}</span>
@@ -466,8 +466,8 @@ const MarketingSegmentsPage: React.FC = () => {
 
             {membersLoading && <p className="text-fg-subtle text-sm mb-nb-3">Loading members...</p>}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-nb-4">
-              <div className="bg-surface p-nb-4 border border-line rounded-nb-lg">
+            <Grid gap="md">
+              <GridItem span={{ md: 4, lg: 6 }}><div className="bg-surface p-nb-4 border border-line rounded-nb-lg">
                 <h4 className="text-sm font-semibold text-fg mb-nb-3">Current Members</h4>
                 <div className="space-y-nb-2 max-h-80 overflow-y-auto">
                   {segmentMembers.map((member: any) => {
@@ -486,9 +486,9 @@ const MarketingSegmentsPage: React.FC = () => {
                   })}
                   {segmentMembers.length === 0 && <p className="text-fg-muted text-sm py-nb-4 text-center">No current members found.</p>}
                 </div>
-              </div>
+              </div></GridItem>
 
-              <div className="bg-surface p-nb-4 border border-line rounded-nb-lg">
+              <GridItem span={{ md: 4, lg: 6 }}><div className="bg-surface p-nb-4 border border-line rounded-nb-lg">
                 <h4 className="text-sm font-semibold text-fg mb-nb-3">Add {memberType === 'customer' ? 'Customers' : 'Leads'}</h4>
                 <div className="space-y-nb-2 max-h-80 overflow-y-auto">
                   {memberCandidates.map((candidate: any) => {
@@ -514,14 +514,14 @@ const MarketingSegmentsPage: React.FC = () => {
                   })}
                   {memberCandidates.length === 0 && <p className="text-fg-muted text-sm py-nb-4 text-center">No records available to add.</p>}
                 </div>
-              </div>
-            </div>
-          </div>
+              </div></GridItem>
+            </Grid>
+          </div></GridItem>
         )}
 
         {hasStores && view === 'storefront' && (
           <>
-            <div className="bg-surface border border-line rounded-nb-lg p-nb-4 h-fit">
+            <GridItem span={{ md: 4, lg: 4 }}><div className="bg-surface border border-line rounded-nb-lg p-nb-4 h-fit">
               <h3 className="text-sm font-semibold text-fg mb-nb-3">Storefront Summary</h3>
               <div className="space-y-nb-2">
                 {mappedSummarySegments.map((entry) => (
@@ -542,9 +542,9 @@ const MarketingSegmentsPage: React.FC = () => {
                 ))}
                 {mappedSummarySegments.length === 0 && <p className="text-fg-muted text-sm py-nb-4 text-center">No segment data.</p>}
               </div>
-            </div>
+            </div></GridItem>
 
-            <div className="lg:col-span-2">
+            <GridItem span={{ md: 4, lg: 8 }}>
               <h3 className="text-sm font-semibold text-fg mb-nb-3">Top Buyers</h3>
               <DataTable
                 columns={buyerColumns}
@@ -553,9 +553,9 @@ const MarketingSegmentsPage: React.FC = () => {
                 onRowClick={(r: any) => navigateToCustomers({ customer_ids: r.customerId, preset: 'top_buyer', storeId })}
                 emptyState={<EmptyState title="No buyer data." />}
               />
-            </div>
+            </GridItem>
 
-            <div className="lg:col-span-3">
+            <GridItem span="full">
               <h3 className="text-sm font-semibold text-fg mb-nb-3">Inactive Customers</h3>
               <DataTable
                 columns={inactiveColumns}
@@ -564,10 +564,10 @@ const MarketingSegmentsPage: React.FC = () => {
                 onRowClick={(r: any) => navigateToCustomers({ customer_ids: r.customerId, preset: 'inactive', storeId })}
                 emptyState={<EmptyState title="No inactive customers identified." />}
               />
-            </div>
+            </GridItem>
           </>
         )}
-      </div>
+      </Grid>
     </ListPageTemplate>
   );
 };

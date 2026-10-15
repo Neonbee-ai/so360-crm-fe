@@ -4,10 +4,9 @@ import { crmService } from '../../services/crmService';
 import { ProjectSelect } from '../../components/common/ProjectSelect';
 import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
-import { toast, Button, TextField, Textarea, Select, DatePicker, TimePicker } from '@so360/design-system';
+import { toast, Button, TextField, Textarea, Select, DatePicker, TimePicker, Grid, GridItem } from '@so360/design-system';
 import { Modal } from '../../components/common/Modal';
 import { useShell, useActivity } from '@so360/shell-context';
-import { CombGrid } from './CombGrid';
 
 interface TaskModalProps {
     task?: Task | null; // If null, creating new task
@@ -299,22 +298,22 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                 { value: 'REMINDER', label: 'Reminder' },
                             ]}
                         />
-                        <CombGrid cols="pair">
-                            <DatePicker
+                        <Grid gap="md">
+                            <GridItem span={{ md: 4, lg: 6 }}><DatePicker
                                 name="task-start-date"
                                 label="Start Date"
                                 value={startDate}
                                 onChange={(v: string) => setStartDate(v)}
-                            />
-                            <DatePicker
+                            /></GridItem>
+                            <GridItem span={{ md: 4, lg: 6 }}><DatePicker
                                 name="task-due-date"
                                 label="Due Date"
                                 value={dueDate}
                                 onChange={(v: string) => setDueDate(v)}
                                 min={todayDate}
                                 required
-                            />
-                        </CombGrid>
+                            /></GridItem>
+                        </Grid>
 
                         {/* Due time is optional for every kind except Reminder, which
                             is an alarm. Left blank the task stays a plain calendar
@@ -402,8 +401,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                     <Link2 size={12} />
                                     Associate With
                                 </label>
-                                <CombGrid cols="pair">
-                                    <Select
+                                <Grid gap="md">
+                                    <GridItem span={{ md: 4, lg: 6 }}><Select
                                         name="task-associate-type"
                                         aria-label="Associate type"
                                         value={associateType}
@@ -413,9 +412,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                             { value: 'lead', label: 'Lead' },
                                             { value: 'deal', label: 'Deal' },
                                         ]}
-                                    />
+                                    /></GridItem>
                                     {associateType !== 'none' && (
-                                        <Select
+                                        <GridItem span={{ md: 4, lg: 6 }}><Select
                                             name="task-associate-id"
                                             aria-label="Associate record"
                                             value={associateId}
@@ -426,9 +425,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                                                     ? leads.map(l => ({ value: l.id, label: l.company_name || l.contact_name || '' }))
                                                     : deals.map(d => ({ value: d.id, label: d.name || d.company_name || '' }))),
                                             ]}
-                                        />
+                                        /></GridItem>
                                     )}
-                                </CombGrid>
+                                </Grid>
                             </div>
                         )}
 

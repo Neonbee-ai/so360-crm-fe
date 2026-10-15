@@ -3,7 +3,7 @@ import {
   TrendingUp, TrendingDown, AlertCircle, Clock, CheckCircle2,
   DollarSign, Zap, Activity, Calendar
 } from 'lucide-react';
-import { Badge, Card } from '@so360/design-system';
+import { Badge, Card, Grid, GridItem } from '@so360/design-system';
 import { Lead, Deal, Task } from '../types/crm';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -221,15 +221,15 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-nb-3">
-        <KPICard
+      <Grid gap="md">
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
           label="Total deal value"
           value={formatters.formatCurrency(kpis.totalDealValue)}
           color="blue"
           icon={<DollarSign size={16} className="text-primary" />}
-        />
+        /></GridItem>
 
-        <KPICard
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
           label="Pipeline health"
           value={
             <span className="text-sm truncate" title={kpis.pipelineHealthLabel}>
@@ -238,17 +238,17 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
           }
           color="emerald"
           icon={<CheckCircle2 size={16} className="text-success" />}
-        />
+        /></GridItem>
 
-        <KPICard
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
           label="Engagement score"
           value={`${kpis.engagementScore}/100`}
           trend={kpis.engagementTrend}
           color="amber"
           icon={<Zap size={16} className="text-warning fill-warning" />}
-        />
+        /></GridItem>
 
-        <KPICard
+        <GridItem span={{ md: 4, lg: 3 }}><KPICard
           label="Sales intelligence"
           value={
             <div className="flex flex-col gap-2">
@@ -262,8 +262,8 @@ export const ExecutiveSummaryPanel: React.FC<ExecutiveSummaryPanelProps> = ({ le
           }
           color="purple"
           icon={<Activity size={16} className="text-info" />}
-        />
-      </div>
+        /></GridItem>
+      </Grid>
     </Card>
   );
 };

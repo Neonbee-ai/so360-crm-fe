@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import { toast, UserSelector, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, DataTable } from '@so360/design-system';
+import { toast, UserSelector, Card, Button, IconButton, TextField, NumberInput, Select, Checkbox, DataTable, Grid, GridItem } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
@@ -15,7 +15,6 @@ import {
 } from '../../../services/salesSettingsService';
 import { useCrmFeatureFlag, RE_FLAGS } from '../../../hooks/useCrmFeatureFlag';
 import { describeApiError } from '../../../utils/apiErrorMessage';
-import { CombGrid } from '../CombGrid';
 
 const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
 const CARD_BODY_CLS = 'space-y-5';
@@ -218,8 +217,8 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
             {commissionsOn && (
                 <Card title="Commission">
                   <div className={CARD_BODY_CLS}>
-                    <CombGrid cols="pair">
-                        <div>
+                    <Grid gap="md">
+                        <GridItem span={{ md: 4, lg: 6 }}><div>
                             <Select
                                 id="sales-earn-trigger"
                                 name="sales-earn-trigger"
@@ -232,8 +231,8 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                     if (EARN_TRIGGER_VALUES.includes(v)) set({ earn_trigger: v as EarnTrigger });
                                 }}
                             />
-                        </div>
-                        <div>
+                        </div></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><div>
                             <NumberInput
                                 id="sales-vat"
                                 name="sales-vat"
@@ -245,8 +244,8 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 disabled={ro}
                                 onChange={(v) => set({ vat_percent: fromPct(v) })}
                             />
-                        </div>
-                        <div>
+                        </div></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><div>
                             <NumberInput
                                 id="sales-agent-share"
                                 name="sales-agent-share"
@@ -258,8 +257,8 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 disabled={ro}
                                 onChange={(v) => set({ default_agent_share_percent: fromPct(v) })}
                             />
-                        </div>
-                        <div>
+                        </div></GridItem>
+                        <GridItem span={{ md: 4, lg: 6 }}><div>
                             <NumberInput
                                 id="sales-tl-override"
                                 name="sales-tl-override"
@@ -271,8 +270,8 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                                 disabled={ro}
                                 onChange={(v) => set({ team_leader_override_percent: fromPct(v) })}
                             />
-                        </div>
-                    </CombGrid>
+                        </div></GridItem>
+                    </Grid>
                     <Checkbox
                         name="sales-approval-required"
                         label="Commission needs manager approval before it becomes payable"

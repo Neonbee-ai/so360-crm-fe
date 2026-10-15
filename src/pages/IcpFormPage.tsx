@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, FormPageTemplate, FormSection, NumberInput, Select, Spinner, Switch, TextField, Textarea, toast } from '@so360/design-system';
+import { Button, Card, FormPageTemplate, FormSection, NumberInput, Select, Spinner, Switch, TextField, Textarea, Grid, GridItem, toast } from '@so360/design-system';
 import {
     ICP_CATEGORIES, DEFAULT_MIN_SCORE, applyDraft, emptyCriterion, emptyIcpForm, icpService, icpToForm,
     validateIcp, type Icp, type IcpCriterion, type IcpErrors, type IcpFormValues,
 } from '../services/icpService';
 
 const LIST = '/crm/settings/icps';
-const GRID = 'grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3';
 
 const parseTags = (t: string): string[] => t.split(',').map((x) => x.trim()).filter(Boolean);
 
@@ -153,17 +152,17 @@ const IcpFormPage: React.FC = () => {
                 <FormSection title="Criteria" description="Each criterion adds (Include) or subtracts (Exclude) its weight from the fit score when a captured profile matches.">
                     {values.criteria.map((c, i) => (
                         <div key={i} className="flex flex-col gap-nb-3 border-b border-line pb-nb-3 last:border-b-0 last:pb-0" data-testid={`icp-criterion-${i}`}>
-                            <div className={GRID}>
-                                <Select
+                            <Grid gap="md">
+                                <GridItem span={{ md: 4, lg: 6 }}><Select
                                     label="Category" name={`criterion-category-${i}`} value={c.category} data-testid={`icp-criterion-category-${i}`}
                                     options={ICP_CATEGORIES.map((o) => ({ value: o.value, label: o.label }))}
                                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCriterion(i, { category: e.target.value })}
-                                />
-                                <TextField
+                                /></GridItem>
+                                <GridItem span={{ md: 4, lg: 6 }}><TextField
                                     label="Label" name={`criterion-label-${i}`} value={c.label} data-testid={`icp-criterion-label-${i}`}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCriterion(i, { label: e.target.value })}
-                                />
-                            </div>
+                                /></GridItem>
+                            </Grid>
                             <KeywordsField
                                 value={c.match_config.keywords}
                                 onChange={(tags: string[]) => setCriterion(i, { match_config: { keywords: tags } })}
