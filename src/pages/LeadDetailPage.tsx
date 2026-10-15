@@ -29,6 +29,7 @@ import CustomerDetailsPanel from '../components/CustomerDetailsPanel';
 import { LeadJourneyStepper } from '../components/LeadJourneyStepper';
 import LeadProductsTab from './components/LeadProductsTab';
 import ActivityHistoryDrawer from './components/ActivityHistoryDrawer';
+import { goBackFrom } from '../components/common/DetailBackLink';
 import NeuraAiSummaryCard from './components/NeuraAiSummaryCard';
 import CustomerFeedbackTab from './components/CustomerFeedbackTab';
 import CallsTab, { LogCallModal } from './components/CallsTab';
@@ -585,8 +586,8 @@ const LeadDetailPage = () => {
                     </span>
                 }
                 status={statusNode}
-                onBack={() => (window.history.length > 1 ? navigate(-1) : navigate(backRoute))}
-                backLabel={backLabel}
+                onBack={() => goBackFrom(navigate, backRoute)}
+                backLabel="Back"
                 primaryAction={canCreateDeal ? (
                     <Button onClick={() => setIsCreatingDeal(true)}><Plus size={16} />
                         Create Deal

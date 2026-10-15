@@ -179,7 +179,7 @@ const MarketingCouponsPage: React.FC = () => {
             }
           >
             <div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-2">
                   <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Coupon Code *</label>
                   <input 

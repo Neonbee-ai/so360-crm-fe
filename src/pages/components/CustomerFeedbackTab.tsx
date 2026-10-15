@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Badge, EmptyState } from '@so360/design-system';
 import {
-    MessageSquare, Loader2, ChevronDown, X, ExternalLink,
+    MessageSquare, Loader2, ChevronDown, ExternalLink,
     Calendar, Star, FileText, AlertCircle,
 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
+import { Modal } from '../../components/common/Modal';
 
 interface FeedbackSubmission {
     id: string;
@@ -187,35 +188,15 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
 
             {/* Response Detail Modal */}
             {selected && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    onClick={() => setSelected(null)}
+                <Modal
+                    isOpen
+                    size="lg"
+                    onClose={() => setSelected(null)}
+                    title={selected.forms?.name || 'Feedback Response'}
+                    subtitle={formatDateTime(selected.submitted_at)}
+                    data-testid="feedback-response-modal"
                 >
-                    <div className="absolute inset-0 bg-surface-sunken backdrop-blur-sm" />
-                    <div
-                        className="relative bg-surface border border-line rounded-nb-lg w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Modal header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
-                            <div>
-                                <h3 className="text-sm font-medium text-fg">
-                                    {selected.forms?.name || 'Feedback Response'}
-                                </h3>
-                                <p className="text-xs text-fg-muted font-medium mt-0.5">
-                                    {formatDateTime(selected.submitted_at)}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setSelected(null)}
-                                className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        {/* Response fields */}
-                        <div className="overflow-y-auto p-6 space-y-4 flex-1">
+                    <div className="space-y-4">
                             {Object.keys(selected.data).length === 0 ? (
                                 <div className="flex items-center gap-2 text-fg-muted">
                                     <AlertCircle size={14} />
@@ -233,9 +214,8 @@ export default function CustomerFeedbackTab({ leadId }: Props) {
                                     </div>
                                 ))
                             )}
-                        </div>
                     </div>
-                </div>
+                </Modal>
             )}
         </>
     );

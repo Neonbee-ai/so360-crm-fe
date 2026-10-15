@@ -194,7 +194,7 @@ const SalesAnalyticsPage: React.FC = () => {
         ];
         body = (
             <>
-                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 wc-medium:grid-cols-4 xl:grid-cols-7 gap-3">
                     {cards.map((c) => (
                         <div key={c.key} className="bg-surface border border-line rounded-nb-lg p-4">
                             <p className="text-xs font-semibold text-fg-muted">{c.label}</p>

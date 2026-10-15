@@ -155,7 +155,8 @@ describe('TasksPage', () => {
     it('When delete confirmed / Then removes task from list', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
+      fireEvent.click(screen.getAllByLabelText('More actions')[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Delete task' }));
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(mockDeleteTask).toHaveBeenCalledWith('t1'));
@@ -165,7 +166,8 @@ describe('TasksPage', () => {
       mockDeleteTask.mockRejectedValue(new Error('Server error'));
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
+      fireEvent.click(screen.getAllByLabelText('More actions')[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Delete task' }));
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Delete'));
       await waitFor(() => expect(screen.getByText('Server error')).toBeInTheDocument());
@@ -174,7 +176,8 @@ describe('TasksPage', () => {
     it('When cancel is clicked / Then dismisses delete dialog', async () => {
       render(<TasksPage />);
       await waitFor(() => expect(screen.getByTestId('task-row-t1')).toBeInTheDocument());
-      fireEvent.click(screen.getAllByTitle('Delete task')[0]);
+      fireEvent.click(screen.getAllByLabelText('More actions')[0]);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Delete task' }));
       await waitFor(() => expect(screen.getByText('Delete Task')).toBeInTheDocument());
       fireEvent.click(screen.getByText('Cancel'));
       await waitFor(() => expect(screen.queryByText('Delete Task')).not.toBeInTheDocument());

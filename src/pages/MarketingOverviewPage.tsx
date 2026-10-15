@@ -115,7 +115,7 @@ const MarketingOverviewPage: React.FC = () => {
       {data && (
         <div className="flex flex-col gap-nb-3">
           <Card title="Marketing tools">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-nb-3">
+            <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-nb-3">
               {quickLinks.map(({ to, icon: Icon, tone, label, cta }) => (
                 <Link key={to} to={to} className="rounded-nb p-nb-2 hover:bg-surface-raised transition-colors group">
                   <div className="flex items-center gap-nb-2 mb-1">
@@ -190,7 +190,7 @@ const MarketingOverviewPage: React.FC = () => {
             </Card>
 
             <Card title="Recent Storefront Searches" className="lg:col-span-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-nb-3">
+              <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                 {data.searchLogs?.map((row: any) => {
                   const customer = row.storefront_customers;
                   const name = customer ? `${customer.first_name} ${customer.last_name || ''}`.trim() : 'Anonymous';
@@ -207,7 +207,7 @@ const MarketingOverviewPage: React.FC = () => {
                   );
                 })}
                 {(!data.searchLogs || data.searchLogs.length === 0) && (
-                  <p className="text-fg-muted text-sm py-4 text-center md:col-span-2">No recent search activity found.</p>
+                  <p className="text-fg-muted text-sm py-4 text-center wc-medium:col-span-2">No recent search activity found.</p>
                 )}
               </div>
             </Card>

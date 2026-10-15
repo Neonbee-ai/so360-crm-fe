@@ -1,3 +1,4 @@
+import { Button } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import { Panel, PersonPicker, formatValue } from './targetUi';
@@ -89,12 +90,11 @@ export default function AllocateTeamPlanPanel({
     <Panel
       title={plan ? `Allocate · ${plan.name}` : 'Allocate'}
       action={
-        <button
-          className="text-xs text-fg-subtle hover:text-fg"
+        <Button variant="secondary" size="sm"
           onClick={onClose}
         >
           Close
-        </button>
+        </Button>
       }
     >
       {error && <div className="mb-2 text-sm text-danger">{error}</div>}
@@ -191,8 +191,7 @@ export default function AllocateTeamPlanPanel({
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              className="text-xs text-fg-subtle hover:text-fg"
+            <Button variant="secondary" size="sm"
               onClick={() =>
                 setRows((cur) => [
                   ...cur,
@@ -201,14 +200,13 @@ export default function AllocateTeamPlanPanel({
               }
             >
               + person
-            </button>
-            <button
-              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+            </Button>
+            <Button variant="primary" size="sm"
               onClick={submit}
               disabled={busy}
             >
               Allocate
-            </button>
+            </Button>
             <span className="text-xs text-fg-muted">
               Each person gets their own plan. Nothing is split automatically.
             </span>

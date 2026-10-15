@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Mail, Phone, Edit2, Loader2, Check, X,
@@ -13,7 +12,7 @@ import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import { goBackFrom } from '../components/common/DetailBackLink';
 import { DetailPageTemplate, Card, Badge, Button, KpiCard, EmptyState } from '@so360/design-system';
-import { crmPortalRoot } from '../utils/crmScope';
+import { Modal } from '../components/common/Modal';
 
 type TabType = 'overview' | 'deals' | 'commissions' | 'activity';
 
@@ -56,32 +55,36 @@ const MarkPaidModal = ({ commissionId, onClose, onPaid }: MarkPaidModalProps) =>
         }
     };
 
-    return createPortal(
-        <div className="fixed inset-0 z-dialog flex items-center justify-center bg-overlay">
-            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-sm shadow-overlay">
-                <h2 className="text-base font-semibold text-fg mb-4">Mark Royalty as Paid</h2>
-                {error && <p className="text-danger text-sm mb-3">{error}</p>}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="text-xs text-fg-subtle mb-1 block">Payment Reference</label>
-                        <input
-                            type="text"
-                            value={paymentRef}
-                            onChange={e => setPaymentRef(e.target.value)}
-                            placeholder="e.g. NEFT-2026-001"
-                            className="w-full bg-bg border border-line rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-fg-subtle hover:text-fg">Cancel</button>
-                        <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-success hover:bg-success/90 text-white rounded-lg font-medium disabled:opacity-50">
-                            {saving ? 'Saving...' : 'Mark Paid'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>,
-        crmPortalRoot()
+    return (
+        <Modal
+            isOpen
+            onClose={onClose}
+            title="Mark Royalty as Paid"
+            size="sm"
+            dismissible={!saving}
+            footer={(
+                <>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
+                    <Button type="submit" form="mark-paid-form" variant="primary" disabled={saving}>
+                        {saving ? 'Saving...' : 'Mark Paid'}
+                    </Button>
+                </>
+            )}
+        >
+            {error && <p className="text-danger text-sm mb-3">{error}</p>}
+            <form id="mark-paid-form" onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="text-xs text-fg-muted mb-1 block">Payment Reference</label>
+                    <input
+                        type="text"
+                        value={paymentRef}
+                        onChange={e => setPaymentRef(e.target.value)}
+                        placeholder="e.g. NEFT-2026-001"
+                        className="w-full bg-bg border border-line rounded-nb px-3 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                </div>
+            </form>
+        </Modal>
     );
 };
 
@@ -173,6 +176,9 @@ const PartnerDetailPage = () => {
     }, [id]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    // Rail cards (Value, Recent activity) show on every tab, so load their data up front.
+    useEffect(() => { fetchCommissions(); fetchActivities(); }, [fetchCommissions, fetchActivities]);
 
     useEffect(() => {
         if (activeTab === 'deals') fetchDeals();
@@ -320,6 +326,82 @@ const PartnerDetailPage = () => {
             ]}
             activeTab={activeTab}
             onTabChange={(tab) => setActiveTab(tab as TabType)}
+            sidePanel={
+                <div className="flex flex-col gap-nb-3">
+                    {/* 1. Owner / relationship manager */}
+                    <Card title="Relationship manager">
+                        {getUserName(partner.owner_person_id)
+                            ? <p className="flex items-center gap-1.5 text-sm text-fg"><User size={14} className="text-fg-subtle" />{getUserName(partner.owner_person_id)}</p>
+                            : <p className="text-sm text-fg-muted">Unassigned</p>}
+                    </Card>
+
+                    {/* 2. Status and key dates */}
+                    <Card title="Status & key dates">
+                        <dl className="flex flex-col gap-nb-2 text-sm">
+                            {partner.created_at && (
+                                <div className="flex items-center justify-between gap-nb-2">
+                                    <dt className="text-xs text-fg-muted">Created</dt>
+                                    <dd className="text-fg">{formatters.formatDate(partner.created_at)}</dd>
+                                </div>
+                            )}
+                            {partner.updated_at && (
+                                <div className="flex items-center justify-between gap-nb-2">
+                                    <dt className="text-xs text-fg-muted">Last updated</dt>
+                                    <dd className="text-fg">{formatters.formatDate(partner.updated_at)}</dd>
+                                </div>
+                            )}
+                        </dl>
+                    </Card>
+
+                    {/* 3. Value */}
+                    <Card title="Value">
+                        <dl className="flex flex-col gap-nb-2 text-sm">
+                            <div className="flex items-center justify-between gap-nb-2">
+                                <dt className="text-xs text-fg-muted">Customers connected</dt>
+                                <dd className="text-fg">{partner.customers_connected != null ? partner.customers_connected : '—'}</dd>
+                            </div>
+                            <div className="flex items-center justify-between gap-nb-2">
+                                <dt className="text-xs text-fg-muted">Value of purchase</dt>
+                                <dd className="text-fg">{partner.value_of_purchase != null ? formatters.formatCurrency(partner.value_of_purchase) : '—'}</dd>
+                            </div>
+                            <div className="flex items-center justify-between gap-nb-2">
+                                <dt className="text-xs text-fg-muted">Total purchase till date</dt>
+                                <dd className="text-fg">{partner.total_purchase_till_date != null ? formatters.formatCurrency(partner.total_purchase_till_date) : '—'}</dd>
+                            </div>
+                            {commissions?.summary && (
+                                <>
+                                    <div className="flex items-center justify-between gap-nb-2">
+                                        <dt className="text-xs text-fg-muted">Royalties earned</dt>
+                                        <dd className="text-fg">{formatters.formatCurrency(commissions.summary.total_earned || 0)}</dd>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-nb-2">
+                                        <dt className="text-xs text-fg-muted">Royalties pending</dt>
+                                        <dd className="text-fg">{formatters.formatCurrency(commissions.summary.pending || 0)}</dd>
+                                    </div>
+                                </>
+                            )}
+                        </dl>
+                    </Card>
+
+                    {/* 4. Neura: NeuraAiSummaryCard supports leads and deals only, so partners skip it. */}
+
+                    {/* 5. Recent activity */}
+                    <Card title="Recent activity" padding="none">
+                        {activities.length === 0 ? (
+                            <EmptyState title="No activity recorded yet." />
+                        ) : (
+                            <div className="divide-y divide-line">
+                                {activities.slice(0, 5).map((a: any) => (
+                                    <div key={a.id} className="p-nb-3">
+                                        <p className="text-sm text-fg font-medium">{a.type || 'Activity'}</p>
+                                        <p className="text-xs text-fg-muted mt-1">{a.created_at ? formatters.formatDateTime(a.created_at) : ''}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            }
         >
             {/* Overview Tab */}
             {activeTab === 'overview' && (
@@ -514,12 +596,6 @@ const PartnerDetailPage = () => {
                                     </dd>
                                 </dl>
                             </Card>
-
-                            <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-3 gap-nb-3">
-                                <KpiCard label="Customers connected" value={partner.customers_connected != null ? partner.customers_connected : '—'} />
-                                <KpiCard label="Value of purchase" value={partner.value_of_purchase != null ? formatters.formatCurrency(partner.value_of_purchase) : '—'} />
-                                <KpiCard label="Total purchase till date" value={partner.total_purchase_till_date != null ? formatters.formatCurrency(partner.total_purchase_till_date) : '—'} />
-                            </div>
 
                             <Card title="Contact information">
                                 <dl className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">

@@ -10,7 +10,7 @@ import {
   formatValue,
   reviewPeriodBounds,
 } from './targetUi';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, Button } from '@so360/design-system';
 
 /**
  * Monthly and quarterly sales reviews.
@@ -233,13 +233,12 @@ export default function SalesReviewsPage() {
               </select>
             )}
           </div>
-          <button
-            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+          <Button variant="primary" size="sm"
             onClick={startReview}
             disabled={busy || !newPersonId || !bounds}
           >
             Open review
-          </button>
+          </Button>
           {bounds && (
             <span className="text-xs text-fg-muted">
               {bounds.period_start} → {bounds.period_end}
@@ -256,13 +255,12 @@ export default function SalesReviewsPage() {
             Some finalized reviews have not reached People Connect, so they are
             not yet usable as appraisal evidence.
           </span>
-          <button
-            className="rounded bg-line px-3 py-1.5 text-xs text-fg hover:bg-surface-high disabled:opacity-50"
+          <Button variant="primary" size="sm"
             onClick={retrySync}
             disabled={busy}
           >
             Retry push
-          </button>
+          </Button>
         </div>
       )}
 
@@ -323,12 +321,11 @@ export default function SalesReviewsPage() {
         <Panel
           title={`Review · ${active.period_start} → ${active.period_end}`}
           action={
-            <button
-              className="text-xs text-fg-subtle hover:text-fg"
+            <Button variant="secondary" size="sm"
               onClick={() => setActive(null)}
             >
               Close
-            </button>
+            </Button>
           }
         >
           <div className="space-y-4">
@@ -438,20 +435,18 @@ export default function SalesReviewsPage() {
 
             {active.status !== 'finalized' ? (
               <div className="flex justify-end gap-2">
-                <button
-                  className="rounded bg-surface-raised px-3 py-1.5 text-sm text-fg hover:bg-line disabled:opacity-50"
+                <Button variant="secondary" size="sm"
                   onClick={saveDraft}
                   disabled={busy}
                 >
                   Save draft
-                </button>
-                <button
-                  className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+                </Button>
+                <Button variant="primary" size="sm"
                   onClick={() => finalize(active.id)}
                   disabled={busy}
                 >
                   Finalize
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="text-xs text-fg-muted">

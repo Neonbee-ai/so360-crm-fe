@@ -600,9 +600,9 @@ const SettingsPage = () => {
                 )}
 
                 {activeTab === 'custom-fields' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-nb-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
                         {/* Lead Custom Fields */}
-                        <Card title="Lead Fields" padding="none" className="h-fit" actions={(
+                        <Card title="Lead Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
                             <button
                                     onClick={() => {
                                         const newField = { id: `lcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
@@ -705,7 +705,7 @@ const SettingsPage = () => {
                         </Card>
 
                         {/* Deal Custom Fields */}
-                        <Card title="Deal Fields" padding="none" className="h-fit" actions={(
+                        <Card title="Deal Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
                             <button
                                     onClick={() => {
                                         const newField = { id: `dcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
@@ -808,7 +808,7 @@ const SettingsPage = () => {
                         </Card>
 
                         {/* Partner Custom Fields */}
-                        <Card title="Partner Fields" padding="none" className="h-fit" actions={(
+                        <Card title="Partner Fields" padding="none" className="h-fit lg:col-span-4 min-w-0" actions={(
                             <button
                                     onClick={() => {
                                         const newField = { id: `pcf-${Date.now()}`, label: 'New Field', type: 'text' as const, required: false };
@@ -1216,7 +1216,7 @@ function ScoringRuleForm({
             </div>
 
             {/* Row 2: Type + Target + Condition + Value */}
-            <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
                 <div>
                     <label className={labelCls}>Rule Type</label>
                     <select

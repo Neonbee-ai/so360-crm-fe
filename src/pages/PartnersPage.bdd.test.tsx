@@ -215,22 +215,22 @@ describe('PartnersPage', () => {
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            // The h2 modal title must sit in a non-scrolling div (shrink-0 header zone)
-            const h2 = screen.getByRole('heading', { level: 2, name: 'Add Partner' });
-            const headerDiv = h2.closest('div');
+            // The modal title must sit in a non-scrolling div (shrink-0 header zone)
+            const h2 = screen.getByRole('heading', { level: 3, name: 'Add Partner' });
+            const headerDiv = h2.closest('div[class*="shrink-0"]');
             expect(headerDiv).not.toBeNull();
             expect(headerDiv!.className).not.toContain('overflow-y-auto');
         });
 
-        it('When modal opens / Then the form body has overflow-y-auto for internal scroll', async () => {
+        it('When modal opens / Then the form body scrolls inside the common Modal body', async () => {
             const user = userEvent.setup();
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            // The scrollable area is the <form> element, not the outer wrapper
+            // The scrollable area is the Modal body wrapping the <form>
             const form = document.querySelector('form#create-partner-form');
             expect(form).not.toBeNull();
-            expect(form!.className).toContain('overflow-y-auto');
+            expect(form!.parentElement!.className).toContain('overflow-y-auto');
         });
 
         it('When modal opens / Then footer buttons are rendered outside the scrollable form', async () => {
@@ -253,13 +253,8 @@ describe('PartnersPage', () => {
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            // The outer fixed backdrop should not have overflow-y-auto
-            const backdrop = document.querySelector('.fixed.inset-0');
-            expect(backdrop).not.toBeNull();
-            expect(backdrop!.className).not.toContain('overflow-y-auto');
-
-            // The immediate modal panel (child of backdrop) must not overflow-y-auto either
-            const panel = backdrop!.firstElementChild as HTMLElement;
+            // The dialog panel itself must not scroll (only its body does)
+            const panel = screen.getByRole('dialog');
             expect(panel.className).not.toContain('overflow-y-auto');
         });
 
@@ -268,9 +263,7 @@ describe('PartnersPage', () => {
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            const backdrop = document.querySelector('.fixed.inset-0');
-            expect(backdrop).not.toBeNull();
-            const panel = backdrop!.firstElementChild as HTMLElement;
+            const panel = screen.getByRole('dialog');
             expect(panel.className).toContain('overflow-hidden');
         });
 
@@ -279,8 +272,7 @@ describe('PartnersPage', () => {
             render(<PartnersPage />);
             await user.click(screen.getByRole('button', { name: /add partner/i }));
 
-            const backdrop = document.querySelector('.fixed.inset-0');
-            const panel = backdrop!.firstElementChild as HTMLElement;
+            const panel = screen.getByRole('dialog');
             expect(panel.className).toContain('max-h-[90vh]');
         });
 
@@ -291,8 +283,8 @@ describe('PartnersPage', () => {
             expect(document.querySelector('form#create-partner-form')).not.toBeNull();
 
             // The X icon button lives in the modal header div alongside the h2
-            const h2 = screen.getByRole('heading', { level: 2, name: 'Add Partner' });
-            const headerDiv = h2.closest('div')!;
+            const h2 = screen.getByRole('heading', { level: 3, name: 'Add Partner' });
+            const headerDiv = h2.closest('div[class*="shrink-0"]')!;
             const closeBtn = headerDiv.querySelector('button');
             expect(closeBtn).not.toBeNull();
             await user.click(closeBtn!);

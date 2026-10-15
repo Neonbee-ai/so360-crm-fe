@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Send, CheckCircle, XCircle, FileText, Plus, Trash2, Edit2, Package, Printer, RotateCcw, Clock, Users, ShieldAlert } from 'lucide-react';
 import { goBackFrom } from '../components/common/DetailBackLink';
@@ -16,7 +15,6 @@ import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import { quoteLinePreTaxAmount, quoteTotals } from '../utils/quoteLineAmounts';
 import { QuoteApprovalModal } from '../components/quotes/QuoteApprovalModal';
 import { QuoteApprovalHistory, ApprovalRequestRecord } from '../components/quotes/QuoteApprovalHistory';
-import { crmPortalRoot } from '../utils/crmScope';
 
 const statusConfig: Record<QuoteStatus, { bg: string; text: string; label: string; tone: BadgeTone }> = {
     draft: { bg: 'bg-fg-muted/20', text: 'text-fg-subtle', label: 'Draft', tone: 'neutral' },
@@ -1000,79 +998,82 @@ const QuoteDetailPage = () => {
             />
 
             {/* Reject Modal */}
-            {showRejectModal && createPortal(
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
-                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-fg mb-4">Reject Quote</h2>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-fg-subtle mb-2">
-                                Reason for rejection *
-                            </label>
-                            <textarea
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                                rows={4}
-                                className={EDITABLE_FIELD_CLASS}
-                                placeholder="Please provide a reason..."
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowRejectModal(false);
-                                    setRejectReason('');
-                                }}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
-                            >
+            {showRejectModal && (
+                <Modal
+                    isOpen
+                    size="md"
+                    title="Reject Quote"
+                    data-testid="reject-quote-modal"
+                    onClose={() => { setShowRejectModal(false); setRejectReason(''); }}
+                    footer={
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => { setShowRejectModal(false); setRejectReason(''); }}>
                                 Cancel
-                            </button>
-                            <button
-                                onClick={handleReject}
-                                disabled={!rejectReason}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-danger-fg rounded-lg transition-colors"
-                            >
+                            </Button>
+                            <Button type="button" variant="danger" onClick={handleReject} disabled={!rejectReason}>
                                 Reject Quote
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                crmPortalRoot()
+                            </Button>
+                        </>
+                    }
+                >
+                    <label className="block text-sm font-medium text-fg-subtle mb-2">
+                        Reason for rejection *
+                    </label>
+                    <textarea
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        rows={4}
+                        className={EDITABLE_FIELD_CLASS}
+                        placeholder="Please provide a reason..."
+                    />
+                </Modal>
             )}
 
             {/* Convert Modal */}
-            {showConvertModal && createPortal(
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
-                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-fg mb-4">Convert to Sales Order</h2>
-                        <p className="text-fg-subtle mb-6">
-                            This will convert the approved quote to a sales order. This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowConvertModal(false)}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
-                            >
+            {showConvertModal && (
+                <Modal
+                    isOpen
+                    size="md"
+                    title="Convert to Sales Order"
+                    data-testid="convert-quote-modal"
+                    onClose={() => setShowConvertModal(false)}
+                    footer={
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => setShowConvertModal(false)}>
                                 Cancel
-                            </button>
-                            <button
-                                onClick={handleConvert}
-                                className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg transition-colors"
-                            >
+                            </Button>
+                            <Button type="button" variant="primary" onClick={handleConvert}>
                                 Convert to Order
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                crmPortalRoot()
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-fg-subtle">
+                        This will convert the approved quote to a sales order. This action cannot be undone.
+                    </p>
+                </Modal>
             )}
 
             <Modal
                 isOpen={showSendModal}
-                onClose={() => !isSending && setShowSendModal(false)}
+                onClose={() => setShowSendModal(false)}
+                dismissible={!isSending}
                 title="Email quotation to customer"
                 size="lg"
+                data-testid="send-quote-modal"
+                footer={
+                    <>
+                        <Button type="button" variant="secondary" onClick={() => setShowSendModal(false)} disabled={isSending}>
+                            Cancel
+                        </Button>
+                        <Button type="button" variant="primary" onClick={handleSendQuote} disabled={isSending || !sendTo.trim()}>
+                            <Send className="w-4 h-4" />
+                            {isSending ? 'Sending…' : 'Send quotation'}
+                        </Button>
+                    </>
+                }
             >
-                <div className="px-6 py-5 space-y-4">
+                <div className="space-y-4">
                     <p className="text-sm text-fg-subtle">
                         The quotation PDF is generated and attached automatically.
                     </p>
@@ -1104,73 +1105,53 @@ const QuoteDetailPage = () => {
                         />
                     </div>
                 </div>
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-line">
-                    <button
-                        type="button"
-                        onClick={() => setShowSendModal(false)}
-                        disabled={isSending}
-                        className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSendQuote}
-                        disabled={isSending || !sendTo.trim()}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-fg rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Send className="w-4 h-4" />
-                        {isSending ? 'Sending…' : 'Send quotation'}
-                    </button>
-                </div>
             </Modal>
 
             {/* Withdraw Modal */}
-            {showWithdrawModal && createPortal(
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
-                    <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md p-6">
-                        <div className="flex items-center gap-2 mb-2 text-warning">
-                            <RotateCcw className="w-5 h-5" />
-                            <h2 className="text-xl font-semibold text-fg">Withdraw Approval Request</h2>
-                        </div>
-                        <p className="text-sm text-fg-subtle mb-4 leading-relaxed">
-                            This will cancel the active approval cycle and return this quote to <strong>Draft</strong> status, unlocking it for edits and resubmission.
-                        </p>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-fg-subtle mb-1.5">
-                                Reason for withdrawal <span className="text-fg-muted font-normal">(optional)</span>
-                            </label>
-                            <textarea
-                                value={withdrawReason}
-                                onChange={(e) => setWithdrawReason(e.target.value)}
-                                rows={3}
-                                className={EDITABLE_FIELD_CLASS}
-                                placeholder="e.g. Updating line item quantities or pricing..."
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3 pt-2">
-                            <button
-                                onClick={() => {
-                                    setShowWithdrawModal(false);
-                                    setWithdrawReason('');
-                                }}
+            {showWithdrawModal && (
+                <Modal
+                    isOpen
+                    size="md"
+                    dismissible={!isWithdrawing}
+                    data-testid="withdraw-approval-modal"
+                    title={
+                        <span className="flex items-center gap-2">
+                            <RotateCcw className="w-5 h-5 text-warning" />
+                            Withdraw Approval Request
+                        </span>
+                    }
+                    onClose={() => { setShowWithdrawModal(false); setWithdrawReason(''); }}
+                    footer={
+                        <>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => { setShowWithdrawModal(false); setWithdrawReason(''); }}
                                 disabled={isWithdrawing}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
                             >
                                 Cancel
-                            </button>
-                            <button
-                                onClick={handleWithdraw}
-                                disabled={isWithdrawing}
-                                className="px-4 py-2 bg-warning hover:bg-warning/90 disabled:opacity-50 text-warning-fg rounded-lg transition-colors flex items-center gap-2 font-medium"
-                            >
+                            </Button>
+                            <Button type="button" variant="primary" onClick={handleWithdraw} disabled={isWithdrawing}>
                                 <RotateCcw className="w-4 h-4" />
                                 {isWithdrawing ? 'Withdrawing...' : 'Confirm Withdrawal'}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                crmPortalRoot()
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-sm text-fg-subtle mb-4 leading-relaxed">
+                        This will cancel the active approval cycle and return this quote to <strong>Draft</strong> status, unlocking it for edits and resubmission.
+                    </p>
+                    <label className="block text-sm font-medium text-fg-subtle mb-1.5">
+                        Reason for withdrawal <span className="text-fg-muted font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                        value={withdrawReason}
+                        onChange={(e) => setWithdrawReason(e.target.value)}
+                        rows={3}
+                        className={EDITABLE_FIELD_CLASS}
+                        placeholder="e.g. Updating line item quantities or pricing..."
+                    />
+                </Modal>
             )}
 
             {/* Quote Approval Modal (Approver Selection & Submission) */}

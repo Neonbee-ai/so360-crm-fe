@@ -115,6 +115,7 @@ const NeuraAiSummaryCard: React.FC<Props> = ({ leadId, leadLabel, isInboxEnabled
 
     return (
         <Card
+            padding="sm"
             title="Neura AI summary"
             actions={
                 <button

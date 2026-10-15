@@ -3,7 +3,7 @@ import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
 import { EmptyState, Panel, PersonPicker } from './targetUi';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, Button } from '@so360/design-system';
 
 /**
  * Reusable target templates.
@@ -119,12 +119,11 @@ export default function TargetTemplatesPage() {
                     {t.duration_periods === 1 ? '' : 's'}
                   </div>
                 </div>
-                <button
-                  className="text-xs text-fg-subtle hover:text-fg"
+                <Button variant="secondary" size="sm"
                   onClick={() => setAssigning(t)}
                 >
                   Assign
-                </button>
+                </Button>
               </div>
 
               {t.description && (
@@ -163,12 +162,11 @@ export default function TargetTemplatesPage() {
         <Panel
           title={`Assign "${assigning.name}"`}
           action={
-            <button
-              className="text-xs text-fg-subtle hover:text-fg"
+            <Button variant="secondary" size="sm"
               onClick={() => setAssigning(null)}
             >
               Cancel
-            </button>
+            </Button>
           }
         >
           <div className="flex flex-wrap items-end gap-3">
@@ -198,13 +196,12 @@ export default function TargetTemplatesPage() {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-            <button
-              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+            <Button variant="primary" size="sm"
               onClick={assign}
               disabled={busy || !ownerId || !startDate || !endDate}
             >
               {busy ? 'Creating…' : 'Create plan'}
-            </button>
+            </Button>
           </div>
           <div className="mt-2 text-xs text-fg-muted">
             Lines are copied into the new plan. Editing this template later will

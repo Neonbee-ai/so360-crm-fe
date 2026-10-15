@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { X, Loader2, AlertCircle, FileSignature } from 'lucide-react';
+import { Loader2, AlertCircle, FileSignature } from 'lucide-react';
+import { Button } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 
 interface Props {
     onClose: () => void;
@@ -95,20 +97,29 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
     const busy = phase === 'loading' || phase === 'sending';
 
     return (
-        <div className="fixed inset-0 bg-overlay z-dialog flex items-center justify-center p-4"
-            onClick={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
-            <div className="bg-surface-raised rounded-lg w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
-                <header className="flex items-center justify-between px-5 py-4 border-b">
-                    <div className="flex items-center gap-2">
-                        <FileSignature className="w-4 h-4 text-primary" />
-                        <h2 className="text-base font-semibold text-fg">Request Signature</h2>
-                    </div>
-                    <button type="button" onClick={onClose} disabled={busy} className="text-fg-subtle hover:text-fg">
-                        <X className="w-4 h-4" />
-                    </button>
-                </header>
-
-                <div className="px-5 py-5 space-y-4">
+        <Modal
+            isOpen
+            onClose={onClose}
+            size="md"
+            dismissible={!busy}
+            data-testid="sign-request-modal"
+            title={
+                <span className="flex items-center gap-2">
+                    <FileSignature className="w-4 h-4 text-primary" />
+                    Request Signature
+                </span>
+            }
+            footer={
+                <>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
+                    <Button type="button" variant="primary" onClick={handleSend} disabled={busy || !valid}>
+                        {phase === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {phase === 'done' ? 'Sent ✓' : phase === 'sending' ? 'Sending…' : 'Send for signature'}
+                    </Button>
+                </>
+            }
+        >
+                <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-fg mb-1">Template</label>
                         <select value={templateId} onChange={e => setTemplateId(e.target.value)}
@@ -152,18 +163,7 @@ const SignRequestModal: React.FC<Props> = ({ onClose, prefillName, prefillEmail,
                         </div>
                     )}
                 </div>
-
-                <footer className="flex items-center justify-end gap-2 px-5 py-3 border-t">
-                    <button type="button" onClick={onClose} disabled={busy}
-                        className="px-3 py-2 text-sm text-fg-muted hover:text-fg">Cancel</button>
-                    <button type="button" onClick={handleSend} disabled={busy || !valid}
-                        className="flex items-center gap-2 bg-primary hover:bg-primary-hover disabled:bg-line-strong text-primary-fg rounded-md px-4 py-2 text-sm font-medium">
-                        {phase === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {phase === 'done' ? 'Sent ✓' : phase === 'sending' ? 'Sending…' : 'Send for signature'}
-                    </button>
-                </footer>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

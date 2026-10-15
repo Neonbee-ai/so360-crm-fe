@@ -126,7 +126,7 @@ export default function TouchpointChannelsPage() {
   return (
     <DashboardPageTemplate
       title="Touchpoint Channels"
-      primaryAction={(
+      secondaryActions={(
         <Button variant="secondary" onClick={importSources} disabled={busy}>
           Import from Lead Sources
         </Button>
@@ -172,13 +172,12 @@ export default function TouchpointChannelsPage() {
               <option value="auto">Auto (system emits it)</option>
             </select>
           </div>
-          <button
-            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+          <Button variant="primary" size="sm"
             onClick={addChannel}
             disabled={busy || !label.trim() || !value.trim()}
           >
             Add
-          </button>
+          </Button>
         </div>
         {actualsSource === 'auto' && (
           <div className="mt-2 text-xs text-warning">

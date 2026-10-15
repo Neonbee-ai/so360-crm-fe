@@ -104,6 +104,10 @@ beforeEach(() => {
   mockGetPartners.mockResolvedValue([]);
 });
 
+async function openImport() {
+  fireEvent.click(await screen.findByRole('button', { name: /^import$/i }));
+}
+
 describe('Given the Leads page header', () => {
   describe('When the bulk import flag is off (non-RE tenant)', () => {
     it('Then there is no Import button', async () => {
@@ -127,7 +131,7 @@ describe('Given the Leads page header', () => {
     it('Then Import opens the import wizard in one tap', async () => {
       flags.on.add('action:crm:bulk_import');
       render(<LeadsPage />);
-      fireEvent.click(await screen.findByRole('button', { name: /^import$/i }));
+      await openImport();
       expect(screen.getByTestId('import-wizard')).toBeInTheDocument();
     });
   });
@@ -136,10 +140,10 @@ describe('Given the Leads page header', () => {
     it('Then it unmounts and Import can reopen it', async () => {
       flags.on.add('action:crm:bulk_import');
       render(<LeadsPage />);
-      fireEvent.click(await screen.findByRole('button', { name: /^import$/i }));
+      await openImport();
       fireEvent.click(screen.getByRole('button', { name: 'close wizard' }));
       expect(screen.queryByTestId('import-wizard')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: /^import$/i }));
+      await openImport();
       expect(screen.getByTestId('import-wizard')).toBeInTheDocument();
     });
   });
@@ -148,7 +152,7 @@ describe('Given the Leads page header', () => {
     it('Then the leads list is fetched again', async () => {
       flags.on.add('action:crm:bulk_import');
       render(<LeadsPage />);
-      fireEvent.click(await screen.findByRole('button', { name: /^import$/i }));
+      await openImport();
       await waitFor(() => expect(mockGetLeads).toHaveBeenCalled());
       const before = mockGetLeads.mock.calls.length;
       fireEvent.click(screen.getByRole('button', { name: 'finish import' }));

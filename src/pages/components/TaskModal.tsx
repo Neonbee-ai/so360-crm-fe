@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Calendar, Clock, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
+import { Loader2, Calendar, Clock, CheckCircle2, User as UserIcon, UserPlus, ChevronDown, Link2 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { ProjectSelect } from '../../components/common/ProjectSelect';
 import { composeDueDate, dueDateCalendarDay, inputValueToApiValue, splitStoredDueDate } from '../../utils/datetime';
 import { Task, TaskType, TaskPriority, TASK_PRIORITY_OPTIONS, User, Lead, Deal } from '../../types/crm';
-import { toast } from '@so360/design-system';
+import { toast, Button } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
 import { useShell, useActivity } from '@so360/shell-context';
 
 interface TaskModalProps {
@@ -224,19 +225,32 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
     };
 
     return (
-        <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-dialog flex items-center justify-center p-4">
-            <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0">
-                    <h2 className="text-xl font-semibold text-fg flex items-center gap-2">
-                        <CheckCircle2 className={isEditing ? "text-primary" : "text-success"} size={24} />
-                        {isEditing ? 'Edit Task' : 'New Task'}
-                    </h2>
-                    <button onClick={onClose} className="text-fg-muted hover:text-fg transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                <div className="p-8 space-y-6 overflow-y-auto flex-1">
+        <Modal
+            isOpen
+            onClose={onClose}
+            size="lg"
+            dismissible={!isSubmitting}
+            data-testid="task-modal"
+            title={
+                <span className="flex items-center gap-2">
+                    <CheckCircle2 className={isEditing ? "text-primary" : "text-success"} size={24} />
+                    {isEditing ? 'Edit Task' : 'New Task'}
+                </span>
+            }
+            footer={
+                <>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" form="task-modal-form" variant="primary" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 size={12} className="animate-spin" />}
+                        {isEditing ? 'Save Changes' : 'Create Task'}
+                    </Button>
+                </>
+            }
+        >
+                <form id="task-modal-form" onSubmit={handleSubmit} className="flex flex-col">
+                <div className="space-y-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-fg-muted">Task Title</label>
@@ -495,26 +509,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, leadId, dealId, stakeholder
                     </div>
 
                 </div>
-                <div className="px-8 pb-6 pt-4 flex justify-end gap-3 border-t border-line flex-shrink-0">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-6 py-3 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className={`px-8 py-3 text-primary-fg rounded-nb-lg text-xs font-semibold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2 ${isEditing ? 'bg-primary hover:bg-primary/90 shadow-primary/20' : 'bg-success hover:bg-success/90 shadow-success/20'}`}
-                        >
-                            {isSubmitting && <Loader2 size={12} className="animate-spin" />}
-                            {isEditing ? 'Save Changes' : 'Create Task'}
-                        </button>
-                </div>
                 </form>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

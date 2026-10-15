@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, ChevronUp, ChevronDown, ChevronsUpDown, X } from 'lucide-react';
+import { Search, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { partnersApi, settingsApi, crmService } from '../services/crmService';
 import { ListPageTemplate, Pagination, Button } from '@so360/design-system';
 import { Table } from '../components/common/Table';
@@ -24,7 +23,7 @@ import {
 import { useBusinessSettings } from '@so360/shell-context';
 import { useFormatters } from '@so360/formatters';
 import type { CustomFieldDefinition } from '../types/crm';
-import { crmPortalRoot } from '../utils/crmScope';
+import { Modal } from '../components/common/Modal';
 
 type SortField = 'contact_name' | 'partner_type' | 'grading' | 'total_deals' | 'total_deal_value';
 type SortDirection = 'asc' | 'desc' | null;
@@ -149,20 +148,26 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
     const inputCls = 'w-full bg-bg border border-line rounded-nb px-nb-3 py-nb-2 text-sm text-fg focus:outline-none focus:ring-2 ring-focus';
     const labelCls = 'text-xs text-fg-subtle mb-1 block';
 
-    return createPortal(
-        <div className="fixed inset-0 z-dialog flex items-center justify-center bg-overlay p-nb-4">
-            <div className="bg-surface-raised border border-line rounded-nb-lg w-full max-w-lg shadow-overlay flex flex-col max-h-[90vh] overflow-hidden">
-
-                {/* Sticky header — never scrolls */}
-                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-line shrink-0">
-                    <h2 className="text-lg font-semibold text-fg">Add Partner</h2>
-                    <button type="button" onClick={onClose} className="text-fg-muted hover:text-fg transition-colors">
-                        <X size={18} />
-                    </button>
-                </div>
-
-                {/* Scrollable form body */}
-                <form id="create-partner-form" onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-6 py-4">
+    return (
+        <Modal
+            isOpen
+            onClose={onClose}
+            title="Add Partner"
+            size="lg"
+            dismissible={!saving}
+            data-testid="create-partner-modal"
+            footer={
+                <>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" form="create-partner-form" variant="primary" disabled={saving}>
+                        {saving ? 'Creating...' : 'Create Partner'}
+                    </Button>
+                </>
+            }
+        >
+                <form id="create-partner-form" onSubmit={handleSubmit}>
                     {error && <p className="text-danger text-sm mb-3">{error}</p>}
                     <div className="space-y-4">
 
@@ -431,21 +436,7 @@ const CreatePartnerModal = ({ partnerTypes, onClose, onCreated }: CreatePartnerM
 
                     </div>
                 </form>
-
-                {/* Sticky footer — never scrolls */}
-                <div className="flex justify-end gap-nb-3 px-6 py-4 border-t border-line shrink-0">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-fg-subtle hover:text-fg transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit" form="create-partner-form" disabled={saving}
-                        className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-fg rounded-nb font-medium disabled:opacity-50 transition-colors">
-                        {saving ? 'Creating...' : 'Create Partner'}
-                    </button>
-                </div>
-
-            </div>
-        </div>,
-        crmPortalRoot()
+        </Modal>
     );
 };
 

@@ -1,5 +1,7 @@
 import { EmptyState } from '@so360/design-system';
 import React, { useState, useEffect, useCallback } from 'react';
+import { Button } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
 import { Package, Plus, Trash2, ChevronDown, Loader2, Search, Copy } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { DealProduct, LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
@@ -90,25 +92,41 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
     };
 
     return (
-        <div className="fixed inset-0 z-dialog flex items-center justify-center bg-overlay backdrop-blur-sm">
-            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-fg">Add Product to Deal</h3>
-                    <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">✕</button>
-                </div>
-
+        <Modal
+            isOpen
+            onClose={onClose}
+            title="Add Product to Deal"
+            size="lg"
+            footer={tab === 'from-lead' ? (
+                <>
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button
+                        variant="primary"
+                        disabled={selectedLeadProducts.size === 0}
+                        onClick={() => onImportFromLead(leadProducts.filter(lp => selectedLeadProducts.has(lp.id)))}
+                    >
+                        Add {selectedLeadProducts.size > 0 ? `(${selectedLeadProducts.size})` : ''}
+                    </Button>
+                </>
+            ) : selected ? (
+                <>
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button variant="primary" onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)}>Add Product</Button>
+                </>
+            ) : undefined}
+        >
                 {/* Tabs */}
                 {leadId && (
                     <div className="flex gap-1 mb-4 bg-surface-high rounded-nb-lg p-1">
                         <button
                             onClick={() => setTab('from-lead')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'from-lead' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'from-lead' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
                         >
                             <Copy size={10} className="inline mr-1" />From Lead
                         </button>
                         <button
                             onClick={() => setTab('search')}
-                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'search' ? 'bg-primary text-white' : 'text-fg-muted hover:text-fg-subtle'}`}
+                            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${tab === 'search' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:text-fg-subtle'}`}
                         >
                             <Search size={10} className="inline mr-1" />Search Inventory
                         </button>
@@ -143,16 +161,6 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                 ))}
                             </div>
                         )}
-                        <div className="flex gap-3">
-                            <button onClick={onClose} className="flex-1 py-2.5 border border-line rounded-nb-lg text-xs font-semibold text-fg-subtle hover:border-line transition-all">Cancel</button>
-                            <button
-                                disabled={selectedLeadProducts.size === 0}
-                                onClick={() => onImportFromLead(leadProducts.filter(lp => selectedLeadProducts.has(lp.id)))}
-                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-nb-lg text-xs font-semibold text-white transition-all"
-                            >
-                                Add {selectedLeadProducts.size > 0 ? `(${selectedLeadProducts.size})` : ''}
-                            </button>
-                        </div>
                     </>
                 )}
 
@@ -214,16 +222,11 @@ function AddProductModal({ dealId, leadId, onClose, onAdd, onImportFromLead, uni
                                     <input type="number" min={1} value={qty} onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
                                         className="w-full bg-surface-raised border border-line rounded-nb-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary" />
                                 </div>
-                                <div className="flex gap-3">
-                                    <button onClick={onClose} className="flex-1 py-2.5 border border-line rounded-nb-lg text-xs font-semibold text-fg-subtle hover:border-line transition-all">Cancel</button>
-                                    <button onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)} className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-nb-lg text-xs font-semibold text-white transition-all">Add Product</button>
-                                </div>
                             </div>
                         )}
                     </>
                 )}
-            </div>
-        </div>
+        </Modal>
     );
 }
 

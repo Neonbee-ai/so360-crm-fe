@@ -527,7 +527,7 @@ const DashboardPage = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-1 wc-medium:grid-cols-2 lg:grid-cols-4 gap-nb-3">
                         {teamStats.slice(0, 4).map((stat: any) => (
                             <div key={stat.user.id} className="border-t border-line pt-4 hover:border-line transition-all shadow-sm">
                                 <div className="flex items-center gap-3 mb-6">
@@ -615,45 +615,45 @@ const DashboardPage = () => {
                             type="button"
                             onClick={() => setShowCustomize(true)}
                             aria-label="Customize dashboard"
-                            className="flex items-center gap-1.5 px-3 py-2 bg-surface border border-line rounded-xl text-xs font-semibold text-fg-subtle hover:text-fg transition-all"
+                            className="flex items-center gap-1.5 h-nb-control-md px-3 bg-surface border border-line rounded-nb text-xs font-semibold text-fg-subtle hover:text-fg transition-all"
                         >
                             <LayoutDashboard size={14} /> Customize
                         </button>
                     )}
-                <div className="flex gap-2 bg-surface p-1 rounded-xl border border-line shadow-inner">
+                <div className="flex gap-2 bg-surface p-1 rounded-nb border border-line">
                     <button
                         onClick={() => setPeriod('yearly')}
-                        className={`px-4 py-2 ${period === 'yearly'
-                            ? 'bg-line text-fg shadow-md'
+                        className={`px-4 py-1.5 ${period === 'yearly'
+                            ? 'bg-line text-fg'
                             : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-lg text-xs font-semibold transition-all shadow-sm`}
+                            } rounded-nb text-xs font-semibold transition-all`}
                     >
                         Yearly
                     </button>
                     <button
                         onClick={() => setPeriod('quarterly')}
-                        className={`px-4 py-2 ${period === 'quarterly'
-                            ? 'bg-line text-fg shadow-md'
+                        className={`px-4 py-1.5 ${period === 'quarterly'
+                            ? 'bg-line text-fg'
                             : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-lg text-xs font-semibold transition-all`}
+                            } rounded-nb text-xs font-semibold transition-all`}
                     >
                         Quarterly
                     </button>
                     <button
                         onClick={() => setPeriod('monthly')}
-                        className={`px-4 py-2 ${period === 'monthly'
-                            ? 'bg-line text-fg shadow-md'
+                        className={`px-4 py-1.5 ${period === 'monthly'
+                            ? 'bg-line text-fg'
                             : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-lg text-xs font-semibold transition-all`}
+                            } rounded-nb text-xs font-semibold transition-all`}
                     >
                         Monthly
                     </button>
                     <button
                         onClick={() => setPeriod('weekly')}
-                        className={`px-4 py-2 ${period === 'weekly'
-                            ? 'bg-line text-fg shadow-md'
+                        className={`px-4 py-1.5 ${period === 'weekly'
+                            ? 'bg-line text-fg'
                             : 'text-fg-muted hover:text-fg-subtle'
-                            } rounded-lg text-xs font-semibold transition-all`}
+                            } rounded-nb text-xs font-semibold transition-all`}
                     >
                         Weekly
                     </button>

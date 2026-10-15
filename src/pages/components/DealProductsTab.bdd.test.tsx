@@ -67,11 +67,9 @@ describe('Given DealProductsTab', () => {
             render(<DealProductsTab dealId="deal-1" />);
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
-            const panels = Array.from(document.querySelectorAll('div')).filter(
-                el => el.className.includes('max-h-[90vh]'),
-            );
-            expect(panels.length).toBeGreaterThan(0);
-            expect(panels[0].className).toContain('overflow-y-auto');
+            const dialog = screen.getByRole('dialog');
+            expect(dialog.className).toContain('max-h-[90vh]');
+            expect(dialog.querySelector('.overflow-y-auto')).not.toBeNull();
         });
 
         it('When the close button is clicked inside modal / Then modal closes', async () => {
@@ -79,7 +77,7 @@ describe('Given DealProductsTab', () => {
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
             expect(screen.getByText(/Add Product to Deal/i)).toBeInTheDocument();
-            fireEvent.click(screen.getByText('✕'));
+            fireEvent.click(screen.getByLabelText('Close'));
             expect(screen.queryByText(/Add Product to Deal/i)).not.toBeInTheDocument();
         });
     });

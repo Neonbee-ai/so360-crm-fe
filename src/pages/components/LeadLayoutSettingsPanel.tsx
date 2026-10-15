@@ -1,5 +1,7 @@
 import React from 'react';
-import { X, ChevronUp, ChevronDown, Eye, RefreshCw } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, RefreshCw } from 'lucide-react';
+import { Button } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
 
 const SECTION_LABELS: Record<string, string> = {
     activity: 'Activity / Timeline',
@@ -29,12 +31,19 @@ interface Props {
 
 const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, onMove, onReset, onClose, labels = SECTION_LABELS, title = 'Layout Settings' }) => {
     return (
-        <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay backdrop-blur-sm" onClick={onClose}>
-            <div role="dialog" aria-label={title} className="bg-bg border border-line rounded-nb-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-                    <p className="text-xs font-medium text-fg">{title}</p>
-                    <button onClick={onClose} aria-label="Close" className="p-1.5 text-fg-muted hover:text-fg rounded-nb hover:bg-surface-raised"><X size={16} /></button>
-                </div>
+        <Modal
+            isOpen
+            onClose={onClose}
+            size="sm"
+            title={title}
+            bodyPadding={false}
+            data-testid="lead-layout-settings"
+            footer={
+                <Button type="button" variant="secondary" onClick={onReset}>
+                    <RefreshCw size={12} /> Reset to Default
+                </Button>
+            }
+        >
                 <div className="p-3 space-y-1 max-h-96 overflow-y-auto">
                     {sections.map((s, i) => (
                         <div key={s.key} className="flex items-center gap-2 px-2 py-2 rounded-nb hover:bg-surface">
@@ -55,16 +64,7 @@ const LeadLayoutSettingsPanel: React.FC<Props> = ({ sections, onToggleVisible, o
                         </div>
                     ))}
                 </div>
-                <div className="px-5 py-4 border-t border-line">
-                    <button
-                        onClick={onReset}
-                        className="w-full flex items-center justify-center gap-1.5 text-xs font-medium text-fg-subtle hover:text-fg py-2"
-                    >
-                        <RefreshCw size={12} /> Reset to Default
-                    </button>
-                </div>
-            </div>
-        </div>
+        </Modal>
     );
 };
 

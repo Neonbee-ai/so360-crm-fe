@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Badge, EmptyState } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
 import { Package, Plus, Trash2, ChevronDown, Loader2, Search, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { LeadProduct, ProductInterestStatus, InventoryItem } from '../../types/crm';
@@ -124,13 +125,18 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
     );
 
     return (
-        <div className="fixed inset-0 z-dialog flex items-center justify-center bg-overlay backdrop-blur-sm">
-            <div className="bg-surface border border-line rounded-nb-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-sm font-medium text-fg">Add Product</h3>
-                    <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">✕</button>
-                </div>
-
+        <Modal
+            isOpen
+            onClose={onClose}
+            title="Add Product"
+            size="lg"
+            footer={selected ? (
+                <>
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button variant="primary" onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)}>Add Product</Button>
+                </>
+            ) : undefined}
+        >
                 {!selected ? (
                     <>
                         <div className="relative mb-4">
@@ -239,24 +245,9 @@ function AddProductModal({ onClose, onAdd, existingItemIds, unitBooking = false 
                                 className="w-full bg-surface-raised border border-line rounded-nb px-4 py-2.5 text-sm text-fg focus:outline-none focus:border-primary"
                             />
                         </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={onClose}
-                                className="flex-1 py-2.5 border border-line rounded-nb text-xs font-medium text-fg-subtle hover:border-line transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => onAdd(selected, qty, unitBooking ? holdHours : undefined)}
-                                className="flex-1 py-2.5 bg-primary hover:bg-primary/90 rounded-nb text-xs font-medium text-primary-fg transition-all"
-                            >
-                                Add Product
-                            </button>
-                        </div>
                     </div>
                 )}
-            </div>
-        </div>
+        </Modal>
     );
 }
 

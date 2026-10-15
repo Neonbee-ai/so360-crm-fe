@@ -90,7 +90,7 @@ export const ListPageTemplate = (p: any) =>
   React.createElement('div', { 'data-template': 'list' },
     React.createElement('header', { 'data-slot': 'header' },
       React.createElement('h1', null, p.title), p.count != null ? React.createElement('span', { 'data-slot': 'count' }, p.count) : null,
-      slot('primary', p.primaryAction), slot('secondary', p.headerSecondaryActions), slot('overflow', p.overflowActions)),
+      slot('primary', p.primaryAction), slot('secondary', p.headerSecondaryActions), slot('overflow', Array.isArray(p.overflowActions) ? p.overflowActions.map((a: any) => React.createElement('button', { key: a.label, onClick: a.onSelect }, a.label)) : p.overflowActions)),
     slot('kpis', p.kpis),
     React.createElement('div', { 'data-slot': 'toolbar' }, p.search, p.filters, p.toolbarEnd),
     p.loading ? React.createElement('div', { 'data-slot': 'skeleton' }) : null,

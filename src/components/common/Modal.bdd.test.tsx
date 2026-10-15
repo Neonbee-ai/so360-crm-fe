@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { Modal } from './Modal';
@@ -147,7 +147,7 @@ describe('Modal', () => {
 
     it('When the modal header is rendered / Then it is a shrink-0 child so it never scrolls away', () => {
       render(<Modal isOpen={true} onClose={vi.fn()} title="Header Sticky"><p>body</p></Modal>);
-      const header = screen.getByText('Header Sticky').closest('div');
+      const header = screen.getByText('Header Sticky').closest('.shrink-0');
       expect(header).not.toBeNull();
       expect(header!.className).toContain('shrink-0');
     });
@@ -189,6 +189,61 @@ describe('Modal', () => {
       );
       expect(container.firstChild).toBeNull();
       expect(screen.queryByText('Closed Portal')).not.toBeInTheDocument();
+    });
+  });
+  describe('Given a modal with a footer', () => {
+    it('When rendered / Then the footer actions are inside the dialog', () => {
+      render(
+        <Modal isOpen onClose={vi.fn()} title="With footer" footer={<button type="button">Save</button>}>
+          <p>Body</p>
+        </Modal>,
+      );
+      expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    });
+
+    it('When a data-testid is passed / Then it is set on the dialog panel', () => {
+      render(<Modal isOpen onClose={vi.fn()} title="T" data-testid="my-modal"><p>x</p></Modal>);
+      expect(screen.getByTestId('my-modal')).toBe(screen.getByRole('dialog'));
+    });
+
+    it('When subtitle is passed / Then it renders under the title', () => {
+      render(<Modal isOpen onClose={vi.fn()} title="T" subtitle="Sub line"><p>x</p></Modal>);
+      expect(screen.getByText('Sub line')).toBeInTheDocument();
+    });
+  });
+
+  describe('Given the Escape key', () => {
+    it('When Escape is pressed on a dismissible modal / Then calls onClose', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T"><p>x</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('When Escape is pressed and dismissible is false / Then onClose is not called', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T" dismissible={false}><p>x</p></Modal>);
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Given dismissible is false (busy)', () => {
+    it('When the close button is clicked / Then it is disabled and onClose is not called', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T" dismissible={false}><p>x</p></Modal>);
+      const closeBtn = within(screen.getByRole('dialog')).getAllByRole('button')[0];
+      expect(closeBtn).toBeDisabled();
+      fireEvent.click(closeBtn);
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('When the backdrop is clicked / Then onClose is not called', () => {
+      const onClose = vi.fn();
+      render(<Modal isOpen onClose={onClose} title="T" dismissible={false}><p>x</p></Modal>);
+      const backdrop = screen.getByRole('dialog').previousElementSibling as HTMLElement;
+      fireEvent.click(backdrop);
+      expect(onClose).not.toHaveBeenCalled();
     });
   });
 });

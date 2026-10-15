@@ -9,7 +9,7 @@ import {
   type IncentiveRuleForm,
   type IncentiveRuleType,
 } from './incentiveRule';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, Button } from '@so360/design-system';
 
 /**
  * Incentive and commission review.
@@ -157,13 +157,12 @@ export default function CompensationPage() {
               onChange={(e) => setPeriodEnd(e.target.value)}
             />
           </div>
-          <button
-            className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+          <Button variant="primary" size="sm"
             onClick={calculate}
             disabled={busy || !personId}
           >
             {busy ? 'Calculating…' : 'Calculate'}
-          </button>
+          </Button>
         </div>
       </Panel>
 
@@ -214,12 +213,11 @@ export default function CompensationPage() {
       <Panel
         title="New rule"
         action={
-          <button
-            className="text-xs text-fg-subtle hover:text-fg"
+          <Button variant="secondary" size="sm"
             onClick={() => setShowRuleForm((v) => !v)}
           >
             {showRuleForm ? 'Cancel' : 'Add rule'}
-          </button>
+          </Button>
         }
       >
         {!showRuleForm ? (
@@ -380,8 +378,7 @@ export default function CompensationPage() {
                     )}
                   </div>
                 ))}
-                <button
-                  className="text-xs text-fg-subtle hover:text-fg"
+                <Button variant="secondary" size="sm"
                   onClick={() =>
                     setForm({
                       ...form,
@@ -390,7 +387,7 @@ export default function CompensationPage() {
                   }
                 >
                   + band
-                </button>
+                </Button>
               </div>
             )}
 
@@ -471,13 +468,12 @@ export default function CompensationPage() {
                   }
                 />
               </div>
-              <button
-                className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+              <Button variant="primary" size="sm"
                 onClick={saveRule}
                 disabled={busy}
               >
                 Save rule
-              </button>
+              </Button>
             </div>
           </div>
         )}

@@ -163,8 +163,8 @@ describe('TaskModal', () => {
       render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => expect(screen.getByText('New Task')).toBeInTheDocument());
       const overlay = document.querySelector('div.fixed.inset-0') as HTMLElement;
-      expect(overlay.className).toContain('items-center');
       expect(overlay.className).toContain('justify-center');
+      expect(screen.getByRole('dialog').className).toContain('my-auto');
     });
   });
 
@@ -682,27 +682,27 @@ describe('TaskModal', () => {
   // ── Viewport height fix ───────────────────────────────────────────────────
   describe('Given the modal renders in a constrained viewport (height fix)', () => {
     it('When rendered / Then the modal container has max-h-[90vh] class to stay within viewport', async () => {
-      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByText('New Task'));
       // The inner modal div (not the overlay) must have the height constraint
-      const modalBox = container.querySelector('[class*="max-h-\\[90vh\\]"]');
+      const modalBox = document.querySelector('[class*="max-h-\\[90vh\\]"]');
       expect(modalBox).not.toBeNull();
     });
 
     it('When rendered / Then the modal container has overflow-hidden to enforce the max-height clipping', async () => {
-      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByText('New Task'));
       // overflow-hidden must live on the same element as max-h-[90vh] so that flex
       // children cannot push the container past the viewport height cap.
-      const modalBox = container.querySelector('[class*="max-h-\\[90vh\\]"]');
+      const modalBox = document.querySelector('[class*="max-h-\\[90vh\\]"]');
       expect(modalBox).not.toBeNull();
       expect(modalBox!.className).toContain('overflow-hidden');
     });
 
     it('When rendered / Then the scrollable content area has overflow-y-auto to allow internal scrolling', async () => {
-      const { container } = render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
+      render(<TaskModal leadId="lead-1" onClose={vi.fn()} onSuccess={vi.fn()} />);
       await waitFor(() => screen.getByText('New Task'));
-      const scrollableArea = container.querySelector('[class*="overflow-y-auto"]');
+      const scrollableArea = document.querySelector('[class*="overflow-y-auto"]');
       expect(scrollableArea).not.toBeNull();
     });
 

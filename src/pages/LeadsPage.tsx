@@ -740,13 +740,8 @@ const LeadsPage = () => {
         }
         headerSecondaryActions={[
           ...(canExportLeads ? [<ExportMenu key="export" label="Export leads" onExport={(format) => exportService.leads({ status: filters.status }, format)} />] : []),
-          ...(canImportLeads ? [
-            <Button key="import" variant="secondary" onClick={() => setIsImportOpen(true)}>
-              <UploadCloud size={16} aria-hidden="true" />
-              Import
-            </Button>,
-          ] : []),
         ]}
+        overflowActions={canImportLeads ? [{ label: 'Import', icon: <UploadCloud size={16} aria-hidden="true" />, onSelect: () => setIsImportOpen(true) }] : undefined}
         kpis={
           <SummaryMetricChips
             chips={[

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, User as UserIcon, Loader2, Send, AlertCircle, Check } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { Quote } from '../../types/crm';
+import { Button } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 
 export interface ApproverCandidate {
   person_id?: string;
@@ -141,24 +143,45 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
   const quoteTotal = Number(quote.total_amount || quote.grand_total || 0);
 
   return (
-    <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-surface border border-line rounded-nb-lg shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
-          <div className="flex items-center gap-2">
-            <Send className="w-5 h-5 text-warning" />
-            <h3 className="text-lg font-semibold text-fg">Submit Quote for Approval</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-fg-subtle hover:text-fg p-1 rounded-lg hover:bg-surface-raised transition-colors"
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="lg"
+      dismissible={!isSubmitting}
+      data-testid="quote-approval-modal"
+      title={
+        <span className="flex items-center gap-2">
+          <Send className="w-5 h-5 text-warning" />
+          Submit Quote for Approval
+        </span>
+      }
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleSend}
+            disabled={isSubmitting || selectedApprovers.length === 0}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-5 overflow-y-auto flex-1">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Sending...</span>
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                <span>Send for Approval</span>
+              </>
+            )}
+          </Button>
+        </>
+      }
+    >
+        <div className="space-y-5">
           {error && (
             <div className="p-3 bg-danger/10 border border-danger/40 rounded-lg flex items-center gap-2.5 text-danger text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -304,37 +327,6 @@ export const QuoteApprovalModal: React.FC<QuoteApprovalModalProps> = ({
             />
           </div>
         </div>
-
-        {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-surface-sunken border-t border-line">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-4 py-2 text-sm text-fg-subtle hover:text-fg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={isSubmitting || selectedApprovers.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-warning hover:bg-warning text-primary-fg rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Sending...</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                <span>Send for Approval</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };

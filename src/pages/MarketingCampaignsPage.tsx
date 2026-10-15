@@ -85,7 +85,7 @@ const MarketingCampaignsPage: React.FC = () => {
 
       {showCreate && (
         <Card title="Create Campaign" className="mb-nb-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-4">
             <input
               className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
               placeholder="Campaign name"

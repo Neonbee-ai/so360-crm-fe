@@ -472,7 +472,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             <Card title="Test a lead">
               <div className="space-y-4">
                 <p className="text-xs text-fg-muted">See who a lead would go to. nothing is saved.</p>
-                <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3">
                     {CONDITION_FIELDS.map((f) => (
                         <div key={f.value}>
                             <label htmlFor={`assignment-test-${f.value}`} className={LABEL_CLS}>{f.label}</label>

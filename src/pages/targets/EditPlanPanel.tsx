@@ -1,3 +1,4 @@
+import { Button } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import { Panel } from './targetUi';
@@ -120,12 +121,11 @@ export default function EditPlanPanel({
     <Panel
       title={plan ? `Edit · ${plan.name}` : 'Edit plan'}
       action={
-        <button
-          className="text-xs text-fg-subtle hover:text-fg"
+        <Button variant="secondary" size="sm"
           onClick={onClose}
         >
           Close
-        </button>
+        </Button>
       }
     >
       {error && <div className="mb-2 text-sm text-danger">{error}</div>}
@@ -247,13 +247,12 @@ export default function EditPlanPanel({
                 }
               />
             </div>
-            <button
-              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+            <Button variant="primary" size="sm"
               onClick={save}
               disabled={busy}
             >
               {busy ? 'Saving…' : 'Save changes'}
-            </button>
+            </Button>
           </div>
         </div>
       )}

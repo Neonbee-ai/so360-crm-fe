@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { crmService } from '../../services/crmService';
 import { useConfirm, Button, Badge, EmptyState } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
 
 interface Props {
     leadId?: string;
@@ -69,9 +70,11 @@ function toDatetimeLocal(date: Date): string {
 interface UploadFormProps {
     onClose: () => void;
     onUpload: (file: File, fields: CallUploadFields) => Promise<void>;
+    /** Render as a dialog (fields in body, actions in sticky footer) instead of inline. */
+    asModal?: boolean;
 }
 
-export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
+export function UploadCallForm({ onClose, onUpload, asModal = false }: UploadFormProps) {
     const [file, setFile] = useState<File | null>(null);
     const [direction, setDirection] = useState<'inbound' | 'outbound'>('outbound');
     const [occurredAt, setOccurredAt] = useState(() => toDatetimeLocal(new Date()));
@@ -120,14 +123,25 @@ export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
         }
     };
 
-    return (
-        <div className="border-b border-line pb-nb-3 mb-nb-3 space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="text-xs font-medium text-fg">Upload Call Recording</h3>
-                <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">
-                    <X size={14} />
-                </button>
-            </div>
+    const actions = (
+        <>
+            <Button variant="secondary" onClick={onClose} disabled={submitting}>Cancel</Button>
+            <Button variant="primary" onClick={handleSubmit} disabled={!file || submitting}>
+                {submitting ? <><Loader2 size={12} className="animate-spin" /> Uploading…</> : 'Upload recording'}
+            </Button>
+        </>
+    );
+
+    const body = (
+        <div className={asModal ? 'space-y-4' : 'border-b border-line pb-nb-3 mb-nb-3 space-y-4'}>
+            {!asModal && (
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-medium text-fg">Upload Call Recording</h3>
+                    <button onClick={onClose} className="text-fg-muted hover:text-fg-subtle transition-colors">
+                        <X size={14} />
+                    </button>
+                </div>
+            )}
 
             <div>
                 <label className="block text-xs font-medium text-fg-muted mb-2">Audio File</label>
@@ -208,14 +222,18 @@ export function UploadCallForm({ onClose, onUpload }: UploadFormProps) {
                 </select>
             </div>
 
-            <div className="flex justify-end gap-nb-2">
-                <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button variant="primary" onClick={handleSubmit} disabled={!file || submitting}>
-                    {submitting ? <><Loader2 size={12} className="animate-spin" /> Uploading…</> : 'Upload recording'}
-                </Button>
-            </div>
+            {!asModal && <div className="flex justify-end gap-nb-2">{actions}</div>}
         </div>
     );
+
+    if (asModal) {
+        return (
+            <Modal isOpen onClose={onClose} title="Upload Call Recording" size="lg" dismissible={!submitting} footer={actions}>
+                {body}
+            </Modal>
+        );
+    }
+    return body;
 }
 
 /**
@@ -238,11 +256,7 @@ export function LogCallModal({ leadId, dealId, onClose, onSuccess }: {
         onClose();
     };
     return (
-        <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-dialog flex items-center justify-center p-4">
-            <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <UploadCallForm onClose={onClose} onUpload={handleUpload} />
-            </div>
-        </div>
+        <UploadCallForm asModal onClose={onClose} onUpload={handleUpload} />
     );
 }
 
@@ -419,39 +433,17 @@ export default function CallsTab({ leadId, dealId }: Props) {
             )}
 
             {selected && (
-                <div
-                    className="fixed inset-0 z-menu flex items-center justify-center p-4"
-                    onClick={() => setSelected(null)}
+                <Modal
+                    isOpen
+                    onClose={() => setSelected(null)}
+                    title="Call Transcript"
+                    subtitle={formatDateTime(selected.occurred_at)}
+                    size="lg"
                 >
-                    <div className="absolute inset-0 bg-surface-sunken backdrop-blur-sm" />
-                    <div
-                        className="relative bg-surface border border-line rounded-nb-lg w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
-                            <div>
-                                <h3 className="text-sm font-medium text-fg">
-                                    Call Transcript
-                                </h3>
-                                <p className="text-xs text-fg-muted font-medium mt-0.5">
-                                    {formatDateTime(selected.occurred_at)}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setSelected(null)}
-                                className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        <div className="overflow-y-auto p-6 flex-1">
-                            <p className="text-sm text-fg whitespace-pre-wrap leading-relaxed">
-                                {selected.transcript_text || 'No transcript available.'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                    <p className="text-sm text-fg whitespace-pre-wrap leading-relaxed">
+                        {selected.transcript_text || 'No transcript available.'}
+                    </p>
+                </Modal>
             )}
         </div>
     );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Phone, Mail, CalendarPlus, CheckSquare, FileEdit, Users, X } from 'lucide-react';
+import { Phone, Mail, CalendarPlus, CheckSquare, FileEdit, Users } from 'lucide-react';
+import { Modal } from '../common/Modal';
 import { Stakeholder } from '../../types/crm';
 import TaskModal from '../../pages/components/TaskModal';
 
@@ -25,13 +26,8 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
     const blocked = stakeholder.do_not_contact;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-bg border border-line rounded-nb-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-                    <p className="text-xs font-medium text-fg">{stakeholder.full_name || 'Stakeholder'}</p>
-                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-nb hover:bg-surface-raised"><X size={16} /></button>
-                </div>
-                <div className="p-3 space-y-1.5">
+        <Modal isOpen onClose={onClose} title={stakeholder.full_name || 'Stakeholder'} size="sm" data-testid="stakeholder-quick-actions">
+                <div className="space-y-1.5">
                     <ActionButton
                         icon={<Phone size={14} />}
                         label="Call"
@@ -51,7 +47,6 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
                     <ActionButton icon={<Users size={14} />} label="Open Contact Profile" onClick={() => onOpenProfile(stakeholder)} />
                     {blocked && <p className="text-xs text-danger px-2 pt-1">This stakeholder is marked Do Not Contact.</p>}
                 </div>
-            </div>
 
             {showTaskModal && (
                 <TaskModal
@@ -61,7 +56,7 @@ const StakeholderQuickActions: React.FC<Props> = ({ leadId, stakeholder, onClose
                     onSuccess={() => { setShowTaskModal(false); onTaskCreated?.(); onClose(); }}
                 />
             )}
-        </div>
+        </Modal>
     );
 };
 

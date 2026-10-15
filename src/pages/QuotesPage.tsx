@@ -18,6 +18,7 @@ import { quotesToCsv, downloadCsv } from '../components/quotes/quotesCsv';
 import { quoteToDocumentData } from '../utils/quoteToDocumentData';
 import ExportMenu from '../components/ExportMenu';
 import { crmPortalRoot } from '../utils/crmScope';
+import { Modal } from '../components/common/Modal';
 
 export const statusColors: Record<QuoteStatus, { bg: string; text: string; label: string; border: string }> = {
     draft: { bg: 'bg-fg-muted/10', text: 'text-fg-subtle', label: 'Draft', border: 'border-line' },
@@ -1325,11 +1326,45 @@ const QuotesPage = () => {
 
             {/* Portal Row Action Menu (⋮) */}
             {/* Create Quote Modal */}
-            {isCreateModalOpen && createPortal(
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
-                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md">
-                        <div className="px-6 pt-6 pb-2">
-                            <h2 className="text-xl font-semibold text-fg mb-4">Create New Quote</h2>
+            {isCreateModalOpen && (
+                <Modal
+                    isOpen
+                    size="md"
+                    title="Create New Quote"
+                    data-testid="create-quote-modal"
+                    onClose={() => {
+                        setIsCreateModalOpen(false);
+                        setSelectedDealId('');
+                        setManualQuoteNumber('');
+                        setDealDropdownOpen(false);
+                        setDealSearchTerm('');
+                    }}
+                    footer={
+                        <>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => {
+                                    setIsCreateModalOpen(false);
+                                    setSelectedDealId('');
+                                    setManualQuoteNumber('');
+                                    setDealDropdownOpen(false);
+                                    setDealSearchTerm('');
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="primary"
+                                onClick={handleCreateQuote}
+                                disabled={!selectedDealId || (!quoteAutoNumbering && !manualQuoteNumber.trim())}
+                            >
+                                Create Quote
+                            </Button>
+                        </>
+                    }
+                >
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-fg-subtle mb-2">
@@ -1419,56 +1454,25 @@ const QuotesPage = () => {
                                     </div>
                                 )}
                             </div>
-                        </div>
-                        <div className="flex justify-end gap-3 px-6 py-4 bg-surface-high border-t border-line rounded-b-lg">
-                            <button
-                                onClick={() => {
-                                    setIsCreateModalOpen(false);
-                                    setSelectedDealId('');
-                                    setManualQuoteNumber('');
-                                    setDealDropdownOpen(false);
-                                    setDealSearchTerm('');
-                                }}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleCreateQuote}
-                                disabled={!selectedDealId || (!quoteAutoNumbering && !manualQuoteNumber.trim())}
-                                className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-primary-fg rounded-lg transition-colors"
-                            >
-                                Create Quote
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                crmPortalRoot()
+                </Modal>
             )}
 
             {/* Reject Reason Modal */}
-            {rejectTarget && createPortal(
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-xs animate-in fade-in duration-150">
-                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-lg font-semibold text-fg mb-2">Reject Quote</h2>
-                        <p className="text-xs text-fg-subtle mb-3">
-                            Please provide a reason for rejecting this quote. Rejection reasons are mandatory.
-                        </p>
-                        <textarea
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="Reason for rejection (mandatory) *"
-                            rows={3}
-                            className="w-full px-3 py-2 bg-surface-raised border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-danger resize-none mb-4"
-                        />
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => { setRejectTarget(null); setRejectReason(''); }}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors"
-                            >
+            {rejectTarget && (
+                <Modal
+                    isOpen
+                    size="md"
+                    title="Reject Quote"
+                    data-testid="reject-quote-modal"
+                    onClose={() => { setRejectTarget(null); setRejectReason(''); }}
+                    footer={
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => { setRejectTarget(null); setRejectReason(''); }}>
                                 Cancel
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="danger"
                                 onClick={async () => {
                                     if (!rejectReason.trim()) {
                                         toast.error('Rejection reason is required');
@@ -1488,22 +1492,46 @@ const QuotesPage = () => {
                                     }
                                 }}
                                 disabled={!rejectReason.trim()}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:opacity-50 text-danger-fg rounded-lg transition-colors font-medium"
                             >
                                 Confirm Reject
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                crmPortalRoot()
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-xs text-fg-subtle mb-3">
+                        Please provide a reason for rejecting this quote. Rejection reasons are mandatory.
+                    </p>
+                        <textarea
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            placeholder="Reason for rejection (mandatory) *"
+                            rows={3}
+                            className="w-full px-3 py-2 bg-surface-raised border border-line rounded-lg text-fg placeholder-fg-subtle focus:outline-none focus:ring-2 focus:ring-danger resize-none"
+                        />
+                </Modal>
             )}
 
             {/* Delete Confirm Dialog */}
-            {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
-                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-fg mb-2">Delete Quote?</h2>
-                        <p className="text-fg-subtle mb-6">
+            {showDeleteConfirm && (
+                <Modal
+                    isOpen
+                    size="md"
+                    title="Delete Quote?"
+                    dismissible={!isDeleting}
+                    data-testid="delete-quote-modal"
+                    onClose={() => setShowDeleteConfirm(null)}
+                    footer={
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => setShowDeleteConfirm(null)} disabled={isDeleting}>
+                                Cancel
+                            </Button>
+                            <Button type="button" variant="danger" onClick={() => handleDeleteQuote(showDeleteConfirm)} disabled={isDeleting}>
+                                {isDeleting ? 'Deleting…' : 'Delete Quote'}
+                            </Button>
+                        </>
+                    }
+                >
+                        <p className="text-fg-subtle">
                             Are you sure you want to delete{' '}
                             <span className="text-fg font-medium">
                                 {(() => {
@@ -1513,25 +1541,7 @@ const QuotesPage = () => {
                             </span>
                             ? This action cannot be undone.
                         </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(null)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleDeleteQuote(showDeleteConfirm)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover text-danger-fg rounded-lg transition-colors disabled:opacity-60"
-                            >
-                                {isDeleting ? 'Deleting…' : 'Delete Quote'}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                crmPortalRoot()
+                </Modal>
             )}
             </div>
         </ListPageTemplate>

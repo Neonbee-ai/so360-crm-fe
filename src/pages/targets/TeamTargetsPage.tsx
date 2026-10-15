@@ -12,7 +12,7 @@ import {
   PeriodPicker,
   AsOfBanner,
 } from './targetUi';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, Button } from '@so360/design-system';
 
 /**
  * Manager roll-up.
@@ -232,15 +232,14 @@ export default function TeamTargetsPage() {
         <Panel
           title="Detail"
           action={
-            <button
-              className="text-xs text-fg-subtle hover:text-fg"
+            <Button variant="secondary" size="sm"
               onClick={() => {
                 setSelected(null);
                 setDetail(null);
               }}
             >
               Close
-            </button>
+            </Button>
           }
         >
           {!detail ? (

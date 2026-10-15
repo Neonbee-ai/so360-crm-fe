@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { salesTargetService } from '../../services/salesTargetService';
+import { Modal } from '../../components/common/Modal';
 import { useConfirm, ListPageTemplate, Button } from '@so360/design-system';
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -203,10 +204,24 @@ export default function AdminTaskTypesPage() {
 
       {/* Create modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-overlay/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-nb border border-line w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold text-fg mb-4">New Activity Type</h2>
-
+        <Modal
+          isOpen
+          size="md"
+          title="New Activity Type"
+          dismissible={!saving}
+          data-testid="new-activity-type-modal"
+          onClose={() => { setShowModal(false); setForm({ ...EMPTY_FORM }); }}
+          footer={
+            <>
+              <Button type="button" variant="secondary" onClick={() => { setShowModal(false); setForm({ ...EMPTY_FORM }); }}>
+                Cancel
+              </Button>
+              <Button type="button" variant="primary" onClick={handleSave} disabled={saving || !form.name}>
+                {saving ? 'Saving…' : 'Create'}
+              </Button>
+            </>
+          }
+        >
             <div className="space-y-4">
               <div>
                 <label className="block text-xs text-fg-subtle mb-1">Name</label>
@@ -302,26 +317,7 @@ export default function AdminTaskTypesPage() {
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-3 mt-6 justify-end">
-              <button
-                type="button"
-                onClick={() => { setShowModal(false); setForm({ ...EMPTY_FORM }); }}
-                className="px-4 py-2 text-sm text-fg-subtle hover:text-fg"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || !form.name}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-fg text-sm font-medium rounded transition-colors"
-              >
-                {saving ? 'Saving…' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </ListPageTemplate>
   );

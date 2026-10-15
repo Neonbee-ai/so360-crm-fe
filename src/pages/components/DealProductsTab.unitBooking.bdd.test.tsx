@@ -2,7 +2,7 @@
  * BDD Spec — DealProductsTab unit booking (flag `submodule:crm:unit_booking`)
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -87,8 +87,7 @@ describe('Given unit booking is enabled for the tenant', () => {
             await openPicker();
             await pickProject();
             fireEvent.click(screen.getByText('Unit B-201'));
-            const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-            fireEvent.click(addButtons[addButtons.length - 1]);
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
             await waitFor(() => {
                 expect(mocks.addDealProduct).toHaveBeenCalledWith('deal-1', expect.objectContaining({ item_id: 'u1', hold_hours: 48 }));
             });
@@ -99,8 +98,7 @@ describe('Given unit booking is enabled for the tenant', () => {
             await openPicker();
             await pickProject();
             fireEvent.click(screen.getByText('Unit B-201'));
-            const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-            fireEvent.click(addButtons[addButtons.length - 1]);
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
             expect(await screen.findByRole('alert')).toHaveTextContent('Unit B-201 is already sold');
         });
 
@@ -109,8 +107,7 @@ describe('Given unit booking is enabled for the tenant', () => {
             await openPicker();
             await pickProject();
             fireEvent.click(screen.getByText('Unit B-201'));
-            const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-            fireEvent.click(addButtons[addButtons.length - 1]);
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
             expect(await screen.findByRole('alert')).toHaveTextContent("This unit isn't allocated to you — ask your manager");
         });
     });
@@ -141,8 +138,7 @@ describe('Given unit booking is disabled for the tenant', () => {
         await screen.findByText('Unit B-201');
         expect(mocks.searchInventoryItems).toHaveBeenCalledWith('unit');
         fireEvent.click(screen.getByText('Unit B-201'));
-        const addButtons = screen.getAllByRole('button', { name: /^Add Product$/i });
-        fireEvent.click(addButtons[addButtons.length - 1]);
+        fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add Product$/i }));
         await waitFor(() => expect(mocks.addDealProduct).toHaveBeenCalled());
         expect(mocks.addDealProduct.mock.calls[0][1]).not.toHaveProperty('hold_hours');
     });

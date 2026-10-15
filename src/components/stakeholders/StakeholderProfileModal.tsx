@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 import { stakeholderApi } from '../../services/crmService';
 import { Stakeholder, StakeholderRole, BuyingCommitteeRole, RelationshipStrength } from '../../types/crm';
 import StakeholderRolesEditor from './StakeholderRolesEditor';
+
+const INPUT = 'w-full bg-surface border border-line rounded-nb px-3 py-2 text-xs text-fg outline-none focus:border-primary';
 
 interface Props {
     leadId: string;
@@ -64,31 +68,37 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-bg border border-line rounded-nb-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-line sticky top-0 bg-bg z-10">
-                    <p className="text-xs font-medium text-fg">
-                        {isEditing ? 'Edit Stakeholder' : 'Add Stakeholder'}
-                    </p>
-                    <button onClick={onClose} className="p-1.5 text-fg-muted hover:text-fg rounded-nb hover:bg-surface-raised">
-                        <X size={16} />
-                    </button>
-                </div>
-
-                <div className="p-5 space-y-4">
+        <Modal
+            isOpen
+            onClose={onClose}
+            title={isEditing ? 'Edit Stakeholder' : 'Add Stakeholder'}
+            size="2xl"
+            dismissible={!saving}
+            data-testid="stakeholder-profile-modal"
+            footer={(
+                <>
+                    <Button variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
+                    <Button variant="primary" onClick={handleSave} disabled={saving}>
+                        {saving && <Loader2 size={12} className="animate-spin" />}
+                        {isEditing ? 'Save Changes' : 'Add Stakeholder'}
+                    </Button>
+                </>
+            )}
+        >
+                <div className="space-y-4">
                     {error && <div className="bg-danger/10 border border-danger/20 text-danger text-xs rounded-nb px-3 py-2">{error}</div>}
 
                     <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
-                        <Field label="First Name"><input value={form.first_name} onChange={(e) => set('first_name', e.target.value)} className="input" /></Field>
-                        <Field label="Last Name"><input value={form.last_name} onChange={(e) => set('last_name', e.target.value)} className="input" /></Field>
-                        <Field label="Job Title"><input value={form.job_title} onChange={(e) => set('job_title', e.target.value)} className="input" /></Field>
-                        <Field label="Department"><input value={form.department} onChange={(e) => set('department', e.target.value)} className="input" /></Field>
-                        <Field label="Company"><input value={form.company_name} onChange={(e) => set('company_name', e.target.value)} className="input" /></Field>
-                        <Field label="Time Zone"><input value={form.time_zone} onChange={(e) => set('time_zone', e.target.value)} className="input" /></Field>
-                        <Field label="Email"><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} className="input" /></Field>
-                        <Field label="Phone"><input value={form.phone} onChange={(e) => set('phone', e.target.value)} className="input" /></Field>
-                        <Field label="Mobile"><input value={form.mobile_phone} onChange={(e) => set('mobile_phone', e.target.value)} className="input" /></Field>
-                        <Field label="LinkedIn URL"><input value={form.linkedin_url} onChange={(e) => set('linkedin_url', e.target.value)} className="input" /></Field>
+                        <Field label="First Name"><input value={form.first_name} onChange={(e) => set('first_name', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Last Name"><input value={form.last_name} onChange={(e) => set('last_name', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Job Title"><input value={form.job_title} onChange={(e) => set('job_title', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Department"><input value={form.department} onChange={(e) => set('department', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Company"><input value={form.company_name} onChange={(e) => set('company_name', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Time Zone"><input value={form.time_zone} onChange={(e) => set('time_zone', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Email"><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Phone"><input value={form.phone} onChange={(e) => set('phone', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Mobile"><input value={form.mobile_phone} onChange={(e) => set('mobile_phone', e.target.value)} className={INPUT} /></Field>
+                        <Field label="LinkedIn URL"><input value={form.linkedin_url} onChange={(e) => set('linkedin_url', e.target.value)} className={INPUT} /></Field>
                     </div>
 
                     <Field label="Roles">
@@ -97,23 +107,23 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
 
                     <div className="grid grid-cols-1 wc-medium:grid-cols-2 gap-nb-3">
                         <Field label="Buying Committee">
-                            <select value={form.buying_committee_role} onChange={(e) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} className="input">
+                            <select value={form.buying_committee_role} onChange={(e) => set('buying_committee_role', e.target.value as BuyingCommitteeRole)} className={INPUT}>
                                 {COMMITTEE_OPTIONS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
                             </select>
                         </Field>
                         <Field label="Relationship Strength">
-                            <select value={form.relationship_strength} onChange={(e) => set('relationship_strength', e.target.value as RelationshipStrength)} className="input">
+                            <select value={form.relationship_strength} onChange={(e) => set('relationship_strength', e.target.value as RelationshipStrength)} className={INPUT}>
                                 {STRENGTH_OPTIONS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
                             </select>
                         </Field>
                         <Field label="Preferred Contact Method">
-                            <select value={form.preferred_communication_method} onChange={(e) => set('preferred_communication_method', e.target.value)} className="input">
+                            <select value={form.preferred_communication_method} onChange={(e) => set('preferred_communication_method', e.target.value)} className={INPUT}>
                                 <option value="">—</option>
                                 {['email', 'phone', 'mobile', 'linkedin', 'sms', 'other'].map((o) => <option key={o} value={o}>{o}</option>)}
                             </select>
                         </Field>
-                        <Field label="Preferred Contact Time"><input value={form.preferred_contact_time} onChange={(e) => set('preferred_contact_time', e.target.value)} className="input" /></Field>
-                        <Field label="Preferred Language"><input value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)} className="input" /></Field>
+                        <Field label="Preferred Contact Time"><input value={form.preferred_contact_time} onChange={(e) => set('preferred_contact_time', e.target.value)} className={INPUT} /></Field>
+                        <Field label="Preferred Language"><input value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)} className={INPUT} /></Field>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 pt-1">
@@ -124,21 +134,7 @@ const StakeholderProfileModal: React.FC<Props> = ({ leadId, stakeholder, onClose
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line sticky bottom-0 bg-bg">
-                    <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-fg-subtle hover:text-fg">Cancel</button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-nb text-xs font-medium disabled:opacity-50"
-                    >
-                        {saving && <Loader2 size={12} className="animate-spin" />}
-                        {isEditing ? 'Save Changes' : 'Add Stakeholder'}
-                    </button>
-                </div>
-            </div>
-
-            <style>{`.input { background: rgb(15 23 42 / 0.6); border: 1px solid rgb(51 65 85); border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: rgb(226 232 240); outline: none; width: 100%; }`}</style>
-        </div>
+        </Modal>
     );
 };
 

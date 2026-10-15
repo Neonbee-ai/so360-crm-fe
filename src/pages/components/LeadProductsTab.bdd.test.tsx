@@ -68,22 +68,17 @@ describe('Given LeadProductsTab', () => {
             render(<LeadProductsTab leadId="lead-1" />);
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
-            const panels = Array.from(document.querySelectorAll('div')).filter(
-                el => el.className.includes('max-h-[90vh]'),
-            );
-            expect(panels.length).toBeGreaterThan(0);
-            expect(panels[0].className).toContain('overflow-y-auto');
+            const dialog = screen.getByRole('dialog');
+            expect(dialog.className).toContain('max-h-[90vh]');
+            expect(dialog.querySelector('.overflow-y-auto')).not.toBeNull();
         });
 
         it('When the close button is clicked inside modal / Then modal closes', async () => {
             render(<LeadProductsTab leadId="lead-1" />);
             await waitFor(() => screen.getByRole('button', { name: /Add Product/i }));
             fireEvent.click(screen.getByRole('button', { name: /Add Product/i }));
-            fireEvent.click(screen.getByText('✕'));
-            const panels = Array.from(document.querySelectorAll('div')).filter(
-                el => el.className.includes('max-h-[90vh]'),
-            );
-            expect(panels.length).toBe(0);
+            fireEvent.click(screen.getByLabelText('Close'));
+            expect(screen.queryByRole('dialog')).toBeNull();
         });
     });
 });

@@ -241,6 +241,11 @@ const MarketingSegmentsPage: React.FC = () => {
     <ListPageTemplate
       title="Customer Segments"
       description="Create CRM segments for leads/customers. Storefront segments are read-only."
+      primaryAction={canCreateMarketing ? (
+        <Button variant="primary" onClick={() => setShowCreate((v) => !v)}>
+          {showCreate ? 'Close Form' : 'Create Segment'}
+        </Button>
+      ) : undefined}
       toolbarEnd={dailystoreEnabled ? <MarketingStorePicker storeId={storeId} onChange={applyStore} /> : undefined}
     >
       {loading && <p className="text-fg-subtle text-sm mb-4">Loading Storefront insights...</p>}
@@ -251,12 +256,6 @@ const MarketingSegmentsPage: React.FC = () => {
         <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-sm font-semibold text-fg">Segments</h3>
-            {canCreateMarketing && <Button
-              variant="primary"
-              onClick={() => setShowCreate((v) => !v)}
-            >
-              {showCreate ? 'Close Form' : 'Create Segment'}
-            </Button>}
           </div>
 
           {showCreate && (
@@ -275,7 +274,7 @@ const MarketingSegmentsPage: React.FC = () => {
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, description: e.target.value }))}
                 />
                 <input
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus md:col-span-2"
+                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus wc-medium:col-span-2"
                   placeholder="Search query (name/email/phone/company)"
                   value={segmentForm.q}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, q: e.target.value }))}
@@ -301,7 +300,7 @@ const MarketingSegmentsPage: React.FC = () => {
                   <option value="b2c">B2C</option>
                 </select>
                 <select
-                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full md:col-span-2"
+                  className="bg-surface border border-line rounded-lg px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus appearance-none cursor-pointer w-full wc-medium:col-span-2"
                   value={segmentForm.preset}
                   onChange={(e) => setSegmentForm((prev) => ({ ...prev, preset: e.target.value }))}
                   disabled={!dailystoreEnabled}

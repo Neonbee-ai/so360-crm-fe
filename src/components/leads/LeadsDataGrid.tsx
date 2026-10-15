@@ -33,6 +33,8 @@ import {
   TrendingUp,
   Layers,
 } from 'lucide-react';
+import { Button } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 import { Lead, User } from '../../types/crm';
 import {
   GridDensity,
@@ -605,29 +607,19 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
     .sort((a, b) => a.order - b.order);
 
   return (
-    <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay backdrop-blur-sm">
-      <div className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
-          <div className="flex items-center gap-2">
-            <Columns2 size={18} className="text-primary" />
-            <h2 className="text-base font-semibold text-fg">Customize Columns</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onReset}
-              className="text-xs text-fg-subtle hover:text-fg transition-colors"
-            >
-              Reset defaults
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1 text-fg-subtle hover:text-fg transition-colors rounded"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-        <div className="p-4 max-h-[60vh] overflow-y-auto space-y-1">
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={<span className="flex items-center gap-2"><Columns2 size={18} className="text-primary" />Customize Columns</span>}
+      size="md"
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onReset}>Reset defaults</Button>
+          <Button variant="primary" onClick={onClose}>Done</Button>
+        </>
+      )}
+    >
+        <div className="space-y-1">
           {manageable.map((col) => {
             const def = COL_DEF_MAP.get(col.key);
             return (
@@ -660,16 +652,7 @@ function ColumnManager({ columns, onToggle, onPin, onReset, onClose, onReorder }
             );
           })}
         </div>
-        <div className="px-5 py-4 border-t border-line flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-fg text-sm font-medium rounded-lg transition-colors"
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

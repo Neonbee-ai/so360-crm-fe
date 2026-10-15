@@ -16,12 +16,13 @@ import CallsTab from './components/CallsTab';
 import DealPaymentPlanPanel from './components/DealPaymentPlanPanel';
 import DealCommissionPanel from './components/DealCommissionPanel';
 import { useCrmFeatureFlag, RE_FLAGS } from '../hooks/useCrmFeatureFlag';
-import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, Card, EmptyState } from '@so360/design-system';
+import { CrossLinkChip, toast, useConfirm, DetailPageTemplate, Button, Card, EmptyState, Badge } from '@so360/design-system';
 import { crmService, dealsApi, tasksApi, activitiesApi, TimelineEvent } from '../services/crmService';
 import { useCRMFormatters } from '../utils/formatters';
 import { Deal, Activity, Task, Note, CustomFieldDefinition, User, Attachment, ActivityType } from '../types/crm';
 import { ClickToCallButton } from '../components/common/ClickToCallButton';
 import TaskModal from './components/TaskModal';
+import { Modal } from '../components/common/Modal';
 import { FEATURES } from '../config/features';
 import { DealLifecycleStepper } from '../components/DealLifecycleStepper';
 import { goBackFrom } from '../components/common/DetailBackLink';
@@ -1292,77 +1293,65 @@ const DealDetailPage = () => {
 
             {/* PROJECT LINKING MODAL */}
             {isProjectModalOpen && (
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-dialog flex items-center justify-center p-4">
-                    <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh]">
-                        <div className="p-6 border-b border-line flex items-center justify-between bg-surface-sunken">
-                            <h3 className="text-fg font-semibold text-xs flex items-center gap-2">
-                                <Briefcase size={16} className="text-info" />
-                                Project Management
-                            </h3>
-                            <button onClick={() => setIsProjectModalOpen(false)} className="text-fg-muted hover:text-fg transition-colors">
-                                <X size={20} />
-                            </button>
+                <Modal
+                    isOpen
+                    onClose={() => setIsProjectModalOpen(false)}
+                    title="Project Management"
+                    size="lg"
+                    data-testid="deal-project-modal"
+                    footer={(
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => setIsProjectModalOpen(false)}>Cancel</Button>
+                            <Button type="button" variant="primary" onClick={handleLinkExistingProject} disabled={!selectedProjectId}>
+                                Confirm Link
+                            </Button>
+                        </>
+                    )}
+                >
+                    <div className="flex flex-col gap-nb-4">
+                        {/* CREATE OPTION */}
+                        <div className="bg-surface-sunken border border-line rounded-nb-lg p-nb-4 hover:border-info/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
+                            <div className="flex items-start justify-between gap-nb-3">
+                                <div className="min-w-0">
+                                    <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-info transition-colors">Create New Project</h4>
+                                    <p className="text-fg-muted text-xs leading-relaxed">
+                                        Open the Projects module with deal info pre-filled to create and configure a new project.
+                                    </p>
+                                </div>
+                                <Button type="button" variant="primary" size="sm">
+                                    Open <ExternalLink size={10} />
+                                </Button>
+                            </div>
                         </div>
 
-                        <div className="p-8 space-y-8">
-                            {/* CREATE OPTION */}
-                            <div className="bg-surface-sunken border border-line rounded-nb-lg p-6 space-y-4 hover:border-info/30 transition-colors group cursor-pointer" onClick={handleCreateProject}>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h4 className="text-fg font-bold text-sm mb-1 group-hover:text-info transition-colors">Create New Project</h4>
-                                        <p className="text-fg-muted text-xs leading-relaxed max-w-48">
-                                            Open the Projects module with deal info pre-filled to create and configure a new project.
-                                        </p>
-                                    </div>
-                                    <div className="bg-primary group-hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all shadow-lg flex items-center gap-1">
-                                        Open <ExternalLink size={10} />
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="relative flex items-center gap-nb-3">
+                            <div className="flex-1 h-px bg-surface-raised"></div>
+                            <span className="text-xs font-semibold text-fg">OR</span>
+                            <div className="flex-1 h-px bg-surface-raised"></div>
+                        </div>
 
-                            <div className="relative flex items-center gap-4">
-                                <div className="flex-1 h-px bg-surface-raised"></div>
-                                <span className="text-xs font-semibold text-fg">OR</span>
-                                <div className="flex-1 h-px bg-surface-raised"></div>
+                        {/* LINK OPTION */}
+                        <div className="flex flex-col gap-nb-3">
+                            <div>
+                                <h4 className="text-fg font-bold text-sm mb-1">Link Existing Project</h4>
+                                <p className="text-fg-muted text-xs">Reference a project already existing in the system.</p>
                             </div>
-
-                            {/* LINK OPTION */}
-                            <div className="space-y-4">
-                                <div>
-                                    <h4 className="text-fg font-bold text-sm mb-1">Link Existing Project</h4>
-                                    <p className="text-fg-muted text-xs">Reference a project already existing in the system.</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <ProjectSelect
-                                        value={selectedProjectId}
-                                        onChange={setSelectedProjectId}
-                                        noneLabel="Select current project..."
-                                    />
-                                    <button
-                                        onClick={handleLinkExistingProject}
-                                        disabled={!selectedProjectId}
-                                        className="w-full bg-surface-raised hover:bg-line disabled:opacity-50 text-fg px-4 py-3 rounded-nb-lg text-xs font-semibold transition-all border border-line"
-                                    >
-                                        Confirm Link
-                                    </button>
-                                </div>
-                            </div>
+                            <ProjectSelect
+                                value={selectedProjectId}
+                                onChange={setSelectedProjectId}
+                                noneLabel="Select current project..."
+                            />
                         </div>
 
                         {projectDetails && (
-                            <div className="p-4 bg-info/5 border-t border-line">
+                            <div className="p-nb-3 bg-surface-sunken border border-line rounded-nb-lg">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs font-semibold text-fg-muted">
                                         Linked Project
                                     </span>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                                        projectDetails.status === 'COMPLETED'
-                                            ? 'bg-success/10 text-success'
-                                            : 'bg-info/10 text-info'
-                                    }`}>
+                                    <Badge size="sm" tone={projectDetails.status === 'COMPLETED' ? 'success' : 'info'}>
                                         {projectDetails.status}
-                                    </span>
+                                    </Badge>
                                 </div>
                                 <h4 className="text-sm font-bold text-fg mb-2">{projectDetails.title}</h4>
                                 <div className="flex items-center justify-between text-xs">
@@ -1375,32 +1364,29 @@ const DealDetailPage = () => {
                                         </span>
                                     )}
                                 </div>
-                                <div className="mt-3 flex gap-2">
+                                <div className="mt-nb-3 flex items-center gap-nb-2">
                                     <a
                                         href={`/projects/${projectDetails.id}`}
-                                        className="flex-1 text-center py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-bold transition-all"
+                                        className="flex-1 text-center text-sm font-bold text-primary hover:underline"
                                     >
                                         View Project Details →
                                     </a>
-                                    <button
-                                        onClick={handleUnlinkProject}
-                                        className="px-4 py-2 bg-surface-raised hover:bg-line text-danger rounded-lg font-bold text-xs border border-line"
-                                    >
+                                    <Button type="button" variant="danger" size="sm" onClick={handleUnlinkProject}>
                                         Unlink
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
 
                         {!projectDetails && deal.project_id && (
-                            <div className="p-4 bg-surface-high border-t border-line text-center">
+                            <div className="p-nb-3 bg-surface-sunken border border-line rounded-nb-lg text-center">
                                 <span className="text-fg-muted text-xs">
                                     Project ID: {deal.project_id}
                                 </span>
                             </div>
                         )}
                     </div>
-                </div>
+                </Modal>
             )}
 
             {/* Modals */}
@@ -1425,31 +1411,26 @@ const DealDetailPage = () => {
 
             {/* Delete Deal Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70 backdrop-blur-sm">
-                    <div className="bg-surface border border-line rounded-nb-lg shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh]">
-                        <h2 className="text-xl font-bold text-fg mb-2">Delete Deal</h2>
-                        <p className="text-fg-subtle mb-6">
-                            Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDeleteDeal}
-                                disabled={isDeleting}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-white rounded-lg transition-colors flex items-center gap-2"
-                            >
+                <Modal
+                    isOpen
+                    onClose={() => setShowDeleteConfirm(false)}
+                    title="Delete Deal"
+                    size="sm"
+                    dismissible={!isDeleting}
+                    footer={
+                        <>
+                            <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)} disabled={isDeleting}>Cancel</Button>
+                            <Button variant="danger" onClick={handleDeleteDeal} disabled={isDeleting}>
                                 {isDeleting && <Loader2 size={16} className="animate-spin" />}
                                 Delete Deal
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-fg-subtle">
+                        Are you sure you want to delete this deal? This will remove all associated notes, activities, tasks, and documents. This action cannot be undone.
+                    </p>
+                </Modal>
             )}
 
             {showActivityDrawer && (

@@ -333,13 +333,12 @@ export default function TargetPlansPage() {
               your industry — metrics, touchpoint channels and loss reasons.
               Nothing existing is overwritten.
             </div>
-            <button
-              className="rounded bg-line px-3 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+            <Button variant="primary" size="sm"
               onClick={provision}
               disabled={saving}
             >
               Load starter metrics
-            </button>
+            </Button>
           </div>
         </Panel>
       )}
@@ -463,9 +462,8 @@ export default function TargetPlansPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {catalog && (
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-primary border border-primary/30 text-xs font-medium transition-all disabled:opacity-40"
+                    <Button
+                      type="button" variant="secondary" size="sm"
                       onClick={() => setShowLeadStageModal(true)}
                       disabled={!unlinkedLeadStages.length}
                       title={
@@ -475,23 +473,21 @@ export default function TargetPlansPage() {
                       }
                     >
                       <Plus size={12} /> + Lead Stage Metric
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-raised hover:bg-line text-warning border border-warning/30 text-xs font-medium transition-all"
+                  <Button
+                    type="button" variant="secondary" size="sm"
                     onClick={() => setShowCustomMetricModal(true)}
                   >
                     <Sparkles size={12} className="text-warning" /> + Custom Metric
-                  </button>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-fg text-xs font-medium transition-all shadow-sm"
+                  </Button>
+                  <Button
+                    type="button" variant="secondary" size="sm"
                     onClick={addLine}
                     disabled={!taskTypes.length}
                   >
                     <Plus size={12} /> Add Metric Row
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -574,7 +570,7 @@ export default function TargetPlansPage() {
                                 </select>
                               </td>
                               <td className="py-2 px-3">
-                                <span className="inline-block px-2 py-0.5 rounded bg-surface-raised border border-line text-xs text-fg-subtle font-mono truncate max-w-[110px]">
+                                <span className="inline-block px-2 py-0.5 rounded bg-surface-raised border border-line text-xs text-fg-subtle font-mono truncate max-w-28">
                                   {metric?.unit || metric?.kind || 'count'}
                                 </span>
                               </td>
@@ -717,13 +713,12 @@ export default function TargetPlansPage() {
             </div>
 
             <div className="flex justify-end">
-              <button
-                className="rounded bg-line px-4 py-1.5 text-sm text-fg hover:bg-surface-high disabled:opacity-50"
+              <Button variant="primary" size="sm"
                 disabled={!canSubmit || saving}
                 onClick={submit}
               >
                 {saving ? 'Saving…' : 'Save plan'}
-              </button>
+              </Button>
             </div>
           </div>
         </Panel>
@@ -768,20 +763,18 @@ export default function TargetPlansPage() {
                     <td className="py-2 text-right">
                       <div className="flex justify-end gap-3">
                         {canEditPlan(shell) && (
-                          <button
-                            className="text-xs text-fg-subtle hover:text-fg"
+                          <Button variant="secondary" size="sm"
                             onClick={() => setEditing(p.id)}
                           >
                             Edit
-                          </button>
+                          </Button>
                         )}
                         {canAllocatePlan(shell, p.owner_type) && (
-                          <button
-                            className="text-xs text-fg-subtle hover:text-fg"
+                          <Button variant="secondary" size="sm"
                             onClick={() => setAllocating(p.id)}
                           >
                             Allocate
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </td>
@@ -861,21 +854,19 @@ export default function TargetPlansPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-line">
-              <button
+              <Button
                 type="button"
-                onClick={() => setShowCustomMetricModal(false)}
-                className="rounded px-3 py-1.5 text-xs text-fg-subtle hover:text-fg"
+                onClick={() => setShowCustomMetricModal(false)} variant="secondary" size="sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                disabled={!customMetricName.trim() || customMetricSaving}
-                className="rounded bg-primary px-4 py-1.5 text-xs font-medium text-primary-fg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5"
+                disabled={!customMetricName.trim() || customMetricSaving} variant="primary" size="sm"
               >
                 {customMetricSaving && <Loader2 size={12} className="animate-spin" />}
                 Create & Add to Plan
-              </button>
+              </Button>
             </div>
           </form>
         </Modal>
@@ -928,13 +919,12 @@ export default function TargetPlansPage() {
               </div>
             )}
             <div className="flex justify-end pt-2 border-t border-line">
-              <button
+              <Button
                 type="button"
-                onClick={() => setShowLeadStageModal(false)}
-                className="rounded px-3 py-1.5 text-xs text-fg-subtle hover:text-fg"
+                onClick={() => setShowLeadStageModal(false)} variant="secondary" size="sm"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>

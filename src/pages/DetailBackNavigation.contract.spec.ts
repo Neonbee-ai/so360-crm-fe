@@ -7,7 +7,7 @@ import path from 'path';
  *
  * Every record detail page used to ship its own back button, hard-wired to the
  * module's list route and labelled after it — "Back to Leads" even when the user
- * had arrived from Tasks. The fix is one shared control (DetailBackLink) that
+ * had arrived from Tasks. The fix is one shared helper (goBackFrom, via the Comb DetailPageTemplate onBack) that
  * returns to the previous history entry and always reads "Back".
  *
  * Per-page behaviour is covered by each page's own specs; this file guards the
@@ -60,26 +60,26 @@ describe('CRM detail pages — back navigation contract', () => {
     describe.each(DETAIL_PAGES)('Given %s', (file) => {
         const source = read(file);
 
-        it('When it renders a back control / Then it uses the shared DetailBackLink', () => {
+        it('When it renders a back control / Then it hands the Comb template an onBack built on goBackFrom', () => {
             expect(source).toContain("from '../components/common/DetailBackLink'");
-            expect(source).toContain('<DetailBackLink');
+            expect(source).toMatch(/onBack=\{\(\) => goBackFrom\(navigate, /);
         });
 
         it('Then it does not hand-roll its own back button', () => {
-            // The old shape: a bare button whose click handler pushes the module
-            // list route, bypassing history entirely.
             const header = withoutNotFoundBranch(source);
             expect(header).not.toMatch(/←\s*Back/);
-            expect(header).not.toMatch(/>\s*Back to \w+/);
+            expect(header).not.toMatch(/backLabel=["']Back to /);
         });
 
         it('Then the header back control carries no module-specific label', () => {
-            const header = withoutNotFoundBranch(source);
-            expect(header).not.toMatch(/<DetailBackLink[^>]*label=/);
+            // The Comb template renders the label; it must read plain "Back" (or default).
+            const labels = [...source.matchAll(/backLabel=(?:"([^"]*)"|\{'([^']*)'\})/g)].map(m => m[1] ?? m[2]);
+            labels.forEach(l => expect(l).toBe('Back'));
         });
 
         it('Then it still declares a fallback route for deep links and bookmarks', () => {
-            expect(source).toMatch(/<DetailBackLink[^>]*fallbackTo=/);
+            // goBackFrom(navigate, fallback) — a second argument is mandatory.
+            expect(source).toMatch(/goBackFrom\(navigate, [^)]+\)/);
         });
     });
 
@@ -89,7 +89,7 @@ describe('CRM detail pages — back navigation contract', () => {
                 .filter(f => f.endsWith('DetailPage.tsx'))
                 .filter(f => {
                     const header = withoutNotFoundBranch(read(f));
-                    return /←\s*Back/.test(header) || />\s*Back to \w+/.test(header);
+                    return /←\s*Back/.test(header) || /backLabel=["']Back to /.test(header);
                 });
             expect(offenders).toEqual([]);
         });

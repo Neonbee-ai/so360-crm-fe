@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus } from 'lucide-react';
+import { Search, CheckCircle2, Circle, AlertCircle, Calendar, Trash2, ChevronUp, ChevronDown, ChevronsUpDown, UserPlus, Building2, Plus, MoreVertical } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { Task } from '../types/crm';
-import { ListPageTemplate, Pagination, Button, Tabs, toast } from '@so360/design-system';
+import { ListPageTemplate, Pagination, Button, Tabs, Menu, toast } from '@so360/design-system';
 import { Table } from '../components/common/Table';
 import { useShell, useShellBridge, useSandboxLimit } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
@@ -12,7 +11,7 @@ import { canCurrentUserBeAssigned, isTaskAssignedToUser, isTaskLocked, isTaskOve
 import { dueDateCalendarDay, hasTimeComponent } from '../utils/datetime';
 import TaskModal from './components/TaskModal';
 import { usePersistedState, useListScrollRestore } from '../hooks/useListViewState';
-import { crmPortalRoot } from '../utils/crmScope';
+import { Modal } from '../components/common/Modal';
 
 type SortField = 'title' | 'due_date' | 'status' | 'assigned_to' | 'associated_with';
 type SortDirection = 'asc' | 'desc' | null;
@@ -372,13 +371,22 @@ const TasksPage = () => {
             header: '',
             accessor: (task: Task) => (
                 <div onClick={(e) => e.stopPropagation()}>
-                    {canCreateTask && <button
-                        onClick={() => setShowDeleteConfirm(task.id)}
-                        className="p-1.5 text-fg-subtle hover:text-danger hover:bg-surface-raised rounded transition-colors"
-                        title="Delete task"
-                    >
-                        <Trash2 size={16} />
-                    </button>}
+                    {canCreateTask && (
+                        <Menu
+                            name={`task-actions-${task.id}`}
+                            trigger={
+                                <button
+                                    type="button"
+                                    className="p-1.5 text-fg-subtle hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
+                                    title="More actions"
+                                    aria-label="More actions"
+                                >
+                                    <MoreVertical size={16} />
+                                </button>
+                            }
+                            items={[{ label: 'Delete task', icon: <Trash2 size={14} />, danger: true, onSelect: () => setShowDeleteConfirm(task.id) }]}
+                        />
+                    )}
                 </div>
             )
         }
@@ -484,33 +492,30 @@ const TasksPage = () => {
             )}
 
             {/* Delete Confirmation Dialog */}
-            {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 z-dialog flex items-center justify-center p-4 bg-overlay/70">
-                    <div className="bg-surface border border-line rounded-lg shadow-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-semibold text-fg mb-2">Delete Task</h2>
-                        <p className="text-fg-subtle mb-6">
-                            Are you sure you want to delete this task? This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowDeleteConfirm(null)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 text-fg-subtle hover:text-fg transition-colors disabled:opacity-50"
-                            >
+            {showDeleteConfirm && (
+                <Modal
+                    isOpen
+                    onClose={() => setShowDeleteConfirm(null)}
+                    size="md"
+                    title="Delete Task"
+                    dismissible={!isDeleting}
+                    data-testid="delete-task-modal"
+                    footer={
+                        <>
+                            <Button type="button" variant="secondary" onClick={() => setShowDeleteConfirm(null)} disabled={isDeleting}>
                                 Cancel
-                            </button>
-                            <button
-                                onClick={() => handleDeleteTask(showDeleteConfirm)}
-                                disabled={isDeleting}
-                                className="px-4 py-2 bg-danger hover:bg-danger-hover disabled:bg-danger-hover text-primary-fg rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                {isDeleting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                            </Button>
+                            <Button type="button" variant="danger" onClick={() => handleDeleteTask(showDeleteConfirm)} disabled={isDeleting}>
+                                {isDeleting && <div className="w-4 h-4 border-2 border-current/20 border-t-current rounded-full animate-spin" />}
                                 Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                crmPortalRoot()
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="text-fg-subtle">
+                        Are you sure you want to delete this task? This action cannot be undone.
+                    </p>
+                </Modal>
             )}
         </ListPageTemplate>
     );

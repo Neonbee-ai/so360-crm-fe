@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FormPageTemplate, Button } from '@so360/design-system';
+import { Button } from '@so360/design-system';
+import { Modal } from '../common/Modal';
 import { PartnerSearchDropdown } from '../common/PartnerSearchDropdown';
 import { crmService, settingsApi } from '../../services/crmService';
 import { AlertCircle } from 'lucide-react';
@@ -267,28 +268,36 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
         }
     };
 
+    const submitDisabled = isSubmitting || !isFormValid;
     return (
         isOpen ? (
-        <div className="fixed inset-0 z-dialog overflow-y-auto bg-bg" data-testid="create-lead-form-page">
-            <form onSubmit={handleSubmit}>
-                <FormPageTemplate
-                    title="Create New Lead"
-                    onBack={onClose}
-                    onCancel={onClose}
-                    primaryAction={
-                        <Button
-                            type="submit"
-                            // Disabled — not hidden — until the form is complete and
-                            // valid: the button stays visible so users can see the
-                            // action exists, and Cancel is always reachable.
-                            disabled={isSubmitting || !isFormValid}
-                            aria-disabled={isSubmitting || !isFormValid}
-                            title={!isFormValid ? 'Complete all required fields with valid values to create the lead' : undefined}
-                        >
-                            {isSubmitting ? 'Creating...' : 'Create Lead'}
-                        </Button>
-                    }
-                    sections={[
+        <Modal
+            isOpen
+            onClose={onClose}
+            title="Create New Lead"
+            size="4xl"
+            dismissible={!isSubmitting}
+            data-testid="create-lead-form-page"
+            footer={(
+                <div data-slot="footer" className="contents">
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+                    <Button
+                        type="submit"
+                        form="create-lead-form"
+                        // Disabled — not hidden — until the form is complete and
+                        // valid: the button stays visible so users can see the
+                        // action exists, and Cancel is always reachable.
+                        disabled={submitDisabled}
+                        aria-disabled={submitDisabled}
+                        title={!isFormValid ? 'Complete all required fields with valid values to create the lead' : undefined}
+                    >
+                        {isSubmitting ? 'Creating...' : 'Create Lead'}
+                    </Button>
+                </div>
+            )}
+        >
+            <form id="create-lead-form" onSubmit={handleSubmit} className="flex flex-col gap-nb-4">
+                {([
                         {
                             id: 'contact',
                             title: 'Contact',
@@ -691,10 +700,14 @@ export const CreateLeadModal = ({ isOpen, onClose, onSuccess, existingLeads }: C
                                 ),
                             }]
                             : []),
-                    ]}
-                />
+                ] as Array<{ id: string; title: string; content: React.ReactNode }>).map((sec) => (
+                    <section key={sec.id} aria-labelledby={`form-section-${sec.id}`} data-slot="section" data-section-id={sec.id} className="flex flex-col gap-nb-3">
+                        <h2 id={`form-section-${sec.id}`} className="text-sm font-semibold text-fg">{sec.title}</h2>
+                        <div data-slot="fields" className="grid grid-cols-1 gap-nb-4 md:grid-cols-2">{sec.content}</div>
+                    </section>
+                ))}
             </form>
-        </div>
+        </Modal>
         ) : null
     );
 };

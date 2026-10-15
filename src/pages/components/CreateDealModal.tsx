@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon } from 'lucide-react';
+import { Loader2, Briefcase, Calendar, ChevronDown, Search, User as UserIcon } from 'lucide-react';
 import { crmService, dealsApi } from '../../services/crmService';
 import { Deal, DealStage, User, SalesRep } from '../../types/crm';
-import { toast } from '@so360/design-system';
+import { toast, Button } from '@so360/design-system';
+import { Modal } from '../../components/common/Modal';
 import { useActivity } from '@so360/shell-context';
 import { useCRMCurrencySymbol } from '../../utils/formatters';
 
@@ -279,23 +280,32 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
     };
 
     return (
-        <>
-            <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-dialog flex items-center justify-center p-4">
-                <div className="bg-surface border border-line rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
-                    {/* Sticky header */}
-                    <div className="px-8 py-6 border-b border-line bg-surface-high flex items-center justify-between flex-shrink-0 rounded-t-3xl">
-                        <h2 className="text-xl font-semibold text-fg flex items-center gap-2">
-                            <Briefcase className="text-primary" size={24} />
-                            New Deal
-                        </h2>
-                        <button onClick={onClose} className="text-fg-muted hover:text-fg transition-colors">
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    {/* Scrollable form body */}
-                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-                        <div className="flex-1 overflow-y-auto p-8 space-y-5">
+        <Modal
+            isOpen
+            onClose={onClose}
+            size="lg"
+            dismissible={!isSubmitting}
+            data-testid="create-deal-modal"
+            title={
+                <span className="flex items-center gap-2">
+                    <Briefcase className="text-primary" size={24} />
+                    New Deal
+                </span>
+            }
+            footer={
+                <>
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" form="create-deal-form" variant="primary" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 size={12} className="animate-spin" />}
+                        Create Deal
+                    </Button>
+                </>
+            }
+        >
+                    <form id="create-deal-form" onSubmit={handleSubmit} className="flex flex-col">
+                        <div className="space-y-5">
                             {leadId && companyError && (
                                 <p className="text-xs text-danger font-bold">{companyError}</p>
                             )}
@@ -503,28 +513,8 @@ const CreateDealModal: React.FC<CreateDealModalProps> = ({ leadId, leadName, com
                             )}
                         </div>
 
-                        {/* Sticky footer */}
-                        <div className="flex justify-end gap-3 border-t border-line px-8 py-5 flex-shrink-0 rounded-b-3xl">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-6 py-3 rounded-nb-lg text-xs font-semibold text-fg-subtle hover:text-fg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="px-8 py-3 bg-primary hover:bg-primary/90 text-primary-fg rounded-nb-lg text-xs font-semibold transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
-                            >
-                                {isSubmitting && <Loader2 size={12} className="animate-spin" />}
-                                Create Deal
-                            </button>
-                        </div>
                     </form>
-                </div>
-            </div>
-        </>
+        </Modal>
     );
 };
 
