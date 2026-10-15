@@ -358,7 +358,7 @@ describe('MarketingSegmentsPage', () => {
       mockGetCustomerSegments.mockResolvedValue([]);
       render(<MarketingSegmentsPage />);
       await waitFor(() => {
-        expect(screen.getByText('No segments yet.')).toBeInTheDocument();
+        expect(screen.getByText('No segments yet')).toBeInTheDocument();
       });
     });
   });

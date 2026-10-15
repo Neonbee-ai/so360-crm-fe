@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { salesTargetService } from '../../services/salesTargetService';
 import { Modal } from '../../components/common/Modal';
-import { useConfirm, ListPageTemplate, Button, DataTable, EmptyState, Badge, Switch, TextField, Select, Checkbox } from '@so360/design-system';
+import { useConfirm, ListPageTemplate, Button, DataTable, EmptyState, Badge, Switch, TextField, Select, Checkbox, SearchInput } from '@so360/design-system';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Plus, ListChecks, AlertCircle } from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   MANUAL: 'Manual',
@@ -40,6 +40,7 @@ export default function AdminTaskTypesPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
   const [filterIndustry, setFilterIndustry] = useState('all');
 
   useEffect(() => {
@@ -103,9 +104,12 @@ export default function AdminTaskTypesPage() {
     }
   };
 
+  const q = search.trim().toLowerCase();
   const visible = taskTypes.filter(tt =>
-    filterIndustry === 'all' || (tt.industry_tags ?? []).includes(filterIndustry)
+    (filterIndustry === 'all' || (tt.industry_tags ?? []).includes(filterIndustry)) &&
+    (!q || String(tt.name || '').toLowerCase().includes(q))
   );
+  const hasFilters = filterIndustry !== 'all' || !!q;
 
   const columns: DataTableColumn<any>[] = [
     { key: 'name', header: 'Name', sortable: true, sortValue: (tt) => tt.name || '', render: (tt) => (
@@ -136,7 +140,9 @@ export default function AdminTaskTypesPage() {
     <ListPageTemplate
       title="Sales Activity Types"
       description="Define what activities reps track — auto-counted or manual"
-      primaryAction={<Button onClick={() => setShowModal(true)}>+ New Type</Button>}
+      count={taskTypes.length}
+      primaryAction={<Button onClick={() => setShowModal(true)}><Plus size={16} aria-hidden="true" /> New type</Button>}
+      search={<SearchInput placeholder="Search activity types" value={search} onChange={setSearch} data-testid="task-types-search" />}
       filterConfig={{
         fields: [{
           key: 'industry',
@@ -152,11 +158,18 @@ export default function AdminTaskTypesPage() {
     >
       {confirmDialog}
 
-      {error && (
-        <div className="mb-4 p-3 bg-danger/30 border border-danger rounded text-danger text-sm">{error}</div>
-      )}
-
-      {(
+      {error && !taskTypes.length && !loading ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="Couldn't load activity types"
+          description={error}
+          action={{ label: 'Try again', onClick: () => { setError(null); load(); } }}
+        />
+      ) : (
+        <>
+        {error && (
+          <div className="mb-nb-3 text-sm text-danger">{error}</div>
+        )}
         <DataTable
           columns={columns}
           rows={visible}
@@ -166,8 +179,23 @@ export default function AdminTaskTypesPage() {
             { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => handleDelete(tt) },
           ]}
           getRowProps={(tt: any) => ({ 'data-testid': `task-type-row-${tt.id}` })}
-          emptyState={<EmptyState title="No task types yet" />}
+          emptyState={hasFilters ? (
+            <EmptyState
+              icon={ListChecks}
+              title="No matching activity types"
+              description="Try a different search or clear the industry filter."
+              action={{ label: 'Clear filters', onClick: () => { setSearch(''); setFilterIndustry('all'); } }}
+            />
+          ) : (
+            <EmptyState
+              icon={ListChecks}
+              title="No activity types yet"
+              description="Define the activities your reps track, auto-counted or manual."
+              action={{ label: 'New type', onClick: () => setShowModal(true) }}
+            />
+          )}
         />
+        </>
       )}
 
       {/* Create modal */}

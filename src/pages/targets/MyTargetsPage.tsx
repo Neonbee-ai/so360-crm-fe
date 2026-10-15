@@ -8,6 +8,9 @@ import {
 import {
   ElapsedBar,
   EmptyState,
+  ErrorState,
+  LoadingState,
+  isUnlinkedProfileError,
   ProgressBar,
   StatusChip,
   formatPct,
@@ -73,7 +76,7 @@ export default function MyTargetsPage() {
   // Rendered by EVERY branch, including the loading and empty states. If the
   // picker vanished when a period came back empty, the user would be stuck on
   // that period with no way to choose another.
-  const header = (
+  const header = isUnlinkedProfileError(error) ? undefined : (
     <div className="space-y-2">
       <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
@@ -84,7 +87,7 @@ export default function MyTargetsPage() {
     return (
       <DashboardPageTemplate title="My Targets" filters={header}>
       <div className="space-y-4">
-        <div className="text-sm text-fg-subtle">Loading targets…</div>
+        <LoadingState />
       </div>
       </DashboardPageTemplate>
     );
@@ -93,7 +96,7 @@ export default function MyTargetsPage() {
     return (
       <DashboardPageTemplate title="My Targets" filters={header}>
       <div className="space-y-4">
-        <div className="text-sm text-danger">{error}</div>
+        <ErrorState error={error} onRetry={load} />
       </div>
       </DashboardPageTemplate>
     );
@@ -102,7 +105,7 @@ export default function MyTargetsPage() {
     return (
       <DashboardPageTemplate title="My Targets" filters={header}>
       <div className="space-y-4">
-        <EmptyState message="No targets assigned for this period." />
+        <EmptyState title="No targets for this period" description="Nothing is assigned to you in the selected period. Pick another date or ask an admin." />
       </div>
       </DashboardPageTemplate>
     );

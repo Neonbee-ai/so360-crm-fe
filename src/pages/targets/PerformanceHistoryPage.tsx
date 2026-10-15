@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel, formatPct, formatValue } from './targetUi';
+import { EmptyState, ErrorState, LoadingState, Panel, formatPct, formatValue } from './targetUi';
 import { DashboardPageTemplate, DataTable } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
@@ -46,17 +46,20 @@ export default function PerformanceHistoryPage() {
     load();
   }, [load]);
 
-  if (loading) {
-    return <div className="text-sm text-fg-subtle">Loading history…</div>;
-  }
-  if (error) {
-    return <div className="text-sm text-danger">{error}</div>;
-  }
-  if (!data?.periods?.length) {
+  if (loading || error || !data?.periods?.length) {
     return (
-      <div>
-        <EmptyState message="No completed periods yet. History appears once a target period closes." />
-      </div>
+      <DashboardPageTemplate title="Performance History">
+        {loading ? (
+          <LoadingState />
+        ) : error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            title="No completed periods yet"
+            description="History appears once a target period closes."
+          />
+        )}
+      </DashboardPageTemplate>
     );
   }
 

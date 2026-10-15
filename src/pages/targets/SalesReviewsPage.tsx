@@ -3,6 +3,8 @@ import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
   Panel,
   PersonName,
   PersonPicker,
@@ -10,7 +12,9 @@ import {
   formatValue,
   reviewPeriodBounds,
 } from './targetUi';
-import { DashboardPageTemplate, Button, DataTable, TextField, Select } from '@so360/design-system';
+import { DashboardPageTemplate, Button, DataTable, TextField, Select, FormField } from '@so360/design-system';
+import { ClipboardList, Plus } from 'lucide-react';
+import { Modal } from '../../components/common/Modal';
 import type { DataTableColumn } from '@so360/design-system';
 
 /**
@@ -35,6 +39,8 @@ export default function SalesReviewsPage() {
 
   // New-review form. The period is chosen as a month or a quarter rather than
   // as two free dates — see reviewPeriodBounds.
+  const [startOpen, setStartOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [newPersonId, setNewPersonId] = useState('');
   const [newPeriodType, setNewPeriodType] = useState<'monthly' | 'quarterly'>(
     'monthly',
@@ -76,7 +82,7 @@ export default function SalesReviewsPage() {
   const startReview = async () => {
     if (!newPersonId || !bounds) return;
     setBusy(true);
-    setError(null);
+    setFormError(null);
     try {
       const created = await targetPlanService.createReview({
         person_id: newPersonId,
@@ -87,10 +93,11 @@ export default function SalesReviewsPage() {
         "Review opened, pre-filled with the period's numbers. Nothing is sent to People Connect until you finalize.",
       );
       setNewPersonId('');
+      setStartOpen(false);
       setActive(created);
       load();
     } catch (e: any) {
-      setError(e.message);
+      setFormError(e.message);
     } finally {
       setBusy(false);
     }
@@ -160,9 +167,21 @@ export default function SalesReviewsPage() {
     }
   };
 
-  if (loading) {
-    return <div className="text-sm text-fg-subtle">Loading reviews…</div>;
-  }
+  const monthOptions = (() => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+      return {
+        value: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`,
+        label: d.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+      };
+    });
+  })();
+
+  const openStart = () => {
+    setFormError(null);
+    setStartOpen(true);
+  };
 
   const columns: DataTableColumn<any>[] = [
     { key: 'period', header: 'Period', sortable: true, sortValue: (r) => r.period_start || '', render: (r) => <span className="text-fg">{r.period_start}</span> },
@@ -184,20 +203,45 @@ export default function SalesReviewsPage() {
   ];
 
   return (
-    <DashboardPageTemplate title="Reviews">
+    <DashboardPageTemplate
+      title="Reviews"
+      primaryAction={(
+        <Button variant="primary" onClick={openStart}>
+          <Plus size={16} aria-hidden="true" /> New review
+        </Button>
+      )}
+    >
     <div className="space-y-5">
 
-      {error && <div className="text-sm text-danger">{error}</div>}
+      {error && !loading && <ErrorState error={error} onRetry={load} />}
       {notice && <div className="text-sm text-success">{notice}</div>}
 
-      <Panel title="Start a review">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-64">
-            <label className="block text-xs text-fg-subtle mb-1">
-              Person
-            </label>
+      <Modal
+        isOpen={startOpen}
+        onClose={() => setStartOpen(false)}
+        title="New review"
+        size="md"
+        dismissible={!busy}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setStartOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={startReview}
+              disabled={busy || !newPersonId || !bounds}
+            >
+              Open review
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-nb-3">
+          {formError && <div className="text-sm text-danger">{formError}</div>}
+          <FormField label="Person" name="review_person">
             <PersonPicker value={newPersonId} onChange={setNewPersonId} />
-          </div>
+          </FormField>
           <Select
             name="review_period_type"
             label="Period"
@@ -219,13 +263,13 @@ export default function SalesReviewsPage() {
             ]}
           />
           {newPeriodType === 'monthly' ? (
-            <TextField
+            <Select
               name="review_month"
-              type="month"
               label="Month"
               aria-label="Month"
               value={newAnchor}
               onChange={(e: any) => setNewAnchor(e.target.value)}
+              options={monthOptions}
             />
           ) : (
             <Select
@@ -242,19 +286,13 @@ export default function SalesReviewsPage() {
               })()}
             />
           )}
-          <Button variant="primary" size="sm"
-            onClick={startReview}
-            disabled={busy || !newPersonId || !bounds}
-          >
-            Open review
-          </Button>
           {bounds && (
-            <span className="text-xs text-fg-muted">
+            <div className="text-xs text-fg-muted">
               {bounds.period_start} → {bounds.period_end}
-            </span>
+            </div>
           )}
         </div>
-      </Panel>
+      </Modal>
 
       {reviews.some(
         (r) => r.status === 'finalized' && !r.pc_synced_at,
@@ -273,8 +311,16 @@ export default function SalesReviewsPage() {
         </div>
       )}
 
-      {!reviews.length ? (
-        <EmptyState message="No reviews yet. A review is created for a person and period, pre-filled with that period's numbers." />
+      {loading ? (
+        <LoadingState />
+      ) : !reviews.length ? (
+        error ? null :
+        <EmptyState
+          icon={ClipboardList}
+          title="No reviews yet"
+          description="A review is created for a person and period, pre-filled with that period's numbers."
+          action={{ label: 'New review', onClick: openStart }}
+        />
       ) : (
         <Panel title="All reviews">
           <DataTable

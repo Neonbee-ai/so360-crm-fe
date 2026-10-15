@@ -7,6 +7,8 @@ import {
 import {
   ElapsedBar,
   EmptyState,
+  ErrorState,
+  LoadingState,
   Panel,
   ProgressBar,
   Sparkline,
@@ -58,17 +60,20 @@ export default function TargetsOverviewPage() {
     load();
   }, [load]);
 
-  if (loading) {
-    return <div className="text-sm text-fg-subtle">Loading overview…</div>;
-  }
-  if (error) {
-    return <div className="text-sm text-danger">{error}</div>;
-  }
-  if (!data || !data.plans?.length) {
+  if (loading || error || !data || !data.plans?.length) {
     return (
-      <div>
-        <EmptyState message="No active target plan for this period. An admin can create one under Target Plans." />
-      </div>
+      <DashboardPageTemplate title="Overview">
+        {loading ? (
+          <LoadingState />
+        ) : error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : (
+          <EmptyState
+            title="No active target plan"
+            description="There is no active target plan for this period. An admin can create one under Target Plans."
+          />
+        )}
+      </DashboardPageTemplate>
     );
   }
 

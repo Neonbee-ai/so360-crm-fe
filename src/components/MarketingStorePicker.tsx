@@ -6,9 +6,10 @@ interface MarketingStorePickerProps {
   storeId: string;
   onChange: (value: string) => void;
   className?: string;
+  onStoresLoaded?: (count: number) => void;
 }
 
-export const MarketingStorePicker: React.FC<MarketingStorePickerProps> = ({ storeId, onChange, className }) => {
+export const MarketingStorePicker: React.FC<MarketingStorePickerProps> = ({ storeId, onChange, className, onStoresLoaded }) => {
   const [value, setValue] = useState<string>(storeId);
   const [stores, setStores] = useState<Array<{ id: string; name: string; store_code?: string; status?: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -27,6 +28,7 @@ export const MarketingStorePicker: React.FC<MarketingStorePickerProps> = ({ stor
         const data = await crmService.getDailystoreStores();
         if (!mounted) return;
         setStores(data || []);
+        onStoresLoaded?.((data || []).length);
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message || 'Failed to load stores');

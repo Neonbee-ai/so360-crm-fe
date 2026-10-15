@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
-import { EmptyState, Panel } from './targetUi';
+import { Plus, Radio } from 'lucide-react';
+import { Modal } from '../../components/common/Modal';
+import { EmptyState, ErrorState, LoadingState, Panel } from './targetUi';
 import { DashboardPageTemplate, Button, DataTable, TextField, Select, Checkbox } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
@@ -22,6 +24,8 @@ export default function TouchpointChannelsPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const [addOpen, setAddOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
   const [actualsSource, setActualsSource] = useState<'auto' | 'manual'>(
@@ -75,7 +79,7 @@ export default function TouchpointChannelsPage() {
       (c: any) => String(c.value).toLowerCase() === key,
     );
     if (clash) {
-      setError(
+      setFormError(
         clash.is_active === false
           ? `A channel with the key "${key}" already exists but is inactive — show inactive channels and reactivate it instead.`
           : `A channel with the key "${key}" already exists (${clash.label}). Pick a different key.`,
@@ -84,7 +88,7 @@ export default function TouchpointChannelsPage() {
     }
 
     setBusy(true);
-    setError(null);
+    setFormError(null);
     try {
       await targetPlanService.createChannel({
         label: label.trim(),
@@ -93,11 +97,12 @@ export default function TouchpointChannelsPage() {
       });
       setLabel('');
       setValue('');
+      setAddOpen(false);
       setNotice(`Added ${label.trim()}.`);
       load();
     } catch (e: any) {
       const raw = String(e?.message ?? '');
-      setError(
+      setFormError(
         /duplicate key|already exists|unique/i.test(raw)
           ? `A channel with the key "${key}" already exists in this organisation. Pick a different key.`
           : raw || 'Could not add the channel.',
@@ -161,6 +166,11 @@ export default function TouchpointChannelsPage() {
     flagCol('active', 'Active', 'is_active'),
   ];
 
+  const openAdd = () => {
+    setFormError(null);
+    setAddOpen(true);
+  };
+
   return (
     <DashboardPageTemplate
       title="Touchpoint Channels"
@@ -169,14 +179,69 @@ export default function TouchpointChannelsPage() {
           Import from Lead Sources
         </Button>
       )}
+      primaryAction={(
+        <Button variant="primary" onClick={openAdd}>
+          <Plus size={16} aria-hidden="true" /> Add channel
+        </Button>
+      )}
     >
-    <div className="space-y-5">
-
-      {error && <div className="text-sm text-danger">{error}</div>}
       {notice && <div className="text-sm text-success">{notice}</div>}
 
-      <Panel title="Add a channel">
-        <div className="flex flex-wrap items-end gap-3">
+      {loading ? (
+        <LoadingState />
+      ) : error ? (
+        <ErrorState error={error} onRetry={load} />
+      ) : !channels.length ? (
+        <EmptyState
+          icon={Radio}
+          title="No channels configured"
+          description="Import your lead sources or add a channel to start tracking touchpoints."
+          action={{ label: 'Add channel', onClick: openAdd }}
+        />
+      ) : (
+        <Panel title="Channels">
+          <DataTable
+            columns={columns}
+            rows={channels}
+            rowKey={(c: any) => c.id}
+          />
+
+          <div className="mt-3 space-y-1 text-xs text-fg-muted">
+            <div>
+              ↔ linked to an existing CRM lead source — configured once,
+              reconcilable in reporting
+            </div>
+            <div className="text-warning">
+              ⚠ Manual channels are self-reported. Compensation eligibility is
+              off by default and must be enabled deliberately.
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      <Modal
+        isOpen={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Add a channel"
+        size="md"
+        dismissible={!busy}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={() => setAddOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={addChannel}
+              disabled={busy || !label.trim() || !value.trim()}
+            >
+              Add channel
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-nb-3">
+          {formError && <div className="text-sm text-danger">{formError}</div>}
           <TextField
             name="channel_label"
             label="Label"
@@ -201,46 +266,14 @@ export default function TouchpointChannelsPage() {
               { value: 'auto', label: 'Auto (system emits it)' },
             ]}
           />
-          <Button variant="primary" size="sm"
-            onClick={addChannel}
-            disabled={busy || !label.trim() || !value.trim()}
-          >
-            Add
-          </Button>
+          {actualsSource === 'auto' && (
+            <div className="text-xs text-warning">
+              Auto channels need an emitter binding — configure it via the API
+              until the binding picker ships.
+            </div>
+          )}
         </div>
-        {actualsSource === 'auto' && (
-          <div className="mt-2 text-xs text-warning">
-            Auto channels need an emitter binding — configure it via the API
-            until the binding picker ships.
-          </div>
-        )}
-      </Panel>
-
-      {loading ? (
-        <div className="text-sm text-fg-subtle">Loading channels…</div>
-      ) : !channels.length ? (
-        <EmptyState message="No channels configured. Import from lead sources or add one above." />
-      ) : (
-        <Panel title="Channels">
-          <DataTable
-            columns={columns}
-            rows={channels}
-            rowKey={(c: any) => c.id}
-          />
-
-          <div className="mt-3 space-y-1 text-xs text-fg-muted">
-            <div>
-              ↔ linked to an existing CRM lead source — configured once,
-              reconcilable in reporting
-            </div>
-            <div className="text-warning">
-              ⚠ Manual channels are self-reported. Compensation eligibility is
-              off by default and must be enabled deliberately.
-            </div>
-          </div>
-        </Panel>
-      )}
-    </div>
+      </Modal>
     </DashboardPageTemplate>
   );
 }

@@ -3,6 +3,9 @@ import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import {
   EmptyState,
+  ErrorState,
+  LoadingState,
+  isUnlinkedProfileError,
   Panel,
   PersonName,
   ProgressBar,
@@ -100,7 +103,7 @@ export default function TeamTargetsPage() {
   // Rendered by EVERY branch, including the loading and empty states. If the
   // picker vanished when a period came back empty, the user would be stuck on
   // that period with no way to choose another.
-  const header = (
+  const header = isUnlinkedProfileError(error) ? undefined : (
     <div className="space-y-2">
       <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
@@ -128,7 +131,7 @@ export default function TeamTargetsPage() {
     return (
       <DashboardPageTemplate title="Team Targets" filters={header}>
       <div className="space-y-4">
-        <div className="text-sm text-fg-subtle">Loading team…</div>
+        <LoadingState />
       </div>
       </DashboardPageTemplate>
     );
@@ -137,7 +140,7 @@ export default function TeamTargetsPage() {
     return (
       <DashboardPageTemplate title="Team Targets" filters={header}>
       <div className="space-y-4">
-        <div className="text-sm text-danger">{error}</div>
+        <ErrorState error={error} onRetry={load} />
       </div>
       </DashboardPageTemplate>
     );
@@ -146,7 +149,7 @@ export default function TeamTargetsPage() {
     return (
       <DashboardPageTemplate title="Team Targets" filters={header}>
       <div className="space-y-4">
-        <EmptyState message="No active individual target plans in this period." />
+        <EmptyState title="No team targets" description="There are no active individual target plans in this period." />
       </div>
       </DashboardPageTemplate>
     );

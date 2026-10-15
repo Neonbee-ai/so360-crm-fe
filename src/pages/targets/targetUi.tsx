@@ -1,5 +1,6 @@
 import React from 'react';
-import { EmptyState as DsEmptyState, DatePicker, Button, TextField } from '@so360/design-system';
+import { EmptyState as DsEmptyState, DatePicker, Button, TextField, Skeleton } from '@so360/design-system';
+import { AlertCircle, Inbox, UserX } from 'lucide-react';
 import type { TargetStatus, TrendPoint } from '../../services/targetPlanService';
 
 /**
@@ -200,9 +201,76 @@ export function Panel({
   );
 }
 
-export function EmptyState({ message }: { message: string }) {
+type EmptyIcon = React.ComponentType<{ className?: string }>;
+
+/**
+ * In-frame empty state. Short title + muted description. `message` is kept for
+ * older call sites and maps to the description under a neutral title.
+ */
+export function EmptyState({
+  title,
+  description,
+  message,
+  icon,
+  action,
+}: {
+  title?: string;
+  description?: string;
+  message?: string;
+  icon?: EmptyIcon;
+  action?: { label: string; onClick: () => void };
+}) {
   return (
-    <DsEmptyState title={message} />
+    <DsEmptyState
+      icon={icon ?? Inbox}
+      title={title ?? 'Nothing here yet'}
+      description={description ?? message}
+      action={action}
+    />
+  );
+}
+
+/** True when the API says the signed-in user has no People Connect person. */
+export function isUnlinkedProfileError(error: string | null | undefined): boolean {
+  return !!error && /no people connect person|not linked|person is linked/i.test(error);
+}
+
+/**
+ * In-frame error. Always rendered inside the page's floorplan so the header
+ * stays; an unlinked profile gets its own explanation instead of raw API text.
+ */
+export function ErrorState({
+  error,
+  onRetry,
+}: {
+  error: string;
+  onRetry?: () => void;
+}) {
+  if (isUnlinkedProfileError(error)) {
+    return (
+      <DsEmptyState
+        icon={UserX}
+        title="Your profile isn't linked to People Connect"
+        description="Ask an admin to link your user to a person in People Connect to see targets."
+      />
+    );
+  }
+  return (
+    <DsEmptyState
+      icon={AlertCircle}
+      title="Couldn't load this page"
+      description={error}
+      action={onRetry ? { label: 'Try again', onClick: onRetry } : undefined}
+    />
+  );
+}
+
+/** Skeleton shown inside the floorplan while data loads. */
+export function LoadingState() {
+  return (
+    <div data-testid="targets-loading">
+      <Skeleton variant="text" lines={5} />
+    </div>
   );
 }
 

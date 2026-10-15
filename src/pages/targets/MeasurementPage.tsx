@@ -4,6 +4,9 @@ import { targetPlanService } from '../../services/targetPlanService';
 import {
   AsOfBanner,
   EmptyState,
+  ErrorState,
+  LoadingState,
+  isUnlinkedProfileError,
   Panel,
   PeriodPicker,
   formatPct,
@@ -56,7 +59,7 @@ export default function MeasurementPage() {
   // Rendered by EVERY branch, including the loading and empty states. If the
   // picker vanished when a period came back empty, the user would be stuck on
   // that period with no way to choose another.
-  const header = (
+  const header = isUnlinkedProfileError(error) ? undefined : (
     <div className="space-y-2">
       <PeriodPicker value={asOf} onChange={setAsOf} />
       <AsOfBanner asOf={asOf} />
@@ -67,7 +70,7 @@ export default function MeasurementPage() {
     return (
       <DashboardPageTemplate title="Measurement" filters={header}>
       <div className="space-y-4">
-        <div className="text-sm text-fg-subtle">Loading…</div>
+        <LoadingState />
       </div>
       </DashboardPageTemplate>
     );
@@ -76,7 +79,7 @@ export default function MeasurementPage() {
     return (
       <DashboardPageTemplate title="Measurement" filters={header}>
       <div className="space-y-4">
-        <div className="text-sm text-danger">{error}</div>
+        <ErrorState error={error} onRetry={load} />
       </div>
       </DashboardPageTemplate>
     );
@@ -85,7 +88,7 @@ export default function MeasurementPage() {
     return (
       <DashboardPageTemplate title="Measurement" filters={header}>
       <div className="space-y-4">
-        <EmptyState message="No measurement data for this period." />
+        <EmptyState title="No measurement data" description="There is nothing to measure in the selected period." />
       </div>
       </DashboardPageTemplate>
     );
@@ -105,7 +108,7 @@ export default function MeasurementPage() {
       </div>
 
       {nothingApplies && (
-        <EmptyState message="No pipeline, product lines or closed deals in this period yet." />
+        <EmptyState title="Nothing to measure yet" description="No pipeline, product lines or closed deals in this period." />
       )}
 
       <div className="flex flex-wrap gap-4">

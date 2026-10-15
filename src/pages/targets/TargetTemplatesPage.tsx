@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useShellBridge } from '@so360/shell-context';
 import { targetPlanService } from '../../services/targetPlanService';
 import { salesTargetService } from '../../services/salesTargetService';
-import { EmptyState, Panel, PersonPicker } from './targetUi';
+import { FileStack } from 'lucide-react';
+import { EmptyState, ErrorState, LoadingState, Panel, PersonPicker } from './targetUi';
 import { DashboardPageTemplate, Button, DatePicker } from '@so360/design-system';
 
 /**
@@ -88,19 +89,23 @@ export default function TargetTemplatesPage() {
   const nameOf = (id: string) =>
     taskTypes.find((t) => t.id === id)?.name ?? 'Metric';
 
-  if (loading) {
-    return <div className="text-sm text-fg-subtle">Loading templates…</div>;
-  }
-
   return (
     <DashboardPageTemplate title="Target Templates">
     <div className="space-y-5">
 
-      {error && <div className="text-sm text-danger">{error}</div>}
+      {error && templates.length > 0 && <div className="text-sm text-danger">{error}</div>}
       {notice && <div className="text-sm text-success">{notice}</div>}
 
-      {!templates.length ? (
-        <EmptyState message="No templates yet. A template captures a role's standard metrics and ramp so a new hire can be set up in one step." />
+      {loading ? (
+        <LoadingState />
+      ) : !templates.length ? (
+        error ? <ErrorState error={error} onRetry={load} /> : (
+          <EmptyState
+            icon={FileStack}
+            title="No templates yet"
+            description="A template captures a role's standard metrics and ramp so a new hire can be set up in one step."
+          />
+        )
       ) : (
         <div className="flex flex-wrap gap-4">
           {templates.map((t) => (

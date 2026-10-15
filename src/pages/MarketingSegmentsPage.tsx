@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney } from './marketing/marketingMappers';
 import { useBusinessSettings, useShell, useShellBridge } from '@so360/shell-context';
-import { Button, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, TextField } from '@so360/design-system';
+import { Button, DataTable, EmptyState, ListPageTemplate, SearchInput, Select, Tabs, TextField } from '@so360/design-system';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
@@ -40,6 +41,8 @@ const MarketingSegmentsPage: React.FC = () => {
   const dailystoreEnabled = shell.isModuleEnabled('dailystore');
 
   const [storeId, setStoreId] = useState<string>(localStorage.getItem(STORE_KEY) || '');
+  const [storeCount, setStoreCount] = useState<number | null>(null);
+  const [view, setView] = useState<'segments' | 'storefront'>('segments');
   const [loading, setLoading] = useState(false);
   const [manualLoading, setManualLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +91,7 @@ const MarketingSegmentsPage: React.FC = () => {
   };
 
   const loadStorefrontSections = async () => {
-    if (!dailystoreEnabled || !storeId) {
+    if (!dailystoreEnabled || !storeId || storeCount === 0) {
       setSegments(null);
       setTopBuyers([]);
       setInactive([]);
@@ -120,7 +123,9 @@ const MarketingSegmentsPage: React.FC = () => {
   useEffect(() => {
     setError(null);
     loadStorefrontSections();
-  }, [dailystoreEnabled, storeId]);
+  }, [dailystoreEnabled, storeId, storeCount]);
+
+  const hasStores = dailystoreEnabled && storeCount !== 0;
 
   const segmentEntries = Object.entries(segments?.segments || {});
   const mappedSummarySegments = useMemo(() => {
@@ -318,13 +323,28 @@ const MarketingSegmentsPage: React.FC = () => {
         onChange: setFilters,
         onClear: () => setFilters({ channel: '', category: '' }),
       }}
-      toolbarEnd={dailystoreEnabled ? <MarketingStorePicker storeId={storeId} onChange={applyStore} /> : undefined}
+      toolbarEnd={hasStores ? <MarketingStorePicker storeId={storeId} onChange={applyStore} onStoresLoaded={setStoreCount} /> : undefined}
     >
       {loading && <p className="text-fg-subtle text-sm mb-4">Loading Storefront insights...</p>}
       {manualLoading && <p className="text-fg-subtle text-sm mb-4">Loading CRM segments...</p>}
       {error && <p className="text-danger mb-4 bg-danger/10 border border-danger/20 p-3 rounded-lg text-sm">{error}</p>}
 
+      {hasStores && (
+        <div className="mb-nb-4">
+          <Tabs
+            name="segments-view"
+            items={[
+              { id: 'segments', label: 'Segments' },
+              { id: 'storefront', label: 'Storefront insights' },
+            ]}
+            value={view}
+            onChange={(id: string) => setView(id as 'segments' | 'storefront')}
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-nb-4">
+        {(!hasStores || view === 'segments') && (
         <div className="lg:col-span-3">
           {showCreate && (
             <div className="mb-nb-4 rounded-nb p-nb-4 bg-surface-sunken">
@@ -401,11 +421,19 @@ const MarketingSegmentsPage: React.FC = () => {
               ...(canCreateMarketing ? [{ label: 'Delete', danger: true, onSelect: () => deleteSegment(row) }] : []),
             ]}
             getRowProps={(r: any) => ({ 'data-testid': `segment-row-${r.id}` })}
-            emptyState={<EmptyState title="No segments yet." />}
+            emptyState={
+              <EmptyState
+                icon={Users}
+                title="No segments yet"
+                description="Group leads and customers into segments to target them in campaigns."
+                action={canCreateMarketing ? { label: 'Create segment', onClick: () => setShowCreate(true) } : undefined}
+              />
+            }
           />
         </div>
+        )}
 
-        {activeSegment && (
+        {activeSegment && (!hasStores || view === 'segments') && (
           <div className="bg-surface border border-line rounded-nb-lg p-nb-4 lg:col-span-3">
             <div className="flex items-center justify-between mb-nb-4 gap-nb-2 flex-wrap pb-nb-4 border-b border-line">
               <h3 className="text-sm font-semibold text-fg">
@@ -491,7 +519,7 @@ const MarketingSegmentsPage: React.FC = () => {
           </div>
         )}
 
-        {dailystoreEnabled && (
+        {hasStores && view === 'storefront' && (
           <>
             <div className="bg-surface border border-line rounded-nb-lg p-nb-4 h-fit">
               <h3 className="text-sm font-semibold text-fg mb-nb-3">Storefront Summary</h3>
