@@ -299,7 +299,7 @@ export default function SalesReviewsPage() {
         <div className="space-y-nb-3">
           {formError && <div className="text-sm text-danger">{formError}</div>}
           <FormField label="Person" name="review_person">
-            <PeopleSelector loadOptions={loadDirectoryPeople} value={newPersonId} onChange={(id) => setNewPersonId(personIdOf(id))} />
+            <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={newPersonId} onChange={(id) => setNewPersonId(personIdOf(id))} />
           </FormField>
           <Select
             name="review_period_type"

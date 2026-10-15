@@ -213,7 +213,7 @@ export default function TargetTemplatesPage() {
       >
         <Stack>
           <FormField label="Person" name="template_person">
-            <PeopleSelector loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => setOwnerId(personIdOf(id))} />
+            <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => setOwnerId(personIdOf(id))} />
           </FormField>
           <DatePicker
             name="template_startDate"

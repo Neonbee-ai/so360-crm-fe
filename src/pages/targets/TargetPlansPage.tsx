@@ -516,7 +516,7 @@ export default function TargetPlansPage() {
                   those two invited a meaningless selection. */}
               {ownerType === 'rep' ? (
                 <Field label="Owner" grow>
-                  <PeopleSelector loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => setOwnerId(personIdOf(id))} />
+                  <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => setOwnerId(personIdOf(id))} />
                 </Field>
               ) : (
                 <Field label="Owner" grow>

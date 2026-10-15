@@ -62,7 +62,7 @@ function Harness({ initial = '' }: { initial?: string }) {
   return (
     <>
       <div data-testid="picker">
-        <PeopleSelector loadOptions={loadDirectoryPeople} value={value} onChange={(id) => setValue(personIdOf(id))} />
+        <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={value} onChange={(id) => setValue(personIdOf(id))} />
       </div>
       {/* Read-back of the stored value, kept OUTSIDE the picker so assertions
           about what the field displays are not satisfied by this probe. */}
@@ -121,6 +121,15 @@ describe('Given a person field on a targets screen', () => {
     expect(
       within(screen.getByTestId('picker')).queryByText(ASHA.id),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('Given a person is selected', () => {
+  it('When the selection is cleared / Then the stored value is emptied and the field returns to searching', async () => {
+    render(<Harness initial={ASHA.id} />);
+    await userEvent.click(await screen.findByLabelText('Clear selection'));
+    await waitFor(() => expect(screen.getByTestId('value')).toHaveTextContent(/^$/));
+    expect(await screen.findByText('Select person...')).toBeInTheDocument();
   });
 });
 

@@ -174,7 +174,7 @@ export default function CompensationPage() {
         <Grid columns={12}>
           <GridItem span={6}>
             <FormField label="Person" name="comp_person">
-              <PeopleSelector loadOptions={loadDirectoryPeople} value={personId} onChange={(id) => setPersonId(personIdOf(id))} />
+              <PeopleSelector clearable loadOptions={loadDirectoryPeople} value={personId} onChange={(id) => setPersonId(personIdOf(id))} />
             </FormField>
           </GridItem>
           <GridItem span={3}>
@@ -363,6 +363,7 @@ export default function CompensationPage() {
         {form.scope === 'person' && (
           <FormField label="Person" name="rule_person">
             <PeopleSelector
+              clearable
               loadOptions={loadDirectoryPeople}
               value={form.applies_to_person_id}
               onChange={(id) => setForm({ ...form, applies_to_person_id: personIdOf(id) })}

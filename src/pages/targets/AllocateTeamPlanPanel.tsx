@@ -152,6 +152,7 @@ export default function AllocateTeamPlanPanel({
               <div key={r.key} className="flex flex-wrap items-center gap-2">
                 <div className="min-w-64">
                   <PeopleSelector
+                    clearable
                     loadOptions={loadDirectoryPeople}
                     value={r.person_id}
                     onChange={(pick) =>
