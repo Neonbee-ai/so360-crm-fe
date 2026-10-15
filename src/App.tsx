@@ -168,6 +168,12 @@ const QuotesPage = lazy(() => import('./pages/QuotesPage'));
 const QuoteDetailPage = lazy(() => import('./pages/QuoteDetailPage'));
 const CustomersPage = lazy(() => import('./pages/CustomersPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const IcpListPage = lazy(() => import('./pages/IcpListPage'));
+const IcpFormPage = lazy(() => import('./pages/IcpFormPage'));
+const SettingsRoute = () => {
+    const navigate = useNavigate();
+    return <SettingsPage onOpenIcps={() => navigate('/crm/settings/icps')} />;
+};
 const MarketingOverviewPage = lazy(() => import('./pages/MarketingOverviewPage'));
 const MarketingAbandonedCartsPage = lazy(() => import('./pages/MarketingAbandonedCartsPage'));
 const MarketingCampaignsPage = lazy(() => import('./pages/MarketingCampaignsPage'));
@@ -233,7 +239,10 @@ const App = () => {
                     <Route path="tasks/:id" element={<PermissionGuard permission='crm_tasks.read'><FlagGuard flagKey="submodule:crm:tasks"><TaskDetailPage /></FlagGuard></PermissionGuard>} />
                     <Route path="quotes" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuotesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="quotes/:id" element={<PermissionGuard permission='quotes.read'><FlagGuard flagKey="submodule:crm:quotes"><QuoteDetailPage /></FlagGuard></PermissionGuard>} />
-                    <Route path="settings" element={<PermissionGuard permission='crm_settings.read'><SettingsPage /></PermissionGuard>} />
+                    <Route path="settings" element={<PermissionGuard permission='crm_settings.read'><SettingsRoute /></PermissionGuard>} />
+                    <Route path="settings/icps" element={<PermissionGuard permission='linkedin_sync.read'><FlagGuard flagKey="submodule:crm:icp_manager"><IcpListPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="settings/icps/new" element={<PermissionGuard permission='linkedin_sync.create'><FlagGuard flagKey="submodule:crm:icp_manager"><IcpFormPage /></FlagGuard></PermissionGuard>} />
+                    <Route path="settings/icps/:id" element={<PermissionGuard permission='linkedin_sync.update'><FlagGuard flagKey="submodule:crm:icp_manager"><IcpFormPage /></FlagGuard></PermissionGuard>} />
                     <Route path="sales" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:commissions"><SalesPage /></FlagGuard></PermissionGuard>} />
                     <Route path="reports/commission" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:commissions"><CommissionReportPage /></FlagGuard></PermissionGuard>} />
                     <Route path="reports/sales" element={<PermissionGuard permission='deals.read'><FlagGuard flagKey="submodule:crm:re_reports"><SalesAnalyticsPage /></FlagGuard></PermissionGuard>} />

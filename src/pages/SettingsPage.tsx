@@ -82,8 +82,9 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
     priority: 0,
 };
 
-const SettingsPage = () => {
+const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
     const shell = useShellBridge();
+    const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
     const commissionsEnabled = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
@@ -496,8 +497,12 @@ const SettingsPage = () => {
         <SettingsPageTemplate
             title="CRM Settings"
             description="Configure your workspace and custom data points"
-            primaryAction={canWriteSettings ? (
-                <div className="flex items-center gap-3">
+            primaryAction={(canWriteSettings || (icpEnabled && onOpenIcps)) ? (
+                <div className="flex items-center gap-nb-2">
+                    {icpEnabled && onOpenIcps && (
+                        <Button variant="secondary" onClick={onOpenIcps} data-testid="settings-open-icps">Ideal customers</Button>
+                    )}
+                    {canWriteSettings && (<>
                     {isDirty && !isSaving && (
                         <span className="flex items-center gap-1.5 text-xs font-bold text-warning">
                             <AlertCircle size={14} />
@@ -510,6 +515,7 @@ const SettingsPage = () => {
                     <Button onClick={handleSave} disabled={isSaving || !isDirty}><Save size={16} />
                         {isSaving ? 'Saving...' : 'Save Configuration'}
                     </Button>
+                    </>)}
                 </div>
             ) : undefined}
             sections={[
