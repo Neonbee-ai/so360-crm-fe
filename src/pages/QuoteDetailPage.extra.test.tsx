@@ -3,7 +3,7 @@
  * line-item management, modal flows (reject/convert), and error branches.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import React from 'react';
 
 const mockGetQuoteById = vi.fn();
@@ -207,8 +207,8 @@ describe('Given QuoteDetailPage — convert modal', () => {
     fireEvent.click(screen.getByText(/convert to order/i));
     await waitFor(() => screen.getByText(/convert to sales order/i));
     // Find the confirm button inside modal
-    const confirmBtn = screen.getAllByText(/convert to order/i)[1];
-    if (confirmBtn) fireEvent.click(confirmBtn);
+    const confirmBtn = within(document.getElementById('crm-portal-root') as HTMLElement).getByText(/convert to order/i);
+    fireEvent.click(confirmBtn);
     await waitFor(() => {
       expect(mockConvertQuoteToOrder).toHaveBeenCalledWith('q-1');
     });

@@ -529,7 +529,7 @@ const TaskDetailPage = () => {
 
             {/* Edit Note Modal */}
             {editingNote && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-[600]">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-dialog">
                     <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -583,7 +583,7 @@ const TaskDetailPage = () => {
 
             {/* Delete Note Confirmation Modal */}
             {deleteNoteId && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-[600]">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-dialog">
                     <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center shrink-0">
@@ -627,7 +627,7 @@ const TaskDetailPage = () => {
 
             {/* Disconnect from Project Confirmation Modal */}
             {showDisconnectConfirm && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-[600]">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm flex items-center justify-center z-dialog">
                     <div className="bg-surface border border-line rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
                         <div className="flex items-start gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center shrink-0">
@@ -692,7 +692,7 @@ const TaskDetailPage = () => {
 
             {/* Delete Confirmation Dialog */}
             {showDeleteConfirm && createPortal(
-                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-overlay/70 backdrop-blur-sm z-dialog flex items-center justify-center p-4">
                     <div className="bg-surface border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl">
                         <h3 className="text-lg font-bold text-fg mb-2">Delete Task</h3>
                         <p className="text-fg-subtle mb-6">

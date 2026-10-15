@@ -80,7 +80,8 @@ vi.mock('@so360/formatters', () => ({
   }),
 }));
 
-vi.mock('@so360/design-system', () => ({
+vi.mock('@so360/design-system', async (importOriginal) => ({
+  ...(await importOriginal<any>()),
   useConfirm: () => [vi.fn(async () => true), null],
   toast: {
     success: vi.fn(),
@@ -208,7 +209,7 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
   });
 
   describe('Given approvers with decided statuses (approved / rejected)', () => {
-    it('Then the approved approver chip carries scoped emerald classes and the rejected approver chip carries scoped rose classes', async () => {
+    it('Then the approved approver chip uses the success tone and the rejected approver chip uses the danger tone', async () => {
       mockGetQuoteById.mockResolvedValue({
         ...pendingQuoteWithApprovers,
         current_approval_request: {
@@ -223,18 +224,14 @@ describe('QuoteDetailPage Approval-in-Progress panel styling', () => {
       render(<QuoteDetailPage />);
 
       const approvedName = await screen.findByText('Bob VP');
-      const approvedChip = approvedName.parentElement as HTMLElement;
-      expect(approvedChip.className).toContain('bg-emerald-500/10');
-      expect(approvedChip.className).toContain('text-emerald-300');
+      expect(approvedName.closest('[data-tone]')).toHaveAttribute('data-tone', 'success');
 
       const rejectedName = await screen.findByText('Carol CFO');
-      const rejectedChip = rejectedName.parentElement as HTMLElement;
-      expect(rejectedChip.className).toContain('bg-rose-500/10');
-      expect(rejectedChip.className).toContain('text-rose-300');
+      expect(rejectedName.closest('[data-tone]')).toHaveAttribute('data-tone', 'danger');
 
-      // Names themselves stay neutral regardless of the chip's semantic color.
-      expect(approvedName.className).toContain('text-fg');
-      expect(rejectedName.className).toContain('text-fg');
+      // Names themselves stay neutral regardless of the chip's semantic tone.
+      expect(approvedName.className).not.toMatch(/text-(success|danger|warning)/);
+      expect(rejectedName.className).not.toMatch(/text-(success|danger|warning)/);
     });
   });
 });

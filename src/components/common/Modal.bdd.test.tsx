@@ -28,7 +28,7 @@ describe('Modal', () => {
       const onClose = vi.fn();
       render(<Modal isOpen={true} onClose={onClose} title="Title"><p>Content</p></Modal>);
       // Modal renders via portal into document.body — query there
-      const backdrop = document.body.querySelector('.bg-black\\/60');
+      const backdrop = document.body.querySelector('.bg-overlay');
       expect(backdrop).toBeTruthy();
       fireEvent.click(backdrop!);
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -73,7 +73,7 @@ describe('Modal', () => {
   });
 
   describe('Given viewport-safety layout contract (overflow fix)', () => {
-    const getOuter = () => document.body.querySelector('.fixed.inset-0.z-\\[600\\]') as HTMLElement;
+    const getOuter = () => document.body.querySelector('.fixed.inset-0.z-dialog') as HTMLElement;
     const getPanel = (outer: HTMLElement) =>
       Array.from(outer.children).find(el => !el.classList.contains('fixed')) as HTMLElement;
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, mapCampaign } from './marketing/marketingMappers';
-import { Button, ListPageTemplate, Menu } from '@so360/design-system';
+import { Button, Card, ListPageTemplate, Menu } from '@so360/design-system';
 import CampaignTemplateEditor from '../components/CampaignTemplateEditor';
 import { useShellBridge } from '@so360/shell-context';
 
@@ -84,8 +84,7 @@ const MarketingCampaignsPage: React.FC = () => {
     >
 
       {showCreate && (
-        <div className="bg-surface-sunken border border-line rounded-xl p-6 mb-8">
-          <h3 className="text-fg font-bold mb-5">Create Campaign</h3>
+        <Card title="Create Campaign" className="mb-nb-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               className="bg-surface border border-line rounded-lg px-4 py-2 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-focus"
@@ -137,14 +136,14 @@ const MarketingCampaignsPage: React.FC = () => {
               Finish & Create
             </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {loading && <p className="text-fg-subtle">Loading...</p>}
       {error && <p className="text-danger mb-3">{error}</p>}
 
-      <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+      <Card title="All Campaigns" padding="none">
+        <div className="w-full overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-surface-raised text-fg-subtle font-medium">
               <tr>
@@ -233,7 +232,7 @@ const MarketingCampaignsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </ListPageTemplate>
   );
 };

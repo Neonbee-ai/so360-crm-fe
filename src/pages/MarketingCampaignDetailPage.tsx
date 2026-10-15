@@ -99,8 +99,8 @@ const MarketingCampaignDetailPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-nb-3">
-            <Card title="Test Send">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
+            <div className="lg:col-span-6"><Card title="Test Send">
               <div className="flex gap-nb-2">
                 <input
                   value={testEmail}
@@ -117,9 +117,9 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   Send Test
                 </Button>
               </div>
-            </Card>
+            </Card></div>
 
-            <Card title="Schedule">
+            <div className="lg:col-span-6"><Card title="Schedule">
               <div className="flex gap-nb-2">
                 <input
                   type="datetime-local"
@@ -139,7 +139,7 @@ const MarketingCampaignDetailPage: React.FC = () => {
                   Schedule
                 </Button>
               </div>
-            </Card>
+            </Card></div>
           </div>
 
           <Card title="Recipients" padding="none">

@@ -571,7 +571,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               {/* Timeline */}
               {tab === 'timeline' && (
                 <div className="px-5 py-4">
-<Card title="Activity">
+                  <Card title="Activity">
                   {timeline.loading ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
@@ -632,13 +632,14 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                       )}
                     </>
                   )}
+                  </Card>
                 </div>
               )}
 
               {/* Sales — linked deals */}
               {tab === 'sales' && (
                 <div className="px-5 py-4">
-<Card title="Deals">
+                  <Card title="Deals">
                   {dealsLoading || deals === null ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
@@ -682,7 +683,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               {/* Tasks — linked tasks */}
               {tab === 'tasks' && (
                 <div className="px-5 py-4">
-<Card title="Tasks">
+                  <Card title="Tasks">
                   {tasksLoading || tasks === null ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
@@ -828,7 +829,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
               {/* Audit — system/state-change events */}
               {tab === 'audit' && (
                 <div className="px-5 py-4">
-<Card title="Audit trail">
+                  <Card title="Audit trail">
                   {activitiesLoading || activities === null ? (
                     <div className="flex items-center justify-center py-10 text-fg-muted">
                       <Loader2 size={20} className="animate-spin" />
@@ -864,7 +865,7 @@ export function LeadDetailPanel({ lead, onClose, onNavigate, onNavigateDeal, onN
                   )}
                 </Card></div>
               )}
-            </Card></div>
+            </div>
 
             {/* Footer */}
             {onDelete && (

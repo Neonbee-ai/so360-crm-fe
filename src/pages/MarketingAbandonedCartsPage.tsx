@@ -4,7 +4,7 @@ import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
 import { formatDateTime, formatMoney, mapAbandonedCart } from './marketing/marketingMappers';
 import { useBusinessSettings } from '@so360/shell-context';
-import { Button, ListPageTemplate } from '@so360/design-system';
+import { Button, Card, KpiCard, ListPageTemplate } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -82,18 +82,15 @@ const MarketingAbandonedCartsPage: React.FC = () => {
       {error && <p className="text-danger mb-3">{error}</p>}
 
       {cards.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 wc-medium:grid-cols-4 gap-nb-3 mb-nb-3">
           {cards.map((card) => (
-            <div key={card.label} className="bg-surface-sunken border border-line rounded-xl p-5">
-              <p className="text-fg-subtle text-sm font-medium">{card.label}</p>
-              <p className="text-fg text-3xl font-bold mt-2">{card.value}</p>
-            </div>
+            <KpiCard key={card.label} label={card.label} value={card.value} />
           ))}
         </div>
       )}
 
-      <div className="bg-surface-sunken border border-line rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+      <Card title="Abandoned Carts" padding="none">
+        <div className="w-full overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-surface-raised text-fg-subtle font-medium">
               <tr>
@@ -171,7 +168,7 @@ const MarketingAbandonedCartsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </ListPageTemplate>
   );
 };

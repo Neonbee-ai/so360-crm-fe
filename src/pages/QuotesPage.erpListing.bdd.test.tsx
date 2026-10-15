@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -283,7 +283,7 @@ describe('Feature: CRM Quotes Listing ERP UI/UX Improvements (BDD)', () => {
 
       const moreButtons = screen.getAllByTitle('More actions');
       expect(moreButtons.length).toBeGreaterThan(0);
-      moreButtons[0].click();
+      fireEvent.click(moreButtons[0]);
 
       await waitFor(() => {
         expect(screen.getByText('View Quote Details')).toBeInTheDocument();

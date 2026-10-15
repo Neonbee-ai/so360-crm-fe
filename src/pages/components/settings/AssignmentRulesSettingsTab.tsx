@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2, ToggleLeft, ToggleRight, X } from 'lucide-react';
-import { toast, DepartmentSelector, UserSelector, useConfirm } from '@so360/design-system';
+import { toast, DepartmentSelector, UserSelector, useConfirm, Card, Button } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     assignmentRulesService,
@@ -213,7 +213,7 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
         setDraft((d) => ({ ...d, conditions: d.conditions.map((c, idx) => (idx === i ? { ...c, ...patch } : c)) }));
 
     const editor = editingId && (
-        <div className="p-6 border-b border-line bg-surface-sunken space-y-5" data-testid="assignment-rule-editor">
+        <div className="p-nb-4 border-b border-line space-y-5" data-testid="assignment-rule-editor">
             <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-fg text-xs">
                     {editingId === 'new' ? 'New rule' : 'Edit rule'}
@@ -396,41 +396,30 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
             {draftError && <p role="alert" className="text-xs font-bold text-danger">{draftError}</p>}
 
             <div className="flex justify-end gap-2">
-                <button type="button" onClick={closeEditor} className="px-5 py-2 rounded-nb text-xs font-semibold text-fg-subtle hover:text-fg">
+                <Button type="button" variant="secondary" onClick={closeEditor}>
                     Cancel
-                </button>
-                <button
-                    type="button"
-                    onClick={saveDraft}
-                    disabled={busy}
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-fg px-5 py-2 rounded-nb text-xs font-semibold disabled:opacity-50"
-                >
+                </Button>
+                <Button type="button" variant="primary" onClick={saveDraft} disabled={busy}>
                     {busy && <Loader2 size={14} className="animate-spin" />}
                     Save rule
-                </button>
+                </Button>
             </div>
         </div>
     );
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-nb-4">
             {confirmDialog}
-            <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-                <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
-                    <div>
-                        <h3 className="font-semibold text-fg text-xs">Lead Assignment Rules</h3>
-                        <p className="text-xs text-fg-muted mt-1">New leads go to the first matching rule, top to bottom</p>
-                    </div>
-                    {canWrite && !editingId && (
-                        <button
-                            type="button"
-                            onClick={() => openEditor()}
-                            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-fg px-4 py-2 rounded-nb text-xs font-semibold"
-                        >
-                            <Plus size={14} /> Add rule
-                        </button>
-                    )}
-                </div>
+            <Card
+                title="Lead assignment rules"
+                padding="none"
+                actions={canWrite && !editingId ? (
+                    <Button type="button" variant="primary" onClick={() => openEditor()}>
+                        <Plus size={14} /> Add rule
+                    </Button>
+                ) : undefined}
+            >
+                <p className="px-nb-4 pt-nb-3 text-xs text-fg-muted">New leads go to the first matching rule, top to bottom</p>
 
                 {editor}
 
@@ -478,13 +467,11 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         ))}
                     </ol>
                 )}
-            </section>
+            </Card>
 
-            <section className="bg-surface border border-line rounded-nb-lg p-6 space-y-4" aria-label="Test assignment">
-                <div>
-                    <h3 className="font-semibold text-fg text-xs">Test a lead</h3>
-                    <p className="text-xs text-fg-muted mt-1">See who a lead would go to. nothing is saved.</p>
-                </div>
+            <Card title="Test a lead">
+              <div className="space-y-4">
+                <p className="text-xs text-fg-muted">See who a lead would go to. nothing is saved.</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {CONDITION_FIELDS.map((f) => (
                         <div key={f.value}>
@@ -499,15 +486,10 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                     ))}
                 </div>
                 <div className="flex items-center gap-4">
-                    <button
-                        type="button"
-                        onClick={runTest}
-                        disabled={testing}
-                        className="flex items-center gap-2 bg-surface-raised hover:bg-line text-fg px-5 py-2 rounded-nb text-xs font-semibold disabled:opacity-50"
-                    >
+                    <Button type="button" variant="secondary" onClick={runTest} disabled={testing}>
                         {testing && <Loader2 size={14} className="animate-spin" />}
                         Run test
-                    </button>
+                    </Button>
                     {testResult && (
                         <p className="text-sm font-bold text-fg-subtle" data-testid="assignment-test-result">
                             {testResult.assigned
@@ -516,7 +498,8 @@ const AssignmentRulesSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         </p>
                     )}
                 </div>
-            </section>
+              </div>
+            </Card>
         </div>
     );
 };

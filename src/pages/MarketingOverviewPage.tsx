@@ -6,7 +6,7 @@ import { useBusinessSettings } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Heart, Mail, Tag, ChevronRight } from 'lucide-react';
-import { DashboardPageTemplate } from '@so360/design-system';
+import { DashboardPageTemplate, KpiCard, Card, Badge } from '@so360/design-system';
 
 const STORE_KEY = 'crm_marketing_store_id';
 
@@ -84,11 +84,32 @@ const MarketingOverviewPage: React.FC = () => {
   const topBuyers = Array.isArray(data?.topBuyers?.data) ? data.topBuyers.data : [];
   const inactive = Array.isArray(data?.inactive?.data) ? data.inactive.data : [];
 
+  const quickLinks = [
+    { to: '/crm/marketing/reviews', icon: MessageSquare, tone: 'text-warning', label: 'Customer Reviews', cta: 'Moderate Feedback' },
+    { to: '/crm/marketing/wishlist', icon: Heart, tone: 'text-danger', label: 'Wishlist Feed', cta: 'Track Customer Intent' },
+    { to: '/crm/marketing/newsletter', icon: Mail, tone: 'text-primary', label: 'Newsletter Audience', cta: 'Manage Subscribers' },
+    { to: '/crm/marketing/coupons', icon: Tag, tone: 'text-success', label: 'Discount Coupons', cta: 'Configure Offers' },
+  ];
+
+  const rowCls = 'flex items-center justify-between gap-nb-3 py-nb-2';
+
   return (
     <DashboardPageTemplate
       title="CRM Marketing Overview"
       description="DailyStore marketing and customer intelligence in CRM."
       filters={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
+      kpis={data ? kpis.map((kpi) => (
+        <KpiCard
+          key={kpi.label}
+          label={kpi.label}
+          value={kpi.hint ? (
+            <>
+              {kpi.value}
+              <span className="block text-xs font-normal text-fg-muted mt-1">{kpi.hint}</span>
+            </>
+          ) : kpi.value}
+        />
+      )) : undefined}
     >
 
       {!storeId && <p className="text-warning text-sm">Select a store to load insights.</p>}
@@ -96,160 +117,106 @@ const MarketingOverviewPage: React.FC = () => {
       {error && <p className="text-danger">{error}</p>}
 
       {data && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-            {kpis.map((kpi) => (
-              <div key={kpi.label} className="bg-surface border border-line rounded-nb-lg p-5">
-                <p className="text-fg-subtle text-sm font-medium">{kpi.label}</p>
-                <p className="text-fg text-3xl font-bold mt-2">{kpi.value}</p>
-                {kpi.hint && <p className="text-fg-muted text-xs mt-2 font-medium">{kpi.hint}</p>}
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-col gap-nb-3">
+          <Card title="Marketing tools">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-nb-3">
+              {quickLinks.map(({ to, icon: Icon, tone, label, cta }) => (
+                <Link key={to} to={to} className="rounded-nb p-nb-2 hover:bg-surface-raised transition-colors group">
+                  <div className="flex items-center gap-nb-2 mb-1">
+                    <Icon size={16} className={tone} />
+                    <span className="text-xs font-semibold text-fg-subtle">{label}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-fg">{cta}</span>
+                    <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Link to="/crm/marketing/reviews" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center text-warning">
-                  <MessageSquare size={16} />
-                </div>
-                <span className="text-xs font-semibold text-fg-subtle">Customer Reviews</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-fg">Moderate Feedback</span>
-                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-
-            <Link to="/crm/marketing/wishlist" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center text-danger">
-                  <Heart size={16} />
-                </div>
-                <span className="text-xs font-semibold text-fg-subtle">Wishlist Feed</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-fg">Track Customer Intent</span>
-                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-
-            <Link to="/crm/marketing/newsletter" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <Mail size={16} />
-                </div>
-                <span className="text-xs font-semibold text-fg-subtle">Newsletter Audience</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-fg">Manage Subscribers</span>
-                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-
-            <Link to="/crm/marketing/coupons" className="bg-surface border border-line rounded-nb-lg p-4 hover:border-primary/50 hover:bg-surface-high transition-all group">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center text-success">
-                  <Tag size={16} />
-                </div>
-                <span className="text-xs font-semibold text-fg-subtle">Discount Coupons</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-fg">Configure Offers</span>
-                <ChevronRight size={14} className="text-fg-muted group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-surface border border-line rounded-nb-lg p-6">
-              <h3 className="text-fg font-bold mb-4">Top Selling Products</h3>
-              <div className="space-y-1">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
+            <Card title="Top Selling Products" className="lg:col-span-6">
+              <div className="divide-y divide-line">
                 {bestSelling.map((row: any) => (
-                  <div key={row.itemId} className="flex items-center justify-between border-b border-line pb-3 pt-2">
+                  <div key={row.itemId} className={rowCls}>
                     <span className="text-fg font-medium">{row.name}</span>
                     <span className="text-fg-subtle text-sm">{row.quantitySold} sold</span>
                   </div>
                 ))}
                 {bestSelling.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No sales data directly available.</p>}
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-surface border border-line rounded-nb-lg p-6">
-              <h3 className="text-fg font-bold mb-4">Top Buyers</h3>
-              <div className="space-y-1">
+            <Card title="Top Buyers" className="lg:col-span-6">
+              <div className="divide-y divide-line">
                 {topBuyers.map((row: any) => (
-                  <div key={row.customerId} className="flex items-center justify-between border-b border-line pb-3 pt-2">
+                  <div key={row.customerId} className={rowCls}>
                     <span className="text-fg font-medium">{row.name || row.email || row.customerId || '-'}</span>
                     <span className="text-fg-subtle text-sm">{formatMoney(row.totalSpent, currencyCode, locale)}</span>
                   </div>
                 ))}
                 {topBuyers.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No buyer data available.</p>}
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-surface border border-line rounded-nb-lg p-6">
-              <h3 className="text-fg font-bold mb-4">Inactive Customers</h3>
-              <div className="space-y-1">
+            <Card title="Inactive Customers" className="lg:col-span-6">
+              <div className="divide-y divide-line">
                 {inactive.map((row: any) => (
-                  <div key={row.customerId} className="flex items-center justify-between border-b border-line pb-3 pt-2">
+                  <div key={row.customerId} className={rowCls}>
                     <span className="text-fg font-medium">{row.name || row.email || row.customerId}</span>
                     <span className="text-fg-subtle text-xs">{row.daysSinceLastOrder || 0} days</span>
                   </div>
                 ))}
                 {inactive.length === 0 && <p className="text-fg-muted text-sm py-4 text-center">No inactive customers identified.</p>}
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-surface border border-line rounded-nb-lg p-6">
-              <h3 className="text-fg font-bold mb-4">Conversion Funnel</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center py-2 border-b border-line">
+            <Card title="Conversion Funnel" className="lg:col-span-6">
+              <div className="divide-y divide-line text-sm">
+                <div className={rowCls}>
                   <span className="text-fg-subtle">Product Views</span>
                   <span className="text-fg font-medium">{data.funnel?.funnel?.product_views || 0}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-line">
+                <div className={rowCls}>
                   <span className="text-fg-subtle">Add to Cart</span>
                   <span className="text-fg font-medium">{data.funnel?.funnel?.add_to_cart || 0}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-line">
+                <div className={rowCls}>
                   <span className="text-fg-subtle">Checkout Started</span>
                   <span className="text-fg font-medium">{data.funnel?.funnel?.checkout_started || 0}</span>
                 </div>
-                <div className="flex justify-between items-center py-2">
+                <div className={rowCls}>
                   <span className="text-fg-subtle font-medium">Purchases</span>
-                  <span className="text-primary font-bold">{data.funnel?.funnel?.purchases || 0}</span>
+                  <span className="text-primary font-semibold">{data.funnel?.funnel?.purchases || 0}</span>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-surface border border-line rounded-nb-lg p-6 lg:col-span-2">
-              <h3 className="text-fg font-bold mb-4">Recent Storefront Searches</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card title="Recent Storefront Searches" className="lg:col-span-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-nb-3">
                 {data.searchLogs?.map((row: any) => {
                   const customer = row.storefront_customers;
                   const name = customer ? `${customer.first_name} ${customer.last_name || ''}`.trim() : 'Anonymous';
                   return (
-                    <div key={row.id} className="flex items-center justify-between p-3 bg-surface-sunken border border-line rounded-lg">
-                      <div>
-                        <p className="text-fg font-bold text-sm">"{row.search_query}"</p>
-                        <p className="text-fg-muted text-xs font-semibold mt-1">
+                    <div key={row.id} className="flex items-center justify-between gap-nb-3 py-nb-2 border-b border-line">
+                      <div className="min-w-0">
+                        <p className="text-fg font-semibold text-sm truncate">"{row.search_query}"</p>
+                        <p className="text-fg-muted text-xs mt-1">
                           {name} • {formatters.formatDate(row.created_at)}
                         </p>
                       </div>
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded border border-primary/20 font-bold">
-                        Search
-                      </span>
+                      <Badge tone="primary" size="sm">Search</Badge>
                     </div>
                   );
                 })}
                 {(!data.searchLogs || data.searchLogs.length === 0) && (
-                  <p className="text-fg-muted text-sm py-4 text-center col-span-2">No recent search activity found.</p>
+                  <p className="text-fg-muted text-sm py-4 text-center md:col-span-2">No recent search activity found.</p>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
-        </>
+        </div>
       )}
     </DashboardPageTemplate>
   );

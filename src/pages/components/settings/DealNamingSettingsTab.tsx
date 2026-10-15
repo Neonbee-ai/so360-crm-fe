@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { crmService } from '../../../services/crmService';
 import { DealNamingConfig, DealNamingResetMode, DEFAULT_DEAL_NAMING_CONFIG } from '../../../types/crm';
+import { Card } from '@so360/design-system';
 import { DEAL_NAME_TOKENS } from '../../../utils/dealNamingTokens';
 
 interface DealNamingSettingsTabProps {
@@ -95,12 +96,9 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
     };
 
     return (
-        <section className="bg-surface border border-line rounded-nb-lg overflow-hidden">
-            <div className="p-6 border-b border-line bg-surface-sunken flex items-center justify-between">
-                <div>
-                    <h3 className="font-semibold text-fg text-xs">Deal Naming Convention</h3>
-                    <p className="text-xs text-fg-muted mt-1">Control how new deal names are generated from leads</p>
-                </div>
+        <Card
+            title="Deal naming convention"
+            actions={
                 <button
                     onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
                     disabled={!canWrite}
@@ -109,9 +107,10 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     {config.enabled ? <ToggleRight size={22} className="text-success" /> : <ToggleLeft size={22} className="text-fg-muted" />}
                     Auto-Generate Deal Names
                 </button>
-            </div>
-
-            <div className={`p-6 space-y-6 ${!config.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
+            }
+        >
+            <p className="text-xs text-fg-muted mb-nb-4">Control how new deal names are generated from leads</p>
+            <div className={`space-y-6 ${!config.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
                 {!config.enabled && (
                     <p className="text-xs text-fg-muted font-bold -mt-2">
                         Auto-generation is off — deals use manual entry only, same as before.
@@ -163,7 +162,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </div>
                 </div>
 
-                <div className="bg-surface-sunken border border-line rounded-nb p-4">
+                <div className="border-t border-line pt-nb-4">
                     <h4 className="text-xs font-semibold text-fg-muted mb-3">Running Number</h4>
                     <div className="grid grid-cols-3 gap-4 items-end">
                         <div>
@@ -199,7 +198,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </div>
                 </div>
 
-                <div className="bg-surface-sunken border border-line rounded-nb p-4">
+                <div className="border-t border-line pt-nb-4">
                     <h4 className="text-xs font-semibold text-fg-muted mb-2">Preview</h4>
                     <div className="text-sm font-semibold text-success flex items-center gap-2">
                         {isPreviewLoading ? <Loader2 size={14} className="animate-spin" /> : null}
@@ -213,7 +212,7 @@ const DealNamingSettingsTab: React.FC<DealNamingSettingsTabProps> = ({ initialCo
                     </p>
                 )}
             </div>
-        </section>
+        </Card>
     );
 };
 

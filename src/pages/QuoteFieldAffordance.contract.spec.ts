@@ -35,7 +35,7 @@ describe('Given the editable-field style tokens', () => {
         for (const token of [EDITABLE_FIELD_CLASS, EDITABLE_FIELD_SM_CLASS]) {
             expect(token).toContain('border-line');
             expect(token).toContain('hover:border-line');
-            expect(token).toContain('focus:ring-blue-500/50');
+            expect(token).toContain('focus:ring-primary/50');
             expect(token).toContain('focus:border-primary');
         }
     });

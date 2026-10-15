@@ -23,10 +23,12 @@ interface ExportMenuProps {
     label: string;
     onExport: (format: ExportFormat) => Promise<void>;
     className?: string;
+    /** Limit the offered formats (default: all). */
+    formats?: readonly ExportFormat[];
 }
 
 /** Single "Export" button opening a CSV / Excel / PDF menu, with a busy state and an inline error. */
-const ExportMenu: React.FC<ExportMenuProps> = ({ label, onExport, className }) => {
+const ExportMenu: React.FC<ExportMenuProps> = ({ label, onExport, className, formats = EXPORT_FORMATS }) => {
     const [busy, setBusy] = useState<ExportFormat | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +55,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({ label, onExport, className }) =
                         Export
                     </Button>
                 }
-                items={EXPORT_FORMATS.map((f) => ({
+                items={formats.map((f) => ({
                     label: EXPORT_FORMAT_LABELS[f],
                     onSelect: () => { void run(f); },
                     disabled: busy !== null,

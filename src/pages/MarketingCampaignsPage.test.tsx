@@ -29,6 +29,7 @@ vi.mock('./marketing/marketingMappers', () => ({
 }));
 
 vi.mock('@so360/design-system', () => ({
+  Card: ({ title, children }: any) => (<section>{title && <h3>{title}</h3>}{children}</section>),
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   ListPageTemplate: (p: any) => (
     <div>

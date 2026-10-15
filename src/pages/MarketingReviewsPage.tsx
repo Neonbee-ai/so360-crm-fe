@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Star, Package, User, Clock, ShieldCheck, ExternalLink, MessageSquare, Loader2, Filter } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, ListPageTemplate } from '@so360/design-system';
+import { toast, ListPageTemplate, Card, Badge, EmptyState } from '@so360/design-system';
 import { Link } from 'react-router-dom';
 import { useCRMFormatters } from '../utils/formatters';
 
@@ -86,47 +86,46 @@ const MarketingReviewsPage: React.FC = () => {
       toolbarEnd={<MarketingStorePicker storeId={storeId} onChange={applyStore} />}
     >
 
-      <div className="grid grid-cols-1 gap-8">
-        <div className="space-y-4">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-fg-muted gap-3">
-              <Loader2 className="animate-spin" />
-              <span className="text-xs font-semibold">Loading reviews...</span>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-20 border-2 border-dashed border-line rounded-2xl bg-surface-sunken">
-              <MessageSquare className="mx-auto mb-4 text-fg-subtle w-12 h-12 opacity-20" />
-              <p className="text-sm font-bold text-fg-muted">No reviews found</p>
-              <p className="text-xs text-fg-subtle mt-1 italic font-bold">Try adjusting your filters or selecting another store</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {filtered.map((rev) => {
-                const customer = rev.storefront_customers;
-                const customerName = customer ? `${customer.first_name} ${customer.last_name || ''}`.trim() : 'Anonymous';
-                const crmLeadId = customer?.crm_lead_id;
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-nb-6 text-fg-muted gap-3">
+          <Loader2 className="animate-spin" />
+          <span className="text-xs font-semibold">Loading reviews...</span>
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={MessageSquare}
+          title="No reviews found"
+          description="Try adjusting your filters or selecting another store"
+        />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-nb-3">
+          {filtered.map((rev) => {
+            const customer = rev.storefront_customers;
+            const customerName = customer ? `${customer.first_name} ${customer.last_name || ''}`.trim() : 'Anonymous';
+            const crmLeadId = customer?.crm_lead_id;
 
-                return (
-                  <div key={rev.id} className="bg-surface border border-line rounded-2xl p-6 group hover:border-line transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex text-warning">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-fg-subtle'} />
-                          ))}
-                        </div>
-                        <h3 className="text-sm font-semibold text-fg">{rev.title || 'Untitled Review'}</h3>
-                      </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded border ${rev.is_approved ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-warning border-warning/20'}`}>
-                        {rev.is_approved ? 'Approved' : 'Pending Approval'}
-                      </span>
+            return (
+              <div key={rev.id} className="lg:col-span-6">
+                <Card
+                  title={rev.title || 'Untitled Review'}
+                  actions={
+                    <Badge tone={rev.is_approved ? 'success' : 'warning'} size="sm">
+                      {rev.is_approved ? 'Approved' : 'Pending Approval'}
+                    </Badge>
+                  }
+                >
+                  <div className="space-y-nb-3">
+                    <div className="flex text-warning">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={14} fill={i < rev.rating ? 'currentColor' : 'none'} className={i < rev.rating ? '' : 'text-fg-subtle'} />
+                      ))}
                     </div>
 
-                    <p className="text-sm text-fg-subtle italic mb-6 leading-relaxed bg-surface-sunken p-4 rounded-xl border border-line">
+                    <p className="text-sm text-fg-subtle italic leading-relaxed border-l-2 border-line pl-nb-3">
                       "{rev.content || 'No content provided'}"
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-4 border-t border-line">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-nb-3 border-t border-line">
                       <div className="flex items-center gap-2">
                         <User className="w-3 h-3 text-fg-muted" />
                         <span className="text-xs font-semibold text-fg-muted">By</span>
@@ -151,22 +150,22 @@ const MarketingReviewsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-6 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a 
-                        href="/dailystore/reviews" 
+                    <div className="flex justify-end">
+                      <a
+                        href="/dailystore/reviews"
                         target="_blank"
-                        className="bg-surface-high hover:bg-surface-high text-fg text-xs font-semibold px-4 py-2 rounded-lg transition-all border border-line flex items-center gap-2 shadow-sm"
+                        className="text-fg text-xs font-semibold px-nb-3 py-2 rounded-nb border border-line hover:bg-surface-raised flex items-center gap-2"
                       >
                         <ShieldCheck size={12} /> Moderate in DailyStore
                       </a>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </Card>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </ListPageTemplate>
   );
 };

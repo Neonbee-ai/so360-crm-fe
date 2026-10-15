@@ -1098,8 +1098,8 @@ const QuotesPage = () => {
                 <ExportMenu
                     key="export"
                     label="Export quotes"
-                    onExport={async (format) => {
-                        if (format !== 'csv') throw new Error('Only CSV export is available for quotes.');
+                    formats={['csv']}
+                    onExport={async () => {
                         handleExportSelected();
                     }}
                 />,

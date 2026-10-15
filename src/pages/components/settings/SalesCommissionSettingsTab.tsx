@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import { toast, UserSelector } from '@so360/design-system';
+import { toast, UserSelector, Card, Button } from '@so360/design-system';
 import { useShellBridge } from '@so360/shell-context';
 import {
     salesSettingsService,
@@ -17,7 +17,7 @@ import { describeApiError } from '../../../utils/apiErrorMessage';
 
 const FIELD_CLS = 'w-full bg-bg border border-line text-fg rounded-nb px-4 py-2.5 outline-none focus:border-primary transition-all font-bold text-sm disabled:opacity-60';
 const LABEL_CLS = 'block text-xs font-semibold text-fg-muted mb-1.5';
-const CARD_CLS = 'bg-surface-sunken border border-line rounded-nb-lg p-6 space-y-5';
+const CARD_BODY_CLS = 'space-y-5';
 
 interface Props {
     canWrite: boolean;
@@ -128,8 +128,8 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
     return (
         <div className="space-y-6">
             {commissionsOn && (
-                <section className={CARD_CLS} aria-label="Commission">
-                    <h3 className="text-sm font-semibold text-fg">Commission</h3>
+                <Card title="Commission">
+                  <div className={CARD_BODY_CLS}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="sales-earn-trigger" className={LABEL_CLS}>Commission is earned</label>
@@ -306,12 +306,13 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                             </table>
                         )}
                     </div>
-                </section>
+                  </div>
+                </Card>
             )}
 
             {allocationOn && (
-                <section className={CARD_CLS} aria-label="Unit visibility">
-                    <h3 className="text-sm font-semibold text-fg">Unit visibility</h3>
+                <Card title="Unit visibility">
+                  <div className={CARD_BODY_CLS}>
                     <div className="flex gap-1 bg-surface-sunken p-1 rounded-nb border border-line w-fit" role="radiogroup" aria-label="Agents can book">
                         {([['all', 'Any available unit'], ['assigned_only', 'Only units allocated to them']] as const).map(([v, label]) => (
                             <button
@@ -328,20 +329,21 @@ const SalesCommissionSettingsTab: React.FC<Props> = ({ canWrite }) => {
                         ))}
                     </div>
                     <p className="text-xs text-fg-muted">Managers can always see and book every unit.</p>
-                </section>
+                  </div>
+                </Card>
             )}
 
             {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
             {canWrite ? (
-                <button
-                    type="button"
-                    onClick={() => void save()}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-nb bg-primary hover:bg-primary/90 text-primary-fg text-xs font-semibold disabled:opacity-60"
-                >
-                    {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Save sales settings
-                </button>
+                <div className="flex items-center justify-end gap-nb-2">
+                    <Button type="button" variant="secondary" onClick={() => void load()} disabled={saving}>
+                        Cancel
+                    </Button>
+                    <Button type="button" variant="primary" onClick={() => void save()} disabled={saving}>
+                        {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />} Save sales settings
+                    </Button>
+                </div>
             ) : (
                 <p className="text-xs text-fg-muted">You can view these settings but not change them.</p>
             )}

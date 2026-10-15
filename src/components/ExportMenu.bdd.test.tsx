@@ -48,6 +48,16 @@ describe('Feature: ExportMenu', () => {
         });
     });
 
+    describe('Given a formats subset is passed', () => {
+        it('then only those formats are offered', () => {
+            render(<ExportMenu label="Export quotes" formats={['csv']} onExport={vi.fn()} />);
+            fireEvent.click(screen.getByRole('button', { name: 'Export quotes' }));
+            expect(screen.getByRole('menuitem', { name: 'CSV' })).toBeTruthy();
+            expect(screen.queryByRole('menuitem', { name: 'PDF' })).toBeNull();
+            expect(screen.queryByRole('menuitem', { name: 'Excel' })).toBeNull();
+        });
+    });
+
     describe('When a format is chosen', () => {
         it('then the export runs with that format and the trigger is disabled while busy', async () => {
             let finish: () => void = () => {};

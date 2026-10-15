@@ -327,17 +327,11 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      // Edit buttons are opacity-0 by default; we need to trigger hover / find them
-      const editBtns = document.querySelectorAll('button svg.lucide-pencil');
-      if (editBtns.length > 0) {
-        fireEvent.click(editBtns[0].closest('button')!);
-        await waitFor(() => {
-          expect(screen.getByText(/edit coupon/i)).toBeInTheDocument();
-        });
-      } else {
-        // If SVG query fails, just verify form structure is accessible
-        expect(screen.getByText('SUMMER20')).toBeInTheDocument();
-      }
+      fireEvent.click(screen.getAllByRole('button', { name: /^actions for/i })[0]);
+      fireEvent.click(await screen.findByRole('menuitem', { name: /edit/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/edit coupon/i)).toBeInTheDocument();
+      });
     });
   });
 
@@ -346,18 +340,12 @@ describe('MarketingCouponsPage BDD', () => {
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
 
-      // Delete buttons are opacity-0; click via DOM
-      const deleteBtns = document.querySelectorAll('button svg.lucide-trash-2');
-      if (deleteBtns.length > 0) {
-        fireEvent.click(deleteBtns[0].closest('button')!);
-        await waitFor(() => {
-          expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ intent: 'danger' }));
-          expect(mockDeleteCoupon).toHaveBeenCalled();
-        });
-      } else {
-        // Fallback: confirm that confirm dialog was not triggered unexpectedly
-        expect(mockGetCoupons).toHaveBeenCalledWith('store-1');
-      }
+      fireEvent.click(screen.getAllByRole('button', { name: /^actions for/i })[0]);
+      fireEvent.click(await screen.findByRole('menuitem', { name: /delete/i }));
+      await waitFor(() => {
+        expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ intent: 'danger' }));
+        expect(mockDeleteCoupon).toHaveBeenCalled();
+      });
     });
   });
 
@@ -366,9 +354,8 @@ describe('MarketingCouponsPage BDD', () => {
       mockConfirm.mockResolvedValue(false);
       renderPage();
       await waitFor(() => expect(screen.getByText('SUMMER20')).toBeInTheDocument());
-      const deleteBtns = document.querySelectorAll('button.hover\\:text-danger');
-      expect(deleteBtns.length).toBeGreaterThan(0);
-      fireEvent.click(deleteBtns[0]);
+      fireEvent.click(screen.getAllByRole('button', { name: /^actions for/i })[0]);
+      fireEvent.click(await screen.findByRole('menuitem', { name: /delete/i }));
       await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
       expect(mockDeleteCoupon).not.toHaveBeenCalled();
     });

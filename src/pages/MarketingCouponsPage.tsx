@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Pencil, Search, Tag, X, Loader2, Calendar, DollarSign, Percent, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, MoreVertical, Search, Tag, X, Loader2, Calendar, DollarSign, Percent, Clock } from 'lucide-react';
 import { crmService } from '../services/crmService';
 import { MarketingStorePicker } from '../components/MarketingStorePicker';
-import { toast, useConfirm, ListPageTemplate, Button } from '@so360/design-system';
+import { toast, useConfirm, ListPageTemplate, Button, Card, EmptyState, Menu } from '@so360/design-system';
 import { useBusinessSettings, useActivity, useShellBridge } from '@so360/shell-context';
 import { useCRMFormatters } from '../utils/formatters';
 import { formatMoney } from './marketing/marketingMappers';
@@ -168,16 +168,17 @@ const MarketingCouponsPage: React.FC = () => {
     >
       {confirmDialog}
 
-      <div className="grid grid-cols-1 gap-8">
+      <div className="flex flex-col gap-nb-3">
         {showForm && (
-          <section className="bg-surface border border-primary/30 rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-top-4 duration-300">
-            <div className="p-6 border-b border-line flex justify-between items-center bg-primary/5">
-              <h3 className="text-xs font-semibold text-primary">{editingId ? 'Edit Coupon' : 'New Discount Code'}</h3>
-              <button onClick={() => setShowForm(false)} className="text-fg-muted hover:text-fg transition-colors">
+          <Card
+            title={editingId ? 'Edit Coupon' : 'New Discount Code'}
+            actions={
+              <button onClick={() => setShowForm(false)} aria-label="Close form" className="text-fg-muted hover:text-fg transition-colors">
                 <X size={20} />
               </button>
-            </div>
-            <div className="p-8">
+            }
+          >
+            <div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="lg:col-span-2">
                   <label className="block text-xs font-semibold text-fg-muted mb-2 ml-1">Coupon Code *</label>
@@ -277,31 +278,19 @@ const MarketingCouponsPage: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-line">
-                <button 
-                  onClick={() => setShowForm(false)} 
-                  className="px-6 py-3 rounded-xl text-xs font-semibold text-fg-subtle hover:text-fg transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleSave} 
-                  disabled={saving} 
-                  className="bg-primary hover:bg-primary/90 text-primary-fg font-semibold text-xs px-8 py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
-                >
+              <div className="flex justify-end gap-nb-2 mt-6 pt-4 border-t border-line">
+                <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button variant="primary" onClick={handleSave} disabled={saving}>
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingId ? 'Update Coupon' : 'Create Coupon'}
-                </button>
+                </Button>
               </div>
             </div>
-          </section>
+          </Card>
         )}
 
-        <div className="bg-surface border border-line rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-line bg-surface-sunken flex justify-between items-center">
-            <h3 className="text-xs font-semibold text-fg-muted">Active & Scheduled Coupons ({filtered.length})</h3>
-          </div>
-          <div className="overflow-x-auto">
+        <Card title={`Active & Scheduled Coupons (${filtered.length})`} padding="none">
+          <div className="w-full overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="text-left border-b border-line">
@@ -324,11 +313,8 @@ const MarketingCouponsPage: React.FC = () => {
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-20 text-center">
-                      <div className="flex flex-col items-center gap-4 opacity-20">
-                        <Tag size={48} className="text-fg-muted" />
-                        <p className="text-sm font-bold">No coupons found</p>
-                      </div>
+                    <td colSpan={5}>
+                      <EmptyState icon={Tag} title="No coupons found" />
                     </td>
                   </tr>
                 ) : (
@@ -377,20 +363,24 @@ const MarketingCouponsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-5 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {canCreateMarketing && <button
-                            onClick={() => handleEdit(coupon)}
-                            className="p-2 text-fg-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                          >
-                            <Pencil size={16} />
-                          </button>}
-                          {canCreateMarketing && <button
-                            onClick={() => handleDelete(coupon)}
-                            className="p-2 text-fg-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-all"
-                          >
-                            <Trash2 size={16} />
-                          </button>}
-                        </div>
+                        {canCreateMarketing && (
+                          <Menu
+                            name={`coupon-${coupon.id}`}
+                            trigger={
+                              <button
+                                type="button"
+                                aria-label={`Actions for ${coupon.code}`}
+                                className="p-2 text-fg-muted hover:text-fg hover:bg-surface-raised rounded-nb transition-colors"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                            }
+                            items={[
+                              { label: 'Edit', icon: <Pencil size={14} />, onSelect: () => handleEdit(coupon) },
+                              { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => handleDelete(coupon) },
+                            ]}
+                          />
+                        )}
                       </td>
                     </tr>
                   ))
@@ -398,7 +388,7 @@ const MarketingCouponsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       </div>
     </ListPageTemplate>
   );

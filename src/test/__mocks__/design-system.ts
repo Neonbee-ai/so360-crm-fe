@@ -9,8 +9,8 @@ export const Select = ({ value, onChange, options = [], placeholder, ...rest }: 
 export const Modal = (props: any) => props;
 export const Card = ({ title, actions, footer, children, 'data-testid': testId }: any) =>
     React.createElement('div', { 'data-testid': testId }, title ? React.createElement('h3', null, title) : null, actions, children, footer);
-export const Badge = ({ children, onClick, 'data-testid': testId }: any) =>
-  React.createElement('span', { onClick, 'data-testid': testId }, children);
+export const Badge = ({ children, onClick, tone, size, 'data-testid': testId }: any) =>
+  React.createElement('span', { onClick, 'data-testid': testId, 'data-tone': tone, 'data-size': size }, children);
 export const Spinner = (props: any) => props;
 export const Tooltip = (props: any) => props;
 export const QuotaGate = ({ children }: any) => React.createElement(React.Fragment, null, children);
@@ -144,9 +144,23 @@ export const SettingsPageTemplate = (p: any) =>
     React.createElement('main', { 'data-slot': 'main' }, p.children));
 export const SettingsCard = (p: any) =>
   React.createElement('section', null, p.title ? React.createElement('h2', null, p.title) : null, p.children);
-export const Menu = ({ trigger, items = [], 'data-testid': testId }: any) =>
-    React.createElement('div', { 'data-testid': testId }, trigger, ...items.map((it: any) =>
-        React.createElement('button', { key: it.label, role: 'menuitem', disabled: it.disabled, onClick: it.onSelect }, it.label)));
+const slugifyId = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+// Mirrors the real Menu: items render only while open; ids derive from `name`.
+export const Menu = ({ trigger, items = [], name, 'data-testid': testId }: any) => {
+    const [open, setOpen] = React.useState(false);
+    const id = testId ?? (name ? name : 'menu');
+    const trig = React.cloneElement(trigger, {
+        onClick: (e: any) => { trigger.props?.onClick?.(e); setOpen((o: boolean) => !o); },
+        'aria-haspopup': 'menu', 'aria-expanded': open,
+    });
+    return React.createElement(React.Fragment, null, trig, open ? React.createElement('div', { role: 'menu', 'data-testid': id },
+        items.map((it: any, i: number) => React.createElement('button', {
+            key: `${it.label}-${i}`, role: 'menuitem', 'data-testid': `${id}-${slugifyId(it.label)}`, 'aria-disabled': it.disabled ? 'true' : undefined,
+            onClick: (e: any) => { e.stopPropagation(); if (it.disabled) return; it.onSelect(); setOpen(false); },
+        }, it.label))) : null);
+};
 export const KpiCard = ({ label, value, onClick, 'data-testid': testId }: any) =>
     React.createElement('div', { 'data-testid': testId, onClick }, React.createElement('span', null, label), React.createElement('span', null, value));
 export const StatusBadge = ({ status, 'data-testid': testId }: any) => React.createElement('span', { 'data-testid': testId }, status);
+export const Alert = ({ title, children, variant, 'data-testid': testId }: any) =>
+    React.createElement('div', { role: 'alert', 'data-variant': variant, 'data-testid': testId }, title ? React.createElement('p', null, title) : null, children);
