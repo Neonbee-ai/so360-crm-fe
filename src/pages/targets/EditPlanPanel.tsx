@@ -118,10 +118,6 @@ export default function EditPlanPanel({
 
   return (
     <Drawer isOpen onClose={onClose} size="lg" title={plan ? `Edit · ${plan.name}` : 'Edit plan'}>
-          Close
-        </Button>
-      }
-    >
       {error && <div className="mb-2 text-sm text-danger">{error}</div>}
       {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 

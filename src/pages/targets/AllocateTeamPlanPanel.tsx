@@ -92,10 +92,6 @@ export default function AllocateTeamPlanPanel({
 
   return (
     <Drawer isOpen onClose={onClose} size="lg" title={plan ? `Allocate · ${plan.name}` : 'Allocate'}>
-          Close
-        </Button>
-      }
-    >
       {error && <div className="mb-2 text-sm text-danger">{error}</div>}
       {notice && <div className="mb-2 text-sm text-success">{notice}</div>}
 
