@@ -82,8 +82,9 @@ const BLANK_RULE: Partial<LeadScoringRule> = {
     priority: 0,
 };
 
-const SettingsPage = () => {
+const SettingsPage = ({ onOpenIcps }: { onOpenIcps?: () => void } = {}) => {
     const shell = useShellBridge();
+    const icpEnabled = useCrmFeatureFlag('submodule:crm:icp_manager');
     const canWriteSettings = (shell?.effectiveFlagsLoaded !== false) && (shell?.isFeatureEnabled?.('submodule:crm:settings') ?? true);
     const assignmentEnabled = useCrmFeatureFlag(RE_FLAGS.LEAD_ASSIGNMENT);
     const commissionsEnabled = useCrmFeatureFlag(RE_FLAGS.COMMISSIONS);
@@ -570,6 +571,15 @@ const SettingsPage = () => {
                         className={`px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'sales-commission' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                     >
                         Sales &amp; commission
+                    </button>
+                )}
+                {icpEnabled && onOpenIcps && (
+                    <button
+                        onClick={onOpenIcps}
+                        data-testid="settings-open-icps"
+                        className="px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all text-slate-500 hover:text-slate-300"
+                    >
+                        Ideal customers
                     </button>
                 )}
             </div>
