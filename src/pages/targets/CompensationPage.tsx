@@ -214,7 +214,7 @@ export default function CompensationPage() {
         open={showRuleForm}
         onClose={() => setShowRuleForm(false)}
         title="New rule"
-        subtitle="Rules are read during calculation only. Adding one never pays anyone."
+        description="Rules are read during calculation only. Adding one never pays anyone."
         size="lg"
         dismissible={!busy}
         footer={(
