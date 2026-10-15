@@ -6,9 +6,10 @@ import { FileStack } from 'lucide-react';
 import {
   EmptyState,
   ErrorState,
-  PersonPicker,
+  loadDirectoryPeople,
+  personIdOf,
 } from './targetUi';
-import { ListPageTemplate, DataTable, SearchInput, Alert, Modal, Stack, FormField, Button, DatePicker } from '@so360/design-system';
+import { PeopleSelector, ListPageTemplate, DataTable, SearchInput, Alert, Modal, Stack, FormField, Button, DatePicker } from '@so360/design-system';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
 /**
@@ -212,7 +213,7 @@ export default function TargetTemplatesPage() {
       >
         <Stack>
           <FormField label="Person" name="template_person">
-            <PersonPicker value={ownerId} onChange={setOwnerId} />
+            <PeopleSelector loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => setOwnerId(personIdOf(id))} />
           </FormField>
           <DatePicker
             name="template_startDate"

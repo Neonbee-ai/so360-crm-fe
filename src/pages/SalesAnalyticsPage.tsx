@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, ListFilters, DataTable, Select } from '@so360/design-system';
+import { DashboardPageTemplate, ListFilters, DataTable, Select, Grid } from '@so360/design-system';
 import { useSalesFilterConfig, type FilterOption } from './components/SalesFiltersBar';
 import ExportMenu, { useCanExport } from '../components/ExportMenu';
 import { validateDateRange, type SalesFilters } from '../services/salesReportService';
@@ -193,14 +193,14 @@ const SalesAnalyticsPage: React.FC = () => {
         ];
         body = (
             <>
-                <div className="grid grid-cols-2 wc-medium:grid-cols-4 xl:grid-cols-7 gap-3">
+                <Grid columns={7} gap="md">
                     {cards.map((c) => (
                         <div key={c.key} className="bg-surface border border-line rounded-nb-lg p-4">
                             <p className="text-xs font-semibold text-fg-muted">{c.label}</p>
                             <p className="mt-1 text-lg font-semibold text-fg" data-testid={`sa-total-${c.key}`}>{c.value}</p>
                         </div>
                     ))}
-                </div>
+                </Grid>
                 {sections.map((s) => (
                     <section key={s.section} data-testid={`sa-section-${s.section}`} className="bg-surface border border-line rounded-nb-lg overflow-hidden">
                         <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-3 flex-wrap">

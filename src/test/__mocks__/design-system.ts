@@ -364,3 +364,13 @@ export const FormField = ({ label, children }: any) =>
   React.createElement('div', null, label ? React.createElement('label', null, label) : null, children);
 export const Progress = ({ value, max = 100, label, showValue, 'data-testid': testId }: any) =>
   React.createElement('div', { role: 'progressbar', 'aria-valuenow': value, 'aria-valuemax': max, 'data-testid': testId }, label ?? null, showValue ? String(value) : null);
+
+// ---- Real DS patterns that carry behaviour the specs rely on (search, gaps, direction) ----
+// @ts-ignore -- resolved by the vitest '@ds-real' alias
+export { PeopleSelector } from '@ds-real/components/PeopleSelector';
+// @ts-ignore -- resolved by the vitest '@ds-real' alias
+export { Sparkline } from '@ds-real/components/Sparkline';
+// @ts-ignore -- resolved by the vitest '@ds-real' alias
+export { TrendIndicator } from '@ds-real/components/TrendIndicator';
+// @ts-ignore -- resolved by the vitest '@ds-real' alias
+export { StatusLegend } from '@ds-real/components/StatusLegend';

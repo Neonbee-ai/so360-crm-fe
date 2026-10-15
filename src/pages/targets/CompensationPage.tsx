@@ -7,7 +7,8 @@ import {
   ErrorState,
   LoadingState,
   PersonName,
-  PersonPicker,
+  loadDirectoryPeople,
+  personIdOf,
   formatValue,
 } from './targetUi';
 import {
@@ -16,7 +17,7 @@ import {
   type IncentiveRuleForm,
   type IncentiveRuleType,
 } from './incentiveRule';
-import { DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker, DateInput, FormField, Card, Modal, Grid, GridItem } from '@so360/design-system';
+import { PeopleSelector, DashboardPageTemplate, Button, DataTable, TextField, Select, DatePicker, DateInput, FormField, Card, Modal, Grid, GridItem } from '@so360/design-system';
 import { Calculator, Plus } from 'lucide-react';
 import type { DataTableColumn } from '@so360/design-system';
 
@@ -173,7 +174,7 @@ export default function CompensationPage() {
         <Grid columns={12}>
           <GridItem span={6}>
             <FormField label="Person" name="comp_person">
-              <PersonPicker value={personId} onChange={setPersonId} />
+              <PeopleSelector loadOptions={loadDirectoryPeople} value={personId} onChange={(id) => setPersonId(personIdOf(id))} />
             </FormField>
           </GridItem>
           <GridItem span={3}>
@@ -361,9 +362,10 @@ export default function CompensationPage() {
         )}
         {form.scope === 'person' && (
           <FormField label="Person" name="rule_person">
-            <PersonPicker
+            <PeopleSelector
+              loadOptions={loadDirectoryPeople}
               value={form.applies_to_person_id}
-              onChange={(id) => setForm({ ...form, applies_to_person_id: id })}
+              onChange={(id) => setForm({ ...form, applies_to_person_id: personIdOf(id) })}
             />
           </FormField>
         )}

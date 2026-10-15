@@ -6,7 +6,8 @@ import { salesTargetService } from '../../services/salesTargetService';
 import {
   EmptyState,
   PersonName,
-  PersonPicker,
+  loadDirectoryPeople,
+  personIdOf,
   formatValue,
 } from './targetUi';
 import {
@@ -18,7 +19,7 @@ import {
 import AllocateTeamPlanPanel from './AllocateTeamPlanPanel';
 import EditPlanPanel from './EditPlanPanel';
 import { canCreatePlan, canEditPlan, canAllocatePlan } from './targetPlanPermissions';
-import { ListPageTemplate, SearchInput, Grid, GridItem, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Card , Modal } from '@so360/design-system';
+import { PeopleSelector, ListPageTemplate, SearchInput, Grid, GridItem, Button, IconButton, DataTable, TextField, Select, NumberInput, DatePicker, Checkbox, Badge, EmptyState as DsEmptyState, Card , Modal } from '@so360/design-system';
 import type { DataTableColumn } from '@so360/design-system';
 
 type Period = 'week' | 'month' | 'quarter' | 'year';
@@ -515,7 +516,7 @@ export default function TargetPlansPage() {
                   those two invited a meaningless selection. */}
               {ownerType === 'rep' ? (
                 <Field label="Owner" grow>
-                  <PersonPicker value={ownerId} onChange={setOwnerId} />
+                  <PeopleSelector loadOptions={loadDirectoryPeople} value={ownerId} onChange={(id) => setOwnerId(personIdOf(id))} />
                 </Field>
               ) : (
                 <Field label="Owner" grow>

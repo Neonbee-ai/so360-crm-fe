@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { DashboardPageTemplate, Card, ListFilters, DataTable } from '@so360/design-system';
+import { DashboardPageTemplate, Card, ListFilters, DataTable, Grid } from '@so360/design-system';
 import { useSalesFilterConfig } from './components/SalesFiltersBar';
 import {
     salesReportService,
@@ -122,14 +122,14 @@ const CommissionReportPage: React.FC = () => {
     } else if (report) {
         body = (
             <>
-                <div className="grid grid-cols-2 wc-medium:grid-cols-4 lg:grid-cols-7 gap-nb-3">
+                <Grid columns={7} gap="md">
                     {TOTAL_CARDS.map((c) => (
                         <Card key={c.key}>
                             <p className="text-xs text-fg-muted">{c.label}</p>
                             <p className="mt-1 text-lg font-semibold text-fg" data-testid={`cr-total-${c.key}`}>{money(report.totals[c.key])}</p>
                         </Card>
                     ))}
-                </div>
+                </Grid>
                 <BucketTable title="By project" nameHeader="Project" rows={report.by_project} money={money} />
                 <BucketTable title="By agent" nameHeader="Agent" rows={report.by_agent} money={money} />
                 <BucketTable title="By month" nameHeader="Month" rows={report.by_month} money={money} />

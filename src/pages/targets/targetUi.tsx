@@ -1,6 +1,6 @@
 import React from 'react';
-import { EmptyState as DsEmptyState, DatePicker, Button, IconButton, TextField, Skeleton, Alert, type BadgeTone } from '@so360/design-system';
-import { AlertCircle, Inbox, UserX, X } from 'lucide-react';
+import { EmptyState as DsEmptyState, DatePicker, Button, Skeleton, Alert, type BadgeTone, type Person } from '@so360/design-system';
+import { AlertCircle, Inbox, UserX } from 'lucide-react';
 import type { TargetStatus, TrendPoint } from '../../services/targetPlanService';
 
 /**
@@ -21,12 +21,12 @@ export const STATUS_TONE: Record<TargetStatus, BadgeTone> = {
   exceeded: 'info',
 };
 
-const PROGRESS_TONE: Record<TargetStatus, 'success' | 'warning' | 'danger' | 'brand'> = {
+const PROGRESS_TONE: Record<TargetStatus, 'success' | 'warning' | 'danger' | 'brand' | 'exceeded'> = {
   on_track: 'success',
   at_risk: 'warning',
   behind: 'danger',
   achieved: 'success',
-  exceeded: 'brand',
+  exceeded: 'exceeded',
 };
 
 /** Default chip text for a status when the API supplies no label. */
@@ -35,14 +35,15 @@ export function statusText(status: TargetStatus, label?: string): string {
 }
 
 /**
- * Props for the DS Progress bar. The fill is clamped by Progress, but the
- * percentage is never capped in text — 133% stays visible elsewhere, because
- * hiding overachievement is as misleading as hiding a shortfall.
+ * Props for the DS Progress bar. Progress clamps the fill for every tone but
+ * `exceeded`, which shows a full bar with an overflow marker and the true
+ * percentage — 133% stays visible, because hiding overachievement is as
+ * misleading as hiding a shortfall.
  */
 export function attainmentProps(actual: number, target: number, status: TargetStatus) {
   const raw = target > 0 ? (actual / target) * 100 : 0;
   return {
-    value: Math.min(raw, 100),
+    value: raw,
     max: 100,
     tone: PROGRESS_TONE[status],
   };
@@ -80,59 +81,42 @@ export function formatValue(
   return rounded.toLocaleString();
 }
 
+/** Status legend items (dot + label) for the Comb StatusLegend, one per target status. */
+export const STATUS_LEGEND: { label: string; tone: 'success' | 'warning' | 'danger' | 'info' }[] = [
+  { label: 'On track', tone: 'success' },
+  { label: 'At risk', tone: 'warning' },
+  { label: 'Behind', tone: 'danger' },
+  { label: 'Achieved', tone: 'success' },
+  { label: 'Exceeded', tone: 'info' },
+];
+
 /**
- * Sparkline over attainment history.
+ * Data for the DS Sparkline over attainment history, in percent.
  *
- * Periods without a target render as a gap rather than a zero bar — a month
- * with no target is not a month of failure.
+ * Periods without a target are `null` so they render as a gap rather than a
+ * zero bar — a month with no target is not a month of failure. Periods whose
+ * target was edited mid-flight become markers.
  */
-export function Sparkline({ points }: { points: TrendPoint[] }) {
-  if (!points.length) {
-    return <div className="text-xs text-fg-muted">No history yet</div>;
-  }
-  const max = Math.max(
-    1,
-    ...points.map((p) => (p.attainment === null ? 0 : p.attainment)),
-  );
-  return (
-    <div className="flex items-end gap-2 h-16">
-      {points.map((p) => {
-        const a = p.attainment;
-        const h = a === null ? 0 : Math.max(4, (a / max) * 100);
-        return (
-          <div
-            key={p.period_start}
-            className="flex-1 flex flex-col items-center gap-1"
-            title={`${p.period_start} — ${formatPct(a)}${p.plan_changed ? ' (target changed)' : ''}`}
-          >
-            {a === null ? (
-              <div className="w-full border-t border-dashed border-line mt-auto" />
-            ) : (
-              <div
-                className={`w-full rounded-sm ${p.plan_changed ? 'bg-fg-subtle' : 'bg-fg-subtle'}`}
-                style={{ height: `${h}%` }}
-              />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+export function trendSparkline(points: TrendPoint[]) {
+  return {
+    data: points.map((p) => (p.attainment === null ? null : Math.round(p.attainment * 100))),
+    markers: points.flatMap((p, index) =>
+      p.plan_changed ? [{ index, label: `${p.period_start} — target changed` }] : [],
+    ),
+  };
 }
 
-export function TrendArrow({
-  direction,
-}: {
-  direction: 'up' | 'down' | 'flat' | null;
-}) {
-  if (!direction) return null;
-  const map = {
-    up: { glyph: '▲', cls: 'text-success' },
-    down: { glyph: '▼', cls: 'text-danger' },
-    flat: { glyph: '▬', cls: 'text-fg-subtle' },
-  } as const;
-  const { glyph, cls } = map[direction];
-  return <span className={`text-xs ${cls}`}>{glyph}</span>;
+/** Signed change in attainment (percentage points) from the first to the last period that had a target. */
+export function trendDelta(
+  points: TrendPoint[],
+  direction: 'up' | 'down' | 'flat' | null,
+): number {
+  if (!direction || direction === 'flat') return 0;
+  const known = points.filter((p) => p.attainment !== null) as (TrendPoint & { attainment: number })[];
+  const delta =
+    known.length > 1 ? Math.abs(known[known.length - 1].attainment - known[0].attainment) * 100 : 0;
+  const mag = Math.max(Math.round(delta), 1);
+  return direction === 'up' ? mag : -mag;
 }
 
 type EmptyIcon = React.ComponentType<{ className?: string }>;
@@ -233,6 +217,49 @@ export function __resetPeopleDirectoryForTests() {
   directoryPromise = null;
 }
 
+function fetchDirectory(): Promise<DirectoryPerson[]> {
+  if (!directoryPromise) {
+    directoryPromise = import('../../services/crmService')
+      .then((m) => m.crmService.getSalesReps())
+      .then((rows) =>
+        [...(rows ?? [])].sort((a, b) =>
+          (a.full_name || '').localeCompare(b.full_name || ''),
+        ),
+      )
+      .catch((e) => {
+        // Do not cache a rejection: a transient failure would otherwise
+        // leave every picker on the page permanently empty.
+        directoryPromise = null;
+        throw e;
+      });
+  }
+  return directoryPromise;
+}
+
+/**
+ * Data source for the DS `PeopleSelector` (`loadOptions`): the broker-route
+ * directory mapped onto the selector's `Person` shape. Shared promise, so any
+ * number of pickers on a page cost one request.
+ */
+export function loadDirectoryPeople(): Promise<Person[]> {
+  return fetchDirectory().then((rows) =>
+    rows.map((p) => ({
+      id: p.id,
+      full_name: p.full_name,
+      email: p.email ?? '',
+      job_title: p.job_title ?? undefined,
+      department_name: p.department_name ?? undefined,
+      status: 'active',
+      type: 'employee',
+    })),
+  );
+}
+
+/** Normalises a PeopleSelector change value to a single person id ('' when cleared). */
+export function personIdOf(v: string | string[] | null): string {
+  return typeof v === 'string' ? v : '';
+}
+
 export function usePeopleDirectory() {
   const [people, setPeople] = React.useState<DirectoryPerson[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -240,22 +267,7 @@ export function usePeopleDirectory() {
 
   React.useEffect(() => {
     let alive = true;
-    if (!directoryPromise) {
-      directoryPromise = import('../../services/crmService')
-        .then((m) => m.crmService.getSalesReps())
-        .then((rows) =>
-          [...(rows ?? [])].sort((a, b) =>
-            (a.full_name || '').localeCompare(b.full_name || ''),
-          ),
-        )
-        .catch((e) => {
-          // Do not cache a rejection: a transient failure would otherwise
-          // leave every picker on the page permanently empty.
-          directoryPromise = null;
-          throw e;
-        });
-    }
-    directoryPromise
+    fetchDirectory()
       .then((rows) => {
         if (!alive) return;
         setPeople(rows);
@@ -297,134 +309,6 @@ export function PersonName({ id }: { id?: string | null }) {
     <span className="text-fg-subtle" title={id}>
       {loading ? '…' : String(id).slice(0, 8)}
     </span>
-  );
-}
-
-/**
- * Search-suggest picker over the People Connect directory.
- *
- * Filtering is client-side across every displayed attribute, matching the
- * behaviour of the deal owner picker: the registry API only indexes name,
- * email and employee id, so searching by job title or department would
- * otherwise silently return nothing.
- */
-export function PersonPicker({
-  value,
-  onChange,
-  placeholder = 'Search people…',
-  allowClear = true,
-}: {
-  value: string;
-  onChange: (id: string) => void;
-  placeholder?: string;
-  allowClear?: boolean;
-}) {
-  const { people, byId, loading, failed } = usePeopleDirectory();
-  const [query, setQuery] = React.useState('');
-  const [open, setOpen] = React.useState(false);
-  const boxRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    const onDocMouseDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDocMouseDown);
-    return () => document.removeEventListener('mousedown', onDocMouseDown);
-  }, []);
-
-  const selected = value ? byId.get(value) : undefined;
-
-  const matches = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const rows = q
-      ? people.filter((p) =>
-          [p.full_name, p.email, p.employee_id, p.job_title, p.department_name]
-            .some((v) => (v || '').toLowerCase().includes(q)),
-        )
-      : people;
-    return rows.slice(0, 50);
-  }, [people, query]);
-
-  if (value && selected && !open) {
-    return (
-      <div className="flex items-center gap-2" ref={boxRef}>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            setQuery('');
-            setOpen(true);
-          }}
-        >
-          {selected.full_name}
-          {selected.job_title ? (
-            <span className="text-fg-subtle"> · {selected.job_title}</span>
-          ) : null}
-        </Button>
-        {allowClear ? (
-          <IconButton
-            label="Clear selection"
-            icon={<X size={14} aria-hidden="true" />}
-            onClick={() => {
-              onChange('');
-              setQuery('');
-            }}
-          />
-        ) : null}
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative" ref={boxRef}>
-      <TextField
-        name="target-person-query"
-        value={query}
-        onFocus={() => setOpen(true)}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-        }}
-        placeholder={
-          failed ? 'People directory unavailable' : loading ? 'Loading people…' : placeholder
-        }
-        role="combobox"
-        aria-expanded={open}
-        aria-label="Person"
-      />
-      {open && !loading && !failed ? (
-        <ul className="absolute z-menu mt-1 max-h-60 w-full overflow-auto rounded border border-line bg-surface py-1 text-sm">
-          {matches.length === 0 ? (
-            <li className="px-2 py-1.5 text-fg-muted">No matching people</li>
-          ) : (
-            matches.map((p) => (
-              <li key={p.id}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full justify-start border-0"
-                  onClick={() => {
-                    onChange(p.id);
-                    setQuery('');
-                    setOpen(false);
-                  }}
-                >
-                  {p.full_name}
-                  {p.job_title || p.department_name ? (
-                    <span className="text-fg-subtle">
-                      {' · '}
-                      {[p.job_title, p.department_name].filter(Boolean).join(' · ')}
-                    </span>
-                  ) : null}
-                </Button>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : null}
-    </div>
   );
 }
 

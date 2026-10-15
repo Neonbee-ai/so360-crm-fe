@@ -181,17 +181,17 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                 {l.override_reason && <p className="text-xs text-fg-subtle">Overridden: {l.override_reason}</p>}
 
                                 {act?.kind === 'override' && (
-                                    <div className="grid grid-cols-1 wc-medium:grid-cols-[1fr_2fr_auto] gap-2 items-center">
+                                    <Grid template="1fr 2fr auto" gap="sm" className="items-center">
                                         <NumberInput name="override-amount" aria-label={`New amount for ${l.name}`} min={0} value={act.amount === '' ? null : Number(act.amount)} onChange={(v) => patchAction({ amount: v == null ? '' : String(v) })} />
                                         <TextField name="override-reason" aria-label={`Reason for ${l.name}`} placeholder="Reason (required)" value={act.reason} onChange={(e) => patchAction({ reason: e.target.value })} />
                                         <div className="flex gap-1">
                                             <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => saveOverride(l, act)}><Save size={12} /> Save</Button>
                                             <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setAction(null); }}><X size={12} /> Cancel</Button>
                                         </div>
-                                    </div>
+                                    </Grid>
                                 )}
                                 {act?.kind === 'transition' && (
-                                    <div className="grid grid-cols-1 wc-medium:grid-cols-[2fr_auto] gap-2 items-center">
+                                    <Grid template="2fr auto" gap="sm" className="items-center">
                                         <TextField name="transition-note" aria-label={`Note for ${l.name}`} placeholder="Note (optional)" value={act.note} onChange={(e) => patchAction({ note: e.target.value })} />
                                         <div className="flex gap-1">
                                             <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => void confirmTransition(l, act)}>
@@ -199,7 +199,7 @@ const DealCommissionPanel: React.FC<Props> = ({ dealId }) => {
                                             </Button>
                                             <Button variant="secondary" size="sm" type="button" onClick={() => { setError(null); setAction(null); }}><X size={12} /> Cancel</Button>
                                         </div>
-                                    </div>
+                                    </Grid>
                                 )}
 
                                 {!act && (

@@ -5,12 +5,13 @@ import {
   EmptyState,
   ErrorState,
   PersonName,
-  PersonPicker,
+  loadDirectoryPeople,
+  personIdOf,
   formatPct,
   formatValue,
   reviewPeriodBounds,
 } from './targetUi';
-import { ListPageTemplate, Button, DataTable, TextField, Select, FormField, Modal, Drawer, Alert, Badge, SearchInput, Stack, Grid, GridItem } from '@so360/design-system';
+import { PeopleSelector, ListPageTemplate, Button, DataTable, TextField, Select, FormField, Modal, Drawer, Alert, Badge, SearchInput, Stack, Grid, GridItem } from '@so360/design-system';
 import { ClipboardList, Plus } from 'lucide-react';
 import type { DataTableColumn, FilterValues } from '@so360/design-system';
 
@@ -298,7 +299,7 @@ export default function SalesReviewsPage() {
         <div className="space-y-nb-3">
           {formError && <div className="text-sm text-danger">{formError}</div>}
           <FormField label="Person" name="review_person">
-            <PersonPicker value={newPersonId} onChange={setNewPersonId} />
+            <PeopleSelector loadOptions={loadDirectoryPeople} value={newPersonId} onChange={(id) => setNewPersonId(personIdOf(id))} />
           </FormField>
           <Select
             name="review_period_type"

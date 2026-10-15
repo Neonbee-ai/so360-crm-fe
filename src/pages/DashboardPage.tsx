@@ -234,7 +234,7 @@ const DashboardPage = () => {
                         {isCommerceLoading && <Loader2 size={12} className="animate-spin text-fg-muted ml-auto" />}
                     </div>
 
-                    <div className="grid grid-cols-2 wc-medium:grid-cols-3 lg:grid-cols-5 gap-nb-3">
+                    <Grid columns={5} gap="md">
                         {/* 1. Ecommerce Revenue */}
                         <div className="border-l border-line pl-4">
                             <div className="relative">
@@ -304,7 +304,7 @@ const DashboardPage = () => {
                                 <p className="text-xs text-fg-muted mt-1 font-medium">Refund rate</p>
                             </div>
                         </div>
-                    </div>
+                    </Grid>
 
                     {/* Orders Distribution chart */}
                     {commerceKPIs?.orderChartData && commerceKPIs.orderChartData.values.length > 0 && (

@@ -1,8 +1,9 @@
-import { Button, TextField, Select, Card } from '@so360/design-system';
+import { PeopleSelector, Button, TextField, Select, Card } from '@so360/design-system';
 import React, { useEffect, useState } from 'react';
 import { targetPlanService } from '../../services/targetPlanService';
 import {
-  PersonPicker,
+  loadDirectoryPeople,
+  personIdOf,
   formatValue,
 } from './targetUi';
 import {
@@ -150,12 +151,13 @@ export default function AllocateTeamPlanPanel({
             {rows.map((r, i) => (
               <div key={r.key} className="flex flex-wrap items-center gap-2">
                 <div className="min-w-64">
-                  <PersonPicker
+                  <PeopleSelector
+                    loadOptions={loadDirectoryPeople}
                     value={r.person_id}
-                    onChange={(id) =>
+                    onChange={(pick) =>
                       setRows((cur) =>
                         cur.map((x) =>
-                          x.key === r.key ? { ...x, person_id: id } : x,
+                          x.key === r.key ? { ...x, person_id: personIdOf(pick) } : x,
                         ),
                       )
                     }

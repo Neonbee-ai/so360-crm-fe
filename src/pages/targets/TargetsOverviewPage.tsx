@@ -9,14 +9,15 @@ import {
   ErrorState,
   LoadingState,
   STATUS_TONE,
-  Sparkline,
-  TrendArrow,
+  STATUS_LEGEND,
+  trendDelta,
+  trendSparkline,
   attainmentProps,
   formatPct,
   formatValue,
   statusText,
 } from './targetUi';
-import { DashboardPageTemplate, Badge, Progress, Card, Grid, GridItem } from '@so360/design-system';
+import { DashboardPageTemplate, Badge, Progress, Card, Grid, GridItem, Sparkline, TrendIndicator, StatusLegend } from '@so360/design-system';
 
 /**
  * The landing screen.
@@ -126,6 +127,7 @@ export default function TargetsOverviewPage() {
               <div className="mt-2">
                 <Badge tone={STATUS_TONE[h.status]} dot>{statusText(h.status, h.status_label)}</Badge>
               </div>
+              <StatusLegend className="mt-2" items={STATUS_LEGEND} />
             </div>
 
             <div className="border-t border-line pt-3">
@@ -186,11 +188,11 @@ export default function TargetsOverviewPage() {
           actions={
             <span className="flex items-center gap-2 text-xs text-fg-subtle">
               average {formatPct(data.trend.average)}
-              <TrendArrow direction={data.trend.direction} />
+              <TrendIndicator value={trendDelta(data.trend.points, data.trend.direction)} format="number" />
             </span>
           }
         >
-          <Sparkline points={data.trend.points} />
+          <Sparkline type="bar" {...trendSparkline(data.trend.points)} />
           <div className="mt-2 flex gap-2 text-xs text-fg-muted">
             {data.trend.points.map((p) => (
               <div key={p.period_start} className="flex-1 text-center">

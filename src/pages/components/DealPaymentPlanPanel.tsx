@@ -245,7 +245,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                 {manual !== null && (
                     <div className="space-y-3" aria-label="Manual instalments">
                         {manual.map((r, i) => (
-                            <div key={i} className="grid grid-cols-1 wc-medium:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
+                            <Grid key={i} template="2fr 1fr 1fr 1fr auto" gap="sm" className="items-center">
                                 <TextField name={`pp-label-${i}`} aria-label={`Instalment ${i + 1} label`} placeholder="Label, e.g. Booking" value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} />
                                 <NumberInput name={`pp-amount-${i}`} aria-label={`Instalment ${i + 1} amount`} min={0} placeholder="Amount" value={r.amount === '' ? null : Number(r.amount)} onChange={(v) => setRow(i, { amount: v == null ? '' : String(v) })} />
                                 <DatePicker name={`pp-due-${i}`} aria-label={`Instalment ${i + 1} due date`} value={r.due_date} onChange={(v) => setRow(i, { due_date: v })} />
@@ -263,7 +263,7 @@ const DealPaymentPlanPanel: React.FC<Props> = ({ dealId }) => {
                                     icon={<Trash2 size={14} />}
                                     onClick={() => setManual((rows) => (rows ?? []).filter((_, j) => j !== i))}
                                 />
-                            </div>
+                            </Grid>
                         ))}
                         <div className="flex flex-wrap gap-2">
                             <Button variant="secondary" size="sm" type="button" onClick={() => setManual((rows) => [...(rows ?? []), blankRow()])}>

@@ -98,7 +98,7 @@ describe('TargetPlansPage — create form owner requirement', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'New plan' }));
     await fillRequiredPlanFields();
 
-    fireEvent.focus(screen.getByRole('combobox', { name: 'Person' }));
+    fireEvent.click(screen.getByText('Select person...'));
     fireEvent.click(await screen.findByText('Ada Lovelace'));
 
     const save = screen.getByRole('button', { name: /Save plan/i });
